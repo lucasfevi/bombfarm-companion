@@ -26,7 +26,6 @@ export type ShowcaseCopy = {
   readonly rollStat: { readonly [K in SheetKey]: string };
   readonly summaryTitle: string;
   readonly summarySquadPower: string;
-  readonly summaryTopHeroes: string;
   readonly summaryRarityMix: string;
   readonly summaryMaxPhase: string;
   readonly summaryAverageItemLevel: string;

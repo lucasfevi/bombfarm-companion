@@ -163,7 +163,7 @@ export type { HeroTypeId, WideBlastReading } from './hero-types';
 export { highestRollsFor, highestRollsText } from './highest-rolls';
 export type { HighestRoll } from './highest-rolls';
 export { equippedGearAverages, equippedItemsOf, isSquadHero, rosterSummaryFor } from './roster-summary';
-export type { EquippedGearAverages, RarityCount, RosterSummary, SummaryHero } from './roster-summary';
+export type { EquippedGearAverages, RarityCount, RosterSummary } from './roster-summary';
 export {
   SHOWCASE_ABILITY_GAP_PX,
   SHOWCASE_ABILITY_TILE_PX,

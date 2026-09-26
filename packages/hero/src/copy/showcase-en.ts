@@ -23,7 +23,6 @@ export const showcaseEn = {
   },
   summaryTitle: 'Roster summary',
   summarySquadPower: 'Squad power',
-  summaryTopHeroes: 'Top heroes',
   summaryRarityMix: 'Rarity mix',
   summaryMaxPhase: 'Max phase',
   summaryAverageItemLevel: 'Average item level',

@@ -15,12 +15,6 @@ export function equippedItemsOf(hero: Pick<HeroRecord, 'loadout'>): readonly Equ
   });
 }
 
-export type SummaryHero = {
-  readonly id: string;
-  readonly name: string;
-  readonly power: number;
-};
-
 export type RarityCount = {
   readonly rarity: RarityKey;
   readonly count: number;
@@ -36,7 +30,6 @@ export type EquippedGearAverages = {
 export type RosterSummary = {
   /** Sum over the squad heroes whose power the read carried. */
   readonly squadPower: number;
-  readonly topSquadHeroes: readonly SummaryHero[];
   /** Rarest first, rarities nobody holds left out. Counts the whole roster, bench included. */
   readonly rarityCounts: readonly RarityCount[];
   readonly squadCount: number;
@@ -45,13 +38,7 @@ export type RosterSummary = {
   readonly squadGear: EquippedGearAverages;
 };
 
-const TOP_SQUAD_HEROES = 3;
-
 const RARITIES_RAREST_FIRST: readonly RarityKey[] = [...RARITIES].reverse();
-
-function byPowerThenId(left: SummaryHero, right: SummaryHero): number {
-  return right.power - left.power || left.id.localeCompare(right.id);
-}
 
 function rarityCountsOf(heroes: readonly Pick<HeroRecord, 'rarity'>[]): readonly RarityCount[] {
   return RARITIES_RAREST_FIRST.map((rarity) => ({
@@ -81,12 +68,8 @@ export function rosterSummaryFor(
 ): RosterSummary {
   const heroes = rows.map((row) => row.hero);
   const squad = heroes.filter(isSquadHero);
-  const powered = squad.flatMap((hero) =>
-    hero.power == null ? [] : [{ id: hero.id, name: hero.name, power: hero.power }],
-  );
   return {
-    squadPower: powered.reduce((total, hero) => total + hero.power, 0),
-    topSquadHeroes: [...powered].sort(byPowerThenId).slice(0, TOP_SQUAD_HEROES),
+    squadPower: squad.reduce((total, hero) => total + (hero.power ?? 0), 0),
     rarityCounts: rarityCountsOf(heroes),
     squadCount: squad.length,
     benchCount: heroes.length - squad.length,

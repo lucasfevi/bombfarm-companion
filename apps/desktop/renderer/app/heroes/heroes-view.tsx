@@ -365,7 +365,6 @@ function HeroesRoster({
       <RosterSummaryStrip
         rows={rows}
         maxPhase={roster.account.maxPhase}
-        onSelectHeroId={onSelectHeroId}
         lang={lang}
       />
       {/* The toolbar is the web planner's too; sharing is this app's alone, so it sits beside it

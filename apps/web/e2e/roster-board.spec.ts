@@ -209,24 +209,16 @@ test.describe('roster rail and board', () => {
     ).toHaveCount(1);
   });
 
-  test('the roster summary sits above both presentations, and its top heroes pick like the roster does', async ({
-    page,
-  }) => {
+  test('the roster summary sits above both presentations', async ({ page }) => {
     await openPlanner(page);
     const summary = page.getByTestId('roster-summary-strip');
     await expect(summary).toBeVisible();
+    await expect(summary.getByTestId('roster-summary-power')).toContainText(/\d/);
     // The imported account carries no furthest phase, so the cell is left out rather than dashed.
     await expect(summary.getByTestId('roster-summary-max-phase')).toHaveCount(0);
 
     await showBoard(page);
     await expect(summary).toBeVisible();
-    await summary.getByTestId('roster-summary-top-board-nessa').click();
-
-    await expect(page.locator('[data-testid^="heroes-roster-card-"]')).toHaveCount(0);
-    await expect(page.getByTestId('heroes-roster-row-board-nessa')).toHaveAttribute('aria-current', 'true');
-    await expect(
-      page.getByRole('region', { name: /^Current hero$/i }).getByText('Nessa'),
-    ).toBeVisible();
   });
 
   test('below the rail threshold the picker dialog is still the way to choose a hero', async ({

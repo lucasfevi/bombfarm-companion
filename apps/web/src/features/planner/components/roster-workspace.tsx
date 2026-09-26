@@ -58,7 +58,6 @@ export function RosterWorkspace({ strip, children }: { strip: ReactNode; childre
       <RosterSummaryStrip
         rows={view.rows}
         maxPhase={maxPhase}
-        onSelectHeroId={view.onSelectHeroId}
         lang={lang}
       />
       <RosterToolbar

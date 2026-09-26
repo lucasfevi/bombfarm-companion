@@ -137,19 +137,11 @@ test.describe('the Heroes screen\'s board of cards', () => {
     await expect(page.getByTestId('heroes-card-abilities').first()).not.toContainText(/\d+\/\d+/);
   });
 
-  test('the roster summary carries the furthest phase, and a top hero picked from it opens that hero', async () => {
+  test('the roster summary carries the squad power and the furthest phase', async () => {
     const summary = page.getByTestId('roster-summary-strip');
     await expect(summary).toBeVisible();
+    await expect(summary.getByTestId('roster-summary-power')).toContainText(/\d/);
     await expect(summary.getByTestId('roster-summary-max-phase')).toContainText('137');
-
-    const top = summary.locator('[data-testid^="roster-summary-top-"]');
-    await expect(top).toHaveCount(3);
-    const pickedId = (await top.nth(1).getAttribute('data-testid'))?.replace('roster-summary-top-', '');
-    expect(pickedId).toBeTruthy();
-    await top.nth(1).click();
-
-    await expect(page.locator('[data-testid^="heroes-roster-card-"]')).toHaveCount(0);
-    await expect(page.getByTestId(`heroes-roster-row-${pickedId}`)).toHaveAttribute('aria-current', 'true');
   });
 
   test('the leaderboard lists every hero, sorts by power both ways, and a row opens that hero', async () => {

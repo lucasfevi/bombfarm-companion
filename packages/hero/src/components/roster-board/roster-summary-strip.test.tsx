@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { emptyLoadout } from '@bombfarm/domain/gear';
@@ -34,13 +34,12 @@ describe('RosterSummaryStrip', () => {
     container.remove();
   });
 
-  function mount(props: { maxPhase?: number | null; onSelectHeroId?: (id: string) => void; lang?: 'en' | 'pt' }) {
+  function mount(props: { maxPhase?: number | null; lang?: 'en' | 'pt' }) {
     act(() => {
       root.render(
         <RosterSummaryStrip
           rows={ROWS}
           maxPhase={props.maxPhase}
-          onSelectHeroId={props.onSelectHeroId ?? (() => undefined)}
           lang={props.lang ?? 'en'}
         />,
       );
@@ -49,18 +48,10 @@ describe('RosterSummaryStrip', () => {
 
   const byTestId = (id: string) => container.querySelector(`[data-testid="${id}"]`);
 
-  it('lists the three strongest squad heroes, and clicking one selects that hero', () => {
-    const onSelectHeroId = vi.fn();
-    mount({ onSelectHeroId });
-    const top = [...container.querySelectorAll('[data-testid^="roster-summary-top-"]')].map(
-      (node) => node.getAttribute('data-testid'),
-    );
-    expect(top).toEqual(['roster-summary-top-bo', 'roster-summary-top-cy', 'roster-summary-top-di']);
-
-    act(() => {
-      (byTestId('roster-summary-top-cy') as HTMLButtonElement).click();
-    });
-    expect(onSelectHeroId).toHaveBeenCalledWith('cy');
+  it('shows the squad power on its own, with no list of heroes beside it', () => {
+    mount({});
+    expect(byTestId('roster-summary-power')?.querySelectorAll('button, li')).toHaveLength(0);
+    expect(container.querySelectorAll('[data-testid^="roster-summary-top-"]')).toHaveLength(0);
   });
 
   it('counts squad and bench, and legends the rarities rarest first with the empty ones left out', () => {

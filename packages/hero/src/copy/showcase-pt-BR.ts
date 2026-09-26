@@ -25,7 +25,6 @@ export const showcasePtBR: ShowcaseCopy = {
   },
   summaryTitle: 'Resumo do elenco',
   summarySquadPower: 'Poder do esquadrão',
-  summaryTopHeroes: 'Melhores heróis',
   summaryRarityMix: 'Raridades',
   summaryMaxPhase: 'Fase máxima',
   summaryAverageItemLevel: 'Nível médio dos itens',
