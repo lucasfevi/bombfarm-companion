@@ -133,6 +133,24 @@ describe('reconcile', () => {
     }
   });
 
+  /**
+   * A rune chest is listed by rank, and the rank is NOT a tier. An owned `chest_rune_3` reads
+   * rarity 0, so keying the market row at the rank would give `chest_rune_3#3` against the owner's
+   * `chest_rune_3#0` and the two would never meet — priced on the board, unpriceable in a bag.
+   */
+  it('keys a rune chest by its rank and rarity 0, not by the rank as a tier', () => {
+    const { entries, anomalies } = reconcileOne('Rune Chest (Rank 2)');
+
+    expect(entries[0]).toMatchObject({
+      defId: 'chest_rune_2',
+      key: priceKey('chest_rune_2', 0),
+      category: 'chest',
+      act: null,
+    });
+    expect(entries[0]?.key).not.toBe(priceKey('chest_rune_2', 2));
+    expect(anomalies).toEqual([]);
+  });
+
   it('keys an item chest at rarity 0, which is what an owned one carries', () => {
     const { entries } = reconcileOne('Item Chest (Lv 10)');
 

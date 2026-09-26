@@ -101,6 +101,10 @@ describe('the builder supplies every identity the catalog cannot', () => {
     expect(anomalies).toEqual([]);
   });
 
+  /**
+   * `Rune Chest` is a family the generator does know — by RANK. Asked for by act it still matches
+   * nothing, which is the point: the axis word is part of the name, not decoration to be skipped.
+   */
   it.each([
     ['Obsidian Gem', 'unknown#'],
     ['Rune Chest (Act 1)', 'unknown#'],

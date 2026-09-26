@@ -105,11 +105,12 @@ describe('the generated set as a whole', () => {
     const raritySuffixed = 3 * 6;
     const itemChests = 30;
     const actChests = 4 * 5;
+    const rankChests = 5;
     const heroes = 6;
     const skins = 5;
 
     expect(generated.size).toBe(
-      equipment + gems + raritySuffixed + itemChests + actChests + heroes + skins,
+      equipment + gems + raritySuffixed + itemChests + actChests + rankChests + heroes + skins,
     );
   });
 });

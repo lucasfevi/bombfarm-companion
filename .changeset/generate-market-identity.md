@@ -25,5 +25,9 @@ identity from the previous file, which is what let a cut-short run's partial ide
 complete on the next run; the refusal to publish a snapshot that drops a catalog key whose row is
 still listed now applies to every run rather than only to a cut-short one.
 
+Rune chests are keyed too. They are listed by rank rather than by act, and unlike an act the rank
+is not a rarity tier — an owned one reads rarity 0 — so the market row is keyed the way the owner's
+copy keys rather than the way an act chest would.
+
 The published snapshot's shape is unchanged, so no client needs to deploy and the web planner
 benefits on the next run.

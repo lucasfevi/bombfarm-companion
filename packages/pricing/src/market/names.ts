@@ -98,6 +98,21 @@ export const RARITY_SUFFIXED_CATEGORIES: Readonly<
 /** The market name an item chest is listed under, which carries a level where the others carry a rarity. */
 const LEVEL_CHEST_MARKET_PREFIX = 'Item Chest';
 
+/**
+ * The rune chest, listed by RANK where the act chests are listed by act.
+ *
+ * The rank rides in the def id exactly as an act does — `Rune Chest (Rank 3)` is `chest_rune_3` —
+ * but unlike an act it is **not** a rarity tier. An owned `chest_rune_3` reads rarity 0 (witnessed
+ * 2026-09-26), because the domain's `chestRarityIdx` tiers only the act-scoped families and leaves
+ * every other chest on its wire rarity, which is always 0. Keying the market row at the rank would
+ * produce `chest_rune_3#3` against an owned `chest_rune_3#0`, and the two would never meet.
+ *
+ * So it takes the item chest's shape — the tail identifies, rarity 0 addresses — with a rank in
+ * place of a level. If `chest_rune_*` is ever added to that domain regex, this has to move with it.
+ */
+const RANK_CHEST_MARKET_PREFIX = 'Rune Chest';
+const RANK_CHEST_DEF_PREFIX = 'chest_rune';
+
 /** The Steam category tag the chests of every family are listed under. */
 const CHEST_CATEGORY = 'chest';
 
@@ -232,6 +247,22 @@ export function generateMarketNames(catalog: CatalogView): Map<string, MarketNam
         slotWord: null,
       });
     }
+  }
+
+  // Ranks bounded the same way the acts are, for want of any other bound: the market carries 1 and
+  // 2, an owned copy witnessed rank 3, and a rank nothing lists simply never matches.
+  for (const rank of catalog.rarityIdxs.filter((idx) => idx > 0)) {
+    add(`${RANK_CHEST_MARKET_PREFIX} (Rank ${String(rank)})`, {
+      category: CHEST_CATEGORY,
+      defId: `${RANK_CHEST_DEF_PREFIX}_${String(rank)}`,
+      set: null,
+      slot: null,
+      rarityIdx: 0,
+      level: null,
+      act: null,
+      kind: itemKindFor(CHEST_CATEGORY),
+      slotWord: null,
+    });
   }
 
   // A hero listing carries no set, slot, level or act: rarity is its whole identity, and it needs
