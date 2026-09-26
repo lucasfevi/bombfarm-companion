@@ -134,6 +134,35 @@ test.describe('roster rail and board', () => {
     expect(await cardIds(page)).not.toContain('board-shelved');
   });
 
+  test('before any pick, every presentation marks the hero the planner is showing', async ({
+    page,
+  }) => {
+    await openPlanner(page);
+    const strip = page.getByRole('region', { name: /^Current hero$/i });
+    await expect(strip.getByText('Doran')).toBeVisible();
+
+    const marked = '[aria-current="true"]';
+    await expect(page.locator(`[data-testid^="heroes-roster-row-"]${marked}`)).toHaveCount(1);
+    await expect(page.getByTestId('heroes-roster-row-board-doran')).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+
+    await showTable(page);
+    await expect(page.locator(`[data-testid^="heroes-leaderboard-row-"]${marked}`)).toHaveCount(1);
+    await expect(page.getByTestId('heroes-leaderboard-row-board-doran')).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+
+    await showBoard(page);
+    await expect(page.locator(`[data-testid^="heroes-roster-card-"]${marked}`)).toHaveCount(1);
+    await expect(page.getByTestId('heroes-roster-card-board-doran')).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+  });
+
   test('picking from the rail changes the hero the planner is editing and stays on the rail', async ({
     page,
   }) => {

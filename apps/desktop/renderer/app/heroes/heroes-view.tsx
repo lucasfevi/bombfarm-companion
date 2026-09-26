@@ -523,7 +523,7 @@ function RosterShare({ rows, roster, lang }: { rows: RosterModel['rows']; roster
   return (
     <>
       <Button
-        variant="ghost"
+        variant="primary"
         className="inline-flex shrink-0 items-center gap-1.5"
         onClick={() => {
           setOpen(true);

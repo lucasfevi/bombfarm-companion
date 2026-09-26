@@ -120,6 +120,29 @@ test.describe('the Heroes screen\'s board of cards', () => {
     fs.rmSync(runDir, { recursive: true, force: true });
   });
 
+  test('before any pick, the rail, the leaderboard and the cards all mark the hero the detail shows', async () => {
+    await resize(app, page, 1280, 900);
+    await openHeroes(page);
+    const marked = (prefix) => page.locator(`[data-testid^="${prefix}"][aria-current="true"]`);
+
+    const railMarked = marked('heroes-roster-row-');
+    await expect(railMarked).toHaveCount(1);
+    const shownId = (await railMarked.getAttribute('data-testid'))?.replace('heroes-roster-row-', '');
+    const firstRailId = (await page.locator('[data-testid^="heroes-roster-row-"]').first().getAttribute('data-testid'))
+      ?.replace('heroes-roster-row-', '');
+    expect(shownId).toBe(firstRailId);
+
+    await showTable(page);
+    await expect(marked('heroes-leaderboard-row-')).toHaveCount(1);
+    await expect(page.getByTestId(`heroes-leaderboard-row-${shownId}`)).toHaveAttribute('aria-current', 'true');
+
+    await showBoard(page);
+    await expect(marked('heroes-roster-card-')).toHaveCount(1);
+    await expect(page.getByTestId(`heroes-roster-card-${shownId}`)).toHaveAttribute('aria-current', 'true');
+
+    await page.getByRole('button', { name: /^List$/i }).click();
+  });
+
   test('every showcase card draws the same sections, with no card-detail control on the board', async () => {
     await resize(app, page, 1280, 900);
     await openHeroes(page);
