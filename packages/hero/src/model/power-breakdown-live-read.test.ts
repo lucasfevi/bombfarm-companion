@@ -17,7 +17,7 @@ import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { hasRuneOnSheet, runesOf } from '@bombfarm/domain/runes';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { TEAM_AURA_SWITCH_IDS, type TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
-import { factsForHero, loadBreakdownFixture } from './combat-breakdown.test-fixture';
+import { factsForHero, loadBreakdownFixture, storedPowerAfterWideBlastNerf } from './combat-breakdown.test-fixture';
 
 const fixture = loadBreakdownFixture('payload-20260913-20heroes-runes.json');
 const treeCritDmgPct = fixture.account.tree.critDmg;
@@ -36,8 +36,7 @@ function runeFreePower(hero: HeroRecord, switches?: TeamAuraSwitches): number {
 }
 
 function storedPower(hero: HeroRecord): number {
-  if (hero.power === undefined) throw new Error(`${hero.name} carries no stored power`);
-  return hero.power;
+  return storedPowerAfterWideBlastNerf(hero);
 }
 
 describe('the Power panel on a live account read', () => {

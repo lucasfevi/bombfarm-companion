@@ -6,6 +6,7 @@ import {
   GAME_POWER_FACTOR_IDS,
   GAME_POWER_NEUTRAL_FACTORS,
   alcanceForExplosaoAmpla,
+  effectiveReachForExplosaoAmpla,
   gamePower,
   gamePowerAxisValue,
   gamePowerCurve,
@@ -28,6 +29,8 @@ type Anchor = {
   readonly explosaoAmpla: number;
   readonly stats: Record<string, number>;
   readonly power: number;
+  /** Stored before the 2026-09-26 patch halved the extra Wide Blast cells, when they counted whole. */
+  readonly beforeWideBlastNerf?: true;
 };
 
 /** Export units, and the game's own Power for each sheet. */
@@ -106,11 +109,68 @@ const ANCHORS: readonly Anchor[] = [
       cooldown_reduction: 0.0773451554004449,
     },
     power: 28031028.0631238,
+    beforeWideBlastNerf: true,
+  },
+  {
+    label: 'legendary-lv182-ampla20-after-nerf',
+    explosaoAmpla: 20,
+    stats: {
+      dmg: 143931.5456329522,
+      energia: 11242.751267361115,
+      speed: 85.38552100820897,
+      luck: 1.2608589436253543,
+      crit_chance: 0.7627259445289484,
+      crit_dmg: 9.826481110785386,
+      penetration: 36.73676496925263,
+      cooldown_reduction: 0.0951583187859157,
+    },
+    power: 32852301.456453953,
+  },
+  {
+    label: 'superrare-lv207-ampla20-after-nerf',
+    explosaoAmpla: 20,
+    stats: {
+      dmg: 84035.4790691488,
+      energia: 7747.534052657672,
+      speed: 93.4882818378734,
+      luck: 0.6820459519885604,
+      crit_chance: 0.7198531808252272,
+      crit_dmg: 6.0545590471208595,
+      penetration: 42.61066123196,
+      cooldown_reduction: 0.13012704905133826,
+    },
+    power: 10626824.616654057,
+  },
+  {
+    label: 'superrare-lv42-ampla20-after-nerf',
+    explosaoAmpla: 20,
+    stats: {
+      dmg: 12094.201864343811,
+      energia: 2098.221099082013,
+      speed: 68.90719429069739,
+      luck: 0.512831523465751,
+      crit_chance: 0.20999940993796215,
+      crit_dmg: 3.1152474515964554,
+      penetration: 5.475423163386364,
+      cooldown_reduction: 0.08673415632586653,
+    },
+    power: 305726.57689256856,
   },
 ];
 
 function inputOf(anchor: Anchor): GamePowerInput {
   return { sheet: saveSheetUnits(anchor.stats), explosaoAmplaLevel: anchor.explosaoAmpla };
+}
+
+/** Power as the game scored it before the 2026-09-26 patch, when every Wide Blast cell counted whole. */
+function gamePowerBeforeWideBlastNerf(input: GamePowerInput): number {
+  const wholeCellRange = 1 + 0.5 * alcanceForExplosaoAmpla(input.explosaoAmplaLevel);
+  return (gamePower(input) / gamePowerFactors(input).range) * wholeCellRange;
+}
+
+function scoredAsStored(entry: Anchor): number {
+  const input = inputOf(entry);
+  return entry.beforeWideBlastNerf ? gamePowerBeforeWideBlastNerf(input) : gamePower(input);
 }
 
 function anchor(label: string): Anchor {
@@ -136,7 +196,29 @@ describe('gamePower', () => {
   it.each(ANCHORS.map((entry) => [entry.label, entry] as const))(
     'reproduces the game figure for %s to 1e-9',
     (_label, entry) => {
-      expect(relativeError(gamePower(inputOf(entry)), entry.power)).toBeLessThan(1e-9);
+      expect(relativeError(scoredAsStored(entry), entry.power)).toBeLessThan(1e-9);
+    },
+  );
+
+  it.each([
+    [0, 1],
+    [9, 1],
+    [10, 1.5],
+    [19, 1.5],
+    [20, 2],
+  ])('Explosão Ampla level %d scores a reach of %d: each extra cell at half damage', (level, reach) => {
+    expect(effectiveReachForExplosaoAmpla(level)).toBe(reach);
+  });
+
+  it('the nerf is the whole gap on a level-20 hero stored before it: 2.0 / 2.5 of the old figure', () => {
+    const before = anchor('legendary-lv160-ampla20');
+    expect(gamePower(inputOf(before)) / before.power).toBeCloseTo(2 / 2.5, 12);
+  });
+
+  it.each(ANCHORS.filter((entry) => entry.explosaoAmpla === 20 && !entry.beforeWideBlastNerf).map((entry) => [entry.label, entry] as const))(
+    '%s, stored after the nerf, reads a quarter high with every cell counted whole',
+    (_label, entry) => {
+      expect(gamePowerBeforeWideBlastNerf(inputOf(entry)) / entry.power).toBeCloseTo(1.25, 12);
     },
   );
 
@@ -169,7 +251,7 @@ describe('gamePower', () => {
     ['payload-20260812-8heroes.json', 'Devin'],
     ['save-20260825-11heroes-one-shot-spread.json', 'Joric'],
     ['save-20260831-13heroes-soulbound.json', 'WB c3'],
-  ])('%s: %s, at a level between the steps, matches the game only with the reach floored', (file, name) => {
+  ])('%s: %s, at a level between the steps, matched the pre-nerf game only with the reach floored', (file, name) => {
     const path = join(__dirname, 'fixtures/sheet-math', file);
     if (!requireFixture(path, `the floored reach matches ${name}'s stored Power`)) return;
     const save = JSON.parse(readFileSync(path, 'utf8')) as {
@@ -180,7 +262,8 @@ describe('gamePower', () => {
     const level = hero.abilities.find((ability) => ability.code === 'explosao_ampla')?.level ?? 0;
     expect(alcanceForExplosaoAmpla(level)).not.toBe(1 + Math.round(0.1 * level));
     const { power, ...stats } = hero.stats;
-    expect(relativeError(gamePower({ sheet: saveSheetUnits(stats), explosaoAmplaLevel: level }), power)).toBeLessThan(1e-12);
+    const scored = gamePowerBeforeWideBlastNerf({ sheet: saveSheetUnits(stats), explosaoAmplaLevel: level });
+    expect(relativeError(scored, power)).toBeLessThan(1e-12);
   });
 
   it('does not clamp penetration at 100: the hero at 108.9 matches only unclamped', () => {
@@ -270,8 +353,8 @@ describe('gamePower', () => {
 describe('runes', () => {
   const lv160 = lv160Input();
 
-  it('the rune model reproduces the in-game 32.41M for the rune witness, crit damage before the tree', () => {
-    const withRunes = gamePower(gamePowerInputWithRunes(lv160, WITNESS_RUNES, TREE_CRIT_DMG_PCT));
+  it('the rune model reproduces the pre-nerf in-game 32.41M for the rune witness, crit damage before the tree', () => {
+    const withRunes = gamePowerBeforeWideBlastNerf(gamePowerInputWithRunes(lv160, WITNESS_RUNES, TREE_CRIT_DMG_PCT));
     expect(relativeError(withRunes, WITNESS_POWER_WITH_RUNES)).toBeLessThan(1e-6);
   });
 
@@ -279,7 +362,7 @@ describe('runes', () => {
     const otherRunes = gamePowerInputWithRunes(lv160, [rune('crit', 9), rune('energy', 5)], TREE_CRIT_DMG_PCT);
     const displayedCritDmg = 1 + lv160.sheet.critDmg / 100;
     const naive = withGamePowerAxis(otherRunes, 'critDmg', (displayedCritDmg * 1.09 - 1) * 100);
-    const naivePower = gamePower(naive);
+    const naivePower = gamePowerBeforeWideBlastNerf(naive);
     expect(relativeError(naivePower, WITNESS_POWER_WITH_RUNES)).toBeGreaterThan(1e-2);
     expect(naivePower / 1e6).toBeCloseTo(32.88, 2);
   });
@@ -291,7 +374,7 @@ describe('runes', () => {
   it('taking the runes back off an observed sheet returns the rune-free figure', () => {
     const observed = gamePowerInputWithRunes(lv160, WITNESS_RUNES, TREE_CRIT_DMG_PCT);
     const stripped = gamePowerInputWithoutRunes(observed, WITNESS_RUNES, TREE_CRIT_DMG_PCT);
-    expect(relativeError(gamePower(stripped), anchor('legendary-lv160-ampla20').power)).toBeLessThan(1e-12);
+    expect(relativeError(gamePowerBeforeWideBlastNerf(stripped), anchor('legendary-lv160-ampla20').power)).toBeLessThan(1e-12);
   });
 });
 
@@ -323,10 +406,10 @@ describe('gamePowerShares', () => {
     expect(relativeError(rebuilt, gamePower(input))).toBeLessThan(1e-12);
   });
 
-  it('with runes on, the witness reads crit ×8.80 at a 46.8% share', () => {
+  it('with runes on, the witness reads crit ×8.80 at a 49.1% share', () => {
     const withRunes = gamePowerInputWithRunes(lv160Input(), WITNESS_RUNES, TREE_CRIT_DMG_PCT);
     expect(gamePowerMultipliers(withRunes).crit).toBeCloseTo(8.8, 2);
-    expect(gamePowerShares(withRunes).crit).toBeCloseTo(0.468, 3);
+    expect(gamePowerShares(withRunes).crit).toBeCloseTo(0.491, 3);
   });
 
   it('a sheet at neutral everywhere has no stack to share', () => {
@@ -402,9 +485,9 @@ describe('a stat point, against the game', () => {
     [0, 27_601_144.3234988],
     [1, 27_816_086.193311],
     [2, 28_031_028.0631238],
-  ])('%d speed point(s) at 2%% of the rolled base land on the game’s figure', (points, power) => {
+  ])('%d speed point(s) at 2%% of the rolled base land on the pre-nerf game’s figure', (points, power) => {
     const speed = beforeSpeedPoints.sheet.speed + points * POINT_GAIN.speedPctOfBase * BIRTH_SPEED;
-    const scored = gamePower(withGamePowerAxis(beforeSpeedPoints, 'speed', speed));
+    const scored = gamePowerBeforeWideBlastNerf(withGamePowerAxis(beforeSpeedPoints, 'speed', speed));
     expect(relativeError(scored, power)).toBeLessThanOrEqual(1e-12);
   });
 });

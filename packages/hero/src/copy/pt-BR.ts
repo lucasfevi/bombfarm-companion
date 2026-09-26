@@ -32,7 +32,7 @@ export const heroPtBR: HeroCopy = {
   heroDetailPowerTip:
     "O próprio número de Poder do jogo, desmontado. Poder é dez vezes o ataque multiplicado por um fator por atributo; a fatia de cada fator é quanto dessa pilha ele levanta, medida a partir de um herói sem nada daquele atributo. O Poder é calculado antes das auras do time, então um atributo aqui pode aparecer menor que no painel de atributos efetivos.",
   heroDetailPowerPick: "Escolha um fator para ver o Poder ao longo da faixa dele.",
-  heroDetailPowerDiffers: "Difere do número do jogo em {pct} (pontos estimados)",
+  heroDetailPowerDiffers: "Difere do número do jogo em {pct}",
   heroDetailPowerRunesActive: "Com as runas ativas · {value} sem elas",
   heroDetailPowerWithheld:
     "Este é o número guardado pelo jogo, sem runas. O detalhamento depende dos pontos gastos do herói, que não puderam ser lidos.",

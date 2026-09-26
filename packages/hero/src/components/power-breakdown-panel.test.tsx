@@ -10,7 +10,12 @@ import { hasRuneOnSheet, runesOf, type HeroRune } from '@bombfarm/domain/runes';
 import { saveSheetUnits } from '@bombfarm/domain/save-units';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { heroCopyFor, type Lang } from '../copy';
-import { factsForHero, fixtureHero, loadBreakdownFixture } from '../model/combat-breakdown.test-fixture';
+import {
+  factsForHero,
+  fixtureHero,
+  loadBreakdownFixture,
+  storedPowerAfterWideBlastNerf,
+} from '../model/combat-breakdown.test-fixture';
 import type { PointDelta } from '../model/power-breakdown';
 import { formatPowerFigure, powerAxisSpec, powerReading, powerReadoutText, steppedGuide } from '../model/power-breakdown';
 import { PowerBreakdownPanel } from './power-breakdown-panel';
@@ -18,7 +23,11 @@ import { PowerBreakdownPanel } from './power-breakdown-panel';
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const TREE_CRIT_DMG_PCT = 90.88461522;
-const STORED_POWER = 28_031_028.0631238;
+const STORED_POWER = storedPowerAfterWideBlastNerf({
+  name: 'rune witness',
+  power: 28_031_028.0631238,
+  abilities: { explosao_ampla: 20 },
+});
 
 const RUNE_FREE: GamePowerInput = {
   sheet: saveSheetUnits({
@@ -115,13 +124,13 @@ function press(element: HTMLElement, key: string) {
 describe('PowerBreakdownPanel', () => {
   it('prints the rune-inclusive total the game shows, and names the stored rune-free figure beside it', () => {
     render(RUNED);
-    expect(query('[data-testid="power-total"]').textContent).toBe('32.41M');
-    expect(query('[data-testid="power-rune-note"]').textContent).toBe('Includes active runes · 28.03M without them');
+    expect(query('[data-testid="power-total"]').textContent).toBe('25.93M');
+    expect(query('[data-testid="power-rune-note"]').textContent).toBe('Includes active runes · 22.42M without them');
   });
 
   it('says nothing about runes for a hero carrying none, and its total is the stored figure', () => {
     render(PLAIN);
-    expect(query('[data-testid="power-total"]').textContent).toBe('28.03M');
+    expect(query('[data-testid="power-total"]').textContent).toBe('22.42M');
     expect(container.querySelector('[data-testid="power-rune-note"]')).toBeNull();
   });
 
@@ -138,7 +147,7 @@ describe('PowerBreakdownPanel', () => {
       'cooldown',
       'attack',
     ]);
-    expect(rows[0].textContent).toBe('Crit (chance × damage)×8.8046.8%');
+    expect(rows[0].textContent).toBe('Crit (chance × damage)×8.8049.1%');
     expect(rows.at(-1)?.textContent).toContain('anchor');
     expect(container.querySelectorAll('[data-power-segment]')).toHaveLength(7);
   });
@@ -262,7 +271,8 @@ describe('PowerBreakdownPanel', () => {
   it('the total is the formula on the sheet it was handed', () => {
     render(RUNED);
     const total = gamePower(gamePowerInputOf(RUNED.sheet, RUNED.hero.abilities));
-    expect(Math.abs(total / 32_411_057.17 - 1)).toBeLessThan(1e-6);
+    expect(query('[data-testid="power-total"]').textContent).toBe(formatPowerFigure(total));
+    expect(Math.abs(total / (32_411_057.17 * (2 / 2.5)) - 1)).toBeLessThan(1e-6);
   });
 
   it('a hero with no Wide Blast keeps its "now" label inside the plot, clear of the axis labels', () => {
@@ -294,15 +304,15 @@ describe('PowerBreakdownPanel', () => {
     expect(container.querySelector('[data-testid="power-mismatch-note"]')).toBeNull();
   });
 
-  it('a hero whose points were only estimated says by how much its figure differs from the game', () => {
+  it('a hero whose figure differs from the game says by how much, without guessing why', () => {
     render({ ...PLAIN, hero: { ...PLAIN.hero, power: STORED_POWER / 1.0033 } });
     expect(query('[data-testid="power-mismatch-note"]').textContent).toBe(
-      "Differs from the game's figure by +0.33% (points estimated)",
+      "Differs from the game's figure by +0.33%",
     );
     expect(container.querySelectorAll('[data-power-row]')).toHaveLength(8);
     render({ ...PLAIN, hero: { ...PLAIN.hero, power: STORED_POWER * 1.0105 } });
     expect(query('[data-testid="power-mismatch-note"]').textContent).toBe(
-      "Differs from the game's figure by −1.04% (points estimated)",
+      "Differs from the game's figure by −1.04%",
     );
   });
 
@@ -313,7 +323,7 @@ describe('PowerBreakdownPanel', () => {
 
   it('a hero whose points were not recovered gets the stored figure and the reason, and no breakdown', () => {
     render({ hero: RUNED.hero, sheet: null });
-    expect(query('[data-testid="power-total"]').textContent).toBe('28.03M');
+    expect(query('[data-testid="power-total"]').textContent).toBe('22.42M');
     expect(query('[data-testid="power-withheld"]').textContent).toBe(t.heroDetailPowerWithheld);
     expect(container.querySelector('[data-power-row]')).toBeNull();
     expect(container.querySelector('[data-power-segment]')).toBeNull();
@@ -322,7 +332,10 @@ describe('PowerBreakdownPanel', () => {
 
 describe('PowerBreakdownPanel on a live account read', () => {
   const fixture = loadBreakdownFixture('payload-20260913-20heroes-runes.json');
-  const shownFor = (hero: HeroRecord): Shown => ({ hero, sheet: factsForHero(fixture, hero).adjusted });
+  const shownFor = (hero: HeroRecord): Shown => ({
+    hero: { ...hero, power: storedPowerAfterWideBlastNerf(hero) },
+    sheet: factsForHero(fixture, hero).adjusted,
+  });
 
   it.each(fixture.heroes.map((hero) => [hero.name, hero] as const))(
     '%s: the total is the Combat stage’s sheet scored, and runes never lower it',
@@ -330,11 +343,12 @@ describe('PowerBreakdownPanel on a live account read', () => {
       render(shownFor(hero), fixture.account.tree.critDmg);
       const total = gamePower(gamePowerInputOf(factsForHero(fixture, hero).adjusted, hero.abilities));
       expect(query('[data-testid="power-total"]').textContent).toBe(formatPowerFigure(total));
-      expect(total).toBeGreaterThanOrEqual((hero.power ?? 0) * (1 - 1e-12));
+      const stored = storedPowerAfterWideBlastNerf(hero);
+      expect(total).toBeGreaterThanOrEqual(stored * (1 - 1e-12));
       expect(container.querySelector('[data-testid="power-mismatch-note"]')).toBeNull();
       const note = container.querySelector('[data-testid="power-rune-note"]');
       if (hasRuneOnSheet(runesOf(hero))) {
-        expect(note?.textContent).toBe(`Includes active runes · ${formatPowerFigure(hero.power ?? 0)} without them`);
+        expect(note?.textContent).toBe(`Includes active runes · ${formatPowerFigure(stored)} without them`);
       } else {
         expect(note).toBeNull();
       }

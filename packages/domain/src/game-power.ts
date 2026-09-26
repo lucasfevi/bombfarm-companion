@@ -25,6 +25,12 @@ const ENERGY_BRACKET_WEIGHT = 0.02;
 const ENERGY_BRACKET_PER_ENERGY = 0.008;
 const ENERGY_BRACKET_CEILING = 6;
 const BLOCKS_PER_ALCANCE = 0.5;
+/**
+ * The cells Explosão Ampla adds beyond the core blast hit for half its damage, and Power counts
+ * them at that weight — the wiki's `extra_range_frac`. Until the 2026-09-26 patch they counted
+ * in full: every level-20 hero's stored Power moved from a reach of 3 to 2 across it.
+ */
+const EXTRA_CELL_DAMAGE_SHARE = 0.5;
 
 /** The highest cooldown reduction the formula has been checked against; past it, it is extrapolated. */
 export const GAME_POWER_CDR_CHECKED_MAX_PCT = 17.85;
@@ -63,6 +69,11 @@ export function alcanceForExplosaoAmpla(level: number): number {
   return 1 + Math.floor(RANGE_CELLS_PER_LEVEL * level + FLOOR_EPSILON);
 }
 
+/** The reach Power scores: the core cell whole, each cell Explosão Ampla adds at its damage share. */
+export function effectiveReachForExplosaoAmpla(level: number): number {
+  return 1 + EXTRA_CELL_DAMAGE_SHARE * (alcanceForExplosaoAmpla(level) - 1);
+}
+
 type PowerTerms = {
   readonly attack: number;
   readonly crit: number;
@@ -83,7 +94,7 @@ function powerTerms({ sheet, explosaoAmplaLevel }: GamePowerInput): PowerTerms {
     attack: sheet.attack,
     crit: 1 + critChance * (sheet.critDmg / 100),
     speed: SPEED_BASE + SPEED_PER_POINT * sheet.speed,
-    range: 1 + BLOCKS_PER_ALCANCE * alcanceForExplosaoAmpla(explosaoAmplaLevel),
+    range: 1 + BLOCKS_PER_ALCANCE * effectiveReachForExplosaoAmpla(explosaoAmplaLevel),
     stamina: 1 - STAMINA_DEPTH / (STAMINA_BASE + STAMINA_PER_ENERGY * sheet.energy),
     luckTerm: (sheet.luck / 100) * LUCK_WEIGHT,
     energyTerm: ENERGY_BRACKET_WEIGHT * (bombs - 1),

@@ -33,7 +33,7 @@ export const heroEn = {
   heroDetailPowerTip:
     "The game's own Power figure, taken apart. Power is ten times attack multiplied by one factor per statistic; each factor's share is how much of that stack it lifts, measured from a hero with none of the statistic. Power is scored before team auras, so a stat here can read lower than on the Effective stats panel.",
   heroDetailPowerPick: "Pick a factor to see Power across its range.",
-  heroDetailPowerDiffers: "Differs from the game's figure by {pct} (points estimated)",
+  heroDetailPowerDiffers: "Differs from the game's figure by {pct}",
   heroDetailPowerRunesActive: "Includes active runes · {value} without them",
   heroDetailPowerWithheld:
     "This is the game's stored figure, without runes. The breakdown is built on the hero's spent points, which could not be read.",
