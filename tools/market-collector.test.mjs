@@ -49,7 +49,7 @@ const snapshotFixture = () => ({
 const statsFixture = (overrides = {}) => ({
   rowsSeen: 2,
   searchCalls: 9,
-  enumerationCalls: 10,
+  enumerationCalls: 9,
   quoteCalls: 1,
   quotesOk: 1,
   quotable: 2,
@@ -151,7 +151,7 @@ describe('the pass plans what it will quote', () => {
         plans.push(
           planQuotes({
             quotable: listed.map((hashName) => ({ hashName })),
-            enumerationCalls: 10,
+            enumerationCalls: 9,
             searchDelayMs: 1500,
           }),
         );
@@ -226,7 +226,7 @@ describe('the pass plans what it will quote', () => {
       runSweep: async ({ planQuotes }) => {
         const plan = planQuotes({
           quotable: listed.map((hashName) => ({ hashName })),
-          enumerationCalls: 10,
+          enumerationCalls: 9,
           searchDelayMs: 1500,
         });
         h.plans.push(plan);
@@ -309,9 +309,9 @@ describe('the pass plans what it will quote', () => {
    * reads it back from. Two identities carry that, and both are cross-column — the kind that
    * breaks silently, since every column stays individually plausible.
    *
-   * Enumeration costs one call more than `search_calls` says: the facet schema is a different
-   * endpoint and is counted apart. And the rotation the pacing was derived for is the attempts,
-   * not the calls, `quote_calls` counting each rate-limited retry again.
+   * Enumeration is exactly `search_calls`: the walk is the only thing a pass spends before the
+   * rotation. And the rotation the pacing was derived for is the attempts, not the calls,
+   * `quote_calls` counting each rate-limited retry again.
    */
   it('reconstructs the delay it chose from the columns it wrote', async () => {
     const h = planningHarness({
@@ -324,7 +324,7 @@ describe('the pass plans what it will quote', () => {
 
     const [run] = h.runs;
     const plan = h.plans[0];
-    const enumerationCalls = run.search_calls + 1;
+    const enumerationCalls = run.search_calls;
     const attempted = run.quote_calls - run.rate_limit_hits;
 
     expect(attempted).toBe(run.tier_a_count + run.first_quote_count);
@@ -355,7 +355,7 @@ describe('the pass plans what it will quote', () => {
 });
 
 describe('configuration read from the environment', () => {
-  it('reads the path it resumes its row identities from', () => {
+  it('reads the path it resumes its snapshot from', () => {
     expect(readConfig(ENV).snapshotPath).toBe('/var/state/market-prices.json');
   });
 
@@ -442,11 +442,11 @@ describe('configuration read from the environment', () => {
 });
 
 /**
- * Identifying a row costs a burst of facet queries, and the burst fires whenever the enumeration
- * turns up a row the prior cannot name. So the question these answer is which prior a pass starts
- * from: the freshest one available, or nothing at all when the freshest cannot be had.
+ * A pass resumes from a snapshot for the rows a cut-short walk never reached, and for the coverage
+ * the publish gate compares against. So the question these answer is which prior it starts from: the
+ * freshest one available, or nothing at all when the freshest cannot be had.
  */
-describe('where a pass gets its row identities', () => {
+describe('where a pass gets the snapshot it resumes from', () => {
   const PUBLISHED = {
     entries: [{ hashName: 'Published Row' }],
     generatedUtc: '2026-09-05T00:00:00.000Z',
@@ -613,9 +613,9 @@ describe('the rows a pass produces', () => {
     const stats = statsFixture({
       anomalies: [
         { kind: 'unlinkable-item', detail: 'x' },
-        { kind: 'unknown-slot-tag', detail: 'y' },
+        { kind: 'name-form-drift', detail: 'y' },
       ],
-      unmappedTags: [{ kind: 'unknown-slot-tag', detail: 'y' }],
+      unmappedTags: [{ kind: 'name-form-drift', detail: 'y' }],
       unlinkableItems: [{ kind: 'unlinkable-item', detail: 'x' }],
     });
     expect(runRowFrom(stats, 1234)).toMatchObject({
@@ -671,14 +671,14 @@ describe('the cool-down ladder', () => {
   it('names every stage that did not finish, and nothing when all of them did', () => {
     expect(incompleteStages(statsFixture())).toEqual([]);
     expect(incompleteStages(statsFixture({ enumerationComplete: false }))).toEqual(['enumerate']);
-    expect(incompleteStages(statsFixture({ discoveryComplete: false }))).toEqual(['tag']);
+    expect(incompleteStages(statsFixture({ discoveryComplete: false }))).toEqual(['discover']);
     expect(incompleteStages(statsFixture({ quotesComplete: false }))).toEqual(['quote']);
   });
 
   it('treats a stage that never reported as unfinished, not as finished', () => {
     const silent = statsFixture();
     delete silent.discoveryComplete;
-    expect(incompleteStages(silent)).toEqual(['tag']);
+    expect(incompleteStages(silent)).toEqual(['discover']);
   });
 
   it('climbs when a pass dies enumerating, though it never reached a quote to fail at', async () => {
@@ -830,12 +830,12 @@ describe('the log', () => {
   it('emits one parseable object per line, each with a timestamp, a level and a dotted event', async () => {
     const h = harness({
       runSweep: async ({ log }) => {
-        log('tagged 2 rows in 9 calls');
+        log('walked 2 rows in 1 calls');
         return {
           snapshot: snapshotFixture(),
           stats: statsFixture({
             quotesComplete: false,
-            unmappedTags: [{ kind: 'unknown-slot-tag', detail: 'slot xyz' }],
+            unmappedTags: [{ kind: 'name-form-drift', detail: 'Coal Boots (Rare) types as Helmet' }],
             unlinkableItems: [
               { kind: 'unlinkable-item', detail: 'Topaz Gem (category gem) is priced' },
             ],
@@ -858,7 +858,7 @@ describe('the log', () => {
     expect(byEvent.get('items.unlinkable').lvl).toBe('warn');
     expect(byEvent.get('tags.unmapped').lvl).toBe('warn');
     expect(byEvent.get('quote.circuitBroken').lvl).toBe('error');
-    expect(byEvent.get('sweep.line').message).toBe('tagged 2 rows in 9 calls');
+    expect(byEvent.get('sweep.line').message).toBe('walked 2 rows in 1 calls');
   });
 
   it('says outright that a pass collected nothing, and which stage cost it', async () => {
@@ -889,7 +889,7 @@ describe('the log', () => {
     });
     expect(byEvent.get('pass.incomplete')).toMatchObject({
       lvl: 'error',
-      stages: ['enumerate', 'tag'],
+      stages: ['enumerate', 'discover'],
       quoted: 0,
     });
   });

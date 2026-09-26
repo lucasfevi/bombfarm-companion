@@ -1,18 +1,14 @@
 import { STEAM_CURRENCY_IDS } from './currencies.js';
-import type { AppFilters, SearchFilters, SearchPage, SearchRow } from './types.js';
+import type { SearchPage, SearchRow } from './types.js';
 
 const COMMUNITY = 'https://steamcommunity.com/market';
 
 /**
  * Steam caps `search/render` at 10 rows per page regardless of the `count` asked for
  * (measured 2026-08-28: count=10/20/50/100 all return pagesize 10). Paging therefore costs one
- * call per 10 rows, which is what makes facet-narrowed queries cheaper than a flat sweep.
+ * call per 10 rows, which is what puts a walk of the whole market at a couple of dozen calls.
  */
 export const SEARCH_PAGE_SIZE = 10;
-
-export function appFiltersUrl(appId: number): string {
-  return `${COMMUNITY}/appfilters/${String(appId)}`;
-}
 
 export function listingUrl(appId: number, hashName: string): string {
   return `${COMMUNITY}/listings/${String(appId)}/${encodeURIComponent(hashName)}`;
@@ -102,13 +98,14 @@ export function parsePriceOverview(payload: unknown): PriceQuote | null {
 }
 
 /**
- * A `search/render` URL narrowed to `filters`. The facet parameter is the market UI's own
- * `category_<appid>_<facet>[]=tag_<value>` form, which is what lets a row's tags be known by
- * construction instead of parsed out of its name.
+ * One page of the unfiltered `search/render` walk.
+ *
+ * It takes no facet narrowing, because nothing asks for any: a row's identity comes from matching
+ * its hash against the names the committed catalog can generate, so the only query the sweep makes
+ * is this one.
  */
 export function searchRenderUrl(
   appId: number,
-  filters: SearchFilters,
   start: number,
   count = SEARCH_PAGE_SIZE,
 ): string {
@@ -123,30 +120,7 @@ export function searchRenderUrl(
     sort_column: 'name',
     sort_dir: 'asc',
   });
-  for (const [facet, tag] of Object.entries(filters) as [string, string | undefined][]) {
-    if (tag != null) params.append(`category_${String(appId)}_${facet}[]`, `tag_${tag}`);
-  }
   return `${COMMUNITY}/search/render/?${params.toString()}`;
-}
-
-interface RawAppFilters {
-  success?: boolean;
-  facets?: Record<string, { name?: string; tags?: Record<string, unknown> } | undefined>;
-}
-
-/**
- * Facet name -> its tag values. Keys arrive prefixed with the appid (`4892010_rarity`); the
- * inner `name` is the bare facet, which is what `searchRenderUrl` needs.
- */
-export function parseAppFilters(payload: unknown): AppFilters {
-  const raw = payload as RawAppFilters | null;
-  if (raw?.success !== true || raw.facets == null) return {};
-  const filters: AppFilters = {};
-  for (const facet of Object.values(raw.facets)) {
-    if (typeof facet?.name !== 'string' || facet.tags == null) continue;
-    filters[facet.name] = Object.keys(facet.tags);
-  }
-  return filters;
 }
 
 interface RawSearchRow {

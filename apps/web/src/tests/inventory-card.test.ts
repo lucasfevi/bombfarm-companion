@@ -83,7 +83,7 @@ const SNAPSHOT = buildSnapshot({
     defs: [{ defId: 'ember_arma', set: 'ember', slot: 'arma', level: 10 }],
     rarityIdxs: [2],
     rarityTokens: { 2: 'raro' },
-    defIdByHash: {},
+    gems: [],
   },
   fx: { USD: 1, BRL: 5 },
   anomalies: [],
