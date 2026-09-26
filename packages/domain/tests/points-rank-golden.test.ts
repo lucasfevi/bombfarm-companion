@@ -85,15 +85,18 @@ describe('DPS next-point ranking — golden fixture (pinned byte-for-byte)', () 
    * leaving the other eight heroes' attack-first orders intact — which is exactly what a golden
    * is for.
    */
+  // RE-PINNED 2026-09-26 for the Wide Blast patch. Footprint: both subjects carry it at rank 20,
+  // and a point's gain is a ratio in which the blast multiplier cancels, so nothing moved but the
+  // last digits — three of Devin's seven and two of Isolde's, each under 3e-14, the order intact.
   it('Devin L87 (geared, Olho Clínico) — full ranking pinned to full precision, crit damage first', () => {
     const result = pipelineForHero(heroByName('Devin'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'critDmg', gainPct: 1.6258384769856304 },
-      { stat: 'attack', gainPct: 1.0900754392397571 },
+      { stat: 'critDmg', gainPct: 1.6258384769856526 },
+      { stat: 'attack', gainPct: 1.0900754392397793 },
       { stat: 'speed', gainPct: 0.4586162938889915 },
       { stat: 'energy', gainPct: 0.3079450009872753 },
       { stat: 'critChance', gainPct: 0.08676728467884587 },
-      { stat: 'cdr', gainPct: 0.01750429994018532 },
+      { stat: 'cdr', gainPct: 0.017504299940207524 },
       { stat: 'penetration', gainPct: 0.00244876856141385 },
     ]);
   });
@@ -110,9 +113,9 @@ describe('DPS next-point ranking — golden fixture (pinned byte-for-byte)', () 
       { stat: 'attack', gainPct: 5.04711144179415 },
       { stat: 'energy', gainPct: 2.305569985939271 },
       { stat: 'speed', gainPct: 0.7083292471643077 },
-      { stat: 'critDmg', gainPct: 0.23330731000408278 },
+      { stat: 'critDmg', gainPct: 0.23330731000406058 },
       { stat: 'critChance', gainPct: 0.08375991220037626 },
-      { stat: 'cdr', gainPct: 0.01524226244737914 },
+      { stat: 'cdr', gainPct: 0.015242262447401345 },
       { stat: 'penetration', gainPct: 0.0012742229402507022 },
     ]);
   });

@@ -4,6 +4,7 @@
 // own points (1/level, same budget shown as "Pontos a Distribuir" in game).
 // Ability effects are FLAT game units applied outside the sheet (confirmed by
 // Ponta de Diamante "+1 de Penetração (pontos)" matching observed sheets).
+import { EXTRA_RANGE_FRAC, SHATTER_FRAC } from '../phase-wiki';
 import { critFactor } from './combat';
 import { MATILHA_PER_RANK_PER_ALLY } from './matilha';
 import { PASSAGEM_BASTAO_PER_RANK } from './passagem-bastao';
@@ -45,6 +46,10 @@ export type AbilityEffect =
   | { kind: 'rangeCells'; perLevel: number }
   | { kind: 'secondBlastPct'; perLevel: number } // chance of 2nd blast at 50% dmg
   | { kind: 'executePct'; perLevel: number } // executes rock below threshold
+  /** Estilhaços — chance % per level that a rock this hero destroys shatters, hitting each rock on
+   *  its four sides for `SHATTER_FRAC` of the killing hit. Paid per kill, so it lives in the clear
+   *  (`model/clear-time.ts`), not in a per-bomb damage figure. */
+  | { kind: 'shatterPct'; perLevel: number }
   | { kind: 'attackPct'; perLevel: number }
   | { kind: 'speedPct'; perLevel: number }
   | { kind: 'gateAttackPct'; perLevel: number } // attack bonus in timed phases only
@@ -106,14 +111,16 @@ export const ABILITIES: AbilityDef[] = [
   // HP at cap, was 25%). The same wiki edit records the 2026-09-01 semantics: below the threshold
   // the rock is destroyed — which is what `executePct` always priced.
   { id: 'misericordia', name: 'Misericórdia', max: 20, effectText: 'executa rocha < 0.75%/nível', effect: { kind: 'executePct', perLevel: 0.75 } },
-  { id: 'explosao_ampla', name: 'Explosão Ampla', max: 20, effectText: '+1 célula de raio da explosão a cada 10 níveis (sobe nos níveis 10 e 20)', effect: { kind: 'rangeCells', perLevel: 0.1 } },
+  { id: 'explosao_ampla', name: 'Explosão Ampla', max: 20, effectText: `+1 célula de raio da explosão a cada 10 níveis (sobe nos níveis 10 e 20); as células extras causam ${EXTRA_RANGE_FRAC * 100}% do dano`, effect: { kind: 'rangeCells', perLevel: 0.1 } },
   { id: 'contra_relogio', name: 'Contra o Relógio', max: 20, effectText: '+2% Ataque em fase de tempo/nível', effect: { kind: 'gateAttackPct', perLevel: 2 } },
   // 2026-08-23 patch: +40 crit POINTS at max rank, i.e. +2 per level flat (live wiki
   // `per_level` 0.01 → 0.02 in save units). MEASURED on account 486's 2026-08-23 15:54 export —
   // see the `critChanceFlat` kind for Perrin's exact reconstruction and why the addend sits
   // outside the gear/points pool.
   { id: 'olho_clinico', name: 'Olho Clínico', max: 20, effectText: '+2 pontos de chance de crítico/nível (valor fixo, altera atributos)', effect: { kind: 'critChanceFlat', perLevel: 2, onSheet: true } },
-  { id: 'detonacao_dupla', name: 'Detonação Dupla', max: 20, effectText: '+1.5% chance de 2ª explosão (50% dano)/nível', effect: { kind: 'secondBlastPct', perLevel: 1.5 } },
+  // Live wiki `per_level` 0.015 → 0.025 on 2026-09-26 (50% at cap, was 30%), the same patch that
+  // moved it from Incomum to Raro. The second blast still deals `combate.second_blast_frac` 0.5.
+  { id: 'detonacao_dupla', name: 'Detonação Dupla', max: 20, effectText: '+2.5% chance de 2ª explosão (50% dano)/nível', effect: { kind: 'secondBlastPct', perLevel: 2.5 } },
   { id: 'folego_mineiro', name: 'Fôlego de Mineiro', max: 20, effectText: '−1% energia gasta do TIME/nível', effect: { kind: 'drainPct', perLevel: 1 } },
   // A team aura that is up in pulses, not a standing multiplier: the Farm board and the Optimizer
   // price it over the rotation, a hero's own screen over its own stint (`model/passagem-bastao.ts`).
@@ -132,6 +139,9 @@ export const ABILITIES: AbilityDef[] = [
   // Live wiki 2026-09-13: `kind: team_pen`, `per_level` 1 — flat points on every hero on the
   // field, capped at 20, the same shape as Presságio Mortal. Never on the carrier's own sheet.
   { id: 'brecha', name: 'Brecha', max: 20, effectText: '+1 ponto de Penetração do TIME/nível, +20 no teto', effect: { kind: 'penetrationPp', perLevel: 1 } },
+  // Added 2026-09-26 (wiki `kind: shatter`, `per_level` 0.025): rocks only, never the boss or the
+  // cage, and a rock felled by a shard does not shatter again.
+  { id: 'estilhacos', name: 'Estilhaços', max: 20, effectText: `+2.5% de chance de a rocha destruída estilhaçar: cada rocha nos 4 lados leva ${SHATTER_FRAC * 100}% do golpe/nível`, effect: { kind: 'shatterPct', perLevel: 2.5 } },
 ];
 
 /** Inventory-sheet abilities (shared Σ with gear) — kept out of the combat ability grid. */
@@ -200,6 +210,8 @@ export interface AbilityMods {
   /** Cells of blast reach past the base 1 — always whole, see {@link wholeRangeCells}. */
   rangeCells: number;
   dmgMult: number; // second blast + execute
+  /** Estilhaços — percent chance a rock this hero destroys shatters, 0..100. */
+  shatterChancePct: number;
   gateAttackMult: number; // applies only inside timed phases (self ability, Contra o Relógio)
 }
 
@@ -223,6 +235,7 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
     sheetCritDmgFlat: 0,
     rangeCells: 0,
     dmgMult: 1,
+    shatterChancePct: 0,
     gateAttackMult: 1,
   };
   for (const ability of ABILITIES) {
@@ -253,6 +266,9 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
         break;
       case 'executePct':
         mods.dmgMult *= 1 / (1 - (effect.perLevel * count) / 100);
+        break;
+      case 'shatterPct':
+        mods.shatterChancePct = Math.min(100, mods.shatterChancePct + effect.perLevel * count);
         break;
       case 'attackPct':
         // Grito de Guerra (team) — see the module doc above.

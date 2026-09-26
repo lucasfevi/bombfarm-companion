@@ -55,7 +55,7 @@ describe('abilityName / abilityEffectText', () => {
     expect(abilityEffectText('misericordia', 'en')).toMatch(/0\.75%/);
     expect(abilityEffectText('explosao_ampla', 'en')).toMatch(/\+1 cell of explosion radius every 10 levels/);
     expect(abilityEffectText('contra_relogio', 'en')).toMatch(/2%/);
-    expect(abilityEffectText('detonacao_dupla', 'en')).toMatch(/1\.5%/);
+    expect(abilityEffectText('detonacao_dupla', 'en')).toMatch(/2\.5%/);
     expect(abilityEffectText('folego_mineiro', 'en')).toMatch(/1%/);
     expect(abilityEffectText('grito_guerra', 'en')).toMatch(/1%/);
     expect(abilityEffectText('golpe_brutal', 'en')).toMatch(/4%/);
@@ -125,6 +125,7 @@ describe('abilityName / abilityEffectText', () => {
       'matilha',
       'fortuna',
       'brecha',
+      'estilhacos',
     ]);
   });
 });
@@ -358,7 +359,7 @@ describe('abilityReadoutText', () => {
   });
 
   it('a second blast reads as its chance and the multiplier; an execute as its threshold and the multiplier', () => {
-    expect(abilityReadoutText(ownAbilityReadout('detonacao_dupla', 20), 'en', format)).toBe('30.0% chance (×1.15 dmg)');
+    expect(abilityReadoutText(ownAbilityReadout('detonacao_dupla', 20), 'en', format)).toBe('50.0% chance (×1.25 dmg)');
     expect(abilityReadoutText(ownAbilityReadout('misericordia', 20), 'pt', format)).toBe('executa < 15.0% HP (×1.18 dano)');
   });
 

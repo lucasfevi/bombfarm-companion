@@ -1,6 +1,6 @@
 /**
- * Ability catalog sync (36, 36a, 37 family, 38) — W3.
- * Grows across T1 → T4 as the catalog completes; each task adds only the ACs it proves.
+ * Ability catalog sync (36, 36a, 37 family, 38).
+ * Grew in steps as the catalog completed; each step added only the cases it proves.
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -23,11 +23,12 @@ const IDENTITY_MODS = {
   packDmgPctPerAlly: 0,
   rangeCells: 0,
   dmgMult: 1,
+  shatterChancePct: 0,
   gateAttackMult: 1,
 };
 
-describe('catalog completeness (T2)', () => {
-  it('ABILITIES has exactly 20 entries in slot order', () => {
+describe('catalog completeness', () => {
+  it('ABILITIES has exactly 21 entries in slot order', () => {
     expect(ABILITIES.map((a) => a.id)).toEqual([
       'bateria_extra',
       'caca_hero',
@@ -49,6 +50,7 @@ describe('catalog completeness (T2)', () => {
       'matilha',
       'fortuna',
       'brecha',
+      'estilhacos',
     ]);
   });
 
@@ -124,7 +126,7 @@ describe('rank-20 migration', () => {
       wikiTotalAtCap: 40,
       citation: 'measured, account 486 2026-08-23 export',
     },
-    { id: 'detonacao_dupla', perLevel: 1.5, wikiTotalAtCap: 30, citation: 'wiki ability table' },
+    { id: 'detonacao_dupla', perLevel: 2.5, wikiTotalAtCap: 50, citation: 'wiki ability table' },
     { id: 'folego_mineiro', perLevel: 1, wikiTotalAtCap: 20, citation: 'wiki ability table' },
     { id: 'grito_guerra', perLevel: 1, wikiTotalAtCap: 20, citation: 'wiki ability table' },
   ];
@@ -157,7 +159,7 @@ describe('rank-20 migration', () => {
     expect(abilityMods({ explosao_ampla: 13 }).rangeCells).toBe(1);
     expect(abilityMods({ contra_relogio: 13 }).gateAttackMult).toBeCloseTo(1.26, 10);
     expect(abilityMods({ olho_clinico: 13 }).sheetCritChanceFlat).toBeCloseTo(2 * 13, 10);
-    expect(abilityMods({ detonacao_dupla: 13 }).dmgMult).toBeCloseTo(1 + (19.5 / 100) * 0.5, 10);
+    expect(abilityMods({ detonacao_dupla: 13 }).dmgMult).toBeCloseTo(1 + (32.5 / 100) * 0.5, 10);
   });
 
   it('a hero\'s own rank in a team aura never touches that hero\'s own AbilityMods (PR #139)', () => {
@@ -222,7 +224,7 @@ describe('golpe_brutal — critDmgFlat (flat crit damage, POINT_GAIN.critDmgFlat
   });
 
   it('golpe_brutal contributes to the sheet exactly once — every combat field stays at identity', () => {
-    // isSheetAbility must recognize it directly (fails loudly if reverted to the old kind list — M1).
+    // isSheetAbility must recognize it directly (fails loudly if reverted to the old kind list).
     const def = ABILITIES.find((a) => a.id === 'golpe_brutal')!;
     expect(isSheetAbility(def)).toBe(true);
 

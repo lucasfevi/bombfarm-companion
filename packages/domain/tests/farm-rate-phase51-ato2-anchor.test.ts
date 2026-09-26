@@ -14,6 +14,16 @@
  * treatment the Baton Pass pricing got. The capture predates the change, so the measured side
  * still describes the larger threshold; the residuals carry that until the pair is re-anchored.
  *
+ * AND ONE GAME CHANGE LANDED UNDER IT: the 2026-09-26 patch cut the cells Wide Blast adds past the
+ * base reach to half the hit, and four of these thirteen heroes carry it at rank 20. The measured
+ * side was taken under the old full-damage rule; the modelled side now prices the half. The same
+ * patch raised Double Detonation from 1.5% to 2.5% a level, and one hero here carries it. The rate
+ * pins were re-pinned to the new arithmetic (clear time +3.45%, gold/hr -3.33%, the two together),
+ * NOT refitted, and
+ * the capture is asserted out of regime for `blastDamage` below, so the widened residual reads as
+ * the game having moved rather than as the model having regressed. Re-anchoring needs a fresh
+ * save with telemetry taken beside it after the patch.
+ *
  * WHY THE PREVIOUS PAIR WAS RETIRED RATHER THAN RE-FITTED. It read `save-20260818-12heroes.json`
  * against 61 clears logged beside it, and both predate the 2026-08-23 patch. That patch changed
  * the crit-chance ABILITIES' shape (see the `critChanceFlat` ability kind), so today's sheet math
@@ -88,6 +98,7 @@ import { describe, expect, it } from 'vitest';
 import { computeFarmRates } from '@bombfarm/domain/farm-rate';
 import { wikiPhaseLine, goldRarityMult } from '@bombfarm/domain/phase-wiki';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
+import { isInRegimeFor } from './helpers/capture-regime';
 
 const FIXTURE = 'save-20260823-13heroes-crit-points.json';
 /** The retired pair's save, kept for the two per-prop gold checks alone: their client readings
@@ -135,6 +146,12 @@ const { heroFacts, squad, rows } = computeFarmRates({ heroes, account, maxPhase 
 const row = rows[PHASE - 1];
 
 describe('the save is read as three distinct quantities', () => {
+  it('the capture predates the Wide Blast patch, so its throughput is the old rule’s, not today’s', () => {
+    expect(isInRegimeFor(`sheet-math/${FIXTURE}`, 'blastDamage')).toBe(false);
+    const carriers = heroes.filter((hero) => (hero.abilities?.explosao_ampla ?? 0) >= 10);
+    expect(carriers).toHaveLength(4);
+  });
+
   it('all 13 heroes are in the pool, and the row under test is phase 51, ato 2', () => {
     expect(heroFacts).toHaveLength(13);
     expect(row.phase).toBe(PHASE);
@@ -204,22 +221,24 @@ describe('the resulting rates', () => {
   // constant kill rate from a crit-averaged hit but integrates over the props left standing,
   // with the crit rolled per hit. Before that change this row read 27.7041s and 17,997,272 gold/h
   // (clear +0.8%, gold -5.4%) — right by cancellation, its own note said. It now reads slower.
-  it('clearSecs is 29.14s — ~6.0% above the measured arithmetic mean of 27.483s', () => {
-    expect(row.clearSecs).toBeCloseTo(29.1358, 3);
+  // RE-PINNED 2026-09-26 for the Wide Blast and Double Detonation patch (see the header): 29.1358s and 17,112,908 gold/h
+  // before, cadence 0.96602.
+  it('clearSecs is 30.14s — ~9.7% above the measured arithmetic mean of 27.483s', () => {
+    expect(row.clearSecs).toBeCloseTo(30.1398, 3);
 
     const residual = row.clearSecs / OBSERVED_CLEAR_SECS - 1;
-    expect(residual).toBeCloseTo(0.0601, 3);
+    expect(residual).toBeCloseTo(0.0967, 3);
     expect(row.clearSecs).toBeGreaterThan(OBSERVED_CLEAR_SECS);
   });
 
-  it('goldPerHour is ~17.11M — ~10.1% BELOW the measured 19,033,500', () => {
+  it('goldPerHour is ~16.54M — ~13.1% BELOW the measured 19,033,500', () => {
     // Left as a point comparison rather than a tolerance band, so that any UNRELATED move (a wiki
     // refresh, a sheet-math change) shows up as a change to THIS number, distinct from the
     // tracked residual itself.
-    expect(row.goldPerHour).toBeCloseTo(17_112_908, -3);
+    expect(row.goldPerHour).toBeCloseTo(16_542_820, -3);
 
     const residual = row.goldPerHour / OBSERVED_GOLD_PER_HOUR - 1;
-    expect(residual).toBeCloseTo(-0.1009, 3);
+    expect(residual).toBeCloseTo(-0.1309, 3);
   });
 
   it('the gold residual is presence × cadence, both reading low — no cancellation hides either', () => {
@@ -230,13 +249,15 @@ describe('the resulting rates', () => {
     // roster of slow, reach-1 heroes, the regime the model's constants were least measured on
     // (they come from frames of a mid-game field at two densities). Recorded, not fitted away:
     // the same model sits within 2% of this capture's clear once the measured presence is fed
-    // in, so the cadence term here is the part still open.
+    // in, so the cadence term here is the part still open. Since the 2026-09-26 patch it
+    // reads 0.934: the 3.2 points between the two are the patch, priced against a capture taken
+    // before it, and belong to the re-anchor rather than to the cadence term.
     const presence = row.heroesOnField / OBSERVED_HEROES_ON_FIELD;
     const goldFactor = row.goldPerHour / OBSERVED_GOLD_PER_HOUR;
     const cadence = goldFactor / presence;
 
     expect(presence).toBeCloseTo(0.93072, 4);
-    expect(cadence).toBeCloseTo(0.96602, 4);
+    expect(cadence).toBeCloseTo(0.93384, 4);
     expect(presence * cadence).toBeCloseTo(goldFactor, 12);
   });
 });

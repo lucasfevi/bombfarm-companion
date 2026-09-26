@@ -118,8 +118,10 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     // of 2026-09-18 moved the winning build). The single-point collapse has held through every
     // re-measurement on every roster; only the winning BUILD ever moved it.
     // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); the previous figure is in the git history.
-    expect(plateau.minEnergyShare).toBeCloseTo(0.53125, 4);
-    expect(plateau.maxEnergyShare).toBeCloseTo(0.53125, 4);
+    // RE-PINNED 2026-09-26 for the Wide Blast patch: the cells it adds past the base reach now take half the hit. 0.53125 before.
+    // Moved again the same day for Double Detonation's 2.5%/level.
+    expect(plateau.minEnergyShare).toBeCloseTo(0.53184, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.53184, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 
@@ -166,10 +168,14 @@ describe('a squad whose small point budget produces a genuinely wide plateau, th
     // as attack, so the winner is the all-energy split and the band runs from the 2-energy split
     // up: shares 0.40–0.60 all round to 2 energy and score bit-identically, 0.70–0.80 to 3, and
     // 0.90–1.00 to 4, every one within tolerance of the peak. Still a measured band, not a point.
+    //
+    // RE-PINNED 2026-09-26 for the Wide Blast patch: the cells it adds past the base reach now take half the hit. Isolde carries it at
+    // rank 20 and her winner moves to the 2/2 split, and the band is exactly the shares that round
+    // to it — 0.40, 0.50 and 0.60 (1.6, 2.0 and 2.4 energy of 4) — with 0.30 and 0.70 falling out.
     expect(plateau.minEnergyShare).toBe(0.4);
-    expect(plateau.maxEnergyShare).toBe(1);
-    expect(plateau.proposedEnergyShare).toBe(1);
-    expect(plateau.maxEnergyShare - plateau.minEnergyShare).toBeCloseTo(0.6, 9);
+    expect(plateau.maxEnergyShare).toBe(0.6);
+    expect(plateau.proposedEnergyShare).toBe(0.5);
+    expect(plateau.maxEnergyShare - plateau.minEnergyShare).toBeCloseTo(0.2, 9);
   });
 });
 

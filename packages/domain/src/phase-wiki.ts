@@ -169,6 +169,17 @@ export type WikiRunes = {
 };
 export const WIKI_RUNES: WikiRunes = wiki.runes;
 
+/**
+ * The share of a hit the blast cells past the base reach deal. ← `combate.extra_range_frac`;
+ * live 0.5 since the 2026-09-26 Wide Blast patch, which left the reach itself alone. Before it
+ * every cell of the cross took the full hit.
+ */
+export const EXTRA_RANGE_FRAC: number = wiki.combat.extraRangeFrac;
+
+/** The share of the killing hit each Estilhaços shard deals to a rock on the destroyed one's four
+ *  sides. ← `combate.shatter_frac`; live 0.5 since the ability arrived on 2026-09-26. */
+export const SHATTER_FRAC: number = wiki.combat.shatterFrac;
+
 /** [ato-1][rank-1] — P(rank | gem chest), per difficulty. 5 rows × 3 columns, each row sums to 1.
  *  Alias of `WIKI_GEMS.rankDistByAto`, exported flat because it is the term farm-rate reads. */
 export const GEM_RANK_DIST_BY_ATO: readonly (readonly number[])[] = WIKI_GEMS.rankDistByAto;

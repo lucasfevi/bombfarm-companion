@@ -1,4 +1,5 @@
 import { ABILITIES, abilityMods, type AbilityEffect } from './model';
+import { SHATTER_FRAC } from './phase-wiki';
 import {
   TEAM_AURA_SWITCH_IDS,
   TEAM_BUFF_ABILITY_IDS,
@@ -28,6 +29,8 @@ export type AbilityEffectReadout =
   | { kind: 'secondBlast'; chancePct: number; dmgMult: number }
   /** Misericórdia — the HP share below which a rock is executed, and the multiplier it amounts to. */
   | { kind: 'execute'; thresholdPct: number; dmgMult: number }
+  /** Estilhaços — the chance a destroyed rock shatters, and the share of the hit each shard deals. */
+  | { kind: 'shatter'; chancePct: number; shardHitPct: number }
   /** Contra o Relógio — attack that reaches the timed-gate table only. */
   | { kind: 'gateAttackPct'; value: number }
   /** Matilha — damage % PER ALLY beside the hero; the field size turns it into a multiplier. */
@@ -116,6 +119,8 @@ function readoutKind(effect: AbilityEffect): AbilityEffectReadout['kind'] {
       return 'secondBlast';
     case 'executePct':
       return 'execute';
+    case 'shatterPct':
+      return 'shatter';
     case 'gateAttackPct':
       return 'gateAttackPct';
     case 'packDmgPct':
@@ -131,7 +136,7 @@ function readoutKind(effect: AbilityEffect): AbilityEffectReadout['kind'] {
 export function teamAuraReadout(auraId: TeamAuraId, amount: number): AbilityEffectReadout {
   const definition = ABILITY_BY_ID.get(auraId);
   const kind = definition ? readoutKind(definition.effect) : 'none';
-  if (kind === 'none' || kind === 'secondBlast' || kind === 'execute') return { kind: 'none' };
+  if (kind === 'none' || kind === 'secondBlast' || kind === 'execute' || kind === 'shatter') return { kind: 'none' };
   return { kind, value: amount };
 }
 
@@ -162,6 +167,8 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
       return { kind, chancePct: perLevelOf(definition.effect) * rank, dmgMult: mods.dmgMult };
     case 'execute':
       return { kind, thresholdPct: perLevelOf(definition.effect) * rank, dmgMult: mods.dmgMult };
+    case 'shatter':
+      return { kind, chancePct: mods.shatterChancePct, shardHitPct: SHATTER_FRAC * 100 };
     case 'gateAttackPct':
       return { kind, value: (mods.gateAttackMult - 1) * 100 };
     case 'packDmgPctPerAlly':

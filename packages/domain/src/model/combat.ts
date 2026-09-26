@@ -1,3 +1,4 @@
+import { EXTRA_RANGE_FRAC } from '../phase-wiki';
 import { cycleSecondsForHero } from './cadence';
 import { POINT_GAIN, STAT_CAPS } from './rarity-constants';
 import type { Context, HeroSheet } from './types';
@@ -26,9 +27,27 @@ function bombsPerSecondWithFuse(hero: Pick<HeroSheet, 'speed'>, context: Context
   return Number.isFinite(cycle) && cycle > 0 ? 1 / cycle : 0;
 }
 
+/** Cells of blast reach every hero has before Wide Blast — wiki `combate.grid_range_base`. */
+export const BASE_BLAST_RANGE = 1;
+
+/**
+ * The blast reach as a damage total sees it: the base cell at full weight and every cell Wide
+ * Blast adds at {@link EXTRA_RANGE_FRAC} of the hit — 2 for a rank-20 carrier, whose cross still
+ * reaches 3. The game's own Power figure reads exactly this. Which props a cross lands on is a
+ * question for the whole `blastRange`, not this.
+ */
+export function damageWeightedBlastRange(blastRange: number): number {
+  return BASE_BLAST_RANGE + EXTRA_RANGE_FRAC * Math.max(0, blastRange - BASE_BLAST_RANGE);
+}
+
+/** Damage a blast spreads over the props it reaches, in hits: `1 + 0.5` per damage-weighted cell. */
+export function blastDamageSpread(blastRange: number): number {
+  return 1 + 0.5 * damageWeightedBlastRange(blastRange);
+}
+
 function activeDpsWithFuse(hero: HeroSheet, context: Context, fuseSec: number): number {
   const dano = hero.attack * mitigationFactor(context.mitigation, hero.penetration) * critFactor(hero.critChance, hero.critDmg);
-  return dano * bombsPerSecondWithFuse(hero, context, fuseSec) * (1 + 0.5 * context.blastRange) * EFF_IA;
+  return dano * bombsPerSecondWithFuse(hero, context, fuseSec) * blastDamageSpread(context.blastRange) * EFF_IA;
 }
 
 /** Exposed for `points-rank`'s marginal-fuse CDR scoring; not part of the public barrel. */
@@ -113,7 +132,7 @@ export function sustainedDps(hero: HeroSheet, context: Context): number {
 /** Active-phase DPS while deployed (no downtime). */
 export function activeDps(hero: HeroSheet, context: Context): number {
   const dano = hero.attack * mitigationFactor(context.mitigation, hero.penetration) * critFactor(hero.critChance, hero.critDmg);
-  return dano * bombsPerSecond(hero, context) * (1 + 0.5 * context.blastRange) * EFF_IA;
+  return dano * bombsPerSecond(hero, context) * blastDamageSpread(context.blastRange) * EFF_IA;
 }
 
 /** Total damage inside a timed gate window (hero enters at full energy). */

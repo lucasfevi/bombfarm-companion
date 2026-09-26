@@ -651,7 +651,7 @@ describe('formula parts', () => {
     if (dmg.kind !== 'formula' || hit.kind !== 'formula' || avg.kind !== 'formula' || factor.kind !== 'formula' || active.kind !== 'formula') {
       throw new Error('expected formulas');
     }
-    expect(facts.mods.dmgMult).toBeCloseTo(1 + 0.15 * 0.5, 9);
+    expect(facts.mods.dmgMult).toBeCloseTo(1 + 0.25 * 0.5, 9);
     expect(dmg.value).toBe(1);
     expect(dmg.parts.filter((part) => typeof part !== 'string').map((part) => part.key)).toEqual(['pack', 'extra']);
     expect(hit.value).toBeCloseTo(facts.effective.attack * mitigationFactor(facts.context.mitigation, facts.effective.penetration), 6);

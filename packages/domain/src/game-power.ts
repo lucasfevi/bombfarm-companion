@@ -9,7 +9,8 @@
  * as the excess over a plain hit in percentage points.
  */
 import type { SheetStats } from './gear/types';
-import { ABILITIES } from './model/abilities';
+import { ABILITIES, wholeRangeCells } from './model/abilities';
+import { damageWeightedBlastRange } from './model/combat';
 import { STAT_CAPS } from './model/rarity-constants';
 import { applyRuneMultipliers, runeSheetMultipliers, stripRuneMultipliers, type HeroRune } from './runes';
 
@@ -25,12 +26,6 @@ const ENERGY_BRACKET_WEIGHT = 0.02;
 const ENERGY_BRACKET_PER_ENERGY = 0.008;
 const ENERGY_BRACKET_CEILING = 6;
 const BLOCKS_PER_ALCANCE = 0.5;
-/**
- * The cells Explosão Ampla adds beyond the core blast hit for half its damage, and Power counts
- * them at that weight — the wiki's `extra_range_frac`. Until the 2026-09-26 patch they counted
- * in full: every level-20 hero's stored Power moved from a reach of 3 to 2 across it.
- */
-const EXTRA_CELL_DAMAGE_SHARE = 0.5;
 
 /** The highest cooldown reduction the formula has been checked against; past it, it is extrapolated. */
 export const GAME_POWER_CDR_CHECKED_MAX_PCT = 17.85;
@@ -54,11 +49,6 @@ function rangeCellsPerLevel(): number {
 }
 
 const RANGE_CELLS_PER_LEVEL = rangeCellsPerLevel();
-/**
- * A product meant to land on a whole cell can land just under it (0.29 × 100 is 28.999999999999996),
- * and flooring that would drop the cell. The catalog's 0.1 happens not to, but the rate is data.
- */
-const FLOOR_EPSILON = 1e-9;
 
 /**
  * Blast reach in whole cells: the game banks Explosão Ampla's per-level fraction until it makes a
@@ -66,12 +56,16 @@ const FLOOR_EPSILON = 1e-9;
  * figure only floored.
  */
 export function alcanceForExplosaoAmpla(level: number): number {
-  return 1 + Math.floor(RANGE_CELLS_PER_LEVEL * level + FLOOR_EPSILON);
+  return 1 + wholeRangeCells(RANGE_CELLS_PER_LEVEL, level);
 }
 
-/** The reach Power scores: the core cell whole, each cell Explosão Ampla adds at its damage share. */
+/**
+ * The reach Power scores: the core cell whole, each cell Explosão Ampla adds at its damage share
+ * (the wiki's `extra_range_frac`). Until the 2026-09-26 patch they counted in full: every
+ * level-20 hero's stored Power moved from a reach of 3 to 2 across it.
+ */
 export function effectiveReachForExplosaoAmpla(level: number): number {
-  return 1 + EXTRA_CELL_DAMAGE_SHARE * (alcanceForExplosaoAmpla(level) - 1);
+  return damageWeightedBlastRange(alcanceForExplosaoAmpla(level));
 }
 
 type PowerTerms = {

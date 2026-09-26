@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, abilityMods, wholeRangeCells } from '@bombfarm/domain/model';
+import { ABILITIES, abilityMods, blastDamageSpread, damageWeightedBlastRange, wholeRangeCells } from '@bombfarm/domain/model';
+import { EXTRA_RANGE_FRAC } from '@bombfarm/domain/phase-wiki';
+import wikiBundle from '@bombfarm/domain/data/phase-wiki.json' with { type: 'json' };
+import { simulateClear, type ClearHero } from '../src/model/clear-time';
 import { computeHeroFarmFacts } from '@bombfarm/domain/farm-rate';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
 import { loadFarmRateFixture, withAbilityLevels } from './helpers/farm-rate-fixtures';
@@ -57,11 +60,16 @@ describe('blocks per bomb at a partial Explosão Ampla level', () => {
     expect(facts.blocksPerBomb).toBe(2);
   });
 
-  it('active DPS does not move between levels that share a reach, and moves at the step', () => {
+  it('active DPS does not move between levels that share a reach, and moves at the step by a half-damage cell', () => {
     const at = (level: number) => priced(level).pipeline.active;
     expect(at(9)).toBe(at(0));
     expect(at(19)).toBe(at(10));
-    expect(at(10) / at(9)).toBeCloseTo(2 / 1.5, 12);
+    expect(at(10) / at(9)).toBeCloseTo(1.75 / 1.5, 12);
+    expect(at(20) / at(9)).toBeCloseTo(2 / 1.5, 12);
+  });
+
+  it('blocks per bomb stays the geometry: a rank-20 carrier still strikes 2.5 blocks a bomb', () => {
+    expect(priced(20).facts.blocksPerBomb).toBe(2.5);
   });
 });
 
@@ -81,5 +89,35 @@ describe('the farm model agrees with the rule for tracked heroes at partial leve
 
     const [facts] = computeHeroFarmFacts({ heroes, account, enabledHeroIds: [hero.id] });
     expect(facts!.blocksPerBomb).toBe(1 + 0.5 * reach);
+  });
+});
+
+describe('the cells Wide Blast adds deal a share of the hit', () => {
+  it('the share is the synced wiki bundle’s, and it is a half since the 2026-09-26 patch', () => {
+    expect(EXTRA_RANGE_FRAC).toBe(wikiBundle.combat.extraRangeFrac);
+    expect(EXTRA_RANGE_FRAC).toBe(0.5);
+  });
+
+  it.each([
+    [1, 1, 1.5],
+    [2, 1.5, 1.75],
+    [3, 2, 2],
+  ])('a reach of %i counts as %d cells of damage, spreading %d hits a blast', (reach, weighted, spread) => {
+    expect(damageWeightedBlastRange(reach)).toBe(weighted);
+    expect(blastDamageSpread(reach)).toBe(spread);
+  });
+
+  it('in the clear, the extra cells are worth their full count only when the half hit still kills', () => {
+    // One prop type, no crits: at 250 the full and the half hit both one-shot a 100-HP prop; at
+    // 100 the full hit does and the half needs two. The base cross cannot tell the two apart —
+    // every hit it lands one-shots — so any difference is the extra cells alone.
+    const props = [{ hp: 100, weight: 1 }];
+    const squad = (blastCells: number, hitNoCrit: number): ClearHero[] =>
+      Array.from({ length: 4 }, () => ({ presence: 0.9, fuseSecs: 1.85, walkSpeedCells: 2.8, blastCells, hitNoCrit, critChance: 0, critMult: 1 }));
+    const clear = (blastCells: number, hit: number) => simulateClear(squad(blastCells, hit), props, 100).clearSecs;
+
+    expect(clear(5, 250)).toBe(clear(5, 100));
+    expect(clear(13, 250)).toBeLessThan(clear(13, 100));
+    expect(clear(13, 100)).toBeLessThan(clear(5, 100));
   });
 });
