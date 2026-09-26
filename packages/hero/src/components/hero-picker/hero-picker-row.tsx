@@ -11,6 +11,7 @@ import {
   HeroAbilityIcons,
   HeroGearIcons,
   heroPeekData,
+  useHeroPeekStats,
   rarityDotClass,
   rarityTextClass,
   rosterInactiveChromeClass,
@@ -56,6 +57,7 @@ export const HeroPickerRow = memo(function HeroPickerRow({
    *  row's cell count still matches the head's (which drops its header on the same condition). */
   onSetBattleAllowed?: ((heroId: string, enabled: boolean) => void) | undefined;
 }) {
+  const peekStats = useHeroPeekStats();
   const rarIdx = RARITIES.indexOf(hero.rarity);
   const battleAllowed = hero.battleAllowed ?? true;
   const inactiveChrome = !battleAllowed ? rosterInactiveChromeClass : undefined;
@@ -82,7 +84,7 @@ export const HeroPickerRow = memo(function HeroPickerRow({
     >
       <DataTable.Cell className="w-14 px-1" nowrap={false}>
         <span className={inactiveChrome}>
-          <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="lg" name={hero.name} peek={{ hero: heroPeekData(hero), lang }} />
+          <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="lg" name={hero.name} peek={{ hero: heroPeekData(hero, peekStats(hero)), lang }} />
         </span>
       </DataTable.Cell>
       <DataTable.Cell

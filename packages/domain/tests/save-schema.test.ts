@@ -319,7 +319,7 @@ describe('SCHEMA_LEVELS — the shared catalogue, key sets written as literals',
 
   it('item: the measured 17-key set with the enumerated optional escapes `slot` and `soulbound` (27/3 API split, 17/5 export split)', () => {
     expect(SCHEMA_LEVELS.item.keys).toHaveLength(17);
-    expect(SCHEMA_LEVELS.item.optional).toEqual(['slot', 'soulbound']);
+    expect(SCHEMA_LEVELS.item.optional).toEqual(['slot', 'soulbound', 'export_lock_secs']);
     expect(SCHEMA_LEVELS.item.keys).not.toContain('soulbound');
   });
 

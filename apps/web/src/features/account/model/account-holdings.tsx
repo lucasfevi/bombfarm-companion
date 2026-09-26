@@ -18,7 +18,7 @@ import type {
   SkinsTally,
 } from '@bombfarm/pricing';
 import { accountHoldings, boughtSkinHashFor } from '@bombfarm/pricing';
-import { HeroIdentity, SkinIdentity, heroPeekData, type HeroPeekData } from '@/shared/game-art';
+import { HeroIdentity, SkinIdentity, heroPeekData, type HeroPeekData, type HeroPeekStatsResolver } from '@/shared/game-art';
 import { formatMoney, sub, type Lang, type Strings } from '@/shared/i18n';
 import type { StoredInventoryView } from '@/shared/lib/inventory-view-storage';
 
@@ -49,8 +49,8 @@ interface HeroDepiction {
 
 type HoldingsHeroSource = HeroDepiction | Omit<HeroRecord, 'id' | 'updatedAt'>;
 
-const peekOf = (hero: HoldingsHeroSource): HeroPeekData | undefined =>
-  'gearedOverride' in hero ? heroPeekData(hero) : undefined;
+const peekOf = (hero: HoldingsHeroSource, peekStats: HeroPeekStatsResolver): HeroPeekData | undefined =>
+  'gearedOverride' in hero ? heroPeekData(hero, peekStats(hero)) : undefined;
 
 export interface AccountHoldingsSource {
   /** Every row of the stored inventory, or null when this browser has imported no save. */
@@ -80,7 +80,10 @@ const priceable = (item: InventoryViewItem): PriceableItem => ({
  * A whole record also carries the card its avatar opens; a partial view carries no card, and its
  * avatar stays bare art.
  */
-export function priceableHeroes(heroes: readonly HoldingsHeroSource[]): HoldingsHero[] | null {
+export function priceableHeroes(
+  heroes: readonly HoldingsHeroSource[],
+  peekStats: HeroPeekStatsResolver,
+): HoldingsHero[] | null {
   if (!heroes.some((hero) => hero.marketable != null)) return null;
   return heroes.map((hero) => ({
     name: hero.name,
@@ -90,7 +93,7 @@ export function priceableHeroes(heroes: readonly HoldingsHeroSource[]): Holdings
     stars: hero.stars,
     level: hero.level,
     skin: hero.skin,
-    peek: peekOf(hero),
+    peek: peekOf(hero, peekStats),
   }));
 }
 

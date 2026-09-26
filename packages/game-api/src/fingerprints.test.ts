@@ -91,12 +91,25 @@ describe('ROUTE_FINGERPRINTS', () => {
       });
     });
 
-    it('the account fingerprint alone is anchored on the later observation; the other four keep the 2026-08-12 anchor', () => {
-      expect(ROUTE_FINGERPRINTS.account.capturedAt).toBe('2026-09-10T00:00:00.000Z');
+    it('RED: a /state body from before the rune stash reports exactly that one key missing, path-qualified', () => {
+      if (!bodies) return;
+      const { rune_stash, ...preRuneStash } = required(bodies['/state'], 'missing /state body');
+      expect(rune_stash).toBeDefined();
+      expect(checkSchema(preRuneStash, ROUTE_FINGERPRINTS.account)).toEqual({
+        ok: false,
+        missingKeys: ['account.rune_stash'],
+        addedKeys: [],
+      });
+    });
+
+    it('the account fingerprint alone is anchored on the later observations; the other four keep the 2026-08-12 anchor', () => {
+      expect(ROUTE_FINGERPRINTS.account.capturedAt).toBe('2026-09-22T12:00:00.000Z');
       expect(ROUTE_FINGERPRINTS.account.sourceArtifact).toContain('2026-09-10');
+      expect(ROUTE_FINGERPRINTS.account.sourceArtifact).toContain('2026-09-22');
       for (const section of ['heroes', 'skills', 'casa', 'items'] as const) {
         expect(ROUTE_FINGERPRINTS[section].capturedAt).toBe('2026-08-12T13:15:38.000Z');
         expect(ROUTE_FINGERPRINTS[section].sourceArtifact).not.toContain('2026-09-10');
+        expect(ROUTE_FINGERPRINTS[section].sourceArtifact).not.toContain('2026-09-22');
       }
     });
   });

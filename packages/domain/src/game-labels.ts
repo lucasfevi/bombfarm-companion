@@ -232,8 +232,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: 'executes rock < 0.75%/level',
   },
   explosao_ampla: {
-    pt: '+0.1 raio da explosão/nível',
-    en: '+0.1 explosion radius/level',
+    pt: '+1 célula de raio da explosão a cada 10 níveis (sobe nos níveis 10 e 20)',
+    en: '+1 cell of explosion radius every 10 levels (steps at levels 10 and 20)',
   },
   contra_relogio: {
     pt: '+2% Ataque em fase de tempo/nível',
@@ -303,7 +303,7 @@ const SHEET_STAT_SHORT_LABELS: Record<SheetKey, Bilingual> = {
 type AbilityReadoutKind = Exclude<AbilityEffectReadout['kind'], 'none'>;
 
 /** How many decimals each readout's leading figure prints with: Marcha's per-level step is
- *  0.185%, Fantasma's 0.05%, a radius lands on 1.0; the rest move in whole or half units. A
+ *  0.185%, Fantasma's 0.05%; a radius is whole cells; the rest move in whole or half units. A
  *  multiplier always prints with two. */
 const ABILITY_READOUT_DECIMALS: Record<AbilityReadoutKind, number> = {
   attackPct: 0,
@@ -312,7 +312,7 @@ const ABILITY_READOUT_DECIMALS: Record<AbilityReadoutKind, number> = {
   drainPct: 0,
   penetrationPoints: 0,
   critDmgPct: 0,
-  rangeCells: 1,
+  rangeCells: 0,
   secondBlast: 1,
   execute: 1,
   gateAttackPct: 0,

@@ -48,12 +48,14 @@ import { AccountView } from './account/account-view';
 import { ConsentSection } from './settings/consent-section';
 import { ForgeSection } from './settings/forge-section';
 import { GameSection } from './settings/game-section';
+import { UsageSection } from './settings/usage-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
 import { MarketSection } from './settings/market-section';
 import { SupportSection } from './settings/support-section';
 import { UpdatesSection } from './settings/updates-section';
 import { WindowSection } from './settings/window-section';
+import { AccountHeroPeekStats } from '../lib/account/account-hero-peek-stats';
 
 const DEFAULT_NAV_ID = 'live';
 
@@ -77,6 +79,8 @@ export default function HomePage() {
   const [restartGameOnExitWarning, setRestartGameOnExitWarning] = useState<SettingsWriteReason | null>(null);
   const [marketQuoteCurrency, setMarketQuoteCurrency] = useState<MarketQuoteCurrency>(DEFAULT_SETTINGS.marketQuoteCurrency);
   const [marketQuoteCurrencyWarning, setMarketQuoteCurrencyWarning] = useState<SettingsWriteReason | null>(null);
+  const [usagePingEnabled, setUsagePingEnabled] = useState(DEFAULT_SETTINGS.usagePingEnabled);
+  const [usagePingWarning, setUsagePingWarning] = useState<SettingsWriteReason | null>(null);
 
   useEffect(() => {
     const bridge = getBridge();
@@ -95,6 +99,7 @@ export default function HomePage() {
         setForgeWritesEnabled(settings.forgeWritesEnabled);
         setRestartGameOnExit(settings.restartGameOnExit);
         setMarketQuoteCurrency(settings.marketQuoteCurrency);
+        setUsagePingEnabled(settings.usagePingEnabled);
       })
       .catch(() => {
         setLocale(DEFAULT_SETTINGS.locale);
@@ -157,6 +162,15 @@ export default function HomePage() {
     });
   };
 
+  const onUsagePingEnabledChange = (next: boolean) => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('settings:setUsagePingEnabled', next).then((result) => {
+      setUsagePingEnabled(result.settings.usagePingEnabled);
+      setUsagePingWarning(result.persisted ? null : result.reason);
+    });
+  };
+
   const onMarketQuoteCurrencyChange = (next: MarketQuoteCurrency) => {
     const bridge = getBridge();
     if (!bridge) return;
@@ -187,6 +201,9 @@ export default function HomePage() {
         marketQuoteCurrency={marketQuoteCurrency}
         onMarketQuoteCurrencyChange={onMarketQuoteCurrencyChange}
         marketQuoteCurrencyWarning={marketQuoteCurrencyWarning}
+        usagePingEnabled={usagePingEnabled}
+        onUsagePingEnabledChange={onUsagePingEnabledChange}
+        usagePingWarning={usagePingWarning}
       />
     </CopyProvider>
   );
@@ -211,6 +228,9 @@ function HomePageContent({
   marketQuoteCurrency,
   onMarketQuoteCurrencyChange,
   marketQuoteCurrencyWarning,
+  usagePingEnabled,
+  onUsagePingEnabledChange,
+  usagePingWarning,
 }: {
   locale: AppLocale;
   onLocaleChange: (next: AppLocale) => void;
@@ -230,6 +250,9 @@ function HomePageContent({
   marketQuoteCurrency: MarketQuoteCurrency;
   onMarketQuoteCurrencyChange: (next: MarketQuoteCurrency) => void;
   marketQuoteCurrencyWarning: SettingsWriteReason | null;
+  usagePingEnabled: boolean;
+  onUsagePingEnabledChange: (next: boolean) => void;
+  usagePingWarning: SettingsWriteReason | null;
 }) {
   const t = useCopy();
   const { lang } = useLocale();
@@ -366,7 +389,7 @@ function HomePageContent({
   const navItems = navItemsFor(t).map((item) => (item.id === 'live' ? { ...item, mark: liveMark } : item));
 
   return (
-    <>
+    <AccountHeroPeekStats>
       <ConsentModal forceOpen={consentForceOpen} onDecided={onConsentDecided} />
       <AppShell
         badge={environment?.badgeLabel ?? null}
@@ -464,6 +487,11 @@ function HomePageContent({
                 persistWarning={marketQuoteCurrencyWarning}
               />
               <ConsentSection onRevoke={onConsentRevoke} />
+              <UsageSection
+                usagePingEnabled={usagePingEnabled}
+                onUsagePingEnabledChange={onUsagePingEnabledChange}
+                persistWarning={usagePingWarning}
+              />
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
               <UpdatesSection
                 status={updateStatus}
@@ -501,6 +529,6 @@ function HomePageContent({
           )}
         </div>
       </AppShell>
-    </>
+    </AccountHeroPeekStats>
   );
 }

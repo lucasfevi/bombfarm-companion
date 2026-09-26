@@ -132,7 +132,7 @@ describe('bombs / DPS', () => {
     const dano = h.attack * mitigationFactor(ctx.mitigation, h.penetration) * critFactor(h.critChance, h.critDmg);
     expect(activeDps(h, ctx)).toBeCloseTo(dano * bombsPerSecond(h, ctx) * (1 + 0.5 * ctx.blastRange) * 0.9, 6);
 
-    const widerCtx = { ...ctx, blastRange: 3 }; // base 1 + Explosão Ampla max (+2 at level 10)
+    const widerCtx = { ...ctx, blastRange: 3 }; // base 1 + Explosão Ampla max (+2 at level 20)
     expect(activeDps(h, widerCtx)).toBeGreaterThan(activeDps(h, ctx));
   });
 });
@@ -162,9 +162,10 @@ describe('abilityMods', () => {
     expect(abilityMods({ ponta_diamante: 20 }).sheetPenetrationFlat).toBe(20);
   });
 
-  it('models Explosão Ampla as +0.1 rangeCells per level, +2 at rank 20 (W3: 0.2 → 0.1)', () => {
+  it('models Explosão Ampla as whole cells of reach: +1 at level 10, +2 at rank 20', () => {
     const maxed: AbilityMods = abilityMods({ explosao_ampla: 20 });
-    expect(maxed.rangeCells).toBeCloseTo(2, 6);
+    expect(maxed.rangeCells).toBe(2);
+    expect(abilityMods({ explosao_ampla: 13 }).rangeCells).toBe(1);
     expect(abilityMods({}).rangeCells).toBe(0);
   });
 });

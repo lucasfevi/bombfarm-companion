@@ -1,5 +1,19 @@
 # @bombfarm/domain
 
+## 1.6.0
+
+### Minor Changes
+
+- 9f09846: The Heroes screen takes the game's own Power figure apart. A new panel on the Combat stage prints the hero's Power as the game shows it — written the way the game writes it, e.g. `32.41M` — scored on the same sheet the Effective Stats panel reads — active runes included, with the stored rune-free figure named beside it while a rune is on — and splits it into the factors that multiply it: crit, speed, range, luck, energy, penetration and cooldown, each with how many times it lifts Power and its share of the stack, measured from a hero with none of that statistic. Picking a factor opens Power drawn across that statistic's range with the hero's current value marked; hovering, dragging or the arrow keys move a guide that reads Power at that value and the change from now. Crit shows both the chance and the damage, the latter beside a line for crit chance at its cap; cooldown past 17.85%, the highest the formula has been checked at, is drawn dashed and labelled as extrapolated; range steps at the Wide Blast levels where the reach gains a whole cell, each extra cell counted at the half damage the game has given it since the 2026-09-26 Wide Blast nerf. Every chart whose stat takes points also marks where the hero would be with 10 and 50 more points in it — from the same per-point gains the rest of the app uses — and a line under the chart gives Power at each and the change from now, saying when a marker sits at the cap or in the extrapolated range. The formula behind it lives in `@bombfarm/domain/game-power` and reproduces the game's figure to float precision. Where the rebuilt figure differs from the game's, the panel gives the gap without guessing a cause.
+
+### Patch Changes
+
+- 02dc923: The account and inventory reads work again, and a read that stops working now says so. Both are identified by their complete set of keys, so a single key the game adds is enough to make the app reject the whole body and read nothing from it — and that is what had happened: the account body gained a rune stash alongside timed hero runes, and inventory items gained a countdown that appears only while a freshly acquired item cannot yet be exported. Measured over a six-hour session, every one of 1,005 account bodies and 1,125 inventory bodies was being discarded, while the roster and rotation reads were unaffected. Both keys are now declared — the rune stash as required, since every observed body carries it, and the export countdown as optional, since the game emits it only while the lock is running, exactly as the hero level already declares the same key. The silence is fixed too: a body that carries everything a known read requires plus something new is now reported as drift, naming the read and the added key, instead of looking exactly like the unrelated traffic the app also sees and ignores. Replayed against that same session, the new report would have named all 2,130 rejected bodies and stayed quiet on the 136 that genuinely belong to other reads.
+- 5b64748: Wide Blast (Explosão Ampla) now reaches whole cells only, the way the game does. The game adds 0.1 of a cell per level but banks the fraction until it makes a full cell, so the blast reaches one extra cell from level 10 and two at level 20, and nothing in between. The farm and DPS figures used to credit the fraction, so a partly levelled hero hit more props per bomb than it does in the game: 1.95 blocks per bomb at level 9 where the game gives 1.5 (+30%), and 2.25 at level 15 where it gives 2.0 (+12.5%). Gold, XP, clear time and active DPS for those heroes now come down to match. Heroes at level 0 or 20 do not change. The ability's description and the hero breakdown now say that the range steps up at levels 10 and 20.
+- Updated dependencies [bb8cad5]
+- Updated dependencies [6d34bfe]
+  - @bombfarm/contracts@0.11.0
+
 ## 1.5.0
 
 ### Minor Changes

@@ -20,20 +20,8 @@ export type {
   RosterBoardSortDirection,
   RosterBoardSortKey,
 } from './roster-board-order';
-export { heroPickOutcome } from './roster-view-mode';
+export { ROSTER_VIEW_MODES, heroPickOutcome } from './roster-view-mode';
 export type { HeroPickOutcome, RosterViewMode } from './roster-view-mode';
-export {
-  DEFAULT_ROSTER_CARD_DENSITY,
-  ROSTER_CARD_DENSITIES,
-  cardSectionsFor,
-  isRosterCardDensity,
-} from './roster-card-density';
-export type {
-  RosterCardAbilities,
-  RosterCardDensity,
-  RosterCardRoll,
-  RosterCardSections,
-} from './roster-card-density';
 export { SHEET_STAT_CODES } from './sheet-stat-codes';
 export { formatClearTime } from './format-clear-time';
 export {
@@ -109,6 +97,7 @@ export {
   ledgerStepNote,
   ledgerStepText,
   rowValue,
+  sheetTotalText,
   sourceLabel,
 } from './breakdown-labels';
 export {
@@ -158,3 +147,158 @@ export type {
   MatrixRow,
   PenetrationCardReading,
 } from './combat-breakdown';
+export {
+  HERO_TYPE_IDS,
+  HERO_TYPE_VOTERS,
+  HERO_TYPE_MIN_VOTING_LEVEL,
+  SECOND_HERO_TYPE_SHARE,
+  WIDE_BLAST_ABILITY_ID,
+  heroTypeLabel,
+  heroTypeLabels,
+  heroTypeOfAbility,
+  heroTypesFor,
+  wideBlastOf,
+} from './hero-types';
+export type { HeroTypeId, WideBlastReading } from './hero-types';
+export { highestRollsFor } from './highest-rolls';
+export type { HighestRoll } from './highest-rolls';
+export { equippedGearAverages, equippedItemsOf, isSquadHero, rosterSummaryFor } from './roster-summary';
+export type { EquippedGearAverages, RarityCount, RosterSummary } from './roster-summary';
+export {
+  DEFAULT_SHOWCASE_VIEW,
+  SHOWCASE_ABILITY_GAP_PX,
+  SHOWCASE_CARD_BORDER_PX,
+  SHOWCASE_CARD_MIN_WIDTH_PX,
+  SHOWCASE_CARD_PADDING_PX,
+  SHOWCASE_GEAR_GAP_PX,
+  SHOWCASE_GEAR_SLOTS,
+  SHOWCASE_MAX_ABILITIES,
+  SHOWCASE_TILE_SIZE,
+  gearAverageFigures,
+  percentText,
+  rowWidthPx,
+  showcaseCardContentWidthPx,
+  showcaseCardReading,
+  showcaseTileWidthCss,
+  showcaseTileWidthPx,
+  squadGearAveragesText,
+} from './showcase-card';
+export type { GearAverageFigures, ShowcaseBirthReading, ShowcaseCardReading, ShowcaseView } from './showcase-card';
+export { auraCoverageFor } from './aura-coverage';
+export type { AuraCoverage, AuraCoverageTile } from './aura-coverage';
+export {
+  DEFAULT_HIDDEN_LEADERBOARD_COLUMNS,
+  DEFAULT_LEADERBOARD_SORT,
+  DEFAULT_LEADERBOARD_VIEW,
+  LEADERBOARD_COLUMNS,
+  LEADERBOARD_COLUMN_IDS,
+  LEADERBOARD_FILTERS,
+  LEADERBOARD_FILTER_LABELS,
+  LEADERBOARD_STAT_COLUMN_IDS,
+  TOGGLEABLE_LEADERBOARD_COLUMN_IDS,
+  filterLeaderboardRows,
+  heroPeekStats,
+  heroPeekStatsResolver,
+  heroStatSheet,
+  isLeaderboardColumnShown,
+  isLeaderboardStatColumn,
+  leaderboardGearText,
+  leaderboardMinWidthRem,
+  leaderboardPowerPercent,
+  leaderboardRowsFor,
+  leaderboardStatValue,
+  pressLeaderboardColumn,
+  sortLeaderboardRows,
+  withShownLeaderboardColumns,
+  shownToggleableLeaderboardColumns,
+  isToggleableLeaderboardColumn,
+  treeSheetFromAccountTree,
+  visibleLeaderboardColumns,
+} from './roster-leaderboard';
+export type {
+  AccountTreeTotals,
+  HeroStatSource,
+  LeaderboardColumn,
+  LeaderboardColumnId,
+  LeaderboardFilter,
+  LeaderboardRow,
+  LeaderboardSort,
+  LeaderboardSortDirection,
+  LeaderboardStatSource,
+  LeaderboardStatColumnId,
+  LeaderboardView,
+  SortableLeaderboardColumnId,
+  StatSheetHero,
+  ToggleableLeaderboardColumnId,
+} from './roster-leaderboard';
+export {
+  EMPTY_SHARE_PICKER_FILTER,
+  SHARE_FEATURED_COUNT,
+  SHARE_MAX_STARS,
+  clampSharePhase,
+  compareByPower,
+  defaultShareCardSettings,
+  featuredRows,
+  filterSharePickerRows,
+  initialSharePhase,
+  shareCardLayout,
+  shareCardTotals,
+  shareDpsText,
+  sharePickerRarities,
+  sharePicksFor,
+  shareRarityIndex,
+  shareStars,
+  togglePick,
+  toggleSharePickerRarity,
+} from './share-card';
+export type {
+  ShareCardLayout,
+  ShareCardSettings,
+  ShareCardTotals,
+  SharePickShortcut,
+  SharePickerFilter,
+} from './share-card';
+export {
+  POWER_ATTACK_RANGE_MULTIPLE,
+  POWER_ROW_AXES,
+  POWER_MARKER_POINTS,
+  POWER_ROW_IDS,
+  axisFraction,
+  axisValueAtFraction,
+  clampToAxis,
+  formatAxisTick,
+  formatAxisValue,
+  formatMultiplier,
+  formatPowerDelta,
+  formatPowerFigure,
+  formatShare,
+  isGuideKey,
+  markLabelAnchor,
+  niceAxis,
+  placeStripLabels,
+  powerPointMarkers,
+  powerPointsLegend,
+  valueAfterPoints,
+  powerAxisSpec,
+  powerChartSeries,
+  formatSignedPct,
+  powerFactorRows,
+  powerMismatchPct,
+  powerReading,
+  powerReadoutText,
+  steppedGuide,
+} from './power-breakdown';
+export type {
+  GuideKey,
+  MarkLabelAnchor,
+  NiceAxis,
+  PlacedStripLabel,
+  PointDelta,
+  PowerPointMarker,
+  StripLabel,
+  PowerAxisSpec,
+  PowerChartSeries,
+  PowerFactorRow,
+  PowerReading,
+  PowerRowId,
+} from './power-breakdown';

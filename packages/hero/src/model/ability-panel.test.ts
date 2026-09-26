@@ -110,8 +110,8 @@ describe('abilityRowsFor', () => {
 
   it('labels a level with the game’s level abbreviation, never the hero’s grade word', () => {
     const [row] = abilityRowsFor([gainOf('olho_clinico', { kind: 'maxed' }, 20)], ROW_TEXT);
-    expect(row.levelText).toBe('Lv 20 of 20');
-    expect(row.levelText.toLowerCase()).not.toContain('rank');
+    expect(row?.levelText).toBe('Lv 20 of 20');
+    expect(row?.levelText.toLowerCase()).not.toContain('rank');
   });
 
   it('marks the abilities that land on the hero’s own statistic sheet', () => {

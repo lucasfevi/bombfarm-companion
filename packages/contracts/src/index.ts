@@ -84,6 +84,7 @@ export { migrateStoredSettings } from './settings-migration.js';
  *  body, never at either module's top level, so the two modules finish initialising before either
  *  is actually called. */
 export * from './locale.js';
+export * from './usage-ping.js';
 export { disabledUpdateStatus, idleUpdateStatus, initialUpdateStatus, UPDATE_CHECK_INTERVAL_MS } from './update.js';
 export type { UpdateErrorReason, UpdatePhase, UpdateStatus } from './update.js';
 export { isTrustworthySection } from './account-payload.js';
@@ -374,6 +375,9 @@ export interface AppSettings {
   /** The currency the desktop's own per-item market quotes are fetched in. The shared published
    *  snapshot stays converted from USD whatever this says. */
   marketQuoteCurrency: MarketQuoteCurrency;
+  /** On until the player turns it off. While on, the hourly usage ping names this install and
+   *  the game account; while off it names neither, and the install's id is deleted. */
+  usagePingEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -384,6 +388,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   forgeWritesEnabled: false,
   restartGameOnExit: false,
   marketQuoteCurrency: DEFAULT_MARKET_QUOTE_CURRENCY,
+  usagePingEnabled: true,
 };
 
 export type MiniLiveGrowthAxis = 'vertical' | 'horizontal';
@@ -402,6 +407,15 @@ export type MiniLiveLayoutPatch = MiniLiveLayoutView;
 export interface WindowStateView {
   maximized: boolean;
 }
+
+/** Why a picture did not reach the clipboard: the bytes were not a PNG main could decode, or the
+ *  write itself threw. */
+export type ClipboardImageRefusal = 'not-an-image' | 'write-failed';
+
+/** On success, the size of the picture the clipboard now holds, in pixels. */
+export type ClipboardImageResult =
+  | { ok: true; width: number; height: number }
+  | { ok: false; reason: ClipboardImageRefusal };
 
 /** Where the account the renderer reads came from. A fixture has no server behind it, so
  *  nothing that would send a write can run against one. */
@@ -455,6 +469,7 @@ export interface IpcChannels {
   'settings:setForgeWritesEnabled': { args: [boolean]; result: SettingsWriteResult };
   'settings:setRestartGameOnExit': { args: [boolean]; result: SettingsWriteResult };
   'settings:setMarketQuoteCurrency': { args: [MarketQuoteCurrency]; result: SettingsWriteResult };
+  'settings:setUsagePingEnabled': { args: [boolean]; result: SettingsWriteResult };
   /** The main window's caption buttons, drawn in the header rather than by the OS. Zero-arg like
    *  the consent quartet — the channel name is the verb. `window:close` asks the window to close
    *  and does not decide what that means: the shell's own close handler still answers it, so on
@@ -542,6 +557,10 @@ export interface IpcChannels {
   /** A kept film, read down to one point per second and the facts the frames settle. `null` when
    *  no film with that id is held. The 2 MB body never crosses the bridge. */
   'pvp:film': { args: [number]; result: PvpFilmView | null };
+  /** Puts a PNG the renderer drew on the system clipboard as an image. The renderer has no
+   *  clipboard of its own that holds pictures reliably — the web one refuses an unfocused
+   *  window — so main writes it. Main re-checks the bytes are a PNG before writing anything. */
+  'clipboard:writeImage': { args: [Uint8Array]; result: ClipboardImageResult };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -561,6 +580,7 @@ export const IPC_CHANNELS = [
   'settings:setForgeWritesEnabled',
   'settings:setRestartGameOnExit',
   'settings:setMarketQuoteCurrency',
+  'settings:setUsagePingEnabled',
   'window:minimize',
   'window:toggleMaximize',
   'window:close',
@@ -599,6 +619,7 @@ export const IPC_CHANNELS = [
   'pvp:history',
   'pvp:refresh',
   'pvp:film',
+  'clipboard:writeImage',
 ] as const satisfies readonly IpcInvokeChannel[];
 
 export type IpcEventChannel =

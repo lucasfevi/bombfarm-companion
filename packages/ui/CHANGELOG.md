@@ -1,5 +1,21 @@
 # @bombfarm/ui
 
+## 0.16.0
+
+### Minor Changes
+
+- 6d34bfe: The hero leaderboard's Abilities column now shows each hero's ability icons instead of a count — hover one for its name and level — and still sorts by how many abilities a hero has, then by their levels. The Columns control became a searchable checklist like the Inventory's set filter: type to find a column, tick to show it, untick to hide it. The "click a column to sort" hint moved into an info icon beside the roster title.
+
+### Patch Changes
+
+- 6d34bfe: The hero roster is easier to read and easier to show off. Each hero is now a showcase card — power up front, what the hero is built for in words, its birth roll as small meters (the grade and overall roll on a grade ladder, then its two highest rolls as a share of their range), its abilities and gear drawn large enough to fill the card's width, with a Show levels switch that prints every item level, forge and ability level on them — under a roster summary strip with squad power, the rarity mix, the furthest phase and the squad's average gear. These cards replace the old Compact/Combat/Full board, so its density switch is gone. A third layout lists the roster as a sortable leaderboard, one row per hero with every stat written out; a searchable Columns list picks which columns show, and hovering a hero's portrait opens its card.
+
+  In the desktop app, a Share button on the Heroes screen opens a share card: your player name, current and furthest phase, total power, your three strongest heroes with their gear and abilities, the team auras your squad covers, and everyone else on it, each with the same DPS the Heroes screen shows at a phase you pick with the Optimizer's searchable phase picker. Pick which heroes go on it — a name filter and rarity chips narrow the list — hide the gear or the auras, show item and ability levels, add your account number if you want it there, and press Copy as image to paste the card into a chat.
+
+  In the web planner, a roster with no hero picked yet (or whose last picked hero is gone) now opens on its strongest hero instead of a blank one, and that hero is marked in the list and the leaderboard.
+
+- 6d34bfe: The web planner now names its own address, bombfarm-companion.app, everywhere it describes itself: the canonical link and link-preview address on every page, the sitemap and `robots.txt`, and the address printed on every share-card image. They all still named the old hosting address, which keeps answering without redirecting, so search engines and link previews were being pointed away from the real site. The address and its bare host form now live in one module of the shared design-system package, so the desktop app can print the same address without keeping a second copy.
+
 ## 0.15.0
 
 ### Minor Changes

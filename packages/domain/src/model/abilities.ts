@@ -106,7 +106,7 @@ export const ABILITIES: AbilityDef[] = [
   // HP at cap, was 25%). The same wiki edit records the 2026-09-01 semantics: below the threshold
   // the rock is destroyed — which is what `executePct` always priced.
   { id: 'misericordia', name: 'Misericórdia', max: 20, effectText: 'executa rocha < 0.75%/nível', effect: { kind: 'executePct', perLevel: 0.75 } },
-  { id: 'explosao_ampla', name: 'Explosão Ampla', max: 20, effectText: '+0.1 raio da explosão/nível', effect: { kind: 'rangeCells', perLevel: 0.1 } },
+  { id: 'explosao_ampla', name: 'Explosão Ampla', max: 20, effectText: '+1 célula de raio da explosão a cada 10 níveis (sobe nos níveis 10 e 20)', effect: { kind: 'rangeCells', perLevel: 0.1 } },
   { id: 'contra_relogio', name: 'Contra o Relógio', max: 20, effectText: '+2% Ataque em fase de tempo/nível', effect: { kind: 'gateAttackPct', perLevel: 2 } },
   // 2026-08-23 patch: +40 crit POINTS at max rank, i.e. +2 per level flat (live wiki
   // `per_level` 0.01 → 0.02 in save units). MEASURED on account 486's 2026-08-23 15:54 export —
@@ -169,6 +169,17 @@ export function abilityPointBudget(rarity: RarityKey, level: number): number {
   return Math.min(level, ABILITY_QUOTA[rarity] * ABILITY_LEVEL_MAX);
 }
 
+/**
+ * Whole cells of blast reach an ability grants at `level`. The game's radius exists only in whole
+ * cells — its live wiki: the point "is banked until the next full cell" — so Explosão Ampla at 0.1
+ * per level reaches +0 at levels 0–9, +1 at 10–19 and +2 at 20. The game's own Power figure for
+ * heroes at partial levels (5, 5 and 17 on tracked saves) reproduces only with the reach floored.
+ */
+export function wholeRangeCells(perLevel: number, level: number): number {
+  // The epsilon absorbs binary error on an exact multiple: 0.29 × 100 is 28.999999999999996.
+  return Math.floor(perLevel * level + 1e-9);
+}
+
 export interface AbilityMods {
   /** <1 reduces drain — SELF only (Bateria Extra). Fôlego de Mineiro is a team aura: it never
    *  touches a hero's own mods at all — see the module doc on team auras below. */
@@ -186,6 +197,7 @@ export interface AbilityMods {
   /** Golpe Brutal — FLAT crit-damage percentage points (planner units), already on the hero
    *  sheet. Feeds `SheetOtherPct.critDmgFlat` as an addend, NOT a pool fraction. */
   sheetCritDmgFlat: number;
+  /** Cells of blast reach past the base 1 — always whole, see {@link wholeRangeCells}. */
   rangeCells: number;
   dmgMult: number; // second blast + execute
   gateAttackMult: number; // applies only inside timed phases (self ability, Contra o Relógio)
@@ -234,7 +246,7 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
         mods.sheetCritDmgFlat += effect.perLevel * count;
         break;
       case 'rangeCells':
-        mods.rangeCells += effect.perLevel * count;
+        mods.rangeCells += wholeRangeCells(effect.perLevel, count);
         break;
       case 'secondBlastPct':
         mods.dmgMult *= 1 + ((effect.perLevel * count) / 100) * 0.5;

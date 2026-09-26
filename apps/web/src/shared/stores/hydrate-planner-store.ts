@@ -7,7 +7,10 @@ import {
   getActiveHeroId,
   loadAccountShared,
   loadHeroes,
+  setActiveHeroId,
+  type HeroRecord,
 } from '@/shared/lib/storage';
+import { pickHeroAfterImportOrStrongest } from '@/shared/lib/pick-hero-or-strongest';
 import { usePlannerStore } from '@/shared/stores/planner-store';
 
 /**
@@ -19,7 +22,9 @@ export function hydratePlannerStore(): void {
   if (state.booted) return;
 
   const heroes = loadHeroes();
-  const activeHeroId = getActiveHeroId();
+  const storedActiveHeroId = getActiveHeroId();
+  const activeHeroId = bootActiveHeroId(heroes, storedActiveHeroId);
+  if (activeHeroId !== storedActiveHeroId) setActiveHeroId(activeHeroId);
   state.hydrateRoster(heroes, activeHeroId);
 
   const account = loadAccountShared();
@@ -34,4 +39,9 @@ export function hydratePlannerStore(): void {
   state.restoreTeamPlan(loadTeamPlanEnvelope());
 
   state.setBooted(true);
+}
+
+/** An empty roster keeps whatever was stored: there is no hero to show either way. */
+function bootActiveHeroId(heroes: HeroRecord[], stored: string | null): string | null {
+  return pickHeroAfterImportOrStrongest(heroes, stored)?.id ?? stored;
 }

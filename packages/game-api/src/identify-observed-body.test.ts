@@ -2,7 +2,7 @@ import type { AccountSection } from '@bombfarm/contracts';
 import type { SchemaLevel } from '@bombfarm/domain/save-schema';
 import { describe, expect, it } from 'vitest';
 import { ROUTE_FINGERPRINTS, type RouteFingerprint } from './fingerprints.js';
-import { identifyObservedBody } from './identify-observed-body.js';
+import { diagnoseObservedBodyDrift, identifyObservedBody } from './identify-observed-body.js';
 import { fixturePath, loadFixtureJson, required, requireFixture } from './test-fixtures.js';
 
 const bodiesPresent = requireFixture(fixturePath('api-bodies.json'), 'identifyObservedBody route corpus check');
@@ -79,5 +79,51 @@ describe('identifyObservedBody: never guesses', () => {
     const result = identifyObservedBody({ x: 1 }, ambiguousFingerprints);
 
     expect(result).toEqual({ kind: 'ambiguous', sections: ['account', 'heroes'] });
+  });
+});
+describe('diagnoseObservedBodyDrift — why an unidentified body was rejected', () => {
+  const stateBody = (): Record<string, unknown> => {
+    const body: Record<string, unknown> = {};
+    for (const key of ROUTE_FINGERPRINTS.account.level.keys) body[key] = 0;
+    return body;
+  };
+
+  it('names the section and the added key when the game adds one to a body we already read', () => {
+    expect(diagnoseObservedBodyDrift({ ...stateBody(), a_key_the_game_added: {} })).toEqual([
+      { section: 'account', addedKeys: ['account.a_key_the_game_added'] },
+    ]);
+  });
+
+  it('reports the real regression: the account body rejected outright for one added key', () => {
+    const drifted = { ...stateBody(), some_new_stash: { owned: false, slots: 0, cap: 0, unit: 150 } };
+    expect(identifyObservedBody(drifted).kind).toBe('unidentified');
+
+    const [diagnosis, ...rest] = diagnoseObservedBodyDrift(drifted);
+    expect(rest).toEqual([]);
+    expect(diagnosis?.section).toBe('account');
+    expect(diagnosis?.addedKeys).toEqual(['account.some_new_stash']);
+  });
+
+  it('stays quiet for a body that is simply some other route — the common case', () => {
+    expect(diagnoseObservedBodyDrift({ unlocked: ['FIRST_GATE'] })).toEqual([]);
+    expect(diagnoseObservedBodyDrift({ gold_per_prop: '254', xp_per_prop: 160, phase: 10 })).toEqual([]);
+  });
+
+  it('stays quiet for a body missing a required key — that is a removal, not an addition', () => {
+    const { gold, ...withoutGold } = stateBody();
+    expect(gold).toBeDefined();
+    expect(identifyObservedBody(withoutGold).kind).toBe('unidentified');
+    expect(diagnoseObservedBodyDrift(withoutGold)).toEqual([]);
+  });
+
+  it('a body that still matches its fingerprint exactly reports no drift', () => {
+    expect(identifyObservedBody(stateBody()).kind).toBe('identified');
+    expect(diagnoseObservedBodyDrift(stateBody())).toEqual([]);
+  });
+
+  it('refuses a non-object without throwing', () => {
+    expect(diagnoseObservedBodyDrift(null)).toEqual([]);
+    expect(diagnoseObservedBodyDrift([1, 2, 3])).toEqual([]);
+    expect(diagnoseObservedBodyDrift('a string')).toEqual([]);
   });
 });

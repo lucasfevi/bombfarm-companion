@@ -18,7 +18,7 @@ export interface HeroSheet {
 export interface Context {
   restSeconds: number;
   mitigation: number; // 0..1 phase mitigation
-  blastRange: number; // alcance; blocos/bomba = 1 + 0.5 × range. Base 1 for every hero, raised only by Explosão Ampla.
+  blastRange: number; // alcance; blocos/bomba = 1 + 0.5 × range. Whole cells: base 1, raised only by Explosão Ampla (at levels 10 and 20).
   ato: number; // difficulty band (1..5) of the phase being priced — selects the bomb cycle's hop histogram
   drainMult: number; // energy drain multiplier (<1 with Bateria Extra / Fôlego)
   /**

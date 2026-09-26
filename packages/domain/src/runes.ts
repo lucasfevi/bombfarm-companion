@@ -129,7 +129,7 @@ export function hasRuneOnSheet(runes: readonly HeroRune[]): boolean {
 /** Composition order: the tree's flat crit-damage add sits OUTSIDE the rune, every other key inside. */
 export function applyRuneMultipliers(
   sheet: SheetStats,
-  tree: TreeSheetTotals,
+  tree: Pick<TreeSheetTotals, 'critDmgPct'>,
   mult: RuneSheetMultipliers,
 ): SheetStats {
   return {
@@ -147,7 +147,7 @@ export function applyRuneMultipliers(
 /** Exact inverse of {@link applyRuneMultipliers} — the observed sheet with the runes taken back off. */
 export function stripRuneMultipliers(
   sheet: SheetStats,
-  tree: TreeSheetTotals,
+  tree: Pick<TreeSheetTotals, 'critDmgPct'>,
   mult: RuneSheetMultipliers,
 ): SheetStats {
   return {

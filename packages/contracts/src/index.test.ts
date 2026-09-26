@@ -24,6 +24,7 @@ const IPC_CHANNEL_LIST = [
   'settings:setForgeWritesEnabled',
   'settings:setRestartGameOnExit',
   'settings:setMarketQuoteCurrency',
+  'settings:setUsagePingEnabled',
   'window:minimize',
   'window:toggleMaximize',
   'window:close',
@@ -62,6 +63,7 @@ const IPC_CHANNEL_LIST = [
   'pvp:history',
   'pvp:refresh',
   'pvp:film',
+  'clipboard:writeImage',
 ] as const;
 
 const IPC_EVENT_CHANNEL_LIST = [
@@ -203,6 +205,7 @@ describe('contracts IPC surface', () => {
     expect(DEFAULT_SETTINGS.forgeWritesEnabled).toBe(false);
     expect(DEFAULT_SETTINGS.restartGameOnExit).toBe(false);
     expect(DEFAULT_SETTINGS.marketQuoteCurrency).toBe('BRL');
+    expect(DEFAULT_SETTINGS.usagePingEnabled).toBe(true);
   });
 });
 

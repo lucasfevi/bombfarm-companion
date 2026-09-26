@@ -77,9 +77,9 @@ jobs:
               --notes "Auto-generated Steam Community Market snapshot for Bomb Farm items. Rebuilt continuously. Not an app release." \
               --latest=false
 
-      # The previous snapshot carries the tags a row was identified by, and the enumeration asks
-      # no facet queries for a row it already recognises. Without this the identification burst
-      # runs every time, which is most of what an address's quota would be spent on.
+      # A run cut short by Steam's quota keeps the rows it never reached from the previous snapshot,
+      # rather than publishing a board that shrinks to whatever it managed to walk. Identity is not
+      # inherited: it is regenerated from the committed catalog every pass.
       - name: Download the previous snapshot (resume)
         run: gh release download "$RELEASE_TAG" --pattern "$SNAPSHOT" --dir . || echo "no prior snapshot"
 

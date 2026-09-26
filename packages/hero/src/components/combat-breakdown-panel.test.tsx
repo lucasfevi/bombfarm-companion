@@ -1,18 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { SHEET_DISPLAY_KEYS } from '@bombfarm/domain/planner-constants';
-import { noTeamAuraSwitches } from '@bombfarm/domain/team-buffs';
+import { TEAM_AURA_SWITCH_IDS, noTeamAuraSwitches, type TeamAuraId } from '@bombfarm/domain/team-buffs';
 import { numberFormatterFor } from '@bombfarm/ui';
-import { statPanelCopyFor, type Lang } from '../copy';
+import { heroCopyFor, statPanelCopyFor, type Lang } from '../copy';
 import { derivedLabel, formatBreakdownValue, isSheetKey, rowValue } from '../model/breakdown-labels';
 import { COMBAT_BREAKDOWN_CARDS } from '../model/combat-breakdown';
 import { factsForHero, fixtureHero, loadBreakdownFixture } from '../model/combat-breakdown.test-fixture';
 import { CombatBreakdownPanel } from './combat-breakdown-panel';
+import type { TeamAuraControls } from './team-auras-section';
 
 const fixture = loadBreakdownFixture();
 const hero = fixtureHero(fixture, 'Minato');
 const switches = noTeamAuraSwitches();
 const facts = factsForHero(fixture, hero, switches);
+const AURAS: TeamAuraControls = {
+  deltas: Object.fromEntries(TEAM_AURA_SWITCH_IDS.map((id, index) => [id, index + 0.5])) as Record<TeamAuraId, number>,
+  onSwitch: () => undefined,
+};
 
 function render(lang: Lang): string {
   return renderToStaticMarkup(
@@ -22,6 +27,7 @@ function render(lang: Lang): string {
       hero={hero}
       phase={fixture.phase}
       switches={switches}
+      auras={AURAS}
       lang={lang}
     />,
   );
@@ -110,5 +116,33 @@ describe('CombatBreakdownPanel', () => {
     expect(fieldTime.match(/tabindex="0"/g)).toHaveLength(1);
     expect(fieldTime).toMatch(/<li role="img" aria-label="Miner(?:'|&#x27;)s Breath — switched off"/);
     expect(html).not.toContain('data-muted');
+  });
+
+  it.each(['en', 'pt'] as const)(
+    '%s: the team auras sit between the pipeline and the sheet matrix, under their own heading and tip',
+    (lang) => {
+      const html = render(lang);
+      const copy = heroCopyFor(lang);
+      const pipeline = html.indexOf('data-testid="breakdown-pipeline"');
+      const auras = html.indexOf('data-testid="team-auras"');
+      const matrixHeading = html.indexOf(`>${copy.heroDetailBreakdownMatrixTitle}<`);
+      expect(pipeline).toBeGreaterThan(-1);
+      expect(auras).toBeGreaterThan(pipeline);
+      expect(matrixHeading).toBeGreaterThan(auras);
+      const section = html.slice(auras, matrixHeading);
+      expect(section).toContain(`<h3 class="m-0 text-[10px] font-bold tracking-[0.08em] text-accent uppercase">${copy.heroDetailAurasTeamGroup}</h3>`);
+      expect(section).toContain(`aria-label="${copy.heroDetailAurasTeamGroup}: `);
+      for (const id of TEAM_AURA_SWITCH_IDS) expect(section, id).toContain(`data-testid="team-aura-${id}"`);
+      expect(html.match(/data-testid="team-auras"/g)).toHaveLength(1);
+    },
+  );
+
+  it('an aura the hero does not carry has a switch naming it, and its card says what flipping it would do', () => {
+    const html = render('en');
+    const copy = heroCopyFor('en');
+    const warCry = html.slice(html.indexOf('data-testid="team-aura-grito_guerra"'));
+    expect(warCry.slice(0, warCry.indexOf('</li>'))).toContain('role="switch"');
+    expect(warCry).toContain(`aria-label="${copy.heroDetailAuraSwitchAria.replace('{name}', 'War Cry')}"`);
+    expect(textOf(warCry, 'team-aura-delta')).toBe('+0.5% if on');
   });
 });

@@ -1,68 +1,46 @@
 'use client';
 
 /**
- * The roster as a board of cards, one per hero, instead of a rail of names.
- *
- * The rail answers "who am I looking at"; the board answers "how does this hero compare to the
- * rest of them" — every hero's power, birth roll as bars, ability pool and gear side by side,
- * without clicking through the roster one at a time. That is why it takes the whole screen rather
- * than living in the 19rem column: eight roll bars and sixteen icons do not fit in a rail, and
- * shrunk until they do they stop being readable, which is the only thing this view is for.
- *
- * How much of that a card draws is the board's own three-way setting, `cardSectionsFor`: the
- * compact preset is what puts a whole roster on one screen, and the combat one is the full card
- * with the gear left off.
+ * The roster as a board of showcase cards, one per hero: who it is, its power, what it is built
+ * for, how it was born, and the abilities and gear it carries — the card a player would show a
+ * friend, rather than a dashboard of unlabelled figures.
  *
  * Read-only. A card selects a hero and changes nothing.
  */
-import { memo, useMemo, type ReactNode, type SyntheticEvent } from 'react';
+import { Fragment, memo, useMemo, type CSSProperties, type SyntheticEvent } from 'react';
 import { motion } from 'motion/react';
-import { RARITIES, SHEET_PANEL_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
-import { heroGearedSheet } from '@bombfarm/domain/power';
+import { rarityLabel } from '@bombfarm/domain/game-labels';
+import { heroAbilityIconEntries } from '@bombfarm/domain/hero-abilities';
+import { RARITIES } from '@bombfarm/domain/planner-constants';
 import {
-  HeroAbilityIcons,
+  ART_TILE_SIZE_VAR,
+  AbilityIcon,
+  HeroAvatar,
   HeroGearIcons,
-  HeroIdentity,
+  rarityTextClass,
   rosterInactiveChromeClass,
 } from '@bombfarm/game-art';
+import { Chip, Panel, Switch, Tooltip, cn, formatCompactNumber, panelHClass, panelTitleClass } from '@bombfarm/ui';
+import { showcaseCopyFor, sub, type Lang, type RosterBoardCopy, type ShowcaseCopy } from '../../copy';
 import {
-  Panel,
-  SegmentedToggle,
-  Tooltip,
-  cn,
-  formatCompactNumber,
-  formatNumber,
-  panelHClass,
-  panelTitleClass,
-} from '@bombfarm/ui';
-import { sub, type Lang, type RosterBoardCopy } from '../../copy';
-import {
-  ROSTER_CARD_DENSITIES,
-  SHEET_PCT_KEYS,
-  SHEET_STAT_CODES,
-  cardSectionsFor,
-  isRosterCardDensity,
-  railTintFor,
-  statRollRowsFor,
+  SHOWCASE_ABILITY_GAP_PX,
+  SHOWCASE_CARD_MIN_WIDTH_PX,
+  SHOWCASE_CARD_PADDING_PX,
+  SHOWCASE_TILE_SIZE,
+  WIDE_BLAST_ABILITY_ID,
+  gearAverageFigures,
+  heroTypeLabel,
+  percentText,
+  showcaseCardReading,
+  showcaseTileWidthCss,
+  type EquippedGearAverages,
+  type RosterHeroRow,
+  type ShowcaseCardReading,
+  type ShowcaseView,
 } from '../../model';
-import type {
-  RollTint,
-  RosterCardAbilities,
-  RosterCardDensity,
-  RosterHeroRow,
-} from '../../model';
-
-/** What a bar prints when the domain could place nothing — never a zero-length bar, which reads
- *  as the worst possible roll rather than as an absence of evidence. */
-const NOT_PLACED = '—';
-
-/** The detail panel's own tints, reused: a bar that reads "high" here has to read high there too,
- *  or one hero's roll means two different things on two screens. */
-const TINT_CLASS: Record<RollTint, string> = {
-  low: 'bg-down',
-  mid: 'bg-warn',
-  high: 'bg-up',
-};
+import { GradeLadder } from '../grade-rail';
+import { RollRail } from '../roll-rail';
+import { BirthGradeLetter } from './birth-grade-letter';
 
 /** Cards arrive in order rather than all at once, so the eye is led across the board. Capped, so
  *  a large roster does not spend seconds dealing itself out. `MotionConfig reducedMotion="user"`
@@ -70,38 +48,18 @@ const TINT_CLASS: Record<RollTint, string> = {
 const CARD_STAGGER_SECONDS = 0.022;
 const CARD_STAGGER_CAP = 12;
 
-/**
- * Each group wraps at a fixed count rather than filling the width.
- *
- * Eight gear tiles in one row set the card's width on their own — every card was then as wide as
- * its widest row and only three fitted across a large window. Wrapping the three groups at four,
- * three and four makes the card about half as wide, which is what puts five of them on a row and
- * lets the board do what it is for: the whole roster in one look.
- */
-/**
- * The card's whole width: four gear tiles, the three gaps between them, and the card's own
- * padding — `4 × w-12 + 3 × gap-0.5 + 2 × p-2.5`.
- *
- * Fixed rather than a share of the row, because the gear row is the widest thing a card holds and
- * anything wider is empty space inside every card at once. The board then fits as many as the
- * window has room for instead of stretching a fixed few.
- */
-const CARD_WIDTH = '13.625rem';
+const NOT_PLACED = '—';
 
-const ROLL_BARS_PER_ROW = cn('grid', 'grid-cols-4', 'gap-1');
-/** All eight in one line once the labels under them are gone: a bar alone is narrow enough. */
-const ROLL_BARS_UNLABELLED_PER_ROW = cn('grid', 'grid-cols-8', 'gap-1');
-/** Small is six in one line — a Mythic's whole pool inside the card's content width. */
-const ABILITIES_PER_ROW: Record<RosterCardAbilities['size'], string> = {
-  lg: cn('grid', 'w-fit', 'grid-cols-3', 'gap-0.5'),
-  xs: cn('grid', 'w-fit', 'grid-cols-6', 'gap-0.5'),
-};
-const GEAR_PER_ROW = cn('grid', 'w-fit', 'grid-cols-4', 'gap-0.5');
-/** The eight figures over the labelled bar strip's four columns, in the strip's own order. */
-const SHEET_STATS_PER_ROW = cn('grid', 'grid-cols-4', 'gap-1');
+const sectionLabelClass = 'mb-1.5 flex min-w-0 items-baseline justify-between gap-2 text-[11px] text-muted';
 
-/** The icon groups inside a card carry their own tooltip triggers. A click on one is about that
- *  icon, not about picking the hero. */
+const figureClass = 'font-mono text-xs font-semibold tabular-nums';
+
+/** Both icon rows measure their tiles against their own width, so a wider card grows its tiles
+ *  rather than leaving the rows short. */
+const TILE_WIDTH_STYLE = { [ART_TILE_SIZE_VAR]: showcaseTileWidthCss() } as CSSProperties;
+
+/** The icon groups inside a card carry their own hover cards. A click on one is about that icon,
+ *  not about picking the hero. */
 function stopCardActivation(event: SyntheticEvent) {
   event.stopPropagation();
 }
@@ -110,9 +68,8 @@ export function RosterCards({
   rows,
   selectedId,
   onSelectHeroId,
-  statLabel,
-  density,
-  onDensity,
+  view,
+  onViewChange,
   t,
   lang,
 }: {
@@ -120,45 +77,34 @@ export function RosterCards({
   rows: readonly RosterHeroRow[];
   selectedId: string;
   onSelectHeroId: (heroId: string) => void;
-  statLabel: (key: SheetKey) => string;
-  /** The board's own, not the toolbar's: the list it shares that toolbar with has no density. */
-  density: RosterCardDensity;
-  onDensity: (next: RosterCardDensity) => void;
+  view: ShowcaseView;
+  onViewChange: (next: ShowcaseView) => void;
   t: RosterBoardCopy;
   lang: Lang;
 }) {
-  const densityOptions = useMemo(
-    () =>
-      ROSTER_CARD_DENSITIES.map((id) => ({
-        id,
-        label: {
-          compact: t.heroesDensityCompact,
-          combat: t.heroesDensityCombat,
-          full: t.heroesDensityFull,
-        }[id],
-      })),
-    [t],
-  );
-
+  const copy = showcaseCopyFor(lang);
   return (
     <Panel className="min-w-0">
       <div className={cn(panelHClass, 'items-center')}>
         <h2 className={panelTitleClass}>{t.heroesRosterTitle}</h2>
-        <div data-testid="heroes-card-density">
-          <SegmentedToggle
-            options={densityOptions}
-            value={density}
-            onChange={(id) => {
-              if (isRosterCardDensity(id)) onDensity(id);
+        <label
+          data-testid="heroes-card-show-levels"
+          className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] text-muted"
+        >
+          <Switch
+            checked={view.showLevels}
+            onCheckedChange={(showLevels) => {
+              onViewChange({ ...view, showLevels });
             }}
-            ariaLabel={t.heroesDensityLabel}
+            aria-label={copy.cardShowLevels}
           />
-        </div>
+          {copy.cardShowLevels}
+        </label>
       </div>
       <Tooltip.Provider delay={200} closeDelay={80}>
         <ul
-          className="m-0 grid list-none justify-start gap-2.5 p-0"
-          style={{ gridTemplateColumns: `repeat(auto-fill, ${CARD_WIDTH})` }}
+          className="m-0 grid list-none gap-2.5 p-0"
+          style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${String(SHOWCASE_CARD_MIN_WIDTH_PX)}px, 1fr))` }}
           aria-label={t.heroesRosterListLabel}
         >
           {rows.map((row, index) => (
@@ -167,11 +113,11 @@ export function RosterCards({
               row={row}
               lang={lang}
               t={t}
+              copy={copy}
               selected={row.id === selectedId}
               index={index}
-              density={density}
+              showLevels={view.showLevels}
               onSelectHeroId={onSelectHeroId}
-              statLabel={statLabel}
             />
           ))}
         </ul>
@@ -181,46 +127,39 @@ export function RosterCards({
 }
 
 /**
- * Memoised for the reason the picker's row is: re-reading the account rebuilds the row array
- * while the hero objects keep their identity, so a shallow compare skips every card whose hero
- * and selection did not move. A board draws the whole roster at once, which is exactly the case
- * where that boundary pays.
- *
- * It is written out by hand rather than left to the React Compiler, which does not run over a
- * package a host lists in `transpilePackages` — so a component that reaches a host this way keeps
- * only the memoisation its own source spells.
+ * Memoised by hand: re-reading the account rebuilds the row array while the hero objects keep
+ * their identity, so a shallow compare skips every card whose hero and selection did not move. The
+ * React Compiler does not run over a package a host lists in `transpilePackages`.
  */
 const HeroCard = memo(function HeroCard({
   row,
   lang,
   t,
+  copy,
   selected,
   index,
-  density,
+  showLevels,
   onSelectHeroId,
-  statLabel,
 }: {
   row: RosterHeroRow;
   lang: Lang;
   t: RosterBoardCopy;
+  copy: ShowcaseCopy;
   selected: boolean;
+  /** The card's place on the board as it is ordered now — the `#` in its corner. */
   index: number;
-  density: RosterCardDensity;
+  showLevels: boolean;
   onSelectHeroId: (heroId: string) => void;
-  statLabel: (key: SheetKey) => string;
 }) {
   const { hero } = row;
-  const sections = cardSectionsFor(density);
-  // A hero taken out of the rotation is still on the board — greyed rather than hidden, so it can
-  // be compared with the ones that are in. The mute rides on the contents, never on the card's
-  // own border, which is what says which hero is selected.
+  const reading = useMemo(() => showcaseCardReading(row), [row]);
+  // Muted on the contents, never on the card's own border, which is what says which is selected.
   const inactiveChrome = hero.battleAllowed === false ? rosterInactiveChromeClass : undefined;
 
   return (
     <motion.li
-      // Deliberately NOT `layout`. A layout animation moves an element by transform-scaling it,
-      // and a card is a box of fixed-size icons: they stretch with the box for the length of the
-      // animation and snap back at the end. Re-ordering the board settles instantly instead.
+      // Deliberately NOT `layout`: a layout animation transform-scales the box, and a card of
+      // fixed-size icons stretches with it for the length of the animation.
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
@@ -242,273 +181,238 @@ const HeroCard = memo(function HeroCard({
           onSelectHeroId(row.id);
         }
       }}
-      // One utility per string, as the roster rail's own row writes them: the copy guard reads a
-      // space between two words as player-facing prose, and `cn()` arguments are not exempt from
-      // it the way a bare `className=` is.
+      // One utility per string: the copy guard reads a space between two words in a `cn()`
+      // argument as player-facing prose.
       className={cn(
+        'relative',
         'flex',
         'min-w-0',
         'cursor-pointer',
         'flex-col',
-        'gap-2.5',
         'rounded-sm',
         'border',
-        'p-2.5',
         'focus-visible:[outline:2px_solid_var(--accent)] focus-visible:[outline-offset:-2px]',
-        // Opaque, not transparent: cards fade over one another while the board is arriving, and
-        // a see-through card shows the one behind it straight through its own gear.
+        // Opaque: cards fade over one another while the board arrives.
         'bg-bg',
         selected ? 'border-accent' : 'border-line',
         selected
           ? 'bg-[color-mix(in_oklch,var(--accent)_10%,var(--bg))]'
           : 'hover:bg-[color-mix(in_oklch,var(--accent)_6%,var(--bg))]',
       )}
+      style={{ padding: SHOWCASE_CARD_PADDING_PX }}
     >
-      <div className={cn('flex', 'min-w-0', 'flex-1', 'flex-col', 'gap-2.5', inactiveChrome)}>
-        <div className="flex min-w-0 items-center justify-between gap-2">
-          {/* The primitive rather than the `HeroRecord` chip around it: at this width the
-              trailing record id crowds the name out, and it identifies a hero the player is
-              already looking at. */}
-          <HeroIdentity
-            name={hero.name}
-            rank={hero.rank}
-            rarityIdx={RARITIES.indexOf(hero.rarity)}
-            stars={hero.stars}
-            level={hero.level}
-            skin={hero.skin}
-            lang={lang}
-          />
-          {/* The one figure a player reads down a roster, and the sans face this app ships has
-              no tabular figures — so the mono face is what keeps the digits in line. Compact
-              (`617.210` → `617.2k`) because at this width the full figure is the widest thing on
-              the card. The roll itself is the bars below, not a number: a mean of eight
-              percentiles said less than the eight lengths do. */}
-          <span className="flex shrink-0 flex-col items-end leading-none">
-            <span className="font-mono text-[17px] font-bold tracking-tight tabular-nums text-ink">
-              {hero.power == null ? NOT_PLACED : formatCompactNumber(hero.power, lang)}
-            </span>
-            <span className="mt-0.5 text-[9px] font-bold tracking-[0.08em] text-muted uppercase">
-              {t.heroesSortPower}
-            </span>
+      <div className={cn('flex', 'min-w-0', 'flex-1', 'flex-col', 'gap-3', inactiveChrome)} style={TILE_WIDTH_STYLE}>
+        <span
+          className="absolute top-2.5 right-3 font-mono text-xs font-semibold text-muted"
+          data-testid="heroes-card-position"
+        >
+          {sub(copy.cardPosition, { position: index + 1 })}
+        </span>
+        <CardHeader row={row} copy={copy} lang={lang} />
+        <p className="m-0 flex items-baseline gap-1.5">
+          <span className="font-mono text-[26px] leading-none font-bold tracking-tight tabular-nums text-accent">
+            {hero.power == null ? NOT_PLACED : formatCompactNumber(hero.power, lang)}
           </span>
+          <span className="text-[10px] font-bold tracking-[0.12em] text-muted uppercase">{copy.cardPower}</span>
+        </p>
+        <HeroTypeChips reading={reading} copy={copy} />
+        <BirthSection row={row} reading={reading} copy={copy} lang={lang} />
+        <div className="@container min-w-0" data-testid="heroes-card-abilities">
+          <div className={sectionLabelClass}>
+            <span>{copy.columnAbilities}</span>
+          </div>
+          <ShowcaseAbilityIcons abilities={hero.abilities} lang={lang} showLevels={showLevels} />
         </div>
-
-        <CardSection
-          title={sections.roll.heading ? t.heroesCardBirthStatsLabel : undefined}
-          testId="heroes-card-birth"
-        >
-          <RollStrip
-            row={row}
-            statLabel={statLabel}
-            showLabels={sections.roll.labels}
-            t={t}
+        {/* Pushed to the floor of the card, so cards in one row line their gear up however many
+            lines the sections above took. */}
+        <div className="@container mt-auto min-w-0" data-testid="heroes-card-gear">
+          <div className={sectionLabelClass}>
+            <span>{copy.columnGear}</span>
+            <GearAverage gear={reading.gear} copy={copy} lang={lang} />
+          </div>
+          <HeroGearIcons
+            loadout={hero.loadout}
             lang={lang}
+            size={SHOWCASE_TILE_SIZE}
+            showLevels={showLevels}
+            emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
+            emptySlotTip={t.gearSlotEmptyTip}
           />
-        </CardSection>
-
-        {sections.sheetStats ? (
-          <CardSection title={t.heroesCardSheetStatsLabel} testId="heroes-card-sheet">
-            <SheetStats hero={hero} statLabel={statLabel} lang={lang} />
-          </CardSection>
-        ) : null}
-
-        <CardSection
-          title={sections.abilities.heading ? t.rosterColAbilities : undefined}
-          testId="heroes-card-abilities"
-        >
-          <HeroAbilityIcons
-            abilities={hero.abilities}
-            lang={lang}
-            size={sections.abilities.size}
-            showLevel={sections.abilities.level}
-            className={ABILITIES_PER_ROW[sections.abilities.size]}
-          />
-        </CardSection>
-
-        {/* Pushed to the floor of the card. Cards in one row are the same height, so a hero
-            whose abilities take two rows and one whose take a single row still line their gear
-            up with each other rather than each starting wherever its own abilities ended. */}
-        {sections.gear ? (
-          <CardSection title={t.rosterColGear} className="mt-auto" testId="heroes-card-gear">
-            <HeroGearIcons
-              loadout={hero.loadout}
-              lang={lang}
-              className={GEAR_PER_ROW}
-              emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
-              emptySlotTip={t.gearSlotEmptyTip}
-            />
-          </CardSection>
-        ) : null}
+        </div>
       </div>
     </motion.li>
   );
 });
 
-function CardSection({
-  title,
-  children,
-  className,
-  testId,
-}: {
-  /** Absent on a compact card's abilities: the icons explain themselves, and height is the point. */
-  title: string | undefined;
-  children: ReactNode;
-  className?: string;
-  testId: string;
-}) {
+function CardHeader({ row, copy, lang }: { row: RosterHeroRow; copy: ShowcaseCopy; lang: Lang }) {
+  const { hero } = row;
+  const rarityIdx = RARITIES.indexOf(hero.rarity);
+  const stars = Math.max(0, Math.min(3, Math.round(hero.stars)));
   return (
-    <div className={cn('min-w-0', className)} data-testid={testId}>
-      {title === undefined ? null : (
-        <h3 className="m-0 mb-1 text-[10px] font-bold tracking-[0.08em] text-muted uppercase">
-          {title}
-        </h3>
+    <div className="flex min-w-0 items-center gap-2.5 pr-8">
+      <HeroAvatar skin={hero.skin ?? 0} rarityIdx={Math.max(0, rarityIdx)} size="md" name={hero.name} />
+      <div className="min-w-0">
+        <p className="m-0 flex min-w-0 items-baseline gap-1.5">
+          <span className="truncate text-[15px] leading-tight font-bold text-ink">{hero.name}</span>
+          {stars > 0 ? (
+            <span className="shrink-0 text-[11px] leading-none tracking-tight text-rar-4" aria-hidden>
+              {'★'.repeat(stars)}
+            </span>
+          ) : null}
+        </p>
+        <p className="m-0 mt-1 truncate text-xs text-muted">
+          <span className={cn('font-bold', rarityTextClass(rarityIdx))}>{rarityLabel(hero.rarity, lang)}</span>
+          <span aria-hidden> · </span>
+          {sub(copy.cardLevel, { level: hero.level })}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function HeroTypeChips({ reading, copy }: { reading: ShowcaseCardReading; copy: ShowcaseCopy }) {
+  return (
+    <div className="flex min-w-0 flex-wrap gap-1" data-testid="heroes-card-types">
+      {reading.types.length === 0 ? (
+        <Chip className="cursor-default px-2 py-0.5 text-muted">{copy.typeNone}</Chip>
+      ) : (
+        reading.types.map((type, position) => (
+          <Chip
+            key={type}
+            variant={position === 0 ? 'on' : 'default'}
+            className={cn('cursor-default', 'px-2', 'py-0.5', position === 0 ? 'text-ink' : 'text-muted')}
+          >
+            {heroTypeLabel(type, copy)}
+          </Chip>
+        ))
       )}
-      {children}
     </div>
   );
 }
 
 /**
- * The hero's own geared sheet, all eight stats in the bar strip's order — read through the same
- * door as its power, and nothing more: no auras, no phase, no derivation. What the game prints.
+ * How the hero was born, as meters: the grade and the mean roll on a small grade ladder, then the
+ * two statistics that rolled closest to the top of their windows, each on the detail panel's rail.
  */
-function SheetStats({
-  hero,
-  statLabel,
-  lang,
-}: {
-  hero: RosterHeroRow['hero'];
-  statLabel: (key: SheetKey) => string;
-  lang: Lang;
-}) {
-  const sheet = heroGearedSheet(hero);
-  return (
-    <div className={SHEET_STATS_PER_ROW}>
-      {SHEET_PANEL_KEYS.map((key) => {
-        const label = statLabel(key);
-        const percent = SHEET_PCT_KEYS.has(key);
-        const value = percent
-          ? `${formatNumber(sheet[key], lang, 1)}%`
-          : formatCompactNumber(sheet[key], lang);
-        const exact = percent
-          ? `${formatNumber(sheet[key], lang, 1)}%`
-          : formatNumber(sheet[key], lang, 2);
-        return (
-          <Tooltip.Root key={key}>
-            <Tooltip.Trigger
-              type="button"
-              tabIndex={-1}
-              aria-label={`${label} ${exact}`}
-              className="flex min-w-0 cursor-default flex-col items-start gap-0.5 border-0 bg-transparent p-0"
-              onClick={stopCardActivation}
-              onKeyDown={stopCardActivation}
-            >
-              <span className="text-[9px] leading-none text-muted" aria-hidden="true">
-                {SHEET_STAT_CODES[key]}
-              </span>
-              <span
-                className="font-mono text-[11px] leading-none tabular-nums text-ink"
-                aria-hidden="true"
-              >
-                {value}
-              </span>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Positioner sideOffset={6}>
-                <Tooltip.Popup>
-                  <p className="m-0 font-semibold text-ink">{label}</p>
-                  <p className="m-0 font-mono text-xs tabular-nums text-muted">{exact}</p>
-                </Tooltip.Popup>
-              </Tooltip.Positioner>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        );
-      })}
-    </div>
-  );
-}
-
-/**
- * The birth roll as eight bars — where each statistic landed inside its own rarity band, in the
- * order the sheet lists them.
- *
- * Bars rather than figures, because the figures are what the detail panel is for. What a card is
- * asked is "is this roll good, and good at what", and eight tinted lengths answer that in one look
- * where eight percentages have to be read one at a time. The exact reading is on each bar's
- * tooltip, so nothing is lost.
- *
- * Without the codes under them the eight fit one row; the tooltip and each bar's own name still
- * say which is which, so a compact card loses nothing to a screen reader.
- */
-function RollStrip({
+function BirthSection({
   row,
-  statLabel,
-  showLabels,
-  t,
+  reading,
+  copy,
   lang,
 }: {
   row: RosterHeroRow;
-  statLabel: (key: SheetKey) => string;
-  showLabels: boolean;
-  t: RosterBoardCopy;
+  reading: ShowcaseCardReading;
+  copy: ShowcaseCopy;
   lang: Lang;
 }) {
-  const statRows = statRollRowsFor(
-    row.hero,
-    (value) => formatNumber(value, lang, 2),
-    (value) => `${formatNumber(value, lang, 1)}%`,
-  );
-  const byKey = new Map(statRows.map((statRow) => [statRow.key, statRow]));
-
+  const grade = row.hero.rank?.trim();
+  const { birth, highestRolls } = reading;
   return (
-    <div
-      className={showLabels ? ROLL_BARS_PER_ROW : ROLL_BARS_UNLABELLED_PER_ROW}
-      role="group"
-      aria-label={`${t.heroesCardBirthStatsLabel} · ${row.hero.name}`}
-    >
-      {SHEET_PANEL_KEYS.map((key) => {
-        const statRow = byKey.get(key);
-        const percentile = statRow?.percentile;
-        const label = statLabel(key);
-        return (
-          <Tooltip.Root key={key}>
-            <Tooltip.Trigger
-              type="button"
-              tabIndex={-1}
-              aria-label={`${label} ${statRow?.position ?? NOT_PLACED}`}
-              className="flex cursor-default flex-col gap-0.5 border-0 bg-transparent p-0"
-              onClick={stopCardActivation}
-              onKeyDown={stopCardActivation}
-            >
-              <span className="h-1.5 w-full overflow-hidden bg-bg" aria-hidden="true">
-                {percentile === undefined ? null : (
-                  <span
-                    className={cn('block h-full', TINT_CLASS[railTintFor(percentile)])}
-                    style={{ width: `${String(percentile)}%` }}
-                  />
-                )}
-              </span>
-              {showLabels ? (
-                <span className="text-[9px] leading-none text-muted" aria-hidden="true">
-                  {SHEET_STAT_CODES[key]}
-                </span>
-              ) : null}
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Positioner sideOffset={6}>
-                <Tooltip.Popup>
-                  <p className="m-0 font-semibold text-ink">{label}</p>
-                  <p className="m-0 font-mono text-xs tabular-nums text-muted">
-                    {statRow === undefined
-                      ? NOT_PLACED
-                      : `${statRow.value} · ${statRow.band} · ${statRow.position}`}
-                  </p>
-                </Tooltip.Popup>
-              </Tooltip.Positioner>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        );
-      })}
+    <div className="min-w-0" data-testid="heroes-card-birth">
+      <div className={sectionLabelClass}>
+        <span>{copy.cardBirthSection}</span>
+        {highestRolls.length === 0 ? null : (
+          <span className="truncate">
+            {copy.cardHighestRollsHeading} · {copy.cardRollRangeHint}
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-[max-content_1fr_4ch] items-center gap-x-2 gap-y-1.5">
+        <span className="flex items-baseline gap-1.5 text-[11px] whitespace-nowrap text-muted">
+          {grade ? <BirthGradeLetter grade={grade} copy={copy} testId="heroes-card-grade" /> : null}
+          <span>{copy.cardBirthOverall}</span>
+        </span>
+        {birth === undefined ? <span /> : <GradeLadder mean={birth.mean} railLetter={birth.railLetter} />}
+        <span className={cn(figureClass, 'text-right', 'text-ink')} data-testid="heroes-card-birth-mean">
+          {birth === undefined ? NOT_PLACED : percentText(birth.mean, lang)}
+        </span>
+        {highestRolls.map((roll) => (
+          <Fragment key={roll.key}>
+            <span className="text-xs whitespace-nowrap text-ink" data-testid="heroes-card-roll-stat">
+              {copy.rollStat[roll.key]}
+            </span>
+            <RollRail percentile={roll.percentile} trackClassName="bg-line/60" />
+            <span className={cn(figureClass, 'text-right', 'text-ink')}>{percentText(roll.percentile, lang)}</span>
+          </Fragment>
+        ))}
+      </div>
     </div>
   );
 }
+
+/** "Avg Lv 124 · Forge +13": the words muted, the figures in the mono face — the level in ink and
+ *  the forge in the accent, as the item tiles print a forge. */
+function GearAverage({ gear, copy, lang }: { gear: EquippedGearAverages; copy: ShowcaseCopy; lang: Lang }) {
+  const figures = gearAverageFigures(gear, lang);
+  if (figures === undefined) {
+    return (
+      <span className="truncate" data-testid="heroes-card-gear-average">
+        {copy.cardNothingEquipped}
+      </span>
+    );
+  }
+  return (
+    <span className="flex min-w-0 items-baseline gap-1 whitespace-nowrap" data-testid="heroes-card-gear-average">
+      <span>{copy.cardGearAverage}</span>{' '}
+      <span className={cn(figureClass, 'text-ink')}>{sub(copy.cardGearLevel, { level: figures.level })}</span>{' '}
+      <span aria-hidden>·</span>{' '}
+      <span>{copy.cardGearForge}</span>{' '}
+      <span className={cn(figureClass, 'text-accent')}>+{figures.forge}</span>
+    </span>
+  );
+}
+
+/**
+ * A hero's ability pool as icons, their levels printed over the art only when the board asks —
+ * over it, so the switch never resizes the art. Wide Blast is ringed in gold and badged, since
+ * owning it at all is the point; the ring and badge ride on the icon, so they lift with it.
+ */
+function ShowcaseAbilityIcons({
+  abilities,
+  lang,
+  showLevels,
+}: {
+  abilities: Record<string, number>;
+  lang: Lang;
+  showLevels: boolean;
+}) {
+  const entries = heroAbilityIconEntries(abilities);
+  if (entries.length === 0) return <span className="text-muted">{NOT_PLACED}</span>;
+  return (
+    <span
+      className="flex flex-nowrap items-center"
+      style={{ gap: SHOWCASE_ABILITY_GAP_PX }}
+      onClick={stopCardActivation}
+      onKeyDown={stopCardActivation}
+    >
+      {entries.map(({ id, level, max }) => (
+        <AbilityIcon
+          key={id}
+          code={id}
+          size={SHOWCASE_TILE_SIZE}
+          {...(showLevels ? { level, max } : {})}
+          levelPlacement="over-art"
+          adornment={id === WIDE_BLAST_ABILITY_ID ? WIDE_BLAST_MARK : undefined}
+          peek={{ lang, level, max, stopRowActivation: true }}
+        />
+      ))}
+    </span>
+  );
+}
+
+const WIDE_BLAST_MARK = (
+  <>
+    <span
+      className="pointer-events-none absolute inset-0 rounded-sm shadow-[0_0_0_2px_var(--gold),0_0_10px_1px_color-mix(in_oklch,var(--gold)_55%,transparent)]"
+      aria-hidden
+      data-testid="heroes-card-wide-blast"
+    />
+    <span
+      className="pointer-events-none absolute -top-1.5 -right-1.5 grid size-3.5 place-items-center rounded-full bg-gold text-[9px] leading-none text-accent-ink"
+      aria-hidden
+      data-testid="heroes-card-wide-blast-badge"
+    >
+      ★
+    </span>
+  </>
+);

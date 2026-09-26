@@ -65,19 +65,13 @@ taken off the top and the rotation is paced with what is left. Pacing the rotati
 enumeration outside the configured number, and a day of passes spent about 9% more than the figure
 it was given.
 
-**A day the market grows is what makes this load-bearing rather than tidy.** A newly listed row
-fires the tag pass, and one such pass was measured at **191 calls** — most of it enumeration.
-Pacing the rotation alone leaves the pass length unchanged whatever the enumeration costs, so that
-day spends 191 × 4.8 ≈ **917 calls against a ceiling of 650–700**. It does not fit, and the market
-has been adding around six rows a day, so those are not rare days.
-
-Deriving the pass length from the whole cost is what absorbs it: at 191 calls the pass stretches
-to about **8.3 hours** and the day spends 550. That is a real cost — a growth day gets a much
-slower rotation — and it is the right trade, because the alternative is not a faster rotation but
-a throttled address, which costs every reading rather than one day's worth.
-
-So expect the call figures to look worse on a day the market grows, without anything having
-regressed: the enumeration is taking a share the rotation would otherwise have had.
+**The enumeration's share is small and grows slowly, which is why this costs little.** A walk is one
+call per ten rows, so the market adding around six rows a day adds well under a call to a pass. What
+made counting it load-bearing was the identification burst it used to carry: a pass that met a newly
+listed row was measured at **191 calls**, and pacing the rotation alone left the pass length
+unchanged whatever the enumeration cost, so such a day spent 191 × 4.8 ≈ **917 calls against a
+ceiling of 650–700**. Deriving the pass length from the whole cost absorbed that. With the burst
+gone, the same derivation simply has much less to absorb.
 
 A pass never starts sooner than five minutes after the previous one began. Spacing stretches a
 pass in proportion to how much it has to quote, so a board small enough to finish in seconds would
@@ -150,56 +144,59 @@ never installs — which killed the run before the checker executed for ten cons
 still posting a red check. A monitor red for a reason nobody reads is worse than none: it looks
 exactly like an alarm firing, so the state it is meant to announce becomes invisible.
 
-## Enumerate first, then ask what things are
+## One walk, and a name the catalog can already spell
 
-The sweep is two passes, and the order is the whole design.
+The sweep makes one kind of upstream call.
 
 **One flat walk of `search/render` with no filters** enumerates the entire market, ten rows a
-call, with each row's lowest listing and listing count. It is complete by construction: it finds
-items nothing here has ever heard of. That is not hypothetical — skins appeared as a whole new
-category days after launch, and a sweep that only asked for what the catalog knows would have
-enumerated exactly none of them.
+call, with each row's lowest listing, its listing count and Steam's own `type` for it. It is
+complete by construction: it finds items nothing here has ever heard of. That is not hypothetical —
+skins appeared as a whole new category days after launch, and a sweep that only asked for what the
+catalog knows would have enumerated exactly none of them.
 
-**Then one facet-narrowed query per tag** says what each row is. `search/render` returns no tags
-at all, so a row's set, slot, rarity, category, level and act are only knowable by asking:
-`category_<appid>_<facet>[]=tag_<value>` is the market UI's own filter, and every row a narrowed
-query returns carries that tag by construction.
+**Identity then costs nothing upstream.** For every item the committed catalog describes, the
+builder generates the market name that item would be listed under: 240 equipment defs across every
+rarity, the nine gems, the gate keys, skill stones, time parts, item chests, act chests and heroes.
+A few thousand strings, built once per run from committed data, with no network. A row is identified
+by finding its market hash in that set.
 
-Nothing parses `market_hash_name`. Steam publishes no format for it, and the game has already
-changed the one it uses: `Ember Amulet (Rare)` became `Ember Amulet Lv 10 (Rare)` days after
-launch. A name parser would have broken on that; the facet queries did not notice it.
+**Generating a name is not parsing one.** A parser reads a name it has never seen and decides what
+it must mean, so the day the game renames everything it is confidently wrong. Generation starts from
+an identity that is already known and asks whether the market is carrying it under the name it
+should have. A name form that moves stops matching, the row goes unkeyed, and the run says so — it
+is never keyed by a near miss and never given another item's price. That is the property the older
+facet design existed to protect, and it is the one that matters.
 
-The tags to ask for come from Steam's `appfilters` first, because it is the only source for
-facets the catalog knows nothing about. But it is a hint, not an authority — it was measured
-omitting `slot=helmet` while `Gold Helmet (Rare)` was listed and sellable. So the sweep verifies
-rather than trusts: if any equipment row is left without a set, slot or rarity, it tries the
-catalog's own tags for the ones Steam did not list, and reports anything still bare.
+**Both known forms are generated, because both are still listed.** The game renamed its items days
+after launch — `Ember Amulet (Rare)` became `Ember Amulet Lv 10 (Rare)` — and a Steam hash is
+immutable, so the two are separate live order books for one item. Ten rows were still in the
+pre-rename form on 2026-09-23. Two hashes sharing one identity is exactly what `alternates` is for.
 
-A full live run costs **4 calls to enumerate and about 30 to tag**. The earlier design asked by
-facet combination and cost roughly 250, which Steam's per-IP tolerance on this endpoint cut off
-after six.
+**Steam's per-row `type` is the early warning, and it is free.** The enumeration already returns it:
+measured live on 2026-09-25, it is the bare slot word for equipment — `Amulet`, `Boots`, `Chestplate`
+— and one word for everything else (`Chest`, `Gem`, `Map Key`, `Hero`, `Skill Stone`, `Skins`, and
+`House Part` for a Time Part, which nothing cross-checks). It is not a source — the generated match
+has already settled what the row is — but a row that still matches a generated name while Steam no
+longer names the slot that name implies means the naming has moved under us, and the next change will
+be the one that matches nothing at all. That disagreement is
+recorded as a `name-form-drift` anomaly and raised as a
+run annotation. **A blank `type` claims nothing and is not drift** — every pre-rename hash still
+listed carries `""`, so reading blank as a disagreement reported all ten of them on every run.
 
-**The tag pass runs only when the enumeration turns up a row the previous snapshot cannot name.**
-It is the large majority of a pass's search calls and it fires them a second or two apart — a
-burst, wrapped around a per-item rotation deliberately paced tens of seconds apart. Item identity
-barely moves, so re-establishing what a hundred already-identified rows are, every pass, learns
-nothing and spends a quota Steam counts cumulatively; that is what got a collector's address
-limited after a few hundred calls. So the sweep is handed the identities the previous snapshot
-carries. A pass that finds nothing new stamps those and asks no narrowed query at all; a pass that
-finds one unrecognised row runs the whole sweep, which is the intended cost on the day an item is
-first listed. It cannot be made cheaper by asking about the new row alone — the sweep learns a tag
-by asking for it and reading back which rows answer, so identifying one row still costs a sweep.
+**A full live run costs about 30 calls, all of it enumeration.** What this replaced asked one
+facet-narrowed query per tag to learn what each row was — `category_<appid>_<facet>[]=tag_<value>`,
+the market UI's own filter — so that a row's set, slot and rarity were known by having asked rather
+than by reading its name. It cost around 150 calls a run against a per-IP ceiling near 105, and it
+had been failing outright since 2026-09-23: all 237 equipment rows priced and unidentifiable,
+`matchedCatalogKeys: 0`, so no owned item could look up a price at all. It also latched, because a
+cut-short run published the partial identities it had managed to learn and partial identities read
+as complete on the next run.
 
-**Which snapshot gets handed in decides how often that fires, so both callers hand in the freshest
-one there is: the published file.** The scheduled job resumes from what it published last run,
-half an hour ago. The collector reads the same file over HTTP rather than the copy its own last
-pass wrote, which is hours old — every row the schedule has already named is a row a pass here
-does not pay the burst to name again. A fetch that fails costs nothing but that: it falls back to
-its own copy, which is what it read before.
-
-Identity is carried over only where it is complete. A row a cut-short pass left half-tagged, or
-one whose facets cannot be spelled back as the Steam tags they came from, is withheld and asked
-about again — so a gap repairs itself on the next pass instead of being inherited forever.
+**No identity is inherited.** A row's identity is a deterministic function of its market hash and the
+committed catalog, so a run that enumerates a row knows exactly as much about it as any earlier run
+did. Carrying identity forward could only keep a row keyed after its name stopped generating, which
+is the one thing this must not do. The previous snapshot is still read, for one narrower purpose: to
+keep the rows a cut-short walk never reached.
 
 ## The price shown is the price on the page
 
@@ -351,12 +348,13 @@ The recorded delay is reconstructable, which is how a deploy is confirmed to hav
 pacing rather than merely to have shipped. Two columns do not mean what their names suggest, and
 both matter here:
 
-- **Enumeration cost one call more than `search_calls`.** The facet schema is a different endpoint
-  and is counted apart, exactly once per pass.
+- **Enumeration is now exactly `search_calls`.** It used to cost one more: the facet schema was a
+  different endpoint, fetched once per pass and counted apart. Nothing fetches it any more, so a row
+  written before 2026-09-23 needs the extra call and a row written after does not.
 - **The rotation was paced for attempts, not calls.** `quote_calls` counts each rate-limited retry
   again, so the planned figure is `quote_calls - rate_limit_hits`.
 
-With `E = search_calls + 1` and `Q = quote_calls - rate_limit_hits`, the delay follows from the
+With `E = search_calls` and `Q = quote_calls - rate_limit_hits`, the delay follows from the
 pacing rule — a pass costs `E + Q` and takes `MS_PER_DAY x (E + Q) / budget`, less the
 enumeration's own `E x searchDelayMs`, divided across `Q`. And `Q` should independently equal
 `tier_a_count + first_quote_count` times the currency count, which is the cross-check worth
@@ -388,23 +386,32 @@ Every entry has a `key`, and that is what an app prices by:
 
 | Item | Key | Where the identity comes from |
 | --- | --- | --- |
-| Equipment | `ember_luva#2` | the catalog def its set and slot name, plus rarity |
-| Gate Key, Time Part | `map_key_raro#2`, `time_part_epico#3` | a fixed `def_id` prefix plus the rarity's own token |
-| Chest, cage, gem, stone, skin | `chest#Hero Cage (Act 1)` | its Steam category and hash, because nothing else identifies it |
+| Equipment | `ember_luva#2` | the catalog def whose generated name the row matched, plus rarity |
+| Gate Key, Skill Stone, Time Part | `map_key_raro#2`, `time_part_epico#3` | a fixed `def_id` prefix plus the rarity's own token |
+| Gem | `gem_emerald#2` | the committed bundle, which names every gem and fixes its rarity |
+| Item chest | `chest_item_30#0` | the level in its name; an owned one is rarity 0 |
+| Act chest, hero cage | `chest_hero_1#1` | the family, named outright, plus the act — which doubles as the rarity tier |
+| Tradable hero | `hero#2` | its rarity, which is the whole of a hero's market identity |
+| Skin | `skin#Royal Sentinel Skin` | its Steam category and hash, because it has no owned counterpart |
 
-The last row is the interesting one. `Hero Cage (Act 1)` and `Skill Stone Chest (Act 1)` carry
-`category=chest, act=1` and nothing else — a key built from facets would have quietly merged two
-different items into one price. A Steam hash never changes meaning, which makes it the only stable
-identity available for an item the catalog does not describe.
+The last two rows are the interesting ones. A hero listing carries nothing but a rarity, so it needs
+no def at all. And a skin is a field on a hero rather than an inventory row, so nothing an owner
+holds could ever look it up — the hash key is the honest end state there, not a failure.
+
+`Hero Cage (Act 1)` and `Skill Stone Chest (Act 1)` differ in nothing but their family name, which is
+why the four families are named outright rather than deduced. A Steam hash never changes meaning,
+which is what makes naming them safe.
 
 Alongside the entries:
 
 - `index` — `key` → the entry to quote
-- `alternates` — `key` → the other entries sharing it. The rename left eight items with two live
-  hashes each; both are kept, because hiding one would hide real supply
+- `alternates` — `key` → the other entries sharing it. The rename left items with two live hashes
+  each; both are kept, because hiding one would hide real supply
 - `unlisted` — catalog def+rarity keys the market has never carried
-- `anomalies` — a facet tag or category nothing here can map. An unmapped tag makes items quietly
-  lose their price, so it is recorded and raised as a run annotation rather than guessed at
+- `anomalies` — `unlinkable-item` for a row whose hash matched no name the catalog can generate, so
+  it is priced and nothing owned can reach it; `name-form-drift` when a matched row's Steam `type`
+  disagrees with the slot its name implies. Either one makes items quietly lose their price, so both
+  are recorded and raised as a run annotation rather than guessed past
 - `fx` — units per 1 USD, so a client converts without another network call
 - `nativeCurrencies` — what the quote pass asked Steam for, named here so a run where every quote
   failed still says what it was trying to do
@@ -437,22 +444,23 @@ limits. A run that stops early is not thrown away:
 - a **completed** enumeration walked the whole market, so its row set is the truth and anything
   missing from it has genuinely been delisted
 - a **cut-short** run keeps the rows it never reached, rather than publishing a snapshot that
-  oscillates between full and partial from one pass to the next
-- a run that enumerated a row but stopped before tagging it inherits the identity the previous run
-  established, so an item that had a price yesterday does not lose it today. Prices are never
-  inherited that way: a null `lowestUsd` is the meaningful statement that nothing is listed now
-- a key is **derived** from the identity an entry ends up with, inherited parts included, rather
-  than fixed when the row was written. Keeping the key a half-tagged run wrote is how an entry
-  ends up knowing its def and rarity and still being addressed by its hash name, which no owned
-  item looks up
+  oscillates between full and partial from one pass to the next. Those rows keep the identity and key
+  the previous run published, because a hash never changes meaning. Prices are not carried that way:
+  a null `lowestUsd` is the meaningful statement that nothing is listed now
+- a row the walk **did** reach is identified from scratch, every pass. There is nothing to inherit —
+  the same hash and the same committed catalog give the same answer — and inheriting would only keep
+  a row keyed after its name stopped generating
 
-The enumeration is the cheap tenth of the sweep and usually finishes even when the quota kills the
-run, so a full row set is no evidence that the run learned what the rows are. What says that is
-`catalog keys carried` in the build log, and the sweep **refuses to publish** a snapshot that
-drops a key whose row is still on the market, when it did not finish tagging. It exits non-zero
-without writing the file, which leaves the last published snapshot standing: prices freeze at the
-last good ones rather than going to zero, and the pass is recorded as failed instead of quietly
-succeeding.
+**The sweep refuses to publish a snapshot that drops a catalog key whose row is still on the
+market.** A row that has left the market takes its key with it, and that is the market talking. A row
+that is right there and has stopped answering to yesterday's key is this run talking, and under name
+generation there is exactly one thing it can be saying: the name form has moved. So the refusal is
+unconditional now, where it used to apply only to a run that had not finished tagging — a completed
+run was entitled to retag a row, and no run is entitled to unname one.
+
+It exits non-zero without writing the file, which leaves the last published snapshot standing: prices
+freeze at the last good ones rather than going to zero, and the pass is recorded as failed instead of
+quietly succeeding. `catalog keys carried` in the build log is the figure to read.
 
 ## What is not settled yet
 
@@ -460,34 +468,38 @@ succeeding.
   `time` each match a rule in the inventory parser's `inferKind`, so those are copied rather than
   guessed. Nothing in the codebase classifies an Item Chest, a Hero Cage, a Skill Stone or a skin,
   so they carry a null `kind` — they are still keyed, still priced, and deliberately do not warn.
-- **Gems have no `def_id`.** `inferKind` knows the `gem_` prefix but nothing says what follows it
-  for an Emerald or an Aquamarine, so they key on their category and hash like the chests do.
 - **Whether a second native currency is worth its calls.** The pass is per-currency per row, so
   each one added multiplies the expensive half of the sweep. BRL is the only one asked for today.
-- **Two rarity tags are still unwitnessed.** `uncommon`, `rare`, `epic` and `legendary` have been
-  read off live listings; `common` and `mythic` complete the same series.
+- **Two rarity words are still unwitnessed.** `Uncommon`, `Rare`, `Epic` and `Legendary` have been
+  read off live listings; `Common` and `Mythic` complete the same series. A word that turns out wrong
+  leaves its rows unmatched and reported, rather than mismatched.
+- **How many acts the chest families reach.** Names are generated for every act the rarity ladder
+  allows, since the act IS the tier; only three have ever been listed. Generating one that does not
+  exist costs nothing — an unlisted name simply never matches.
 
 ## The tests that hold this up
 
 `live-market.test.ts` runs the reconciliation over every row the market actually carried and
 asserts each one lands on the right identity — checked against real Steam rows, not a fake.
 
-`tags.test.ts` pins each confirmed slot against the listing that witnessed it. Five of the eight
-are not what an English reading of the catalog would produce (`armor` is the chestplate, `legs`
-the leggings), so a tidy-up back to the obvious guesses is the regression most worth catching.
+`names.test.ts` pins each slot and rarity word against the listing that witnessed it, and counts the
+generated set family by family. Five of the eight slot words are not what an English reading of the
+catalog would produce (`peito` is the Chestplate, `calca` the Leggings), so a tidy-up back to the
+obvious guesses is the regression most worth catching — and a collision between two generated names
+would otherwise show up only as a slightly smaller set.
 
-`tools/market-tags-catalog-parity.test.mjs` fails if the slot or rarity tables stop covering the
+`tools/market-names-catalog-parity.test.mjs` fails if the slot or rarity word tables stop covering the
 committed catalog.
 
 `tools/market-item-linking.test.mjs` drives the builder's own catalog load against the built
-reconciliation, over the real committed game data. The builder is `.mjs` and is not typechecked,
-so this is the only thing that proves it still supplies the hash → `def_id` map every gem and act
-chest is linked by.
+reconciliation, over the real committed game data. The builder is `.mjs` and is not typechecked, so
+this is the only thing that proves it still supplies the gem list every gem is linked by.
 
 `tools/market-snapshot/sweep-stats.test.mjs` holds the two seams no type reaches: that the
 rate-limit counts still find the log lines they are read off — reword either message and the count
-silently goes to zero — and that the expensive tag pass stays off an ordinary pass. Drop the
-hand-off that keeps it off and every unit test stays green while the burst comes back every pass.
+silently goes to zero — and that a pass asks for nothing but the enumeration. It asserts on the call
+count rather than on the absence of a function, because a burst that still ran and found nothing
+would pass a weaker test.
 
 `tools/market-collector.test.mjs` drives the continuous producer with an injected clock, sweep and
 transport, so its decisions are exercised without a market call. The two worth naming are that a

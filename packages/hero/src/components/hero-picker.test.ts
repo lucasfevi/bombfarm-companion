@@ -86,13 +86,22 @@ describe('the components are prop-driven — no store, no host module', () => {
   });
 
   it('the scan reaches every component in this tree, subdirectories included', () => {
-    expect(componentFiles.length).toBe(33);
+    expect(componentFiles.length).toBe(47);
+    expect(componentFiles).toContain('share-card/share-card.tsx');
+    expect(componentFiles).toContain('share-card/share-card-dialog.tsx');
+    expect(componentFiles).toContain('share-card/share-card-controls.tsx');
     expect(componentFiles).toContain('hero-identity-roll-panel.tsx');
+    expect(componentFiles).toContain('grade-rail.tsx');
+    expect(componentFiles).toContain('roll-rail.tsx');
+    expect(componentFiles).toContain('power-breakdown-panel.tsx');
+    expect(componentFiles).toContain('power-factor-chart.tsx');
     expect(componentFiles).toContain('aura-cap-chips.tsx');
     expect(componentFiles).toContain('hero-runes-panel.tsx');
-    expect(componentFiles).toContain('abilities-auras-panel.tsx');
+    expect(componentFiles).toContain('team-auras-section.tsx');
     expect(componentFiles).toContain('roster-board/roster-rail.tsx');
     expect(componentFiles).toContain('roster-board/roster-cards.tsx');
+    expect(componentFiles).toContain('roster-board/roster-leaderboard.tsx');
+    expect(componentFiles).toContain('roster-board/roster-summary-strip.tsx');
     expect(componentFiles).toContain('roster-board/roster-toolbar.tsx');
     expect(componentFiles).toContain('hero-abilities-panel.tsx');
     expect(componentFiles).toContain('phases-hero-switcher.tsx');

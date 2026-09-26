@@ -239,7 +239,7 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
       keys,
     }) => {
       localStorage.setItem(keys.heroes, JSON.stringify(heroes));
-      if (activeHeroId) localStorage.setItem(keys.active, activeHeroId);
+      if (activeHeroId) localStorage.setItem(keys.active, JSON.stringify(activeHeroId));
       else localStorage.removeItem(keys.active);
       if (account) localStorage.setItem(keys.account, JSON.stringify(account));
       else localStorage.removeItem(keys.account);

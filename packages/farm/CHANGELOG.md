@@ -1,5 +1,23 @@
 # @bombfarm/farm
 
+## 1.2.7
+
+### Patch Changes
+
+- 6d34bfe: Hero cards shown on hover now include spent stat points, matching the hero's stat sheet. A hero whose spent points could not be read shows its card without figures, as its stat sheet does, instead of figures that leave those points out.
+- Updated dependencies [6d34bfe]
+- Updated dependencies [9f09846]
+- Updated dependencies [6d34bfe]
+- Updated dependencies [6d34bfe]
+- Updated dependencies [6d34bfe]
+- Updated dependencies [02dc923]
+- Updated dependencies [9f09846]
+- Updated dependencies [5b64748]
+  - @bombfarm/game-art@0.7.2
+  - @bombfarm/hero@0.4.0
+  - @bombfarm/domain@1.6.0
+  - @bombfarm/ui@0.16.0
+
 ## 1.2.6
 
 ### Patch Changes

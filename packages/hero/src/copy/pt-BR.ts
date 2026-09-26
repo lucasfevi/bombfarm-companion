@@ -28,23 +28,61 @@ export const heroPtBR: HeroCopy = {
   heroDetailRuneAxisXp: "XP",
   heroDetailRuneAxisGold: "Ouro",
 
-  heroDetailRollTitle: "Sorteio de nascimento",
-  heroDetailRollQuality: "Qualidade do sorteio",
+  heroDetailPowerTitle: "Poder",
+  heroDetailPowerTip:
+    "O próprio número de Poder do jogo, desmontado. Poder é dez vezes o ataque multiplicado por um fator por atributo; a fatia de cada fator é quanto dessa pilha ele levanta, medida a partir de um herói sem nada daquele atributo. O Poder é calculado antes das auras do time, então um atributo aqui pode aparecer menor que no painel de atributos efetivos.",
+  heroDetailPowerPick: "Escolha um fator para ver o Poder ao longo da faixa dele.",
+  heroDetailPowerDiffers: "Difere do número do jogo em {pct}",
+  heroDetailPowerRunesActive: "Com as runas ativas · {value} sem elas",
+  heroDetailPowerWithheld:
+    "Este é o número guardado pelo jogo, sem runas. O detalhamento depende dos pontos gastos do herói, que não puderam ser lidos.",
+  heroDetailPowerFactorCrit: "Crítico (chance × dano)",
+  heroDetailPowerFactorSpeed: "Velocidade",
+  heroDetailPowerFactorRange: "Alcance (Explosão Ampla)",
+  heroDetailPowerFactorLuck: "Sorte",
+  heroDetailPowerFactorEnergy: "Energia",
+  heroDetailPowerFactorPenetration: "Penetração",
+  heroDetailPowerFactorCooldown: "Recarga",
+  heroDetailPowerFactorAttack: "Ataque",
+  heroDetailPowerAnchor: "base",
+  heroDetailPowerColFactor: "Fator",
+  heroDetailPowerColMultiplier: "× Poder",
+  heroDetailPowerColMultiplierTip:
+    "Quantas vezes este fator multiplica o Poder em relação a um herói sem nada daquele atributo. A linha de Ataque mostra o próprio ataque: é a base que todo fator multiplica.",
+  heroDetailPowerColShare: "Parte",
+  heroDetailPowerColShareTip:
+    "A parte deste fator em todo o ganho multiplicativo acima da base de Ataque. As partes somam 100%; o Ataque, a base, não tem parte.",
+  heroDetailPowerShareBar: "Fatia do Poder por fator",
+  heroDetailPowerSegment: "{factor}: {share}",
+  heroDetailPowerAxisAmpla: "Nível de Explosão Ampla",
+  heroDetailPowerChart: "Poder em função de {stat}",
+  heroDetailPowerNow: "agora",
+  heroDetailPowerCap: "limite",
+  heroDetailPowerPointsMarker: "+{points} pontos: {power} ({change})",
+  heroDetailPowerAtCap: "no limite",
+  heroDetailPowerExtrapolatedNote: "extrapolado",
+  heroDetailPowerReadout: "{stat} {value} → Poder {power} ({delta}, {pct} em relação a agora)",
+  heroDetailPowerReadoutCapped: "Com 100% de chance de crítico: {power}",
+  heroDetailPowerCappedLegend: "Tracejado: com chance de crítico em 100%",
+  heroDetailPowerExtrapolated: "Acima da maior recarga conferida ({pct}), isto é extrapolado.",
+
+  heroDetailRollTitle: "Roll de nascimento",
+  heroDetailRollQuality: "Qualidade do roll",
   heroDetailRollQualityNote:
-    "A média dos oito percentis do sorteio: para cada atributo, o quanto ele avançou dentro da própria faixa. 50 é um sorteio mediano em tudo, 90 é perto do topo de todas as faixas.",
+    "A média dos oito percentis do roll: para cada atributo, o quanto ele avançou dentro da própria faixa. 50 é um roll mediano em tudo, 90 é perto do topo de todas as faixas.",
   heroDetailRollColStat: "Atributo",
   heroDetailRollColBand: "Faixa",
   heroDetailRollColPosition: "Posição",
-  heroDetailRollValue: "Sorteado",
-  heroDetailRollBand: "Sorteado dentro de {range}",
+  heroDetailRollValue: "Roll",
+  heroDetailRollBand: "Roll dentro de {range}",
   heroDetailRollPercentile: "{pct}% dentro da faixa",
   heroDetailRollGradePlacement: "Onde ele fica na nota {letter}",
   heroDetailRollPermanent:
-    "O sorteio de nascimento é permanente: nunca muda com nível, estrelas, equipamento ou pontos gastos.",
+    "O roll de nascimento é permanente: nunca muda com nível, estrelas, equipamento ou pontos gastos.",
   heroDetailRollNoBirthRoll:
-    "Este herói não tem sorteio de nascimento, então não há o que posicionar.",
+    "Este herói não tem roll de nascimento, então não há o que posicionar.",
   heroDetailRollNoBounds:
-    "Este herói não tem os limites do sorteio, então não dá para medir a posição dentro deles.",
+    "Este herói não tem os limites do roll, então não dá para medir a posição dentro deles.",
   heroDetailRollComputedDisagrees:
     "A qualidade que calculamos cai em uma letra diferente da que o jogo guardou.",
   heroDetailRollStoredLetterStands: "A letra guardada é a resposta do jogo e continua valendo.",
@@ -65,7 +103,7 @@ export const heroPtBR: HeroCopy = {
   heroDetailAbilitiesNotMeasured:
     "O modelo tem este efeito, mas ele cai fora do que o DPS sustentado consegue medir.",
   heroDetailAbilitiesNoBirthRoll:
-    "Sem o sorteio de nascimento não dá para avaliar este herói, então nenhuma habilidade dele tem preço.",
+    "Sem o roll de nascimento não dá para avaliar este herói, então nenhuma habilidade dele tem preço.",
   heroDetailAbilitiesPoints: "Pontos de habilidade",
   heroDetailAbilitiesPointsValue: "{spent} de {budget} gastos",
   heroDetailAbilitiesNone: "Este herói não tem nenhuma habilidade.",
@@ -102,18 +140,13 @@ export const heroPtBR: HeroCopy = {
   heroDetailPhaseNoMatch: "Nenhuma fase corresponde.",
   heroDetailPhaseMoreMatches: "Mostrando {shown} de {matched} — continue digitando para filtrar.",
 
-  heroDetailAurasTitle: "Habilidades e auras",
   heroDetailAurasTip:
     "Com o que os números desta etapa são precificados. Uma aura de time é uma propriedade do campo: todo mundo que está nele recebe o mesmo total, com teto por aura. A aura do próprio herói conta no rank dele e não pode ser desligada; qualquer outra aura fica desligada até você ligar, e então conta no teto, seja quem for o portador. A tela Farm e o Otimizador precificam as mesmas auras pelo tempo ativo previsto de cada portador, então os números deles podem diferir destes. A Passagem de Bastão conta aqui como se o pulso nunca acabasse — o tempo em campo inteiro no nível dela, +80% no teto — enquanto a tela Farm e o Otimizador contam só os 120 s que cada entrada acende.",
   heroDetailAurasTeamGroup: "Auras de time",
-  heroDetailAurasOwnGroup: "Habilidades próprias",
   heroDetailAuraOwnTag: "própria",
-  heroDetailAuraNotHereTag: "não nesta fase",
-  heroDetailAuraNotModelledTag: "não modelada",
   heroDetailAuraSwitchAria: "Contar {name} no teto",
   heroDetailAuraDeltaIfOn: "+{value}% se ligada",
   heroDetailAuraDeltaIfOff: "−{value}% se desligada",
-  heroDetailAurasNoOwnAbilities: "Este herói não tem nenhuma habilidade própria em vigor.",
 
   heroDetailBreakdownHint: 'Passe o mouse ou foque um quadro para ver a fórmula por trás dele e o que ele lê; os quadros ligados a ele ficam acesos.',
   heroDetailBreakdownRowSheet: "Ficha",
@@ -171,7 +204,7 @@ export const heroPtBR: HeroCopy = {
     "O que uma explosão mostra no jogo. {names} soma dano que nenhuma explosão isolada mostra, então fica de fora aqui; o DPS ativo carrega isso como ×{mult}.",
   heroDetailBreakdownNoteFieldWithoutTeamDrain: "Sem o {name} do time isto seria {secs}s.",
   heroDetailBreakdownNoteActiveConstants:
-    "O espalhamento da explosão é 1 + 0,5 por célula de alcance ({cells} células aqui): cada célula além do epicentro alcança em média meio hit de props. A eficiência da IA é o ×0,9 fixo do jogo para o remirar e as bombas mal colocadas de um herói em campo; todo DPS ativo deste app carrega isso.",
+    "O espalhamento da explosão é 1 + 0,5 por célula de alcance ({cells} células aqui): cada célula além do epicentro alcança em média meio hit de props. O alcance é sempre em células inteiras — Explosão Ampla o sobe nos níveis 10 e 20. A eficiência da IA é o ×0,9 fixo do jogo para o remirar e as bombas mal colocadas de um herói em campo; todo DPS ativo deste app carrega isso.",
   heroDetailBreakdownNoteBatonHeld:
     "A Passagem de Bastão conta como se o pulso nunca acabasse: o tempo em campo inteiro a +{pct}%. A página Farm e o Otimizador contam só os 120 s que cada entrada acende.",
   heroDetailBreakdownPenCovers: "nada perdido para a mitigação",

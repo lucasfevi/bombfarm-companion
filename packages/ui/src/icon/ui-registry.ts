@@ -19,6 +19,8 @@ import {
   HiMiniLockClosed,
   HiMiniSquares2X2,
   HiMiniBars3,
+  HiMiniShare,
+  HiMiniTableCells,
   HiMiniWindow,
   HiMiniSparkles,
 } from 'react-icons/hi2';
@@ -71,6 +73,8 @@ export const uiIconRegistry = {
   'layout-grid': HiMiniSquares2X2,
   // Inventory layout toggle — list
   'layout-list': HiMiniBars3,
+  // Heroes roster layout toggle — leaderboard table
+  'layout-table': HiMiniTableCells,
   // select affix, num spinner, accordion/collapsible trigger, sort desc, idle sort stack
   'chevron-down': HiMiniChevronDown,
   // num spinner increment, sort asc, idle sort stack
@@ -86,6 +90,8 @@ export const uiIconRegistry = {
   coffee: BiCoffee,
   // The referral-code controls in both apps' chrome — copy the code to the clipboard
   copy: BiCopy,
+  // The desktop Heroes screen's opener for the roster share card
+  share: HiMiniShare,
   // toast/notification `success` variant (m2-toast-settings)
   'check-circle': HiMiniCheckCircle,
   // toast/notification `error` variant (m2-toast-settings)

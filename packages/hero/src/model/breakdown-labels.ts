@@ -27,6 +27,11 @@ export function sheetStatUnit(key: SheetKey): string {
   return SHEET_PCT_KEYS.has(key) ? '%' : '';
 }
 
+/** A sheet total as the statistic sheet's Total column prints it: two decimals and its unit. */
+export function sheetTotalText(key: SheetKey, value: number, format: (n: number, decimals?: number) => string): string {
+  return `${format(value, 2)}${sheetStatUnit(key)}`;
+}
+
 export function derivedLabel(strings: StatPanelCopy, statId: Exclude<BreakdownStatId, SheetKey>): string {
   switch (statId) {
     case 'mitF':

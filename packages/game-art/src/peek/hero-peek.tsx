@@ -43,7 +43,7 @@ export type HeroPeekData = {
   stars?: number | undefined;
   level?: number | undefined;
   skin?: number | undefined;
-  /** The geared sheet — the eight figures the sheet panel prints. */
+  /** The sheet the hero's detail panel totals — absent wherever that panel prints no figures. */
   stats?: SheetStats | undefined;
   abilities?: Record<string, number> | undefined;
   loadout?: Loadout | undefined;
@@ -53,8 +53,11 @@ export type HeroPeekData = {
 /**
  * The whole record, as the card reads it. An import candidate is a record without an id yet,
  * and the card never prints one — a reader tells two Perrins apart by the sheet, not the id.
+ *
+ * `stats` is the caller's to compose: the record's own `gearedOverride` leaves out every spent
+ * point, so it is never the card's sheet. `undefined` drops the statistics block.
  */
-export function heroPeekData(hero: Omit<HeroRecord, 'id' | 'updatedAt'>): HeroPeekData {
+export function heroPeekData(hero: Omit<HeroRecord, 'id' | 'updatedAt'>, stats: SheetStats | undefined): HeroPeekData {
   return {
     name: hero.name,
     rank: hero.rank,
@@ -62,7 +65,7 @@ export function heroPeekData(hero: Omit<HeroRecord, 'id' | 'updatedAt'>): HeroPe
     stars: hero.stars,
     level: hero.level,
     skin: hero.skin,
-    stats: hero.gearedOverride,
+    stats,
     abilities: hero.abilities,
     loadout: hero.loadout,
     power: hero.power,

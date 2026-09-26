@@ -19,6 +19,7 @@ import {
 import { CombatBreakdownCard, type BreakdownText } from './combat-breakdown-card';
 import { CombatBreakdownMatrix } from './combat-breakdown-matrix';
 import { CombatBreakdownWires } from './combat-breakdown-wires';
+import { TeamAurasSection, type TeamAuraControls } from './team-auras-section';
 
 const ROW_LABEL_KEY: Record<BreakdownRowId, keyof HeroCopy> = {
   sheet: 'heroDetailBreakdownRowSheet',
@@ -56,6 +57,7 @@ export function CombatBreakdownPanel({
   hero,
   phase,
   switches,
+  auras,
   lang,
 }: {
   t: StatPanelCopy;
@@ -63,6 +65,8 @@ export function CombatBreakdownPanel({
   hero: Pick<HeroRecord, 'abilities'>;
   phase: number;
   switches: TeamAuraSwitches;
+  /** The team-aura switches drawn between the pipeline and the matrix, and what flipping each does. */
+  auras: TeamAuraControls;
   lang: Lang;
 }) {
   const copy = heroCopyFor(lang);
@@ -127,6 +131,7 @@ export function CombatBreakdownPanel({
             </section>
           ))}
         </div>
+        <TeamAurasSection hero={hero} switches={switches} controls={auras} t={copy} lang={lang} />
         <h3 className={cn(groupHeadClass, 'mt-5 mb-1.5')}>{copy.heroDetailBreakdownMatrixTitle}</h3>
         <CombatBreakdownMatrix rows={matrixRows} t={t} copy={copy} formatNumber={formatNumber} />
       </Tooltip.Provider>

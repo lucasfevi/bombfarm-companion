@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { SITE_HOST, SITE_URL } from '@bombfarm/ui/site-address';
 import previews from '@/shared/lib/site-previews.json';
 import {
   SECTION_PREVIEWS,
@@ -72,6 +73,17 @@ describe('link preview', () => {
 
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { renderedFrom: unknown };
     expect(manifest.renderedFrom).toEqual(previews);
+  });
+
+  it('prints the address the site is served at on every card', () => {
+    const manifestPath = path.resolve(__dirname, '../../scripts/og-manifest.json');
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { footerUrl: unknown };
+    expect(manifest.footerUrl).toBe(SITE_HOST);
+  });
+
+  it('advertises the sitemap at the address the site is served at', () => {
+    const robots = readFileSync(publicFile('/robots.txt'), 'utf8');
+    expect(robots).toContain(`Sitemap: ${SITE_URL}/sitemap.xml`);
   });
 
   /**
