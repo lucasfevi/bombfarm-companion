@@ -100,7 +100,10 @@ function SummaryCell({
   children: ReactNode;
 }) {
   return (
-    <div className={cn('min-w-0', 'bg-surface', 'px-4', 'py-3', className)} data-testid={testId}>
+    <div
+      className={cn('min-w-0', 'bg-surface', 'px-4', 'py-3', 'sm:max-lg:odd:last:col-span-2', className)}
+      data-testid={testId}
+    >
       {children}
     </div>
   );
