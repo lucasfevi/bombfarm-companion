@@ -1,5 +1,50 @@
 # @bombfarm/desktop
 
+## 0.22.0
+
+### Minor Changes
+
+- 9f09846: The Heroes screen takes the game's own Power figure apart. A new panel on the Combat stage prints the hero's Power as the game shows it — written the way the game writes it, e.g. `32.41M` — scored on the same sheet the Effective Stats panel reads — active runes included, with the stored rune-free figure named beside it while a rune is on — and splits it into the factors that multiply it: crit, speed, range, luck, energy, penetration and cooldown, each with how many times it lifts Power and its share of the stack, measured from a hero with none of that statistic. Picking a factor opens Power drawn across that statistic's range with the hero's current value marked; hovering, dragging or the arrow keys move a guide that reads Power at that value and the change from now. Crit shows both the chance and the damage, the latter beside a line for crit chance at its cap; cooldown past 17.85%, the highest the formula has been checked at, is drawn dashed and labelled as extrapolated; range steps at the Wide Blast levels where the reach gains a whole cell, each extra cell counted at the half damage the game has given it since the 2026-09-26 Wide Blast nerf. Every chart whose stat takes points also marks where the hero would be with 10 and 50 more points in it — from the same per-point gains the rest of the app uses — and a line under the chart gives Power at each and the change from now, saying when a marker sits at the cap or in the extrapolated range. The formula behind it lives in `@bombfarm/domain/game-power` and reproduces the game's figure to float precision. Where the rebuilt figure differs from the game's, the panel gives the gap without guessing a cause.
+- bb8cad5: The installed app now tells our server once an hour that it is running, so we can count how many people use it. While the new Settings switch "Include my account in the usage count" is on (the default), the message carries a random code for this installation, the game account id and the player name. Turned off, it carries only the app version and build, and the installation's code is deleted from this machine. Development builds never send it.
+
+  The website gains a privacy policy at /privacy, linked from the site footer and from the desktop app's Settings, describing exactly what the app sends, how long it is kept, who handles it and how to have it deleted.
+
+- 6d34bfe: The hero roster is easier to read and easier to show off. Each hero is now a showcase card — power up front, what the hero is built for in words, its birth roll as small meters (the grade and overall roll on a grade ladder, then its two highest rolls as a share of their range), its abilities and gear drawn large enough to fill the card's width, with a Show levels switch that prints every item level, forge and ability level on them — under a roster summary strip with squad power, the rarity mix, the furthest phase and the squad's average gear. These cards replace the old Compact/Combat/Full board, so its density switch is gone. A third layout lists the roster as a sortable leaderboard, one row per hero with every stat written out; a searchable Columns list picks which columns show, and hovering a hero's portrait opens its card.
+
+  In the desktop app, a Share button on the Heroes screen opens a share card: your player name, current and furthest phase, total power, your three strongest heroes with their gear and abilities, the team auras your squad covers, and everyone else on it, each with the same DPS the Heroes screen shows at a phase you pick with the Optimizer's searchable phase picker. Pick which heroes go on it — a name filter and rarity chips narrow the list — hide the gear or the auras, show item and ability levels, add your account number if you want it there, and press Copy as image to paste the card into a chat.
+
+  In the web planner, a roster with no hero picked yet (or whose last picked hero is gone) now opens on its strongest hero instead of a blank one, and that hero is marked in the list and the leaderboard.
+
+- 9f09846: The Combat tab on the web planner and the Combat stage on the desktop Heroes screen no longer end with a separate "Abilities & auras" panel. Its team-aura switches now sit inside the Effective stats panel, under their own "Team auras" heading, between the wired figures and the sheet-stats matrix they change — the same cards, the same switches and the same "+x% if on" / "−x% if off" promises. The own-abilities list is gone: the abilities a hero carries are already badged on the cards they reach, and listed on the hero's own Abilities panel.
+
+### Patch Changes
+
+- 6d34bfe: Hero cards shown on hover now include spent stat points, matching the hero's stat sheet. A hero whose spent points could not be read shows its card without figures, as its stat sheet does, instead of figures that leave those points out.
+- 6d34bfe: The hero leaderboard's Abilities column now shows each hero's ability icons instead of a count — hover one for its name and level — and still sorts by how many abilities a hero has, then by their levels. The Columns control became a searchable checklist like the Inventory's set filter: type to find a column, tick to show it, untick to hide it. The "click a column to sort" hint moved into an info icon beside the roster title.
+- 02dc923: The account and inventory reads work again, and a read that stops working now says so. Both are identified by their complete set of keys, so a single key the game adds is enough to make the app reject the whole body and read nothing from it — and that is what had happened: the account body gained a rune stash alongside timed hero runes, and inventory items gained a countdown that appears only while a freshly acquired item cannot yet be exported. Measured over a six-hour session, every one of 1,005 account bodies and 1,125 inventory bodies was being discarded, while the roster and rotation reads were unaffected. Both keys are now declared — the rune stash as required, since every observed body carries it, and the export countdown as optional, since the game emits it only while the lock is running, exactly as the hero level already declares the same key. The silence is fixed too: a body that carries everything a known read requires plus something new is now reported as drift, naming the read and the added key, instead of looking exactly like the unrelated traffic the app also sees and ignores. Replayed against that same session, the new report would have named all 2,130 rejected bodies and stayed quiet on the 136 that genuinely belong to other reads.
+- 5b64748: Wide Blast (Explosão Ampla) now reaches whole cells only, the way the game does. The game adds 0.1 of a cell per level but banks the fraction until it makes a full cell, so the blast reaches one extra cell from level 10 and two at level 20, and nothing in between. The farm and DPS figures used to credit the fraction, so a partly levelled hero hit more props per bomb than it does in the game: 1.95 blocks per bomb at level 9 where the game gives 1.5 (+30%), and 2.25 at level 15 where it gives 2.0 (+12.5%). Gold, XP, clear time and active DPS for those heroes now come down to match. Heroes at level 0 or 20 do not change. The ability's description and the hero breakdown now say that the range steps up at levels 10 and 20.
+- Updated dependencies [78b5f18]
+- Updated dependencies [6d34bfe]
+- Updated dependencies [9f09846]
+- Updated dependencies [bb8cad5]
+- Updated dependencies [6d34bfe]
+- Updated dependencies [6d34bfe]
+- Updated dependencies [6d34bfe]
+- Updated dependencies [02dc923]
+- Updated dependencies [9f09846]
+- Updated dependencies [5b64748]
+  - @bombfarm/pricing@0.4.0
+  - @bombfarm/game-art@0.7.2
+  - @bombfarm/hero@0.4.0
+  - @bombfarm/farm@1.2.7
+  - @bombfarm/team-plan@0.4.1
+  - @bombfarm/domain@1.6.0
+  - @bombfarm/contracts@0.11.0
+  - @bombfarm/ui@0.16.0
+  - @bombfarm/game-api@0.6.2
+  - @bombfarm/account@0.3.5
+  - @bombfarm/game-data@0.0.19
+
 ## 0.21.0
 
 ### Minor Changes
