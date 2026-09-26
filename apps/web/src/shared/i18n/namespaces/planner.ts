@@ -93,7 +93,7 @@ export const pt: typeof en = {
   heroesViewList: "Lista",
   heroesViewTable: "Ranking",
   heroesSortLabel: "Ordenar por",
-  heroesSortRoll: "Sorteio",
+  heroesSortRoll: "Roll",
   heroesSortPower: "Poder",
   heroesSortLevel: "Nível",
   heroesSortRarity: "Raridade",

@@ -656,7 +656,7 @@ export const ptBR: Copy = {
   heroesNoneDescription: 'Sua conta foi lida e ainda não há ninguém para mostrar aqui.',
   heroesViewLabel: 'Layout',
   heroesSortLabel: 'Ordenar por',
-  heroesSortRoll: 'Sorteio',
+  heroesSortRoll: 'Roll',
   heroesSortPower: 'Poder',
   heroesSortLevel: 'Nível',
   heroesSortRarity: 'Raridade',

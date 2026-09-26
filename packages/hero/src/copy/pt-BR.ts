@@ -28,23 +28,23 @@ export const heroPtBR: HeroCopy = {
   heroDetailRuneAxisXp: "XP",
   heroDetailRuneAxisGold: "Ouro",
 
-  heroDetailRollTitle: "Sorteio de nascimento",
-  heroDetailRollQuality: "Qualidade do sorteio",
+  heroDetailRollTitle: "Roll de nascimento",
+  heroDetailRollQuality: "Qualidade do roll",
   heroDetailRollQualityNote:
-    "A média dos oito percentis do sorteio: para cada atributo, o quanto ele avançou dentro da própria faixa. 50 é um sorteio mediano em tudo, 90 é perto do topo de todas as faixas.",
+    "A média dos oito percentis do roll: para cada atributo, o quanto ele avançou dentro da própria faixa. 50 é um roll mediano em tudo, 90 é perto do topo de todas as faixas.",
   heroDetailRollColStat: "Atributo",
   heroDetailRollColBand: "Faixa",
   heroDetailRollColPosition: "Posição",
-  heroDetailRollValue: "Sorteado",
-  heroDetailRollBand: "Sorteado dentro de {range}",
+  heroDetailRollValue: "Roll",
+  heroDetailRollBand: "Roll dentro de {range}",
   heroDetailRollPercentile: "{pct}% dentro da faixa",
   heroDetailRollGradePlacement: "Onde ele fica na nota {letter}",
   heroDetailRollPermanent:
-    "O sorteio de nascimento é permanente: nunca muda com nível, estrelas, equipamento ou pontos gastos.",
+    "O roll de nascimento é permanente: nunca muda com nível, estrelas, equipamento ou pontos gastos.",
   heroDetailRollNoBirthRoll:
-    "Este herói não tem sorteio de nascimento, então não há o que posicionar.",
+    "Este herói não tem roll de nascimento, então não há o que posicionar.",
   heroDetailRollNoBounds:
-    "Este herói não tem os limites do sorteio, então não dá para medir a posição dentro deles.",
+    "Este herói não tem os limites do roll, então não dá para medir a posição dentro deles.",
   heroDetailRollComputedDisagrees:
     "A qualidade que calculamos cai em uma letra diferente da que o jogo guardou.",
   heroDetailRollStoredLetterStands: "A letra guardada é a resposta do jogo e continua valendo.",
@@ -65,7 +65,7 @@ export const heroPtBR: HeroCopy = {
   heroDetailAbilitiesNotMeasured:
     "O modelo tem este efeito, mas ele cai fora do que o DPS sustentado consegue medir.",
   heroDetailAbilitiesNoBirthRoll:
-    "Sem o sorteio de nascimento não dá para avaliar este herói, então nenhuma habilidade dele tem preço.",
+    "Sem o roll de nascimento não dá para avaliar este herói, então nenhuma habilidade dele tem preço.",
   heroDetailAbilitiesPoints: "Pontos de habilidade",
   heroDetailAbilitiesPointsValue: "{spent} de {budget} gastos",
   heroDetailAbilitiesNone: "Este herói não tem nenhuma habilidade.",
