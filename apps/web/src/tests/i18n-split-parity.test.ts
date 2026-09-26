@@ -607,7 +607,7 @@ const KEYS_ADDED: readonly string[] = [
   // The roster rail and board (2026-09-10). The planner had no roster surface of its own — the
   // hero strip's picker dialog was the only way to see the account at once — so it now draws the
   // same rail, board and toolbar the desktop app's Heroes screen does, from one implementation.
-  // Nineteen strings, and every one of them is this app's own word rather than a copy of the
+  // Every one of these strings is this app's own word rather than a copy of the
   // desktop's: the filter that keeps only the heroes in rotation says "Enabled heroes" here,
   // because "Enabled"/"Disabled" is what this planner has always called that flag.
   'heroesRosterTitle',
@@ -615,10 +615,7 @@ const KEYS_ADDED: readonly string[] = [
   'heroesViewLabel',
   'heroesViewCards',
   'heroesViewList',
-  // The board's card-detail presets (2026-09-14): the control's name, its three options and the
-  // headings over a card's sheet stats and roll bars. Six strings, on one line because this file
-  // sits at its line cap.
-  'heroesDensityLabel', 'heroesDensityCompact', 'heroesDensityCombat', 'heroesDensityFull', 'heroesCardSheetStatsLabel', 'heroesCardBirthStatsLabel',
+  'heroesViewTable',
   'heroesSortLabel',
   'heroesSortRoll',
   'heroesSortPower',

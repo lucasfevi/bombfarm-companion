@@ -21,6 +21,8 @@ import { AccountCard } from '@/features/home/components/account-card';
 import { STRINGS, formatMoney, sub, type Lang } from '@/shared/i18n';
 import { resetPlannerStoreForTests, usePlannerStore, type PlannerStore } from '@/shared/stores';
 
+const noPeekStats = (): undefined => undefined;
+
 vi.mock('@/shared/stores/planner-store', async (importOriginal) => {
   const real = await importOriginal<typeof import('@/shared/stores/planner-store')>();
   const live = Object.assign(
@@ -119,7 +121,7 @@ const ROSTER = [
 function holdingsFor(
   market: MarketSnapshot | null,
   lang: Lang,
-  heroes: HoldingsHero[] | null = priceableHeroes(ROSTER),
+  heroes: HoldingsHero[] | null = priceableHeroes(ROSTER, noPeekStats),
   inventory: InventoryViewItem[] | null = INVENTORY,
 ) {
   const raw = accountHoldingsFrom({

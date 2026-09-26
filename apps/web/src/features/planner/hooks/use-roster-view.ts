@@ -1,21 +1,25 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import {
+  DEFAULT_LEADERBOARD_VIEW,
   DEFAULT_ROSTER_BOARD_SORT,
-  DEFAULT_ROSTER_CARD_DENSITY,
+  DEFAULT_SHOWCASE_VIEW,
   EMPTY_ROSTER_BOARD_FILTER,
   heroPickOutcome,
   orderByRollQuality,
   rosterRowsShown,
+  type LeaderboardStatSource,
+  type LeaderboardView,
   type RosterBoardFilter,
   type RosterBoardSort,
-  type RosterCardDensity,
   type RosterHeroRow,
   type RosterViewMode,
+  type ShowcaseView,
 } from '@bombfarm/hero/model';
 import type { RosterToolbarActions } from '@bombfarm/hero/components';
-import { usePlannerStore } from '@/shared/stores';
+import { selectTreeSheetTotals, usePlannerStore } from '@/shared/stores';
 import { useHeroDraftActions } from './use-hero-draft-actions';
 
 export type RosterView = {
@@ -27,17 +31,22 @@ export type RosterView = {
   sort: RosterBoardSort;
   filter: RosterBoardFilter;
   viewMode: RosterViewMode;
-  /** How much of a hero each card on the board draws — the board's own, since the rail has none. */
-  density: RosterCardDensity;
   actions: RosterToolbarActions;
+  /** The table's own column order and squad/bench narrowing. */
+  leaderboardView: LeaderboardView;
+  onLeaderboardView: (next: LeaderboardView) => void;
+  /** The board's own switches — whether its cards print their levels. */
+  showcaseView: ShowcaseView;
+  onShowcaseView: (next: ShowcaseView) => void;
+  /** What the table's statistics are composed against — the tree the Stats panel reads. */
+  statSource: LeaderboardStatSource;
   onSelectHeroId: (heroId: string) => void;
-  onDensity: (next: RosterCardDensity) => void;
 };
 
 /**
  * How this app is looking at its roster right now, and what picking a hero from it does.
  *
- * All four settings are view-local and stored nowhere, exactly as the desktop's Heroes screen
+ * Every setting here is view-local and stored nowhere, exactly as the desktop's Heroes screen
  * holds them: they are ways of looking at the roster you are in front of, not preferences about
  * this account, and the planner tab — which IS about the work in hand — is the one thing here
  * that survives a reload.
@@ -56,7 +65,10 @@ export function useRosterView(): RosterView {
   const [sort, setSort] = useState<RosterBoardSort>(DEFAULT_ROSTER_BOARD_SORT);
   const [filter, setFilter] = useState<RosterBoardFilter>(EMPTY_ROSTER_BOARD_FILTER);
   const [viewMode, setViewMode] = useState<RosterViewMode>('list');
-  const [density, setDensity] = useState<RosterCardDensity>(DEFAULT_ROSTER_CARD_DENSITY);
+  const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>(DEFAULT_LEADERBOARD_VIEW);
+  const [showcaseView, setShowcaseView] = useState<ShowcaseView>(DEFAULT_SHOWCASE_VIEW);
+  const tree = usePlannerStore(useShallow(selectTreeSheetTotals));
+  const statSource = useMemo<LeaderboardStatSource>(() => ({ tree }), [tree]);
 
   const rows = useMemo(() => orderByRollQuality(heroes), [heroes]);
   // Resolved from the WHOLE roster, never from the narrowed list: a filter is a question about
@@ -87,9 +99,12 @@ export function useRosterView(): RosterView {
     sort,
     filter,
     viewMode,
-    density,
     actions,
+    leaderboardView,
+    onLeaderboardView: setLeaderboardView,
+    showcaseView,
+    onShowcaseView: setShowcaseView,
+    statSource,
     onSelectHeroId,
-    onDensity: setDensity,
   };
 }

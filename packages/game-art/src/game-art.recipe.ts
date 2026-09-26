@@ -9,12 +9,20 @@ export const artFrameRadiusClass = 'rounded-sm';
 const artFrameBase =
   'relative z-0 isolate inline-grid shrink-0 place-items-center overflow-hidden border-2';
 
+/**
+ * The custom property a `fluid` tile takes its width from. The layout that holds a row of tiles
+ * sets it — to a share of its own width — so a row can fill whatever room it is given, where every
+ * other step is one fixed footprint.
+ */
+export const ART_TILE_SIZE_VAR = '--art-tile';
+
 const artFrameSize = {
   xs: 'w-7',
   sm: 'w-8',
   md: 'w-11',
   lg: 'w-12',
   xl: 'w-16 max-[720px]:w-14',
+  fluid: 'w-(--art-tile)',
 } as const;
 
 /** Rarity-coloured frame for hero avatars (square) and item icons (portrait). */
@@ -95,6 +103,8 @@ export const iconMetaGlyphRecipe = cva(iconMetaGlyphBase, {
       tiny: 'font-mono text-[8px] font-semibold',
       compact: 'text-[10px] font-bold tracking-tight',
       roomy: 'text-[11px] font-bold tracking-tight',
+      /** Grows with a `fluid` tile: the compact glyph on a 32px tile, the roomy one past 40px. */
+      fluid: 'text-[length:clamp(10px,calc(var(--art-tile)*0.27),13px)] font-bold tracking-tight',
     },
     place: {
       'top-end': 'text-ink',
@@ -103,9 +113,9 @@ export const iconMetaGlyphRecipe = cva(iconMetaGlyphBase, {
     },
   },
   compoundVariants: [
-    { size: ['compact', 'roomy'], place: 'top-end', class: 'top-0.5 right-0.5' },
-    { size: ['compact', 'roomy'], place: 'bottom-end', class: 'bottom-0.5 right-0.5' },
-    { size: ['compact', 'roomy'], place: 'bottom-center', class: 'bottom-0.5' },
+    { size: ['compact', 'roomy', 'fluid'], place: 'top-end', class: 'top-0.5 right-0.5' },
+    { size: ['compact', 'roomy', 'fluid'], place: 'bottom-end', class: 'bottom-0.5 right-0.5' },
+    { size: ['compact', 'roomy', 'fluid'], place: 'bottom-center', class: 'bottom-0.5' },
     { size: 'tiny', place: 'top-end', class: 'top-px right-px' },
     { size: 'tiny', place: 'bottom-end', class: 'bottom-px right-px' },
     { size: 'tiny', place: 'bottom-center', class: 'bottom-px' },
@@ -113,7 +123,7 @@ export const iconMetaGlyphRecipe = cva(iconMetaGlyphBase, {
   defaultVariants: { size: 'compact', place: 'top-end' },
 });
 
-export type IconMetaGlyphSize = 'tiny' | 'compact' | 'roomy';
+export type IconMetaGlyphSize = 'tiny' | 'compact' | 'roomy' | 'fluid';
 
 const abilityIconSize = {
   xs: 'size-7',
@@ -121,6 +131,7 @@ const abilityIconSize = {
   md: 'size-11',
   lg: 'size-12',
   xl: 'size-16 max-[720px]:size-14',
+  fluid: 'size-(--art-tile)',
 } as const;
 
 /** Neutral square frame for wiki ability icons (no rarity border). */
@@ -286,4 +297,10 @@ export function heroRankBandClass(rank: string | undefined, active = false): str
   const index = LETTER_BANDS.letters.indexOf(rank.trim());
   if (index === -1) return undefined;
   return active ? rarityBandActiveClasses[index] : rarityBandClasses[index];
+}
+
+/** A grade's own colour at full strength — the one grade a small ladder lifts out of its washes. */
+export function heroRankFillClass(rank: string | undefined): string | undefined {
+  if (!rank?.trim()) return undefined;
+  return rarityDotClass(LETTER_BANDS.letters.indexOf(rank.trim()));
 }

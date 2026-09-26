@@ -6,8 +6,14 @@ export type { HeroPickerActions, HeroPickerData } from './hero-picker/hero-picke
 export { HeroActiveToggle } from './hero-picker/hero-active-toggle';
 export { RosterRail } from './roster-board/roster-rail';
 export { RosterCards } from './roster-board/roster-cards';
+export { RosterLeaderboard } from './roster-board/roster-leaderboard';
+export { RosterSummaryStrip } from './roster-board/roster-summary-strip';
 export { RosterToolbar } from './roster-board/roster-toolbar';
 export type { RosterToolbarActions } from './roster-board/roster-toolbar';
+export { ShareCard, SHARE_CARD_WIDTH_PX } from './share-card/share-card';
+export type { ShareCardIdentity } from './share-card/share-card';
+export { ShareCardDialog } from './share-card/share-card-dialog';
+export type { ShareCardActions, ShareCardData } from './share-card/share-card-dialog';
 export { PhasesHeroSwitcherView } from './phases-hero-switcher';
 export type { HeroPickerSlot, HeroPickerSlotProps } from './phases-hero-switcher';
 export { HeroCopyProvider, useHeroCopy } from './hero-copy-context';

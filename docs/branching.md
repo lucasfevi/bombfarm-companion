@@ -190,7 +190,7 @@ If you have local branches or open PRs from before the cutover:
 
 | Surface | Branch | URL | Access |
 | --- | --- | --- | --- |
-| Production | `main` | [bombfarm-companion.vercel.app](https://bombfarm-companion.vercel.app) | Public |
+| Production | `main` | [bombfarm-companion.app](https://bombfarm-companion.app) | Public |
 | Pre-production preview | `develop` | [bombfarm-companion-git-develop-lucasfevi-projects.vercel.app](https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app) | Gated by **Vercel Authentication** (owner-only today; not a shareable playtester link) |
 
 No Custom Environment, no custom domain, no new GitHub Actions secret, and no change to the Vercel Git integration is required for the develop preview.

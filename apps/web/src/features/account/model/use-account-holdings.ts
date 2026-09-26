@@ -5,6 +5,7 @@ import type { HoldingsViewProps } from '@bombfarm/account/holdings';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { holdingsPrices } from '@bombfarm/pricing';
 import { useAppLang } from '@/shared/context/app-lang';
+import { useHeroPeekStats } from '@/shared/game-art';
 import { useMarketSnapshot } from '@/shared/hooks/use-market-snapshot';
 import { formatPriceFreshness } from '@/shared/i18n';
 import { loadInventoryView } from '@/shared/lib/inventory-view-storage';
@@ -40,7 +41,8 @@ export function useAccountHoldings(): Omit<HoldingsViewProps, 'inventoryLink' | 
   }, [importedAt]);
 
   const skinsWorn = useMemo(() => skinsWornBy(heroes), [heroes]);
-  const sellable = useMemo(() => priceableHeroes(heroes), [heroes]);
+  const peekStats = useHeroPeekStats();
+  const sellable = useMemo(() => priceableHeroes(heroes, peekStats), [heroes, peekStats]);
   const holdings = useMemo(
     () => accountHoldingsFrom({ inventory, heroes: sellable, skinsWorn, snapshot }),
     [inventory, sellable, skinsWorn, snapshot],

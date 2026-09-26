@@ -1,5 +1,6 @@
 import {
   heroPeekData,
+  type HeroPeekStatsResolver,
   type InventoryBadge,
   type InventoryEquippedBy,
   InventoryGridLabels,
@@ -154,6 +155,7 @@ function equippedBy(
   item: InventoryViewItem,
   heroBySourceId: ReadonlyMap<string, HeroRecord>,
   strings: Strings,
+  peekStats: HeroPeekStatsResolver,
 ): InventoryEquippedBy | null {
   if (!item.equippedBy) return null;
 
@@ -178,7 +180,7 @@ function equippedBy(
     stars: hero.stars,
     skin: hero.skin ?? 0,
     unknown: false,
-    peek: heroPeekData(hero),
+    peek: heroPeekData(hero, peekStats(hero)),
   };
 }
 
@@ -212,10 +214,13 @@ function searchText(item: InventoryViewItem, strings: Strings, lang: Lang): stri
   ].join(' ');
 }
 
+const noPeekStats: HeroPeekStatsResolver = () => undefined;
+
 export function inventoryLabels(
   strings: Strings,
   lang: Lang,
   heroes: readonly HeroRecord[] = [],
+  peekStats: HeroPeekStatsResolver = noPeekStats,
 ): InventoryGridLabels {
   const heroBySourceId = new Map<string, HeroRecord>();
   for (const hero of heroes) {
@@ -231,7 +236,7 @@ export function inventoryLabels(
     itemForge: (item) => itemForge(item),
     itemStat: (stat) => itemStat(stat, lang),
     badges: (item) => badges(item, strings),
-    equippedBy: (item) => equippedBy(item, heroBySourceId, strings),
+    equippedBy: (item) => equippedBy(item, heroBySourceId, strings, peekStats),
     heroOption: (heroId) => heroOption(heroId, heroBySourceId, strings),
     setOption: (group) =>
       sub(strings.inventorySetOption, { level: group.level, set: setName(group.set, lang) }),
@@ -275,8 +280,9 @@ export function inventoryTableLabels(
   strings: Strings,
   lang: Lang,
   heroes: readonly HeroRecord[] = [],
+  peekStats: HeroPeekStatsResolver = noPeekStats,
 ): InventoryTableLabels {
-  const grid = inventoryLabels(strings, lang, heroes);
+  const grid = inventoryLabels(strings, lang, heroes, peekStats);
 
   return {
     caption: strings.inventoryTableCaption,

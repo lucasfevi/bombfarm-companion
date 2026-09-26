@@ -240,7 +240,7 @@ describe('the things each column lists under its figure', () => {
       power: 1234,
     };
     const columns = columnsOf({
-      heroes: roster.map((hero) => (hero.name === 'Vex' ? { ...hero, peek: heroPeekData(record) } : hero)),
+      heroes: roster.map((hero) => (hero.name === 'Vex' ? { ...hero, peek: heroPeekData(record, record.gearedOverride) } : hero)),
     });
     const [vex, nim] = columns.heroes.entries.map((entry) => renderToStaticMarkup(entry.leading));
 

@@ -1,11 +1,17 @@
 'use client';
 
-import { useCallback, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
-import { RosterCards, RosterRail, RosterToolbar } from '@bombfarm/hero/components';
-import type { SheetKey } from '@bombfarm/domain/planner-constants';
+import {
+  RosterCards,
+  RosterLeaderboard,
+  RosterRail,
+  RosterSummaryStrip,
+  RosterToolbar,
+} from '@bombfarm/hero/components';
 import { colClass } from '@bombfarm/ui/panel-field.recipe';
 import { useAppLang } from '@/shared/context/app-lang';
+import { selectMaxPhase, usePlannerStore } from '@/shared/stores';
 import { useRosterView } from '../hooks/use-roster-view';
 
 /**
@@ -28,14 +34,15 @@ import { useRosterView } from '../hooks/use-roster-view';
  * the hero DETAIL, which is what the desktop's own rail sits beside — and the strip spans both
  * columns above it, about the hero the rail just picked.
  *
- * The board takes the planner's place entirely rather than sitting above it, because that is what
+ * The board and the leaderboard table take the planner's place entirely rather than sitting above it, because that is what
  * it is for: every hero's roll, pool and gear at once needs the whole width, and the strip is one
- * hero's dashboard, which is the question the board is not answering.
+ * hero's dashboard, which is the question the board is not answering. The roster summary above the
+ * toolbar is the account's, not a hero's, so it stays in both shapes.
  */
 export function RosterWorkspace({ strip, children }: { strip: ReactNode; children: ReactNode }) {
   const { t, lang } = useAppLang();
   const view = useRosterView();
-  const statLabel = useCallback((key: SheetKey) => t.statFull[key], [t]);
+  const maxPhase = usePlannerStore(selectMaxPhase);
 
   if (view.rows.length === 0) {
     return (
@@ -48,6 +55,11 @@ export function RosterWorkspace({ strip, children }: { strip: ReactNode; childre
 
   return (
     <div className={colClass}>
+      <RosterSummaryStrip
+        rows={view.rows}
+        maxPhase={maxPhase}
+        lang={lang}
+      />
       <RosterToolbar
         rows={view.rows}
         sort={view.sort}
@@ -76,9 +88,28 @@ export function RosterWorkspace({ strip, children }: { strip: ReactNode; childre
                 rows={view.shownRows}
                 selectedId={view.selectedId}
                 onSelectHeroId={view.onSelectHeroId}
-                statLabel={statLabel}
-                density={view.density}
-                onDensity={view.onDensity}
+                view={view.showcaseView}
+                onViewChange={view.onShowcaseView}
+                t={t}
+                lang={lang}
+              />
+            </motion.div>
+          ) : view.viewMode === 'table' ? (
+            <motion.div
+              key="table"
+              className="min-w-0"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              <RosterLeaderboard
+                rows={view.shownRows}
+                statSource={view.statSource}
+                view={view.leaderboardView}
+                onViewChange={view.onLeaderboardView}
+                selectedId={view.selectedId}
+                onSelectHeroId={view.onSelectHeroId}
                 t={t}
                 lang={lang}
               />

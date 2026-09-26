@@ -34,6 +34,13 @@ import { uiIconRegistry } from './ui-registry';
 // Desktop Skill Tree tab (2026-09-17): graph — the tenth nav tab's glyph, a hub joined to outlying
 // nodes like the game's own tree, chosen over a branching hierarchy (an org chart) and a leafed
 // tree (nature) so it reads as connected nodes beside the sparkles; the budget moved to 33 with it.
+// Heroes leaderboard (2026-09-25): layout-table — the roster's third layout beside the cards and
+// list glyphs, a gridded sheet so it reads as rows-and-columns rather than as the list's bars; the
+// budget moved to 34 with it.
+// Heroes share card (2026-09-25): share — the desktop roster's opener for the card a player sends
+// a friend, the three joined nodes every OS draws for sharing, chosen over `copy` (which already
+// means "copy this code" in the same chrome) and an upward arrow out of a box (an export); the
+// budget moved to 35 with it.
 const MIGRATED_UI_NAMES = [
   'window',
   'signal',
@@ -49,6 +56,7 @@ const MIGRATED_UI_NAMES = [
   'ellipsis-horizontal',
   'layout-grid',
   'layout-list',
+  'layout-table',
   'chevron-down',
   'chevron-up',
   'x-mark',
@@ -56,6 +64,7 @@ const MIGRATED_UI_NAMES = [
   'check',
   'coffee',
   'copy',
+  'share',
   'check-circle',
   'x-circle',
   'exclamation-triangle',
@@ -71,8 +80,8 @@ const MIGRATED_UI_NAMES = [
 ] as const;
 
 describe('icon registries — budget and membership', () => {
-  it('keeps uiIconRegistry within the 33-entry budget', () => {
-    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(33);
+  it('keeps uiIconRegistry within the 35-entry budget', () => {
+    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(35);
   });
 
   it('maps exactly the declared ui-chrome glyphs', () => {

@@ -17,6 +17,7 @@ import {
   Banner,
   Button,
   EmptyState,
+  Icon,
   Panel,
   Tabs,
   adviceSplitClass,
@@ -29,6 +30,7 @@ import {
 } from '@bombfarm/ui';
 import { HeroIdentityChip } from '@bombfarm/game-art';
 import type { MarketQuoteCurrency } from '@bombfarm/contracts';
+import { phaseSearchOptions } from '@bombfarm/farm';
 import { CombatPhasePanel } from '@bombfarm/farm/components';
 import {
   AbilitiesAurasPanel,
@@ -42,13 +44,18 @@ import {
   NextPointRanking,
   PointsTable,
   RosterCards,
+  RosterLeaderboard,
   RosterRail,
+  RosterSummaryStrip,
   RosterToolbar,
+  ShareCardDialog,
   SheetTable,
 } from '@bombfarm/hero/components';
+import type { ShareCardActions, ShareCardData } from '@bombfarm/hero/components';
 import {
+  DEFAULT_LEADERBOARD_VIEW,
   DEFAULT_ROSTER_BOARD_SORT,
-  DEFAULT_ROSTER_CARD_DENSITY,
+  DEFAULT_SHOWCASE_VIEW,
   EMPTY_ROSTER_BOARD_FILTER,
   filterRosterRows,
   heroPickOutcome,
@@ -56,11 +63,13 @@ import {
 } from '@bombfarm/hero/model';
 import type {
   HeroMarketPrice,
+  LeaderboardStatSource,
+  LeaderboardView,
   RosterBoardFilter,
   RosterBoardSort,
-  RosterCardDensity,
   RosterHeroRow,
   RosterViewMode,
+  ShowcaseView,
 } from '@bombfarm/hero/model';
 import { resolveHeroPrice } from '@bombfarm/pricing';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
@@ -82,6 +91,7 @@ import {
   type TeamAuraId,
 } from '@bombfarm/domain/team-buffs';
 import { accountAroundHero, type AccountBlock } from '../../lib/account/account-shared';
+import { rosterHeroStatSource } from '../../lib/account/account-roster';
 import { useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import {
@@ -91,12 +101,15 @@ import {
   useFarmCopy,
   useGearPanelCopy,
   useHeroDetailCopy,
+  useShareCardCopy,
   useStatPanelCopy,
 } from '../screen-copy';
 import { heroNextPointRanking } from './hero-detail-panels';
 import { heroesScreenModel, type HeroesScreenModel } from './heroes-screen-model';
 import { resolveSelectedHeroId, selectedRow } from './hero-selection';
-import { readHeroPhase, shownHeroPhase } from './hero-phase';
+import { LAST_KNOWN_PHASE, readHeroPhase, shownHeroPhase } from './hero-phase';
+import { createShareCardDps } from './share-card-dps';
+import { copyCardImage } from './copy-card-image';
 import { useFarmSelectedPhase } from './use-farm-selected-phase';
 import { heroFigures, type HeroFigures } from './hero-figures';
 import { cachedAbilityGains, createAbilityGainCache } from './ability-gain-cache';
@@ -182,15 +195,15 @@ function HeroesRoster({
   const [pickedHeroId, setPickedHeroId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   // View-local and stored nowhere, like the phase override and the rank mode below it: the board
-  // is a way of looking at the roster you are in now, not a setting about this account — and so
-  // is how much of a hero each of its cards draws.
+  // is a way of looking at the roster you are in now, not a setting about this account.
   const [viewMode, setViewMode] = useState<RosterViewMode>('list');
-  const [cardDensity, setCardDensity] = useState<RosterCardDensity>(DEFAULT_ROSTER_CARD_DENSITY);
   // The roster's order and narrowing, view-local like the mode itself: they are ways of looking
   // at the roster you are in now, not settings about this account. Shared by both presentations,
   // so switching between them never changes which heroes are on screen.
   const [rosterSort, setRosterSort] = useState<RosterBoardSort>(DEFAULT_ROSTER_BOARD_SORT);
   const [rosterFilter, setRosterFilter] = useState<RosterBoardFilter>(EMPTY_ROSTER_BOARD_FILTER);
+  const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>(DEFAULT_LEADERBOARD_VIEW);
+  const [showcaseView, setShowcaseView] = useState<ShowcaseView>(DEFAULT_SHOWCASE_VIEW);
   // View-local, and stored nowhere: leaving the screen unmounts this and the next visit opens on
   // the Farm selection again. It outlives a hero switch on purpose — comparing two heroes at one
   // phase is the reason to override at all.
@@ -210,6 +223,9 @@ function HeroesRoster({
   const farmPhase = useFarmSelectedPhase();
 
   const { rows, roster } = model;
+  // The same tree and withheld heroes the detail pane composes and withholds its sheet against, read
+  // straight off the account, so the table does not wait on a phase the way the per-hero figures do.
+  const leaderboardStats = useMemo<LeaderboardStatSource>(() => rosterHeroStatSource(roster), [roster]);
   // The whole roster in the order the toolbar asks for, before any narrowing: the default
   // selection is whichever hero that order puts first, and a filter must not move it.
   const orderedRows = useMemo(() => sortRosterRows(rows, rosterSort), [rows, rosterSort]);
@@ -340,15 +356,27 @@ function HeroesRoster({
 
   return (
     <div className={cn(colClass, 'min-h-0 flex-1')}>
-      <RosterToolbar
+      <RosterSummaryStrip
         rows={rows}
-        sort={rosterSort}
-        filter={rosterFilter}
-        viewMode={viewMode}
-        actions={toolbarActions}
-        t={rosterCopy}
+        maxPhase={roster.account.maxPhase}
         lang={lang}
       />
+      {/* The toolbar is the web planner's too; sharing is this app's alone, so it sits beside it
+          rather than inside it. */}
+      <div className="flex min-w-0 items-start gap-2.5">
+        <div className="min-w-0 flex-1">
+          <RosterToolbar
+            rows={rows}
+            sort={rosterSort}
+            filter={rosterFilter}
+            viewMode={viewMode}
+            actions={toolbarActions}
+            t={rosterCopy}
+            lang={lang}
+          />
+        </div>
+        <RosterShare rows={rows} roster={roster} lang={lang} />
+      </div>
       {/* One presentation at a time, cross-faded: `mode="wait"` lets the outgoing one finish
           before the incoming one lays out, which is what keeps a board of twenty-two cards from
           measuring itself against a rail that is still on screen. `reducedMotion="user"` turns
@@ -368,9 +396,28 @@ function HeroesRoster({
                 rows={shownRows}
                 selectedId={active.id}
                 onSelectHeroId={onSelectHeroId}
-                statLabel={boundStatLabel}
-                density={cardDensity}
-                onDensity={setCardDensity}
+                view={showcaseView}
+                onViewChange={setShowcaseView}
+                t={rosterCopy}
+                lang={lang}
+              />
+            </motion.div>
+          ) : viewMode === 'table' ? (
+            <motion.div
+              key="table"
+              className="min-w-0"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              <RosterLeaderboard
+                rows={shownRows}
+                statSource={leaderboardStats}
+                view={leaderboardView}
+                onViewChange={setLeaderboardView}
+                selectedId={active.id}
+                onSelectHeroId={onSelectHeroId}
                 t={rosterCopy}
                 lang={lang}
               />
@@ -442,6 +489,52 @@ function HeroesRoster({
         actions={{ onSelectHero }}
       />
     </div>
+  );
+}
+
+function writeClipboardImage(png: Uint8Array) {
+  const bridge = (window as unknown as { bfc?: NonNullable<Window['bfc']> }).bfc;
+  if (bridge === undefined) return Promise.resolve({ ok: false as const, reason: 'write-failed' as const });
+  return bridge.invoke('clipboard:writeImage', png);
+}
+
+const SHARE_ACTIONS: ShareCardActions = {
+  copyImage: (card) => copyCardImage(card, writeClipboardImage),
+};
+
+function RosterShare({ rows, roster, lang }: { rows: RosterModel['rows']; roster: RosterModel['roster']; lang: Lang }) {
+  const [open, setOpen] = useState(false);
+  const shareCopy = useShareCardCopy();
+  const data = useMemo<ShareCardData>(
+    () => ({
+      rows,
+      identity: {
+        playerName: roster.account.playerName ?? null,
+        accountId: roster.account.accountId ?? null,
+        phase: roster.account.phase,
+        maxPhase: roster.account.maxPhase ?? null,
+      },
+      lastKnownPhase: LAST_KNOWN_PHASE,
+      phaseOptions: phaseSearchOptions(lang),
+      dpsAt: createShareCardDps(roster),
+    }),
+    [rows, roster, lang],
+  );
+  return (
+    <>
+      <Button
+        variant="primary"
+        className="inline-flex shrink-0 items-center gap-1.5"
+        onClick={() => {
+          setOpen(true);
+        }}
+        data-testid="heroes-share-open"
+      >
+        <Icon name="share" size="sm" />
+        {shareCopy.openButton}
+      </Button>
+      <ShareCardDialog open={open} onOpenChange={setOpen} data={data} actions={SHARE_ACTIONS} lang={lang} />
+    </>
   );
 }
 

@@ -37,6 +37,17 @@ describe('AbilityIcon', () => {
     expect(html).not.toMatch(/pb-4/);
   });
 
+  it('prints the badge over the art, leaving the sprite its full tile, when asked to', () => {
+    const html = render({ code: CODE, size: 'sm', level: 12, max: 20, levelPlacement: 'over-art' });
+    expect(html).toContain('12/20');
+    expect(html).not.toMatch(/pb-3\.5/);
+  });
+
+  it('draws an adornment beside the tile inside one wrapper, so a hover lift moves both', () => {
+    const html = render({ code: CODE, adornment: createElement('i', { 'data-mark': '' }) });
+    expect(html).toMatch(/<span[^>]*data-slot="ability-adorned"><span[^>]*><img[^>]*\/><\/span><i data-mark=""><\/i><\/span>$/);
+  });
+
   it('renders nothing when there is no id to build a path from', () => {
     // `abilityIconSrc` files an icon by id without checking the bundle actually carries one, so
     // an empty id is the only case that resolves to no icon at all.

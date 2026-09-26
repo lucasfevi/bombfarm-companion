@@ -63,6 +63,7 @@ const IPC_CHANNEL_LIST = [
   'pvp:history',
   'pvp:refresh',
   'pvp:film',
+  'clipboard:writeImage',
 ] as const;
 
 const IPC_EVENT_CHANNEL_LIST = [

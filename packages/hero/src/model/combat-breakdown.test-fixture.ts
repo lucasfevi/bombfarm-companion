@@ -56,7 +56,7 @@ export function loadBreakdownFixture(filename: string = BREAKDOWN_FIXTURE): Brea
       energy: data.tree.energy,
       teamCoinPct: data.tree.teamCoinPct ?? 0,
       luckFlatPct: data.tree.luckFlatPct,
-      xpMult: data.tree.xpMult,
+      ...(data.tree.xpMult !== undefined ? { xpMult: data.tree.xpMult } : {}),
     },
     context: {
       houseIdx: data.houseIdx ?? 0,
@@ -66,7 +66,7 @@ export function loadBreakdownFixture(filename: string = BREAKDOWN_FIXTURE): Brea
       rankMode: 'dps',
       targetProp: DEFAULT_TARGET_PROP,
     },
-    slots: data.slots ?? undefined,
+    ...(data.slots != null ? { slots: data.slots } : {}),
     fieldSlots: data.fieldSlots ?? null,
     houseCycleSecs: data.houseCycleSecs ?? null,
     maxPhase: data.maxPhase ?? null,
