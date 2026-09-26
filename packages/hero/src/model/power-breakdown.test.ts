@@ -29,6 +29,7 @@ import {
   valueAfterPoints,
   formatPowerDelta,
   type PointDelta,
+  type PowerPointMarker,
   powerAxisSpec,
   powerChartSeries,
   powerFactorRows,
@@ -127,9 +128,9 @@ describe('powerChartSeries', () => {
 
   it('cooldown is checked up to 17.85% and extrapolated from there to the 80% cap', () => {
     const series = powerChartSeries(INPUT, powerAxisSpec(INPUT, 'cdr'));
-    expect(series.solid[0].x).toBe(0);
+    expect(series.solid[0]!.x).toBe(0);
     expect(series.solid.at(-1)?.x).toBe(17.85);
-    expect(series.extrapolated[0].x).toBe(17.85);
+    expect(series.extrapolated[0]!.x).toBe(17.85);
     expect(series.extrapolated.at(-1)?.x).toBe(80);
   });
 
@@ -141,7 +142,7 @@ describe('powerChartSeries', () => {
   it('the Range staircase steps at levels 10 and 20 and nowhere else', () => {
     const series = powerChartSeries(INPUT, powerAxisSpec(INPUT, 'explosaoAmpla'));
     const steps = series.solid.slice(1).flatMap((point, index) =>
-      point.power === series.solid[index].power ? [] : [point.x],
+      point.power === series.solid[index]!.power ? [] : [point.x],
     );
     expect(steps).toEqual([10, 20]);
   });
@@ -174,8 +175,8 @@ describe('powerReading', () => {
     const spec = powerAxisSpec(INPUT, 'speed');
     const [point] = gamePowerCurve(INPUT, 'speed', 150, 150, 1);
     const reading = powerReading(INPUT, spec, 150);
-    expect(reading.power).toBe(point.power);
-    expect(reading.delta).toBe(point.power - gamePower(INPUT));
+    expect(reading.power).toBe(point!.power);
+    expect(reading.delta).toBe(point!.power - gamePower(INPUT));
   });
 
   it('says a cooldown past 17.85% is extrapolated, and one at it is not', () => {
@@ -309,7 +310,7 @@ describe('niceAxis', () => {
     expect(spec.hi).toBeGreaterThanOrEqual(value);
     expect(spec.ticks[0]).toBe(spec.lo);
     expect(spec.ticks.at(-1)).toBe(spec.hi);
-    const step = spec.ticks[1] - spec.ticks[0];
+    const step = spec.ticks[1]! - spec.ticks[0]!;
     const mantissa = step / 10 ** Math.floor(Math.log10(step));
     expect([1, 2, 2.5, 3, 5].some((nice) => Math.abs(nice - mantissa) < 1e-9), `step ${String(step)}`).toBe(true);
   });
@@ -393,7 +394,7 @@ describe('stat-point markers', () => {
 
   it('a marker past the cap is drawn at the cap, and the legend says so', () => {
     const spec = powerAxisSpec(INPUT, 'critChance', DELTA);
-    const [ten, fifty] = powerPointMarkers(INPUT, spec, DELTA);
+    const [ten, fifty] = powerPointMarkers(INPUT, spec, DELTA) as [PowerPointMarker, PowerPointMarker];
     expect(ten.atCap).toBe(false);
     expect(fifty.atCap).toBe(true);
     expect(fifty.x).toBe(100);
@@ -423,7 +424,7 @@ describe('stat-point markers', () => {
 
   it('a cooldown marker past the checked bound says it is extrapolated', () => {
     const spec = powerAxisSpec(INPUT, 'cdr', DELTA);
-    const [, fifty] = powerPointMarkers(INPUT, spec, DELTA);
+    const [, fifty] = powerPointMarkers(INPUT, spec, DELTA) as [PowerPointMarker, PowerPointMarker];
     expect(fifty.x).toBeGreaterThan(17.85);
     expect(fifty.reading.extrapolated).toBe(true);
     expect(powerPointsLegend([fifty], 'pt', heroCopyFor('pt'))).toMatch(/^\+50 pontos: [\d.]+M \(\+[\d,]+%, extrapolado\)$/);
@@ -509,7 +510,7 @@ describe('placeStripLabels', () => {
       { id: '50', fraction: fifty, text: '+50' },
     ]);
     expect(placed.map((label) => label.id)).toEqual(['now', '10', '50']);
-    expect(placed[0].row).toBe(0);
+    expect(placed[0]!.row).toBe(0);
     expect(stripRowCount(placed)).toBeLessThanOrEqual(3);
   });
 

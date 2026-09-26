@@ -97,7 +97,7 @@ function render({ hero, sheet, pointDelta = null }: Shown, treeCritDmgPct: numbe
         pointDelta={pointDelta}
         treeCritDmgPct={treeCritDmgPct}
         lang={lang}
-        statLabel={lang === 'en' ? label : (key: SheetKey) => statLabel(key, 'pt')}
+        statLabel={lang === 'en' ? label : (key: SheetKey) => (key === 'luck' ? 'Sorte' : statLabel(key, 'pt'))}
       />,
     );
   });
@@ -147,7 +147,7 @@ describe('PowerBreakdownPanel', () => {
       'cooldown',
       'attack',
     ]);
-    expect(rows[0].textContent).toBe('Crit (chance × damage)×8.8049.1%');
+    expect(rows[0]!.textContent).toBe('Crit (chance × damage)×8.8049.1%');
     expect(rows.at(-1)?.textContent).toContain('anchor');
     expect(container.querySelectorAll('[data-power-segment]')).toHaveLength(7);
   });
@@ -240,7 +240,7 @@ describe('PowerBreakdownPanel', () => {
     expect(xTicks).toEqual(['0%', '25%', '50%', '75%', '100%']);
     const yTicks = [...chart.querySelectorAll<HTMLElement>('[data-testid="power-y-ticks"] [data-tick]')];
     expect(yTicks.length).toBeGreaterThanOrEqual(3);
-    expect(yTicks[0].textContent).toBe('0');
+    expect(yTicks[0]!.textContent).toBe('0');
     expect(chart.querySelectorAll('[data-gridline]')).toHaveLength(yTicks.length);
     expect(chart.querySelector('[data-testid="power-x-ticks"]')?.closest('[role="slider"]')).toBeNull();
     expect(query('[data-power-chart="critDmg"] [data-series="capped-crit"]')).toBeTruthy();
@@ -317,7 +317,8 @@ describe('PowerBreakdownPanel', () => {
   });
 
   it('with no stored figure there is nothing to compare against', () => {
-    render({ ...PLAIN, hero: { ...PLAIN.hero, power: undefined } });
+    const { power: _stored, ...withoutStoredPower } = PLAIN.hero;
+    render({ ...PLAIN, hero: withoutStoredPower });
     expect(container.querySelector('[data-testid="power-mismatch-note"]')).toBeNull();
   });
 
