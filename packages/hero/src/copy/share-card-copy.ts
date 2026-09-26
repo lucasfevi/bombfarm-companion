@@ -23,7 +23,6 @@ export type ShareCardCopy = {
   /** `{count}` `{rarity}` */
   readonly tierCount: string;
   readonly medalPower: readonly [string, string, string];
-  readonly medalRoll: readonly [string, string, string];
   /** `{dps}` */
   readonly dps: string;
   /** `{rarity}` `{level}` */
@@ -40,13 +39,8 @@ export type ShareCardCopy = {
   readonly footerLink: string;
   readonly cardLabel: string;
   readonly emptyCard: string;
-  readonly featureTitle: string;
-  readonly featurePower: string;
-  readonly featureRoll: string;
   readonly phaseTitle: string;
   readonly phaseAria: string;
-  readonly phaseIncrement: string;
-  readonly phaseDecrement: string;
   /** `{phase}` */
   readonly phaseReset: string;
   /** `{count}` */
@@ -54,6 +48,10 @@ export type ShareCardCopy = {
   readonly pickSquad: string;
   readonly pickEveryone: string;
   readonly pickNone: string;
+  readonly pickerFilterLabel: string;
+  readonly pickerFilterPlaceholder: string;
+  readonly pickerRarityLabel: string;
+  readonly pickerNoMatch: string;
   /** `{level}` */
   readonly pickerLevel: string;
   readonly showTitle: string;

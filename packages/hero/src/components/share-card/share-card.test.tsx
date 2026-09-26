@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { emptyLoadout } from '@bombfarm/domain/gear';
+import { heroRankToneClass, iconMetaGlyphRecipe } from '@bombfarm/game-art';
 import { SITE_HOST } from '@bombfarm/ui/site-address';
 import { defaultShareCardSettings, shareCardLayout, type RosterHeroRow, type ShareCardSettings } from '../../model';
 import { item, rowFixture } from '../../model/showcase.test-fixture';
@@ -27,7 +28,7 @@ const IDENTITY: ShareCardIdentity = { playerName: 'Black', accountId: '486', max
 
 function render(overrides: Partial<ShareCardSettings> = {}, identity: ShareCardIdentity = IDENTITY): string {
   const settings = { ...defaultShareCardSettings(ROSTER, 180, 310), ...overrides };
-  const layout = shareCardLayout(ROSTER, settings.picked, settings.feature);
+  const layout = shareCardLayout(ROSTER, settings.picked);
   return renderToStaticMarkup(
     <ShareCard
       layout={layout}
@@ -86,10 +87,23 @@ describe('ShareCard', () => {
     expect(text(featuredA)).not.toMatch(/\d+\/20/);
   });
 
+  it('prints the grade as a bare coloured letter, with no chip behind it', () => {
+    const gradeClass = /<span class="([^"]*)"[^>]*data-testid="share-card-grade"/.exec(render())?.[1] ?? '';
+    expect(gradeClass).toContain(heroRankToneClass('S'));
+    expect(gradeClass).not.toMatch(/\b(bg-|border|rounded)/);
+  });
+
   it('prints an item level and its forge on the featured gear, and hides the gear when asked', () => {
     expect(render()).toContain('data-testid="share-card-gear"');
+    expect(text(render())).toContain('140');
     expect(text(render())).toContain('+13');
     expect(render({ showGear: false })).not.toContain('data-testid="share-card-gear"');
+  });
+
+  it('places the item level and the forge where, and in the colour, every item tile prints them', () => {
+    const gear = render().split('data-testid="share-card-featured-b"')[1] ?? '';
+    expect(gear).toContain(`<span class="${iconMetaGlyphRecipe({ size: 'compact', place: 'top-end' })}" aria-hidden="true">140</span>`);
+    expect(gear).toContain(`<span class="${iconMetaGlyphRecipe({ size: 'compact', place: 'bottom-end' })}" aria-hidden="true">+13</span>`);
   });
 
   it('shows the seven team auras from the heroes on the card, and hides them when asked', () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { heroRankToneClass } from '@bombfarm/game-art';
 import type { RosterBoardCopy } from '../../copy';
 import type { RosterHeroRow } from '../../model';
 import { ZERO_SHEET, rowFixture } from '../../model/showcase.test-fixture';
@@ -90,6 +91,13 @@ describe('RosterCards', () => {
     expect(html).toContain('Birth roll 45%');
     expect(html).toContain('Highest rolls: CDR 97%, Crit DMG 94%');
     expect(html).toContain('Nothing equipped');
+  });
+
+  it('prints the grade as a bare coloured letter, with no chip behind it', () => {
+    const html = render([rowFixture({ id: 'graded', rank: 'S' })]);
+    const gradeClass = /<span class="([^"]*)"[^>]*data-testid="heroes-card-grade"/.exec(html)?.[1] ?? '';
+    expect(gradeClass).toContain(heroRankToneClass('S'));
+    expect(gradeClass).not.toMatch(/\b(bg-|border|rounded)/);
   });
 
   it('calls a hero with no type-deciding ability unspecialised', () => {

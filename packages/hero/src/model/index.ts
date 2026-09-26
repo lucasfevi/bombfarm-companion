@@ -225,25 +225,29 @@ export type {
   ToggleableLeaderboardColumnId,
 } from './roster-leaderboard';
 export {
+  EMPTY_SHARE_PICKER_FILTER,
   SHARE_FEATURED_COUNT,
-  SHARE_FEATURES,
   SHARE_MAX_STARS,
   clampSharePhase,
   compareByPower,
   defaultShareCardSettings,
   featuredRows,
+  filterSharePickerRows,
   initialSharePhase,
   shareCardLayout,
   shareCardTotals,
   shareDpsText,
+  sharePickerRarities,
   sharePicksFor,
+  shareRarityIndex,
   shareStars,
   togglePick,
+  toggleSharePickerRarity,
 } from './share-card';
 export type {
   ShareCardLayout,
   ShareCardSettings,
   ShareCardTotals,
-  ShareFeature,
   SharePickShortcut,
+  SharePickerFilter,
 } from './share-card';

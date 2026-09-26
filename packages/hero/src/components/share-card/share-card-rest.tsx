@@ -2,7 +2,7 @@ import { HeroAvatar } from '@bombfarm/game-art';
 import { cn, formatCompactNumber } from '@bombfarm/ui';
 import { showcaseCopyFor, type Lang, type ShareCardCopy } from '../../copy';
 import type { RosterHeroRow } from '../../model';
-import { BirthGradeChip } from '../roster-board/birth-grade-chip';
+import { BirthGradeLetter } from '../roster-board/birth-grade-letter';
 import { ShareDpsLine } from './share-card-featured';
 import { RarityLevel, ShareAbilityIcons, ShareStars, rarityIndexOf, shareWellClass } from './share-card-parts';
 
@@ -40,7 +40,7 @@ export function ShareRestRow({
       <div className="flex min-w-0 items-center justify-between gap-2">
         <p className="m-0 flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-ink">
           {grade ? (
-            <BirthGradeChip grade={grade} copy={showcaseCopyFor(lang)} size="sm" testId="share-card-grade" />
+            <BirthGradeLetter grade={grade} copy={showcaseCopyFor(lang)} size="sm" testId="share-card-grade" />
           ) : null}
           <span className="truncate">{hero.name}</span>
           <ShareStars stars={hero.stars} />

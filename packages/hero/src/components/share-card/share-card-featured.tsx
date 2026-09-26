@@ -1,10 +1,10 @@
-import { SLOTS, type EquippedItem } from '@bombfarm/domain/gear';
+import { SLOTS } from '@bombfarm/domain/gear';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { HeroAvatar, ItemIcon, artFrameRadiusClass } from '@bombfarm/game-art';
 import { cn, formatCompactNumber } from '@bombfarm/ui';
 import { showcaseCopyFor, type Lang, type ShareCardCopy } from '../../copy';
 import { shareDpsText, type RosterHeroRow } from '../../model';
-import { BirthGradeChip } from '../roster-board/birth-grade-chip';
+import { BirthGradeLetter } from '../roster-board/birth-grade-letter';
 import { RarityLevel, ShareAbilityIcons, ShareStars, rarityIndexOf, shareWellClass } from './share-card-parts';
 
 const NOT_PLACED = '—';
@@ -49,7 +49,7 @@ export function ShareFeaturedTile({
       <ShareDpsLine dps={featured.dps} copy={copy} lang={lang} heroId={featured.row.id} className="-mt-1 text-xs" />
       <p className="m-0 flex min-w-0 items-center justify-center gap-1.5">
         {grade ? (
-          <BirthGradeChip grade={grade} copy={showcaseCopyFor(lang)} testId="share-card-grade" />
+          <BirthGradeLetter grade={grade} copy={showcaseCopyFor(lang)} testId="share-card-grade" />
         ) : null}
         <RarityLevel hero={hero} copy={copy} lang={lang} />
       </p>
@@ -90,7 +90,7 @@ function ShareGearGrid({ loadout }: { loadout: HeroRecord['loadout'] }) {
       {SLOTS.map((slot) => {
         const item = loadout[slot];
         return item ? (
-          <ShareGearTile key={slot} item={item} />
+          <ItemIcon key={slot} item={item} size="sm" />
         ) : (
           <span
             key={slot}
@@ -100,24 +100,5 @@ function ShareGearGrid({ loadout }: { loadout: HeroRecord['loadout'] }) {
         );
       })}
     </div>
-  );
-}
-
-/** The item's level in one corner as the app prints it everywhere, and its forge in green in the
- *  opposite one — the pair a friend reads a piece of gear by. */
-function ShareGearTile({ item }: { item: EquippedItem }) {
-  const upgrade = Math.max(0, Math.round(item.upgrade));
-  return (
-    <span className="relative inline-flex">
-      <ItemIcon item={item} size="sm" showUpgrade={false} />
-      {upgrade > 0 ? (
-        <span
-          className="pointer-events-none absolute bottom-px left-0.5 z-2 font-mono text-[9px] leading-none font-semibold text-up [text-shadow:0_1px_1px_var(--bg),0_0_3px_var(--bg)]"
-          aria-hidden
-        >
-          +{upgrade}
-        </span>
-      ) : null}
-    </span>
   );
 }

@@ -1,16 +1,31 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { HeroAvatar } from '@bombfarm/game-art';
-import { Button, Num, SegmentedToggle, Slider, Switch, cn, formatCompactNumber } from '@bombfarm/ui';
-import { shareCardCopyFor, sub, type Lang, type ShareCardCopy } from '../../copy';
+import { useMemo, useState, type ReactNode } from 'react';
+import { rarityLabel } from '@bombfarm/domain/game-labels';
+import { RARITIES } from '@bombfarm/domain/planner-constants';
+import { HeroAvatar, inventoryChipRecipe, inventoryFieldClass, rarityTextClass } from '@bombfarm/game-art';
 import {
+  Button,
+  Icon,
+  SearchSelect,
+  Switch,
+  cn,
+  formatCompactNumber,
+  formatNumber,
+  selectFieldHeightClass,
+  type SearchSelectOption,
+} from '@bombfarm/ui';
+import { heroCopyFor, shareCardCopyFor, sub, type Lang, type ShareCardCopy } from '../../copy';
+import {
+  EMPTY_SHARE_PICKER_FILTER,
   clampSharePhase,
+  filterSharePickerRows,
+  sharePickerRarities,
   sharePicksFor,
   togglePick,
+  toggleSharePickerRarity,
   type RosterHeroRow,
   type ShareCardSettings,
-  type ShareFeature,
   type SharePickShortcut,
 } from '../../model';
 import { rarityIndexOf, shareEyebrowClass } from './share-card-parts';
@@ -20,6 +35,8 @@ export type ShareCopyStatus = 'idle' | 'copying' | 'copied' | 'failed';
 export type SharePhaseBounds = {
   readonly accountPhase: number | null;
   readonly lastKnownPhase: number;
+  /** Every phase the picker offers, under the app's one phase spelling — the host's to supply. */
+  readonly options: readonly SearchSelectOption[];
 };
 
 export type ShareCopyControl = {
@@ -56,20 +73,7 @@ export function ShareCardControls({
   const copy = shareCardCopyFor(lang);
   return (
     <div className="grid min-w-0 content-start gap-[18px]" data-testid="share-card-controls">
-      <Field title={copy.featureTitle}>
-        <SegmentedToggle
-          ariaLabel={copy.featureTitle}
-          options={[
-            { id: 'power', label: copy.featurePower },
-            { id: 'roll', label: copy.featureRoll },
-          ]}
-          value={settings.feature}
-          onChange={(id) => {
-            onSettings({ feature: id as ShareFeature });
-          }}
-        />
-      </Field>
-      <PhaseField phase={settings.phase} bounds={phaseBounds} onSettings={onSettings} copy={copy} />
+      <PhaseField phase={settings.phase} bounds={phaseBounds} onSettings={onSettings} copy={copy} lang={lang} />
       <HeroPicker rows={rows} picked={settings.picked} onSettings={onSettings} copy={copy} lang={lang} />
       <Field title={copy.showTitle}>
         <ShowSwitch label={copy.showGear} checked={settings.showGear} onChange={(showGear) => { onSettings({ showGear }); }} testId="share-card-show-gear" />
@@ -93,15 +97,31 @@ export function ShareCardControls({
         >
           {copyControl.status === 'copying' ? copy.copying : copy.copyImage}
         </Button>
-        <p
-          className={cn('m-0', 'min-h-5', 'text-xs', copyControl.status === 'failed' ? 'text-down' : 'text-up')}
-          aria-live="polite"
-          data-testid="share-card-copy-status"
-        >
-          {copyControl.status === 'copied' ? copy.copied : copyControl.status === 'failed' ? copy.copyFailed : null}
-        </p>
+        <CopyStatus status={copyControl.status} copy={copy} />
       </Field>
     </div>
+  );
+}
+
+/** The check and the word the Optimizer's ledger marks a finished step with. */
+function CopyStatus({ status, copy }: { status: ShareCopyStatus; copy: ShareCardCopy }) {
+  return (
+    <p
+      className={cn('m-0', 'flex', 'min-h-5', 'items-center', 'gap-1.5', 'text-xs', status === 'failed' ? 'text-down' : 'text-up')}
+      aria-live="polite"
+      data-testid="share-card-copy-status"
+    >
+      {status === 'copied' ? (
+        <>
+          <span className="flex size-4 shrink-0 items-center justify-center" data-testid="share-card-copied-icon">
+            <Icon name="check-circle" className="size-4 text-up" />
+          </span>
+          {copy.copied}
+        </>
+      ) : status === 'failed' ? (
+        copy.copyFailed
+      ) : null}
+    </p>
   );
 }
 
@@ -114,17 +134,22 @@ function Field({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+/** The Combat tab's and the Optimizer's searchable phase picker, with the way back to the
+ *  account's own phase beside it. */
 function PhaseField({
   phase,
   bounds,
   onSettings,
   copy,
+  lang,
 }: {
   phase: number;
   bounds: SharePhaseBounds;
   onSettings: (patch: SettingsPatch) => void;
   copy: ShareCardCopy;
+  lang: Lang;
 }) {
+  const heroCopy = heroCopyFor(lang);
   const setPhase = (value: number) => {
     const next = clampSharePhase(value, bounds.lastKnownPhase);
     if (next !== null && next !== phase) onSettings({ phase: next });
@@ -132,41 +157,42 @@ function PhaseField({
   const accountPhase = bounds.accountPhase === null ? null : clampSharePhase(bounds.accountPhase, bounds.lastKnownPhase);
   return (
     <Field title={copy.phaseTitle}>
-      <div className="grid grid-cols-[minmax(0,1fr)_88px] items-center gap-2.5" data-testid="share-card-phase">
-        <Slider
-          value={phase}
-          min={1}
-          max={bounds.lastKnownPhase}
-          step={1}
-          onValueChange={setPhase}
+      <div className="grid min-w-0 gap-2" data-testid="share-card-phase">
+        <SearchSelect
           aria-label={copy.phaseAria}
-        />
-        <Num
-          value={phase}
-          step={1}
-          decimals={0}
-          onChange={setPhase}
-          incrementLabel={copy.phaseIncrement}
-          decrementLabel={copy.phaseDecrement}
-        />
-      </div>
-      {accountPhase === null ? null : (
-        <Button
-          variant="text"
-          className="justify-self-start normal-case tracking-normal text-accent"
-          disabled={accountPhase === phase}
-          onClick={() => {
-            setPhase(accountPhase);
+          options={bounds.options}
+          value={String(phase)}
+          onValueChange={(next) => {
+            setPhase(Number.parseInt(next, 10));
           }}
-          data-testid="share-card-phase-reset"
-        >
-          {sub(copy.phaseReset, { phase: accountPhase })}
-        </Button>
-      )}
+          searchPlaceholder={heroCopy.heroDetailPhaseSearchPlaceholder}
+          emptyLabel={heroCopy.heroDetailPhaseNoMatch}
+          overflowLabel={(shown, matched) =>
+            sub(heroCopy.heroDetailPhaseMoreMatches, {
+              shown: formatNumber(shown, lang, 0),
+              matched: formatNumber(matched, lang, 0),
+            })
+          }
+        />
+        {accountPhase === null ? null : (
+          <Button
+            variant="ghost"
+            className={cn(selectFieldHeightClass, 'justify-self-start')}
+            disabled={accountPhase === phase}
+            onClick={() => {
+              setPhase(accountPhase);
+            }}
+            data-testid="share-card-phase-reset"
+          >
+            {sub(copy.phaseReset, { phase: accountPhase })}
+          </Button>
+        )}
+      </div>
     </Field>
   );
 }
 
+/** The name filter and rarity chips narrow the list shown; they never take a hero off the card. */
 function HeroPicker({
   rows,
   picked,
@@ -180,14 +206,15 @@ function HeroPicker({
   copy: ShareCardCopy;
   lang: Lang;
 }) {
+  const [filter, setFilter] = useState(EMPTY_SHARE_PICKER_FILTER);
+  const rarities = useMemo(() => sharePickerRarities(rows), [rows]);
+  const shown = useMemo(() => filterSharePickerRows(rows, filter), [rows, filter]);
   return (
     <Field title={sub(copy.pickerTitle, { count: picked.size })}>
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-1.5">
         {PICK_SHORTCUTS.map((shortcut) => (
           <Button
             key={shortcut}
-            variant="text"
-            className="normal-case tracking-normal text-accent"
             onClick={() => {
               onSettings({ picked: sharePicksFor(rows, shortcut) });
             }}
@@ -197,11 +224,48 @@ function HeroPicker({
           </Button>
         ))}
       </div>
+      <input
+        type="search"
+        value={filter.text}
+        onChange={(event) => {
+          setFilter({ ...filter, text: event.target.value });
+        }}
+        placeholder={copy.pickerFilterPlaceholder}
+        aria-label={copy.pickerFilterLabel}
+        className={cn(inventoryFieldClass, 'w-full', 'min-w-0')}
+        data-testid="share-card-picker-filter"
+      />
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={copy.pickerRarityLabel}>
+        {rarities.map((rarityIdx) => {
+          const rarity = RARITIES[rarityIdx];
+          if (rarity === undefined) return null;
+          const active = filter.rarities.includes(rarityIdx);
+          return (
+            <button
+              key={rarityIdx}
+              type="button"
+              aria-pressed={active}
+              onClick={() => {
+                setFilter(toggleSharePickerRarity(filter, rarityIdx));
+              }}
+              className={cn(inventoryChipRecipe({ active }), !active && rarityTextClass(rarityIdx))}
+              data-testid={`share-card-picker-rarity-${String(rarityIdx)}`}
+            >
+              {rarityLabel(rarity, lang)}
+            </button>
+          );
+        })}
+      </div>
       <ul
         className="m-0 grid max-h-85 list-none gap-0.5 overflow-y-auto rounded-sm border border-line bg-bg-2 p-1"
         data-testid="share-card-picker"
       >
-        {rows.map((row) => (
+        {shown.length === 0 ? (
+          <li className="px-1.5 py-1 text-[13px] text-muted" data-testid="share-card-picker-empty">
+            {copy.pickerNoMatch}
+          </li>
+        ) : null}
+        {shown.map((row) => (
           <li key={row.id}>
             <label className="grid cursor-pointer grid-cols-[auto_28px_minmax(0,1fr)_auto] items-center gap-2 rounded-sm px-1.5 py-1 text-[13px] hover:bg-surface">
               <input

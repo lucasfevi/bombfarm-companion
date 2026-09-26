@@ -30,6 +30,7 @@ import {
 } from '@bombfarm/ui';
 import { HeroIdentityChip } from '@bombfarm/game-art';
 import type { MarketQuoteCurrency } from '@bombfarm/contracts';
+import { phaseSearchOptions } from '@bombfarm/farm';
 import { CombatPhasePanel } from '@bombfarm/farm/components';
 import {
   AbilitiesAurasPanel,
@@ -519,9 +520,10 @@ function RosterShare({ rows, roster, lang }: { rows: RosterModel['rows']; roster
         maxPhase: roster.account.maxPhase ?? null,
       },
       lastKnownPhase: LAST_KNOWN_PHASE,
+      phaseOptions: phaseSearchOptions(lang),
       dpsAt: createShareCardDps(roster),
     }),
-    [rows, roster],
+    [rows, roster, lang],
   );
   return (
     <>

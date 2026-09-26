@@ -4,16 +4,20 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { RosterHeroRow } from './roster-rows';
 import { rowFixture } from './showcase.test-fixture';
 import {
+  EMPTY_SHARE_PICKER_FILTER,
   clampSharePhase,
   defaultShareCardSettings,
   featuredRows,
+  filterSharePickerRows,
   initialSharePhase,
   shareCardLayout,
   shareCardTotals,
   shareDpsText,
+  sharePickerRarities,
   sharePicksFor,
   shareStars,
   togglePick,
+  toggleSharePickerRarity,
 } from './share-card';
 
 function row(partial: Partial<HeroRecord> & Pick<HeroRecord, 'id'>, rollMean?: number): RosterHeroRow {
@@ -34,26 +38,17 @@ describe('featuredRows', () => {
     row({ id: 'd', power: 200 }, 0.8),
   ];
 
-  it('features the three strongest by power', () => {
-    expect(ids(featuredRows(roster, 'power'))).toEqual(['b', 'c', 'd']);
-  });
-
-  it('features the three best birth rolls when asked for rolls', () => {
-    expect(ids(featuredRows(roster, 'roll'))).toEqual(['a', 'd', 'c']);
+  it('features the three strongest by power, whatever their birth rolls', () => {
+    expect(ids(featuredRows(roster))).toEqual(['b', 'c', 'd']);
   });
 
   it('breaks a power tie by hero id, and puts a hero with no power read last', () => {
     const tied = [row({ id: 'z', power: 50 }), row({ id: 'm' }), row({ id: 'k', power: 50 })];
-    expect(ids(featuredRows(tied, 'power'))).toEqual(['k', 'z', 'm']);
-  });
-
-  it('breaks a roll tie by hero id, and puts a hero whose roll could not be placed last', () => {
-    const tied = [row({ id: 'q' }), row({ id: 'y' }, 0.5), row({ id: 'x' }, 0.5)];
-    expect(ids(featuredRows(tied, 'roll'))).toEqual(['x', 'y', 'q']);
+    expect(ids(featuredRows(tied))).toEqual(['k', 'z', 'm']);
   });
 
   it('features fewer than three when fewer are picked', () => {
-    expect(ids(featuredRows([row({ id: 'solo', power: 1 })], 'power'))).toEqual(['solo']);
+    expect(ids(featuredRows([row({ id: 'solo', power: 1 })]))).toEqual(['solo']);
   });
 });
 
@@ -92,20 +87,20 @@ describe('shareCardLayout', () => {
   ];
 
   it('features the top three of the picked heroes and lists the rest strongest first', () => {
-    const layout = shareCardLayout(roster, new Set(['a', 'c', 'd', 'e']), 'power');
+    const layout = shareCardLayout(roster, new Set(['a', 'c', 'd', 'e']));
     expect(ids(layout.featured)).toEqual(['c', 'd', 'e']);
     expect(ids(layout.rest)).toEqual(['a']);
     expect(layout.totals.totalPower).toBe(100);
   });
 
   it('leaves a hero that was not picked off the card entirely', () => {
-    const layout = shareCardLayout(roster, new Set(['a', 'b']), 'power');
+    const layout = shareCardLayout(roster, new Set(['a', 'b']));
     expect(ids(layout.picked)).toEqual(['b', 'a']);
     expect(layout.totals.heroCount).toBe(2);
   });
 
   it('draws nothing when nobody is picked', () => {
-    const layout = shareCardLayout(roster, new Set(), 'roll');
+    const layout = shareCardLayout(roster, new Set());
     expect(layout.featured).toEqual([]);
     expect(layout.rest).toEqual([]);
     expect(layout.totals).toEqual({ heroCount: 0, totalPower: 0, tierCounts: [] });
@@ -165,12 +160,46 @@ describe('defaultShareCardSettings', () => {
     );
     expect([...settings.picked]).toEqual(['in']);
     expect(settings).toMatchObject({
-      feature: 'power',
       phase: 137,
       showGear: true,
       showAuras: true,
       showAccountNumber: false,
     });
+  });
+});
+
+describe('the hero picker filter', () => {
+  const roster = [
+    row({ id: 'ada', name: 'Ada', rarity: 'Mítico' }),
+    row({ id: 'adao', name: 'Adão', rarity: 'Épico' }),
+    row({ id: 'bo', name: 'Bo', rarity: 'Épico' }),
+    row({ id: 'cy', name: 'Cy', rarity: 'Comum' }),
+  ];
+
+  it('shows everyone with no filter', () => {
+    expect(ids(filterSharePickerRows(roster, EMPTY_SHARE_PICKER_FILTER))).toEqual(['ada', 'adao', 'bo', 'cy']);
+  });
+
+  it('matches a name part, ignoring case and accents', () => {
+    expect(ids(filterSharePickerRows(roster, { text: ' ADA', rarities: [] }))).toEqual(['ada', 'adao']);
+    expect(ids(filterSharePickerRows(roster, { text: 'adã', rarities: [] }))).toEqual(['ada', 'adao']);
+  });
+
+  it('keeps the rarities chosen, and combines them with the name', () => {
+    const epic = toggleSharePickerRarity(EMPTY_SHARE_PICKER_FILTER, sharePickerRarities([roster[1] as RosterHeroRow])[0] ?? -1);
+    expect(ids(filterSharePickerRows(roster, epic))).toEqual(['adao', 'bo']);
+    expect(ids(filterSharePickerRows(roster, { ...epic, text: 'ad' }))).toEqual(['adao']);
+  });
+
+  it('turns a rarity chip off again', () => {
+    const on = toggleSharePickerRarity(EMPTY_SHARE_PICKER_FILTER, 3);
+    expect(toggleSharePickerRarity(on, 3).rarities).toEqual([]);
+  });
+
+  it('offers a chip for each rarity the roster holds, commonest first', () => {
+    const offered = sharePickerRarities(roster);
+    expect(offered).toEqual([...offered].sort((a, b) => a - b));
+    expect(offered).toHaveLength(3);
   });
 });
 

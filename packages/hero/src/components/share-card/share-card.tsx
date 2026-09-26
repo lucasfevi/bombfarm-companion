@@ -51,7 +51,6 @@ export function ShareCard({
   ref?: Ref<HTMLDivElement>;
 }) {
   const copy = shareCardCopyFor(lang);
-  const medals = settings.feature === 'roll' ? copy.medalRoll : copy.medalPower;
   const coverage = useMemo(
     () => auraCoverageFor(layout.picked.map((row) => row.hero), lang, numberFormatterFor(lang)),
     [layout.picked, lang],
@@ -83,7 +82,7 @@ export function ShareCard({
           {layout.featured.map((row, index) => (
             <ShareFeaturedTile
               key={row.id}
-              featured={{ row, medal: medals[index] ?? '', dps: dps.get(row.id) }}
+              featured={{ row, medal: copy.medalPower[index] ?? '', dps: dps.get(row.id) }}
               showGear={settings.showGear}
               copy={copy}
               lang={lang}

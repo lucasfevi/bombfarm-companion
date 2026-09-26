@@ -11,7 +11,7 @@
  * clipboard.
  */
 import { useCallback, useDeferredValue, useMemo, useRef, useState } from 'react';
-import { Dialog, Icon } from '@bombfarm/ui';
+import { Dialog, Icon, type SearchSelectOption } from '@bombfarm/ui';
 import { shareCardCopyFor, type Lang } from '../../copy';
 import {
   compareByPower,
@@ -28,6 +28,8 @@ export type ShareCardData = {
   readonly identity: ShareCardIdentity & { readonly phase: number | null };
   /** The last phase the shipped tables describe — the far end of the phase control. */
   readonly lastKnownPhase: number;
+  /** The phase picker's rows: every phase under the app's one spelling of it. */
+  readonly phaseOptions: readonly SearchSelectOption[];
   /** Sustained DPS by hero id at `phase`, for the heroes asked about. A hero the host could not
    *  work a figure out for is left out, and the card prints a dash for it. */
   readonly dpsAt: (phase: number, heroIds: readonly string[]) => ReadonlyMap<string, number>;
@@ -75,7 +77,7 @@ export function ShareCardDialog({
 }
 
 function ShareWorkspace({ data, actions, lang }: { data: ShareCardData; actions: ShareCardActions; lang: Lang }) {
-  const { rows, identity, lastKnownPhase, dpsAt } = data;
+  const { rows, identity, lastKnownPhase, phaseOptions, dpsAt } = data;
   const [settings, setSettings] = useState<ShareCardSettings>(() =>
     defaultShareCardSettings(rows, identity.phase, lastKnownPhase),
   );
@@ -89,19 +91,19 @@ function ShareWorkspace({ data, actions, lang }: { data: ShareCardData; actions:
 
   const strongestFirst = useMemo(() => [...rows].sort(compareByPower), [rows]);
   const layout = useMemo(
-    () => shareCardLayout(rows, settings.picked, settings.feature),
-    [rows, settings.picked, settings.feature],
+    () => shareCardLayout(rows, settings.picked),
+    [rows, settings.picked],
   );
-  // The slider answers at once and the card follows a frame behind, so a drag across two hundred
-  // phases never waits on a card being redrawn at every one of them.
+  // The picker closes at once and the card follows a frame behind, so choosing a phase never waits
+  // on every picked hero's DPS being worked out again.
   const cardPhase = useDeferredValue(settings.phase);
   const cardSettings = useMemo(() => ({ ...settings, phase: cardPhase }), [settings, cardPhase]);
   const pickedIds = useMemo(() => layout.picked.map((row) => row.id), [layout.picked]);
   const dps = useMemo(() => dpsAt(cardPhase, pickedIds), [dpsAt, cardPhase, pickedIds]);
 
   const phaseBounds = useMemo(
-    () => ({ accountPhase: identity.phase, lastKnownPhase }),
-    [identity.phase, lastKnownPhase],
+    () => ({ accountPhase: identity.phase, lastKnownPhase, options: phaseOptions }),
+    [identity.phase, lastKnownPhase, phaseOptions],
   );
   const onCopy = useCallback(() => {
     const card = cardRef.current;

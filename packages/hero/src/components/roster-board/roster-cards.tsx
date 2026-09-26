@@ -33,7 +33,7 @@ import {
   type RosterHeroRow,
   type ShowcaseCardReading,
 } from '../../model';
-import { BirthGradeChip } from './birth-grade-chip';
+import { BirthGradeLetter } from './birth-grade-letter';
 
 /** Cards arrive in order rather than all at once, so the eye is led across the board. Capped, so
  *  a large roster does not spend seconds dealing itself out. `MotionConfig reducedMotion="user"`
@@ -278,7 +278,7 @@ function BirthLines({
   return (
     <div className="flex min-w-0 flex-col gap-1" data-testid="heroes-card-birth">
       <p className="m-0 flex items-center gap-2 text-xs text-muted">
-        {grade ? <BirthGradeChip grade={grade} copy={copy} testId="heroes-card-grade" /> : null}
+        {grade ? <BirthGradeLetter grade={grade} copy={copy} testId="heroes-card-grade" /> : null}
         {reading.birthRollPct === undefined ? null : (
           <span>{sub(copy.cardBirthRoll, { pct: percentText(reading.birthRollPct, lang) })}</span>
         )}

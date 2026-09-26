@@ -1,11 +1,10 @@
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { heroAbilityIconEntries } from '@bombfarm/domain/hero-abilities';
-import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { AbilityIcon, rarityTextClass } from '@bombfarm/game-art';
 import { cn } from '@bombfarm/ui';
 import { sub, type Lang, type ShareCardCopy } from '../../copy';
-import { shareStars } from '../../model';
+import { shareRarityIndex, shareStars } from '../../model';
 
 export const shareEyebrowClass = 'm-0 text-[11px] font-semibold tracking-[0.12em] text-muted uppercase';
 
@@ -18,7 +17,7 @@ export const shareWellClass = cn(
 );
 
 export function rarityIndexOf(hero: Pick<HeroRecord, 'rarity'>): number {
-  return Math.max(0, RARITIES.indexOf(hero.rarity));
+  return shareRarityIndex(hero.rarity);
 }
 
 export function ShareStars({ stars }: { stars: number }) {

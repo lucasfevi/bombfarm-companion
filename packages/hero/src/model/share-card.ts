@@ -1,13 +1,8 @@
 import type { RarityKey } from '@bombfarm/domain/model';
-import { compareRollQuality } from '@bombfarm/domain/roll-quality';
+import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { formatCompactNumber, type Lang } from '@bombfarm/ui';
 import { isSquadHero, type RarityCount } from './roster-summary';
 import type { RosterHeroRow } from './roster-rows';
-
-/** What picks the card's three featured heroes. */
-export type ShareFeature = 'power' | 'roll';
-
-export const SHARE_FEATURES: readonly ShareFeature[] = ['power', 'roll'];
 
 export const SHARE_FEATURED_COUNT = 3;
 
@@ -46,19 +41,8 @@ export function compareByPower(left: RosterHeroRow, right: RosterHeroRow): numbe
   return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
 }
 
-function compareByRoll(left: RosterHeroRow, right: RosterHeroRow): number {
-  return compareRollQuality(
-    { id: left.id, ...(left.report === undefined ? {} : { rollQuality: left.report.mean }) },
-    { id: right.id, ...(right.report === undefined ? {} : { rollQuality: right.report.mean }) },
-  );
-}
-
-export function featuredRows(
-  picked: readonly RosterHeroRow[],
-  feature: ShareFeature,
-): readonly RosterHeroRow[] {
-  const order = feature === 'roll' ? compareByRoll : compareByPower;
-  return [...picked].sort(order).slice(0, SHARE_FEATURED_COUNT);
+export function featuredRows(picked: readonly RosterHeroRow[]): readonly RosterHeroRow[] {
+  return [...picked].sort(compareByPower).slice(0, SHARE_FEATURED_COUNT);
 }
 
 export function shareCardTotals(picked: readonly RosterHeroRow[]): ShareCardTotals {
@@ -75,10 +59,9 @@ export function shareCardTotals(picked: readonly RosterHeroRow[]): ShareCardTota
 export function shareCardLayout(
   rows: readonly RosterHeroRow[],
   pickedIds: ReadonlySet<string>,
-  feature: ShareFeature,
 ): ShareCardLayout {
   const picked = rows.filter((row) => pickedIds.has(row.id)).sort(compareByPower);
-  const featured = featuredRows(picked, feature);
+  const featured = featuredRows(picked);
   const featuredIds = new Set(featured.map((row) => row.id));
   return {
     picked,
@@ -121,7 +104,6 @@ export function initialSharePhase(accountPhase: number | null | undefined, lastK
 }
 
 export type ShareCardSettings = {
-  readonly feature: ShareFeature;
   readonly phase: number;
   readonly picked: ReadonlySet<string>;
   readonly showGear: boolean;
@@ -136,13 +118,53 @@ export function defaultShareCardSettings(
   lastKnownPhase: number,
 ): ShareCardSettings {
   return {
-    feature: 'power',
     phase: initialSharePhase(accountPhase, lastKnownPhase),
     picked: sharePicksFor(rows, 'squad'),
     showGear: true,
     showAuras: true,
     showAccountNumber: false,
   };
+}
+
+/** What narrows the hero picker's list. It never changes who is on the card. */
+export type SharePickerFilter = {
+  readonly text: string;
+  /** Rarity indices; none means every rarity. */
+  readonly rarities: readonly number[];
+};
+
+export const EMPTY_SHARE_PICKER_FILTER: SharePickerFilter = { text: '', rarities: [] };
+
+function foldForSearch(value: string): string {
+  return value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+}
+
+export function shareRarityIndex(rarity: RarityKey): number {
+  return Math.max(0, RARITIES.indexOf(rarity));
+}
+
+/** The rarities the roster holds, commonest first — the inventory's chip order. */
+export function sharePickerRarities(rows: readonly RosterHeroRow[]): readonly number[] {
+  return [...new Set(rows.map((row) => shareRarityIndex(row.hero.rarity)))].sort((a, b) => a - b);
+}
+
+export function filterSharePickerRows(
+  rows: readonly RosterHeroRow[],
+  filter: SharePickerFilter,
+): readonly RosterHeroRow[] {
+  const needle = foldForSearch(filter.text);
+  return rows.filter(
+    (row) =>
+      (needle === '' || foldForSearch(row.hero.name).includes(needle)) &&
+      (filter.rarities.length === 0 || filter.rarities.includes(shareRarityIndex(row.hero.rarity))),
+  );
+}
+
+export function toggleSharePickerRarity(filter: SharePickerFilter, rarityIdx: number): SharePickerFilter {
+  const rarities = filter.rarities.includes(rarityIdx)
+    ? filter.rarities.filter((entry) => entry !== rarityIdx)
+    : [...filter.rarities, rarityIdx];
+  return { ...filter, rarities };
 }
 
 const NOT_PLACED = '—';

@@ -1,6 +1,7 @@
 /**
  * The Heroes screen's share card in the real app, drawn from the fixture account: the dialog
- * opens on the player's name, its DPS follows the phase control, a hero taken off the picker
+ * opens on the player's name, its DPS follows the searchable phase picker, the picker's name
+ * filter and rarity chips narrow the list without touching the card, a hero taken off the picker
  * leaves the card, and Copy as image leaves a PNG of the card, at twice its size, on the system
  * clipboard — read back through main, since that is the clipboard a chat app pastes from.
  *
@@ -82,10 +83,34 @@ function cardDps(page) {
   );
 }
 
+/** Through the searchable picker the Optimizer and the Combat tab use: open it, type, pick. */
 async function setPhase(page, phase) {
-  const input = page.getByTestId('share-card-phase').locator('input[type="number"]');
-  await input.fill(String(phase));
+  await page.getByTestId('share-card-phase').getByRole('combobox', { name: 'Phase' }).click();
+  await expect(page.getByPlaceholder('Hard, Normal 2-1, or 151')).toBeFocused();
+  await page.keyboard.type(String(phase));
+  await page.getByRole('option', { name: `(#${String(phase)})`, exact: false }).click();
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await expect(page.getByTestId('share-card-phase')).toContainText(`(#${String(phase)})`);
   await expect(page.getByTestId('share-card-footer-phase')).toContainText(`phase ${String(phase)}`);
+  await expect(page.getByTestId('share-card-subtitle')).toContainText(`Current phase ${String(phase)}`);
+}
+
+/** The hero ids the picker lists right now. */
+function listedHeroes(page) {
+  return page.locator('[data-testid^="share-card-pick-hero-"]').evaluateAll((nodes) =>
+    nodes.map((node) => node.getAttribute('data-testid')?.replace('share-card-pick-hero-', '')),
+  );
+}
+
+/** The hero ids on the card right now. */
+function cardHeroes(page) {
+  return page
+    .locator('[data-testid^="share-card-featured-"], [data-testid^="share-card-rest-"]')
+    .evaluateAll((nodes) =>
+      nodes
+        .map((node) => node.getAttribute('data-testid')?.replace(/^share-card-(featured|rest)-/, ''))
+        .filter((id) => id !== undefined && id !== '' && id !== 'rest'),
+    );
 }
 
 test.describe('the Heroes screen\'s share card', () => {
@@ -141,14 +166,52 @@ test.describe('the Heroes screen\'s share card', () => {
     await expect(page.locator('[data-testid^="share-card-aura-"]')).toHaveCount(7);
   });
 
-  test('moving the phase moves the DPS', async () => {
+  test('picking a phase through the search moves the DPS, and the reset goes back', async () => {
     const before = await cardDps(page);
     const figured = Object.entries(before).filter(([, text]) => /\d/.test(text ?? ''));
     expect(figured.length).toBeGreaterThan(0);
 
+    const reset = page.getByTestId('share-card-phase-reset');
+    await expect(reset).toHaveText('Use my current phase (51)');
+    await expect(reset).toBeDisabled();
+
     await setPhase(page, 137);
+    await expect(reset).toBeEnabled();
     const after = await cardDps(page);
     expect(figured.some(([id, text]) => after[id] !== text)).toBe(true);
+
+    await reset.click();
+    await expect(page.getByTestId('share-card-subtitle')).toContainText('Current phase 51');
+    await expect(page.getByTestId('share-card-phase')).toContainText('(#51)');
+    await setPhase(page, 137);
+  });
+
+  test('the name filter and a rarity chip narrow the list, never the card', async () => {
+    const everyone = await listedHeroes(page);
+    const onCard = (await cardHeroes(page)).sort();
+    expect(everyone.length).toBeGreaterThan(2);
+
+    const filter = page.getByTestId('share-card-picker-filter');
+    const firstName = (await page.locator('[data-testid="share-card-picker"] li').first().innerText()).split(/\s/)[0];
+    await filter.fill(firstName);
+    const byName = await listedHeroes(page);
+    expect(byName.length).toBeGreaterThan(0);
+    expect(byName.length).toBeLessThan(everyone.length);
+    expect((await cardHeroes(page)).sort()).toEqual(onCard);
+    await filter.fill('');
+    await expect(page.locator('[data-testid^="share-card-pick-hero-"]')).toHaveCount(everyone.length);
+
+    const chips = page.locator('[data-testid^="share-card-picker-rarity-"]');
+    expect(await chips.count()).toBeGreaterThan(1);
+    const chip = chips.first();
+    await chip.click();
+    await expect(chip).toHaveAttribute('aria-pressed', 'true');
+    const byRarity = await listedHeroes(page);
+    expect(byRarity.length).toBeGreaterThan(0);
+    expect(byRarity.length).toBeLessThan(everyone.length);
+    expect((await cardHeroes(page)).sort()).toEqual(onCard);
+    await chip.click();
+    await expect(page.locator('[data-testid^="share-card-pick-hero-"]')).toHaveCount(everyone.length);
   });
 
   test('a hero taken off the picker leaves the card', async () => {
@@ -181,9 +244,8 @@ test.describe('the Heroes screen\'s share card', () => {
     }
 
     await page.getByTestId('share-card-copy').click();
-    await expect(page.getByTestId('share-card-copy-status')).toHaveText('Copied — paste it into a chat', {
-      timeout: 30_000,
-    });
+    await expect(page.getByTestId('share-card-copy-status')).toHaveText('Copied', { timeout: 30_000 });
+    await expect(page.getByTestId('share-card-copied-icon').locator('svg')).toBeVisible();
 
     const held = await app.evaluate(({ clipboard }) => {
       const image = clipboard.readImage();
