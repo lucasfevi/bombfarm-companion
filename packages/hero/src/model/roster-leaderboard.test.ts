@@ -9,6 +9,8 @@ import {
   DEFAULT_LEADERBOARD_SORT,
   LEADERBOARD_COLUMNS,
   filterLeaderboardRows,
+  heroPeekStats,
+  heroPeekStatsResolver,
   heroStatSheet,
   leaderboardGearText,
   leaderboardPowerPercent,
@@ -65,6 +67,41 @@ describe('heroStatSheet', () => {
 
   it('has no sheet for a hero without a birth roll, as the panel has no Total', () => {
     expect(heroStatSheet(rowFixture({ id: 'a' }).hero, NEUTRAL_TREE)).toBeUndefined();
+  });
+});
+
+describe('heroPeekStats', () => {
+  const spent = rowFixture({ id: 'a', birth: BIRTH, level: 80, stars: 2, pts: { ...ZERO_SHEET, attack: 20, energy: 5 } }).hero;
+  const tree = { ...NEUTRAL_TREE, danoStatic: 1.3 };
+
+  it('is the sheet the hero panel totals, spent points included', () => {
+    const sheet = heroPeekStats(spent, { tree });
+    expect(sheet).toEqual(heroStatSheet(spent, tree));
+    expect(sheet?.attack).toBeGreaterThan(heroStatSheet({ ...spent, pts: ZERO_SHEET }, tree)?.attack ?? Infinity);
+  });
+
+  it('prints nothing for a hero whose spent points the host withholds', () => {
+    expect(heroPeekStats(spent, { tree, withheldHeroIds: new Set(['a']) })).toBeUndefined();
+    expect(heroPeekStats(spent, { tree, withheldHeroIds: new Set(['b']) })).toEqual(heroStatSheet(spent, tree));
+  });
+
+  it('prints nothing while the tree is unread, rather than composing against a tree of zeroes', () => {
+    expect(heroPeekStats(spent, { tree: null })).toBeUndefined();
+  });
+
+  it('prints nothing for a hero without a birth roll', () => {
+    expect(heroPeekStats(rowFixture({ id: 'a' }).hero, { tree })).toBeUndefined();
+  });
+
+  it('composes an import candidate, which has no id to withhold by', () => {
+    const { id: _id, ...candidate } = spent;
+    expect(heroPeekStats(candidate, { tree, withheldHeroIds: new Set(['a']) })).toEqual(heroStatSheet(spent, tree));
+  });
+
+  it('bound to a source, answers as the leaderboard row does', () => {
+    const source = { tree, withheldHeroIds: new Set(['b']) };
+    const [row] = leaderboardRowsFor([rowFixture(spent)], source);
+    expect(heroPeekStatsResolver(source)(spent)).toEqual(row?.sheet);
   });
 });
 

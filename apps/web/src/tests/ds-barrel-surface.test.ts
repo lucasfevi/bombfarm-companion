@@ -311,6 +311,10 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityPeekCard',
   'HeroPeek',
   'HeroPeekCard',
+  // The host hands every hero card below it the sheet its hero panel totals (2026-09-26): the
+  // record's own import-time sheet leaves out every spent point, so the card never reads it.
+  'HeroPeekStatsProvider',
+  'useHeroPeekStats',
   'ItemPeek',
   'ItemPeekCard',
   'PeekFrame',

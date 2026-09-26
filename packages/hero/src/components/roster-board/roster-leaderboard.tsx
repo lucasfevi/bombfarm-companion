@@ -351,7 +351,7 @@ function HeroCell({ row, lang }: { row: LeaderboardRow; lang: Lang }) {
         rarityIdx={Math.max(0, RARITIES.indexOf(hero.rarity))}
         size="sm"
         name={hero.name}
-        peek={{ hero: heroPeekData(hero), lang }}
+        peek={{ hero: heroPeekData(hero, row.sheet), lang }}
       />
       <span className="truncate font-semibold text-ink">{hero.name}</span>
       {stars > 0 ? (

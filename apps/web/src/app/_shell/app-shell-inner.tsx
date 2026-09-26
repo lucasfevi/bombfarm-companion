@@ -9,6 +9,7 @@ import { ReferralNotice } from './referral-notice';
 import { readReferralNoticeHidden, writeReferralNoticeHidden } from './referral-notice-storage';
 import { ImportHeroesDialog } from '@/features/import';
 import { Footer } from './footer';
+import { PlannerHeroPeekStats } from './planner-hero-peek-stats';
 import type { HeroRecord } from '@/shared/lib/storage';
 import { pickHeroAfterImport } from '@bombfarm/domain/pick-hero-after-import';
 import type { AccountImportData } from '@bombfarm/domain/import-save';
@@ -96,6 +97,7 @@ export function AppShellInner({
   }
 
   return (
+    <PlannerHeroPeekStats>
     <div className="flex min-h-screen flex-col">
       <SiteHeader t={t} lang={lang} onImport={openImportDialog} onLangChange={setLang} />
 
@@ -128,5 +130,6 @@ export function AppShellInner({
        */}
       <Toast message={toast} />
     </div>
+    </PlannerHeroPeekStats>
   );
 }

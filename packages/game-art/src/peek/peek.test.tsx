@@ -215,7 +215,7 @@ describe('AbilityPeekCard', () => {
 
 describe('HeroPeekCard', () => {
   it('reads the record: rank, name, stars, tier, level, the sheet and both strips — never the id', () => {
-    const html = render(createElement(HeroPeekCard, { hero: heroPeekData(perrin), lang: 'en' }));
+    const html = render(createElement(HeroPeekCard, { hero: heroPeekData(perrin, perrin.gearedOverride), lang: 'en' }));
     expect(html).toContain('>A<');
     expect(html).toContain('Perrin');
     expect(html).toContain('★★');
@@ -233,7 +233,7 @@ describe('HeroPeekCard', () => {
   });
 
   it('the gear strip is always eight tiles in slot order, an empty tile standing in for each bare slot', () => {
-    const html = render(createElement(HeroPeekCard, { hero: heroPeekData(perrin), lang: 'en' }));
+    const html = render(createElement(HeroPeekCard, { hero: heroPeekData(perrin, perrin.gearedOverride), lang: 'en' }));
     expect(html.match(/data-slot="empty-gear-slot"/g)).toHaveLength(7);
     expect(html.match(/<img src="\/wiki-assets\/items\/lvl100_helmet_forest\.png"/g)).toHaveLength(1);
     // The one equipped piece is a weapon, the first slot: it leads the strip and the empties follow.
@@ -244,14 +244,24 @@ describe('HeroPeekCard', () => {
   });
 
   it('a deployed hero reads no differently — the card says nothing about deployment', () => {
-    const html = render(createElement(HeroPeekCard, { hero: heroPeekData({ ...perrin, deployed: true }), lang: 'en' }));
+    const html = render(createElement(HeroPeekCard, { hero: heroPeekData({ ...perrin, deployed: true }, perrin.gearedOverride), lang: 'en' }));
     expect(html).not.toContain('Deployed');
-    expect(heroPeekData(perrin)).not.toHaveProperty('deployed');
+    expect(heroPeekData(perrin, perrin.gearedOverride)).not.toHaveProperty('deployed');
   });
 
   it('prints the power figure larger than the name, in the accent, mono and tabular', () => {
-    const html = render(createElement(HeroPeekCard, { hero: heroPeekData(perrin), lang: 'en' }));
+    const html = render(createElement(HeroPeekCard, { hero: heroPeekData(perrin, perrin.gearedOverride), lang: 'en' }));
     expect(html).toMatch(/class="font-mono text-base leading-none font-bold tabular-nums text-accent">48\.2k</);
+  });
+
+  it('prints the sheet it is handed, never the record’s own import-time sheet', () => {
+    const composed = { ...perrin.gearedOverride, attack: 12_278.51 };
+    expect(render(createElement(HeroPeekCard, { hero: heroPeekData(perrin, composed), lang: 'en' }))).toContain('>12.3k<');
+    const withheld = render(createElement(HeroPeekCard, { hero: heroPeekData(perrin, undefined), lang: 'en' }));
+    expect(withheld).not.toContain('Attack');
+    expect(withheld).not.toContain('12.5k');
+    expect(withheld).toContain('Perrin');
+    expect(withheld).toContain('/abilities/golpe_brutal.png');
   });
 
   it('says only what it was handed — a live row’s identity draws no sheet and no strips', () => {
@@ -265,7 +275,7 @@ describe('HeroPeekCard', () => {
 
   it('reads an import candidate, which has no id yet', () => {
     const { id: _id, sourceId: _sourceId, updatedAt: _at, ...candidate } = perrin;
-    expect(heroPeekData(candidate).name).toBe('Perrin');
+    expect(heroPeekData(candidate, undefined).name).toBe('Perrin');
   });
 });
 

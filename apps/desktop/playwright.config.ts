@@ -38,6 +38,7 @@ export default defineConfig({
         'heroes-roster-board.spec.mjs',
         'heroes-share-card.spec.mjs',
         'heroes-stages-and-scrollbars.spec.mjs',
+        'hero-peek-stats.spec.mjs',
         'live-earnings-no-layout-shift.spec.mjs',
         'live-hero-row-no-layout-shift.spec.mjs',
         'live-state-summary-no-layout-shift.spec.mjs',

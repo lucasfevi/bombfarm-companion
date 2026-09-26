@@ -197,6 +197,8 @@ export {
   LEADERBOARD_STAT_COLUMN_IDS,
   TOGGLEABLE_LEADERBOARD_COLUMN_IDS,
   filterLeaderboardRows,
+  heroPeekStats,
+  heroPeekStatsResolver,
   heroStatSheet,
   isLeaderboardColumnShown,
   isLeaderboardStatColumn,
@@ -215,6 +217,7 @@ export {
 } from './roster-leaderboard';
 export type {
   AccountTreeTotals,
+  HeroStatSource,
   LeaderboardColumn,
   LeaderboardColumnId,
   LeaderboardFilter,
@@ -225,6 +228,7 @@ export type {
   LeaderboardStatColumnId,
   LeaderboardView,
   SortableLeaderboardColumnId,
+  StatSheetHero,
   ToggleableLeaderboardColumnId,
 } from './roster-leaderboard';
 export {

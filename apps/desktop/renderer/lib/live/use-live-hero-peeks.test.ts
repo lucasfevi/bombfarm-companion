@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { emptyLoadout } from '@bombfarm/domain/gear';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { heroStatSheet, treeSheetFromAccountTree } from '@bombfarm/hero/model';
 import type { AccountRoster } from '../account/account-roster';
 import { rosterHeroPeeks } from './use-live-hero-peeks';
 
@@ -26,13 +27,19 @@ function record(id: string, name: string, level: number): HeroRecord {
   };
 }
 
+const TREE = { danoTotal: 1.3, critChance: 4, critDmg: 10, speed: 2, energy: 3, luckFlatPct: 1 };
+
 function rosterOf(...heroes: HeroRecord[]): AccountRoster {
   return {
     heroes,
-    account: {} as AccountRoster['account'],
+    account: { tree: TREE } as AccountRoster['account'],
     inventory: [],
     pointsUnrecovered: [],
   };
+}
+
+function spent(id: string): HeroRecord {
+  return { ...record(id, 'Vex', 42), birth: { ...SHEET, attack: 180, critChance: 5 }, pts: { ...ZERO_PTS(), attack: 20 } };
 }
 
 describe('rosterHeroPeeks', () => {
@@ -44,10 +51,26 @@ describe('rosterHeroPeeks', () => {
     expect(peeks.get('h2')).toMatchObject({ name: 'Nim', level: 7 });
   });
 
-  it('carries the sheet, the abilities and the loadout — what the row itself cannot say', () => {
+  it('carries the sheet the detail pane totals, spent points included — never the import-time sheet', () => {
+    const hero = spent('h1');
+    const peek = rosterHeroPeeks(rosterOf(hero)).get('h1');
+
+    expect(peek?.stats).toEqual(heroStatSheet(hero, treeSheetFromAccountTree(TREE)));
+    expect(peek?.stats).not.toEqual(hero.gearedOverride);
+  });
+
+  it('carries no sheet for a hero whose spent points were not read, nor while the tree is unread', () => {
+    const withheld = { ...rosterOf(spent('h1'), spent('h2')), pointsUnrecovered: [{ id: 'h1', name: 'Vex' }] };
+    expect(rosterHeroPeeks(withheld).get('h1')?.stats).toBeUndefined();
+    expect(rosterHeroPeeks(withheld).get('h2')?.stats).toBeDefined();
+
+    const treeless = { ...rosterOf(spent('h1')), account: { tree: null } as AccountRoster['account'] };
+    expect(rosterHeroPeeks(treeless).get('h1')?.stats).toBeUndefined();
+  });
+
+  it('carries the abilities and the loadout — what the row itself cannot say', () => {
     const peek = rosterHeroPeeks(rosterOf(record('h1', 'Vex', 42))).get('h1');
 
-    expect(peek?.stats).toEqual(SHEET);
     expect(peek?.abilities).toEqual({});
     expect(peek?.loadout).toEqual(emptyLoadout());
   });

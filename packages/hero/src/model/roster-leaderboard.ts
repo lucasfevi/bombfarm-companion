@@ -10,12 +10,17 @@ import { gradePlacementFor } from './birth-roll-panel';
 import { equippedGearAverages, isSquadHero } from './roster-summary';
 import type { RosterHeroRow } from './roster-rows';
 
+/** What composing a hero's sheet reads — a whole record, or an import candidate without an id yet. */
+export type StatSheetHero = Pick<HeroRecord, 'birth' | 'level' | 'stars' | 'abilities' | 'loadout' | 'pts' | 'runes'> & {
+  readonly id?: string | undefined;
+};
+
 /**
  * The statistic sheet the hero panel's Total column prints: birth composed through level, stars,
  * abilities, gear, points, the account's skill tree and the hero's runes. Uncapped, as that
  * column is. `undefined` for a hero without a birth roll, where the panel has no Total either.
  */
-export function heroStatSheet(hero: HeroRecord, tree: TreeSheetTotals): SheetStats | undefined {
+export function heroStatSheet(hero: StatSheetHero, tree: TreeSheetTotals): SheetStats | undefined {
   if (hero.birth === undefined) return undefined;
   const mods = abilityMods(hero.abilities);
   return composeSheetFromBirth({
@@ -63,7 +68,7 @@ export type LeaderboardRow = RosterHeroRow & {
 };
 
 /** Which heroes' statistics the host will not draw, and the tree the rest are composed against. */
-export type LeaderboardStatSource = {
+export type HeroStatSource = {
   /** `null` while the account's skill tree is unread: every statistic is then absent, never
    *  composed against a tree of zeroes. */
   readonly tree: TreeSheetTotals | null;
@@ -72,16 +77,31 @@ export type LeaderboardStatSource = {
   readonly withheldHeroIds?: ReadonlySet<string> | undefined;
 };
 
-export function leaderboardRowsFor(
-  rows: readonly RosterHeroRow[],
-  { tree, withheldHeroIds }: LeaderboardStatSource,
-): readonly LeaderboardRow[] {
+export type LeaderboardStatSource = HeroStatSource;
+
+/**
+ * The sheet a hero's hover card prints — the detail panel's Total, or nothing where that panel
+ * prints nothing: no tree read yet, no birth roll, or spent points the host could not read.
+ * Never the import-time zero-points sheet, which would print every spent point as unspent.
+ */
+export function heroPeekStats(hero: StatSheetHero, { tree, withheldHeroIds }: HeroStatSource): SheetStats | undefined {
+  if (tree === null) return undefined;
+  if (hero.id !== undefined && withheldHeroIds?.has(hero.id) === true) return undefined;
+  return heroStatSheet(hero, tree);
+}
+
+/** {@link heroPeekStats} bound to one source, as the hover cards' provider takes it. */
+export function heroPeekStatsResolver(source: HeroStatSource): (hero: StatSheetHero) => SheetStats | undefined {
+  return (hero) => heroPeekStats(hero, source);
+}
+
+export function leaderboardRowsFor(rows: readonly RosterHeroRow[], source: HeroStatSource): readonly LeaderboardRow[] {
   return rows.map((row) => {
     const gear = equippedGearAverages([row.hero]);
     const abilities = heroAbilityIconEntries(row.hero.abilities);
     return {
       ...row,
-      sheet: tree === null || withheldHeroIds?.has(row.id) === true ? undefined : heroStatSheet(row.hero, tree),
+      sheet: heroPeekStats(row.hero, source),
       gradeLetter: gradePlacementFor(row.report)?.railLetter,
       abilityCount: abilities.length,
       abilityLevelTotal: abilities.reduce((total, ability) => total + ability.level, 0),

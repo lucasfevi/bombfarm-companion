@@ -55,6 +55,7 @@ import { MarketSection } from './settings/market-section';
 import { SupportSection } from './settings/support-section';
 import { UpdatesSection } from './settings/updates-section';
 import { WindowSection } from './settings/window-section';
+import { AccountHeroPeekStats } from '../lib/account/account-hero-peek-stats';
 
 const DEFAULT_NAV_ID = 'live';
 
@@ -388,7 +389,7 @@ function HomePageContent({
   const navItems = navItemsFor(t).map((item) => (item.id === 'live' ? { ...item, mark: liveMark } : item));
 
   return (
-    <>
+    <AccountHeroPeekStats>
       <ConsentModal forceOpen={consentForceOpen} onDecided={onConsentDecided} />
       <AppShell
         badge={environment?.badgeLabel ?? null}
@@ -528,6 +529,6 @@ function HomePageContent({
           )}
         </div>
       </AppShell>
-    </>
+    </AccountHeroPeekStats>
   );
 }

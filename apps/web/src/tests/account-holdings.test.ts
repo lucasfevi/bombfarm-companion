@@ -33,6 +33,8 @@ import { INVENTORY_VIEW_KEY, loadInventoryView } from '@/shared/lib/inventory-vi
 import { STRINGS, formatPriceFreshness, formatQuoteAge } from '@/shared/i18n';
 import type { Lang } from '@/shared/i18n';
 
+const noPeekStats = (): undefined => undefined;
+
 const CATALOG: CatalogView = {
   defs: [{ defId: 'ember_arma', set: 'ember', slot: 'arma', level: 10 }],
   rarityIdxs: [1, 2],
@@ -246,7 +248,7 @@ describe('account holdings — the three components the section reads', () => {
   });
 
   it('prices the heroes the game permits selling, and leaves the bound ones out of both counts', () => {
-    const holdings = holdingsOf(INVENTORY, wornBy(ROSTER), SNAPSHOT, priceableHeroes(ROSTER));
+    const holdings = holdingsOf(INVENTORY, wornBy(ROSTER), SNAPSHOT, priceableHeroes(ROSTER, noPeekStats));
 
     expect(tallyOf(holdings.heroes)).toEqual({
       amount: 50,
@@ -260,7 +262,7 @@ describe('account holdings — the three components the section reads', () => {
 
   it('still withholds heroes for a roster stored before anything read the flag', () => {
     const stale = ROSTER.map(({ name, rarity, skin }) => ({ name, rarity, skin }));
-    const holdings = holdingsOf(INVENTORY, wornBy(stale), SNAPSHOT, priceableHeroes(stale));
+    const holdings = holdingsOf(INVENTORY, wornBy(stale), SNAPSHOT, priceableHeroes(stale, noPeekStats));
 
     expect(tallyOf(holdings.heroes)).toEqual({
       amount: 0,
@@ -280,7 +282,7 @@ describe('account holdings — the three components the section reads', () => {
       skin,
       marketable: false,
     }));
-    const holdings = holdingsOf(INVENTORY, wornBy(allBound), SNAPSHOT, priceableHeroes(allBound));
+    const holdings = holdingsOf(INVENTORY, wornBy(allBound), SNAPSHOT, priceableHeroes(allBound, noPeekStats));
 
     // The same zero as the roster above, and a different KIND of zero: every hero answered, and
     // every answer was no. Withholding here would report an answered question as unasked.
@@ -319,7 +321,7 @@ describe('account holdings — what reaches the view', () => {
   });
 
   it('leaves the figure unqualified, under the same title, once every component was read', () => {
-    const whole = renderSection(INVENTORY, wornBy(ROSTER), priceableHeroes(ROSTER));
+    const whole = renderSection(INVENTORY, wornBy(ROSTER), priceableHeroes(ROSTER, noPeekStats));
 
     expect(slot(whole, 'account-holdings-partial')).toBeNull();
     expect(whole).toContain(STRINGS.en.accountHoldingsTotal);
@@ -356,7 +358,7 @@ describe('account holdings — what reaches the view', () => {
 });
 
 describe('account holdings — what each component is made of', () => {
-  const heroes = priceableHeroes(ROSTER);
+  const heroes = priceableHeroes(ROSTER, noPeekStats);
   const worn = [ROYAL_SENTINEL, FOREST_WARDEN];
   const html = renderSection(INVENTORY, worn, heroes);
   const openHeroes = openRow('heroes', INVENTORY, worn, heroes);
@@ -411,7 +413,7 @@ describe('account holdings — what each component is made of', () => {
       marketable: true,
       skin: ROYAL_SENTINEL,
     };
-    const mixed = priceableHeroes([stored, ...ROSTER.slice(1)]);
+    const mixed = priceableHeroes([stored, ...ROSTER.slice(1)], noPeekStats);
     const open = openRow('heroes', INVENTORY, worn, mixed);
     const [aria, cyra] = entryChunks(open, 'heroes');
 

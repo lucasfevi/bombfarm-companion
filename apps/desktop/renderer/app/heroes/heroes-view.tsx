@@ -60,7 +60,6 @@ import {
   filterRosterRows,
   heroPickOutcome,
   sortRosterRows,
-  treeSheetFromAccountTree,
 } from '@bombfarm/hero/model';
 import type {
   HeroMarketPrice,
@@ -92,7 +91,7 @@ import {
   type TeamAuraId,
 } from '@bombfarm/domain/team-buffs';
 import { accountAroundHero, type AccountBlock } from '../../lib/account/account-shared';
-import { unrecoveredPointsHeroIds } from '../../lib/account/account-roster';
+import { rosterHeroStatSource } from '../../lib/account/account-roster';
 import { useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import {
@@ -224,18 +223,9 @@ function HeroesRoster({
   const farmPhase = useFarmSelectedPhase();
 
   const { rows, roster } = model;
-  // The same tree the detail pane's statistic sheet is composed against — `buildAccountBlock`
-  // hands the pipeline these fields — read straight off the account, so the table does not wait
-  // on a phase the way the per-hero figures do.
-  const accountTree = roster.account.tree;
-  // The heroes whose detail pane withholds its figures are withheld from the table for the same reason.
-  const leaderboardStats = useMemo<LeaderboardStatSource>(
-    () => ({
-      tree: accountTree === null ? null : treeSheetFromAccountTree(accountTree),
-      withheldHeroIds: unrecoveredPointsHeroIds(roster),
-    }),
-    [accountTree, roster],
-  );
+  // The same tree and withheld heroes the detail pane composes and withholds its sheet against, read
+  // straight off the account, so the table does not wait on a phase the way the per-hero figures do.
+  const leaderboardStats = useMemo<LeaderboardStatSource>(() => rosterHeroStatSource(roster), [roster]);
   // The whole roster in the order the toolbar asks for, before any narrowing: the default
   // selection is whichever hero that order puts first, and a filter must not move it.
   const orderedRows = useMemo(() => sortRosterRows(rows, rosterSort), [rows, rosterSort]);

@@ -13,6 +13,8 @@ import { parseAccountPayload, type AccountImportData } from '@bombfarm/domain/im
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import type { AccountView } from '@bombfarm/contracts';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { HeroPeekStatsResolver } from '@bombfarm/game-art';
+import { heroPeekStatsResolver, treeSheetFromAccountTree, type HeroStatSource } from '@bombfarm/hero/model';
 import { capturedAtOf } from './account-facts';
 
 /** One parse of one account read: its completed roster, the account-wide values beside it, and
@@ -36,6 +38,22 @@ export function hasUnrecoveredPoints(roster: AccountRoster, heroId: string): boo
 /** Every hero {@link hasUnrecoveredPoints} answers yes for, for a surface that draws them all. */
 export function unrecoveredPointsHeroIds(roster: AccountRoster): ReadonlySet<string> {
   return new Set(roster.pointsUnrecovered.map((hero) => hero.id));
+}
+
+/** The tree a hero's sheet is composed against, and the heroes whose sheet the detail pane withholds. */
+export function rosterHeroStatSource(roster: AccountRoster): HeroStatSource {
+  const tree = roster.account.tree;
+  return {
+    tree: tree === null ? null : treeSheetFromAccountTree(tree),
+    withheldHeroIds: unrecoveredPointsHeroIds(roster),
+  };
+}
+
+const noHeroPeekStats: HeroPeekStatsResolver = () => undefined;
+
+/** Each hero's hover-card sheet, as the detail pane totals it; none at all without a roster. */
+export function rosterHeroPeekStats(roster: AccountRoster | null): HeroPeekStatsResolver {
+  return roster === null ? noHeroPeekStats : heroPeekStatsResolver(rosterHeroStatSource(roster));
 }
 
 /** `null` when the payload did not parse at all — never a partial roster over the heroes that did. */
