@@ -246,6 +246,7 @@ test.describe('the Heroes screen\'s share card', () => {
     await page.getByTestId('share-card-copy').click();
     await expect(page.getByTestId('share-card-copy-status')).toHaveText('Copied', { timeout: 30_000 });
     await expect(page.getByTestId('share-card-copied-icon').locator('svg')).toBeVisible();
+    await expect(page.getByTestId('share-card-copy-status')).toBeInViewport({ ratio: 1 });
 
     const held = await app.evaluate(({ clipboard }) => {
       const image = clipboard.readImage();

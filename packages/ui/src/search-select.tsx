@@ -226,7 +226,17 @@ export function SearchSelectMultiple({
   const itemClass = size === 'compact' ? selectItemCompactClass : selectItemClass;
 
   const visible = useMemo(() => options.filter((option) => searchSelectMatches(option, query)), [options, query]);
-  const selected = useMemo(() => options.filter((option) => value.includes(option.value)), [options, value]);
+  // Base UI opens a multiple combobox highlighting, and scrolled to, the LAST entry of its value
+  // array. Handed bottom-up, that entry is the topmost tick, so the list opens at its top as
+  // SelectMultiple's does instead of scrolled to its last ticked row.
+  const selectedBottomUp = useMemo(
+    () => options.filter((option) => value.includes(option.value)).reverse(),
+    [options, value],
+  );
+  const emitInListOrder = (next: readonly SearchSelectOption[]) => {
+    const ticked = new Set(next.map((option) => option.value));
+    onValueChange(options.filter((option) => ticked.has(option.value)).map((option) => option.value));
+  };
 
   return (
     <Combobox.Root<SearchSelectOption, true>
@@ -234,8 +244,8 @@ export function SearchSelectMultiple({
       items={options as SearchSelectOption[]}
       filteredItems={visible}
       filter={null}
-      value={selected}
-      onValueChange={(next) => onValueChange(next.map((option) => option.value))}
+      value={selectedBottomUp}
+      onValueChange={emitInListOrder}
       isItemEqualToValue={(item, candidate) => item.value === candidate.value}
       itemToStringLabel={(item) => item.label}
       itemToStringValue={(item) => item.value}

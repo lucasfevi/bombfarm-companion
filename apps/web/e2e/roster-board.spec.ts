@@ -291,8 +291,10 @@ test.describe('roster rail and board', () => {
     await page.getByRole('combobox', { name: /^Columns$/ }).click();
     const search = page.getByPlaceholder('Find a column');
     await expect(search).toBeFocused();
-    await search.fill('cool');
     const list = page.getByRole('listbox');
+    await expect(list.getByRole('option').first()).toHaveAttribute('data-highlighted', '');
+    await expect(list).toHaveJSProperty('scrollTop', 0);
+    await search.fill('cool');
     await expect(list.getByRole('option')).toHaveText(['Cooldown reduction']);
     await list.getByRole('option', { name: /^Cooldown reduction$/ }).click();
     await expect(page.getByTestId('heroes-leaderboard-sort-cdr')).toHaveText(/Cooldown reduction/);

@@ -88,16 +88,17 @@ export function ShareCardControls({
         />
       </Field>
       <Field title={copy.shareTitle}>
-        <Button
-          variant="primary"
-          className="justify-self-start"
-          disabled={settings.picked.size === 0 || copyControl.status === 'copying'}
-          onClick={copyControl.onCopy}
-          data-testid="share-card-copy"
-        >
-          {copyControl.status === 'copying' ? copy.copying : copy.copyImage}
-        </Button>
-        <CopyStatus status={copyControl.status} copy={copy} />
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <Button
+            variant="primary"
+            disabled={settings.picked.size === 0 || copyControl.status === 'copying'}
+            onClick={copyControl.onCopy}
+            data-testid="share-card-copy"
+          >
+            {copyControl.status === 'copying' ? copy.copying : copy.copyImage}
+          </Button>
+          <CopyStatus status={copyControl.status} copy={copy} />
+        </div>
       </Field>
     </div>
   );
