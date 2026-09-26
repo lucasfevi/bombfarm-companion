@@ -36,6 +36,7 @@ export const showcasePtBR: ShowcaseCopy = {
   summarySquadGear: 'Equipamento do esquadrão, média',
   summaryGearAverages: 'Nv {level} · forjado +{forge}',
   summaryGearItems: 'em {count} itens equipados',
+  summaryGearRange: 'itens Nv {lowest}–{highest}',
   cardPosition: '#{position}',
   cardPower: 'Poder',
   cardLevel: 'Nível {level}',

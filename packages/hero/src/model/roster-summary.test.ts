@@ -58,7 +58,13 @@ describe('rosterSummaryFor', () => {
       rowFixture({ id: 'c', loadout: { arma: item(10, 15) }, battleAllowed: false }),
       rowFixture({ id: 'd' }),
     ]);
-    expect(summary.squadGear).toEqual({ itemCount: 3, averageLevel: 200, averageUpgrade: 4 });
+    expect(summary.squadGear).toEqual({
+      itemCount: 3,
+      averageLevel: 200,
+      averageUpgrade: 4,
+      lowestLevel: 100,
+      highestLevel: 300,
+    });
   });
 });
 

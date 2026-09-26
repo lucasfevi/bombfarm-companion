@@ -74,6 +74,6 @@ describe('RosterSummaryStrip', () => {
     mount({});
     const gear = byTestId('roster-summary-gear')?.textContent ?? '';
     expect(gear).toContain('Lv 120 · forged +13.0');
-    expect(gear).toContain('across 1 equipped items');
+    expect(gear).toContain('items Lv 120–120 · across 1 equipped items');
   });
 });

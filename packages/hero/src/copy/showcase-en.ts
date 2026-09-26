@@ -34,6 +34,7 @@ export const showcaseEn = {
   summarySquadGear: 'Squad gear, average',
   summaryGearAverages: 'Lv {level} · forged +{forge}',
   summaryGearItems: 'across {count} equipped items',
+  summaryGearRange: 'items Lv {lowest}–{highest}',
   cardPosition: '#{position}',
   cardPower: 'Power',
   cardLevel: 'Level {level}',

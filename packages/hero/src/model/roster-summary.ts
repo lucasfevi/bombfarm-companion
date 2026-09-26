@@ -22,9 +22,11 @@ export type RarityCount = {
 
 export type EquippedGearAverages = {
   readonly itemCount: number;
-  /** Both absent when no squad hero wears anything — an average of nothing is not a zero. */
+  /** All absent when no squad hero wears anything — an average of nothing is not a zero. */
   readonly averageLevel?: number;
   readonly averageUpgrade?: number;
+  readonly lowestLevel?: number;
+  readonly highestLevel?: number;
 };
 
 export type RosterSummary = {
@@ -58,6 +60,8 @@ export function equippedGearAverages(
     itemCount: items.length,
     averageLevel: mean((item) => item.level),
     averageUpgrade: mean((item) => item.upgrade),
+    lowestLevel: Math.min(...items.map((item) => item.level)),
+    highestLevel: Math.max(...items.map((item) => item.level)),
   };
 }
 

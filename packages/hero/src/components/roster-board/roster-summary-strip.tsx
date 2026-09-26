@@ -63,7 +63,13 @@ export function RosterSummaryStrip({
       <SummaryCell key="gear" testId="roster-summary-gear">
         <p className={eyebrowClass}>{copy.summarySquadGear}</p>
         <p className={wordedFigureClass}>{gearText}</p>
-        <p className="m-0 mt-1 text-[11px] text-muted">
+        <p className="m-0 mt-1 text-[11px] text-muted" data-testid="roster-summary-gear-range">
+          {summary.squadGear.lowestLevel === undefined || summary.squadGear.highestLevel === undefined
+            ? null
+            : `${sub(copy.summaryGearRange, {
+                lowest: formatNumber(summary.squadGear.lowestLevel, lang, 0),
+                highest: formatNumber(summary.squadGear.highestLevel, lang, 0),
+              })} · `}
           {sub(copy.summaryGearItems, { count: summary.squadGear.itemCount })}
         </p>
       </SummaryCell>,

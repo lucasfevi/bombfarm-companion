@@ -42,6 +42,7 @@ export type ShowcaseCopy = {
   readonly summaryGearAverages: string;
   /** `{count}` */
   readonly summaryGearItems: string;
+  readonly summaryGearRange: string;
   /** `{position}` */
   readonly cardPosition: string;
   readonly cardPower: string;
