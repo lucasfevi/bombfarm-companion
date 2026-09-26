@@ -234,7 +234,7 @@ describe('resolveSkinPrice', () => {
   });
 
   it('gives an index the table cannot name no key and no price, not the only skin listed', () => {
-    expect(resolveSkinPrice(9, snapshot)).toMatchObject({
+    expect(resolveSkinPrice(16, snapshot)).toMatchObject({
       key: null,
       hashName: null,
       amount: null,

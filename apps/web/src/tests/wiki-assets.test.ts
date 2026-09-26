@@ -18,23 +18,30 @@ describe('wiki-assets', () => {
     expect(heroAvatarSrc(6)).toBe('/wiki-assets/hero/hero7_avatar.png');
     expect(heroAvatarSrc(7)).toBe('/wiki-assets/hero/hero8_avatar.png');
     expect(heroAvatarSrc(8)).toBe('/wiki-assets/hero/hero9_avatar.png');
+    expect(heroAvatarSrc(9)).toBe('/wiki-assets/hero/hero10_avatar.png');
+    expect(heroAvatarSrc(10)).toBe('/wiki-assets/hero/hero11_avatar.png');
+    expect(heroAvatarSrc(11)).toBe('/wiki-assets/hero/hero12_avatar.png');
+    expect(heroAvatarSrc(12)).toBe('/wiki-assets/hero/hero13_avatar.png');
+    expect(heroAvatarSrc(13)).toBe('/wiki-assets/hero/hero14_avatar.png');
+    expect(heroAvatarSrc(14)).toBe('/wiki-assets/hero/hero15_avatar.png');
+    expect(heroAvatarSrc(15)).toBe('/wiki-assets/hero/hero16_avatar.png');
   });
 
   it('clamps skin to 0..(HERO_SKIN_COUNT-1)', () => {
     expect(normalizeSkin(-1)).toBe(0);
     expect(normalizeSkin(5)).toBe(5);
     expect(normalizeSkin(6.4)).toBe(6);
-    expect(normalizeSkin(8)).toBe(8);
-    expect(normalizeSkin(99)).toBe(8);
+    expect(normalizeSkin(15)).toBe(15);
+    expect(normalizeSkin(99)).toBe(15);
     expect(normalizeSkin('x')).toBe(0);
   });
 
-  it('treats skin 8 as known and 9 as unknown', () => {
-    // The 2026-08-23 patch added a 9th cosmetic ("Sentinela Real"), which the wiki reports as
-    // `skins.total: 9`. Before it landed here, a hero wearing it imported as the placeholder.
-    expect(HERO_SKIN_COUNT).toBe(9);
-    expect(isKnownSkin(8)).toBe(true);
-    expect(isKnownSkin(9)).toBe(false);
+  it('treats skin 15 as known and 16 as unknown', () => {
+    // The 2026-09-26 patch took the game from 9 cosmetics to 16, which the wiki reports as
+    // `skins.total: 16`. Before they landed here, a hero wearing one imported as the placeholder.
+    expect(HERO_SKIN_COUNT).toBe(16);
+    expect(isKnownSkin(15)).toBe(true);
+    expect(isKnownSkin(16)).toBe(false);
   });
 
   /**
@@ -44,7 +51,7 @@ describe('wiki-assets', () => {
    * `0` — the stored value on disk was discarded, not merely mis-rendered. Nothing covered
    * this boundary through the actual import path, which is why the regression was invisible.
    */
-  it('keeps a saved skin 8 through import, and still degrades skin 9 to the placeholder', () => {
+  it('keeps a saved skin 15 through import, and still degrades skin 16 to the placeholder', () => {
     const raw = JSON.parse(
       readFileSync(
         join(WEB_PACKAGE_ROOT, '../../packages/domain/tests/fixtures/sheet-math/payload-20260812-8heroes.json'),
@@ -61,13 +68,13 @@ describe('wiki-assets', () => {
     const skinIssues = (candidate: { issues: string[] }) =>
       candidate.issues.filter((issue) => /unknown skin/i.test(issue));
 
-    const known = withSkin(8).candidates[0];
-    expect(known.record.skin).toBe(8);
+    const known = withSkin(15).candidates[0];
+    expect(known.record.skin).toBe(15);
     expect(skinIssues(known)).toEqual([]);
 
     // One past the end must NOT clamp to the nearest index — a nearest-index
     // clamp would render a different hero's face, the exact failure this whole change is about.
-    const unknown = withSkin(9).candidates[0];
+    const unknown = withSkin(16).candidates[0];
     expect(unknown.record.skin).toBe(0);
     expect(skinIssues(unknown)).toHaveLength(1);
   });

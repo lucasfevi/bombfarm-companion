@@ -87,6 +87,13 @@ describe('the bought skin listings', () => {
     [6, 'White Oracle Skin'],
     [7, 'Cobalt Sorcerer Skin'],
     [8, 'Royal Sentinel Skin'],
+    [9, 'Mage Skin'],
+    [10, 'Dolphin Skin'],
+    [11, 'Vampire Count Skin'],
+    [12, 'Cauldron Witch Skin'],
+    [13, 'Shadow Ninja Skin'],
+    [14, 'Golden Paladin Skin'],
+    [15, 'Nurse Skin'],
   ])('names the listing skin %i is worn as', (skinIndex, hashName) => {
     expect(boughtSkinHashFor(skinIndex)).toBe(hashName);
   });
@@ -117,7 +124,7 @@ describe('the bought skin listings', () => {
   });
 
   it('fails closed on an index it does not name, rather than reaching for a neighbour', () => {
-    expect(boughtSkinHashFor(9)).toBeNull();
+    expect(boughtSkinHashFor(16)).toBeNull();
     expect(boughtSkinHashFor(-1)).toBeNull();
   });
 });

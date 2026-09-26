@@ -128,9 +128,10 @@ export const FIRST_BOUGHT_SKIN_INDEX = 4;
  * Nothing in a save connects the two — the market keys a skin on its hash and a hero carries a bare
  * integer — so this table is written out by hand, exactly as the act chest families are.
  *
- * `Royal Sentinel Skin` is the one name read off a live listing. The other four are owner-confirmed
- * and their ` Skin` suffix follows that single witness, which is why an index this table does not
- * name must fail closed: it resolves to no price at all rather than borrowing a neighbour's.
+ * Each name is the game client's English skin name plus ` Skin`. Four were read off live listings
+ * (Royal Sentinel, White Oracle, Shadow Hunter, Nurse); the rest follow that pattern, which is why
+ * an index this table does not name must fail closed: it resolves to no price at all rather than
+ * borrowing a neighbour's.
  */
 export const BOUGHT_SKIN_HASH: Readonly<Record<number, string>> = {
   4: 'Forest Warden Skin',
@@ -138,6 +139,13 @@ export const BOUGHT_SKIN_HASH: Readonly<Record<number, string>> = {
   6: 'White Oracle Skin',
   7: 'Cobalt Sorcerer Skin',
   8: 'Royal Sentinel Skin',
+  9: 'Mage Skin',
+  10: 'Dolphin Skin',
+  11: 'Vampire Count Skin',
+  12: 'Cauldron Witch Skin',
+  13: 'Shadow Ninja Skin',
+  14: 'Golden Paladin Skin',
+  15: 'Nurse Skin',
 };
 
 /** The market hash for a worn skin index, or null for a birth skin and for any index unnamed above. */

@@ -22,17 +22,16 @@ describe('heroAvatarSrc display map', () => {
     expect(heroAvatarSrc(6)).toBe('/wiki-assets/hero/hero7_avatar.png');
   });
 
-  // PROVISIONAL: skins 7 and 8 → files 8 and 9 are inferred from `file = index + 1` holding for
-  // indices 3..6, not confirmed against an in-game save carrying either. The hero2/hero3 swap at
-  // the front of the table is standing proof that wiki numbering CAN diverge from the in-game
-  // index, so if a real save ever contradicts this, fix `SKIN_AVATAR_FILE` — not the test.
-  it('maps the last two skins to their own files instead of falling back to skin 1', () => {
-    expect(HERO_SKIN_COUNT).toBe(9);
-    expect(heroAvatarSrc(7)).toBe('/wiki-assets/hero/hero8_avatar.png');
-    expect(heroAvatarSrc(8)).toBe('/wiki-assets/hero/hero9_avatar.png');
+  // Past the hero2/hero3 swap the wiki numbers files one ahead of the index; the game client's
+  // own skin table agrees for every index, so a real save that contradicts this means the table
+  // moved — fix `SKIN_AVATAR_FILE`, not the test.
+  it('maps each of the sixteen skins to its own file instead of falling back to skin 1', () => {
+    expect(HERO_SKIN_COUNT).toBe(16);
+    for (let skin = 3; skin < HERO_SKIN_COUNT; skin += 1) {
+      expect(heroAvatarSrc(skin)).toBe(`/wiki-assets/hero/hero${skin + 1}_avatar.png`);
+    }
     // The bug: an index past the table's end hit `?? 1` and rendered skin 1's face.
-    expect(heroAvatarSrc(7)).not.toBe(heroAvatarSrc(0));
-    expect(heroAvatarSrc(8)).not.toBe(heroAvatarSrc(0));
+    expect(heroAvatarSrc(15)).not.toBe(heroAvatarSrc(0));
   });
 
   it('clamps unknown skins without rewriting 1↔2', () => {
@@ -43,10 +42,10 @@ describe('heroAvatarSrc display map', () => {
     expect(normalizeSkin(HERO_SKIN_COUNT + 8)).toBe(HERO_SKIN_COUNT - 1);
   });
 
-  it('moves the known-skin boundary to 8', () => {
-    expect(isKnownSkin(7)).toBe(true);
-    expect(isKnownSkin(8)).toBe(true);
-    expect(isKnownSkin(9)).toBe(false);
+  it('moves the known-skin boundary to 15', () => {
+    expect(isKnownSkin(9)).toBe(true);
+    expect(isKnownSkin(15)).toBe(true);
+    expect(isKnownSkin(16)).toBe(false);
   });
 });
 
