@@ -93,17 +93,29 @@ describe('ShareCard', () => {
     expect(gradeClass).not.toMatch(/\b(bg-|border|rounded)/);
   });
 
-  it('prints an item level and its forge on the featured gear, and hides the gear when asked', () => {
+  it('draws the featured gear with no item level or forge until levels are asked for', () => {
     expect(render()).toContain('data-testid="share-card-gear"');
-    expect(text(render())).toContain('140');
-    expect(text(render())).toContain('+13');
+    expect(text(render())).not.toContain('140');
+    expect(text(render())).not.toContain('+13');
+    expect(text(render({ showLevels: true }))).toContain('140');
+    expect(text(render({ showLevels: true }))).toContain('+13');
     expect(render({ showGear: false })).not.toContain('data-testid="share-card-gear"');
   });
 
   it('places the item level and the forge where, and in the colour, every item tile prints them', () => {
-    const gear = render().split('data-testid="share-card-featured-b"')[1] ?? '';
-    expect(gear).toContain(`<span class="${iconMetaGlyphRecipe({ size: 'compact', place: 'top-end' })}" aria-hidden="true">140</span>`);
-    expect(gear).toContain(`<span class="${iconMetaGlyphRecipe({ size: 'compact', place: 'bottom-end' })}" aria-hidden="true">+13</span>`);
+    const gear = render({ showLevels: true }).split('data-testid="share-card-featured-b"')[1] ?? '';
+    expect(gear).toContain(`<span class="${iconMetaGlyphRecipe({ size: 'compact', place: 'top-end' })}" aria-hidden="true" data-slot="item-level">140</span>`);
+    expect(gear).toContain(`<span class="${iconMetaGlyphRecipe({ size: 'compact', place: 'bottom-end' })}" aria-hidden="true" data-slot="item-upgrade">+13</span>`);
+  });
+
+  it('prints each featured ability level over its art when levels are asked for, and none on the rows below', () => {
+    const html = render({ showLevels: true });
+    const featuredA = html.slice(html.indexOf('share-card-featured-a'), html.indexOf('share-card-featured-b'));
+    expect(featuredA.match(/data-slot="ability-level"/g)?.length).toBe(6);
+    expect(text(featuredA)).toContain('17/20');
+    expect(featuredA).not.toMatch(/pb-3\.5/);
+    const rest = html.slice(html.indexOf('data-testid="share-card-rest"'));
+    expect(rest).not.toContain('data-slot="ability-level"');
   });
 
   it('shows the seven team auras from the heroes on the card, and hides them when asked', () => {

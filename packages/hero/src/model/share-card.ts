@@ -110,6 +110,8 @@ export type ShareCardSettings = {
   readonly showAuras: boolean;
   /** Off until the player turns it on: the number identifies the account to anyone shown it. */
   readonly showAccountNumber: boolean;
+  /** Item level and forge on the featured gear, and ability levels on the featured abilities. */
+  readonly showLevels: boolean;
 };
 
 export function defaultShareCardSettings(
@@ -123,6 +125,7 @@ export function defaultShareCardSettings(
     showGear: true,
     showAuras: true,
     showAccountNumber: false,
+    showLevels: false,
   };
 }
 

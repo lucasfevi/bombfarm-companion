@@ -9,7 +9,7 @@
  */
 import { memo, useMemo, type SyntheticEvent } from 'react';
 import { motion } from 'motion/react';
-import { abilityName, rarityLabel } from '@bombfarm/domain/game-labels';
+import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { heroAbilityIconEntries } from '@bombfarm/domain/hero-abilities';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import {
@@ -19,7 +19,7 @@ import {
   rarityTextClass,
   rosterInactiveChromeClass,
 } from '@bombfarm/game-art';
-import { Chip, Panel, Tooltip, cn, formatCompactNumber, panelHClass, panelTitleClass } from '@bombfarm/ui';
+import { Chip, Panel, Switch, Tooltip, cn, formatCompactNumber, panelHClass, panelTitleClass } from '@bombfarm/ui';
 import { showcaseCopyFor, sub, type Lang, type RosterBoardCopy, type ShowcaseCopy } from '../../copy';
 import {
   SHOWCASE_ABILITY_GAP_PX,
@@ -32,6 +32,7 @@ import {
   showcaseCardReading,
   type RosterHeroRow,
   type ShowcaseCardReading,
+  type ShowcaseView,
 } from '../../model';
 import { BirthGradeLetter } from './birth-grade-letter';
 
@@ -55,6 +56,8 @@ export function RosterCards({
   rows,
   selectedId,
   onSelectHeroId,
+  view,
+  onViewChange,
   t,
   lang,
 }: {
@@ -62,6 +65,8 @@ export function RosterCards({
   rows: readonly RosterHeroRow[];
   selectedId: string;
   onSelectHeroId: (heroId: string) => void;
+  view: ShowcaseView;
+  onViewChange: (next: ShowcaseView) => void;
   t: RosterBoardCopy;
   lang: Lang;
 }) {
@@ -70,6 +75,19 @@ export function RosterCards({
     <Panel className="min-w-0">
       <div className={cn(panelHClass, 'items-center')}>
         <h2 className={panelTitleClass}>{t.heroesRosterTitle}</h2>
+        <label
+          data-testid="heroes-card-show-levels"
+          className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] text-muted"
+        >
+          <Switch
+            checked={view.showLevels}
+            onCheckedChange={(showLevels) => {
+              onViewChange({ ...view, showLevels });
+            }}
+            aria-label={copy.cardShowLevels}
+          />
+          {copy.cardShowLevels}
+        </label>
       </div>
       <Tooltip.Provider delay={200} closeDelay={80}>
         <ul
@@ -86,6 +104,7 @@ export function RosterCards({
               copy={copy}
               selected={row.id === selectedId}
               index={index}
+              showLevels={view.showLevels}
               onSelectHeroId={onSelectHeroId}
             />
           ))}
@@ -107,6 +126,7 @@ const HeroCard = memo(function HeroCard({
   copy,
   selected,
   index,
+  showLevels,
   onSelectHeroId,
 }: {
   row: RosterHeroRow;
@@ -116,6 +136,7 @@ const HeroCard = memo(function HeroCard({
   selected: boolean;
   /** The card's place on the board as it is ordered now — the `#` in its corner. */
   index: number;
+  showLevels: boolean;
   onSelectHeroId: (heroId: string) => void;
 }) {
   const { hero } = row;
@@ -187,13 +208,8 @@ const HeroCard = memo(function HeroCard({
         <div className="min-w-0" data-testid="heroes-card-abilities">
           <div className={sectionLabelClass}>
             <span>{copy.columnAbilities}</span>
-            {reading.hasWideBlast ? (
-              <span className="font-semibold text-gold" data-testid="heroes-card-wide-blast-label">
-                {sub(copy.cardWideBlast, { ability: abilityName(WIDE_BLAST_ABILITY_ID, lang) })}
-              </span>
-            ) : null}
           </div>
-          <ShowcaseAbilityIcons abilities={hero.abilities} lang={lang} />
+          <ShowcaseAbilityIcons abilities={hero.abilities} lang={lang} showLevels={showLevels} />
         </div>
         {/* Pushed to the floor of the card, so cards in one row line their gear up however many
             lines the sections above took. */}
@@ -208,6 +224,7 @@ const HeroCard = memo(function HeroCard({
             loadout={hero.loadout}
             lang={lang}
             size="sm"
+            showLevels={showLevels}
             emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
             emptySlotTip={t.gearSlotEmptyTip}
           />
@@ -291,10 +308,19 @@ function BirthLines({
 }
 
 /**
- * A hero's ability pool as bare icons — the level is on each icon's hover card, not on the icon.
- * Wide Blast is ringed in gold and badged, since owning it at all is the point.
+ * A hero's ability pool as icons, their levels printed over the art only when the board asks —
+ * over it, so the switch never resizes the art. Wide Blast is ringed in gold and badged, since
+ * owning it at all is the point; the ring and badge ride on the icon, so they lift with it.
  */
-function ShowcaseAbilityIcons({ abilities, lang }: { abilities: Record<string, number>; lang: Lang }) {
+function ShowcaseAbilityIcons({
+  abilities,
+  lang,
+  showLevels,
+}: {
+  abilities: Record<string, number>;
+  lang: Lang;
+  showLevels: boolean;
+}) {
   const entries = heroAbilityIconEntries(abilities);
   if (entries.length === 0) return <span className="text-muted">{NOT_PLACED}</span>;
   return (
@@ -304,25 +330,34 @@ function ShowcaseAbilityIcons({ abilities, lang }: { abilities: Record<string, n
       onClick={stopCardActivation}
       onKeyDown={stopCardActivation}
     >
-      {entries.map(({ id, level, max }) => {
-        const icon = <AbilityIcon code={id} size="sm" peek={{ lang, level, max, stopRowActivation: true }} />;
-        if (id !== WIDE_BLAST_ABILITY_ID) return <span key={id} className="inline-flex">{icon}</span>;
-        return (
-          <span
-            key={id}
-            className="relative inline-flex rounded-sm shadow-[0_0_0_2px_var(--gold),0_0_10px_1px_color-mix(in_oklch,var(--gold)_55%,transparent)]"
-            data-testid="heroes-card-wide-blast"
-          >
-            {icon}
-            <span
-              className="pointer-events-none absolute -top-1.5 -right-1.5 grid size-3.5 place-items-center rounded-full bg-gold text-[9px] leading-none text-accent-ink"
-              aria-hidden
-            >
-              ★
-            </span>
-          </span>
-        );
-      })}
+      {entries.map(({ id, level, max }) => (
+        <AbilityIcon
+          key={id}
+          code={id}
+          size="sm"
+          {...(showLevels ? { level, max } : {})}
+          levelPlacement="over-art"
+          adornment={id === WIDE_BLAST_ABILITY_ID ? WIDE_BLAST_MARK : undefined}
+          peek={{ lang, level, max, stopRowActivation: true }}
+        />
+      ))}
     </span>
   );
 }
+
+const WIDE_BLAST_MARK = (
+  <>
+    <span
+      className="pointer-events-none absolute inset-0 rounded-sm shadow-[0_0_0_2px_var(--gold),0_0_10px_1px_color-mix(in_oklch,var(--gold)_55%,transparent)]"
+      aria-hidden
+      data-testid="heroes-card-wide-blast"
+    />
+    <span
+      className="pointer-events-none absolute -top-1.5 -right-1.5 grid size-3.5 place-items-center rounded-full bg-gold text-[9px] leading-none text-accent-ink"
+      aria-hidden
+      data-testid="heroes-card-wide-blast-badge"
+    >
+      ★
+    </span>
+  </>
+);

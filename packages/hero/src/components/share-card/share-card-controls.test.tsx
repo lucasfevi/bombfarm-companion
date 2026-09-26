@@ -153,6 +153,20 @@ describe('ShareCardControls', () => {
     expect(reset.disabled).toBe(true);
   });
 
+  it('offers one Show levels switch, off until the player turns it on', () => {
+    mount();
+    const toggle = byTestId('share-card-show-levels');
+    expect(toggle.textContent).toContain('Show levels');
+    const control = toggle.querySelector('[role="switch"]') as HTMLElement;
+    expect(control.getAttribute('aria-checked')).toBe('false');
+    expect(latest.showLevels).toBe(false);
+    act(() => {
+      toggle.click();
+    });
+    expect(latest.showLevels).toBe(true);
+    expect(control.getAttribute('aria-checked')).toBe('true');
+  });
+
   it('says Copied beside a check once the image is on the clipboard', () => {
     mount('copied');
     const status = byTestId('share-card-copy-status');

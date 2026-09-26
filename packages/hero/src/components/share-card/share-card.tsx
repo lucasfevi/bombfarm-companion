@@ -83,7 +83,7 @@ export function ShareCard({
             <ShareFeaturedTile
               key={row.id}
               featured={{ row, medal: copy.medalPower[index] ?? '', dps: dps.get(row.id) }}
-              showGear={settings.showGear}
+              show={settings}
               copy={copy}
               lang={lang}
             />

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { emptyLoadout } from '@bombfarm/domain/gear';
 import { heroRankToneClass } from '@bombfarm/game-art';
 import type { RosterBoardCopy } from '../../copy';
-import type { RosterHeroRow } from '../../model';
-import { ZERO_SHEET, rowFixture } from '../../model/showcase.test-fixture';
+import { DEFAULT_SHOWCASE_VIEW, type RosterHeroRow, type ShowcaseView } from '../../model';
+import { ZERO_SHEET, item, rowFixture } from '../../model/showcase.test-fixture';
 import { RosterCards } from './roster-cards';
 
 const HOST_COPY = new Proxy({}, { get: (_target, key) => String(key) }) as RosterBoardCopy;
@@ -17,10 +18,32 @@ const SIX_ABILITIES = {
   explosao_ampla: 14,
 };
 
-function render(rows: readonly RosterHeroRow[], lang: 'en' | 'pt' = 'en'): string {
+function render(
+  rows: readonly RosterHeroRow[],
+  lang: 'en' | 'pt' = 'en',
+  view: ShowcaseView = DEFAULT_SHOWCASE_VIEW,
+): string {
   return renderToStaticMarkup(
-    <RosterCards rows={rows} selectedId="" onSelectHeroId={() => undefined} t={HOST_COPY} lang={lang} />,
+    <RosterCards
+      rows={rows}
+      selectedId=""
+      onSelectHeroId={() => undefined}
+      view={view}
+      onViewChange={() => undefined}
+      t={HOST_COPY}
+      lang={lang}
+    />,
   );
+}
+
+const WORN = { ...emptyLoadout(), arma: item(124, 13) };
+
+/** The markup of the element the hover lift moves: the peek trigger's one child. */
+function liftedArtOf(html: string, marker: string): string {
+  const at = html.indexOf(marker);
+  const trigger = html.lastIndexOf('data-slot="peek-trigger"', at);
+  const child = html.indexOf('<span', trigger);
+  return html.slice(child, at + marker.length);
 }
 
 function cardOf(html: string, id: string): string {
@@ -38,7 +61,7 @@ describe('RosterCards', () => {
     expect(visibleText).not.toMatch(/maxed/i);
   });
 
-  it('rings and badges Wide Blast only on the hero that owns it, and marks the label row', () => {
+  it('rings and badges Wide Blast only on the hero that owns it, with no label in the heading row', () => {
     const html = render([
       rowFixture({ id: 'with', abilities: SIX_ABILITIES }),
       rowFixture({ id: 'without', abilities: { olho_clinico: 20 } }),
@@ -46,13 +69,40 @@ describe('RosterCards', () => {
     const withIt = cardOf(html, 'with');
     const withoutIt = cardOf(html, 'without');
     expect(withIt).toContain('data-testid="heroes-card-wide-blast"');
-    expect(withIt).toContain('Wide Blast ✓');
+    expect(withIt).toContain('data-testid="heroes-card-wide-blast-badge"');
+    const heading = /data-testid="heroes-card-abilities"><div[^>]*>(.*?)<\/div>/.exec(withIt)?.[1] ?? '';
+    expect(heading.replace(/<[^>]*>/g, '')).toBe('Abilities');
+    expect(withIt).not.toContain('✓');
     expect(withoutIt).not.toContain('heroes-card-wide-blast');
-    expect(withoutIt).not.toContain('Wide Blast');
   });
 
-  it('names the mark in the reader’s language', () => {
-    expect(render([rowFixture({ id: 'pt', abilities: SIX_ABILITIES })], 'pt')).toContain('Explosão Ampla ✓');
+  it('seats the Wide Blast ring and badge inside the element the hover lifts, beside the art', () => {
+    const html = render([rowFixture({ id: 'with', abilities: { explosao_ampla: 14 } })]);
+    const lifted = liftedArtOf(html, 'data-testid="heroes-card-wide-blast-badge"');
+    expect(lifted.startsWith('<span class="relative inline-flex rounded-sm" data-slot="ability-adorned"')).toBe(true);
+    expect(lifted).toContain('explosao_ampla');
+    expect(lifted).toContain('data-testid="heroes-card-wide-blast"');
+  });
+
+  it('prints no item level, forge or ability level by default', () => {
+    const html = render([rowFixture({ id: 'quiet', abilities: SIX_ABILITIES, loadout: WORN })]);
+    expect(html).not.toContain('data-slot="item-level"');
+    expect(html).not.toContain('data-slot="item-upgrade"');
+    expect(html).not.toContain('data-slot="ability-level"');
+    expect(html).toContain('data-testid="heroes-card-show-levels"');
+  });
+
+  it('prints every item level, forge and ability level when the board asks, over the art', () => {
+    const html = render(
+      [rowFixture({ id: 'loud', abilities: SIX_ABILITIES, loadout: WORN })],
+      'en',
+      { showLevels: true },
+    );
+    expect(html).toMatch(/data-slot="item-level">124</);
+    expect(html).toMatch(/data-slot="item-upgrade">\+13</);
+    expect(html.match(/data-slot="ability-level"/g)?.length).toBe(6);
+    expect(html).toContain('20/20');
+    expect(html).not.toMatch(/pb-3\.5/);
   });
 
   it('numbers each card by its place on the board as ordered', () => {

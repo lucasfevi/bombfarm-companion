@@ -152,7 +152,7 @@ describe('the card phase', () => {
 });
 
 describe('defaultShareCardSettings', () => {
-  it('opens on the squad, the account phase, gear and auras shown, the account number hidden', () => {
+  it('opens on the squad, the account phase, gear and auras shown, the account number and levels hidden', () => {
     const settings = defaultShareCardSettings(
       [row({ id: 'in' }), row({ id: 'out', battleAllowed: false })],
       137,
@@ -164,6 +164,7 @@ describe('defaultShareCardSettings', () => {
       showGear: true,
       showAuras: true,
       showAccountNumber: false,
+      showLevels: false,
     });
   });
 });

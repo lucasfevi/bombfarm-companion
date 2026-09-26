@@ -51,8 +51,8 @@ export type ShowcaseCopy = {
   readonly cardBirthGrade: string;
   /** `{pct}` */
   readonly cardBirthRoll: string;
-  /** `{ability}` — the label row's mark for a hero that owns Wide Blast. */
-  readonly cardWideBlast: string;
+  /** The board's one switch for every item level, forge `+N` and ability level on its cards. */
+  readonly cardShowLevels: string;
   /** `{level}` `{forge}` */
   readonly cardAverageItemLevel: string;
   readonly cardNothingEquipped: string;

@@ -41,7 +41,7 @@ export const showcasePtBR: ShowcaseCopy = {
   cardLevel: 'Nível {level}',
   cardBirthGrade: 'Nota de nascimento {grade}',
   cardBirthRoll: 'Sorteio de nascimento {pct}',
-  cardWideBlast: '{ability} ✓',
+  cardShowLevels: 'Mostrar níveis',
   cardAverageItemLevel: 'Nível médio dos itens {level} · +{forge}',
   cardNothingEquipped: 'Nada equipado',
   aurasTitle: 'Auras de time',

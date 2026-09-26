@@ -77,6 +77,14 @@ export function ShareCardControls({
       <HeroPicker rows={rows} picked={settings.picked} onSettings={onSettings} copy={copy} lang={lang} />
       <Field title={copy.showTitle}>
         <ShowSwitch label={copy.showGear} checked={settings.showGear} onChange={(showGear) => { onSettings({ showGear }); }} testId="share-card-show-gear" />
+        <ShowSwitch
+          label={copy.showLevels}
+          checked={settings.showLevels}
+          onChange={(showLevels) => {
+            onSettings({ showLevels });
+          }}
+          testId="share-card-show-levels"
+        />
         <ShowSwitch label={copy.showAuras} checked={settings.showAuras} onChange={(showAuras) => { onSettings({ showAuras }); }} testId="share-card-show-auras" />
         <ShowSwitch
           label={copy.showAccountNumber}

@@ -20,6 +20,8 @@ type Props = {
   emptySlotAriaLabel?: (slotName: string) => string;
   /** Tooltip body for an empty gear slot. */
   emptySlotTip?: string;
+  /** Off, a tile is its art and rarity frame alone; the item's card still reads both numbers. */
+  showLevels?: boolean;
 };
 
 function stopRowActivation(event: SyntheticEvent) {
@@ -34,6 +36,7 @@ export function HeroGearIcons({
   size = 'lg',
   emptySlotAriaLabel = (slotName) => `${slotName} — empty`,
   emptySlotTip = 'Empty',
+  showLevels = true,
 }: Props) {
   return (
     <span
@@ -71,7 +74,16 @@ export function HeroGearIcons({
           );
         }
 
-        return <ItemIcon key={slot} item={equipped} size={size} peek={{ lang, stopRowActivation: true }} />;
+        return (
+          <ItemIcon
+            key={slot}
+            item={equipped}
+            size={size}
+            showLevel={showLevels}
+            showUpgrade={showLevels}
+            peek={{ lang, stopRowActivation: true }}
+          />
+        );
       })}
     </span>
   );

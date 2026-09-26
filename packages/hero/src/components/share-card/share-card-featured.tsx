@@ -3,7 +3,7 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { HeroAvatar, ItemIcon, artFrameRadiusClass } from '@bombfarm/game-art';
 import { cn, formatCompactNumber } from '@bombfarm/ui';
 import { showcaseCopyFor, type Lang, type ShareCardCopy } from '../../copy';
-import { shareDpsText, type RosterHeroRow } from '../../model';
+import { shareDpsText, type RosterHeroRow, type ShareCardSettings } from '../../model';
 import { BirthGradeLetter } from '../roster-board/birth-grade-letter';
 import { RarityLevel, ShareAbilityIcons, ShareStars, rarityIndexOf, shareWellClass } from './share-card-parts';
 
@@ -21,12 +21,12 @@ export type ShareFeaturedHero = {
 
 export function ShareFeaturedTile({
   featured,
-  showGear,
+  show,
   copy,
   lang,
 }: {
   featured: ShareFeaturedHero;
-  showGear: boolean;
+  show: Pick<ShareCardSettings, 'showGear' | 'showLevels'>;
   copy: ShareCardCopy;
   lang: Lang;
 }) {
@@ -53,8 +53,13 @@ export function ShareFeaturedTile({
         ) : null}
         <RarityLevel hero={hero} copy={copy} lang={lang} />
       </p>
-      <ShareAbilityIcons abilities={hero.abilities} tileClassName={FEATURED_ABILITY_TILE} gapPx={FEATURED_ABILITY_GAP_PX} />
-      {showGear ? <ShareGearGrid loadout={hero.loadout} /> : null}
+      <ShareAbilityIcons
+        abilities={hero.abilities}
+        tileClassName={FEATURED_ABILITY_TILE}
+        gapPx={FEATURED_ABILITY_GAP_PX}
+        showLevels={show.showLevels}
+      />
+      {show.showGear ? <ShareGearGrid loadout={hero.loadout} showLevels={show.showLevels} /> : null}
     </div>
   );
 }
@@ -84,13 +89,13 @@ export function ShareDpsLine({
   );
 }
 
-function ShareGearGrid({ loadout }: { loadout: HeroRecord['loadout'] }) {
+function ShareGearGrid({ loadout, showLevels }: { loadout: HeroRecord['loadout']; showLevels: boolean }) {
   return (
     <div className="grid grid-cols-[repeat(4,32px)] justify-center gap-[3px]" data-testid="share-card-gear">
       {SLOTS.map((slot) => {
         const item = loadout[slot];
         return item ? (
-          <ItemIcon key={slot} item={item} size="sm" />
+          <ItemIcon key={slot} item={item} size="sm" showLevel={showLevels} showUpgrade={showLevels} />
         ) : (
           <span
             key={slot}

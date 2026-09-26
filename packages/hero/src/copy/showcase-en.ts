@@ -39,7 +39,7 @@ export const showcaseEn = {
   cardLevel: 'Level {level}',
   cardBirthGrade: 'Birth grade {grade}',
   cardBirthRoll: 'Birth roll {pct}',
-  cardWideBlast: '{ability} ✓',
+  cardShowLevels: 'Show levels',
   cardAverageItemLevel: 'Average item level {level} · +{forge}',
   cardNothingEquipped: 'Nothing equipped',
   aurasTitle: 'Team auras',

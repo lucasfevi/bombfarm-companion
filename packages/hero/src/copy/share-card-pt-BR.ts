@@ -41,6 +41,7 @@ export const shareCardPtBR: ShareCardCopy = {
   showGear: 'Equipamento dos destaques',
   showAuras: 'Auras de time',
   showAccountNumber: 'Meu número de conta',
+  showLevels: 'Mostrar níveis',
   shareTitle: 'Compartilhar',
   copyImage: 'Copiar como imagem',
   copying: 'Gerando a imagem…',

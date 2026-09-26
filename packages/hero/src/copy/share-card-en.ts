@@ -41,6 +41,7 @@ export const shareCardEn: ShareCardCopy = {
   showGear: 'Gear on featured heroes',
   showAuras: 'Team auras',
   showAccountNumber: 'My account number',
+  showLevels: 'Show levels',
   shareTitle: 'Share',
   copyImage: 'Copy as image',
   copying: 'Making the image…',

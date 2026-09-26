@@ -52,20 +52,30 @@ export function RarityLevel({
   );
 }
 
-/** A hero's pool as bare art: the card is a picture, so nothing on it opens a hover card. */
+/** A hero's pool as art alone: the card is a picture, so nothing on it opens a hover card. A
+ *  level, when asked for, is printed over the art so the tile keeps its size. */
 export function ShareAbilityIcons({
   abilities,
   tileClassName,
   gapPx,
+  showLevels = false,
 }: {
   abilities: Record<string, number>;
   tileClassName: string;
   gapPx: number;
+  showLevels?: boolean;
 }) {
   return (
     <span className="flex flex-nowrap items-center justify-center" style={{ gap: gapPx }}>
-      {heroAbilityIconEntries(abilities).map(({ id }) => (
-        <AbilityIcon key={id} code={id} size="xs" className={tileClassName} />
+      {heroAbilityIconEntries(abilities).map(({ id, level, max }) => (
+        <AbilityIcon
+          key={id}
+          code={id}
+          size="xs"
+          className={tileClassName}
+          {...(showLevels ? { level, max } : {})}
+          levelPlacement="over-art"
+        />
       ))}
     </span>
   );

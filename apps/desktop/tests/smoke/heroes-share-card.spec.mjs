@@ -224,6 +224,18 @@ test.describe('the Heroes screen\'s share card', () => {
     await expect(page.getByTestId(`share-card-rest-${heroId}`)).toHaveCount(0);
   });
 
+  test('Show levels, off by default, prints the item and ability levels on the card', async () => {
+    const card = page.getByTestId('share-card');
+    const toggle = page.getByTestId('share-card-show-levels').getByRole('switch', { name: 'Show levels' });
+    await expect(toggle).not.toBeChecked();
+    await expect(card.locator('[data-slot="item-level"], [data-slot="ability-level"]')).toHaveCount(0);
+
+    await toggle.click();
+    await expect(toggle).toBeChecked();
+    await expect(card.locator('[data-slot="item-level"]').first()).toBeVisible();
+    await expect(card.locator('[data-slot="ability-level"]').first()).toHaveText(/^\d+\/\d+$/);
+  });
+
   test('Copy as image leaves a PNG of the card at twice its size on the clipboard', async () => {
     savedClipboard = await app.evaluate(({ clipboard }) => {
       const image = clipboard.readImage();

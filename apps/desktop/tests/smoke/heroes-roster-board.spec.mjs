@@ -137,6 +137,28 @@ test.describe('the Heroes screen\'s board of cards', () => {
     await expect(page.getByTestId('heroes-card-abilities').first()).not.toContainText(/\d+\/\d+/);
   });
 
+  test('one Show levels switch, off by default, prints every item and ability level on the cards', async () => {
+    const board = page.locator('[data-testid^="heroes-roster-card-"]');
+    const levelGlyphs = '[data-slot="item-level"], [data-slot="item-upgrade"], [data-slot="ability-level"]';
+    const toggle = page.getByTestId('heroes-card-show-levels').getByRole('switch', { name: 'Show levels' });
+    await expect(toggle).not.toBeChecked();
+    await expect(board.locator(levelGlyphs)).toHaveCount(0);
+
+    await toggle.click();
+    await expect(toggle).toBeChecked();
+    await expect(board.locator('[data-slot="item-level"]').first()).toBeVisible();
+    await expect(board.locator('[data-slot="ability-level"]').first()).toHaveText(/^\d+\/\d+$/);
+
+    await page.getByRole('button', { name: /^List$/i }).click();
+    await expect(page.getByTestId('heroes-card-show-levels')).toHaveCount(0);
+    await showTable(page);
+    await expect(page.getByTestId('heroes-card-show-levels')).toHaveCount(0);
+    await showBoard(page);
+    await expect(toggle).toBeChecked();
+    await toggle.click();
+    await expect(board.locator(levelGlyphs)).toHaveCount(0);
+  });
+
   test('the roster summary carries the squad power and the furthest phase', async () => {
     const summary = page.getByTestId('roster-summary-strip');
     await expect(summary).toBeVisible();

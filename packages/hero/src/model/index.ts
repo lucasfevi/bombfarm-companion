@@ -165,6 +165,7 @@ export type { HighestRoll } from './highest-rolls';
 export { equippedGearAverages, equippedItemsOf, isSquadHero, rosterSummaryFor } from './roster-summary';
 export type { EquippedGearAverages, RarityCount, RosterSummary } from './roster-summary';
 export {
+  DEFAULT_SHOWCASE_VIEW,
   SHOWCASE_ABILITY_GAP_PX,
   SHOWCASE_ABILITY_TILE_PX,
   SHOWCASE_CARD_MIN_WIDTH_PX,
@@ -180,7 +181,7 @@ export {
   showcaseCardReading,
   squadGearAveragesText,
 } from './showcase-card';
-export type { ShowcaseCardReading } from './showcase-card';
+export type { ShowcaseCardReading, ShowcaseView } from './showcase-card';
 export { auraCoverageFor } from './aura-coverage';
 export type { AuraCoverage, AuraCoverageTile } from './aura-coverage';
 export {

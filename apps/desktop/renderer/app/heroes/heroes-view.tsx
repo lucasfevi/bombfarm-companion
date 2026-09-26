@@ -55,6 +55,7 @@ import type { ShareCardActions, ShareCardData } from '@bombfarm/hero/components'
 import {
   DEFAULT_LEADERBOARD_VIEW,
   DEFAULT_ROSTER_BOARD_SORT,
+  DEFAULT_SHOWCASE_VIEW,
   EMPTY_ROSTER_BOARD_FILTER,
   filterRosterRows,
   heroPickOutcome,
@@ -69,6 +70,7 @@ import type {
   RosterBoardSort,
   RosterHeroRow,
   RosterViewMode,
+  ShowcaseView,
 } from '@bombfarm/hero/model';
 import { resolveHeroPrice } from '@bombfarm/pricing';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
@@ -202,6 +204,7 @@ function HeroesRoster({
   const [rosterSort, setRosterSort] = useState<RosterBoardSort>(DEFAULT_ROSTER_BOARD_SORT);
   const [rosterFilter, setRosterFilter] = useState<RosterBoardFilter>(EMPTY_ROSTER_BOARD_FILTER);
   const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>(DEFAULT_LEADERBOARD_VIEW);
+  const [showcaseView, setShowcaseView] = useState<ShowcaseView>(DEFAULT_SHOWCASE_VIEW);
   // View-local, and stored nowhere: leaving the screen unmounts this and the next visit opens on
   // the Farm selection again. It outlives a hero switch on purpose — comparing two heroes at one
   // phase is the reason to override at all.
@@ -403,6 +406,8 @@ function HeroesRoster({
                 rows={shownRows}
                 selectedId={active.id}
                 onSelectHeroId={onSelectHeroId}
+                view={showcaseView}
+                onViewChange={setShowcaseView}
                 t={rosterCopy}
                 lang={lang}
               />

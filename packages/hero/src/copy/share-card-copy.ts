@@ -58,6 +58,7 @@ export type ShareCardCopy = {
   readonly showGear: string;
   readonly showAuras: string;
   readonly showAccountNumber: string;
+  readonly showLevels: string;
   readonly shareTitle: string;
   readonly copyImage: string;
   readonly copying: string;

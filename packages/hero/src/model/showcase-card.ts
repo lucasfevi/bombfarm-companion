@@ -1,13 +1,12 @@
 import { formatNumber, type Lang } from '@bombfarm/ui';
 import { sub, type ShowcaseCopy } from '../copy';
-import { heroTypesFor, wideBlastOf, type HeroTypeId } from './hero-types';
+import { heroTypesFor, type HeroTypeId } from './hero-types';
 import { highestRollsFor, highestRollsText } from './highest-rolls';
 import { equippedGearAverages, type EquippedGearAverages } from './roster-summary';
 import type { RosterHeroRow } from './roster-rows';
 
 export type ShowcaseCardReading = {
   readonly types: readonly HeroTypeId[];
-  readonly hasWideBlast: boolean;
   /** Absent when no birth statistic could be placed — never a 0%, which reads as the worst roll. */
   readonly birthRollPct?: number;
   readonly highestRolls?: string;
@@ -23,12 +22,19 @@ export function showcaseCardReading(
   const highestRolls = highestRollsText(highestRollsFor(hero), copy, (pct) => percentText(pct, lang));
   return {
     types: heroTypesFor(hero.abilities),
-    hasWideBlast: wideBlastOf(hero.abilities).has,
     ...(row.report === undefined ? {} : { birthRollPct: row.report.mean }),
     ...(highestRolls === undefined ? {} : { highestRolls }),
     gear: equippedGearAverages([hero]),
   };
 }
+
+/** How the board of cards is being looked at: session-only, like the leaderboard's own view. */
+export type ShowcaseView = {
+  /** Every item level, forge `+N` and ability level on the cards, together. */
+  readonly showLevels: boolean;
+};
+
+export const DEFAULT_SHOWCASE_VIEW: ShowcaseView = { showLevels: false };
 
 export function percentText(pct: number, lang: Lang): string {
   return `${formatNumber(pct, lang, 0)}%`;

@@ -88,12 +88,12 @@ export function ItemIcon({ item, size = 'md', className, showUpgrade, showLevel,
         />
       ) : null}
       {withLevel ? (
-        <span className={iconMetaGlyphRecipe({ size: glyphSize, place: 'top-end' })} aria-hidden="true">
+        <span className={iconMetaGlyphRecipe({ size: glyphSize, place: 'top-end' })} aria-hidden="true" data-slot="item-level">
           {Math.max(0, Math.round(item.level))}
         </span>
       ) : null}
       {withUpgrade ? (
-        <span className={iconMetaGlyphRecipe({ size: glyphSize, place: 'bottom-end' })} aria-hidden="true">
+        <span className={iconMetaGlyphRecipe({ size: glyphSize, place: 'bottom-end' })} aria-hidden="true" data-slot="item-upgrade">
           +{upgrade}
         </span>
       ) : null}

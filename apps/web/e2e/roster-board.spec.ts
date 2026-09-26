@@ -209,6 +209,25 @@ test.describe('roster rail and board', () => {
     ).toHaveCount(1);
   });
 
+  test('one Show levels switch on the board prints every item level, forge and ability level', async ({ page }) => {
+    await openPlanner(page);
+    await expect(page.getByTestId('heroes-card-show-levels')).toHaveCount(0);
+    await showBoard(page);
+    const ayla = page.getByTestId('heroes-roster-card-board-ayla');
+    const toggle = page.getByTestId('heroes-card-show-levels').getByRole('switch', { name: 'Show levels' });
+    await expect(toggle).not.toBeChecked();
+    await expect(ayla.locator('[data-slot="item-level"], [data-slot="ability-level"]')).toHaveCount(0);
+
+    await toggle.click();
+    await expect(ayla.locator('[data-slot="item-level"]').first()).toHaveText('220');
+    await expect(ayla.locator('[data-slot="item-upgrade"]').first()).toHaveText('+8');
+    await expect(ayla.locator('[data-slot="ability-level"]')).toHaveCount(3);
+    await expect(ayla.locator('[data-slot="ability-level"]').first()).toHaveText(/^\d+\/\d+$/);
+
+    await showTable(page);
+    await expect(page.getByTestId('heroes-card-show-levels')).toHaveCount(0);
+  });
+
   test('the roster summary sits above both presentations', async ({ page }) => {
     await openPlanner(page);
     const summary = page.getByTestId('roster-summary-strip');

@@ -88,6 +88,8 @@ export function RosterWorkspace({ strip, children }: { strip: ReactNode; childre
                 rows={view.shownRows}
                 selectedId={view.selectedId}
                 onSelectHeroId={view.onSelectHeroId}
+                view={view.showcaseView}
+                onViewChange={view.onShowcaseView}
                 t={t}
                 lang={lang}
               />

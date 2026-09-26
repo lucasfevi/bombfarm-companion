@@ -29,7 +29,7 @@ const RANGES = {
 };
 
 describe('showcaseCardReading', () => {
-  it('reads the type, the Wide Blast mark, the birth roll and the highest rolls off one hero', () => {
+  it('reads the type, the birth roll and the highest rolls off one hero', () => {
     const row = rowFixture({
       id: 'h',
       abilities: { olho_clinico: 20, golpe_brutal: 12, explosao_ampla: 3 },
@@ -38,7 +38,6 @@ describe('showcaseCardReading', () => {
     });
     const reading = showcaseCardReading(row, showcaseEn, 'en');
     expect(reading.types).toEqual(['crit']);
-    expect(reading.hasWideBlast).toBe(true);
     expect(reading.birthRollPct).toBeCloseTo((40 + 97 + 94 + 50) / 8, 6);
     expect(reading.highestRolls).toBe('Highest rolls: CDR 97%, Crit DMG 94%');
   });
@@ -47,7 +46,6 @@ describe('showcaseCardReading', () => {
     const reading = showcaseCardReading(rowFixture({ id: 'bare' }), showcaseEn, 'en');
     expect(reading.birthRollPct).toBeUndefined();
     expect(reading.highestRolls).toBeUndefined();
-    expect(reading.hasWideBlast).toBe(false);
     expect(reading.types).toEqual([]);
   });
 });
