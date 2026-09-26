@@ -1,55 +1,17 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { reconcile, type CatalogView } from './reconcile.js';
+import { reconcile } from './reconcile.js';
 import { resolveItemPrice, resolveKey } from './resolve.js';
 import { buildSnapshot } from './snapshot.js';
 import { categoryKey, priceKey } from './types.js';
+import { COMMITTED_CATALOG as CATALOG } from './__fixtures__/committed-catalog.js';
 import { LIVE_MARKET_ROWS } from './__fixtures__/live-market-rows.js';
 
 /**
- * The reconciliation run over every row the market actually carried. The unit tests elsewhere
- * drive a fake; this one proves the same code turns real Steam rows into identities an app can
- * price — which is the claim the whole snapshot rests on.
+ * The reconciliation run over every row the market actually carried. The unit tests elsewhere drive
+ * a synthetic catalog; this one proves the same code turns real Steam rows into identities an app
+ * can price, out of the committed data the published snapshot is generated from — which is the
+ * claim the whole snapshot rests on.
  */
-const CATALOG_PATH = fileURLToPath(
-  new URL('../../../domain/src/data/catalog.json', import.meta.url),
-);
-const WIKI_PATH = fileURLToPath(
-  new URL('../../../domain/src/data/phase-wiki.json', import.meta.url),
-);
-
-interface RawCatalog {
-  defs: { id: string; set: string; slot: string; nativeLevel: number }[];
-  rarities: { idx: number; label: string }[];
-}
-
-interface RawWiki {
-  gems: { list: { defId: string; name: string }[] };
-}
-
-const raw = JSON.parse(readFileSync(CATALOG_PATH, 'utf-8')) as RawCatalog;
-const wiki = JSON.parse(readFileSync(WIKI_PATH, 'utf-8')) as RawWiki;
-const CATALOG: CatalogView = {
-  defs: raw.defs.map((def) => ({
-    defId: def.id,
-    set: def.set,
-    slot: def.slot,
-    level: def.nativeLevel,
-  })),
-  rarityIdxs: raw.rarities.map((rarity) => rarity.idx),
-  rarityTokens: Object.fromEntries(
-    raw.rarities.map((rarity) => [
-      rarity.idx,
-      rarity.label
-        .normalize('NFD')
-        .replace(/\p{Diacritic}/gu, '')
-        .toLowerCase(),
-    ]),
-  ),
-  defIdByHash: Object.fromEntries(wiki.gems.list.map((gem) => [`${gem.name} Gem`, gem.defId])),
-};
-
 const FETCHED = '2026-08-29T00:00:00.000Z';
 const reconciled = reconcile(LIVE_MARKET_ROWS, CATALOG, FETCHED);
 const snapshot = buildSnapshot({
@@ -142,7 +104,7 @@ describe('the live market rows', () => {
     expect(entryFor(priceKey(defId, rarityIdx))?.hashName).toBe(hashName);
   });
 
-  it('keeps two same-act chests apart, which a facet-built key would have merged', () => {
+  it('keeps two same-act chests apart, which anything but the family name would have merged', () => {
     const cage = entryFor(priceKey('chest_hero_1', 1));
     const stoneChest = entryFor(priceKey('chest_skill_1', 1));
 
@@ -175,7 +137,7 @@ describe('the live market rows', () => {
     expect(entryFor(categoryKey('skin', 'Royal Sentinel Skin'))?.kind).toBeNull();
   });
 
-  it('raises nothing, because every category and tag on the market is one it knows', () => {
+  it('raises nothing, because every row on the market is one the catalog can generate a name for', () => {
     expect(snapshot.anomalies).toEqual([]);
   });
 

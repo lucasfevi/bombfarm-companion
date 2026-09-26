@@ -1,39 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { parseAppFilters, parseSearchPage, searchRenderUrl } from './endpoints.js';
+import { parseSearchPage, searchRenderUrl } from './endpoints.js';
 
 const APP_ID = 4892010;
 
 describe('searchRenderUrl', () => {
-  it('narrows a query using the market UI own facet parameter form', () => {
-    const url = new URL(searchRenderUrl(APP_ID, { set: 'ember', slot: 'weapon' }, 0));
+  it('narrows by nothing, because identity comes from the name and not from a facet', () => {
+    const url = new URL(searchRenderUrl(APP_ID, 0));
 
-    expect(url.searchParams.getAll(`category_${String(APP_ID)}_set[]`)).toEqual(['tag_ember']);
-    expect(url.searchParams.getAll(`category_${String(APP_ID)}_slot[]`)).toEqual(['tag_weapon']);
+    expect(
+      [...url.searchParams.keys()].some((key) => key.startsWith(`category_${String(APP_ID)}_`)),
+    ).toBe(false);
+  });
+
+  it('asks for the page the caller named, so the walk pages rather than repeating itself', () => {
+    expect(new URL(searchRenderUrl(APP_ID, 20)).searchParams.get('start')).toBe('20');
   });
 
   it('always asks for USD, so a runner in any region produces the same base prices', () => {
-    const url = new URL(searchRenderUrl(APP_ID, {}, 0));
+    const url = new URL(searchRenderUrl(APP_ID, 0));
 
     expect(url.searchParams.get('currency')).toBe('1');
     expect(url.searchParams.get('country')).toBe('US');
-  });
-});
-
-describe('parseAppFilters', () => {
-  it('keys the tag lists by the bare facet name, not the appid-prefixed one', () => {
-    const filters = parseAppFilters({
-      success: true,
-      facets: {
-        '4892010_rarity': { appid: APP_ID, name: 'rarity', tags: { uncommon: {}, rare: {} } },
-      },
-    });
-
-    expect(filters).toEqual({ rarity: ['uncommon', 'rare'] });
-  });
-
-  it('returns nothing when Steam reports failure, rather than an empty-looking success', () => {
-    expect(parseAppFilters({ success: false })).toEqual({});
-    expect(parseAppFilters(null)).toEqual({});
   });
 });
 

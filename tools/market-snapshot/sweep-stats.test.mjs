@@ -6,12 +6,13 @@
  * the discovery pass emits — because neither pass totals them. Reword either message and the count
  * silently goes to zero while every other suite stays green.
  *
- * The facet sweep is the burst that spends an address's quota, and the only thing keeping it off
- * an ordinary pass is the previous snapshot reaching discovery. Nothing types that hand-off:
- * drop it and every unit test stays green while the burst comes back on every pass.
+ * And a pass must ask for nothing but the enumeration. Nothing types that: a second upstream pass
+ * could be reintroduced and every unit test would stay green while an address's quota went back to
+ * being spent on identifying rows it already knew. So the assertion here is on the call count and on
+ * the URLs themselves, not on the absence of a function — a burst that ran and found nothing would
+ * satisfy anything weaker.
  *
- * So this drives `runSweep` against a stubbed network, with no request made, down each path in
- * turn. That is what this file is for, and it is what makes both safe to depend on.
+ * So this drives `runSweep` against a stubbed network, with no request made, down each path in turn.
  */
 import { describe, expect, it, vi } from 'vitest';
 import { assertWorkspaceDistBuilt } from '../require-workspace-dist.mjs';
@@ -29,28 +30,37 @@ const CATALOG = {
   defs: [{ defId: 'coal_bota', set: 'coal', slot: 'bota', level: 30 }],
   rarityIdxs: [2],
   rarityTokens: { 2: 'raro' },
-  defIdByHash: {},
-  sets: ['coal'],
-  slots: ['bota'],
+  gems: [{ defId: 'gem_topaz', name: 'Topaz', rarityIdx: 2 }],
 };
 
+const BOOTS = 'Coal Boots Lv 30 (Rare)';
+const GEM = 'Topaz Gem';
+
+/**
+ * `Coal Cape (Rare)` is the row nothing can name: exactly the shape a name parser would have read as
+ * the coal set in a cape slot. It is here so the unlinkable count has something to count, and so
+ * "counts them all" and "counts the right ones" can be told apart on a run carrying two kinds.
+ */
+const UNNAMEABLE = 'Coal Cape (Rare)';
+
+// The boots row carries a type that disagrees with the slot its name implies, which is the drift
+// witness: it must be counted as drift and NOT as unlinkable, since it matched and is still keyed.
 const ROWS = [
-  ['Coal Boots Lv 30 (Rare)', 480],
-  ['Topaz Gem', 250],
-].map(([hashName, sellPriceCents]) => ({
+  [BOOTS, 480, 'Helmet'],
+  [GEM, 250, null],
+  [UNNAMEABLE, 300, null],
+].map(([hashName, sellPriceCents, type]) => ({
   hashName,
   name: hashName,
   sellPriceCents,
   listings: 2,
   iconUrl: null,
-  type: null,
+  type,
 }));
 
-/** Steam publishing a slot nothing maps: an anomaly of a kind the unlinkable count must exclude. */
-const APP_FILTERS = { success: true, facets: { s: { name: 'slot', tags: { notaslot: {} } } } };
-
-const isFlatQuery = (url) =>
-  ![...new URL(url).searchParams.keys()].some((key) => key.startsWith('category_'));
+/** True when a search URL narrows by a market facet, which nothing in the sweep does any more. */
+const narrowsByFacet = (url) =>
+  [...new URL(url).searchParams.keys()].some((key) => key.startsWith('category_'));
 
 /** Enough consecutive rate limits to trip either pass's circuit breaker. */
 const PAST_THE_BREAKER = 99;
@@ -59,16 +69,20 @@ function sweepWith({ searchRateLimits = 0, quoteRateLimits = 0, currencies = ['B
   let searchLeft = searchRateLimits;
   let quoteLeft = quoteRateLimits;
   const lines = [];
+  const searchUrls = [];
 
   const steamNet = {
-    fetchAppFilters: () => Promise.resolve(APP_FILTERS),
     fetchSearchPage: (url) => {
       if (searchLeft > 0) {
         searchLeft -= 1;
         return Promise.resolve({ ok: false, rateLimited: true });
       }
-      const rows = isFlatQuery(url) ? ROWS : [];
-      return Promise.resolve({ ok: true, page: { totalCount: rows.length, rows } });
+      searchUrls.push(url);
+      const start = Number(new URL(url).searchParams.get('start') ?? '0');
+      return Promise.resolve({
+        ok: true,
+        page: { totalCount: ROWS.length, rows: ROWS.slice(start, start + SEARCH_PAGE_SIZE) },
+      });
     },
     fetchPriceOverview: () => {
       if (quoteLeft > 0) {
@@ -88,8 +102,33 @@ function sweepWith({ searchRateLimits = 0, quoteRateLimits = 0, currencies = ['B
     log: (message) => lines.push(message),
     now: () => Date.parse('2026-09-01T00:00:00.000Z'),
     steamNet,
-  }).then(({ snapshot, stats }) => ({ snapshot, stats, lines }));
+  }).then(({ snapshot, stats }) => ({ snapshot, stats, lines, searchUrls }));
 }
+
+describe('a pass asks for the enumeration and nothing else', () => {
+  it('spends one search call on a board that fits one page, narrowed by no facet', async () => {
+    const { stats, searchUrls } = await sweepWith({ currencies: [] });
+
+    expect(stats.searchCalls).toBe(1);
+    expect(searchUrls).toHaveLength(1);
+    expect(searchUrls.some(narrowsByFacet)).toBe(false);
+  });
+
+  it('counts the walk as the whole enumeration, with no second endpoint beside it', async () => {
+    const { stats } = await sweepWith({ currencies: [] });
+
+    expect(stats.enumerationCalls).toBe(stats.searchCalls);
+  });
+
+  it('identifies the board it walked, which is the half the walk alone now buys', async () => {
+    const { snapshot, stats } = await sweepWith({ currencies: [] });
+
+    expect(stats.enumerationComplete).toBe(true);
+    expect(snapshot.index[priceKey('coal_bota', 2)]).toBeDefined();
+    expect(snapshot.index[priceKey('gem_topaz', 2)]).toBeDefined();
+    expect(snapshot.coverage.matchedCatalogKeys).toBeGreaterThan(0);
+  });
+});
 
 describe('the sweep counts the rate limits its two passes log', () => {
   it('reads zero from a pass that hit none, so the counts below are not counting noise', async () => {
@@ -142,19 +181,23 @@ describe('the sweep reports what it asked for and what it could not explain', ()
   it('counts exactly the priced rows nothing owned can look up, and no other anomaly', async () => {
     const { stats } = await sweepWith();
 
-    expect(stats.unlinkableItems.length).toBeGreaterThan(0);
+    expect(stats.unlinkableItems).toHaveLength(1);
+    expect(stats.unlinkableItems[0].detail).toContain(UNNAMEABLE);
     expect(stats.unlinkableItems).toEqual(
       stats.anomalies.filter((anomaly) => anomaly.kind === 'unlinkable-item'),
     );
+  });
 
-    // A second kind is present in the same run, so "counts them all" and "counts the right ones"
-    // are told apart rather than both passing on a run that has only one kind in it.
-    expect(stats.unmappedTags.map((anomaly) => anomaly.kind)).toContain('unknown-slot-tag');
-    expect(stats.unlinkableItems).not.toEqual(stats.anomalies);
+  it('keeps the drift count apart from the unlinkable one, on a run carrying both', async () => {
+    const { stats } = await sweepWith();
+
+    expect(stats.unmappedTags.map((anomaly) => anomaly.kind)).toEqual(['name-form-drift']);
+    expect(stats.unmappedTags[0].detail).toContain(BOOTS);
+    expect(stats.unlinkableItems).not.toEqual(stats.unmappedTags);
   });
 });
 
-describe('the unmapped-tag annotation', () => {
+describe('the name-form drift annotation', () => {
   const annotationsWith = (githubActions, snapshot) => {
     const printed = [];
     const console_ = vi.spyOn(console, 'log').mockImplementation((line) => printed.push(line));
@@ -165,7 +208,7 @@ describe('the unmapped-tag annotation', () => {
       console_.mockRestore();
       vi.unstubAllEnvs();
     }
-    return printed.filter((line) => line.startsWith('::warning title=Unmapped market tags::'));
+    return printed.filter((line) => line.startsWith('::warning title=Market name form has moved::'));
   };
 
   it('is raised on Actions, which is the only place that renders one', async () => {
@@ -182,82 +225,39 @@ describe('the unmapped-tag annotation', () => {
 });
 
 /**
- * A market that answers facet-narrowed queries the way Steam does — a query for a tag returns
- * exactly the rows carrying it — so a pass can identify what it enumerated and hand the snapshot
- * it produced to the next one.
+ * A market that answers the flat walk out of a fixed item list, so a pass can identify what it
+ * enumerated and hand the snapshot it produced to the next one.
  */
-const TAGGED_CATALOG = {
+const TWO_DEF_CATALOG = {
   defs: [
     { defId: 'coal_bota', set: 'coal', slot: 'bota', level: 30 },
     { defId: 'coal_elmo', set: 'coal', slot: 'elmo', level: 30 },
   ],
   rarityIdxs: [2, 3],
   rarityTokens: { 2: 'raro', 3: 'epico' },
-  defIdByHash: { 'Topaz Gem': 'gem_topaz' },
-  sets: ['coal'],
-  slots: ['bota', 'elmo'],
+  gems: [{ defId: 'gem_topaz', name: 'Topaz', rarityIdx: 2 }],
 };
 
-const listed = (hashName, tags) => ({ hashName, tags });
+const listed = (hashName) => ({ hashName });
 
-const BOOTS = listed('Coal Boots Lv 30 (Rare)', {
-  category: 'equip',
-  set: 'coal',
-  slot: 'boots',
-  rarity: 'rare',
-  level: '30',
-});
-const GEM = listed('Topaz Gem', { category: 'gem', rarity: 'rare' });
-const HELMET = listed('Coal Helmet Lv 30 (Epic)', {
-  category: 'equip',
-  set: 'coal',
-  slot: 'helmet',
-  rarity: 'epic',
-  level: '30',
-});
+const LISTED_BOOTS = listed('Coal Boots Lv 30 (Rare)');
+const LISTED_GEM = listed('Topaz Gem');
+const LISTED_HELMET = listed('Coal Helmet Lv 30 (Epic)');
 
-const TAGGED_FILTERS = {
-  success: true,
-  facets: {
-    a: { name: 'category', tags: { equip: {}, gem: {} } },
-    b: { name: 'set', tags: { coal: {} } },
-    c: { name: 'slot', tags: { boots: {}, helmet: {} } },
-    d: { name: 'rarity', tags: { rare: {}, epic: {} } },
-    e: { name: 'level', tags: { 30: {} } },
-  },
-};
-
-/** The facet each search URL narrows by, as `facet=tag`, or `''` for the flat enumeration. */
-function narrowingOf(url) {
-  const narrow = {};
-  for (const [key, value] of new URL(url).searchParams) {
-    const facet = /^category_\d+_(.+)\[\]$/.exec(key)?.[1];
-    if (facet != null) narrow[facet] = value.replace(/^tag_/, '');
-  }
-  return narrow;
-}
-
-function taggedSweep({ items, prior = null, planQuotes = undefined, currencies = ['BRL'] }) {
-  const facetQueries = [];
+function walkedSweep({ items, prior = null, planQuotes = undefined, currencies = ['BRL'] }) {
+  const searchUrls = [];
 
   const steamNet = {
-    fetchAppFilters: () => Promise.resolve(TAGGED_FILTERS),
     fetchSearchPage: (url) => {
-      const narrow = narrowingOf(url);
-      const asked = Object.entries(narrow).map(([facet, tag]) => `${facet}=${tag}`);
-      if (asked.length > 0) facetQueries.push(asked.join(','));
-
-      const matching = items.filter((item) =>
-        Object.entries(narrow).every(([facet, tag]) => item.tags[facet] === tag),
-      );
+      searchUrls.push(url);
       const start = Number(new URL(url).searchParams.get('start') ?? '0');
       return Promise.resolve({
         ok: true,
         page: {
-          totalCount: matching.length,
-          rows: matching.slice(start, start + SEARCH_PAGE_SIZE).map((item) => ({
-            hashName: item.hashName,
-            name: item.hashName,
+          totalCount: items.length,
+          rows: items.slice(start, start + SEARCH_PAGE_SIZE).map((entry) => ({
+            hashName: entry.hashName,
+            name: entry.hashName,
             sellPriceCents: 480,
             listings: 2,
             iconUrl: null,
@@ -272,7 +272,7 @@ function taggedSweep({ items, prior = null, planQuotes = undefined, currencies =
   };
 
   return runSweep({
-    catalog: TAGGED_CATALOG,
+    catalog: TWO_DEF_CATALOG,
     prior,
     searchDelayMs: 0,
     quoteDelayMs: 0,
@@ -281,7 +281,7 @@ function taggedSweep({ items, prior = null, planQuotes = undefined, currencies =
     log: () => {},
     now: () => Date.parse('2026-09-01T00:00:00.000Z'),
     steamNet,
-  }).then(({ snapshot, stats }) => ({ snapshot, stats, facetQueries }));
+  }).then(({ snapshot, stats }) => ({ snapshot, stats, searchUrls }));
 }
 
 const BOOTS_KEY = priceKey('coal_bota', 2);
@@ -289,7 +289,7 @@ const GEM_KEY = priceKey('gem_topaz', 2);
 
 const onlyBoots = ({ quotable }) => ({
   hashNames: quotable
-    .filter((entry) => entry.hashName === BOOTS.hashName)
+    .filter((entry) => entry.hashName === LISTED_BOOTS.hashName)
     .map((entry) => entry.hashName),
 });
 
@@ -302,11 +302,11 @@ const onlyBoots = ({ quotable }) => ({
  */
 describe('a row left to the enumeration is priced from it, and says which', () => {
   it('reports the rotation native and the row it dropped converted', async () => {
-    const first = await taggedSweep({ items: [BOOTS, GEM] });
+    const first = await walkedSweep({ items: [LISTED_BOOTS, LISTED_GEM] });
     expect(resolveKey(GEM_KEY, first.snapshot, 'BRL').basis).toBe('native');
 
-    const second = await taggedSweep({
-      items: [BOOTS, GEM],
+    const second = await walkedSweep({
+      items: [LISTED_BOOTS, LISTED_GEM],
       prior: first.snapshot,
       planQuotes: onlyBoots,
     });
@@ -322,9 +322,9 @@ describe('a row left to the enumeration is priced from it, and says which', () =
   });
 
   it('spends a call on the rotation only, and names both sides of the split', async () => {
-    const first = await taggedSweep({ items: [BOOTS, GEM] });
-    const second = await taggedSweep({
-      items: [BOOTS, GEM],
+    const first = await walkedSweep({ items: [LISTED_BOOTS, LISTED_GEM] });
+    const second = await walkedSweep({
+      items: [LISTED_BOOTS, LISTED_GEM],
       prior: first.snapshot,
       planQuotes: onlyBoots,
     });
@@ -333,13 +333,13 @@ describe('a row left to the enumeration is priced from it, and says which', () =
     expect(second.stats.quoteCalls).toBe(1);
     expect(second.stats.quotesAttempted).toBe(1);
     expect(second.stats.quotable).toBe(2);
-    expect(second.stats.rotation).toEqual([BOOTS.hashName]);
-    expect(second.stats.enumerationOnly).toEqual([GEM.hashName]);
+    expect(second.stats.rotation).toEqual([LISTED_BOOTS.hashName]);
+    expect(second.stats.enumerationOnly).toEqual([LISTED_GEM.hashName]);
   });
 
   it('paces the rotation at the delay the plan chose, not the caller default', async () => {
-    const { stats } = await taggedSweep({
-      items: [BOOTS, GEM],
+    const { stats } = await walkedSweep({
+      items: [LISTED_BOOTS, LISTED_GEM],
       planQuotes: ({ quotable }) => ({
         hashNames: quotable.map((entry) => entry.hashName),
         delayMs: 7,
@@ -353,21 +353,21 @@ describe('a row left to the enumeration is priced from it, and says which', () =
    * something with nothing to price. The rotation is the expensive half of the sweep.
    */
   it('never quotes a row the plan named but the market did not list', async () => {
-    const { stats } = await taggedSweep({
-      items: [BOOTS],
+    const { stats } = await walkedSweep({
+      items: [LISTED_BOOTS],
       planQuotes: ({ quotable }) => ({
         hashNames: [...quotable.map((entry) => entry.hashName), 'Nothing Listed (Rare)'],
       }),
     });
 
-    expect(stats.rotation).toEqual([BOOTS.hashName]);
+    expect(stats.rotation).toEqual([LISTED_BOOTS.hashName]);
     expect(stats.quoteCalls).toBe(1);
   });
 
-  it('hands the plan the enumeration it just paid for, the facet schema included', async () => {
+  it('hands the plan the enumeration it just paid for', async () => {
     const seen = [];
-    await taggedSweep({
-      items: [BOOTS, GEM],
+    await walkedSweep({
+      items: [LISTED_BOOTS, LISTED_GEM],
       planQuotes: ({ quotable, enumerationCalls, searchDelayMs }) => {
         seen.push({ enumerationCalls, searchDelayMs, quotable: quotable.length });
         return { hashNames: [] };
@@ -377,7 +377,7 @@ describe('a row left to the enumeration is priced from it, and says which', () =
     expect(seen).toHaveLength(1);
     expect(seen[0].quotable).toBe(2);
     expect(seen[0].searchDelayMs).toBe(0);
-    expect(seen[0].enumerationCalls).toBeGreaterThan(1);
+    expect(seen[0].enumerationCalls).toBe(1);
   });
 });
 
@@ -392,24 +392,26 @@ describe('a row left to the enumeration is priced from it, and says which', () =
  */
 describe('a sweep asked for no native currency', () => {
   it('leaves every listed row to the enumeration, whatever plan the caller brought', async () => {
-    const { stats } = await taggedSweep({
-      items: [BOOTS, GEM],
+    const { stats } = await walkedSweep({
+      items: [LISTED_BOOTS, LISTED_GEM],
       currencies: [],
       planQuotes: ({ quotable }) => ({ hashNames: quotable.map((entry) => entry.hashName) }),
     });
 
     expect(stats.rotation).toEqual([]);
-    expect([...stats.enumerationOnly].sort()).toEqual([BOOTS.hashName, GEM.hashName].sort());
+    expect([...stats.enumerationOnly].sort()).toEqual(
+      [LISTED_BOOTS.hashName, LISTED_GEM.hashName].sort(),
+    );
     expect(stats.quoteCalls).toBe(0);
     expect(stats.quotesAttempted).toBe(0);
   });
 
   it('retires the previous pass native quotes rather than carrying them behind their label', async () => {
-    const quoted = await taggedSweep({ items: [BOOTS, GEM] });
+    const quoted = await walkedSweep({ items: [LISTED_BOOTS, LISTED_GEM] });
     expect(resolveKey(BOOTS_KEY, quoted.snapshot, 'BRL').basis).toBe('native');
 
-    const enumerated = await taggedSweep({
-      items: [BOOTS, GEM],
+    const enumerated = await walkedSweep({
+      items: [LISTED_BOOTS, LISTED_GEM],
       prior: quoted.snapshot,
       currencies: [],
     });
@@ -420,21 +422,41 @@ describe('a sweep asked for no native currency', () => {
     expect(boots.amount).toBeCloseTo(4.8 * 5.4);
     expect(enumerated.snapshot.nativeCurrencies).toEqual([]);
   });
+});
 
-  it('still enumerates and identifies the board, which is the half it keeps', async () => {
-    const { snapshot, stats } = await taggedSweep({ items: [BOOTS, GEM], currencies: [] });
+/**
+ * Identity is regenerated every pass rather than carried, so a pass that meets a row for the first
+ * time costs no more than one that has seen it before. That is the property the facet sweep could
+ * not have: it had to be handed the previous snapshot to stay off an ordinary pass, and forgetting
+ * to hand it in brought a 150-call burst back on every one.
+ */
+describe('a newly listed row costs the same as a known one', () => {
+  it('spends the same calls whether or not the prior names the row, and keys it either way', async () => {
+    const first = await walkedSweep({ items: [LISTED_BOOTS, LISTED_GEM] });
+    const withHelmet = await walkedSweep({
+      items: [LISTED_BOOTS, LISTED_GEM, LISTED_HELMET],
+      prior: first.snapshot,
+    });
 
-    expect(stats.enumerationComplete).toBe(true);
-    expect(snapshot.index[BOOTS_KEY]).toBeDefined();
-    expect(snapshot.index[GEM_KEY]).toBeDefined();
-    expect(snapshot.coverage.matchedCatalogKeys).toBeGreaterThan(0);
+    expect(withHelmet.stats.searchCalls).toBe(first.stats.searchCalls);
+    expect(withHelmet.searchUrls.some(narrowsByFacet)).toBe(false);
+    expect(withHelmet.snapshot.index[priceKey('coal_elmo', 3)]).toBeDefined();
+    expect(withHelmet.snapshot.index[priceKey('coal_bota', 2)]).toBeDefined();
+  });
+
+  it('gives the same board on two identical passes, so nothing is inherited to drift', async () => {
+    const first = await walkedSweep({ items: [LISTED_BOOTS, LISTED_GEM] });
+    const second = await walkedSweep({ items: [LISTED_BOOTS, LISTED_GEM], prior: first.snapshot });
+
+    expect(second.snapshot.index).toEqual(first.snapshot.index);
+    expect(second.snapshot.entries).toEqual(first.snapshot.entries);
   });
 });
 
 /**
- * The seam a pass reads its row identities through, whether they came off disk or off the
- * published file. Version 2 is the case that earns the test: it predates native quotes, so it is
- * a real published shape that carries fields the merge would otherwise reason about as absent.
+ * The seam a pass reads its prior through, whether it came off disk or off the published file.
+ * Version 2 is the case that earns the test: it predates native quotes, so it is a real published
+ * shape that carries fields the merge would otherwise reason about as absent.
  */
 describe('reading a prior snapshot out of a body', () => {
   const body = (overrides) =>
@@ -485,38 +507,5 @@ describe('reading a prior snapshot out of a body', () => {
     const said = [];
     expect(parsePrior(raw, 'the published snapshot', (line) => said.push(line))).toBeNull();
     expect(said.join(' ')).toContain('the published snapshot');
-  });
-});
-
-describe('the facet sweep runs only when the enumeration turns up something new', () => {
-  it('asks for every tag on a pass with no prior, and identifies what answers', async () => {
-    const first = await taggedSweep({ items: [BOOTS, GEM] });
-
-    expect(first.stats.facetSweepRan).toBe(true);
-    expect(first.facetQueries).toContain('slot=boots');
-    expect(first.snapshot.index[priceKey('coal_bota', 2)]).toBeDefined();
-    expect(first.snapshot.index[priceKey('gem_topaz', 2)]).toBeDefined();
-  });
-
-  it('asks for none at all on the next pass, and prices the same board off the prior tags', async () => {
-    const first = await taggedSweep({ items: [BOOTS, GEM] });
-    const second = await taggedSweep({ items: [BOOTS, GEM], prior: first.snapshot });
-
-    expect(second.facetQueries).toEqual([]);
-    expect(second.stats.facetSweepRan).toBe(false);
-    expect(second.stats.searchCalls).toBe(1);
-    expect(second.stats.searchCalls).toBeLessThan(first.stats.searchCalls);
-    expect(second.snapshot.index).toEqual(first.snapshot.index);
-    expect(second.snapshot.entries).toEqual(first.snapshot.entries);
-  });
-
-  it('asks for them again once one row is unrecognised, and identifies that row', async () => {
-    const first = await taggedSweep({ items: [BOOTS, GEM] });
-    const withHelmet = await taggedSweep({ items: [BOOTS, GEM, HELMET], prior: first.snapshot });
-
-    expect(withHelmet.stats.facetSweepRan).toBe(true);
-    expect(withHelmet.facetQueries).toContain('slot=helmet');
-    expect(withHelmet.snapshot.index[priceKey('coal_elmo', 3)]).toBeDefined();
-    expect(withHelmet.snapshot.index[priceKey('coal_bota', 2)]).toBeDefined();
   });
 });

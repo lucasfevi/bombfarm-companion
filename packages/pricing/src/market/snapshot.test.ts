@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { CatalogView } from './reconcile.js';
+import type { CatalogView } from './names.js';
 import {
   buildSnapshot,
   catalogKeysLost,
@@ -17,7 +17,7 @@ const CATALOG: CatalogView = {
   ],
   rarityIdxs: [1],
   rarityTokens: { 1: 'incomum' },
-  defIdByHash: {},
+  gems: [],
 };
 
 function entry(overrides: Partial<MarketEntry> & { hashName: string }): MarketEntry {
@@ -83,69 +83,37 @@ describe('mergeEntries', () => {
     expect(merged[0]?.lowestUsd).toBe(5);
   });
 
-  it('keeps the identity a previous run established when this run stopped before tagging', () => {
-    const untagged = entry({ hashName: 'Ember Weapon', key: 'unknown#Ember Weapon', category: null });
+  /**
+   * The latch this used to have. A run that reached a row and failed to identify it had its identity
+   * filled in from the previous file, which is indistinguishable from a run that identified the row
+   * itself — so a name form that stopped generating would go on being keyed indefinitely. Identity
+   * is deterministic now, so the fresh answer is the only honest one.
+   */
+  it('does not fill a reached row identity in from the previous file', () => {
+    const unmatched = entry({
+      hashName: 'Ember Weapon',
+      key: 'unknown#Ember Weapon',
+      category: null,
+    });
 
-    const merged = mergeEntries([untagged], [weapon], false);
+    const merged = mergeEntries([unmatched], [weapon], false);
 
     expect(merged[0]).toMatchObject({
-      key: priceKey('ember_arma', 1),
-      defId: 'ember_arma',
-      rarityIdx: 1,
-      level: 10,
+      key: 'unknown#Ember Weapon',
+      defId: null,
+      category: null,
+      rarityIdx: null,
     });
   });
 
-  it('keeps the key reachable when this run tagged the category but never reached rarity', () => {
-    const untagged = entry({
-      hashName: 'Ember Weapon',
-      key: 'equip#Ember Weapon',
-      category: 'equip',
-    });
-
-    const merged = mergeEntries([untagged], [weapon], false);
+  it('carries a row a cut-short walk never reached with the identity it was published under', () => {
+    const merged = mergeEntries([], [weapon], false);
 
     expect(merged[0]).toMatchObject({
+      hashName: 'Ember Weapon',
       key: priceKey('ember_arma', 1),
       defId: 'ember_arma',
-      rarityIdx: 1,
     });
-  });
-
-  it('recovers a key from an inherited identity even when the previous run lost it too', () => {
-    const lost = { ...weapon, key: 'equip#Ember Weapon' };
-    const untagged = entry({
-      hashName: 'Ember Weapon',
-      key: 'equip#Ember Weapon',
-      category: 'equip',
-    });
-
-    const merged = mergeEntries([untagged], [lost], false);
-
-    expect(merged[0]?.key).toBe(priceKey('ember_arma', 1));
-  });
-
-  it('leaves an item chest keyed by the rarity an owned one carries', () => {
-    const chest = entry({
-      hashName: 'Item Chest Lv 30',
-      key: priceKey('chest_item_30', 0),
-      category: 'chest',
-      defId: 'chest_item_30',
-      level: 30,
-    });
-    const untagged = entry({ hashName: 'Item Chest Lv 30', key: 'chest#Item Chest Lv 30', category: 'chest' });
-
-    const merged = mergeEntries([untagged], [chest], false);
-
-    expect(merged[0]?.key).toBe(priceKey('chest_item_30', 0));
-  });
-
-  it('re-keys a row this run never reached, so a blocked run still repairs one', () => {
-    const lost = { ...weapon, key: 'equip#Ember Weapon' };
-
-    const merged = mergeEntries([], [lost], false);
-
-    expect(merged[0]?.key).toBe(priceKey('ember_arma', 1));
   });
 
   it('never inherits a previous price for an item that is listed nowhere now', () => {
@@ -200,8 +168,12 @@ describe('catalogKeysLost', () => {
   const good = build([weapon, helmet], null, true);
 
   it('names a key whose row is still on the market and no longer answers to it', () => {
-    const untagged = entry({ hashName: 'Ember Weapon', key: 'equip#Ember Weapon', category: 'equip' });
-    const stripped = build([untagged, helmet], null, false);
+    const unmatched = entry({
+      hashName: 'Ember Weapon',
+      key: 'unknown#Ember Weapon',
+      category: null,
+    });
+    const stripped = build([unmatched, helmet], null, false);
 
     expect(catalogKeysLost(good, stripped, CATALOG)).toEqual([priceKey('ember_arma', 1)]);
   });
@@ -212,11 +184,20 @@ describe('catalogKeysLost', () => {
     expect(catalogKeysLost(good, delisted, CATALOG)).toEqual([]);
   });
 
-  it('is empty once the merge has restored the identity behind those keys', () => {
-    const untagged = entry({ hashName: 'Ember Weapon', key: 'equip#Ember Weapon', category: 'equip' });
-    const merged = build([untagged, helmet], good, false);
+  /**
+   * Finishing the walk buys no licence to unname a row, which is why the builder asks this on every
+   * run rather than only on a cut-short one. A completed walk still carrying a hash that has stopped
+   * generating a name is the loudest form of the failure, not an exemption from it.
+   */
+  it('names it on a completed run too, where the row is still right there', () => {
+    const unmatched = entry({
+      hashName: 'Ember Weapon',
+      key: 'unknown#Ember Weapon',
+      category: null,
+    });
+    const stripped = build([unmatched, helmet], good, true);
 
-    expect(catalogKeysLost(good, merged, CATALOG)).toEqual([]);
+    expect(catalogKeysLost(good, stripped, CATALOG)).toEqual([priceKey('ember_arma', 1)]);
   });
 
   it('has nothing to compare against on a first run', () => {
