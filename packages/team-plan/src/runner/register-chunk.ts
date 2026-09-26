@@ -2,7 +2,7 @@
 
 /**
  * Keeps the team-plan worker in the production module graph so webpack emits a
- * separate chunk under `out/_next/static/**` (T22). Never call at module load —
+ * separate chunk under `out/_next/static/**`. Never call at module load —
  * instantiation stays in `team-plan-runner-core`.
  */
 export function createTeamPlanWorkerModule(): Worker {

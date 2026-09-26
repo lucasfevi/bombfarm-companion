@@ -25,11 +25,12 @@ export function isFarmObjectiveUnavailable(
 }
 
 /**
- * The duel room seats nine, and the plan never picks which nine: a scope board fielding more
- * heroes than that is the player's to trim before a duel can be scored.
+ * The duel squad has as many slots as the account's squad house gives it, and the plan never
+ * picks who fills them: a scope board fielding more heroes than that is the player's to trim
+ * before a duel can be scored.
  */
 export function isPvpObjectiveUnavailable(
-  inputs: Pick<TeamPlanInputs, 'heroes'>,
+  inputs: Pick<TeamPlanInputs, 'heroes' | 'pvpSquadSlots'>,
   controls: Pick<TeamPlanControls, 'scopeByHeroId'>,
 ): boolean {
   return pvpSquadExcess(inputs, controls) > 0;

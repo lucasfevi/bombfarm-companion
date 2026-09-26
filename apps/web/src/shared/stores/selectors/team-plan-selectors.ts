@@ -36,6 +36,7 @@ export function selectTeamPlanInputs(state: PlannerStore): TeamPlanInputs {
     farmChosenPhase: state.phasesViewPhaseChosen ? state.phasesViewPhase : null,
     // A save carries no PVP state, so this app never offers the duel objective.
     pvpRoomPhase: null,
+    pvpSquadSlots: null,
   };
 }
 

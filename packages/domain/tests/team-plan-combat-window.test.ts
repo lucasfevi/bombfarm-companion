@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { runTeamPlan } from '@bombfarm/domain/team-plan';
 import { planFieldSlots, resolveCombatWindow } from '@bombfarm/domain/team-plan/combat-window';
 import { farmFromAccount } from '@bombfarm/domain/team-plan/waterfall-guards';
-import { PVP_SQUAD_SLOTS, PVP_WINDOW_SECS, defaultGatePhase, gateWindowSecs } from '@bombfarm/domain/combat-window';
+import { PVP_TOP_HOUSE_SQUAD_SLOTS, PVP_WINDOW_SECS, defaultGatePhase, gateWindowSecs, pvpSquadSlots } from '@bombfarm/domain/combat-window';
 import { fieldPresence, fieldSeconds, sustainedDps, type Context, type HeroSheet } from '@bombfarm/domain/model';
 import { wikiPhaseLine } from '@bombfarm/domain/phase-wiki';
 import type { TeamPlanInput, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
@@ -74,12 +74,22 @@ describe('resolveCombatWindow', () => {
     expect(resolveCombatWindow({ ...input, objective: 'gateClear', targetPhase: 11 })).toEqual({ phase: next, windowSecs: gateWindowSecs(next), fieldSlots: null });
   });
 
-  it('a duel is always one minute in a room of nine seats, at the chosen phase or the account’s', () => {
-    expect(resolveCombatWindow({ ...input, objective: 'pvp', targetPhase: 220 })).toEqual({ phase: 220, windowSecs: 60, fieldSlots: PVP_SQUAD_SLOTS });
-    expect(resolveCombatWindow({ ...input, objective: 'pvp', targetPhase: null })).toEqual({ phase: input.account.phase, windowSecs: 60, fieldSlots: 9 });
-    expect(planFieldSlots({ ...input, objective: 'pvp', targetPhase: null })).toBe(9);
-    expect(planFieldSlots({ ...input, objective: 'gateClear', targetPhase: null })).toBe(input.account.fieldSlots);
-    expect(planFieldSlots({ ...input, objective: 'dps', targetPhase: null })).toBe(input.account.fieldSlots);
+  it('a duel is always one minute in a room seating the squad’s slots, at the chosen phase or the account’s', () => {
+    expect(resolveCombatWindow({ ...input, objective: 'pvp', targetPhase: 220, pvpSquadSlots: 6 })).toEqual({ phase: 220, windowSecs: 60, fieldSlots: 6 });
+    expect(resolveCombatWindow({ ...input, objective: 'pvp', targetPhase: null, pvpSquadSlots: 4 })).toEqual({ phase: input.account.phase, windowSecs: 60, fieldSlots: 4 });
+    expect(planFieldSlots({ ...input, objective: 'pvp', targetPhase: null, pvpSquadSlots: 6 })).toBe(6);
+  });
+
+  it('with no squad slots read, a duel seats the top squad house’s nine', () => {
+    expect(PVP_TOP_HOUSE_SQUAD_SLOTS).toBe(9);
+    expect(resolveCombatWindow({ ...input, objective: 'pvp', targetPhase: 220 })).toEqual({ phase: 220, windowSecs: 60, fieldSlots: 9 });
+    expect(planFieldSlots({ ...input, objective: 'pvp', targetPhase: null, pvpSquadSlots: null })).toBe(9);
+  });
+
+  it('the squad slots reach only the duel: a gate clear and the rotations keep the account’s field', () => {
+    for (const objective of ['gateClear', 'dps', 'farm'] as const) {
+      expect(planFieldSlots({ ...input, objective, targetPhase: null, pvpSquadSlots: 2 })).toBe(input.account.fieldSlots);
+    }
   });
 
   it('the rotation objectives have no window', () => {
@@ -131,15 +141,35 @@ describe('runTeamPlan under a combat window', () => {
     expect(gate.currentDps).toBeGreaterThan(rotation.currentDps);
   });
 
-  it('the duel room seats nine whatever the account’s field: a squad the field could not seat all fights at once', () => {
+  it('the duel room seats the squad whatever the account’s field: a squad the field could not seat all fights at once', () => {
     const optimizeCount = Object.values(input.scopeByHeroId).filter((scope) => scope === 'optimize').length;
     expect(optimizeCount).toBeGreaterThan(input.account.fieldSlots);
     const duel = planFor(input, 'pvp', 60);
-    expect(duel.slots).toBe(PVP_SQUAD_SLOTS);
+    expect(duel.slots).toBe(PVP_TOP_HOUSE_SQUAD_SLOTS);
     expect(duel.regime).toBe('underSaturated');
     expect(duel.currentDps).toBe(planFor(input, 'pvp', 60, true).currentDps);
     // The same squad on the account's own field would have to share its slots.
     expect(planFor(input, 'gateClear', 60).regime).toBe('saturated');
+  });
+
+  it('a six-slot squad is scored on a six-seat room: six fielded all fight at once, a seventh would share', () => {
+    const fielded = Object.keys(input.scopeByHeroId).filter((id) => input.scopeByHeroId[id] !== 'donate');
+    expect(fielded.length).toBeGreaterThanOrEqual(7);
+    const squadOf = (count: number): TeamPlanInput['scopeByHeroId'] =>
+      Object.fromEntries(fielded.map((id, index) => [id, index < count ? input.scopeByHeroId[id]! : 'donate']));
+    const sixSlots = { ...input, pvpSquadSlots: 6 };
+    const crowdingCost = (plan: { currentDps: number }, uncrowded: { currentDps: number }) =>
+      1 - plan.currentDps / uncrowded.currentDps;
+
+    const six = { ...sixSlots, scopeByHeroId: squadOf(6) };
+    expect(planFor(six, 'pvp', 60).slots).toBe(6);
+    expect(crowdingCost(planFor(six, 'pvp', 60), planFor(six, 'pvp', 60, true))).toBeCloseTo(0, 12);
+
+    const seven = { ...sixSlots, scopeByHeroId: squadOf(7) };
+    expect(planFor(seven, 'pvp', 60).slots).toBe(6);
+    expect(crowdingCost(planFor(seven, 'pvp', 60), planFor(seven, 'pvp', 60, true))).toBeGreaterThan(0.1);
+    // The same seven in the top house's room all fit.
+    expect(planFor({ ...input, scopeByHeroId: squadOf(7) }, 'pvp', 60).regime).toBe('underSaturated');
   });
 
   it('the point pass buys no energy for a duel that every stint already outlasts', () => {
@@ -151,5 +181,15 @@ describe('runTeamPlan under a combat window', () => {
     // The same roster on a rotation still finds energy worth buying, so the claim is the window's.
     const rotation = planFor(input, 'dps', 60);
     expect(rotation.pointResets.some((reset) => reset.pts.energy > 0)).toBe(true);
+  });
+});
+
+describe('pvpSquadSlots', () => {
+  it('is the reported slot count, or the top house’s when nothing usable was reported', () => {
+    expect(pvpSquadSlots(2)).toBe(2);
+    expect(pvpSquadSlots(6)).toBe(6);
+    for (const unread of [null, undefined, 0, -1, 2.5, Number.NaN]) {
+      expect(pvpSquadSlots(unread)).toBe(PVP_TOP_HOUSE_SQUAD_SLOTS);
+    }
   });
 });

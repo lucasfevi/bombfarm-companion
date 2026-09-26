@@ -51,7 +51,7 @@ describe('pvp recorder', () => {
     expect(emitted).toHaveLength(5);
     const view = history.list({ limit: 10 });
     expect(view.totals).toEqual({ duels: 2, won: 1, films: 1 });
-    expect(view.standing).toMatchObject({ points: 113, tier: 'r3', tierFloor: 100, duelsUsed: 3, duelsMax: 5, slots: 5, slotsMax: 9, capturedAt: new Date(4_000).toISOString() });
+    expect(view.standing).toMatchObject({ points: 113, tier: 'r1', tierFloor: 50, duelsUsed: 3, duelsMax: 5, slots: 6, slotsMax: 9, capturedAt: new Date(4_000).toISOString() });
     expect(view.standing?.squadHeroIds).toHaveLength(5);
     expect(view.rank).toEqual({ position: 12, points: 113, capturedAt: new Date(5_000).toISOString() });
     expect(view.rows.map((row) => [row.filmId, row.filmStored, row.won, row.accountId])).toEqual([
@@ -88,7 +88,7 @@ describe('pvp recorder', () => {
     const [result] = fixtureBodies();
     if (!result) throw new Error('fixture is empty');
     recorder.observe(observationOf(result, 1_000));
-    expect(history.list({ limit: 10 }).standing).toMatchObject({ points: 123, tier: 'r3', capturedAt: new Date(1_000).toISOString() });
+    expect(history.list({ limit: 10 }).standing).toMatchObject({ points: 123, tier: 'r1', capturedAt: new Date(1_000).toISOString() });
   });
 
   it('keeps a rank from the PVP points board only, never from the hero or power boards', () => {

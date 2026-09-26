@@ -49,7 +49,7 @@ function inputs(heroes: HeroRecord[], items: InventoryItem[], overrides: Partial
     inventory: { version: 1, importedAt: 0, items },
     treeDanoTotal: 41, treeEnergy: 0, treeSpeed: 0, treeCritChance: 0, treeCritDmg: 0, treeLuckFlatPct: 0, treeTeamCoinPct: 0, treeXpMult: 1,
     houseIdx: 3, houseLevel: 2, phase: 91, mitigationPct: 0, slots: 5, fieldSlots: 9,
-    houseCycleSecs: 300, houseCycleSecsHouseIdx: 3, houseCycleSecsLevel: 2, maxPhase: 91, farmChosenPhase: 91, pvpRoomPhase: null,
+    houseCycleSecs: 300, houseCycleSecsHouseIdx: 3, houseCycleSecsLevel: 2, maxPhase: 91, farmChosenPhase: 91, pvpRoomPhase: null, pvpSquadSlots: null,
     ...overrides,
   };
 }

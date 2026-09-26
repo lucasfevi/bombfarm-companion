@@ -53,7 +53,7 @@ type OptimizerScreenActionsIn = {
 
 export function OptimizerScreen({
   snapshot,
-  pvpRoomPhase,
+  pvp,
   controls,
   setControls,
   planState,
@@ -63,9 +63,10 @@ export function OptimizerScreen({
   accountSource,
 }: {
   snapshot: OptimizerSettledSnapshot;
-  /** The phase the duel room is hardened to as last read, or `null` — live, not part of the
-   *  snapshot, and a change of it is a change of the phase a duel plan is scored at. */
-  pvpRoomPhase: number | null;
+  /** The duel room's phase and the squad's slots as last read, each `null` with nothing read —
+   *  live, not part of the snapshot, and a change of either is a change of what a duel plan is
+   *  scored on. */
+  pvp: Pick<TeamPlanInputs, 'pvpRoomPhase' | 'pvpSquadSlots'>;
   controls: OptimizerView;
   setControls: (next: OptimizerView) => void;
   planState: OptimizerPlanState;
@@ -79,7 +80,7 @@ export function OptimizerScreen({
   const teamPlanCopy = useTeamPlanCopy();
   const screenCopy = useMemo(() => optimizerScreenCopy(teamPlanCopy, t, lang), [teamPlanCopy, t, lang]);
 
-  const inputs = useMemo<TeamPlanInputs>(() => ({ ...snapshot.inputs, pvpRoomPhase }), [snapshot.inputs, pvpRoomPhase]);
+  const inputs = useMemo<TeamPlanInputs>(() => ({ ...snapshot.inputs, ...pvp }), [snapshot.inputs, pvp]);
 
   // The current controls, read through a ref so the single control handler and the actions bag
   // stay stable across a render that only changed the controls themselves.

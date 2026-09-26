@@ -3,8 +3,19 @@ import { GATE_SECS_POR_ATO, WIKI_PHASE_LINES, wikiPhaseLine } from './phase-wiki
 /** A duel is fought over one minute — the game's `duelo_secs`. */
 export const PVP_WINDOW_SECS = 60;
 
-/** The duel room seats a squad of at most nine, whatever field slots the account has unlocked. */
-export const PVP_SQUAD_SLOTS = 9;
+/**
+ * The squad slots of the top squad house. A duel squad's slots grow with the account's squad
+ * house — two, four, six, eight, then nine — and the game reports the account's own figure with
+ * its PVP standing; this stands in only while no standing has been read, and on a host that has
+ * no PVP source at all. The live wiki agrees on nine.
+ */
+export const PVP_TOP_HOUSE_SQUAD_SLOTS = 9;
+
+/** The slots a duel squad has: the account's own as the game last reported them, else the top
+ *  house's. */
+export function pvpSquadSlots(reported: number | null | undefined): number {
+  return reported != null && Number.isInteger(reported) && reported > 0 ? reported : PVP_TOP_HOUSE_SQUAD_SLOTS;
+}
 
 export function wikiGateLines(): (typeof WIKI_PHASE_LINES)[number][] {
   return WIKI_PHASE_LINES.filter((line) => line.gate);

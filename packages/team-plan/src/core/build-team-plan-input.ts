@@ -77,5 +77,7 @@ export function buildTeamPlanInput(
     aurasAtCap: controls.aurasAtCap,
     // Every objective scores here. Null is gold's own default: it sweeps for its best phase.
     targetPhase: planTargetPhase(inputs, controls),
+    // Read under the duel objective only: the room seats this many. Null plans for the top house.
+    pvpSquadSlots: inputs.pvpSquadSlots,
   };
 }
