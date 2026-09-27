@@ -93,6 +93,24 @@ test.describe('roster rail and board', () => {
     expect(await railIds(page)).toEqual([...byLevel].reverse());
   });
 
+  test('the layout, sort and filter are still as they were left after a reload', async ({ page }) => {
+    await openPlanner(page);
+    await showBoard(page);
+    await page.getByRole('combobox', { name: /^Sort by$/i }).click();
+    await page.getByRole('option', { name: /^Level$/i }).click();
+    await page.getByRole('button', { name: /^Best first$/i }).click();
+    await page.getByTestId('heroes-filter-active').click();
+    const leftAs = await cardIds(page);
+    expect(leftAs).not.toContain('board-shelved');
+
+    await page.reload();
+
+    await expect(page.locator('[data-testid^="heroes-roster-card-"]').first()).toBeVisible();
+    expect(await cardIds(page)).toEqual(leftAs);
+    await expect(page.getByRole('combobox', { name: /^Sort by$/i })).toHaveText(/Level/);
+    await expect(page.getByRole('button', { name: /^Worst first$/i })).toBeVisible();
+  });
+
   test('an ability filter narrows both presentations to the heroes that own it', async ({
     page,
   }) => {

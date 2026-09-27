@@ -11,6 +11,7 @@ import { describePlanChanges } from '../core';
 import type { TeamPlanScreenCopy } from '../copy';
 import { teamPlanObjectiveCopy } from '../model/objective-copy';
 import { teamPlanEmptyState, type TeamPlanEmptyStateKind } from '../model/empty-state';
+import type { TeamPlanResultSort } from '../model/result-order';
 import {
   useTeamPlanRunner,
   type TeamPlanRunnerHandle,
@@ -44,6 +45,8 @@ export type TeamPlanScreenData = {
   /** The result rows the player has opened, or `null` for the default — the first hero. Held by
    *  the host so it outlives the screen; reset to `null` by the host when a new plan lands. */
   openHeroIds: readonly string[] | null;
+  /** The order the result rows are drawn in. Held by the host so it outlives the screen. */
+  resultSort: TeamPlanResultSort;
 };
 
 export type TeamPlanScreenActions = {
@@ -59,6 +62,7 @@ export type TeamPlanScreenActions = {
   applyPlan: (runId: string, plan: TeamPlan) => void;
   clearPlan: () => void;
   setOpenHeroIds: (heroIds: readonly string[]) => void;
+  setResultSort: (next: TeamPlanResultSort) => void;
 };
 
 export type TeamPlanScreenSlots = {
@@ -244,6 +248,8 @@ export function TeamPlanScreenView({
                     inventoryItems={inventoryItems}
                     openHeroIds={data.openHeroIds}
                     onOpenHeroIdsChange={actions.setOpenHeroIds}
+                    sort={data.resultSort}
+                    onSortChange={actions.setResultSort}
                     forgeQueueAction={slots.forgeQueueAction}
                   />
                 </div>

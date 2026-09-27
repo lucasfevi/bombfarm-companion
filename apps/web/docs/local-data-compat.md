@@ -16,7 +16,7 @@ Canonical keys (current):
 | `bf-hp-gear-scope-v1` | Optimizer per-hero scope map (`Record<heroId, ScopeState>`) — see below |
 | `bf-hp-team-plan-v1` | Optimizer plan envelope (`{ version, signature, objective, allowedChanges, ignoreFieldCrowding, targetPhase, plan }`) — see below |
 
-UI chrome prefs (`bf_lang`, `bf-hp-skills-view-v1`, guide/roster open state, etc.) are separate and must tolerate absence.
+UI chrome prefs (`bf_lang`, `bf-hp-skills-view-v1`, `bf-hp-roster-view-v1` — the roster's layout, sort, filters and board/table switches — `bf-hp-team-plan-result-sort-v1` — the Optimizer result rows' order — guide/roster open state, etc.) are separate and must tolerate absence: each field of a stored value falls back to its own default.
 
 **Out of scope for this hard truth:** pre-public / private-only shapes (e.g. old point-advisor `bf-pa-*` keys). The product guarantee starts at the public `bf-hp-*-v1` schema. Leftover readers in code are optional cleanup, not a requirement to preserve forever.
 

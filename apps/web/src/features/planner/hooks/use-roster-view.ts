@@ -1,14 +1,11 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
-  DEFAULT_LEADERBOARD_VIEW,
-  DEFAULT_ROSTER_BOARD_SORT,
-  DEFAULT_SHOWCASE_VIEW,
-  EMPTY_ROSTER_BOARD_FILTER,
   heroPickOutcome,
   orderByRollQuality,
+  ownedRosterBoardFilter,
   rosterRowsShown,
   type LeaderboardStatSource,
   type LeaderboardView,
@@ -20,6 +17,7 @@ import {
 } from '@bombfarm/hero/model';
 import type { RosterToolbarActions } from '@bombfarm/hero/components';
 import { selectTreeSheetTotals, usePlannerStore } from '@/shared/stores';
+import { loadRosterView, saveRosterView } from '../model/roster-view-storage';
 import { useHeroDraftActions } from './use-hero-draft-actions';
 
 export type RosterView = {
@@ -29,6 +27,7 @@ export type RosterView = {
   shownRows: readonly RosterHeroRow[];
   selectedId: string;
   sort: RosterBoardSort;
+  /** The filter as applied: any remembered ability this roster owns none of is dropped. */
   filter: RosterBoardFilter;
   viewMode: RosterViewMode;
   actions: RosterToolbarActions;
@@ -46,10 +45,8 @@ export type RosterView = {
 /**
  * How this app is looking at its roster right now, and what picking a hero from it does.
  *
- * Every setting here is view-local and stored nowhere, exactly as the desktop's Heroes screen
- * holds them: they are ways of looking at the roster you are in front of, not preferences about
- * this account, and the planner tab — which IS about the work in hand — is the one thing here
- * that survives a reload.
+ * Every setting here is remembered across visits and reloads, exactly as the desktop's Heroes
+ * screen remembers them, so coming back shows the roster the way it was left.
  *
  * Picking is a draft write, which is why this sits in the planner rather than beside the picker
  * dialog: `applyHero` commits the hero being edited and starts the autosave the strip above it
@@ -62,15 +59,21 @@ export function useRosterView(): RosterView {
   const activeHeroId = usePlannerStore((state) => state.activeHeroId);
   const { applyHero } = useHeroDraftActions();
 
-  const [sort, setSort] = useState<RosterBoardSort>(DEFAULT_ROSTER_BOARD_SORT);
-  const [filter, setFilter] = useState<RosterBoardFilter>(EMPTY_ROSTER_BOARD_FILTER);
-  const [viewMode, setViewMode] = useState<RosterViewMode>('list');
-  const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>(DEFAULT_LEADERBOARD_VIEW);
-  const [showcaseView, setShowcaseView] = useState<ShowcaseView>(DEFAULT_SHOWCASE_VIEW);
+  // Read during the first render: the shell's mount gate means this never renders on the server.
+  const [storedView] = useState(loadRosterView);
+  const [sort, setSort] = useState<RosterBoardSort>(storedView.sort);
+  const [storedFilter, setFilter] = useState<RosterBoardFilter>(storedView.filter);
+  const [viewMode, setViewMode] = useState<RosterViewMode>(storedView.viewMode);
+  const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>(storedView.leaderboardView);
+  const [showcaseView, setShowcaseView] = useState<ShowcaseView>(storedView.showcaseView);
+  useEffect(() => {
+    saveRosterView({ viewMode, sort, filter: storedFilter, leaderboardView, showcaseView });
+  }, [viewMode, sort, storedFilter, leaderboardView, showcaseView]);
   const tree = usePlannerStore(useShallow(selectTreeSheetTotals));
   const statSource = useMemo<LeaderboardStatSource>(() => ({ tree }), [tree]);
 
   const rows = useMemo(() => orderByRollQuality(heroes), [heroes]);
+  const filter = useMemo(() => ownedRosterBoardFilter(rows, storedFilter), [rows, storedFilter]);
   // Resolved from the WHOLE roster, never from the narrowed list: a filter is a question about
   // the roster, not a hero switch, so narrowing must not change which hero is being edited.
   const shownRows = useMemo(() => rosterRowsShown(rows, filter, sort), [rows, filter, sort]);

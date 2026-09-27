@@ -28,7 +28,15 @@ import { useAccountView } from '../../lib/account/use-account-view';
 import { useAccountReadRequest } from '../../lib/account/use-account-read-request';
 import { settledSnapshot } from '../../lib/optimizer/optimizer-snapshot-store';
 import { useOptimizerSnapshot } from '../../lib/optimizer/use-optimizer-snapshot';
-import { DEFAULT_OPTIMIZER_VIEW, loadOptimizerView, saveOptimizerView, type OptimizerView } from '../../lib/optimizer/optimizer-view-storage';
+import type { TeamPlanResultSort } from '@bombfarm/team-plan/model';
+import {
+  DEFAULT_OPTIMIZER_VIEW,
+  loadOptimizerResultSort,
+  loadOptimizerView,
+  saveOptimizerResultSort,
+  saveOptimizerView,
+  type OptimizerView,
+} from '../../lib/optimizer/optimizer-view-storage';
 import { pvpRoomPhaseInput } from '../../lib/optimizer/pvp-room-phase-input';
 import { pvpSquadSlotsInput } from '../../lib/optimizer/pvp-squad-slots-input';
 import { refreshPvpStanding, usePvpHistory } from '../../lib/pvp/use-pvp-history';
@@ -60,6 +68,9 @@ export function OptimizerView({
   } = useOptimizerSnapshot();
 
   const [controls, setControls] = useState<OptimizerView>(DEFAULT_OPTIMIZER_VIEW);
+  // Read during the first render rather than after it, unlike the controls: the plan's rows can be
+  // on screen from that render, and reading later would draw them once in the wrong order.
+  const [resultSort, setResultSort] = useState<TeamPlanResultSort>(loadOptimizerResultSort);
   const [storageReady, setStorageReady] = useState(false);
 
   // The duel objective fights at the phase the room is hardened to, with the slots the squad
@@ -83,6 +94,10 @@ export function OptimizerView({
     if (!storageReady) return;
     saveOptimizerView(controls);
   }, [storageReady, controls]);
+
+  useEffect(() => {
+    saveOptimizerResultSort(resultSort);
+  }, [resultSort]);
 
   // `open` is re-created whenever the LIVE account moves, which is every few seconds. Read
   // through a ref so the effect below is not woken by a tick it must not act on.
@@ -174,6 +189,8 @@ export function OptimizerView({
         pvp={pvp}
         controls={controls}
         setControls={setControls}
+        resultSort={resultSort}
+        setResultSort={setResultSort}
         planState={planState}
         runner={runner}
         actions={{ startRun, resolveRun, applyPlan, clearPlan, openHeroes }}

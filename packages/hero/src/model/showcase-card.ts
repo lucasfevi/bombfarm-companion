@@ -32,7 +32,7 @@ export function showcaseCardReading(row: RosterHeroRow): ShowcaseCardReading {
   };
 }
 
-/** How the board of cards is being looked at: session-only, like the leaderboard's own view. */
+/** How the board of cards is being looked at, beside the leaderboard's own view. */
 export type ShowcaseView = {
   /** Every item level, forge `+N` and ability level on the cards, together. */
   readonly showLevels: boolean;
