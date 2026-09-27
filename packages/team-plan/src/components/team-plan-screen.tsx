@@ -23,7 +23,7 @@ import { useOptimizeAction } from './use-optimize-action';
 import { ScopeList } from './scope-list';
 import { TeamPlanOptimizingModal } from './team-plan-optimizing-modal';
 import { WaterfallPanel } from './waterfall-panel';
-import { HeroDeltaTable } from './hero-delta-table';
+import { HeroDeltaTable, type HeroDeltaRowsView } from './hero-delta-table';
 import type { ForgeQueueAction } from './hero-forge-queue';
 
 export type TeamPlanScreenData = {
@@ -126,6 +126,15 @@ export function TeamPlanScreenView({
   const ledger = useMemo(
     () => (data.planBasis === null ? null : describePlanChanges(data.planBasis, { inputs, controls }, displayPlan)),
     [data.planBasis, inputs, controls, displayPlan],
+  );
+  const rowsView = useMemo<HeroDeltaRowsView>(
+    () => ({
+      openHeroIds: data.openHeroIds,
+      onOpenHeroIdsChange: actions.setOpenHeroIds,
+      sort: data.resultSort,
+      onSortChange: actions.setResultSort,
+    }),
+    [data.openHeroIds, data.resultSort, actions.setOpenHeroIds, actions.setResultSort],
   );
   const blockedNames = runnerState.blockedHeroNames;
   const isRunning = data.runStatus === 'running' || runnerState.status === 'running';
@@ -246,10 +255,7 @@ export function TeamPlanScreenView({
                     plan={displayPlan}
                     heroes={data.planHeroes ?? heroes}
                     inventoryItems={inventoryItems}
-                    openHeroIds={data.openHeroIds}
-                    onOpenHeroIdsChange={actions.setOpenHeroIds}
-                    sort={data.resultSort}
-                    onSortChange={actions.setResultSort}
+                    rowsView={rowsView}
                     forgeQueueAction={slots.forgeQueueAction}
                   />
                 </div>

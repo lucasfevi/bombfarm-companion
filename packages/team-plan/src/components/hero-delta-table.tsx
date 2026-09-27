@@ -30,6 +30,14 @@ const SORT_KEY_LABEL = {
   level: 'teamPlanResultSortLevel',
 } as const satisfies Record<TeamPlanResultSortKey, keyof TeamPlanScreenCopy>;
 
+/** How the host is holding the rows: which are open, and the order they are drawn in. */
+export type HeroDeltaRowsView = {
+  openHeroIds: readonly string[] | null;
+  onOpenHeroIdsChange: (heroIds: readonly string[]) => void;
+  sort: TeamPlanResultSort;
+  onSortChange: (next: TeamPlanResultSort) => void;
+};
+
 /**
  * Which rows are open, and the order they are in, are the host's state, not this table's: the desktop unmounts the screen on
  * every tab change and the web on every route change, and a row the player opened to read must
@@ -42,10 +50,7 @@ export function HeroDeltaTable({
   plan,
   heroes,
   inventoryItems,
-  openHeroIds,
-  onOpenHeroIdsChange,
-  sort,
-  onSortChange,
+  rowsView,
   forgeQueueAction,
 }: {
   t: TeamPlanScreenCopy;
@@ -53,10 +58,7 @@ export function HeroDeltaTable({
   plan: TeamPlan;
   heroes: readonly HeroRecord[];
   inventoryItems: readonly InventoryItem[];
-  openHeroIds: readonly string[] | null;
-  onOpenHeroIdsChange: (heroIds: readonly string[]) => void;
-  sort: TeamPlanResultSort;
-  onSortChange: (next: TeamPlanResultSort) => void;
+  rowsView: HeroDeltaRowsView;
   forgeQueueAction: ForgeQueueAction | undefined;
 }) {
   const roster: HeroDeltaRoster = useMemo(() => {
@@ -89,6 +91,7 @@ export function HeroDeltaTable({
     return map;
   }, [plan, inventoryItems]);
 
+  const { openHeroIds, onOpenHeroIdsChange, sort, onSortChange } = rowsView;
   const rows = useMemo(() => sortTeamPlanResultRows(plan.perHero, sort), [plan.perHero, sort]);
 
   const firstHeroId = rows[0]?.heroId;
