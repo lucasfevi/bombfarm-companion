@@ -120,8 +120,9 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); the previous figure is in the git history.
     // RE-PINNED 2026-09-26 for the Wide Blast patch: the cells it adds past the base reach now take half the hit. 0.53125 before.
     // Moved again the same day for Double Detonation's 2.5%/level.
-    expect(plateau.minEnergyShare).toBeCloseTo(0.53184, 4);
-    expect(plateau.maxEnergyShare).toBeCloseTo(0.53184, 4);
+    // RE-PINNED 2026-09-27 for the plant-cycle refit (ADR-018): 0.53184 before.
+    expect(plateau.minEnergyShare).toBeCloseTo(0.38819, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.38819, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 
@@ -172,10 +173,14 @@ describe('a squad whose small point budget produces a genuinely wide plateau, th
     // RE-PINNED 2026-09-26 for the Wide Blast patch: the cells it adds past the base reach now take half the hit. Isolde carries it at
     // rank 20 and her winner moves to the 2/2 split, and the band is exactly the shares that round
     // to it — 0.40, 0.50 and 0.60 (1.6, 2.0 and 2.4 energy of 4) — with 0.30 and 0.70 falling out.
-    expect(plateau.minEnergyShare).toBe(0.4);
-    expect(plateau.maxEnergyShare).toBe(0.6);
-    expect(plateau.proposedEnergyShare).toBe(0.5);
-    expect(plateau.maxEnergyShare - plateau.minEnergyShare).toBeCloseTo(0.2, 9);
+    //
+    // RE-PINNED 2026-09-27 for the plant-cycle refit (ADR-018): the winner is now the all-attack
+    // split, and the band is exactly the shares that round to 0 energy of 4 — 0, 0.05 and 0.10 —
+    // with 0.15 (0.6, rounding to 1) falling out.
+    expect(plateau.minEnergyShare).toBe(0);
+    expect(plateau.maxEnergyShare).toBe(0.1);
+    expect(plateau.proposedEnergyShare).toBe(0);
+    expect(plateau.maxEnergyShare - plateau.minEnergyShare).toBeCloseTo(0.1, 9);
   });
 });
 

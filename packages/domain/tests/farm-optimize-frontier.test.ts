@@ -29,11 +29,12 @@ describe('the fixture reproduces the measured frontier ordering', () => {
     expect(oneHero.heroCount).toBe(1);
     expect(oneHero.respecCostGold).toBeLessThan(result.respecCostGold);
     expect(oneHero.gainPct).toBeLessThan(result.gainPct);
-    // Kira, +1.36%, 98,000 gold against the joint +9.41% — recorded, not hardcoded as the
+    // Nolan, +0.61%, 127,000 gold against the joint +6.96% — recorded, not hardcoded as the
     // pass/fail bar; the strict inequalities above are the actual assertions. Payback is cost ÷
     // Δgold/h and can go either way, so nothing pins it beyond being present and finite.
     // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017): Nolan (+0.54%, 127,000) before.
-    expect(oneHero.heroIds).toEqual(['406463']); // Kira
+    // RE-PINNED 2026-09-27 for the plant-cycle refit (ADR-018): Kira (+1.36%, 98,000) before.
+    expect(oneHero.heroIds).toEqual(['720809']); // Nolan
     expect(oneHero.paybackHours).not.toBeNull();
     expect(result.paybackHours).not.toBeNull();
   });
@@ -188,10 +189,10 @@ describe('each frontier entry is a complete result on its own', () => {
 });
 
 describe('the frontier candidate ranking reproduces the exhaustive answer on the fixture', () => {
-  it("Kira wins the 1-hero tier and Sora+Kira wins the 2-hero tier — the frontier's own verification", () => {
+  it("Nolan wins the 1-hero tier and Sora+Kira wins the 2-hero tier — the frontier's own verification", () => {
     const result = solveFarmRespec({ heroes, account, maxPhase });
     const [oneHero, twoHero] = result.frontier;
-    expect(oneHero.heroIds).toEqual(['406463']); // Kira
+    expect(oneHero.heroIds).toEqual(['720809']); // Nolan
     expect([...twoHero.heroIds].sort()).toEqual(['268800', '406463'].sort()); // Sora + Kira
   });
 });

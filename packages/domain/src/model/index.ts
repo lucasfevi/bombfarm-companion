@@ -4,11 +4,12 @@
 // Sustained (farming) DPS per hero:
 //   activeDPS = dano_avg × bombas/s × blocos/bomba × eficiência_IA
 //   dano_avg  = ataque × (1 − mitig × (1 − pen)) × (1 + critChance × critDmg)
-//   bombas/s  = 1 / cycle,  cycle = E[max(fuse, hop / w)] + latency   (cadence.ts)
+//   bombas/s  = plants per field second over a clear of the band      (cadence.ts)
+//               cycle = E[max(fuse + 0.47, hop / w + 0.58)]              (plant-cycle.ts)
 //   fuse      = 2 × (1 − cdr) floored at 0.4s ("piso de 20% do ciclo" — the floor
 //               lands exactly at the 80% CDR cap)
-//   w         = velocidade × 0.0386 cells/s; hop drawn from a measured histogram
-//               rescaled to the phase's difficulty band
+//   w         = velocidade × 0.0386 cells/s; hop from the band's standing props,
+//               scaled by speed and spread by a measured shape
 //   duty      = energia / (energia + rest)   [1 energy/sec drain; rest = house T]
 //   DPS       = activeDPS × duty
 //
@@ -74,14 +75,27 @@ export {
 } from './combat';
 
 export {
-  HOP_DISTRIBUTION,
-  CYCLE_LATENCY_SEC,
-  HOP1_CYCLE_SEC,
-  HOP_FIT_ATO,
-  HOP_DENSITY_EXPONENT,
-  hopScaleForAto,
+  FIRST_ATO,
+  REFERENCE_FIELD_HEROES,
+  REFERENCE_BLAST_CELLS,
+  REFERENCE_HITS_TO_KILL,
   cycleSecondsForHero,
 } from './cadence';
+export {
+  FUSE_CYCLE_OVERHEAD_SEC,
+  WALK_CYCLE_OVERHEAD_SEC,
+  FREE_HOP_BASE_CELLS,
+  FREE_HOP_SQRT_CELLS,
+  FREE_HOP_SHAPE,
+  HOP_SPEED_EXPONENT,
+  HOP_SPEED_PIVOT,
+  REPLANT_HOP_CELLS,
+  REPLANT_SHARE,
+  freeHopCells,
+  hopSpeedFactor,
+  plantCycleSeconds,
+  meanPlantCycleSeconds,
+} from './plant-cycle';
 
 export { rankNextPoint, energySwitchPoint, RANK_STATS } from './points-rank';
 

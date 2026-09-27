@@ -239,13 +239,15 @@ describe('explain-tab copy (advice-column IA alignment)', () => {
   it('explains synced farm phase and the measured bomb cycle — no serial or wiki model left', () => {
     expect(STRINGS.en.explainSections[1].p[0]).toMatch(/synced farm phase/);
     expect(STRINGS.en.explainSections[2].p[0]).toMatch(/walk speed/i);
-    expect(STRINGS.en.explainSections[2].p[0]).toMatch(/Speed shortens every hop/);
+    expect(STRINGS.en.explainSections[2].p[0]).toMatch(/lengthen for faster heroes/);
     expect(STRINGS.en.explainSections[2].p[1]).toMatch(/Blocks per bomb/);
     expect(STRINGS.en.explainSections[2].p[2]).toMatch(/One cycle model/);
-    expect(STRINGS.en.explainSections[2].code).toMatch(/max\(fuse, hop \/ walk\)/);
+    expect(STRINGS.en.explainSections[2].p[3]).toMatch(/over a whole clear/);
+    expect(STRINGS.en.explainSections[2].code).toMatch(/max\(fuse \+ 0\.47, hop \/ walk \+ 0\.58\)/);
     expect(STRINGS.pt.explainSections[1].p[0]).toMatch(/fase de farm sincronizada/);
     expect(STRINGS.pt.explainSections[2].p[0]).toMatch(/velocidade de caminhada/i);
     expect(STRINGS.pt.explainSections[2].p[2]).toMatch(/Um único modelo de ciclo/);
+    expect(STRINGS.pt.explainSections[2].p[3]).toMatch(/limpeza inteira/);
     for (const lang of ['en', 'pt'] as const) {
       const section = STRINGS[lang].explainSections[2];
       const cadenceText = [section.p[0], section.p[2], section.code ?? ''].join(' ');

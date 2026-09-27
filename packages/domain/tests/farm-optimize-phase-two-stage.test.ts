@@ -13,8 +13,7 @@
  * that no longer proves anything.
  *
  * The second block records that on the states these captures' own searches visit, the two sweeps
- * do agree, bar the named, bounded misses in `KNOWN_SCREEN_MISSES`. That is a property of this
- * corpus, not a theorem, and it is named that way — widening
+ * do agree. That is a property of this corpus, not a theorem, and it is named that way — widening
  * the screen stride or narrowing the refine window shows up there.
  *
  * NO REGIME HOLD, deliberately. What the other farm suites gate on is whether a capture's
@@ -288,22 +287,6 @@ function squadsForFixture(filename: string): NamedSquad[] {
   ];
 }
 
-/**
- * The states where the screen now misses on this corpus, each asserted AS a miss so the entry
- * retires itself loudly once the model stops producing it. They arrived with the 2026-09-26 Wide
- * Blast patch: this roster's blend objective has two near-level peaks, phase 28-29 (the reference)
- * and phase 51, and the screen's opener for the lower world no longer scores above 51's. What it
- * costs is bounded below, and — the load-bearing property above — no reported figure is a
- * screened one. Keyed `fixture|squad|objective`, missing only once the ceiling reaches 51.
- */
-const KNOWN_SCREEN_MISSES = new Set([
-  'save-20260831-13heroes-soulbound.json|current build|blend',
-  'save-20260831-13heroes-soulbound.json|halfway to the solved build|blend',
-  'save-20260831-13heroes-soulbound.json|frontier tier 2|blend',
-]);
-const KNOWN_MISS_FROM_PHASE = 51;
-const KNOWN_MISS_MAX_LOSS = 0.01;
-
 describe.each(FIXTURES)('the two sweeps agree on the states this capture reaches — %s', (filename) => {
   const squads = squadsForFixture(filename);
 
@@ -325,14 +308,6 @@ describe.each(FIXTURES)('the two sweeps agree on the states this capture reaches
             return;
           }
           expect(twoStage).not.toBeNull();
-          const knownMiss =
-            KNOWN_SCREEN_MISSES.has(`${filename}|${name}|${objectiveName}`) &&
-            (maxPhase === null || maxPhase >= KNOWN_MISS_FROM_PHASE);
-          if (knownMiss) {
-            expect(twoStage!.phase).not.toBe(reference.phase);
-            expect(1 - twoStage!.value / reference.value).toBeLessThan(KNOWN_MISS_MAX_LOSS);
-            return;
-          }
           expect(twoStage!.phase).toBe(reference.phase);
           expect(twoStage!.value).toBe(reference.value);
           expect(twoStage!.row.goldPerHour).toBe(reference.row.goldPerHour);

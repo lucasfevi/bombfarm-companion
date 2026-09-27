@@ -223,25 +223,27 @@ describe('the resulting rates', () => {
   // (clear +0.8%, gold -5.4%) — right by cancellation, its own note said. It now reads slower.
   // RE-PINNED 2026-09-26 for the Wide Blast and Double Detonation patch (see the header): 29.1358s and 17,112,908 gold/h
   // before, cadence 0.96602.
-  it('clearSecs is 30.14s — ~9.7% above the measured arithmetic mean of 27.483s', () => {
-    expect(row.clearSecs).toBeCloseTo(30.1398, 3);
+  // RE-PINNED 2026-09-27 for the plant-cycle refit (ADR-018): 30.1398s and 16,542,820 gold/h
+  // before, cadence 0.93384. Measured on two post-patch fields and held out here, not fitted to it.
+  it('clearSecs is 26.32s — ~4.2% below the measured arithmetic mean of 27.483s', () => {
+    expect(row.clearSecs).toBeCloseTo(26.3226, 3);
 
     const residual = row.clearSecs / OBSERVED_CLEAR_SECS - 1;
-    expect(residual).toBeCloseTo(0.0967, 3);
-    expect(row.clearSecs).toBeGreaterThan(OBSERVED_CLEAR_SECS);
+    expect(residual).toBeCloseTo(-0.0422, 3);
+    expect(row.clearSecs).toBeLessThan(OBSERVED_CLEAR_SECS);
   });
 
-  it('goldPerHour is ~16.54M — ~13.1% BELOW the measured 19,033,500', () => {
+  it('goldPerHour is ~18.94M — ~0.5% BELOW the measured 19,033,500', () => {
     // Left as a point comparison rather than a tolerance band, so that any UNRELATED move (a wiki
     // refresh, a sheet-math change) shows up as a change to THIS number, distinct from the
     // tracked residual itself.
-    expect(row.goldPerHour).toBeCloseTo(16_542_820, -3);
+    expect(row.goldPerHour).toBeCloseTo(18_941_817, -3);
 
     const residual = row.goldPerHour / OBSERVED_GOLD_PER_HOUR - 1;
-    expect(residual).toBeCloseTo(-0.1309, 3);
+    expect(residual).toBeCloseTo(-0.0048, 3);
   });
 
-  it('the gold residual is presence × cadence, both reading low — no cancellation hides either', () => {
+  it('the gold residual is presence × cadence — presence low, cadence high, so the top line is a cancellation', () => {
     // The two factors whose product IS the gold residual. `presence` is the heroes-on-field
     // residual asserted above; `cadence` is everything else. Under the retired row cadence read
     // 1.155 against presence 0.931 and the top line looked like +7.5%; with the head charged it
@@ -251,13 +253,15 @@ describe('the resulting rates', () => {
     // the same model sits within 2% of this capture's clear once the measured presence is fed
     // in, so the cadence term here is the part still open. Since the 2026-09-26 patch it
     // reads 0.934: the 3.2 points between the two are the patch, priced against a capture taken
-    // before it, and belong to the re-anchor rather than to the cadence term.
+    // before it, and belong to the re-anchor rather than to the cadence term. The plant-cycle
+    // refit moved it to 1.069 — 7% fast on this early-game roster, whose presence reads 7% low, so
+    // the −0.5% top line is two errors cancelling, not a match.
     const presence = row.heroesOnField / OBSERVED_HEROES_ON_FIELD;
     const goldFactor = row.goldPerHour / OBSERVED_GOLD_PER_HOUR;
     const cadence = goldFactor / presence;
 
     expect(presence).toBeCloseTo(0.93072, 4);
-    expect(cadence).toBeCloseTo(0.93384, 4);
+    expect(cadence).toBeCloseTo(1.06926, 4);
     expect(presence * cadence).toBeCloseTo(goldFactor, 12);
   });
 });

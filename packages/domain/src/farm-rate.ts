@@ -3,13 +3,12 @@
  * key/hr (signed), gem/hr, time-piece/hr, XP/hr, clear time, one-shot and jaula facts for all
  * 600 wiki phases.
  *
- * ONE CADENCE MODEL, SHARED. The bomb cycle this board prices —
- * `cycle = E[max(fuse, hop/w)] + latency` over {@link HOP_DISTRIBUTION}, rescaled per difficulty
- * band — lives in `model/cadence.ts` and is the same one `model/combat.ts`'s `bombsPerSecond`
- * (and so the advisor, the next-point ranking and the team-plan scorer) reads. This module
- * re-exports it unchanged so its callers and tests keep importing from here; what it adds is the
- * per-band precompute (`plantsPerSecByAto`) that lets the row layer run with zero pipeline calls.
- * A hero's Combat-stage bombs/s and its farm-board plants/s at the same band are one number.
+ * ONE CADENCE MODEL, SHARED. The clear integral this board prices a map with (`model/clear-time.ts`)
+ * and the per-hero bombs/s `model/combat.ts` reads (`model/cadence.ts`, and so the advisor, the
+ * next-point ranking and the team-plan scorer) run on one plant cycle, `model/plant-cycle.ts`.
+ * What this module adds is the per-band precompute (`plantsPerSecByAto`) that lets the row layer
+ * run with zero pipeline calls. A hero's Combat-stage bombs/s and its farm-board plants/s at the
+ * same band are one number.
  *
  * GATE ATTACK MULT OMITTED (deliberately out of scope): gate rows use the same `avgHitBase` as
  * every other row — `Contra o Relógio`'s gate-only attack bonus is deliberately NOT applied,
@@ -80,7 +79,7 @@ import {
   predictHitDamage,
   critFactor,
   fieldSeconds,
-  HOP_FIT_ATO,
+  FIRST_ATO,
   cycleSecondsForHero,
   alliesOverRotation,
   matilhaMult,
@@ -95,15 +94,7 @@ import {
 } from './model';
 import { atoIndex } from './model/cadence';
 import { simulateClear, type ClearHero, type ClearPropType } from './model/clear-time';
-export {
-  HOP_DISTRIBUTION,
-  CYCLE_LATENCY_SEC,
-  HOP1_CYCLE_SEC,
-  HOP_FIT_ATO,
-  HOP_DENSITY_EXPONENT,
-  hopScaleForAto,
-  cycleSecondsForHero,
-} from './model/cadence';
+export { FIRST_ATO, cycleSecondsForHero } from './model/cadence';
 import { buildCandidateSheet } from './points-reopt-core';
 import { pipelineForHero } from './roster-dps';
 import { DEFAULT_CASA_SLOTS } from './casa-slots';
@@ -161,8 +152,7 @@ export const HERO_ACTIVATION_STAGGER_SEC = 0.5;
  * empty field: zero explosions, zero hits, zero loot for ~1.8 s across 42 clears.
  *
  * NOT A DOUBLE COUNT of the steady-state cycle, which is the first thing anyone will suspect.
- * {@link CYCLE_LATENCY_SEC} and {@link HOP1_CYCLE_SEC} are PER-BOMB terms living inside
- * {@link cycleSecondsForHero}, and the fuse reaches that cycle only as part of
+ * The cycle's overheads are PER-BOMB terms, and the fuse reaches it only as part of
  * `max(fuse, hop/w)` — a bomb whose fuse burns while the hero is already walking to the next
  * plant. The ONE pipeline fill before the first kill overlaps nothing, so it is uncharged
  * anywhere else.
@@ -219,15 +209,14 @@ export type HeroFarmFacts = {
   cdrCapPct: number;
   /** Grid walk speed `w = effective.speed × GRID_SPEED_COEF`, CELLS PER SECOND. */
   walkSpeedCells: number;
-  /** {@link cycleSecondsForHero} at {@link HOP_FIT_ATO}, seconds — averaged over the hop
-   *  distribution, NOT `max()` of a mean hop. `Infinity` when `w <= 0`. */
+  /** {@link cycleSecondsForHero} at {@link FIRST_ATO}, seconds per bomb over a whole clear.
+   *  `Infinity` when `w <= 0`. */
   cycleSecs: number;
-  /** `1 / cycleSecs`, plants per second, at {@link HOP_FIT_ATO}. `0` when `cycleSecs` is not
+  /** `1 / cycleSecs`, plants per second, at {@link FIRST_ATO}. `0` when `cycleSecs` is not
    *  finite and positive. */
   plantsPerSec: number;
   /**
-   * `1 / cycleSecs` per ato, index `ato - 1`, each at that ato's own prop density
-   * (see {@link hopScaleForAto}).
+   * `1 / cycleSecs` per ato, index `ato - 1`, each at that ato's own prop count.
    *
    * OPTIONAL, and absent means density-INDEPENDENT: the row layer falls back to
    * {@link plantsPerSec} at every ato, which is what lets a hand-built `HeroFarmFacts` keep a
@@ -690,7 +679,7 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
     }),
   );
   const cycleSecs = cycleSecondsForHero(fuseSecs, walkSpeedCells);
-  const plantsPerSec = plantsPerSecByAto[HOP_FIT_ATO - 1];
+  const plantsPerSec = plantsPerSecByAto[FIRST_ATO - 1];
   const field = fieldSeconds(sheet, basis.context);
   const uptime = (100 * field) / (field + basis.context.restSeconds) / 100;
   const passagemBastao =
