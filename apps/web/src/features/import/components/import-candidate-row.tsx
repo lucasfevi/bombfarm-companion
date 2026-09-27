@@ -14,6 +14,7 @@ import {
   HeroAvatar,
   HeroGearIcons,
   heroPeekData,
+  useHeroPeekStats,
   rarityDotClass,
   rarityTextClass,
   rosterInactiveChromeClass,
@@ -28,6 +29,7 @@ export function ImportCandidateRow({
   t: Strings;
   lang: Lang;
 }) {
+  const peekStats = useHeroPeekStats();
   const rarIdx = RARITIES.indexOf(candidate.rarity);
   const stars = Math.max(0, Math.min(MAX_STARS, Math.round(candidate.record.stars ?? 0)));
   const battleAllowed = candidate.record.battleAllowed ?? true;
@@ -51,7 +53,7 @@ export function ImportCandidateRow({
             rarityIdx={rarIdx}
             size="lg"
             name={candidate.name}
-            peek={{ hero: heroPeekData(candidate.record), lang }}
+            peek={{ hero: heroPeekData(candidate.record, candidate.blocked ? undefined : peekStats(candidate.record)), lang }}
           />
         </span>
       </DataTable.Cell>

@@ -239,7 +239,7 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
       keys,
     }) => {
       localStorage.setItem(keys.heroes, JSON.stringify(heroes));
-      if (activeHeroId) localStorage.setItem(keys.active, activeHeroId);
+      if (activeHeroId) localStorage.setItem(keys.active, JSON.stringify(activeHeroId));
       else localStorage.removeItem(keys.active);
       if (account) localStorage.setItem(keys.account, JSON.stringify(account));
       else localStorage.removeItem(keys.account);
@@ -430,8 +430,8 @@ export async function gotoSkillsPage(page: Page): Promise<void> {
  * padded to 30 heroes so a perf capture can answer whether render counts scale with
  * roster size or are flat.
  *
- * `importedRoster` is deliberately left untouched — every existing baseline (W1, W5, W8,
- * and the `prod-profile` baseline) is expressed against it, and changing it would
+ * `importedRoster` is deliberately left untouched — every existing baseline (the `dev-strict`
+ * ones and the `prod-profile` one) is expressed against it, and changing it would
  * invalidate all of them.
  */
 export const largeRoster: SeededState = {

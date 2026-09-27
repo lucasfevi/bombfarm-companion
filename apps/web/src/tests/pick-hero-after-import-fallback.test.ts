@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pickHeroAfterImportOrStrongest } from '@/app/_shell/app-shell-inner';
+import { pickHeroAfterImportOrStrongest } from '@/shared/lib/pick-hero-or-strongest';
 import type { HeroRecord } from '@/shared/lib/storage';
 
 function hero(id: string, power: number): HeroRecord {

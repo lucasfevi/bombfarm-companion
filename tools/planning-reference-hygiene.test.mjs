@@ -1,9 +1,10 @@
 /**
  * The repo-wide half of the planning-reference rule: this repository is public, the planning
  * tree that drives it is not, so nothing tracked here may carry a reference only that tree can
- * resolve. Two shapes are forbidden — a planning identifier (`PREFIX-NUMBER`) and a path into a
- * planning document. Both had reached tracked source at scale before anything measured them,
- * because the rule lived only in `AGENTS.md` as a command nobody ran.
+ * resolve. Two shapes are forbidden — a planning identifier (`PREFIX-NUMBER`, or its unhyphenated
+ * milestone-and-feature and work-item-slug forms) and a path into a planning document. Both had
+ * reached tracked source at scale before anything measured them, because the rule lived only in
+ * `AGENTS.md` as a command nobody ran.
  *
  * Deliberately dumb text scanning over `git ls-files`, not a parse — the same convention
  * `tools/design-system-gate.test.mjs` and `tools/desktop-main-computes-nothing.test.mjs` use.
@@ -89,6 +90,64 @@ const PLANNING_IDENTIFIER = new RegExp(
 );
 
 /**
+ * The same citation without the hyphen: a milestone token glued to its number, a space, then a
+ * feature number (`QQ7 F2`). It dodged the identifier scan for as long as that scan existed. The
+ * milestone half must be letters immediately followed by digits, so a function key on its own
+ * (`F1`), an audio format (`MP3`), a version (`Windows 11 F1`) or a standard ending in a letter
+ * (`W3C`) never completes the shape.
+ */
+const MILESTONE_FEATURE_CITATION = /\b[A-Z]{1,4}[0-9]{1,2} F[0-9]{1,2}\b/;
+
+/**
+ * A milestone's work-item slug cited as provenance (`mp7-example-work-item`, `m7-example-item`,
+ * or the capitalised one-word `M7-widgets`). The lowercase form needs at least
+ * two words after the number, which keeps a media file name like `mp3-sample.ogg` or `mp4-clip`
+ * out; the capitalised one-word form skips a participle, so `M1-based` and `MP3-encoded` pass.
+ */
+const MILESTONE_SLUG =
+  /\b(?:[mM][pP]?[0-9]{1,2}(?:-[a-z][a-z0-9]*){2,}|MP?[0-9]{1,2}-(?![a-z]+ed\b)[a-z]{3,}\b)/;
+
+/**
+ * A milestone number cited on its own (`MP7`). Nothing else in this repo spells `MP` and a number
+ * except an audio or video format, and a format is followed by the thing it encodes.
+ */
+const MILESTONE_NUMBER =
+  /\bMP[0-9]{1,2}\b(?!-|\s+(?:files?|clips?|audio|video|tracks?|streams?|formats?|players?)\b)/;
+
+/** A wave or milestone spelled out with its number (`Wave 9`, `pre-Wave-9`, `milestone 9`). */
+const SPELLED_PLAN_NUMBER = /\b(?:[Ww]ave|[Mm]ilestone)[ -][0-9]{1,2}\b/;
+
+/**
+ * A wave, task or milestone number (`W9`, `T19`, `M9`) — the bare token, which is also an SVG
+ * move-to (`M13.5 8`), a PVP streak (`W2`), a tier (`T3`) or a time variable (`T1 - T0`) in
+ * code. So it is only an offense in prose: a markdown line, a comment, or a test title, where
+ * none of those appear. The `M` form still skips a trailing coordinate, and `T` a clock time,
+ * for the SVG or timestamp a comment quotes; `W` never starts either, and a leading zero (`T01`,
+ * a skill-tree node id) is never a plan number.
+ */
+const PLAN_STEP_NUMBER =
+  /\b(?:W[1-9][0-9]?\b|T[1-9][0-9]?[a-z]?\b(?!:[0-9])|M[0-9]{1,2}\b(?![ ,]?-?[0-9.]|-[a-z]))/;
+
+const TEST_TITLE = /\b(?:describe|it|test)(?:\.[a-z]+)*\(\s*(['"`])((?:\\.|(?!\1).)*)\1/g;
+const LINE_COMMENT = /^\s*(?:\/\/|\/\*|\*|\{\/\*)/;
+const TRAILING_COMMENT = /(?<![:\\'"`])\/\/(.*)$|\/\*(.*?)(?:\*\/|$)/g;
+
+/**
+ * The parts of one line that are prose rather than code: the whole line in markdown, the comment
+ * in YAML and source, and every test title. JSON carries no prose this rule can separate from data.
+ */
+function proseOf(line, file) {
+  if (/\.mdc?$/.test(file)) return [line];
+  if (/\.ya?ml$/.test(file)) return [/(?:^|\s)#(.*)$/.exec(line)?.[1] ?? ''];
+  if (file.endsWith('.json')) return [];
+  if (LINE_COMMENT.test(line)) return [line];
+  const prose = [];
+  for (const match of line.matchAll(TRAILING_COMMENT)) prose.push(match[1] ?? match[2] ?? '');
+  for (const match of line.matchAll(TEST_TITLE)) prose.push(match[2]);
+  return prose;
+}
+
+/**
  * A regex character class spells `PREFIX-NUMBER` by accident: `[A-Z0-9]{8}` contains `Z0-9`,
  * `[a-fA-F0-9]{64}` contains `F0-9`. What separates a class from a markdown link label like
  * `[ADR-014](…)` is what follows the bracket — a quantifier means regex, a paren means link.
@@ -118,8 +177,11 @@ const PLANNING_PATHS = [
   { name: 'bare PRD reference', pattern: /\bPRD\b/ },
   // Dropping the `.md` does not make a pointer less resolvable — `design §4.6` names the same
   // private section `design.md §4.6` does. The word must be the whole word before the section
-  // sign, so this repo's own `DESIGN_SYSTEM §4` (whose last word is `SYSTEM`) is not a match.
+  // sign; the design-system planning document has its own entry below.
   { name: 'planning-document section pointer', pattern: /\b(?:design|spec|tasks|prd|validation) §/i },
+  // The design-system planning document is not in this checkout — `docs/design-system.md` is the
+  // public one — so its name, with or without `.md` or a section, only resolves privately.
+  { name: 'design-system planning document', pattern: /\bDESIGN_SYSTEM\b/ },
 ];
 
 const UNPREFIXED_VALIDATION_DOC = {
@@ -132,6 +194,13 @@ export function planningReferenceOffenses(line, { file = '' } = {}) {
   const offenses = [];
   if (PLANNING_IDENTIFIER.test(stripRegexCharacterClasses(line))) {
     offenses.push('planning identifier');
+  }
+  if (MILESTONE_FEATURE_CITATION.test(line)) offenses.push('milestone-feature citation');
+  if (MILESTONE_SLUG.test(line)) offenses.push('milestone work-item slug');
+  if (MILESTONE_NUMBER.test(line)) offenses.push('milestone number');
+  if (SPELLED_PLAN_NUMBER.test(line)) offenses.push('spelled-out wave or milestone number');
+  if (proseOf(line, file).some((prose) => PLAN_STEP_NUMBER.test(prose))) {
+    offenses.push('wave, task or milestone number in prose');
   }
   for (const { name, pattern } of PLANNING_PATHS) {
     if (pattern.test(line)) offenses.push(name);
@@ -200,6 +269,124 @@ describe('planning-reference hygiene — no planning identifier or planning-docu
 describe('planning-reference hygiene — the scan discriminates', () => {
   it('red state: a planning identifier is caught', () => {
     expect(planningReferenceOffenses('gate on usability (QQZ-07).')).toEqual(['planning identifier']);
+  });
+
+  it('red state: a space-separated milestone-and-feature citation is caught', () => {
+    expect(planningReferenceOffenses('// QQ7 F2: re-pointed onto the capture')).toEqual([
+      'milestone-feature citation',
+    ]);
+    expect(planningReferenceOffenses('a second bilingual layer (QQZ12 F4) — it')).toEqual([
+      'milestone-feature citation',
+    ]);
+  });
+
+  it('red state: a milestone work-item slug cited as provenance is caught', () => {
+    expect(planningReferenceOffenses('# The corpus (`mp7-example-rebaseline`)')).toEqual([
+      'milestone work-item slug',
+    ]);
+    expect(planningReferenceOffenses(' * guards this rests on (mp7-live-example-read).')).toEqual([
+      'milestone work-item slug',
+    ]);
+  });
+
+  it('red state: a lowercase or capitalised single-letter milestone slug is caught', () => {
+    expect(planningReferenceOffenses('  // toast `success` variant (m9-example-item)')).toEqual([
+      'milestone work-item slug',
+    ]);
+    expect(planningReferenceOffenses('// M9-widgets: Icon, iconSources added')).toEqual([
+      'milestone work-item slug',
+    ]);
+  });
+
+  it('red state: a bare milestone number is caught anywhere', () => {
+    expect(planningReferenceOffenses('    // not the constant this has returned since MP9.')).toEqual([
+      'milestone number',
+    ]);
+    expect(planningReferenceOffenses('"accountLabel": "MP9 reference account"', { file: 'x.json' })).toEqual([
+      'milestone number',
+    ]);
+  });
+
+  it('red state: a wave or milestone spelled out with its number is caught', () => {
+    expect(planningReferenceOffenses('## Wave 9 — naked is tree-free', { file: 'docs/x.md' })).toEqual([
+      'spelled-out wave or milestone number',
+    ]);
+    expect(planningReferenceOffenses("it('defaults to 0 (pre-Wave-9 record)', () => {")).toEqual([
+      'spelled-out wave or milestone number',
+    ]);
+  });
+
+  it('red state: a wave, task or milestone number in a comment, test title, doc or YAML comment is caught', () => {
+    for (const [line, file] of [
+      ['      // W9: no component defined inside another component render.', 'x.mjs'],
+      [' * guard (T19). The last five are produced elsewhere', 'x.ts'],
+      ['  /** Flavor badge — kept from M9; the smoke test asserts it. */', 'x.tsx'],
+      ['const TOL = 1e-9; // stated once, per T17.', 'x.ts'],
+      ['/* Promoted from import dialog (W9). */', 'x.css'],
+      ["describe('planner store scaffold (W9 T29)', () => {", 'x.test.ts'],
+      ["  it('M9 discrimination: keeps no stale field', () => {", 'x.test.ts'],
+      ['was deleted in T9a rather than migrated.', 'docs/x.md'],
+      ['| session | W9 | lang, toast |', 'docs/x.md'],
+      ['      # W9 guardrail — warn first', '.github/workflows/x.yml'],
+    ]) {
+      expect(planningReferenceOffenses(line, { file }), line).toEqual([
+        'wave, task or milestone number in prose',
+      ]);
+    }
+  });
+
+  it('red state: the design-system planning document is caught by name', () => {
+    expect(planningReferenceOffenses(' * every policy decision DESIGN_SYSTEM.md §11 specifies')).toEqual([
+      'design-system planning document',
+    ]);
+  });
+
+  it('green state: code that spells a wave, task or milestone token is not an offense', () => {
+    for (const [line, file] of [
+      ["    expect(html).toContain('last 12, win rate 17%, streak W2');", 'x.test.tsx'],
+      ["    expect(html).toContain('120 (T3, floor 100)');", 'x.test.tsx'],
+      ['            <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9" />', 'x.tsx'],
+      ["  'M11.98 0C5.67 0 .5 4.87 0 11.05l6.44 2.66',", 'x.tsx'],
+      ['const elapsed = T1 - T0;', 'x.ts'],
+      ['function lerp<T1, T2>(from: T1, to: T2) {}', 'x.ts'],
+      ['    new Date(`${isoDay}T00:00:00Z`),', 'x.ts'],
+      ['  T01: \'sangue_ouro\',', 'x.ts'],
+      ['      "id": "T01",', 'x.json'],
+      ["<div className='w-2 mt-4 grid-cols-2 md:w-1/2' />", 'x.tsx'],
+    ]) {
+      expect(planningReferenceOffenses(line, { file }), line).toEqual([]);
+    }
+  });
+
+  it('green state: prose that shares part of the wave, task or milestone shapes is not an offense', () => {
+    for (const [line, file] of [
+      ['// the icon path is M0 0 L10 10, drawn as M3.5 7h7', 'x.ts'],
+      ['// the cycle resets at T12:00, stamped 2026-08-13T12:00:00Z', 'x.ts'],
+      ['// an MP3-encoded clip beside an MP4 file', 'x.ts'],
+      ['// Apple M1-based Macs run the arm64 build', 'x.ts'],
+      ['// the knight moves e4 to f6; press F1 for help', 'x.ts'],
+      ['/* w-12 h-12, colour #1a2b3c, hash 3f2a9b1c */', 'x.css'],
+      ['A tier-2 hero after 2 waves, per the W3C spec', 'docs/x.md'],
+      ['the planner waves and the milestones are named in words, not numbers', 'docs/x.md'],
+      ['`DESIGN_SYSTEM_TOKENS` is a constant, not the document', 'docs/x.md'],
+    ]) {
+      expect(planningReferenceOffenses(line, { file }), line).toEqual([]);
+    }
+  });
+
+  it('green state: text that shares part of the milestone shapes is not an offense', () => {
+    for (const line of [
+      'press F1 for help, or F12 for the console',
+      'an MP3 file and an MP4 clip',
+      'SHA-256 of the 2026-08-13 export, per the W3C spec',
+      'Windows 11 F1 key',
+      'phase 5 F1 row',
+      'assets/mp3-sample.ogg and mp4-clip.webm',
+      'hero6-menu-idle/hero6_idle_menu1.png',
+      'the (L38) hero at phase 24',
+    ]) {
+      expect(planningReferenceOffenses(line), line).toEqual([]);
+    }
   });
 
   it('red state: a section-qualified planning-document pointer is caught', () => {

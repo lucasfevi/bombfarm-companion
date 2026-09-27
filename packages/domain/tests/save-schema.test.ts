@@ -14,7 +14,7 @@ function fingerprint(root: string, level: SchemaLevel): SchemaFingerprint {
 }
 
 /** A valid `skills.totals` body built from the exported level's own key list (engine test only —
- * the "written down as literals" baseline rule applies to the T4/T5 corpus checks, not this generic
+ * the "written down as literals" baseline rule applies to the corpus checks, not this generic
  * mechanics suite). */
 function validSkillsTotals(): Record<string, number> {
   return Object.fromEntries(SCHEMA_LEVELS.skillsTotals.keys.map((key) => [key, 1]));
@@ -319,7 +319,7 @@ describe('SCHEMA_LEVELS — the shared catalogue, key sets written as literals',
 
   it('item: the measured 17-key set with the enumerated optional escapes `slot` and `soulbound` (27/3 API split, 17/5 export split)', () => {
     expect(SCHEMA_LEVELS.item.keys).toHaveLength(17);
-    expect(SCHEMA_LEVELS.item.optional).toEqual(['slot', 'soulbound']);
+    expect(SCHEMA_LEVELS.item.optional).toEqual(['slot', 'soulbound', 'export_lock_secs']);
     expect(SCHEMA_LEVELS.item.keys).not.toContain('soulbound');
   });
 

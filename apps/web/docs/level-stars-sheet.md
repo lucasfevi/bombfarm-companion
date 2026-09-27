@@ -32,7 +32,7 @@ Use the shared helpers `rescaleHeroForLevel` / `rescaleHeroForStars` (or equival
 
 ## Star mult (capture-backed)
 
-`starsMult = 1 + STAR_MULT_PER_STAR × ★` (0..`MAX_STARS`), i.e. `1 + 0.25 × ★` over 0..3 today — ×1.75 at max stars. Applies to intrinsic Attack, Energy, Crit %, Crit Dmg, Penetration, CDR before items. **Speed does not scale** (Bram geared + Orin unequipped, 2026-07-23). Luck scales with ★ and is on the planner sheet model (carrying a luck key across SheetStats/SheetKey/PointAlloc and the stored HeroRecord); it is not displayed until Wave 6.
+`starsMult = 1 + STAR_MULT_PER_STAR × ★` (0..`MAX_STARS`), i.e. `1 + 0.25 × ★` over 0..3 today — ×1.75 at max stars. Applies to intrinsic Attack, Energy, Crit %, Crit Dmg, Penetration, CDR before items. **Speed does not scale** (Bram geared + Orin unequipped, 2026-07-23). Luck scales with ★ and is on the planner sheet model (carrying a luck key across SheetStats/SheetKey/PointAlloc and the stored HeroRecord); it was not displayed until a later change added it to the sheet table.
 
 The per-★ share is the wiki's `gemas.mult_por_estrela` and it **moves between patches** — it was `0.5` (×2.5 at max stars) until a patch halved it. The 2026-07-23 capture above measured the SCOPE (which stats scale, and that Speed does not), and that has held across the change; only the magnitude moved. Read the magnitude from `STAR_MULT_PER_STAR` in `packages/domain/src/gear/catalog.ts`, never from a number written into prose — including this paragraph.
 
@@ -44,9 +44,9 @@ The per-★ share is the wiki's `gemas.mult_por_estrela` and it **moves between 
 4. Ability-point trim/caps on level change keep existing planner behavior unless a separate bug is filed.
 5. Manual geared edits win until the next level/stars change (which re-runs residual + re-apply).
 
-## Wave 4 — naked is tree-free
+## Naked is tree-free
 
-`naked` (the Locked strategy above) is **Hero + Ability, tree-free** after Wave 4 —
+`naked` (the Locked strategy above) is **Hero + Ability, tree-free** —
 `nakedFromBirth` never bakes the account skill tree in; a separate stage
 (`applySkillTree`) applies it exactly once, on top, to produce the displayed sheet.
 The pooled per-point bases this file's rescale helpers read
@@ -62,6 +62,6 @@ the hero's own birth roll; a well-rolled hero (Bellatrix's crit chance 9.51 vs R
 rarity midpoint 7, a 36% error) gets silently corrupted. `rescaleNakedCritChance(naked,
 oldOtherPct, newOtherPct)` replaces it with the same ratio form `rescaleNakedPen` /
 `rescaleNakedCritDmg` already use, preserving the hero's own roll. Not swapped at the
-two call sites (`use-hero-build-actions.ts:74`, `:110`) in this wave — that hook has no
-test harness in this repo (Wave 2 `M7`), so the swap is Wave 6's, where `prevMods` is
+two call sites (`use-hero-build-actions.ts:74`, `:110`) in that change — that hook had no
+test harness in this repo, so the swap was left to the later change where `prevMods` is
 already in scope at both sites.

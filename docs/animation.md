@@ -2,7 +2,7 @@
 
 **Status:** reference (durable) · **Source:** Motion Accordion/Collapsible + planner Tabs IA + Tooltip (2026-07-24)
 
-`Accordion.Panel` / `Collapsible.Panel` (`packages/ui/src/accordion/accordion-panel.tsx`, `collapsible/collapsible-panel.tsx`) animate open/close via [`motion`](https://motion.dev) (`motion/react`), not a plain CSS transition on Base UI's `--*-panel-height` var. Planner workspace tabs (`packages/ui/src/tabs/`) follow [Animate UI animate/tabs](https://animate-ui.com/docs/primitives/animate/tabs): horizontal slide + auto-height shell, inactive fade, spring highlight under the active trigger. Tooltips (`packages/ui/src/tooltip/`) follow [Animate UI Base UI tooltip](https://animate-ui.com/docs/components/base/tooltip): Motion spring scale enter/exit on the popup. Each primitive is a directory (one file per part + a namespace `index.ts`) — see [`design-system.md`](design-system.md#compound-namespace-file-layout-w6).
+`Accordion.Panel` / `Collapsible.Panel` (`packages/ui/src/accordion/accordion-panel.tsx`, `collapsible/collapsible-panel.tsx`) animate open/close via [`motion`](https://motion.dev) (`motion/react`), not a plain CSS transition on Base UI's `--*-panel-height` var. Planner workspace tabs (`packages/ui/src/tabs/`) follow [Animate UI animate/tabs](https://animate-ui.com/docs/primitives/animate/tabs): horizontal slide + auto-height shell, inactive fade, spring highlight under the active trigger. Tooltips (`packages/ui/src/tooltip/`) follow [Animate UI Base UI tooltip](https://animate-ui.com/docs/components/base/tooltip): Motion spring scale enter/exit on the popup. Each primitive is a directory (one file per part + a namespace `index.ts`) — see [`design-system.md`](design-system.md#compound-namespace-file-layout).
 
 ## Rules
 

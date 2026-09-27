@@ -12,6 +12,15 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
  *
  * Every `RosterSortKey` branch is covered, in both directions, plus the name tiebreak.
  */
+function required<T>(value: T | undefined, message: string): T {
+  if (value === undefined) throw new Error(message);
+  return value;
+}
+
+const FIRST_RARITY = required(RARITIES[0], 'RARITIES is empty');
+const LAST_RARITY = required(RARITIES.at(-1), 'RARITIES is empty');
+const FIRST_SLOT = required(SLOTS[0], 'SLOTS is empty');
+
 const ZERO_SHEET = {
   attack: 0,
   energy: 0,
@@ -25,7 +34,7 @@ const ZERO_SHEET = {
 
 function hero(partial: Partial<HeroRecord> & Pick<HeroRecord, 'id' | 'name'>): HeroRecord {
   return {
-    rarity: RARITIES[0],
+    rarity: FIRST_RARITY,
     level: 60,
     stars: 0,
     naked: { ...ZERO_SHEET },
@@ -75,8 +84,8 @@ describe('compareRosterHeroes', () => {
     });
 
     it('rarity follows the RARITIES catalogue order', () => {
-      const first = hero({ id: 'a', name: 'A', rarity: RARITIES[0] });
-      const later = hero({ id: 'b', name: 'B', rarity: RARITIES[RARITIES.length - 1] });
+      const first = hero({ id: 'a', name: 'A', rarity: FIRST_RARITY });
+      const later = hero({ id: 'b', name: 'B', rarity: LAST_RARITY });
 
       expect(order(first, later, 'rarity')).toBe(-1);
       expect(order(later, first, 'rarity')).toBe(1);
@@ -90,7 +99,7 @@ describe('compareRosterHeroes', () => {
 
     it('gear counts equipped slots', () => {
       const loadout = emptyLoadout();
-      const slot = SLOTS[0];
+      const slot = FIRST_SLOT;
       const geared = hero({
         id: 'a',
         name: 'A',
@@ -161,13 +170,13 @@ describe('compareRosterHeroes', () => {
         gearedOverride: { ...ZERO_SHEET, attack: 10 },
       });
       const loadout = emptyLoadout();
-      const slot = SLOTS[0];
+      const slot = FIRST_SLOT;
       const right = hero({
         id: 'b',
         name: 'B',
         rank: 'F',
         level: 80,
-        rarity: RARITIES[RARITIES.length - 1],
+        rarity: LAST_RARITY,
         updatedAt: 900,
         gearedOverride: { ...ZERO_SHEET, attack: 900 },
         // Must differ on `gear` too — otherwise that key ties and falls through to the

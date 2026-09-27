@@ -1,6 +1,6 @@
 {
   "name": "@bombfarm/ui",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -9,6 +9,10 @@
       "default": "./src/index.ts"
     },
     "./styles.css": "./src/styles.css",
+    "./site-address": {
+      "types": "./src/site-address.ts",
+      "default": "./src/site-address.ts"
+    },
     "./*": {
       "types": "./src/*",
       "default": "./src/*"

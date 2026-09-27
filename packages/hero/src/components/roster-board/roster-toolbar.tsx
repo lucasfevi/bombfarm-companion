@@ -4,8 +4,8 @@
  * What the roster is ordered by, whether shelved heroes are in it, which abilities it is narrowed
  * to, and which of the two shapes it is drawn in.
  *
- * It governs BOTH presentations, which is the point: the list and the board are two shapes of one
- * roster, so switching between them must not change which heroes are on screen. A filter that
+ * It governs EVERY presentation, which is the point: the list, the board and the table are shapes
+ * of one roster, so switching between them must not change which heroes are on screen. A filter that
  * applied to only one of them would make the switch look like it had lost half the account. The
  * layout switch is inside this control rather than beside it for the same reason — it is the
  * fourth thing you can ask of a roster, and a host that placed it itself could place it somewhere
@@ -13,7 +13,8 @@
  *
  * The sort pair is the Inventory's own control — a key and a direction sharing one outline — for
  * the same reason the layout glyphs are: one shape, one meaning, wherever this app orders a
- * collection.
+ * collection. The table orders itself by its column headers, so the pair steps aside there rather
+ * than offer a second order the table would not follow.
  */
 import { useMemo } from 'react';
 import { abilityName } from '@bombfarm/domain/game-labels';
@@ -28,6 +29,7 @@ import { Icon, Select, Switch, Tooltip, cn } from '@bombfarm/ui';
 import { sub, type Lang, type RosterBoardCopy } from '../../copy';
 import {
   ROSTER_BOARD_SORT_KEYS,
+  ROSTER_VIEW_MODES,
   abilityFilterOptions,
   pressAbilityFilter,
   type RosterAbilityFilterOption,
@@ -83,7 +85,12 @@ export function RosterToolbar({
     [rows, filter.abilityIds],
   );
   const viewToggleLabels = useMemo(
-    () => ({ group: t.heroesViewLabel, cards: t.heroesViewCards, list: t.heroesViewList }),
+    () => ({
+      group: t.heroesViewLabel,
+      cards: t.heroesViewCards,
+      list: t.heroesViewList,
+      table: t.heroesViewTable,
+    }),
     [t],
   );
 
@@ -103,46 +110,48 @@ export function RosterToolbar({
           />
           {t.heroesFilterActiveHeroes}
         </label>
-        <span className={inventorySortGroupClass}>
-          <Select
-            size="compact"
-            value={sort.key}
-            onChange={(event) => {
-              actions.onSort({ ...sort, key: event.target.value as RosterBoardSortKey });
-            }}
-            aria-label={t.heroesSortLabel}
-            className={inventorySortSelectClass}
-          >
-            {ROSTER_BOARD_SORT_KEYS.map((key) => (
-              <option key={key} value={key}>
-                {t[SORT_KEY_LABEL[key]]}
-              </option>
-            ))}
-          </Select>
-          {/* The design-system tooltip, never the native `title`, exactly as the Inventory's own
-              direction button does it. */}
-          <Tooltip.Root>
-            <Tooltip.Trigger
-              type="button"
-              onClick={() => {
-                actions.onSort({ ...sort, direction: ascending ? 'desc' : 'asc' });
+        {viewMode === 'table' ? null : (
+          <span className={inventorySortGroupClass}>
+            <Select
+              size="compact"
+              value={sort.key}
+              onChange={(event) => {
+                actions.onSort({ ...sort, key: event.target.value as RosterBoardSortKey });
               }}
-              aria-label={ascending ? t.heroesSortAscending : t.heroesSortDescending}
-              className={inventorySortDirectionClass}
+              aria-label={t.heroesSortLabel}
+              className={inventorySortSelectClass}
             >
-              <Icon name={ascending ? 'sort-ascending' : 'sort-descending'} size="sm" />
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Positioner sideOffset={6}>
-                <Tooltip.Popup>
-                  <p className="m-0 text-xs text-ink">
-                    {ascending ? t.heroesSortAscending : t.heroesSortDescending}
-                  </p>
-                </Tooltip.Popup>
-              </Tooltip.Positioner>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        </span>
+              {ROSTER_BOARD_SORT_KEYS.map((key) => (
+                <option key={key} value={key}>
+                  {t[SORT_KEY_LABEL[key]]}
+                </option>
+              ))}
+            </Select>
+            {/* The design-system tooltip, never the native `title`, exactly as the Inventory's own
+                direction button does it. */}
+            <Tooltip.Root>
+              <Tooltip.Trigger
+                type="button"
+                onClick={() => {
+                  actions.onSort({ ...sort, direction: ascending ? 'desc' : 'asc' });
+                }}
+                aria-label={ascending ? t.heroesSortAscending : t.heroesSortDescending}
+                className={inventorySortDirectionClass}
+              >
+                <Icon name={ascending ? 'sort-ascending' : 'sort-descending'} size="sm" />
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Positioner sideOffset={6}>
+                  <Tooltip.Popup>
+                    <p className="m-0 text-xs text-ink">
+                      {ascending ? t.heroesSortAscending : t.heroesSortDescending}
+                    </p>
+                  </Tooltip.Popup>
+                </Tooltip.Positioner>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </span>
+        )}
         <AbilityFilterStrip
           options={options}
           filter={filter}
@@ -151,12 +160,13 @@ export function RosterToolbar({
           onFilter={actions.onFilter}
         />
       </div>
-      {/* The Inventory's own control, for the same two shapes: one pair of glyphs means one thing
-          wherever this app switches between a board and a list. */}
+      {/* The Inventory's own control, plus a table: one glyph means one shape wherever this app
+          switches between a board and a list. */}
       <InventoryLayoutToggle
         layout={viewMode}
         onChange={actions.onViewMode}
         labels={viewToggleLabels}
+        layouts={ROSTER_VIEW_MODES}
       />
     </div>
   );

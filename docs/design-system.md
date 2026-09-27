@@ -60,6 +60,7 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `Num` | `@base-ui/react/button` spin + `<input type="number">` | composite numeric field — left chevron steppers, right-aligned value; hide native spinners | `stepper.recipe.ts` (`num*`) |
 | `Select` | `@base-ui/react/select` | `size`: `default` \| `compact`; left chevron trigger; **ported popup** (themed options) | `select.recipe.ts` |
 | `SearchSelect` | `@base-ui/react/combobox` | single-select over a list too long to scroll: `Select`'s trigger and popup, plus a search field INSIDE the popup and a rendered-row cap (`limit`, default 50) with an `overflowLabel` note saying how many matched. Filtering is the primitive's own (accent-insensitive, every query token must appear in the label), not Base UI's `filter` — only the side doing the matching knows the match count the note reports. Options are `{ value, label }` and the label is the whole search surface, so whatever a caller wants found has to be visible in the row | `search-select.recipe.ts` + `select.recipe.ts` |
+| `SearchSelectMultiple` | `@base-ui/react/combobox` (`multiple`) | `SelectMultiple`'s trigger (caller-rendered `renderValue`), optional header row and checkbox rows, plus `SearchSelect`'s search field and matcher inside the popup — for a tick list a player finds a row in by typing (the Heroes leaderboard's Columns control). No row cap: its lists are short | `search-select.recipe.ts` + `select.recipe.ts` |
 | `Switch` | `@base-ui/react/switch` | boolean on/off; Root + Thumb; planner token track/thumb | `switch.recipe.ts` |
 | `Accordion` | `@base-ui/react/accordion` | compound `Root`/`Item`/`Header`/`Trigger`/`Panel`; `multiple`; Trigger `tone`: `section` \| `row`, `size`: `default` \| `compact`; `Panel` open/close animates via Motion (`motion/react`), not a CSS transition — see [`animation.md`](animation.md) | `accordion.recipe.ts` |
 | `Collapsible` | `@base-ui/react/collapsible` | compound `Root`/`Trigger`/`Panel`; controlled `open` / uncontrolled `defaultOpen`; shared Trigger `tone`/`size`; `Panel` animates via Motion — see [`animation.md`](animation.md) | `accordion.recipe.ts` |
@@ -71,12 +72,12 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `Tooltip` | `@base-ui/react/tooltip` + Motion | compound `Provider`/`Root`/`Trigger`/`Portal`/`Positioner`/`Popup`/`Arrow`/`StatusBody`; Animate UI spring scale enter/exit — see [`animation.md`](animation.md) | `tooltip.recipe.ts` |
 | `DataTable` | `<table>` compound | `Root` (`scrollable` + optional `maxRows`/`minRows`), `Table`/`Head`/`Body`/`Row`/`Header`/`Cell`/`RowHeader`/`Caption`; sticky heads `z-20` + `border-separate`; `Header sortable` shows stacked ▲▼ when idle, single chevron when active | `data-table.recipe.ts` |
 | `GlossaryTerm` | DS `Tooltip` | inline dotted-underline formula token + tip | `glossary-term.recipe.ts` + `tooltip.recipe.ts` |
-| `MetricScoreboard` | `<div>` grid | equal-column KPI cells: `cells[]` of `{ id, label, value, tone, delta, deltaTone }`; keeps the invisible `+0.0%` placeholder for delta-less cells (no CLS) — promoted from the planner's `CompareMetricsStrip` (W6); grid is a fixed `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4` — a caller with fewer than 4 cells passes `className="sm:grid-cols-N lg:grid-cols-N"` (`cn()`/tailwind-merge overrides both breakpoints) rather than leaving a blank trailing cell, e.g. `WaterfallPanel`'s 3-step scoreboard | `metric-scoreboard.recipe.ts` |
-| `GlossedText` | `<span>` | renders `template` with `terms: ReadonlyMap<token, tip>` tokens wrapped in `GlossaryTerm`; longest-token-first split; empty `terms` renders a plain wrapper — promoted from the planner's `GlossedFormula` (W6); the vocabulary is the caller's | inline Tailwind |
-| `FileDropZone` | `<div role="button">` | click / keyboard / drag-drop file target; idle vs drag-over chrome via recipe; keeps Enter/Space and `input.value = ''` reset — promoted from import dialog (W6) | `file-drop-zone.recipe.ts` |
-| `AppNav` | `<nav>` + `<button>` | segmented nav pill: `items` (`{id, label, active}`), `ariaLabel` (default `'Main'`), `onSelect`; optional `renderItem` render prop lets a caller substitute its own element (the web supplies a Next `<Link>`) for the default `<button type="button">`; renders no `<nav>` at all when `items` is empty — extracted verbatim from the web's former `site-header.tsx` nav + `site-nav-link.tsx` (T4a) | `app-nav.recipe.ts` |
-| `SegmentedToggle` | `<div role="group">` + `<button>` | generic bordered flush button group: `options` (`{id, label}`), `value`, `onChange`, `ariaLabel`; no language semantics (DS-09) — extracted verbatim from the web's former inline PT/EN control (T4a) | `segmented-toggle.recipe.ts` |
-| `AppShell` | `<header>`/`<main>`/`<footer>` | desktop-only top-bar shell (used solely by `apps/desktop/renderer/app/page.tsx`): sticky header (brand `title`/`badge` lockup, an `AppNav` pill built from `items`/`activeId`/`onNavigate`, and a right-hand `actions` slot), a single scrolling `<main>`, and a slim status strip (`status`/`progress`/`version`). Same top-bar shape as the web's `SiteHeader`, replacing the desktop's earlier icon-rail sidebar (T4a). `draggable`/`overlayInset` are implemented for a later custom-title-bar task and default off | `AppShell.recipe.ts` |
+| `MetricScoreboard` | `<div>` grid | equal-column KPI cells: `cells[]` of `{ id, label, value, tone, delta, deltaTone }`; keeps the invisible `+0.0%` placeholder for delta-less cells (no CLS) — promoted from the planner's `CompareMetricsStrip`; grid is a fixed `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4` — a caller with fewer than 4 cells passes `className="sm:grid-cols-N lg:grid-cols-N"` (`cn()`/tailwind-merge overrides both breakpoints) rather than leaving a blank trailing cell, e.g. `WaterfallPanel`'s 3-step scoreboard | `metric-scoreboard.recipe.ts` |
+| `GlossedText` | `<span>` | renders `template` with `terms: ReadonlyMap<token, tip>` tokens wrapped in `GlossaryTerm`; longest-token-first split; empty `terms` renders a plain wrapper — promoted from the planner's `GlossedFormula`; the vocabulary is the caller's | inline Tailwind |
+| `FileDropZone` | `<div role="button">` | click / keyboard / drag-drop file target; idle vs drag-over chrome via recipe; keeps Enter/Space and `input.value = ''` reset — promoted from import dialog | `file-drop-zone.recipe.ts` |
+| `AppNav` | `<nav>` + `<button>` | segmented nav pill: `items` (`{id, label, active}`), `ariaLabel` (default `'Main'`), `onSelect`; optional `renderItem` render prop lets a caller substitute its own element (the web supplies a Next `<Link>`) for the default `<button type="button">`; renders no `<nav>` at all when `items` is empty — extracted verbatim from the web's former `site-header.tsx` nav + `site-nav-link.tsx` | `app-nav.recipe.ts` |
+| `SegmentedToggle` | `<div role="group">` + `<button>` | generic bordered flush button group: `options` (`{id, label}`), `value`, `onChange`, `ariaLabel`; no language semantics (DS-09) — extracted verbatim from the web's former inline PT/EN control | `segmented-toggle.recipe.ts` |
+| `AppShell` | `<header>`/`<main>`/`<footer>` | desktop-only top-bar shell (used solely by `apps/desktop/renderer/app/page.tsx`): sticky header (brand `title`/`badge` lockup, an `AppNav` pill built from `items`/`activeId`/`onNavigate`, and a right-hand `actions` slot), a single scrolling `<main>`, and a slim status strip (`status`/`progress`/`version`). Same top-bar shape as the web's `SiteHeader`, replacing the desktop's earlier icon-rail sidebar. `draggable`/`overlayInset` are implemented for a later custom-title-bar task and default off | `AppShell.recipe.ts` |
 
 ### Game art (`packages/game-art/src/`)
 
@@ -202,7 +203,7 @@ classes. These are imported directly from the recipe module (not re-exported fro
 because they dress plain elements rather than back a primitive. Direct `*.recipe.ts` imports are
 the sanctioned MOD-12 carve-out; every other design-system module is barrel-only.
 
-## Compound namespace file layout (W6)
+## Compound namespace file layout
 
 `Dialog`, `Collapsible`, `Accordion`, `Tabs`, `Tooltip`, and `DataTable` are each a **directory**
 under `packages/ui/src/`, not a single module — e.g. `dialog/`, not `dialog.tsx`:
@@ -291,7 +292,7 @@ The boundary is **lint-enforced, not grep-checked** — `eslint-plugin-boundarie
 `@bombfarm/ui` sources as a boundary and allows them to depend on only themselves and
 shared lib helpers; every other edge (into a feature, into `@bombfarm/domain`, `@bombfarm/game-art`,
 `shared/context`, `shared/i18n`) is `disallow` by default. Package-aware element mapping is
-tracked debt for `mp1-ci-vercel-rebrand` / hygiene — until then, treat the reuse boundary as
+tracked hygiene debt — until then, treat the reuse boundary as
 convention + review, not a fully wired package path. Run `pnpm lint` — a violation of still-mapped
 web `src/` elements fails the build.
 
@@ -343,7 +344,7 @@ Semantics live on a wrapping `<span>`; the inner `react-icons` SVG is always dec
 ### Lint seam
 
 - `packages/ui/**` and `apps/desktop/**`: raw `react-icons` or `*.svg` imports fail lint outside `packages/ui/src/icon/**`.
-- `apps/web/**`: eight planner files are **grandfathered** in `apps/web/eslint.config.mjs` (`site-header`, `footer`, `slot-editor`, `import-heroes-dialog`, `hero-picker-dialog`, `hero-strip`, `hero-strip-identity`, `phases-hero-switcher`). Delete an entry when that file migrates to `<Icon />`; any **new** web call site errors immediately. (`topbar.tsx` — dead code, unreachable from any route — was deleted in T4a rather than migrated.)
+- `apps/web/**`: eight planner files are **grandfathered** in `apps/web/eslint.config.mjs` (`site-header`, `footer`, `slot-editor`, `import-heroes-dialog`, `hero-picker-dialog`, `hero-strip`, `hero-strip-identity`, `phases-hero-switcher`). Delete an entry when that file migrates to `<Icon />`; any **new** web call site errors immediately. (`topbar.tsx` — dead code, unreachable from any route — was deleted with the top-bar move rather than migrated.)
 - `packages/ui/**/*.stories.tsx`: **covered too.** Stories are excluded from `packages/ui/tsconfig.json`, so root ESLint lints them with type checking off (`disableTypeChecked`) — the raw-icon ban applies. `tailwindcss/no-unnecessary-arbitrary-value` is deliberately off there: stories size demo frames to taste.
 - **Known gap:** `packages/ui/**/*.{test,spec}.{ts,tsx}` are still ignored by root ESLint (same tsconfig reason), so a raw icon import in a unit test is caught by review only. Narrow blast radius, no owning feature yet.
 
@@ -367,7 +368,7 @@ once the primitive API surface stops churning.
 
 Local catalog for `packages/ui/src` primitives, **owned by `packages/ui` itself** on
 `@storybook/react-vite` (dark-only preview, desktop/tablet viewports). Moved off
-`apps/web`'s `@storybook/nextjs` host in `m2-storybook-ci` — the catalog belongs with
+`apps/web`'s `@storybook/nextjs` host when Storybook joined CI — the catalog belongs with
 the package it documents, not with an app that merely consumes it.
 
 | Command | Purpose |

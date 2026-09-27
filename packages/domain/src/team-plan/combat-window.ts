@@ -1,4 +1,4 @@
-import { PVP_SQUAD_SLOTS, PVP_WINDOW_SECS, gateWindowSecs, resolveGatePhase } from '../combat-window';
+import { PVP_WINDOW_SECS, gateWindowSecs, pvpSquadSlots, resolveGatePhase } from '../combat-window';
 import type { TeamPlanInput } from './types';
 
 export type ResolvedCombatWindow = {
@@ -13,10 +13,11 @@ export type ResolvedCombatWindow = {
  * The window a plan fights over and the phase it is fought at, or `null` for a rotation
  * objective. A gate clear resolves its phase through the gate table — a chosen phase that is
  * not a gate, or none, becomes the account's next gate — because the timer is the act's, and
- * an act needs a gate to be read from. A duel is fought in a room of its own, which seats nine.
+ * an act needs a gate to be read from. A duel is fought in a room of its own, which seats the
+ * account's duel squad whatever field slots it has unlocked.
  */
 export function resolveCombatWindow(
-  input: Pick<TeamPlanInput, 'objective' | 'targetPhase' | 'account'>,
+  input: Pick<TeamPlanInput, 'objective' | 'targetPhase' | 'account' | 'pvpSquadSlots'>,
 ): ResolvedCombatWindow | null {
   const chosen = input.targetPhase != null && Number.isFinite(input.targetPhase) ? Math.round(input.targetPhase) : null;
   if (input.objective === 'gateClear') {
@@ -24,12 +25,12 @@ export function resolveCombatWindow(
     return { phase, windowSecs: gateWindowSecs(phase), fieldSlots: null };
   }
   if (input.objective === 'pvp') {
-    return { phase: chosen ?? input.account.phase, windowSecs: PVP_WINDOW_SECS, fieldSlots: PVP_SQUAD_SLOTS };
+    return { phase: chosen ?? input.account.phase, windowSecs: PVP_WINDOW_SECS, fieldSlots: pvpSquadSlots(input.pvpSquadSlots) };
   }
   return null;
 }
 
-/** The field a plan's roster is evaluated on: the duel room's seats, else the account's field. */
-export function planFieldSlots(input: Pick<TeamPlanInput, 'objective' | 'targetPhase' | 'account'>): number {
+/** The field a plan's roster is evaluated on: the duel squad's slots, else the account's field. */
+export function planFieldSlots(input: Pick<TeamPlanInput, 'objective' | 'targetPhase' | 'account' | 'pvpSquadSlots'>): number {
   return resolveCombatWindow(input)?.fieldSlots ?? input.account.fieldSlots;
 }

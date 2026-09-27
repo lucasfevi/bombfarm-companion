@@ -6,7 +6,7 @@ import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { shortHeroRecordId } from '@bombfarm/domain/shims/hero-identity';
 import { HeroIdentity, type HeroIdentityVariant } from './hero-identity';
 import type { ArtFrameSize } from './art-frame';
-import { heroPeekData } from './peek';
+import { heroPeekData, useHeroPeekStats } from './peek';
 
 /** Compact avatar + rank/name/rarity/level·id block — the `ScopeHeroCard` identity, sized down for a row. */
 export function HeroIdentityChip({
@@ -31,6 +31,7 @@ export function HeroIdentityChip({
   /** `data-testid` on the element carrying the hero's own name, for a caller that needs one. */
   nameTestId?: string | undefined;
 }) {
+  const peekStats = useHeroPeekStats();
   if (!hero) {
     return (
       <span data-testid={nameTestId} className="truncate text-[13px] font-bold text-ink">
@@ -52,7 +53,7 @@ export function HeroIdentityChip({
       size={size}
       variant={variant}
       nameTestId={nameTestId}
-      peek={heroPeekData(hero)}
+      peek={heroPeekData(hero, peekStats(hero))}
     />
   );
 }

@@ -13,7 +13,7 @@ export const peekPopupClass = 'w-[17rem]';
  * `tabIndex={-1}` on it keeps one tab stop per row, as the roster icons always had.
  */
 export const peekTriggerClass =
-  'inline-flex cursor-default rounded-sm border-0 bg-transparent p-0 align-top [&>*]:transition-[filter,transform,box-shadow] [&>*]:duration-100 hover:[&>*]:-translate-y-0.5 hover:[&>*]:brightness-[1.18] hover:[&>*]:saturate-[1.1] hover:[&>*]:shadow-[0_4px_10px_rgb(0_0_0/0.45)] motion-reduce:[&>*]:transition-none motion-reduce:hover:[&>*]:translate-y-0';
+  'inline-flex cursor-default rounded-sm border-0 bg-transparent p-0 align-top [&>*]:transition-[filter,transform,translate,box-shadow] [&>*]:duration-100 hover:[&>*]:-translate-y-0.5 hover:[&>*]:brightness-[1.18] hover:[&>*]:saturate-[1.1] hover:[&>*]:shadow-[0_4px_10px_rgb(0_0_0/0.45)] motion-reduce:[&>*]:transition-none motion-reduce:hover:[&>*]:translate-y-0';
 
 /** Art, then name and subtitle stacked beside it. */
 export const peekHeadClass = 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2.5';

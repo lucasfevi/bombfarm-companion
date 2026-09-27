@@ -52,5 +52,6 @@ export const teamPlanChangesPtBR: TeamPlanChangesCopy = {
   teamPlanChangesControlIgnoreFieldCrowding: 'manter todos equipados',
   teamPlanChangesControlAurasAtCap: 'auras no teto',
   teamPlanChangesControlTargetPhase: 'fase pontuada',
+  teamPlanChangesControlPvpSquadSlots: 'vagas do esquadrão no duelo',
   teamPlanChangesScope: 'escopo de {hero}',
 };

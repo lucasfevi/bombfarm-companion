@@ -6,7 +6,16 @@
  * Nothing here prices anything — `buildStatBreakdown` and `rowValue` do, and every figure the
  * panel prints is theirs.
  */
-import { ABILITIES, FUSE_FLOOR, STAT_CAPS, critFactor, fuseSeconds, type AbilityEffect } from '@bombfarm/domain/model';
+import {
+  ABILITIES,
+  FUSE_FLOOR,
+  STAT_CAPS,
+  critFactor,
+  damageWeightedBlastRange,
+  fuseSeconds,
+  type AbilityEffect,
+} from '@bombfarm/domain/model';
+import { EXTRA_RANGE_FRAC } from '@bombfarm/domain/phase-wiki';
 import { combineDrainRate } from '@bombfarm/domain/drain';
 import { abilityName } from '@bombfarm/domain/game-labels';
 import { SHEET_DISPLAY_KEYS, type SheetDisplayKey } from '@bombfarm/domain/planner-constants';
@@ -97,6 +106,8 @@ const CARD_FOR_EFFECT: Record<AbilityEffect['kind'], BreakdownStatId | null> = {
   // rock, so neither reaches a printed hit — they land where DPS earns them.
   secondBlastPct: 'activeDps',
   executePct: 'activeDps',
+  // Paid per rock destroyed, which only the farm clear counts — no per-bomb card carries it.
+  shatterPct: null,
   packDmgPct: 'dmg',
   teamPulseDmgPct: 'dmg',
   none: null,
@@ -264,7 +275,14 @@ export type CardNote =
   | { readonly kind: 'hitWithoutExpectedBlasts'; readonly abilityIds: readonly string[]; readonly mult: number }
   | { readonly kind: 'fieldWithoutTeamDrain'; readonly auraId: string; readonly seconds: number }
   | { readonly kind: 'batonHeld'; readonly pct: number }
-  | { readonly kind: 'activeDpsConstants'; readonly rangeCells: number }
+  /** `rangeCells` is the whole reach; the cells past the first deal `extraCellDamagePct` of the
+   *  hit, so the spread reads `damageRangeCells`. */
+  | {
+      readonly kind: 'activeDpsConstants';
+      readonly rangeCells: number;
+      readonly damageRangeCells: number;
+      readonly extraCellDamagePct: number;
+    }
   | { readonly kind: 'penetration'; readonly reading: PenetrationCardReading };
 
 /** What the model has to say about a card beyond its formula, when it has something. */
@@ -299,7 +317,12 @@ export function cardNoteFor(
       return pulse > 1 ? { kind: 'batonHeld', pct: (pulse - 1) * 100 } : null;
     }
     case 'activeDps':
-      return { kind: 'activeDpsConstants', rangeCells: facts.context.blastRange };
+      return {
+        kind: 'activeDpsConstants',
+        rangeCells: facts.context.blastRange,
+        damageRangeCells: damageWeightedBlastRange(facts.context.blastRange),
+        extraCellDamagePct: EXTRA_RANGE_FRAC * 100,
+      };
     case 'mitF':
       return { kind: 'penetration', reading: penetrationCardReading(facts) };
     default:

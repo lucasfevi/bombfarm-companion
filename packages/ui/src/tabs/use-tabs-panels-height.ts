@@ -3,7 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 /**
  * Measures the active tab panel's height (border-box aware, DPR-rounded) and keeps it in
  * sync via `ResizeObserver` so `Tabs.Panels`' outer shell can animate to it. Extracted
- * verbatim from `Tabs.Panels` (W6) — `measure`, the effect wiring, and the dependency
+ * verbatim from `Tabs.Panels` — `measure`, the effect wiring, and the dependency
  * array are unchanged.
  */
 export function useTabsPanelsHeight(activeIndex: number, childrenLength: number) {

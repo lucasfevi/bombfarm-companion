@@ -10,6 +10,7 @@ import {
   itemKindIconSrc,
   normalizeSkin,
   propIconSrc,
+  runeIconSrc,
 } from '../src/wiki-assets';
 import { PROPS } from '../src/phases';
 
@@ -22,17 +23,16 @@ describe('heroAvatarSrc display map', () => {
     expect(heroAvatarSrc(6)).toBe('/wiki-assets/hero/hero7_avatar.png');
   });
 
-  // PROVISIONAL: skins 7 and 8 → files 8 and 9 are inferred from `file = index + 1` holding for
-  // indices 3..6, not confirmed against an in-game save carrying either. The hero2/hero3 swap at
-  // the front of the table is standing proof that wiki numbering CAN diverge from the in-game
-  // index, so if a real save ever contradicts this, fix `SKIN_AVATAR_FILE` — not the test.
-  it('maps the last two skins to their own files instead of falling back to skin 1', () => {
-    expect(HERO_SKIN_COUNT).toBe(9);
-    expect(heroAvatarSrc(7)).toBe('/wiki-assets/hero/hero8_avatar.png');
-    expect(heroAvatarSrc(8)).toBe('/wiki-assets/hero/hero9_avatar.png');
+  // Past the hero2/hero3 swap the wiki numbers files one ahead of the index; the game client's
+  // own skin table agrees for every index, so a real save that contradicts this means the table
+  // moved — fix `SKIN_AVATAR_FILE`, not the test.
+  it('maps each of the sixteen skins to its own file instead of falling back to skin 1', () => {
+    expect(HERO_SKIN_COUNT).toBe(16);
+    for (let skin = 3; skin < HERO_SKIN_COUNT; skin += 1) {
+      expect(heroAvatarSrc(skin)).toBe(`/wiki-assets/hero/hero${skin + 1}_avatar.png`);
+    }
     // The bug: an index past the table's end hit `?? 1` and rendered skin 1's face.
-    expect(heroAvatarSrc(7)).not.toBe(heroAvatarSrc(0));
-    expect(heroAvatarSrc(8)).not.toBe(heroAvatarSrc(0));
+    expect(heroAvatarSrc(15)).not.toBe(heroAvatarSrc(0));
   });
 
   it('clamps unknown skins without rewriting 1↔2', () => {
@@ -43,10 +43,10 @@ describe('heroAvatarSrc display map', () => {
     expect(normalizeSkin(HERO_SKIN_COUNT + 8)).toBe(HERO_SKIN_COUNT - 1);
   });
 
-  it('moves the known-skin boundary to 8', () => {
-    expect(isKnownSkin(7)).toBe(true);
-    expect(isKnownSkin(8)).toBe(true);
-    expect(isKnownSkin(9)).toBe(false);
+  it('moves the known-skin boundary to 15', () => {
+    expect(isKnownSkin(9)).toBe(true);
+    expect(isKnownSkin(15)).toBe(true);
+    expect(isKnownSkin(16)).toBe(false);
   });
 });
 
@@ -99,6 +99,25 @@ describe('propIconSrc', () => {
  * art for a different item. The tail is the act the cage was caught in, and the wiki draws that
  * cage per act, so the row shows the cage itself.
  */
+describe('itemKindIconSrc for skins and runes', () => {
+  it('draws an unpacked skin as the avatar a hero wearing it shows', () => {
+    expect(itemKindIconSrc('skin_6', 0)).toBe(heroAvatarSrc(6));
+  });
+
+  it('draws nothing for a skin index past the bundled art, rather than another skin face', () => {
+    expect(itemKindIconSrc('skin_99', 0)).toBeNull();
+  });
+
+  it('draws a rune as its axis sprite at the tier it carries', () => {
+    expect(itemKindIconSrc('rune_critdmg_comum', 0)).toBe(runeIconSrc('critdmg', 0));
+    expect(itemKindIconSrc('rune_attack_raro', 2)).toBe(runeIconSrc('attack', 2));
+  });
+
+  it('draws nothing for an axis the game has not been seen to use', () => {
+    expect(itemKindIconSrc('rune_luck_comum', 0)).toBeNull();
+  });
+});
+
 describe('itemKindIconSrc for a hero cage', () => {
   it.each([1, 2, 3, 4, 5])('draws the act-%i cage, never the item chest', (act) => {
     const src = itemKindIconSrc(`chest_hero_${act}`, act);

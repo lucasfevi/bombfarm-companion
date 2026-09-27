@@ -3,7 +3,12 @@ import { DEFAULT_SETTINGS } from './index.js';
 import { isAppLocale } from './locale.js';
 import { isMarketQuoteCurrency, type MarketQuoteCurrency } from './market.js';
 
-type BooleanFlag = 'alwaysOnTopMain' | 'alwaysOnTopMini' | 'forgeWritesEnabled' | 'restartGameOnExit';
+type BooleanFlag =
+  | 'alwaysOnTopMain'
+  | 'alwaysOnTopMini'
+  | 'forgeWritesEnabled'
+  | 'restartGameOnExit'
+  | 'usagePingEnabled';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -58,6 +63,7 @@ export function migrateStoredSettings(parsed: unknown): AppSettings | null {
   const miniFlag = readBooleanFlag(parsed, 'alwaysOnTopMini');
   const forgeWritesFlag = readBooleanFlag(parsed, 'forgeWritesEnabled');
   const restartGameFlag = readBooleanFlag(parsed, 'restartGameOnExit');
+  const usagePingFlag = readBooleanFlag(parsed, 'usagePingEnabled');
   const marketQuoteCurrency = readMarketQuoteCurrency(parsed);
 
   if (
@@ -65,6 +71,7 @@ export function migrateStoredSettings(parsed: unknown): AppSettings | null {
     miniFlag === 'invalid' ||
     forgeWritesFlag === 'invalid' ||
     restartGameFlag === 'invalid' ||
+    usagePingFlag === 'invalid' ||
     marketQuoteCurrency === 'invalid'
   ) {
     return null;
@@ -78,5 +85,6 @@ export function migrateStoredSettings(parsed: unknown): AppSettings | null {
     forgeWritesEnabled: forgeWritesFlag === 'missing' ? DEFAULT_SETTINGS.forgeWritesEnabled : forgeWritesFlag,
     restartGameOnExit: restartGameFlag === 'missing' ? DEFAULT_SETTINGS.restartGameOnExit : restartGameFlag,
     marketQuoteCurrency,
+    usagePingEnabled: usagePingFlag === 'missing' ? DEFAULT_SETTINGS.usagePingEnabled : usagePingFlag,
   };
 }

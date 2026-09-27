@@ -83,7 +83,7 @@ describe('advisor-selectors.ts and roster-dps.ts build source-derived-equal inpu
     expect(advisorSelectorsKeys.size).toBeGreaterThan(10);
   });
 
-  it('the key sets are exactly equal (the treeCritDmgMult exception closed: MP5 removed it from both surfaces)', () => {
+  it('the key sets are exactly equal (the treeCritDmgMult exception closed: the corpus rebaseline removed it from both surfaces)', () => {
     const onlyInRosterDps = [...rosterDpsKeys].filter((key) => !advisorSelectorsKeys.has(key));
     const onlyInAdvisorSelectors = [...advisorSelectorsKeys].filter((key) => !rosterDpsKeys.has(key));
 

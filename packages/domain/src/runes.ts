@@ -23,6 +23,7 @@
  */
 import type { TreeSheetTotals } from './birth-sheet';
 import type { SheetStats } from './gear/types';
+import { WIKI_RUNES } from './phase-wiki';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
 
 export const RUNE_AXES = ['attack', 'energy', 'speed', 'crit', 'critdmg', 'cdr', 'xp', 'gold'] as const;
@@ -56,8 +57,20 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function isRuneAxis(value: unknown): value is RuneAxis {
+export function isRuneAxis(value: unknown): value is RuneAxis {
   return typeof value === 'string' && (RUNE_AXES as readonly string[]).includes(value);
+}
+
+/**
+ * A rune held in the inventory, read off its `def_id` (`rune_critdmg_comum`) and the tier the
+ * inventory row resolved for it. Unlike a rune on a hero it carries no strength of its own, so the
+ * strength is the wiki's for that tier. Null for an id that names no known axis.
+ */
+export function runeFromDefId(defId: string, rarityIdx: number): { axis: RuneAxis; strengthPct: number | null } | null {
+  const axis = /^rune_([a-z]+)_[a-z]+$/.exec(defId)?.[1];
+  if (!isRuneAxis(axis)) return null;
+  const strength = WIKI_RUNES.strengthByRarity[Math.round(rarityIdx)];
+  return { axis, strengthPct: strength === undefined ? null : strength * 100 };
 }
 
 /**
@@ -129,7 +142,7 @@ export function hasRuneOnSheet(runes: readonly HeroRune[]): boolean {
 /** Composition order: the tree's flat crit-damage add sits OUTSIDE the rune, every other key inside. */
 export function applyRuneMultipliers(
   sheet: SheetStats,
-  tree: TreeSheetTotals,
+  tree: Pick<TreeSheetTotals, 'critDmgPct'>,
   mult: RuneSheetMultipliers,
 ): SheetStats {
   return {
@@ -147,7 +160,7 @@ export function applyRuneMultipliers(
 /** Exact inverse of {@link applyRuneMultipliers} — the observed sheet with the runes taken back off. */
 export function stripRuneMultipliers(
   sheet: SheetStats,
-  tree: TreeSheetTotals,
+  tree: Pick<TreeSheetTotals, 'critDmgPct'>,
   mult: RuneSheetMultipliers,
 ): SheetStats {
   return {

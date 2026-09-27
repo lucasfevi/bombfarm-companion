@@ -157,11 +157,12 @@ describe('hero picker roster chrome', () => {
 describe('hero gear icons', () => {
   const src = readGameArt('hero-gear-icons.tsx');
 
-  it('shows level and forge plaques on roster icons at lg size', () => {
-    expect(src).toContain('size="lg"');
+  it('shows level and forge plaques on roster icons, lg unless a caller asks smaller', () => {
+    expect(src).toContain("size = 'lg'");
+    expect(src).toContain('size={size}');
     expect(src).not.toContain('showUpgrade={false}');
     expect(src).not.toContain('showLevel={false}');
-    expect(src).toContain('emptyGearSlotClass');
+    expect(src).toContain('emptyGearSlotRecipe({ size })');
     const recipe = readGameArt('game-art.recipe.ts');
     expect(recipe).toMatch(/emptyGearSlotClass = cn\(\s*'inline-grid w-12 aspect-\[18\/19\]/);
   });

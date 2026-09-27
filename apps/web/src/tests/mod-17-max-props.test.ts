@@ -6,7 +6,7 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 /**
  * No component's *own* props exceed 8 members (error; no allowlist escape hatch).
  *
- * SPEC_DEVIATION: the spec said the W7
+ * SPEC_DEVIATION: the spec said the
  * allowlist SHALL be empty. The user explicitly approved a narrower counting rule as the
  * mechanism to get there honestly: only *non-DOM* props count toward the 8-prop budget.
  * Native HTML/ARIA attribute names (and `aria-*`/`data-*` props) that a component simply
@@ -24,7 +24,7 @@ const MAX_PROPS = 8;
 /** Reviewed empty — no component is exempted from the 8-prop budget (error). */
 const ALLOWLIST_FILES = new Set<string>([]);
 
-/** W5-migrated components — must stay ≤8 and never live under ALLOWLIST_FILES.
+/** Store-migrated components — must stay ≤8 and never live under ALLOWLIST_FILES.
  *  `AccountColumn` left the list when the Account page replaced it with focused panels, and
  *  `HeroAbilitiesTab` left it when the shared abilities panel absorbed the editor it was. */
 const MIGRATED_SIX = [
@@ -164,7 +164,7 @@ describe('max props (error, non-DOM props only, no allowlist)', () => {
   it('migrated six each declare ≤ 8 own props and are not allowlisted', () => {
     for (const key of MIGRATED_SIX) {
       const [file, name] = key.split('::');
-      expect(ALLOWLIST_FILES.has(file), `${file} must not be on the W7 allowlist`).toBe(false);
+      expect(ALLOWLIST_FILES.has(file), `${file} must not be on the allowlist`).toBe(false);
       const count = countPropsFor(file, name);
       expect(count, `${key} has ${count} own props`).toBeLessThanOrEqual(MAX_PROPS);
     }
@@ -176,6 +176,6 @@ describe('max props (error, non-DOM props only, no allowlist)', () => {
       hits,
       hits.map((h) => `${h.key} (${h.count} own props)`).join('\n') || 'ok',
     ).toEqual([]);
-    expect(ALLOWLIST_FILES.size, 'allowlist must stay empty (error, W7)').toBe(0);
+    expect(ALLOWLIST_FILES.size, 'allowlist must stay empty (error)').toBe(0);
   });
 });

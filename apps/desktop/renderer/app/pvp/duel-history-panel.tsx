@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import type { PvpDuelRow, PvpHistoryResult } from '@bombfarm/contracts';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { HeroAvatar, heroPeekData, inventoryFieldHeightClass } from '@bombfarm/game-art';
+import { HeroAvatar, heroPeekData, inventoryFieldHeightClass, useHeroPeekStats } from '@bombfarm/game-art';
 import { Button, cn, DataTable, EmptyState, FactTile, InfoTip, Panel, PanelHeader, SearchSelect, SegmentedToggle } from '@bombfarm/ui';
 import { buildAccountRoster } from '../../lib/account/account-roster';
 import { useAccountView } from '../../lib/account/use-account-view';
@@ -328,6 +328,7 @@ function DuelRow({
 function SquadStack({ heroIds, heroById }: { heroIds: readonly string[]; heroById: HeroById }) {
   const t = useCopy();
   const { lang } = useLocale();
+  const peekStats = useHeroPeekStats();
   if (heroIds.length === 0) return <span aria-hidden>—</span>;
   return (
     <span className="flex items-center">
@@ -365,7 +366,7 @@ function SquadStack({ heroIds, heroById }: { heroIds: readonly string[]; heroByI
             size="xs"
             name={hero.name}
             className="size-6"
-            peek={{ hero: heroPeekData(hero), lang, className: cn('relative', 'hover:z-[1]', overlap) }}
+            peek={{ hero: heroPeekData(hero, peekStats(hero)), lang, className: cn('relative', 'hover:z-[1]', overlap) }}
           />
         );
       })}

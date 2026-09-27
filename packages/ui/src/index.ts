@@ -81,8 +81,10 @@ export {
 } from './select';
 export {
   SearchSelect,
+  SearchSelectMultiple,
   searchSelectMatches,
   type SearchSelectProps,
+  type SearchSelectMultipleProps,
   type SearchSelectOption,
 } from './search-select';
 export { Switch, type SwitchProps } from './switch';

@@ -99,8 +99,10 @@ export function buildOptimizerInputs(
     houseCycleSecsLevel: houseLevel,
     maxPhase: account.maxPhase ?? null,
     farmChosenPhase,
-    // The duel room's phase is live, not part of the account read: the screen merges it in.
+    // The duel room's phase and the squad's slots are live, not part of the account read: the
+    // screen merges them in.
     pvpRoomPhase: null,
+    pvpSquadSlots: null,
   };
 
   return { inputs, leftOut: roster.pointsUnrecovered };

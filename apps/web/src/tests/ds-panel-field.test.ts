@@ -6,7 +6,7 @@ import * as pf from '@bombfarm/ui/panel-field.recipe';
  * `panel-field.recipe.ts` must reproduce the legacy string exactly, and the
  * cva recipes must reproduce the legacy panel / setup-banner concatenations.
  *
- * `chrome.ts` was deleted at T15, so its exact class strings are inlined below
+ * `chrome.ts` was deleted in the migration, so its exact class strings are inlined below
  * as the frozen source-of-truth snapshot captured from the pre-migration file.
  *
  * THREE BUNDLES HAVE DELIBERATELY DIVERGED (2026-08-25), and the snapshot moved with them rather
@@ -52,7 +52,7 @@ const chrome = {
   panelNeedClass: '',
   panelAlignedClass:
     'border-[color-mix(in_oklch,var(--up)_45%,var(--line))] shadow-[inset_3px_0_0_var(--up)]',
-  // m2-storybook-ci (T7): was 'opacity-[0.78]' pre-migration — raised to
+  // Was 'opacity-[0.78]' pre-migration — raised to
   // 0.85 because dimmed muted text measured 4.25:1 contrast, under WCAG AA's
   // 4.5:1 floor. See packages/ui/src/panel-field.recipe.ts for the computation.
   panelUnverifiedClass: 'opacity-[0.85]',

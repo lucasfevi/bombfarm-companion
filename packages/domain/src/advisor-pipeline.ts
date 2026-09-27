@@ -149,7 +149,7 @@ export type AdvisorPipelineResult = {
    * below carry it; hits-to-kill does not — a hit is a step the Farm board prices per level.
    */
   entryPulse: PassagemBastaoFieldPulse;
-  /** The whole skill tree, once — surfaced for Wave 6's breakdown. */
+  /** The whole skill tree, once — surfaced for the stat breakdown. */
   treeSheet: TreeSheetTotals;
   A: DeriveResult;
   B: DeriveResult | null;

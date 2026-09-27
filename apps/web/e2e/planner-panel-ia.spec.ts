@@ -35,7 +35,7 @@ test.describe('planner tabs IA (PTI)', () => {
     await expect(stage.getByRole('heading', { name: /^Math check$/i })).toHaveCount(0);
   });
 
-  test('Combat tab stacks the phase control, Effective, then the abilities and auras — no hero panel of its own', async ({ page }) => {
+  test('Combat tab stacks the phase control, then Effective with the team auras inside it — no hero panel of its own', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
@@ -43,10 +43,10 @@ test.describe('planner tabs IA (PTI)', () => {
     await page.getByRole('tab', { name: /^Combat$/i }).click();
     const stage = activePanel(page);
     const headings = stage.getByRole('heading', { level: 2 });
-    await expect(headings).toHaveCount(3);
+    await expect(headings).toHaveCount(2);
     await expect(headings.nth(0)).toHaveText(/^Phase these numbers are for$/i);
-    await expect(headings.nth(-2)).toHaveText(/^Effective stats$/i);
-    await expect(headings.last()).toHaveText(/^Abilities & auras$/i);
+    await expect(headings.last()).toHaveText(/^Effective stats$/i);
+    await expect(stage.getByTestId('combat-breakdown').getByRole('heading', { name: /^Team auras$/i, level: 3 })).toBeVisible();
     await expect(stage.getByRole('combobox', { name: /which phase these numbers/i })).toBeVisible();
     // Nothing to go back to until a phase is picked here.
     await expect(stage.getByRole('button', { name: /^Back to your current phase$/i })).toBeDisabled();

@@ -6,7 +6,8 @@ export type SiteSection =
   | 'inventory'
   | 'skills'
   | 'account'
-  | 'download';
+  | 'download'
+  | 'privacy';
 
 /**
  * Every top-level route, in order.
@@ -24,14 +25,16 @@ export const SITE_SECTIONS: readonly SiteSection[] = [
   'skills',
   'account',
   'download',
+  'privacy',
 ];
 
 /**
  * The sections that appear as nav tabs. `download` is deliberately absent: it is reached from the
  * primary button beside Import, which is a call to action rather than a place in the planner.
+ * `privacy` is reached from the footer.
  */
 export const NAV_SECTIONS: readonly SiteSection[] = SITE_SECTIONS.filter(
-  (section) => section !== 'download',
+  (section) => section !== 'download' && section !== 'privacy',
 );
 
 export const SITE_SECTION_HREF: Record<SiteSection, string> = {
@@ -43,6 +46,7 @@ export const SITE_SECTION_HREF: Record<SiteSection, string> = {
   skills: '/skills',
   account: '/account',
   download: '/download',
+  privacy: '/privacy',
 };
 
 /**
@@ -58,6 +62,7 @@ export const SITE_SECTION_LABEL_KEY = {
   skills: 'navSkills',
   account: 'navAccount',
   download: 'downloadNavLabel',
+  privacy: 'privacyNavLabel',
 } as const satisfies Record<SiteSection, string>;
 
 /** `/` matches only itself; every other section owns its prefix. */

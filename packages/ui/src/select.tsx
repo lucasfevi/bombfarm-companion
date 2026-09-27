@@ -121,6 +121,28 @@ export type SelectMultipleProps = Omit<
   optionTrailing?: (value: string) => ReactNode;
 };
 
+/** The multi-select popup's fixed top row, shared with the searchable one. */
+export function SelectPopupHeader({ header }: { header: SelectMultipleHeader }) {
+  return (
+    <div data-testid="select-popup-header" className={selectPopupHeaderClass}>
+      <span className={selectPopupHeaderLabelClass}>{header.label}</span>
+      {header.action ? (
+        <button
+          type="button"
+          data-testid="select-popup-action"
+          className={selectPopupHeaderActionClass}
+          // Base UI moves focus through the list itself; letting the button take it on
+          // press dismisses the popup and breaks arrow-key navigation afterwards.
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => header.action?.onAction()}
+        >
+          {header.action.label}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 /**
  * Multi-select variant. Base UI's own `multiple` does the work — the value becomes an array, the
  * popup stays open across picks, and each chosen item reports `data-selected` for the checkmark.
@@ -179,24 +201,7 @@ export function SelectMultiple({
           align="start"
         >
           <BaseSelect.Popup className={cn(selectPopupClass, selectPopupMultipleClass)}>
-            {header ? (
-              <div data-testid="select-popup-header" className={selectPopupHeaderClass}>
-                <span className={selectPopupHeaderLabelClass}>{header.label}</span>
-                {header.action ? (
-                  <button
-                    type="button"
-                    data-testid="select-popup-action"
-                    className={selectPopupHeaderActionClass}
-                    // Base UI moves focus through the list itself; letting the button take it on
-                    // press dismisses the popup and breaks arrow-key navigation afterwards.
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => header.action?.onAction()}
-                  >
-                    {header.action.label}
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
+            {header ? <SelectPopupHeader header={header} /> : null}
             <BaseSelect.List className={selectListClass}>
               {items.map((item) => {
                 const trailing = optionTrailing?.(item.value);

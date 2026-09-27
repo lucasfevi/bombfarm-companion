@@ -181,6 +181,7 @@ export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames
         ignoreFieldCrowding: t.teamPlanChangesControlIgnoreFieldCrowding,
         aurasAtCap: t.teamPlanChangesControlAurasAtCap,
         targetPhase: t.teamPlanChangesControlTargetPhase,
+        pvpSquadSlots: t.teamPlanChangesControlPvpSquadSlots,
       }[d.name];
       const value = (raw: string): string => {
         switch (d.name) {
@@ -196,6 +197,8 @@ export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames
             return raw === '' ? none : raw.split(',').map((id) => abilityName(id, lang)).join(', ');
           case 'targetPhase':
             return raw === 'null' ? t.teamPlanPhaseNone : raw;
+          case 'pvpSquadSlots':
+            return raw === 'null' ? none : raw;
         }
       };
       return { change: label, before: text(value(d.before)), after: text(value(d.after)), note: null };

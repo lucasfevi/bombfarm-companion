@@ -43,7 +43,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 /**
  * Generic recursive exact-equality diff that reports the first differing path. Used for both
  * the non-sheet hero record fields and the account-level fields — both need path-naming
- * mismatches (T4's "each mutated in isolation and asserted to throw ... naming the path").
+ * mismatches ("each mutated in isolation and asserted to throw ... naming the path").
  */
 function findMismatchPath(a: unknown, b: unknown, path: string): PathMismatch | null {
   if (a === b) return null;

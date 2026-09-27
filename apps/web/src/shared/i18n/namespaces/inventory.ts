@@ -9,6 +9,8 @@ export const en = {
   inventoryGroupTime: "House parts",
   inventoryGroupStone: "Skill stones",
   inventoryGroupChest: "Chests",
+  inventoryGroupRune: "Runes",
+  inventoryGroupSkin: "Skins",
   inventoryGroupOther: "Other",
 
   inventoryBadgeLocked: "Locked",
@@ -97,6 +99,8 @@ export const pt: typeof en = {
   inventoryGroupTime: "Peças de Casa",
   inventoryGroupStone: "Pedras de habilidade",
   inventoryGroupChest: "Baús",
+  inventoryGroupRune: "Runas",
+  inventoryGroupSkin: "Skins",
   inventoryGroupOther: "Outros",
 
   inventoryBadgeLocked: "Bloqueado",

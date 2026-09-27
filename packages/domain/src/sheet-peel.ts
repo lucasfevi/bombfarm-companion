@@ -7,7 +7,7 @@
  * no separate "Points" tooltip row) — proven against the Bellatrix crit-damage tooltip
  * (`554.9184% = (1.67344467136338−1)×2×(1+39×0.08)×100`). That arithmetic is
  * HISTORICAL: it was read off `save-20260801-crit-dmg-tree.json`, a PRE-2026-08-13-patch
- * capture (deleted in the MP5 corpus rebaseline), and it was correct for that build — crit
+ * capture (deleted in the corpus rebaseline), and it was correct for that build — crit
  * damage was a shared-pool percentage of the roll then, and that file fits it to float
  * precision on all three of its crit-damage-bearing heroes. The patch changed the shape: on
  * every post-patch capture crit damage is FLAT (`POINT_GAIN.critDmgFlat`), which is why the

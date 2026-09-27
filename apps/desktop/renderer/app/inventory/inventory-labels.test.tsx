@@ -6,7 +6,7 @@ import { en } from '../../lib/copy/en';
 import { ptBR } from '../../lib/copy/pt-BR';
 import { inventoryLabels } from './inventory-labels';
 
-/** One row of each of the six kinds the wire's `category` codes partition, in wire shape. */
+/** One row of each kind the wire's `category` codes partition, in wire shape. */
 const ROWS = [
   {
     id: 'g1',
@@ -30,6 +30,8 @@ const ROWS = [
   { id: 'k1', def_id: 'map_key_epico', category: 4, rarity: 3, level: 0, sell_value: '220' },
   { id: 'k2', def_id: 'map_key_epico', category: 4, rarity: 3, level: 0, sell_value: '220' },
   { id: 's1', def_id: 'skill_stone_mitico', category: 5, rarity: 5, level: 0, sell_value: '300' },
+  { id: 'sk1', def_id: 'skin_6', category: 6, rarity: 0, level: 0, sell_value: '100' },
+  { id: 'r1', def_id: 'rune_critdmg_comum', category: 7, rarity: 0, level: 0, sell_value: '100' },
 ];
 
 const HEROES = mapInventoryHeroes([
@@ -82,6 +84,21 @@ describe('desktop inventory labels', () => {
       expect(labels.itemRarity(item(id))).toBe('');
       expect(labels.itemLevel(item(id))).toBe('');
     }
+  });
+
+  /** Both used to land under "Other" named only "Common", with a blank tile. */
+  it('names an unpacked skin by its market listing, with no tier line', () => {
+    const labels = inventoryLabels(en, 'en');
+    expect(labels.itemName(item('sk1'))).toBe('White Oracle');
+    expect(labels.itemRarity(item('sk1'))).toBe('');
+    expect(labels.groupTitle('skin')).toBe('Skins');
+  });
+
+  it('names a rune by the statistic it raises, with its tier below', () => {
+    expect(inventoryLabels(en, 'en').itemName(item('r1'))).toBe('Crit Damage');
+    expect(inventoryLabels(ptBR, 'pt').itemName(item('r1'))).toBe('Dano Crítico');
+    expect(inventoryLabels(en, 'en').itemRarity(item('r1'))).toBe('Common');
+    expect(inventoryLabels(ptBR, 'pt').groupTitle('rune')).toBe('Runas');
   });
 
   /** The cage used to print its wire id, `chest_hero_3`, under the wooden item-chest icon. */

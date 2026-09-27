@@ -86,8 +86,43 @@ const unpriced = (
   alternateHashNames: [],
 });
 
-/** The market key for an owned inventory item. */
+/**
+ * The def id an unpacked skin carries, which is the bought-skin index and nothing else: a player who
+ * takes `White Oracle Skin` off their account to sell it holds `skin_6`.
+ */
+const UNPACKED_SKIN_DEF = /^skin_(\d+)$/;
+
+/**
+ * The market key for a bought skin, from the index that names it.
+ *
+ * One derivation for both ways a player can hold one. Worn, it is a bare integer on a hero record;
+ * unpacked for sale, it is an inventory item with def id `skin_<index>` — the same asset in two
+ * mutually exclusive states, which must reach the same market row or the app prices it in one hand
+ * and not the other. Nothing on the wire connects them: the market row carries no def at all, so the
+ * hand-written index-to-hash table is the only bridge, and having exactly one caller of it is what
+ * keeps the two states from drifting apart.
+ *
+ * Null for an index the table does not name, which keeps a new skin out of a total rather than
+ * letting it take a neighbour's price.
+ */
+export function skinPriceKey(skinIndex: number): string | null {
+  const hashName = boughtSkinHashFor(skinIndex);
+  return hashName == null ? null : categoryKey(SKIN_CATEGORY, hashName);
+}
+
+/**
+ * The market key for an owned inventory item.
+ *
+ * Every item keys on its def and rarity, except an unpacked skin: the market lists a skin under a
+ * name and no def, so the def an owner holds cannot address it directly.
+ */
 export function keyForItem(item: PriceableItem): string {
+  const unpackedSkin = UNPACKED_SKIN_DEF.exec(item.defId);
+  if (unpackedSkin?.[1] != null) {
+    // Falls through to the def key when the table cannot name the index, which matches nothing —
+    // an unpriced skin, never another skin's price.
+    return skinPriceKey(Number(unpackedSkin[1])) ?? priceKey(item.defId, item.rarity);
+  }
   return priceKey(item.defId, item.rarity);
 }
 
@@ -199,9 +234,9 @@ export function resolveSkinPrice(
   currency = 'USD',
 ): ResolvedPrice {
   const code = currency.toUpperCase();
-  const hashName = boughtSkinHashFor(skinIndex);
-  if (hashName == null) return unpriced('unknown', null, null, code);
-  return resolveKey(categoryKey(SKIN_CATEGORY, hashName), snapshot, currency);
+  const key = skinPriceKey(skinIndex);
+  if (key == null) return unpriced('unknown', null, null, code);
+  return resolveKey(key, snapshot, currency);
 }
 
 export function marketEntryFor(

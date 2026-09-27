@@ -9,6 +9,10 @@ import { formatMoney, sub, type Strings } from '@/shared/i18n';
 import { hasInventoryRows, useInventoryViewSnapshot } from '../model/use-inventory-view-snapshot';
 import { HomeSectionCard } from './home-section-card';
 
+/** The six kinds every account holds a spread of. Runes and skins are listed on the Inventory page
+ *  itself, not here: most accounts hold none, and a tile reading 0 says nothing. */
+type CountedKind = Exclude<ItemKind, 'other' | 'rune' | 'skin'>;
+
 const GROUP_LABEL_KEY = {
   equipment: 'inventoryGroupEquipment',
   gem: 'inventoryGroupGem',
@@ -16,7 +20,7 @@ const GROUP_LABEL_KEY = {
   time: 'inventoryGroupTime',
   stone: 'inventoryGroupStone',
   chest: 'inventoryGroupChest',
-} as const satisfies Record<Exclude<ItemKind, 'other'>, keyof Strings>;
+} as const satisfies Record<CountedKind, keyof Strings>;
 
 const MYTHIC = 5;
 
@@ -29,11 +33,9 @@ const GROUP_EMBLEM_SRC = {
   time: itemKindIconSrc('time_part_mythic', MYTHIC),
   stone: itemKindIconSrc('skill_stone_mythic', MYTHIC),
   chest: itemKindIconSrc('chest_item', MYTHIC),
-} as const satisfies Record<Exclude<ItemKind, 'other'>, string | null>;
+} as const satisfies Record<CountedKind, string | null>;
 
-const COUNTED_KINDS = ITEM_KINDS.filter(
-  (kind): kind is keyof typeof GROUP_LABEL_KEY => kind !== 'other',
-);
+const COUNTED_KINDS = ITEM_KINDS.filter((kind): kind is CountedKind => kind in GROUP_LABEL_KEY);
 
 export function InventoryCard() {
   const { t, lang } = useAppLang();

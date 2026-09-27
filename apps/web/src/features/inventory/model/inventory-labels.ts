@@ -1,5 +1,6 @@
 import {
   heroPeekData,
+  type HeroPeekStatsResolver,
   type InventoryBadge,
   type InventoryEquippedBy,
   InventoryGridLabels,
@@ -13,7 +14,9 @@ import type {
   InventoryViewStat,
   ItemKind,
 } from '@bombfarm/domain/inventory-view';
-import { itemRarityLabel, itemStatLabel, setName, slotLabel } from '@bombfarm/domain/game-labels';
+import { itemRarityLabel, itemStatLabel, runeAxisLabel, setName, slotLabel } from '@bombfarm/domain/game-labels';
+import { runeFromDefId } from '@bombfarm/domain/runes';
+import { boughtSkinHashFor } from '@bombfarm/pricing';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
@@ -30,6 +33,8 @@ const GROUP_KEY: Record<ItemKind, keyof Strings> = {
   time: 'inventoryGroupTime',
   stone: 'inventoryGroupStone',
   chest: 'inventoryGroupChest',
+  rune: 'inventoryGroupRune',
+  skin: 'inventoryGroupSkin',
   other: 'inventoryGroupOther',
 };
 
@@ -54,6 +59,8 @@ function itemName(item: InventoryViewItem, strings: Strings, lang: Lang): string
   const gem = GEM_KEY[item.defId];
   if (gem) return strings[gem] as string;
   if (item.kind === 'chest') return chestName(item.defId, strings);
+  if (item.kind === 'skin') return skinName(item.defId);
+  if (item.kind === 'rune') return runeName(item, lang);
   return itemRarityLabel(item.rarityIdx, lang);
 }
 
@@ -69,6 +76,19 @@ const GEM_KEY: Record<string, keyof Strings> = {
   gem_sapphire: 'inventoryGemSapphire',
   gem_topaz: 'inventoryGemTopaz',
 };
+
+/** An unpacked skin is `skin_<index>`, named as the market lists it — the heading already says "Skins". */
+function skinName(defId: string): string {
+  const index = /^skin_(\d+)$/.exec(defId)?.[1];
+  const listing = index === undefined ? null : boughtSkinHashFor(Number(index));
+  return listing === null ? defId : listing.replace(/ Skin$/, '');
+}
+
+/** `rune_critdmg_comum` is named by the statistic it raises; its tier is the line below. */
+function runeName(item: InventoryViewItem, lang: Lang): string {
+  const rune = runeFromDefId(item.defId, item.rarityIdx);
+  return rune ? runeAxisLabel(rune.axis, lang) : item.defId;
+}
 
 /**
  * `chest_item_90` is the level-90 item chest; `chest_key_3`/`chest_gem_2` name their contents;
@@ -92,7 +112,7 @@ function chestName(defId: string, strings: Strings): string {
  * name instead of the line below it.
  */
 function itemRarity(item: InventoryViewItem, lang: Lang): string {
-  if (NAMED_BY_RARITY.has(item.kind)) return '';
+  if (NAMED_BY_RARITY.has(item.kind) || item.kind === 'skin') return '';
   return itemRarityLabel(item.rarityIdx, lang);
 }
 
@@ -154,6 +174,7 @@ function equippedBy(
   item: InventoryViewItem,
   heroBySourceId: ReadonlyMap<string, HeroRecord>,
   strings: Strings,
+  peekStats: HeroPeekStatsResolver,
 ): InventoryEquippedBy | null {
   if (!item.equippedBy) return null;
 
@@ -178,7 +199,7 @@ function equippedBy(
     stars: hero.stars,
     skin: hero.skin ?? 0,
     unknown: false,
-    peek: heroPeekData(hero),
+    peek: heroPeekData(hero, peekStats(hero)),
   };
 }
 
@@ -212,10 +233,13 @@ function searchText(item: InventoryViewItem, strings: Strings, lang: Lang): stri
   ].join(' ');
 }
 
+const noPeekStats: HeroPeekStatsResolver = () => undefined;
+
 export function inventoryLabels(
   strings: Strings,
   lang: Lang,
   heroes: readonly HeroRecord[] = [],
+  peekStats: HeroPeekStatsResolver = noPeekStats,
 ): InventoryGridLabels {
   const heroBySourceId = new Map<string, HeroRecord>();
   for (const hero of heroes) {
@@ -231,7 +255,7 @@ export function inventoryLabels(
     itemForge: (item) => itemForge(item),
     itemStat: (stat) => itemStat(stat, lang),
     badges: (item) => badges(item, strings),
-    equippedBy: (item) => equippedBy(item, heroBySourceId, strings),
+    equippedBy: (item) => equippedBy(item, heroBySourceId, strings, peekStats),
     heroOption: (heroId) => heroOption(heroId, heroBySourceId, strings),
     setOption: (group) =>
       sub(strings.inventorySetOption, { level: group.level, set: setName(group.set, lang) }),
@@ -275,8 +299,9 @@ export function inventoryTableLabels(
   strings: Strings,
   lang: Lang,
   heroes: readonly HeroRecord[] = [],
+  peekStats: HeroPeekStatsResolver = noPeekStats,
 ): InventoryTableLabels {
-  const grid = inventoryLabels(strings, lang, heroes);
+  const grid = inventoryLabels(strings, lang, heroes, peekStats);
 
   return {
     caption: strings.inventoryTableCaption,

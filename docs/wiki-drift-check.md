@@ -1,4 +1,4 @@
-# Wiki drift check (MP5 F5)
+# Wiki drift check
 
 **Status (2026-08-14):** the wiki is refreshed out of band by a maintainer; between refreshes the
 committed artifacts derived from it (`packages/domain/src/data/phase-wiki.json`, `catalog.json`,

@@ -105,8 +105,14 @@ describe('capture registry — the declared regime agrees with the dates', () =>
 
   it("`sheet` is the strictest mechanic — anything derived from a whole sheet folds in all the others", () => {
     for (const mechanic of ALL_MECHANICS) {
+      if (mechanic === 'blastDamage') continue;
       expect(MECHANICS.sheet.since >= MECHANICS[mechanic].since, `sheet vs ${mechanic}`).toBe(true);
     }
+  });
+
+  it('`blastDamage` is the one mechanic past `sheet`: it moves no sheet stat, only what a Wide Blast cross does', () => {
+    const past = ALL_MECHANICS.filter((mechanic) => MECHANICS[mechanic].since > MECHANICS.sheet.since);
+    expect(past).toEqual(['blastDamage']);
   });
 
   it('retention is derived, not asserted: `value` iff the capture is in regime for at least one mechanic', () => {

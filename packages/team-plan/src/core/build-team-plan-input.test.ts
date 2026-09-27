@@ -68,6 +68,7 @@ function inputs(overrides: Partial<TeamPlanInputs> = {}): TeamPlanInputs {
     maxPhase: null,
     farmChosenPhase: null,
     pvpRoomPhase: null,
+    pvpSquadSlots: null,
     ...overrides,
   };
 }
@@ -167,6 +168,7 @@ describe('buildTeamPlanInput scope defaults', () => {
       maxPhase: 200,
       farmChosenPhase: null,
       pvpRoomPhase: null,
+      pvpSquadSlots: null,
     });
     const control = controls({ scopeByHeroId: { opt: 'optimize' }, forgeFloor: 7 });
 
@@ -245,6 +247,7 @@ describe('buildTeamPlanInput scope defaults', () => {
       ignoreFieldCrowding: false,
       aurasAtCap: [],
       targetPhase: 100,
+      pvpSquadSlots: null,
     });
   });
 
@@ -282,5 +285,12 @@ describe('buildTeamPlanInput under the windowed objectives', () => {
   it('a duel with no room phase on record falls back to the account phase, never the farm phase', () => {
     const input = buildTeamPlanInput(inputs({ heroes: roster, phase: 91, farmChosenPhase: 30, pvpRoomPhase: null }), controls({ objective: 'pvp' }));
     expect(input.targetPhase).toBe(91);
+  });
+
+  it('a duel carries the squad slots the game reported, and none when nothing was read', () => {
+    const read = buildTeamPlanInput(inputs({ heroes: roster, pvpSquadSlots: 6 }), controls({ objective: 'pvp' }));
+    expect(read.pvpSquadSlots).toBe(6);
+    const unread = buildTeamPlanInput(inputs({ heroes: roster, pvpSquadSlots: null }), controls({ objective: 'pvp' }));
+    expect(unread.pvpSquadSlots).toBeNull();
   });
 });

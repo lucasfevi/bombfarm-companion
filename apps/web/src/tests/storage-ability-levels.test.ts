@@ -31,7 +31,7 @@ function memoryLocalStorage() {
 }
 
 // A real stored HeroRecord shape (current bf-hp-heroes-v1 schema, 8-key sheets) carrying
-// ability levels above the pre-W3 max: 10 (explosao_ampla @ 20) and a mid-curve on-sheet
+// ability levels above the old catalog max: 10 (explosao_ampla @ 20) and a mid-curve on-sheet
 // level (ponta_diamante @ 10) — both legitimately reachable via import today.
 const STORED_HERO_JSON =
   '{"id":"hero-ability-w3","name":"Ranked","updatedAt":1700000000003,"rarity":"Épico","level":40,"stars":1,' +
@@ -70,16 +70,16 @@ describe('stored ability levels survive the rank-20 catalog migration', () => {
     expect(hero.abilities).toEqual(STORED_HERO.abilities);
   });
 
-  it('abilityMods on the loaded record reflects the corrected (not double-counted) W3 curve', () => {
+  it('abilityMods on the loaded record reflects the corrected (not double-counted) catalog curve', () => {
     localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([STORED_HERO]));
     const hero = loadHeroes()[0];
 
     const mods = abilityMods(hero.abilities);
-    // explosao_ampla @ 20, perLevel 0.1 (W3) -> rangeCells = 2.0, not the old
+    // explosao_ampla @ 20, perLevel 0.1 -> rangeCells = 2.0, not the old
     // perLevel 0.2 double-counted value (4.0) that a stale catalog would have produced
     // for a rank the old max: 10 catalog was never meant to accept.
     expect(mods.rangeCells).toBeCloseTo(2.0, 10);
-    // ponta_diamante @ 10, perLevel 1.0 (W3) -> sheetPenetrationFlat = 10, not the old
+    // ponta_diamante @ 10, perLevel 1.0 -> sheetPenetrationFlat = 10, not the old
     // perLevel 2.0 value (20).
     expect(mods.sheetPenetrationFlat).toBeCloseTo(10, 10);
   });

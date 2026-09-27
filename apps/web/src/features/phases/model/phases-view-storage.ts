@@ -1,4 +1,4 @@
-/** Re-export — implementation lives in shared/lib so the store can persist (W4). */
+/** Re-export — implementation lives in shared/lib so the store can persist. */
 export {
   defaultPhasesView,
   loadPhasesView,

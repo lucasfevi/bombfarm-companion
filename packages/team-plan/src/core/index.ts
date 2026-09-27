@@ -37,12 +37,13 @@ export {
 export { buildTeamPlanInput } from './build-team-plan-input';
 export { planTargetPhase } from './target-phase';
 export {
-  PVP_SQUAD_SLOTS,
+  PVP_TOP_HOUSE_SQUAD_SLOTS,
   PVP_WINDOW_SECS,
   countPvpSquadHeroes,
   pvpSquadExcess,
   resolveTeamPlanGatePhase,
   teamPlanGateWindowSecs,
+  teamPlanPvpSquadSlots,
 } from './combat-window';
 export {
   resolveTeamPlanTargetPhase,

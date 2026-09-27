@@ -51,7 +51,7 @@ declare global {
   }
 }
 
-/** Counted fiber tags — spec metric definition (W8 inherits verbatim). */
+/** Counted fiber tags — the baseline's metric definition, kept verbatim. */
 export const COUNTED_TAGS = {
   FunctionComponent: 0,
   ClassComponent: 1,
@@ -162,7 +162,7 @@ export function collectorInitScript(): void {
     // Independent walk using the same PerformedWork predicate DevTools applies to
     // FunctionComponent / ClassComponent / ForwardRef / SimpleMemoComponent
     // (react-devtools-shared didFiberRender). MemoComponent is included per the
-    // W1 metric definition (PerformedWork), not the DevTools default branch.
+    // The baseline's metric definition (PerformedWork), not the DevTools default branch.
     let node = fiber
     while (node) {
       if (COUNTED.has(node.tag) && (node.flags & PERFORMED_WORK_FLAG) !== 0) {

@@ -31,7 +31,7 @@ export type NotificationCenterItem = {
   variant: ToastVariant;
   title: string;
   description?: string;
-  /** Preformatted (e.g. "3m ago") — locale/relative-time formatting is M5's, not this package's. */
+  /** Preformatted (e.g. "3m ago") — locale/relative-time formatting is the caller's, not this package's. */
   timeLabel: string;
 };
 
@@ -49,7 +49,7 @@ export type NotificationCenterProps = {
 /**
  * NotificationCenter — fully controlled ring-buffer *view*. The
  * ring buffer itself (capping, persistence) is `toast-queue.ts`'s
- * `NOTIFICATION_BUFFER_LIMIT` / M5's NotificationService; this component only
+ * `NOTIFICATION_BUFFER_LIMIT` / the host's notification service; this component only
  * renders whatever `items` it's given.
  */
 export function NotificationCenter({

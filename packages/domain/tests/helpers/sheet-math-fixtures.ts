@@ -59,7 +59,7 @@ function str(v: unknown, fallback = ''): string {
 }
 
 /**
- * Save-unit conversion — deduplicated onto the shared `save-units.ts` site (T1). This helper
+ * Save-unit conversion — deduplicated onto the shared `save-units.ts` site. This helper
  * keeps its own names so existing test call sites read the same; `save-units.test.ts` is
  * the discriminating guard on the literal conversions, not this re-export.
  */

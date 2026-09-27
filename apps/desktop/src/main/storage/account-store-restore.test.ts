@@ -29,7 +29,7 @@ function seedBoundAccountId(db: SqliteDb, key: string): void {
 }
 
 /** A post-patch `skills.totals` — used as the base for both clean and stale skills fixtures
- *  below (T10). */
+ *  below. */
 function cleanSkillsTotals(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     team_dmg_add: 1,
@@ -78,6 +78,7 @@ function cleanAccountBody(overrides: Record<string, unknown> = {}): Record<strin
     chests: 0,
     chest_stash: 0,
     item_stash: 0,
+    rune_stash: 0,
     vip_until: 0,
     bag_tabs: 1,
     bag_capacity: 100,
@@ -502,7 +503,7 @@ describe('createAccountStore().restore()', () => {
       store.close();
     });
 
-    // --- (T10): the stale-section drop ---
+    // --- the stale-section drop ---
 
     it('per-section: a skills row carrying a retired totals key is dropped and its row deleted; a clean sibling heroes row survives byte-identical', () => {
       const open = openTestAccountDb(binding);

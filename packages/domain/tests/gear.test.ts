@@ -313,7 +313,7 @@ describe('defaultNaked (static naked sheet)', () => {
 
 describe('defaultNaked vs nakedFromBirth', () => {
   it('differ for a hero whose birth rolls are not the rarity midpoint (Bellatrix crit chance 9.51 vs Raro 7)', () => {
-    // defaultNaked is the hand-built-hero rarity-midpoint FALLBACK (Wave 2's stated
+    // defaultNaked is the hand-built-hero rarity-midpoint FALLBACK (the planner's stated
     // position — a real hero's luck/crit chance comes from birth_stats, not the midpoint).
     // A birth-backed hero must never silently land on the fallback.
     const bellatrixBirth = { ...naked(), critChance: 9.51 };

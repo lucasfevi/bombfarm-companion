@@ -1,8 +1,8 @@
 # Naming conventions
 
-**Status:** hard truth — accepted 2026-07-30 (W8, MOD-42)
+**Status:** hard truth — accepted 2026-07-30 (MOD-42)
 
-Canonical reference for modular-architecture naming (MOD-23..MOD-27). Written against the lint rules **as landed in W1** (`warn` only). W8 promotes this doc via [`hard-truths.md`](hard-truths.md) after the waves that make each rule real.
+Canonical reference for modular-architecture naming (MOD-23..MOD-27). Written against the lint rules **as they first landed** (`warn` only), and promoted via [`hard-truths.md`](hard-truths.md) once each rule was made real.
 
 ## Rules
 
@@ -14,7 +14,7 @@ Every file under `src/` uses kebab-case basenames (including `packages/ui/src/*`
 | --- | --- |
 | **Lint rule** | `unicorn/filename-case` with `{ case: 'kebabCase' }` |
 | **Severity today** | `error` |
-| **Makes real** | **W2** (ui/ kebab renames landed); **W7** flips the rule to `error` |
+| **Makes real** | the `ui/` kebab renames; a later sweep flipped the rule to `error` |
 
 Inventory lived in modular-architecture lint-warning delivery notes (historical).
 
@@ -24,9 +24,9 @@ Reserved suffixes: `.recipe.ts`, `.slice.ts`, `.selectors.ts`, `.store.ts`, `.st
 
 | | |
 | --- | --- |
-| **Lint rule** | No dedicated ESLint rule in W1 — enforced by W2 rename procedure + review; W7 closes residual mismatches |
-| **Severity today** | n/a (convention until W7) |
-| **Makes real** | **W2** (files it renames); residual already-kebab mismatches deferred to **W7** |
+| **Lint rule** | No dedicated ESLint rule — enforced by the rename procedure + review; the naming sweep closed residual mismatches |
+| **Severity today** | n/a (convention) |
+| **Makes real** | the kebab renames (files they touched); residual already-kebab mismatches went to the naming sweep |
 
 ### MOD-25 — identifier conventions
 
@@ -35,8 +35,8 @@ Components `PascalCase`; hooks `useCamelCase`; store actions verb-first; selecto
 | | |
 | --- | --- |
 | **Lint rule** | Partial — `id-length` covers length only; casing conventions are review + later waves |
-| **Severity today** | `id-length` at `error` (see MOD-26); no casing lint in W1 |
-| **Makes real** | **W7** naming sweep + severity flips where a rule exists |
+| **Severity today** | `id-length` at `error` (see MOD-26); no casing lint |
+| **Makes real** | the naming sweep + severity flips where a rule exists |
 
 ### MOD-26 — no terse identifiers
 
@@ -46,13 +46,13 @@ Names say what they hold. Two rules enforce this together, because either one al
 
 **2. No cryptic abbreviations**, even at 3+ characters. Write `formatNumber` not `fmt`, `index` not `idx`, `comparison` not `cmp`, `direction` not `dir`. Prefer deleting a pointless alias over renaming it: `const fmt = formatNumber` should just be `formatNumber` at the call site.
 
-> **Why two rules.** `id-length` uses `min: 3`, so it is structurally blind to 3-letter abbreviations. During W7 this let `fmt` (155 sites) and `idx` survive a burn-down that reported "zero findings" — even though the W7 spec had explicitly named both. `id-denylist` closes that gap. A rule that reports clean is not the same as a codebase that reads well.
+> **Why two rules.** `id-length` uses `min: 3`, so it is structurally blind to 3-letter abbreviations. During the naming sweep this let `fmt` (155 sites) and `idx` survive a burn-down that reported "zero findings" — even though the sweep's own brief had explicitly named both. `id-denylist` closes that gap. A rule that reports clean is not the same as a codebase that reads well.
 
 | | |
 | --- | --- |
 | **Lint rules** | `id-length` (`min: 3`, `properties: 'never'`, exceptions `['_', 'cn', 'en', 'pt']`) + `id-denylist` (banned abbreviations). Both are off for tests and stories. |
 | **Severity today** | `error` (both) |
-| **Makes real** | **W7** renames + flips to `error`; W7 adds `id-denylist` |
+| **Makes real** | the naming sweep's renames + flip to `error`, which also added `id-denylist` |
 
 **Extending the denylist.** When you spell out an abbreviation, add it to `id-denylist` in `eslint.config.mjs` once its count reaches zero in non-test `src/`. That converts a one-time cleanup into a permanent guarantee.
 
@@ -81,13 +81,13 @@ Case-only renames use two-step `git mv` through a temporary name so Windows and 
 
 | | |
 | --- | --- |
-| **Lint rule** | Not ESLint — `tools/check-filename-case.mjs` lands in **W2** |
-| **Severity today** | n/a until W2 |
-| **Makes real** | **W2** |
+| **Lint rule** | Not ESLint — a planned `tools/check-filename-case.mjs` |
+| **Severity today** | n/a until that script lands |
+| **Makes real** | that script |
 
-## Enforcement status (post-W7)
+## Enforcement status
 
-- Every rule above that has a lint rule is at **`error`**: `unicorn/filename-case`, `id-length`, `id-denylist`, and the `max-lines` budgets (300 hard cap / 200 feature-UI / 150 hooks). W1 landed them at `warn`; **W7** flipped them and burned the findings to zero.
+- Every rule above that has a lint rule is at **`error`**: `unicorn/filename-case`, `id-length`, `id-denylist`, and the `max-lines` budgets (300 hard cap / 200 feature-UI / 150 hooks). They landed at `warn`; the naming sweep flipped them and burned the findings to zero.
 - Allowlists are small and each entry carries a written reason.
 - MOD-25's casing conventions are still **review-enforced**; no lint rule covers them.
 - This doc is a hard truth; Cursor rule stubs may be added under `.cursor/rules/` later.

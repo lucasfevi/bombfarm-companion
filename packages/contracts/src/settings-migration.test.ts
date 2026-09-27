@@ -12,6 +12,7 @@ describe('migrateStoredSettings', () => {
       forgeWritesEnabled: false,
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
+      usagePingEnabled: true,
     });
   });
 
@@ -31,6 +32,7 @@ describe('migrateStoredSettings', () => {
       forgeWritesEnabled: false,
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
+      usagePingEnabled: true,
     });
   });
 
@@ -52,6 +54,7 @@ describe('migrateStoredSettings', () => {
       forgeWritesEnabled: true,
       restartGameOnExit: true,
       marketQuoteCurrency: 'BRL',
+      usagePingEnabled: true,
     });
   });
 
@@ -64,6 +67,7 @@ describe('migrateStoredSettings', () => {
       forgeWritesEnabled: true,
       restartGameOnExit: true,
       marketQuoteCurrency: 'USD' as const,
+      usagePingEnabled: false,
     };
     expect(migrateStoredSettings(stored)).toEqual(stored);
   });
@@ -87,6 +91,7 @@ describe('migrateStoredSettings', () => {
       forgeWritesEnabled: true,
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
+      usagePingEnabled: true,
     });
   });
 
@@ -116,6 +121,7 @@ describe('migrateStoredSettings', () => {
       forgeWritesEnabled: false,
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
+      usagePingEnabled: true,
     });
   });
 
@@ -129,6 +135,7 @@ describe('migrateStoredSettings', () => {
         forgeWritesEnabled: DEFAULT_SETTINGS.forgeWritesEnabled,
         restartGameOnExit: DEFAULT_SETTINGS.restartGameOnExit,
         marketQuoteCurrency: DEFAULT_SETTINGS.marketQuoteCurrency,
+        usagePingEnabled: DEFAULT_SETTINGS.usagePingEnabled,
       });
     }
   });
@@ -150,6 +157,7 @@ describe('migrateStoredSettings', () => {
       forgeWritesEnabled: true,
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
+      usagePingEnabled: true,
     });
   });
 
@@ -211,5 +219,29 @@ describe('migrateStoredSettings', () => {
         restartGameOnExit: 1,
       }),
     ).toBeNull();
+  });
+});
+
+describe('migrateStoredSettings — usagePingEnabled', () => {
+  const v4 = {
+    schemaVersion: 4,
+    locale: 'pt-BR',
+    alwaysOnTopMain: false,
+    alwaysOnTopMini: false,
+    forgeWritesEnabled: false,
+    restartGameOnExit: false,
+    marketQuoteCurrency: 'BRL',
+  };
+
+  it('an install that predates the switch updates with it on', () => {
+    expect(migrateStoredSettings(v4)?.usagePingEnabled).toBe(true);
+  });
+
+  it('a player who turned it off stays off across an update', () => {
+    expect(migrateStoredSettings({ ...v4, usagePingEnabled: false })?.usagePingEnabled).toBe(false);
+  });
+
+  it('a stored value that is not a boolean discards the row rather than guessing', () => {
+    expect(migrateStoredSettings({ ...v4, usagePingEnabled: 'off' })).toBeNull();
   });
 });

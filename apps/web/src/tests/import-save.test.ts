@@ -95,7 +95,7 @@ describe('parseSaveFile — birth_stats reject gate', () => {
     expect(candidates.length).toBeGreaterThan(0);
   });
 
-  // MP5 F1 (class (a) — read from the capture): re-pointed onto the post-patch export.
+  // Read from the capture: re-pointed onto the post-patch export.
   it('real fixture: a birth-capable save is not rejected', () => {
     const raw = loadFixtureJson('save-20260813-5heroes.json');
     const { rejected, candidates } = parseSaveFile(raw, []);
@@ -114,7 +114,7 @@ describe('parseSaveFile — birth_stats reject gate', () => {
     expect(candidates).toHaveLength(15);
   });
 
-  // MP5 F1 — RECORDED LOSS ("deleted, not weakened"): `gale-01-points-reset.json`
+  // RECORDED LOSS ("deleted, not weakened"): `gale-01-points-reset.json`
   // (16 heroes, 0 with birth_stats) is the only fixture that could demonstrate the whole-file
   // reject gate against a REAL pre-birth_stats export. Every post-patch capture carries
   // `birth_stats` on every hero by construction (the field predates the 2026-08-13 patch), so
@@ -475,7 +475,7 @@ describe('parseSaveFile', () => {
 
   it('unresolvable gear blocks the hero; an unknown ability code alone does not', () => {
     const save = baseSave();
-    // Cora is otherwise clean (T4's self-consistent fixture) — add ONLY an unknown
+    // Cora is otherwise clean (a self-consistent fixture) — add ONLY an unknown
     // ability, no bad gear, to isolate the non-blocking side of the asymmetry.
     (save.heroes[0].abilities as unknown[]).push({ code: 'made_up_ability', level: 3, slot: 99 });
     const { candidates } = parseSaveFile(save, []);
@@ -539,7 +539,7 @@ describe('parseSaveFile', () => {
     expect(weird.record.pts).toEqual(ZERO_PTS());
   });
 
-  // MP5 F1 — RECORDED LOSS ("deleted, not weakened"): this claim needs a real save
+  // RECORDED LOSS ("deleted, not weakened"): this claim needs a real save
   // hero with an ability array entry AT level 0. Neither post-patch corpus file has one (every
   // ability entry on every hero in both `save-20260813-5heroes.json` and
   // `payload-20260812-8heroes.json` is level >= 17) — unreproducible from the new corpus. See
@@ -548,7 +548,7 @@ describe('parseSaveFile', () => {
   // `marcha_acelerada: 0`), which is not fixture-dependent.
 
   it('rank 20 and a mid-curve rank both survive parseSaveFile unclamped', () => {
-    // MP5 F1 (class (a) — read from the capture): re-pointed onto
+    // Read from the capture: re-pointed onto
     // payload-20260812-8heroes.json — the payload's 8 heroes carry the highest ability-level
     // variety in the new corpus.
     const raw = loadFixtureJson('payload-20260812-8heroes.json');

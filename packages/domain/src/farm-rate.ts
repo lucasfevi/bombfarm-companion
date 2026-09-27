@@ -74,6 +74,7 @@ import {
   STAT_CAPS,
   GRID_SPEED_COEF,
   EFF_IA,
+  BASE_BLAST_RANGE,
   ABILITY_LEVEL_MAX,
   mitigationFactor,
   predictHitDamage,
@@ -129,6 +130,7 @@ import {
   GATE_SECS_POR_ATO,
   BOSS_HP_MULT_WIKI,
   JAULA,
+  EXTRA_RANGE_FRAC,
   PROPS_POR_ATO,
   propCountForAto,
   xpPerProp,
@@ -232,7 +234,9 @@ export type HeroFarmFacts = {
    * single plant rate. `computeHeroFarmFacts` always populates it.
    */
   plantsPerSecByAto?: readonly number[];
-  /** `1 + 0.5 × context.blastRange`, blocks hit per bomb. Note: `blastRange` is already `1 + rangeCells`. */
+  /** `1 + 0.5 × context.blastRange`, blocks STRUCK per bomb — `blastRange` is already `1 + rangeCells`.
+   *  What lies past the base reach's 1.5 lands on the cells Wide Blast adds, at `EXTRA_RANGE_FRAC`
+   *  of the hit; the row prices that part at its own hits-to-kill. */
   blocksPerBomb: number;
   /**
    * The NON-CRIT hit before phase mitigation, with `dmgMult` (second blast, execute) — what the
@@ -267,6 +271,9 @@ export type HeroFarmFacts = {
   veiaOuroLevel: number;
   /** `abilities.fortuna`, clamped to `[0, ABILITY_LEVEL_MAX]`. */
   fortunaLevel: number;
+  /** Estilhaços: the chance, as a FRACTION, that a rock this hero destroys shatters. OPTIONAL, and
+   *  absent means none, so a hand-built `HeroFarmFacts` prices as it always has. */
+  shatterChance?: number;
   /** True when this hero contributes no throughput: `avgHitBase <= 0` or `plantsPerSec <= 0`. */
   degenerate: boolean;
 };
@@ -342,7 +349,9 @@ export type HeroFarmBasis = {
   veiaOuroLevel: number;
   fortunaLevel: number;
   passagemBastaoLevel: number;
-  /** `1 + 0.5 × context.blastRange` — ability-driven, build-independent, precomputed. */
+  estilhacosLevel: number;
+  /** `1 + 0.5 × context.blastRange`, blocks struck per bomb — ability-driven, build-independent,
+   *  precomputed. Geometry, not damage: see {@link HeroFarmFacts.blocksPerBomb}. */
   blocksPerBomb: number;
   /**
    * The same pipeline output with every team aura OFF, kept so {@link squadFactsFromBases} can
@@ -411,6 +420,7 @@ export function heroFarmBasisFromParts(parts: HeroFarmBasisParts): HeroFarmBasis
     veiaOuroLevel: clampAbilityLevel(parts.abilities.veia_ouro ?? 0),
     fortunaLevel: clampAbilityLevel(parts.abilities.fortuna ?? 0),
     passagemBastaoLevel: clampAbilityLevel(parts.abilities.passagem_bastao ?? 0),
+    estilhacosLevel: clampAbilityLevel(parts.abilities.estilhacos ?? 0),
     blocksPerBomb: 1 + 0.5 * parts.context.blastRange,
     ...(parts.auraFree ? { auraFree: parts.auraFree } : {}),
   };
@@ -710,6 +720,9 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
     heroLuckPct: basis.heroLuckPct,
     veiaOuroLevel: basis.veiaOuroLevel,
     fortunaLevel: basis.fortunaLevel,
+    ...(basis.estilhacosLevel > 0
+      ? { shatterChance: abilityMods({ estilhacos: basis.estilhacosLevel }).shatterChancePct / 100 }
+      : {}),
     degenerate,
     ...(passagemBastao ? { passagemBastao } : {}),
   };
@@ -1103,6 +1116,15 @@ function hitsPerSec(hero: HeroFarmFacts, ato: number): number {
   return plantsPerSecForAto(hero, ato) * hero.blocksPerBomb * EFF_IA;
 }
 
+/** {@link HeroFarmFacts.blocksPerBomb} of a hero whose blast stops at the base reach. */
+const BASE_BLOCKS_PER_BOMB = 1 + 0.5 * BASE_BLAST_RANGE;
+
+/** The part of {@link hitsPerSec} landing on the cells Wide Blast adds, which take
+ *  `EXTRA_RANGE_FRAC` of the hit. */
+function extraCellHitsPerSec(hero: HeroFarmFacts, ato: number): number {
+  return plantsPerSecForAto(hero, ato) * Math.max(0, hero.blocksPerBomb - BASE_BLOCKS_PER_BOMB) * EFF_IA;
+}
+
 /**
  * Hits per kill as the hero's prop RATE sees them over a field that sits at each pulse level for
  * its share of wall clock: the rate is `hps × Σ_level p / htk(hit × mult)`, so the single figure
@@ -1279,23 +1301,34 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const perHero = squad.heroes.map((hero) => {
     const mitF = mitigationFactor(line.mitig, hero.penetrationPct);
     const avgHit = hero.avgHitBase * mitF;
-    const eHtk = pulseBlendedHtk(pulse, avgHit, (hit) =>
+    const propHtkFor = (hit: number) =>
       PROP_SHARES.reduce(
         (sum, prop) => sum + prop.share * hitsToKill(hit, propHp(line.hp, prop.hpMult)),
         0,
-      ),
-    );
-    const bossHtk = pulseBlendedHtk(pulse, avgHit, (hit) =>
-      hitsToKill(hit, propHp(line.hp, BOSS_HP_MULT_WIKI)),
-    );
+      );
+    const bossHtkFor = (hit: number) => hitsToKill(hit, propHp(line.hp, BOSS_HP_MULT_WIKI));
+    const eHtk = pulseBlendedHtk(pulse, avgHit, propHtkFor);
+    const bossHtk = pulseBlendedHtk(pulse, avgHit, bossHtkFor);
     const hps = hitsPerSec(hero, line.ato);
+    const extraHps = extraCellHitsPerSec(hero, line.ato);
+    // The floor hit: the LOWEST level the field ever sits at. `oneShot` reads this — a hero that
+    // one-shots only while a pulse is up is not a one-shot hero.
+    const floorHit = avgHit * pulse.levels[0].mult;
+    if (extraHps === 0) {
+      return {
+        floorHit,
+        fullTerm: (hps * hero.uptime) / eHtk,
+        fullBossTerm: (hps * hero.uptime) / bossHtk,
+      };
+    }
+    const extraHit = avgHit * EXTRA_RANGE_FRAC;
+    const baseHps = hps - extraHps;
     return {
-      // The hit the hero lands at the LOWEST level the field ever sits at. `oneShot` reads this:
-      // a hero that one-shots only while a pulse is up is not a one-shot hero.
-      floorHit: avgHit * pulse.levels[0].mult,
-      eHtk,
-      fullTerm: (hps * hero.uptime) / eHtk,
-      fullBossTerm: (hps * hero.uptime) / bossHtk,
+      floorHit,
+      fullTerm:
+        (baseHps * hero.uptime) / eHtk + (extraHps * hero.uptime) / pulseBlendedHtk(pulse, extraHit, propHtkFor),
+      fullBossTerm:
+        (baseHps * hero.uptime) / bossHtk + (extraHps * hero.uptime) / pulseBlendedHtk(pulse, extraHit, bossHtkFor),
     };
   });
 
@@ -1362,6 +1395,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
         hitNoCrit: hitNoCritBase * mitigationFactor(line.mitig, hero.penetrationPct) * level.mult,
         critChance: Math.max(0, critChancePct) / 100,
         critMult: 1 + Math.max(0, hero.critDmgPct ?? 0) / 100,
+        ...(hero.shatterChance ? { shatterChance: hero.shatterChance } : {}),
       };
     });
     const clear = simulateClear(clearHeroes, propTypes, propCount);

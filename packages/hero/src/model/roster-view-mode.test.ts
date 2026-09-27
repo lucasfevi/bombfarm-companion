@@ -6,6 +6,10 @@ describe('heroPickOutcome', () => {
     expect(heroPickOutcome('cards', 'hero-1')).toEqual({ heroId: 'hero-1', showDetail: true });
   });
 
+  it('sends the reader to the detail when picking from the table, which covers it the way the board does', () => {
+    expect(heroPickOutcome('table', 'hero-1')).toEqual({ heroId: 'hero-1', showDetail: true });
+  });
+
   it('leaves the reader where they are in the list, which sits beside the detail already', () => {
     expect(heroPickOutcome('list', 'hero-1')).toEqual({ heroId: 'hero-1', showDetail: false });
   });

@@ -35,7 +35,7 @@ const TOKEN = {
 };
 
 const FOOTER_NOTE = 'Unofficial fan tool · Not affiliated with Bomb Farm';
-const FOOTER_URL = 'bombfarm-companion.vercel.app';
+const FOOTER_URL = 'bombfarm-companion.app';
 
 /**
  * Must agree with `sectionSlug()` in `src/shared/lib/site-metadata.ts`, which derives the same
@@ -187,7 +187,7 @@ try {
 
 await writeFile(
   path.join(projectRoot, 'scripts', 'og-manifest.json'),
-  `${JSON.stringify({ renderedFrom: previews }, null, 2)}\n`,
+  `${JSON.stringify({ renderedFrom: previews, footerUrl: FOOTER_URL }, null, 2)}\n`,
   'utf8',
 );
 console.log('og: scripts/og-manifest.json');

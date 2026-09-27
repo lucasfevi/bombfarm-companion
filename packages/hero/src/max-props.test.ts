@@ -120,14 +120,14 @@ function countDestructured(params: string): number {
     .split(',')
     .map((part) => part.trim())
     .filter(Boolean)
-    .map((part) => part.split(/[=:]/)[0].trim().replace(/^['"]|['"]$/g, ''))
+    .map((part) => (part.split(/[=:]/)[0] ?? '').trim().replace(/^['"]|['"]$/g, ''))
     .filter((part) => part && !part.startsWith('...') && part !== 'children' && !isDomProp(part))
     .length;
 }
 
 function countTypeMembers(block: string): number {
   return [...topLevelOnly(block).matchAll(/^\s*(?:readonly\s+)?([A-Za-z_][\w]*)\s*[?:]/gm)]
-    .map((entry) => entry[1])
+    .map((entry) => entry[1] ?? '')
     .filter((key) => key !== 'children' && !isDomProp(key)).length;
 }
 
@@ -144,14 +144,14 @@ function collectHits(files: string[]): Hit[] {
 
     for (const match of text.matchAll(/(?:type|interface) (\w*Props)\s*=?\s*\{/g)) {
       const open = match.index + match[0].length - 1;
-      record(match[1], countTypeMembers(balancedBlock(text, open)));
+      record(match[1] ?? '', countTypeMembers(balancedBlock(text, open)));
     }
 
     for (const match of text.matchAll(
       /(?:export (?:default )?function|memo\(function) (\w+)\s*\(\s*\{/g,
     )) {
       const open = match.index + match[0].length - 1;
-      record(match[1], countDestructured(balancedBlock(text, open)));
+      record(match[1] ?? '', countDestructured(balancedBlock(text, open)));
     }
   }
 

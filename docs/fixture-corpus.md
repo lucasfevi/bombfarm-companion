@@ -1,4 +1,4 @@
-# The post-patch fixture corpus (MP5 F1, `mp5-fixture-rebaseline`)
+# The post-patch fixture corpus
 
 **Status (2026-08-13):** the 2026-08-13 patch removed five skill-tree mechanics and wiped every
 account.
@@ -33,7 +33,7 @@ Under the positive discriminator (`skills.refunds` / `skills.totals.vagas_campo`
 `skills.totals.bag_tabs_bonus` — post-patch-only keys), **every one of the 41 pre-patch capture
 files was an invalid save**: all 41 carried the three `skills.totals` keys the patch retired
 (pre-patch-only keys), and none carried any of the three new keys. That is the exact input
-`mp5-schema-guard` (F4) is being built to reject. The corpus was not merely stale — it was the
+the save-shape guard is being built to reject. The corpus was not merely stale — it was the
 thing the next feature exists to catch.
 
 ## 3. Per-deleted-file loss table
@@ -80,7 +80,7 @@ replacement**: §6 below, the round-trip invariant.
   with a negative gainPct`) — its subject (`save-20260801-crit-dmg-tree.json`, hero 37446) died
   with the rest of the pre-wipe corpus; nobody has looked for a fresh empirical example on the
   new substrate, so it was deleted rather than re-pointed onto an unverified subject.
-- **`luck-sheet.test.ts`'s `luck per-point value against Wave 0 fixtures` block** (2 tests, Vera
+- **`luck-sheet.test.ts`'s luck per-point value block against the original fixtures** (2 tests, Vera
   ★0 and Bellatrix ★1) — the point-delta before/after family (§5).
 - **`ability-catalog.test.ts`'s Korin recomposition case** (id 43040, `golpe_brutal` rank 1
   proof) — no hero in either post-patch capture owned `golpe_brutal` at the time (scanned
@@ -116,7 +116,7 @@ replacement**: §6 below, the round-trip invariant.
   test** — a tree flag flowing from a real save's retired `skills.totals` key is unreproducible
   (no post-patch capture carries the key at all, §4); the mechanic itself was deleted with `F2`.
 - **`apps/web/e2e/team-plan-disclosures.spec.ts`'s `saturated account shows saturation callout`
-  test** was found RED on the new corpus during T7 (its `slots: 2` override was tuned for the
+  test** was found RED on the new corpus during the re-pointing work (its `slots: 2` override was tuned for the
   deleted 11-hero fixture's ~2.5–3.2 `sumDuty` range) and was fixed by an orchestrator ruling
   that extended the three-file exception to this fourth `apps/web/e2e/**` file. On the
   5-hero export, `slots` alone can no longer force the saturated regime — this roster's own
@@ -838,16 +838,16 @@ with the same discipline. That diff was:
 
 ### 12.2 `fixtures/invariance/baseline.json`
 
-Verbatim, as it stood in `invariance-baseline.test.ts`'s header at deletion:
+Adapted from `invariance-baseline.test.ts`'s header at deletion:
 
 The pre-deletion characterization baseline — an explicitly projected record with a
 sign-preserving number encoder. The mechanism that makes
-MP5's headline risk ("F2 edits fidelity-gated sheet math while deleting fields, and numbers
-drift silently") assertable rather than reviewable: a committed pre-deletion recording of the
+The corpus rebaseline's headline risk ("retiring a mechanic edits fidelity-gated sheet math while
+deleting fields, and numbers drift silently") assertable rather than reviewable: a committed pre-deletion recording of the
 entire SURVIVING numeric surface, compared bit-exactly against every post-deletion commit.
 
 Named `invariance-*`, deliberately never named after any deleted arm — a file
-named after one would trip this feature's own absence guard (T10's `source-surface.test.ts`).
+named after one would trip this feature's own absence guard (`source-surface.test.ts`).
 
 A decimal-digit-tolerance assertion style is deliberately never used in this file: it would
 silently absorb exactly the class of drift this suite exists to catch (a 5e-3 error still

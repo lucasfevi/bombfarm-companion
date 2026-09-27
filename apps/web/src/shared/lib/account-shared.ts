@@ -37,8 +37,8 @@ export type TreeState = {
   teamCoinPct: number;
   /**
    * Flat Luck percentage points from `skills.totals.luck_add × 100`.
-   * Additive on `bf-hp-account-v1` — optional (not `number`) so pre-Wave-5 literals (e.g.
-   * `e2e/fixtures/seed.ts`, out of this wave's touch scope) keep typechecking; every read
+   * Additive on `bf-hp-account-v1` — optional (not `number`) so literals written before the field existed (e.g.
+   * `e2e/fixtures/seed.ts`) keep typechecking; every read
    * site defaults absence to `0` and `normalizeTree`'s rebuild fills it on load. Import-sourced
    * only; no Account UI field yet.
    */

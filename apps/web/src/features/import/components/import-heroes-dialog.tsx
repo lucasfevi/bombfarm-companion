@@ -1,6 +1,9 @@
 'use client';
 
+import { useMemo } from 'react';
 import { HiMiniXMark } from 'react-icons/hi2';
+import { heroPeekStatsResolver, treeSheetFromAccountTree } from '@bombfarm/hero/model';
+import { HeroPeekStatsProvider } from '@/shared/game-art';
 import type { Lang, Strings } from '@/shared/i18n';
 import type { HeroRecord } from '@/shared/lib/storage';
 import { cn, Dialog, FileDropZone } from '@bombfarm/ui';
@@ -24,6 +27,12 @@ type Props = {
 
 export function ImportHeroesDialog({ open, onOpenChange, existing, t, lang, onImported }: Props) {
   const importState = useImportCandidates({ existing, t, onImported, onOpenChange });
+  // A candidate's card is composed against the save's own tree, not the account already in the planner.
+  const saveTree = importState.accountData?.tree ?? null;
+  const candidatePeekStats = useMemo(
+    () => heroPeekStatsResolver({ tree: saveTree === null ? null : treeSheetFromAccountTree(saveTree) }),
+    [saveTree],
+  );
 
   if (!open) return null;
 
@@ -73,14 +82,16 @@ export function ImportHeroesDialog({ open, onOpenChange, existing, t, lang, onIm
 
                     <ImportBlockedNotice candidates={importState.candidates} t={t} />
 
-                    <ImportCandidateTable
-                      sorted={importState.sorted}
-                      sort={{
-                        sortKey: importState.sortKey,
-                        sortDir: importState.sortDir,
-                        onSort: importState.handleSort,
-                      }}
-                    />
+                    <HeroPeekStatsProvider resolve={candidatePeekStats}>
+                      <ImportCandidateTable
+                        sorted={importState.sorted}
+                        sort={{
+                          sortKey: importState.sortKey,
+                          sortDir: importState.sortDir,
+                          onSort: importState.handleSort,
+                        }}
+                      />
+                    </HeroPeekStatsProvider>
                     <ImportWarnings warnings={importState.warnings} t={t} />
                   </>
                 )}

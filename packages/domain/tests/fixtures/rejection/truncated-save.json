@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "purpose": "MP5 F4 rejection fixture — synthetic, hand-written, never a game observation. Demonstrates parseSaveFile rejecting a truncated/hand-edited save: skills.totals is present but stripped of BOTH the old and new key vocabularies — proves the discriminator is positive (asks presence of the new keys), not merely 'lacks the old keys', which a truncated file would also satisfy."
+    "purpose": "Rejection fixture — synthetic, hand-written, never a game observation. Demonstrates parseSaveFile rejecting a truncated/hand-edited save: skills.totals is present but stripped of BOTH the old and new key vocabularies — proves the discriminator is positive (asks presence of the new keys), not merely 'lacks the old keys', which a truncated file would also satisfy."
   },
   "heroes": [
     {

@@ -5,7 +5,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { Select, cn } from '@bombfarm/ui';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
-import { HeroAvatar, heroPeekData, heroRankToneClass, rarityTextClass } from '@bombfarm/game-art';
+import { HeroAvatar, heroPeekData, heroRankToneClass, rarityTextClass, useHeroPeekStats } from '@bombfarm/game-art';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import { shortHeroRecordId } from '@bombfarm/domain/shims/hero-identity';
@@ -48,6 +48,7 @@ export const ScopeHeroCard = memo(function ScopeHeroCard({
     data: { type: 'hero', heroId: hero.id, scope },
     disabled: overlay,
   });
+  const peekStats = useHeroPeekStats();
   const rarIdx = RARITIES.indexOf(hero.rarity);
   const stars = Math.max(0, Math.min(MAX_STARS, Math.round(hero.stars ?? 0)));
   const battleAllowed = hero.battleAllowed ?? true;
@@ -78,7 +79,7 @@ export const ScopeHeroCard = memo(function ScopeHeroCard({
             rarityIdx={rarIdx}
             size="md"
             name={hero.name}
-            peek={overlay ? undefined : { hero: heroPeekData(hero), lang }}
+            peek={overlay ? undefined : { hero: heroPeekData(hero, peekStats(hero)), lang }}
           />
         </div>
         <div className="min-w-0 flex-1">

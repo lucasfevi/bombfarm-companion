@@ -163,13 +163,13 @@ describe('POINT_GAIN.luckPctOfBase', () => {
 });
 
 // RECORDED LOSS (the ground-truth rule: "deleted, not weakened"): the deleted
-// `luck per-point value against Wave 0 fixtures` describe block (2 tests, Vera ★0 and
+// luck per-point value describe block against the original fixtures (2 tests, Vera ★0 and
 // Bellatrix ★1) compared two REAL observations of the SAME hero before/after spending exactly
 // one Luck point (`vera-01` -> `vera-02`, `bellatrix-01` -> `bellatrix-02`). This is the
 // point-delta before/after family that is
 // unreproducible: every post-wipe corpus hero has `stat_points_available: 0` (every point is
 // already spent), so no zero-point "before" state exists to pair with a "+1 point" state.
-// `point-roundtrip.test.ts` (T4) is the replacement — a stronger, corpus-anchored
+// `point-roundtrip.test.ts` is the replacement — a stronger, corpus-anchored
 // claim that the forward per-point math reproduces the game's own observed sheet — but it
 // cannot isolate a single point's marginal value the way this deleted pair could. See
 // docs/fixture-corpus.md.

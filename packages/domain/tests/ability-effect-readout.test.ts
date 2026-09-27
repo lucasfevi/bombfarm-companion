@@ -41,7 +41,7 @@ describe('ownAbilityReadout — the model’s own arithmetic read back', () => {
   it('Detonação Dupla reads as its chance and the multiplier abilityMods applies', () => {
     expect(ownAbilityReadout('detonacao_dupla', 20)).toEqual({
       kind: 'secondBlast',
-      chancePct: 30,
+      chancePct: 50,
       dmgMult: abilityMods({ detonacao_dupla: 20 }).dmgMult,
     });
   });

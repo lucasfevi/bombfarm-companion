@@ -1,4 +1,4 @@
-import { PVP_SQUAD_SLOTS, PVP_WINDOW_SECS, gateWindowSecs, resolveGatePhase } from '@bombfarm/domain/combat-window';
+import { PVP_TOP_HOUSE_SQUAD_SLOTS, PVP_WINDOW_SECS, gateWindowSecs, pvpSquadSlots, resolveGatePhase } from '@bombfarm/domain/combat-window';
 import { resolveHeroScope } from './hero-scope';
 import type { TeamPlanControls } from './team-plan-controls';
 import type { TeamPlanInputs } from './team-plan-inputs';
@@ -19,7 +19,13 @@ export function teamPlanGateWindowSecs(
   return gateWindowSecs(resolveTeamPlanGatePhase(inputs, controls));
 }
 
-export { PVP_SQUAD_SLOTS, PVP_WINDOW_SECS };
+export { PVP_TOP_HOUSE_SQUAD_SLOTS, PVP_WINDOW_SECS };
+
+/** The slots the duel squad has: the account's own when the host has read them, else the top
+ *  house's. */
+export function teamPlanPvpSquadSlots(inputs: Pick<TeamPlanInputs, 'pvpSquadSlots'>): number {
+  return pvpSquadSlots(inputs.pvpSquadSlots);
+}
 
 /**
  * The squad a duel plan fields: every hero the scope board keeps on the field — Optimize and
@@ -33,10 +39,10 @@ export function countPvpSquadHeroes(
   return inputs.heroes.filter((hero) => resolveHeroScope(hero, controls.scopeByHeroId) !== 'donate').length;
 }
 
-/** How many heroes over the room's nine seats the scope board fields — zero when it fits. */
+/** How many heroes over the duel squad's slots the scope board fields — zero when it fits. */
 export function pvpSquadExcess(
-  inputs: Pick<TeamPlanInputs, 'heroes'>,
+  inputs: Pick<TeamPlanInputs, 'heroes' | 'pvpSquadSlots'>,
   controls: Pick<TeamPlanControls, 'scopeByHeroId'>,
 ): number {
-  return Math.max(0, countPvpSquadHeroes(inputs, controls) - PVP_SQUAD_SLOTS);
+  return Math.max(0, countPvpSquadHeroes(inputs, controls) - teamPlanPvpSquadSlots(inputs));
 }

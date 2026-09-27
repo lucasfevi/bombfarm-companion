@@ -30,6 +30,7 @@ import { settledSnapshot } from '../../lib/optimizer/optimizer-snapshot-store';
 import { useOptimizerSnapshot } from '../../lib/optimizer/use-optimizer-snapshot';
 import { DEFAULT_OPTIMIZER_VIEW, loadOptimizerView, saveOptimizerView, type OptimizerView } from '../../lib/optimizer/optimizer-view-storage';
 import { pvpRoomPhaseInput } from '../../lib/optimizer/pvp-room-phase-input';
+import { pvpSquadSlotsInput } from '../../lib/optimizer/pvp-squad-slots-input';
 import { refreshPvpStanding, usePvpHistory } from '../../lib/pvp/use-pvp-history';
 import { useScreenRefreshRegistration } from '../../lib/refresh/screen-refresh-store';
 import { OptimizerScreen } from './optimizer-screen';
@@ -61,16 +62,17 @@ export function OptimizerView({
   const [controls, setControls] = useState<OptimizerView>(DEFAULT_OPTIMIZER_VIEW);
   const [storageReady, setStorageReady] = useState(false);
 
-  // The duel objective fights at the phase the room is hardened to, so the standing is asked for
-  // on open the way the PVP and Skill Tree tabs ask — never guessed from the farm phase.
+  // The duel objective fights at the phase the room is hardened to, with the slots the squad
+  // house gives, so the standing is asked for on open the way the PVP and Skill Tree tabs ask —
+  // never guessed from the farm phase or the field.
   const pvpHistory = usePvpHistory();
   useEffect(() => {
     refreshPvpStanding();
   }, []);
-  const pvpRoomPhase = useMemo(
-    () => pvpRoomPhaseInput(pvpHistory.status === 'ready' ? pvpHistory.history : null),
-    [pvpHistory],
-  );
+  const pvpRead = pvpHistory.status === 'ready' ? pvpHistory.history : null;
+  const pvpRoomPhase = pvpRoomPhaseInput(pvpRead);
+  const pvpSquadSlots = pvpSquadSlotsInput(pvpRead);
+  const pvp = useMemo(() => ({ pvpRoomPhase, pvpSquadSlots }), [pvpRoomPhase, pvpSquadSlots]);
 
   useEffect(() => {
     setControls(loadOptimizerView());
@@ -169,7 +171,7 @@ export function OptimizerView({
       )}
       <OptimizerScreen
         snapshot={settled}
-        pvpRoomPhase={pvpRoomPhase}
+        pvp={pvp}
         controls={controls}
         setControls={setControls}
         planState={planState}

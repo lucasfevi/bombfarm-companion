@@ -72,7 +72,7 @@ function at(dictionary: Record<string, string>, key: string): string {
 
 function placeholderSet(value: string): Set<string> {
   const matches = value.matchAll(/\{(\w+)\}/g);
-  return new Set(Array.from(matches, (match) => match[1]));
+  return new Set(Array.from(matches, (match) => match[1] ?? ''));
 }
 
 function placeholderMismatches(

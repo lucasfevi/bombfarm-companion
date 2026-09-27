@@ -7,6 +7,7 @@ import {
   InventoryLayoutToggle,
   InventoryTable,
   InventoryTotals,
+  useHeroPeekStats,
 } from '@bombfarm/game-art';
 import { Panel, PanelHeader } from '@bombfarm/ui';
 import type { InventoryView } from '@bombfarm/domain/inventory-view';
@@ -69,8 +70,9 @@ export function InventoryPage() {
     storeLayout(next);
   }, []);
 
-  const labels = useMemo(() => inventoryLabels(t, lang, heroes), [t, lang, heroes]);
-  const tableLabels = useMemo(() => inventoryTableLabels(t, lang, heroes), [t, lang, heroes]);
+  const peekStats = useHeroPeekStats();
+  const labels = useMemo(() => inventoryLabels(t, lang, heroes, peekStats), [t, lang, heroes, peekStats]);
+  const tableLabels = useMemo(() => inventoryTableLabels(t, lang, heroes, peekStats), [t, lang, heroes, peekStats]);
 
   const layoutToggle = (
     <InventoryLayoutToggle

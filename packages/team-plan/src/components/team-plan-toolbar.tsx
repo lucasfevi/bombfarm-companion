@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { Button, InfoTip, Panel, Tooltip, panelHClass, panelTitleClass } from '@bombfarm/ui';
 import type { Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
-import { countPvpSquadHeroes, resolveTeamPlanGatePhase } from '../core/combat-window';
+import { countPvpSquadHeroes, resolveTeamPlanGatePhase, teamPlanPvpSquadSlots } from '../core/combat-window';
 import { resolveTeamPlanTargetPhase } from '../core/plan-lifecycle';
 import type { TeamPlanScreenCopy } from '../copy';
 import { teamPlanObjectiveCopy } from '../model/objective-copy';
@@ -89,6 +89,7 @@ export function TeamPlanToolbar({
                   lang={lang}
                   roomPhase={data.inputs.pvpRoomPhase}
                   fielded={countPvpSquadHeroes(data.inputs, data.controls)}
+                  slots={teamPlanPvpSquadSlots(data.inputs)}
                 />
               ) : (
                 <PhaseField

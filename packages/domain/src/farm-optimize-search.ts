@@ -416,7 +416,7 @@ export type FarmSearchOutcome = {
   evaluations: number;
   sweeps: number;
   budgetExhausted: boolean;
-  /** The FINAL sweep's `(share, value)` ladder — the plateau's zero-extra-cost read-out (T8). */
+  /** The FINAL sweep's `(share, value)` ladder — the plateau's zero-extra-cost read-out. */
   ladder: readonly { share: number; value: number }[];
 };
 
@@ -425,7 +425,7 @@ export type FarmSearchOutcome = {
  * then repeated (share-ladder pass + per-hero local search over `generateMoves()`) sweeps from
  * the best seed until a sweep accepts nothing, and finally the incumbent against the result —
  * the proposal is never worse than the build the player has, and on a tie it IS that build.
- * `searchableIds` may be the whole searchable set (the joint solve) or a narrowed subset (T9's
+ * `searchableIds` may be the whole searchable set (the joint solve) or a narrowed subset (the
  * frontier re-solves) — same loop either way.
  *
  * The descent never sees the current build: its seeds come from the budget, ties between them

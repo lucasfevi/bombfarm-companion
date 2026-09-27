@@ -135,7 +135,7 @@ function _assertNeverResolvedComparisonIsATypeError(restored: RestoredAccount): 
 void _assertNeverResolvedComparisonIsATypeError;
 
 // 10. Positive assertion: RestoredAccount['payload'] IS assignable to AccountPayload with no
-//     cast, so MP3/F4 can feed a restored payload straight into `parseAccountPayload`. Same
+//     cast, so a caller can feed a restored payload straight into `parseAccountPayload`. Same
 //     never-called-function wrapping to avoid evaluating a type-only value at runtime.
 function _assertRestoredPayloadIsAnAccountPayload(restoredPayload: RestoredAccount['payload']): void {
   const asAccountPayload: AccountPayload = restoredPayload;

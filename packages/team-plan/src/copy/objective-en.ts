@@ -28,7 +28,7 @@ export const teamPlanObjectivePairsEn = {
   teamPlanObjectiveHintGate:
     'Ranks builds by the damage the squad lands inside the gate timer. Energy counts only for the field time it buys before the timer runs out; gold per hour is not scored.',
   teamPlanObjectiveHintPvp:
-    'Ranks builds by the damage the squad you field lands in the one-minute duel — at most nine heroes, picked on the scope board. A stint that outlasts the minute needs no more energy; gold per hour is not scored.',
+    'Ranks builds by the damage the squad you field lands in the one-minute duel — at most as many heroes as your squad has slots, picked on the scope board. A stint that outlasts the minute needs no more energy; gold per hour is not scored.',
   /** No longer enumerates gear moves, forge work and point resets: the Allowed changes control
    *  below decides which of those a plan may contain, so listing all three here promises chores a
    *  restricted plan will never produce. */
@@ -39,7 +39,7 @@ export const teamPlanObjectivePairsEn = {
   teamPlanSetupSectionBodyGate:
     'Builds a plan for the heroes you mark Optimize, out of the changes you allow below — scored for the damage they land inside the gate timer.',
   teamPlanSetupSectionBodyPvp:
-    'Builds a plan for the duel squad you field on the scope board — at most nine heroes, Optimize and Leave alone alike — out of the changes you allow below, scored for the damage it lands in the one-minute duel. Donors stay out of the room.',
+    'Builds a plan for the duel squad you field on the scope board — at most as many heroes as your squad has slots, Optimize and Leave alone alike — out of the changes you allow below, scored for the damage it lands in the one-minute duel. Donors stay out of the room.',
   teamPlanTotalGainValueDps: '{delta} dps ({pct}%)',
   teamPlanTotalGainValueFarm: '{delta} gold/h ({pct}%)',
   teamPlanTotalGainValueGate: '{delta} dps at the gate ({pct}%)',
@@ -61,7 +61,7 @@ export const teamPlanObjectivePairsEn = {
    *  picks the squad and the room. */
   teamPlanPvpSquadLabel: 'Duel',
   teamPlanPvpSquadValue: '{count} of {max} fielded · {phase} · {secs} s',
-  teamPlanPvpSquadHint: 'How many heroes the scope board fields against the room’s nine seats, and the phase the room is hardened to, as last read.',
+  teamPlanPvpSquadHint: 'How many heroes the scope board fields against your squad’s slots, and the phase the room is hardened to, as last read. Until the game has reported your slots, the plan assumes the top squad house’s nine.',
   teamPlanPvpRoomUnknown: 'room phase unknown',
-  teamPlanPvpSquadTooMany: 'The duel room seats {max}. Move {excess} more to Donate before this plan can be built.',
+  teamPlanPvpSquadTooMany: 'Your squad has {max} slots. Move {excess} more to Donate before this plan can be built.',
 } as const;

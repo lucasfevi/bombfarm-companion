@@ -16,6 +16,7 @@ import {
   applyRuneMultipliers,
   hasRuneOnSheet,
   readHeroRunes,
+  runeFromDefId,
   RUNE_AXES,
   RUNE_AXIS_SHEET_KEY,
   runeSheetMultipliers,
@@ -250,5 +251,18 @@ describe('the importer', () => {
     expect(runed.record.runes).toEqual([{ axis: 'attack', strengthPct: 5, playSecondsLeft: 80_000, rarity: 0 }]);
     expect(runed.record.gearedOverride.attack).toBeCloseTo(bare.record.gearedOverride.attack * 1.05, 9);
     expect(runed.record.gearedOverride.energy).toBe(bare.record.gearedOverride.energy);
+  });
+});
+
+describe('runeFromDefId', () => {
+  it('reads the axis off the id and the strength off the wiki for the tier', () => {
+    expect(runeFromDefId('rune_critdmg_comum', 0)).toEqual({ axis: 'critdmg', strengthPct: 5 });
+    expect(runeFromDefId('rune_gold_mitico', 5)?.strengthPct).toBeCloseTo(25, 12);
+  });
+
+  it('refuses an id that names no known axis, and leaves an unknown tier without a strength', () => {
+    expect(runeFromDefId('rune_luck_comum', 0)).toBeNull();
+    expect(runeFromDefId('skin_6', 0)).toBeNull();
+    expect(runeFromDefId('rune_speed_comum', 9)).toEqual({ axis: 'speed', strengthPct: null });
   });
 });

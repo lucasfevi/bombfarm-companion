@@ -127,8 +127,11 @@ test.describe('combat breakdown panel', () => {
 
     await openCombatTab(page, 'en');
     const combatHeadings = activePanel(page).getByRole('heading', { level: 2 });
-    await expect(combatHeadings.nth(-2)).toHaveText(/^Effective stats$/);
-    await expect(combatHeadings.last()).toHaveText(/^Abilities & auras$/);
+    await expect(combatHeadings.last()).toHaveText(/^Effective stats$/);
+    await expect(combatHeadings.filter({ hasText: /^Abilities & auras$/ })).toHaveCount(0);
+    await expect(
+      effectivePanel(page).getByTestId('team-auras').getByRole('heading', { name: /^Team auras$/, level: 3 }),
+    ).toBeVisible();
 
     await page.getByRole('group', { name: 'Language' }).getByRole('button', { name: 'PT' }).click();
     await openPointsTab(page, 'pt');
@@ -141,8 +144,11 @@ test.describe('combat breakdown panel', () => {
 
     await openCombatTab(page, 'pt');
     const combatHeadingsPt = activePanel(page).getByRole('heading', { level: 2 });
-    await expect(combatHeadingsPt.nth(-2)).toHaveText(/^Atributos efetivos$/);
-    await expect(combatHeadingsPt.last()).toHaveText(/^Habilidades e auras$/);
+    await expect(combatHeadingsPt.last()).toHaveText(/^Atributos efetivos$/);
+    await expect(combatHeadingsPt.filter({ hasText: /^Habilidades e auras$/ })).toHaveCount(0);
+    await expect(
+      effectivePanel(page).getByTestId('team-auras').getByRole('heading', { name: /^Auras de time$/, level: 3 }),
+    ).toBeVisible();
   });
 
   test('wide: all twenty figures are visible without a click, labelled, in four rows, and no accordion remains', async ({
@@ -254,6 +260,9 @@ test.describe('combat breakdown panel', () => {
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
+    // The pointer is parked off the panel first: focusing scrolls the page under it, and a hover
+    // card that slides under a resting pointer opens and takes the popover's place.
+    await page.mouse.move(0, 0);
     // Keyboard focus: the badge icons are not tab stops, so Tab from Fuse's card lands on Field time's.
     await cardFace(page, 'fuse').focus();
     await page.keyboard.press('Tab');
@@ -351,7 +360,7 @@ test.describe('combat breakdown panel', () => {
     const attackBefore = await cardValue(page, 'attack').innerText();
     await expect(card(page, 'attack').locator('[data-badge="grito_guerra"]')).toHaveAttribute('data-on', 'false');
 
-    const auras = activePanel(page).getByTestId('abilities-auras');
+    const auras = effectivePanel(page).getByTestId('team-auras');
     await auras.getByTestId('team-aura-grito_guerra').getByRole('switch').click();
 
     await expect(card(page, 'attack').locator('[data-badge="grito_guerra"]')).toHaveAttribute('data-on', 'true');

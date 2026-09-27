@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import type { AccountView, LiveCurrency, LiveEvent, LiveFrame, LiveTick, SectionFidelity } from '@bombfarm/contracts';
 import { liveGap } from '@bombfarm/contracts';
-import { liveFrameWireKey, wireKey } from '@bombfarm/game-api';
+import { ROUTE_FINGERPRINTS, liveFrameWireKey, wireKey } from '@bombfarm/game-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createBoundaryLog } from '../boundary-log/index.js';
 import { generateReplayStream } from './fixtures/generate-replay-stream.js';
@@ -742,6 +742,35 @@ describe('LiveSource: an observed body identification failure falls back to the 
     source.start();
 
     currentTap().emitHttpBody({ totally: 'unrecognisable', shape: 1 }, Date.now());
+
+    expect(warnRecords).toHaveLength(1);
+    expect(warnRecords[0]).toMatchObject({ event: 'observed_body.unidentified' });
+  });
+
+  it('a body that is a known route plus a key the game added is reported as drift, naming the key', () => {
+    const { log, warnRecords } = createSpyLog();
+    const { source, currentTap } = createHarness({ log });
+    source.start();
+
+    const accountBody: Record<string, unknown> = {};
+    for (const key of ROUTE_FINGERPRINTS.account.level.keys) accountBody[key] = 0;
+
+    currentTap().emitHttpBody({ ...accountBody, a_key_the_game_added: 1 }, Date.now());
+
+    expect(warnRecords).toHaveLength(1);
+    expect(warnRecords[0]).toMatchObject({
+      event: 'observed_body.drift',
+      sections: ['account'],
+      addedKeys: ['account.a_key_the_game_added'],
+    });
+  });
+
+  it('an unrelated route stays the quiet unidentified line, so drift is not drowned in ordinary traffic', () => {
+    const { log, warnRecords } = createSpyLog();
+    const { source, currentTap } = createHarness({ log });
+    source.start();
+
+    currentTap().emitHttpBody({ unlocked: ['FIRST_GATE'] }, Date.now());
 
     expect(warnRecords).toHaveLength(1);
     expect(warnRecords[0]).toMatchObject({ event: 'observed_body.unidentified' });

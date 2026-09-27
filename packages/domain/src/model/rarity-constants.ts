@@ -47,7 +47,7 @@ export const BASE_ROLLS: Record<RarityKey, BaseRoll> = {
 // Ataque +10 native × levelPowerMult(level) · Energia +8 native · Velocidade / Sorte /
 // Crit chance / Pen / CDR add a bonus that is a percentage OF THE BASE ROLL
 // (+2% / +3% / +2% / +2% / +2%).
-// Sorte (Luck): measured against the Wave 0 fixtures at ≤8e-16 residual,
+// Sorte (Luck): measured against the original point fixtures at ≤8e-16 residual,
 // ★0 gear-free (vera-02-pts-luck-1.json) and confirmed exactly at ★1 with gear
 // (bellatrix-02-pts-each-1.json). +3% of the hero's birth roll, × starsMult.
 //

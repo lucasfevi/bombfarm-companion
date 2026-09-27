@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { heroPeekData, type HeroPeekData } from '@bombfarm/game-art';
-import { buildAccountRoster, type AccountRoster } from '../account/account-roster';
+import { buildAccountRoster, rosterHeroPeekStats, type AccountRoster } from '../account/account-roster';
 import { useAccountView } from '../account/use-account-view';
 
 const NO_PEEKS: ReadonlyMap<string, HeroPeekData> = new Map();
@@ -13,7 +13,8 @@ const NO_PEEKS: ReadonlyMap<string, HeroPeekData> = new Map();
  */
 export function rosterHeroPeeks(roster: AccountRoster | null): ReadonlyMap<string, HeroPeekData> {
   if (roster === null) return NO_PEEKS;
-  return new Map(roster.heroes.map((hero) => [hero.id, heroPeekData(hero)]));
+  const peekStats = rosterHeroPeekStats(roster);
+  return new Map(roster.heroes.map((hero) => [hero.id, heroPeekData(hero, peekStats(hero))]));
 }
 
 export function useLiveHeroPeeks(): (heroId: string) => HeroPeekData | undefined {

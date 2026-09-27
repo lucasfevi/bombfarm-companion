@@ -8,7 +8,7 @@ import {
   isTeamPlanStale,
   resolveTeamPlanTargetPhase,
 } from './plan-lifecycle';
-import { pvpSquadExcess, resolveTeamPlanGatePhase } from './combat-window';
+import { PVP_TOP_HOUSE_SQUAD_SLOTS, pvpSquadExcess, resolveTeamPlanGatePhase, teamPlanPvpSquadSlots } from './combat-window';
 import { clampForgeFloor, clampTargetPhase, DEFAULT_TEAM_PLAN_CONTROLS } from './team-plan-controls';
 import type { TeamPlanControls } from './team-plan-controls';
 import type { TeamPlanInputs } from './team-plan-inputs';
@@ -48,6 +48,7 @@ function inputs(overrides: Partial<TeamPlanInputs> = {}): TeamPlanInputs {
     maxPhase: null,
     farmChosenPhase: null,
     pvpRoomPhase: null,
+    pvpSquadSlots: null,
     ...overrides,
   };
 }
@@ -417,15 +418,25 @@ describe('gatePhase and the duel squad', () => {
     expect(applyTeamPlanControlChange(controls({ gatePhase: 100 }), { kind: 'gatePhase', value: 100 }, context({ phase: 91 }))).toBeNull();
   });
 
-  it('the duel objective is unavailable while the scope board fields more than the room’s nine seats', () => {
-    const heroes = Array.from({ length: 11 }, (_, i) => heroRecord(`h${i}`));
+  it('the duel objective is unavailable while the scope board fields more than the squad’s slots', () => {
+    const heroes = Array.from({ length: 8 }, (_, i) => heroRecord(`h${i}`));
+    const sixSlots = { heroes, pvpSquadSlots: 6 };
     const donate = (ids: string[]) => ({ scopeByHeroId: Object.fromEntries(ids.map((id) => [id, 'donate' as const])) });
-    expect(pvpSquadExcess({ heroes }, donate([]))).toBe(2);
-    expect(isPvpObjectiveUnavailable({ heroes }, donate([]))).toBe(true);
-    expect(isPvpObjectiveUnavailable({ heroes }, donate(['h0']))).toBe(true);
-    expect(isPvpObjectiveUnavailable({ heroes }, donate(['h0', 'h1']))).toBe(false);
-    // Leave alone still fields, so it counts against the seats; only Donate leaves the room.
-    expect(isPvpObjectiveUnavailable({ heroes }, { scopeByHeroId: { h0: 'donate', h1: 'leaveAlone' } })).toBe(true);
-    expect(isPvpObjectiveUnavailable({ heroes: heroes.slice(0, 9) }, donate([]))).toBe(false);
+    expect(teamPlanPvpSquadSlots(sixSlots)).toBe(6);
+    expect(pvpSquadExcess(sixSlots, donate([]))).toBe(2);
+    expect(isPvpObjectiveUnavailable(sixSlots, donate([]))).toBe(true);
+    expect(isPvpObjectiveUnavailable(sixSlots, donate(['h0']))).toBe(true);
+    expect(isPvpObjectiveUnavailable(sixSlots, donate(['h0', 'h1']))).toBe(false);
+    // Leave alone still fields, so it counts against the slots; only Donate leaves the room.
+    expect(isPvpObjectiveUnavailable(sixSlots, { scopeByHeroId: { h0: 'donate', h1: 'leaveAlone' } })).toBe(true);
+  });
+
+  it('with no slots read the squad is held to the top squad house’s nine', () => {
+    const heroes = Array.from({ length: 11 }, (_, i) => heroRecord(`h${i}`));
+    const unread = { heroes, pvpSquadSlots: null };
+    expect(teamPlanPvpSquadSlots(unread)).toBe(PVP_TOP_HOUSE_SQUAD_SLOTS);
+    expect(PVP_TOP_HOUSE_SQUAD_SLOTS).toBe(9);
+    expect(pvpSquadExcess(unread, { scopeByHeroId: {} })).toBe(2);
+    expect(isPvpObjectiveUnavailable({ heroes: heroes.slice(0, 9), pvpSquadSlots: null }, { scopeByHeroId: {} })).toBe(false);
   });
 });

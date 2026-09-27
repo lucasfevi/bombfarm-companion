@@ -6,14 +6,7 @@ import { heroAbilitySlotsUsed } from '@bombfarm/domain/hero-abilities';
 import { RARITIES, type SheetKey } from '@bombfarm/domain/planner-constants';
 import type { RollQualityReport } from '@bombfarm/domain/roll-quality';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import {
-  HeroAbilityIcons,
-  HeroAvatar,
-  SteamGlyph,
-  heroRankBandClass,
-  heroRankTextClass,
-  rarityTextClass,
-} from '@bombfarm/game-art';
+import { HeroAbilityIcons, HeroAvatar, SteamGlyph, heroRankTextClass, rarityTextClass } from '@bombfarm/game-art';
 import {
   DataTable,
   FactTile,
@@ -30,17 +23,16 @@ import type { PanelUnavailableReason } from '../core';
 import {
   birthRollAvailability,
   gradePlacementFor,
-  gradeRailFor,
   heroPowerTextFor,
   marketTileReadingFor,
   marketableReadingFor,
   letterDisagreementFor,
-  railTintFor,
   statRollRowsFor,
   type HeroMarketPrice,
   type PlacementCertainty,
-  type RollTint,
 } from '../model';
+import { GradeRailView } from './grade-rail';
+import { RollRail } from './roll-rail';
 
 const UNKNOWN = '—';
 
@@ -49,12 +41,6 @@ const sectionTitleClass = 'text-[10px] font-bold tracking-[0.08em] text-muted up
 /** Every numeric column here is a column players compare down, and the sans face this app ships
  *  has no tabular figures — so the mono face is what actually keeps the digits in line. */
 const numericClass = 'font-mono tabular-nums';
-
-const TINT_CLASS: Record<RollTint, string> = {
-  low: 'bg-down',
-  mid: 'bg-warn',
-  high: 'bg-up',
-};
 
 /** Only genuine uncertainty is worth a sentence. A placement near a boundary is still a
  *  placement, and saying so on every such hero was a caveat that changed nothing a player does. */
@@ -107,64 +93,6 @@ function IdentityFactTile({ fact }: { fact: IdentityFact }) {
       {...(fact.note === undefined ? {} : { note: fact.note })}
       {...(fact.valueClass === undefined ? {} : { valueClassName: fact.valueClass })}
     />
-  );
-}
-
-function RollRail({ percentile }: { percentile: number }) {
-  return (
-    <span className="mt-1 block h-1 w-full overflow-hidden bg-bg" aria-hidden="true">
-      <span
-        className={cn('block h-full', TINT_CLASS[railTintFor(percentile)])}
-        style={{ width: `${percentile}%` }}
-      />
-    </span>
-  );
-}
-
-/**
- * The grade scale, drawn to the measured table: a letter's share of the width is its share of the
- * scale, so E spans far more of it than C does because that is what the corpus says.
- *
- * Each band carries the colour the game prints its own grade in, so the six read left to right as
- * the ladder they are; the hero's own grade is the one lifted out of them. Each boundary is a band
- * rather than a line because that is the shape of the evidence — the corpus locates it inside an
- * interval and no closer — and it is drawn over the grades it separates, being about both.
- */
-function GradeRailView({ mean, railLetter }: { mean: number; railLetter: string }) {
-  const rail = gradeRailFor(mean);
-
-  return (
-    <div className="relative mt-1.5 h-7 w-full overflow-hidden rounded-sm border border-line bg-bg">
-      {rail.segments.map((segment) => {
-        const active = segment.letter === railLetter;
-        return (
-          <span
-            key={segment.letter}
-            className={cn(
-              'absolute inset-y-0 flex items-center justify-center text-[10px] font-bold tracking-[0.08em]',
-              heroRankBandClass(segment.letter, active),
-              active ? heroRankTextClass(segment.letter) : 'text-muted',
-            )}
-            style={{ left: `${segment.startPct}%`, width: `${segment.endPct - segment.startPct}%` }}
-          >
-            {segment.letter}
-          </span>
-        );
-      })}
-      {rail.boundaries.map((boundary) => (
-        <span
-          key={`${boundary.below}${boundary.above}`}
-          aria-hidden="true"
-          className="absolute inset-y-0 bg-bg/30"
-          style={{ left: `${boundary.startPct}%`, width: `${boundary.endPct - boundary.startPct}%` }}
-        />
-      ))}
-      <span
-        className="absolute inset-y-0 w-0.5 bg-ink"
-        style={{ left: `${rail.markerPct}%` }}
-        aria-hidden="true"
-      />
-    </div>
   );
 }
 
@@ -383,7 +311,7 @@ export function HeroIdentityRollPanel({
                       >
                         {row.position}
                         {row.percentile === undefined ? null : (
-                          <RollRail percentile={row.percentile} />
+                          <RollRail percentile={row.percentile} className="mt-1" />
                         )}
                       </DataTable.Cell>
                     </DataTable.Row>

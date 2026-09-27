@@ -210,3 +210,34 @@ describe('simulateClear', () => {
     expect(performance.now() - started).toBeLessThan(1_000);
   });
 });
+
+describe('simulateClear — Estilhaços shards', () => {
+  const props = mixAt(525_000);
+
+  it('a hero without the ability clears exactly as before, and a zero chance is no ability', () => {
+    const plain = simulateClear([hero(), hero()], props, 100);
+    expect(simulateClear([hero({ shatterChance: 0 }), hero()], props, 100)).toEqual(plain);
+  });
+
+  it('shards shorten the clear and land extra hits, more at a higher chance', () => {
+    const none = simulateClear([hero(), hero()], props, 100);
+    const half = simulateClear([hero({ shatterChance: 0.25 }), hero()], props, 100);
+    const full = simulateClear([hero({ shatterChance: 0.5 }), hero()], props, 100);
+    expect(half.clearSecs).toBeLessThan(none.clearSecs);
+    expect(full.clearSecs).toBeLessThan(half.clearSecs);
+    expect(full.killShareByHero[0]).toBeGreaterThan(none.killShareByHero[0]);
+    expect(full.killShareByHero[0] + full.killShareByHero[1]).toBeCloseTo(1, 12);
+  });
+
+  it('a shard is half the killing hit: worth nothing extra where half a hit cannot dent a prop, and most where it one-shots', () => {
+    // One prop type, no crits, a base cross so the extra cells are out of it. At 250 a shard's
+    // 125 one-shots a 100-HP prop; at 100 it needs two.
+    const single = [{ hp: 100, weight: 1 }];
+    const squad = (hitNoCrit: number, shatterChance: number): ClearHero[] => [
+      { presence: 0.9, fuseSecs: 1.85, walkSpeedCells: 2.8, blastCells: 5, hitNoCrit, critChance: 0, critMult: 1, shatterChance },
+    ];
+    const gain = (hit: number) => simulateClear(squad(hit, 0), single, 100).clearSecs / simulateClear(squad(hit, 0.5), single, 100).clearSecs;
+    expect(gain(250)).toBeGreaterThan(gain(100));
+    expect(gain(100)).toBeGreaterThan(1);
+  });
+});

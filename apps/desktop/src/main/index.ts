@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, type WebContents } from 'electron';
+import { app, BrowserWindow, clipboard, ipcMain, Menu, nativeImage, screen, shell, type WebContents } from 'electron';
 import {
   DEFAULT_SETTINGS,
   EMPTY_FORGE_HISTORY,
@@ -113,7 +113,9 @@ import {
   applyLocale as applyLocaleSettings,
   applyMarketQuoteCurrency as applyMarketQuoteCurrencySettings,
   applyRestartGameOnExit as applyRestartGameOnExitSettings,
+  applyUsagePingEnabled as applyUsagePingEnabledSettings,
 } from './shell/settings-apply.js';
+import { accountIdentityOf, createElectronUsagePing, type UsagePing } from './usage-ping/index.js';
 import { createElectronTray } from './shell/electron-tray.js';
 import { resolveAppIconPath } from './shell/app-icon-path.js';
 import {
@@ -135,6 +137,7 @@ import {
   type WindowPort,
 } from './shell/window-lifecycle.js';
 import { broadcastEventToWindows } from './shell/broadcast-event.js';
+import { writeClipboardImage } from './shell/clipboard-image.js';
 import { isWindowRevealSuppressed } from './shell/window-reveal.js';
 import {
   createMiniLiveController,
@@ -187,6 +190,7 @@ let layoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
 let miniLiveController: MiniLiveController | null = null;
 let miniLayoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
 let gameKeepAlive: GameKeepAlive | null = null;
+let usagePing: UsagePing | null = null;
 
 function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C]): void {
   broadcastEventToWindows(BrowserWindow.getAllWindows(), `bfc:event:${channel}`, payload);
@@ -283,6 +287,17 @@ function applyRestartGameOnExit(enabled: unknown): SettingsWriteResult {
     enabled,
     setEnabled: (on) => {
       gameKeepAlive?.setEnabled(on);
+    },
+    persist: persistSettings,
+  });
+}
+
+function applyUsagePingEnabled(enabled: unknown): SettingsWriteResult {
+  return applyUsagePingEnabledSettings({
+    current: currentSettings,
+    enabled,
+    setEnabled: (on) => {
+      usagePing?.setEnabled(on);
     },
     persist: persistSettings,
   });
@@ -451,7 +466,7 @@ function registerIpcHandlers(): void {
     },
     'app:ping': () => ({ ok: true as const, from: 'main' as const }),
     // The resolved settings (stored override, else OS detection, else
-    // DEFAULT_SETTINGS.locale), not the constant this has returned since MP1.
+    // DEFAULT_SETTINGS.locale), not the constant this used to return.
     'settings:get': (): AppSettings => currentSettings,
     'settings:useEnglish': (): SettingsWriteResult => applyLocale('en'),
     'settings:usePortuguese': (): SettingsWriteResult => applyLocale('pt-BR'),
@@ -461,6 +476,7 @@ function registerIpcHandlers(): void {
     'settings:setRestartGameOnExit': (enabled: boolean): SettingsWriteResult => applyRestartGameOnExit(enabled),
     'settings:setMarketQuoteCurrency': (currency: MarketQuoteCurrency): SettingsWriteResult =>
       applyMarketQuoteCurrency(currency),
+    'settings:setUsagePingEnabled': (enabled: boolean): SettingsWriteResult => applyUsagePingEnabled(enabled),
     'storage:health': () => storage?.healthCheck() ?? { binding: 'unknown', ok: false },
     'game:getStatus': () => gameReader?.getStatus() ?? {
       status: 'not_running' as const,
@@ -555,6 +571,13 @@ function registerIpcHandlers(): void {
       miniLiveController?.fitGrowthAxis(content);
       return null;
     },
+    'clipboard:writeImage': (bytes: unknown) =>
+      writeClipboardImage(bytes, {
+        decodePng: (buffer) => nativeImage.createFromBuffer(buffer),
+        writeImage: (image) => {
+          clipboard.writeImage(image);
+        },
+      }),
   };
 
   ipcMain.handle('bfc:invoke', (_event, channel: string, ...args: unknown[]) => {
@@ -912,7 +935,7 @@ async function bootstrap(): Promise<void> {
 
   // The consented game-API account reader. Independent of the game reader's own
   // memory/fixture ticking: consent gates every request structurally,
-  // so this cycle issues nothing at all until the player has accepted the first-run modal (T9).
+  // so this cycle issues nothing at all until the player has accepted the first-run modal.
   // Constructed before registerIpcHandlers() so the consent:* handlers never see a null store,
   // and before the game reader so its own live-mode process lookups can be gated by the same
   // predicate the live tap already checks.
@@ -1072,6 +1095,21 @@ async function bootstrap(): Promise<void> {
   gameKeepAlive.setEnabled(currentSettings.restartGameOnExit);
   gameKeepAlive.start();
 
+  usagePing = createElectronUsagePing({
+    isPackaged: resolveAppEnv().isPackaged,
+    db: accountOpen.db,
+    flavor: resolveAppEnv().flavor,
+    version: app.getVersion(),
+    isEnabled: () => currentSettings.usagePingEnabled,
+    readAccount: () =>
+      accountIdentityOf(resolveCachedAccountView({ gameReader, consentStore, accountRefresh })?.payload ?? null),
+    log: (event, detail) => {
+      log.info({ scope: 'main', event, ...detail });
+    },
+  });
+  usagePing?.setEnabled(currentSettings.usagePingEnabled);
+  usagePing?.start();
+
   const gate = createPacingGate({
     now: () => Date.now(),
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
@@ -1103,7 +1141,7 @@ async function bootstrap(): Promise<void> {
     now: () => new Date().toISOString(),
     isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
     readToken,
-    // account-refresh.ts itself is unmodified (MP2 owns that file's commit semantics) —
+    // account-refresh.ts itself is unmodified (its commit semantics are its own) —
     // only what the listener does changed: it used to emit unconditionally on every commit;
     // it now asks the notifier, which emits only on a real change.
     onView: (view) => {
@@ -1363,6 +1401,8 @@ if (!gotLock) {
     gameReader = null;
     gameKeepAlive?.stop();
     gameKeepAlive = null;
+    usagePing?.stop();
+    usagePing = null;
     accountRefresh?.stop();
     accountRefresh = null;
     liveFastPublisher?.stop();

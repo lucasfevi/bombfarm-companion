@@ -51,7 +51,7 @@ async function getAccount(page) {
 test.describe('account restart round-trip smoke', () => {
   test('an account persists across a full app restart, honestly stamped as stale', async () => {
     // One fresh temp user-data dir shared by both launches, passed via BFC_USER_DATA_DIR
-    // (T9) — never the developer's real %APPDATA% flavor directory (design R-7).
+    // — never the developer's real %APPDATA% flavor directory.
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-account-restart-'));
 
     let firstView;

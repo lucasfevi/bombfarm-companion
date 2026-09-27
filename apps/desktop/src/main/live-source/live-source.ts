@@ -27,7 +27,7 @@ import type {
   SectionFidelity,
 } from '@bombfarm/contracts';
 import { isConnectedCurrency, isLiveCurrency, liveGap } from '@bombfarm/contracts';
-import { identifyObservedBody, isPlainObject, normalizeRotation, type PvpRoute } from '@bombfarm/game-api';
+import { diagnoseObservedBodyDrift, identifyObservedBody, isPlainObject, normalizeRotation, type PvpRoute } from '@bombfarm/game-api';
 import {
   advanceRecoveryClock,
   createInitialFieldCountdownState,
@@ -804,6 +804,17 @@ export class LiveSource {
 
     const identification = identifyObservedBody(parsed);
     if (identification.kind === 'unidentified') {
+      const drift = diagnoseObservedBodyDrift(parsed);
+      if (drift.length > 0) {
+        this.#log.warn({
+          scope: 'live-source',
+          event: 'observed_body.drift',
+          sections: drift.map(({ section }) => section),
+          addedKeys: drift.flatMap(({ addedKeys }) => addedKeys),
+          byteLength: bodyBuf.length,
+        });
+        return;
+      }
       this.#log.warn({ scope: 'live-source', event: 'observed_body.unidentified', byteLength: bodyBuf.length });
       return;
     }

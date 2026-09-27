@@ -99,7 +99,7 @@ export interface AccountRefreshDeps {
   readToken?: (consent: GrantedConsent) => SessionTokenFileResult;
   /** Injected wall-clock scheduling seam. Defaults to the real timers. */
   scheduler?: { readonly setTimeout: typeof setTimeout; readonly clearTimeout: typeof clearTimeout };
-  /** Called after every commit (T9's `account:changed` IPC event source). Optional so every
+  /** Called after every commit (the `account:changed` IPC event source). Optional so every
    *  existing test/caller that does not care about push notifications is unaffected. */
   onView?: (view: AccountView) => void;
 }

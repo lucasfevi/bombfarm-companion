@@ -15,6 +15,7 @@ export {
   InventoryLayoutToggle,
   type InventoryLayout,
   type InventoryLayoutToggleLabels,
+  type LayoutToggleOption,
 } from './inventory-layout-toggle';
 export {
   InventoryTotals,
@@ -47,7 +48,7 @@ export type {
   InventoryTableLabels,
   InventoryTableProps,
 } from './inventory-table';
-export { AbilityIcon } from './ability-icon';
+export { AbilityIcon, type AbilityLevelPlacement } from './ability-icon';
 export { RuneIcon } from './rune-icon';
 export { PropIcon } from './prop-icon';
 export { DropIcon } from './drop-icon';
@@ -65,6 +66,7 @@ export { ChestIcon } from './chest-icon';
 export { ClockIcon } from './clock-icon';
 export { HouseIcon } from './house-icon';
 export {
+  ART_TILE_SIZE_VAR,
   artFrameRecipe,
   artFrameRadiusClass,
   abilityIconRecipe,
@@ -74,6 +76,7 @@ export {
   rosterIconTooltipTriggerClass,
   heroRankTextClass,
   heroRankBandClass,
+  heroRankFillClass,
   heroRankToneClass,
   rarityTextClass,
   rarityDotClass,
@@ -123,16 +126,20 @@ export {
   AbilityPeekCard,
   HeroPeek,
   HeroPeekCard,
+  HeroPeekStatsProvider,
   ItemPeek,
   ItemPeekCard,
   PeekFrame,
   heroPeekData,
   itemPeekFromInventory,
+  useHeroPeekStats,
   peekPopupClass,
   peekTriggerClass,
   type AbilityPeekProps,
   type HeroPeekData,
   type HeroPeekProps,
+  type HeroPeekStatsResolver,
+  type HeroPeekStatsSubject,
   type ItemPeekItem,
   type ItemPeekPrice,
   type ItemPeekProps,

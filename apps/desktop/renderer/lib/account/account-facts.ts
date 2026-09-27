@@ -14,7 +14,7 @@ import { buildInventoryView } from '@bombfarm/domain/inventory-view';
 import { resolveHouseRestSeconds } from '@bombfarm/domain/model';
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { heroPeekData, type HeroPeekData } from '@bombfarm/game-art';
+import { heroPeekData, type HeroPeekData, type HeroPeekStatsResolver } from '@bombfarm/game-art';
 import { isTrustworthySection } from '@bombfarm/contracts';
 import type {
   AccountPayload,
@@ -23,7 +23,7 @@ import type {
   SectionFidelity,
 } from '@bombfarm/contracts';
 import type { PriceableHero, PriceableItem } from '@bombfarm/pricing';
-import type { AccountRoster } from './account-roster';
+import { rosterHeroPeekStats, type AccountRoster } from './account-roster';
 
 /**
  * The withhold gate is per-section usability, never the account-wide fidelity grade. A
@@ -234,6 +234,7 @@ function roundedNumberOf(value: unknown): number | undefined {
 function priceableHeroesOf(
   rawHeroes: readonly unknown[],
   recordsById: ReadonlyMap<string, HeroRecord>,
+  peekStats: HeroPeekStatsResolver,
 ): HoldingsHero[] {
   const heroes: HoldingsHero[] = [];
   for (const raw of rawHeroes) {
@@ -249,7 +250,7 @@ function priceableHeroesOf(
       stars: roundedNumberOf(raw.stars),
       level: roundedNumberOf(raw.level),
       skin: roundedNumberOf(raw.skin),
-      ...(record === undefined ? {} : { peek: heroPeekData(record) }),
+      ...(record === undefined ? {} : { peek: heroPeekData(record, peekStats(record)) }),
     });
   }
   return heroes;
@@ -280,7 +281,7 @@ function holdingsFactsOf(payload: AccountPayload, roster: AccountRoster | null):
     // The same derivation the Inventory screen draws from, so the two cannot disagree about what
     // the inventory holds.
     inventory: inventoryRead ? buildInventoryView(rawItems).items.map(priceableItem) : null,
-    heroes: rosterRead ? priceableHeroesOf(rawHeroes, recordsByIdOf(roster)) : null,
+    heroes: rosterRead ? priceableHeroesOf(rawHeroes, recordsByIdOf(roster), rosterHeroPeekStats(roster)) : null,
     skinsWorn: rosterRead ? skinsWornOf(rawHeroes) : null,
   };
 }

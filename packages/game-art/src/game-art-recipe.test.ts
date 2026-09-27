@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { LETTER_BANDS } from '@bombfarm/domain/roll-quality';
 import {
   artFrameRecipe,
+  ART_TILE_SIZE_VAR,
   heroRankBandClass,
+  heroRankFillClass,
   heroRankTextClass,
   rarityTextClass,
   abilityIconRecipe,
@@ -123,5 +125,30 @@ describe('heroRankBandClass', () => {
     expect(heroRankBandClass(undefined)).toBeUndefined();
     expect(heroRankBandClass('')).toBeUndefined();
     expect(heroRankBandClass('Z', true)).toBeUndefined();
+  });
+});
+
+describe('the fluid tile step', () => {
+  it('sizes an item frame, an empty slot and an ability tile from one custom property', () => {
+    const fromVar = `(${ART_TILE_SIZE_VAR})`;
+    expect(artFrameRecipe({ size: 'fluid', rarity: 2 })).toContain(`w-${fromVar}`);
+    expect(abilityIconRecipe({ size: 'fluid' })).toContain(`size-${fromVar}`);
+  });
+
+  it('grows its glyph with the tile, never below the compact glyph nor past the roomy one by much', () => {
+    const glyph = iconMetaGlyphRecipe({ size: 'fluid', place: 'top-end' });
+    expect(glyph).toContain(`var(${ART_TILE_SIZE_VAR})`);
+    expect(glyph).toContain('clamp(10px,');
+    expect(glyph).toContain('top-0.5');
+  });
+});
+
+describe('heroRankFillClass', () => {
+  it('paints each grade in its own colour at full strength, and nothing for an unknown grade', () => {
+    const fills = LETTER_BANDS.letters.map((letter) => heroRankFillClass(letter));
+    expect(new Set(fills).size).toBe(LETTER_BANDS.letters.length);
+    expect(fills.every((fill) => fill !== undefined && !fill.includes('/'))).toBe(true);
+    expect(heroRankFillClass('Z')).toBeUndefined();
+    expect(heroRankFillClass(undefined)).toBeUndefined();
   });
 });

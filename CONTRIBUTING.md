@@ -47,7 +47,7 @@ Full release maintainer steps: [`docs/releases.md`](docs/releases.md).
 
 ## Web deploy (maintainers)
 
-**Production** ([https://bombfarm-companion.vercel.app](https://bombfarm-companion.vercel.app)): Vercel Git integration on this repo, Root Directory `apps/web`, production branch `main`.
+**Production** ([https://bombfarm-companion.app](https://bombfarm-companion.app)): Vercel Git integration on this repo, Root Directory `apps/web`, production branch `main`, served at that custom domain. The site's own address is `SITE_URL` in `packages/ui/src/site-address.ts`; the canonical tags and sitemap are built from it, and `apps/web/src/tests/link-preview.test.ts` fails when `robots.txt` or the share-card footer disagree with it.
 
 **Pre-production preview:** every push to `develop` deploys a Vercel branch preview — host and access model are in [`docs/branching.md`](docs/branching.md). Access is gated by **Vercel Authentication** (owner-only today; not a shareable playtester link).
 

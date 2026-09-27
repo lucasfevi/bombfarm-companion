@@ -1,7 +1,7 @@
 import catalog from './data/catalog.json' with { type: 'json' };
 import type { Slot } from './gear';
 import type { DropRateId } from './phase-wiki';
-import type { RuneAxis } from './runes';
+import { runeFromDefId, type RuneAxis } from './runes';
 import type { SkillEffectKind } from './skill-tree/catalog';
 
 /**
@@ -54,20 +54,20 @@ const defById = new Map(catalog.defs.map((definition) => [definition.id, definit
 
 /**
  * Bundled cosmetic skin count (`hero1`…`heroN` under `public/wiki-assets/hero/`).
- * All 9 are mirrored from the wiki CDN, which serves the full set at 192x192.
+ * All 16 are mirrored from the wiki CDN, which serves the full set at 192x192.
  * Raise this when adding a new `hero{N}_avatar.png` — the wiki's `skins.total` is the count to
  * match, and a hero wearing a skin past this bound imports with an "Unknown skin" issue and the
  * neutral placeholder (`import-save.ts`), so a new skin has to land here in the same change.
  */
-export const HERO_SKIN_COUNT = 9;
+export const HERO_SKIN_COUNT = 16;
 
 /**
  * Save `skin` → bundled `hero{N}_avatar.png` N.
  * Wiki filenames `hero2` / `hero3` are swapped vs in-game skin 1 / 2.
- * Skins 4..8 → files 5..9 were confirmed in game on 2026-09-02 by opening each bundled avatar
- * against the skin a hero was wearing, which is also how the bought skins got their listing names.
+ * The whole table was confirmed from the game client's skin table on 2026-09-26: each index's
+ * avatar texture matched exactly one wiki file by pixel comparison, the swap included.
  */
-const SKIN_AVATAR_FILE = [1, 3, 2, 4, 5, 6, 7, 8, 9] as const;
+const SKIN_AVATAR_FILE = [1, 3, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] as const;
 
 /** Save `skin` 0..(HERO_SKIN_COUNT-1) → bundled avatar path. */
 export function heroAvatarSrc(skin: number): string {
@@ -112,6 +112,17 @@ export function raritySlotPlateSrc(rarityIdx: number): string | null {
  */
 export function itemKindIconSrc(defId: string, rarityIdx: number): string | null {
   if (defId.startsWith('gem_')) return `${WIKI_ASSETS_BASE}/gems/${defId}.png`;
+
+  const unpackedSkin = /^skin_(\d+)$/.exec(defId);
+  if (unpackedSkin) {
+    const skin = Number(unpackedSkin[1]);
+    return isKnownSkin(skin) ? heroAvatarSrc(skin) : null;
+  }
+
+  if (defId.startsWith('rune_')) {
+    const rune = runeFromDefId(defId, rarityIdx);
+    return rune ? runeIconSrc(rune.axis, rarityIdx) : null;
+  }
 
   if (defId.startsWith('time_part_')) {
     const slug = CRYSTAL_SLUG[Math.round(rarityIdx)];

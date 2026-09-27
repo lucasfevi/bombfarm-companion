@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { accountHoldings, boughtSkinsWorn, holdingsPrices } from './holdings.js';
-import type { CatalogView } from './reconcile.js';
+import type { CatalogView } from './names.js';
 import { buildSnapshot } from './snapshot.js';
 import type { MarketEntry } from './types.js';
 import { categoryKey, heroPriceKey, priceKey } from './types.js';
@@ -9,7 +9,7 @@ const CATALOG: CatalogView = {
   defs: [{ defId: 'ember_arma', set: 'ember', slot: 'arma', level: 10 }],
   rarityIdxs: [1, 2],
   rarityTokens: { 1: 'incomum', 2: 'raro' },
-  defIdByHash: {},
+  gems: [],
 };
 
 function marketEntry(overrides: Partial<MarketEntry> & { hashName: string; key: string }): MarketEntry {
@@ -186,7 +186,7 @@ describe('accountHoldings', () => {
   });
 
   it('counts a skin index the table cannot name nowhere at all', () => {
-    const unnamed = holdingsOf([], [], [ROYAL_SENTINEL, 9]);
+    const unnamed = holdingsOf([], [], [ROYAL_SENTINEL, 16]);
     const named = holdingsOf([], [], [ROYAL_SENTINEL]);
 
     expect(unnamed.skins.eligible).toBe(1);

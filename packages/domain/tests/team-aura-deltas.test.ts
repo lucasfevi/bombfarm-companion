@@ -1,5 +1,5 @@
 /**
- * `teamAuraDpsDeltas` is the "+x% if on / −x% if off" column of the Abilities & auras section:
+ * `teamAuraDpsDeltas` is the "+x% if on / −x% if off" line of the team-aura cards on the Combat stage:
  * one pipeline run per aura, on the same input the figures came from. Every expectation here is a
  * comparison between runs of the model made in the test itself, never a number read off the
  * capture.

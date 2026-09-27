@@ -7,6 +7,7 @@ import {
   applyLocale,
   applyMarketQuoteCurrency,
   applyRestartGameOnExit,
+  applyUsagePingEnabled,
 } from './settings-apply.js';
 
 const BASE: AppSettings = {
@@ -17,6 +18,7 @@ const BASE: AppSettings = {
   forgeWritesEnabled: true,
   restartGameOnExit: true,
   marketQuoteCurrency: 'BRL',
+  usagePingEnabled: true,
 };
 
 describe('applyLocale', () => {
@@ -37,6 +39,7 @@ describe('applyLocale', () => {
       forgeWritesEnabled: true,
       restartGameOnExit: true,
       marketQuoteCurrency: 'BRL',
+      usagePingEnabled: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -83,6 +86,7 @@ describe('applyAlwaysOnTopMain', () => {
       forgeWritesEnabled: false,
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
+      usagePingEnabled: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -169,6 +173,7 @@ describe('applyAlwaysOnTopMini', () => {
       forgeWritesEnabled: false,
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
+      usagePingEnabled: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -211,6 +216,7 @@ describe('applyForgeWritesEnabled', () => {
       forgeWritesEnabled: true,
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
+      usagePingEnabled: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -276,6 +282,7 @@ describe('applyRestartGameOnExit', () => {
       forgeWritesEnabled: false,
       restartGameOnExit: true,
       marketQuoteCurrency: 'BRL',
+      usagePingEnabled: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -341,6 +348,45 @@ describe('applyMarketQuoteCurrency', () => {
       const result = applyMarketQuoteCurrency({ current: DEFAULT_SETTINGS, next, persist });
       expect(result).toEqual({ settings: DEFAULT_SETTINGS, persisted: true, reason: null });
     }
+    expect(persist).not.toHaveBeenCalled();
+  });
+});
+
+describe('applyUsagePingEnabled', () => {
+  it('turning it off persists false, leaves every other setting alone, and tells the ping', () => {
+    const setEnabled = vi.fn();
+    const persist = vi.fn((settings: AppSettings) => ({ settings, persisted: true, reason: null }));
+
+    const result = applyUsagePingEnabled({ current: BASE, enabled: false, setEnabled, persist });
+
+    expect(setEnabled).toHaveBeenCalledWith(false);
+    expect(result.settings).toEqual({ ...BASE, usagePingEnabled: false });
+    expect(persist).toHaveBeenCalledWith(result.settings);
+  });
+
+  it('turning it back on persists true and tells the ping', () => {
+    const setEnabled = vi.fn();
+    const persist = vi.fn((settings: AppSettings) => ({ settings, persisted: true, reason: null }));
+
+    const result = applyUsagePingEnabled({
+      current: { ...BASE, usagePingEnabled: false },
+      enabled: true,
+      setEnabled,
+      persist,
+    });
+
+    expect(setEnabled).toHaveBeenCalledWith(true);
+    expect(result.settings.usagePingEnabled).toBe(true);
+  });
+
+  it('is a no-op for a non-boolean enabled argument — the switch cannot be flipped by a string', () => {
+    const setEnabled = vi.fn();
+    const persist = vi.fn();
+
+    const result = applyUsagePingEnabled({ current: DEFAULT_SETTINGS, enabled: 'false', setEnabled, persist });
+
+    expect(result).toEqual({ settings: DEFAULT_SETTINGS, persisted: true, reason: null });
+    expect(setEnabled).not.toHaveBeenCalled();
     expect(persist).not.toHaveBeenCalled();
   });
 });

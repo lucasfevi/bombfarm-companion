@@ -1,5 +1,6 @@
 /**
- * The rows of the Abilities & auras section — what one hero's figures are priced with.
+ * What one hero's figures are priced with: the team-aura cards on the Combat stage, and the
+ * hero's own abilities in force, which the breakdown cards badge.
  *
  * Nothing here prices anything: `teamAurasAroundHero` says what each aura is worth from the
  * hero's seat, `teamAuraDpsDeltas` what flipping it would do, and `ownAbilityReadout` reads the

@@ -337,3 +337,55 @@ describe('hydratePlannerStore', () => {
     expect(state.openHeroIds).toBeNull();
   });
 });
+
+describe('hydratePlannerStore — which hero the planner opens on', () => {
+  const ACTIVE_KEY = 'bf-hp-active-hero-v1';
+
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', memoryLocalStorage());
+    resetPlannerStoreForTests();
+  });
+
+  afterEach(() => {
+    resetPlannerStoreForTests();
+    vi.unstubAllGlobals();
+  });
+
+  function seedRoster(stored: string | null) {
+    localStorage.setItem(
+      'bf-hp-heroes-v1',
+      JSON.stringify([
+        { ...heroJson('weak', 's-weak'), power: 100 },
+        { ...heroJson('strong', 's-strong'), power: 900 },
+      ]),
+    );
+    if (stored !== null) localStorage.setItem(ACTIVE_KEY, JSON.stringify(stored));
+  }
+
+  it('keeps a stored hero the roster still holds', () => {
+    seedRoster('weak');
+    hydratePlannerStore();
+    expect(usePlannerStore.getState().activeHeroId).toBe('weak');
+    expect(localStorage.getItem(ACTIVE_KEY)).toBe(JSON.stringify('weak'));
+  });
+
+  it('opens on the strongest hero, and stores it, when no hero was stored', () => {
+    seedRoster(null);
+    hydratePlannerStore();
+    expect(usePlannerStore.getState().activeHeroId).toBe('strong');
+    expect(localStorage.getItem(ACTIVE_KEY)).toBe(JSON.stringify('strong'));
+  });
+
+  it('opens on the strongest hero, and stores it, when the stored hero is no longer on the roster', () => {
+    seedRoster('sold-last-week');
+    hydratePlannerStore();
+    expect(usePlannerStore.getState().activeHeroId).toBe('strong');
+    expect(localStorage.getItem(ACTIVE_KEY)).toBe(JSON.stringify('strong'));
+  });
+
+  it('opens on no hero when the roster is empty', () => {
+    hydratePlannerStore();
+    expect(usePlannerStore.getState().activeHeroId).toBeNull();
+    expect(localStorage.getItem(ACTIVE_KEY)).toBeNull();
+  });
+});

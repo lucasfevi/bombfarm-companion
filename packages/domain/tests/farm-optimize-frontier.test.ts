@@ -137,7 +137,7 @@ describe('frontier size tracks |S|, never duplicated, never padded', () => {
   });
 });
 
-describe('exactly one searchable hero ⇒ empty frontier (re-asserted from T7)', () => {
+describe('exactly one searchable hero ⇒ empty frontier (re-asserted)', () => {
   it('a single-hero pool never produces a frontier entry', () => {
     const oneId = [heroes.find((h) => h.name === 'Nolan')!.id];
     const result = solveFarmRespec({ heroes, account, maxPhase, enabledHeroIds: oneId });

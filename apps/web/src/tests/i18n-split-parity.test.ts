@@ -30,6 +30,7 @@ import * as inventory from '@/shared/i18n/namespaces/inventory';
 import * as download from '@/shared/i18n/namespaces/download';
 import * as home from '@/shared/i18n/namespaces/home';
 import * as skills from '@/shared/i18n/namespaces/skills';
+import * as privacy from '@/shared/i18n/namespaces/privacy';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 /**
@@ -441,7 +442,8 @@ const KEYS_REMOVED: readonly string[] = [
  * route listing every item a save carries, not just the gear the optimizer pools. The five
  * `inventoryGroup*` keys name the item kinds; `inventoryGroupOther` and
  * `inventoryUnknownCategory` exist because the catalog names gear only, so an item type a patch
- * adds is shown and labelled unknown rather than silently filed as gear.
+ * adds is shown and labelled unknown rather than silently filed as gear. `inventoryGroupRune` and
+ * `inventoryGroupSkin` followed when runes and unpacked skins began arriving as inventory rows.
  *
  * The market-price data layer (2026-08-29) adds the `market*` block. Two of the strings exist
  * because Steam prices each region independently instead of converting: a native quote is the
@@ -586,7 +588,7 @@ const KEYS_ADDED: readonly string[] = [
   // note, scored-phase note), the gate picker that stands in for the phase control, the read-only
   // duel facts with their over-the-cap notice, and the front-page
   // card's two headline units. One line: this file sits at the max-lines cap.
-  'teamPlanObjectiveOptionGate', 'teamPlanObjectiveOptionPvp', 'teamPlanObjectiveHintGate', 'teamPlanObjectiveHintPvp', 'teamPlanSetupSectionBodyGate', 'teamPlanSetupSectionBodyPvp', 'teamPlanTotalGainValueGate', 'teamPlanTotalGainValuePvp', 'teamPlanGearDipNoteGate', 'teamPlanGearDipNotePvp', 'teamPlanScoredPhaseGate', 'teamPlanScoredPhasePvp', 'teamPlanGatePhaseLabel', 'teamPlanGatePhaseAria', 'teamPlanGatePhaseHint', 'teamPlanGatePhaseSearchPlaceholder', 'teamPlanPvpSquadLabel', 'teamPlanPvpSquadValue', 'teamPlanPvpSquadHint', 'teamPlanPvpRoomUnknown', 'teamPlanPvpSquadTooMany', 'homeCardOptimizerHeadlineGate', 'homeCardOptimizerHeadlinePvp',
+  'teamPlanObjectiveOptionGate', 'teamPlanObjectiveOptionPvp', 'teamPlanObjectiveHintGate', 'teamPlanObjectiveHintPvp', 'teamPlanSetupSectionBodyGate', 'teamPlanSetupSectionBodyPvp', 'teamPlanTotalGainValueGate', 'teamPlanTotalGainValuePvp', 'teamPlanGearDipNoteGate', 'teamPlanGearDipNotePvp', 'teamPlanScoredPhaseGate', 'teamPlanScoredPhasePvp', 'teamPlanGatePhaseLabel', 'teamPlanGatePhaseAria', 'teamPlanGatePhaseHint', 'teamPlanGatePhaseSearchPlaceholder', 'teamPlanPvpSquadLabel', 'teamPlanPvpSquadValue', 'teamPlanPvpSquadHint', 'teamPlanPvpRoomUnknown', 'teamPlanPvpSquadTooMany', 'teamPlanChangesControlPvpSquadSlots', 'homeCardOptimizerHeadlineGate', 'homeCardOptimizerHeadlinePvp',
   'teamPlanChangesScope',
   'teamPlanChangesGroupBreaks',
   'teamPlanChangesHeroRemovedUsed',
@@ -606,7 +608,7 @@ const KEYS_ADDED: readonly string[] = [
   // The roster rail and board (2026-09-10). The planner had no roster surface of its own — the
   // hero strip's picker dialog was the only way to see the account at once — so it now draws the
   // same rail, board and toolbar the desktop app's Heroes screen does, from one implementation.
-  // Nineteen strings, and every one of them is this app's own word rather than a copy of the
+  // Every one of these strings is this app's own word rather than a copy of the
   // desktop's: the filter that keeps only the heroes in rotation says "Enabled heroes" here,
   // because "Enabled"/"Disabled" is what this planner has always called that flag.
   'heroesRosterTitle',
@@ -614,10 +616,7 @@ const KEYS_ADDED: readonly string[] = [
   'heroesViewLabel',
   'heroesViewCards',
   'heroesViewList',
-  // The board's card-detail presets (2026-09-14): the control's name, its three options and the
-  // headings over a card's sheet stats and roll bars. Six strings, on one line because this file
-  // sits at its line cap.
-  'heroesDensityLabel', 'heroesDensityCompact', 'heroesDensityCombat', 'heroesDensityFull', 'heroesCardSheetStatsLabel', 'heroesCardBirthStatsLabel',
+  'heroesViewTable',
   'heroesSortLabel',
   'heroesSortRoll',
   'heroesSortPower',
@@ -746,6 +745,8 @@ const KEYS_ADDED: readonly string[] = [
   'inventoryGroupTime',
   'inventoryGroupStone',
   'inventoryGroupChest',
+  'inventoryGroupRune',
+  'inventoryGroupSkin',
   'inventoryGroupOther',
   'inventoryBadgeLocked',
   'inventoryBadgeMarketBlocked',
@@ -1053,6 +1054,8 @@ const KEYS_ADDED: readonly string[] = [
   // next level is worth. One compact block — this file sits at its line cap.
   'navSkills', 'skillsTitle', 'skillsTip', 'skillsUnreadableTitle', 'skillsUnreadableDescription', 'skillsArmHub', 'skillsArmDano', 'skillsArmCrit', 'skillsArmVelocidade', 'skillsArmOuro', 'skillsArmDrop', 'skillsArmEnergia', 'skillsArmGeo', 'skillsArmNeutro', 'skillsTierStart', 'skillsTierSmall', 'skillsTierNotavel', 'skillsTierUnlock', 'skillsKindTeamDmg', 'skillsKindCritChance', 'skillsKindCritDmg', 'skillsKindSpeed', 'skillsKindCoin', 'skillsKindLuck', 'skillsKindEnergia', 'skillsKindXp', 'skillsKindGeo', 'skillsKindFieldSlot', 'skillsKindBagTab', 'skillsEffectTeamDmg', 'skillsEffectCritChance', 'skillsEffectCritDmg', 'skillsEffectSpeed', 'skillsEffectCoin', 'skillsEffectLuck', 'skillsEffectEnergia', 'skillsEffectXp', 'skillsEffectGeo', 'skillsEffectFieldSlot', 'skillsEffectBagTab', 'skillsLevel', 'skillsHubName', 'skillsHubNote', 'skillsStateOwned', 'skillsStateMaxed', 'skillsStateBuyable', 'skillsStateUnaffordable', 'skillsStateLockedPrerequisite', 'skillsStateLockedPhase', 'skillsAlwaysLit', 'skillsNextLevelCost', 'skillsCostToMax', 'skillsRefund', 'skillsRefundTip', 'skillsRefundBlocked', 'skillsWallet', 'skillsGoldAmount', 'skillsNextToBuy', 'skillsNextToBuyTip', 'skillsObjectiveGold', 'skillsObjectiveGate', 'skillsObjectivePvp', 'skillsColNode', 'skillsColCost', 'skillsColGain', 'skillsColPerMillion', 'skillsGainDps', 'skillsPerMillionGold', 'skillsPerMillionDps', 'skillsGainOutsideObjectives', 'skillsNothingToRecommend', 'skillsPvpEmpty', 'skillsPricingUnavailable', 'skillsPricedAtPhase', 'skillsPricedAtAccountPhase', 'skillsPricedAtGate', 'skillsPricedAtPvp', 'skillsGatePhaseSelect', 'skillsGatePhaseSearchPlaceholder', 'skillsGatePhaseNoMatch', 'skillsGatePhaseMoreMatches',
   'skillsNodeTitleC07', 'skillsNodeTitleC12', 'skillsNodeTitleD07', 'skillsNodeTitleD12', 'skillsNodeTitleE07', 'skillsNodeTitleE11', 'skillsNodeTitleN01', 'skillsNodeTitleN03', 'skillsNodeTitleN05', 'skillsNodeTitleN07', 'skillsNodeTitleN09', 'skillsNodeTitleN11', 'skillsNodeTitleN13', 'skillsNodeTitleN15', 'skillsNodeTitleO08', 'skillsNodeTitleO12', 'skillsNodeTitleP01', 'skillsNodeTitleP02', 'skillsNodeTitleP03', 'skillsNodeTitleP04', 'skillsNodeTitleP05', 'skillsNodeTitleP06', 'skillsNodeTitleP07', 'skillsNodeTitleS02', 'skillsNodeTitleS05', 'skillsNodeTitleS07', 'skillsNodeTitleS11', 'skillsNodeTitleT01', 'skillsNodeTitleT02', 'skillsNodeTitleT03', 'skillsNodeTitleT04', 'skillsNodeTitleT05', 'skillsNodeTitleT06', 'skillsNodeTitleV08', 'skillsNodeTitleV13', 'skillsDpsLeftOut', 'skillsAffordableNow', 'skillsCloseNode', 'skillsPreview', 'skillsPreviewTip', 'skillsPreviewGold', 'skillsPreviewGate', 'skillsPreviewPvp', 'skillsTotalNowNext', 'skillsRequires', 'skillsGate', 'skillsArm', 'skillsTier', 'skillsEffects', 'skillsTotals', 'skillsTotalsTip', 'skillsTotalTeamDmg', 'skillsTotalCritChance', 'skillsTotalCritDmg', 'skillsTotalSpeed', 'skillsTotalCoin', 'skillsTotalLuck', 'skillsTotalEnergia', 'skillsTotalDmgStatic', 'skillsTotalGeo', 'skillsTotalXp', 'skillsTotalFieldSlots', 'skillsTotalBagTabs', 'skillsLevelsBought', 'skillsCountOf', 'skillsGoldSpent', 'skillsGoldToMax', 'skillsFitToView', 'skillsZoomIn', 'skillsZoomOut', 'skillsLegend', 'skillsLegendOwned', 'skillsLegendBuyable', 'skillsLegendUnaffordable', 'skillsLegendLocked', 'skillsLegendRecommended', 'skillsCanvasAria', 'skillsNodeAria', 'skillsPaths', 'skillsNodesMaxed', 'skillsLegendPathNote',
+  // Privacy policy page (2026-09-23): what the desktop usage ping sends and how to stop it. One line for the cap.
+  'privacyNavLabel', 'privacyTitle', 'privacyUpdated', 'privacyIntro', 'privacyPingTitle', 'privacyPingIntro', 'privacyPingFields', 'privacyPingAccountFields', 'privacyPingOptOut', 'privacySections',
 ];
 
 /**
@@ -1112,6 +1115,10 @@ const PROSE_EDITED_PATHS_PT_ONLY: readonly string[] = [
 ];
 
 const PROSE_EDITED_PATHS: readonly string[] = [
+  // The 2026-09-26 patch halved the damage of the cells Wide Blast adds, so the Active DPS
+  // explainer's spread term reads the damage-weighted reach, in prose and in its formula.
+  'explainSections.3.p.0',
+  'explainSections.3.code',
   // The Planner page is the Heroes page (2026-09-15): the Farm board's empty-roster note stops
   // naming a page — the web link beside it does that — so the shared copy stays true on both hosts.
   'phasesNoHeroes',
@@ -1263,7 +1270,7 @@ const namespaces = [
   ['stats', stats],
   ['market', market],
   ['inventory', inventory],
-  ['download', download], ['home', home], ['skills', skills],
+  ['download', download], ['home', home], ['skills', skills], ['privacy', privacy],
 ] as const;
 
 describe('i18n split parity', () => {

@@ -219,7 +219,9 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
     const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Bram').id, maxPhase: 42 });
     expect(gainOf(result, 'energy')).toBeLessThan(0);
     // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); -0.12713347066902747 before.
-    expect(gainOf(result, 'energy')).toBeCloseTo(-0.07899834560854968, 9);
+    // RE-PINNED 2026-09-26 for the Wide Blast patch: the cells it adds past the base reach now take half the hit. -0.07899834560854968 before.
+    // Moved again the same day for Double Detonation's 2.5%/level.
+    expect(gainOf(result, 'energy')).toBeCloseTo(-0.0790154592172354, 9);
     // Not a collapse: the sign is decided hero by hero. On this queued field it is positive on
     // every geared hero — more of a one-shotter's field time is more kills — and negative on
     // every naked one, whose extra field seconds displace a faster clearer's.

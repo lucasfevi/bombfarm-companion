@@ -64,15 +64,24 @@ function reportFor(record: HeroRecord) {
   return report;
 }
 
+function required<T>(value: T | undefined, message: string): T {
+  if (value === undefined) throw new Error(message);
+  return value;
+}
+
+const FIRST_EVIDENCE = required(LETTER_BANDS.evidence[0], 'LETTER_BANDS carries no evidence');
+const LAST_EVIDENCE = required(LETTER_BANDS.evidence.at(-1), 'LETTER_BANDS carries no evidence');
+
+function boundaryAt(index: number) {
+  return required(LETTER_BANDS.boundaries[index], `LETTER_BANDS has no boundary ${index}`);
+}
+
 const cutPoints = LETTER_BANDS.boundaries.map(boundaryCutPoint);
 
 /** A mean comfortably inside the letter at `index`, away from either bracketed edge. */
 function insideLetter(index: number): number {
-  const low = index === 0 ? LETTER_BANDS.evidence[0].observedMin : LETTER_BANDS.boundaries[index - 1].max;
-  const high =
-    index === cutPoints.length
-      ? LETTER_BANDS.evidence[LETTER_BANDS.evidence.length - 1].observedMax
-      : LETTER_BANDS.boundaries[index].min;
+  const low = index === 0 ? FIRST_EVIDENCE.observedMin : boundaryAt(index - 1).max;
+  const high = index === cutPoints.length ? LAST_EVIDENCE.observedMax : boundaryAt(index).min;
   return (low + high) / 2;
 }
 
@@ -145,7 +154,7 @@ describe('gradePlacementFor and letterDisagreementFor', () => {
   });
 
   it('sitting near a bracketed edge is neither of the two uncertain causes', () => {
-    const boundary = LETTER_BANDS.boundaries[A_INDEX - 1];
+    const boundary = boundaryAt(A_INDEX - 1);
     const mean = (boundary.min + boundary.max) / 2;
     const record = rolledAt(mean, mean < boundaryCutPoint(boundary) ? boundary.below : boundary.above);
     const report = reportFor(record);
@@ -192,8 +201,8 @@ describe('gradeRailFor', () => {
     const widths = rail.segments.map((segment) => segment.endPct - segment.startPct);
 
     expect(rail.segments.map((segment) => segment.letter)).toEqual([...LETTER_BANDS.letters]);
-    expect(rail.segments[0].startPct).toBe(0);
-    expect(rail.segments[rail.segments.length - 1].endPct).toBe(100);
+    expect(rail.segments[0]?.startPct).toBe(0);
+    expect(rail.segments.at(-1)?.endPct).toBe(100);
     // Even spacing would make all six equal; the corpus makes E by far the widest.
     expect(Math.max(...widths)).toBe(widths[0]);
     expect(new Set(widths.map((width) => width.toFixed(4))).size).toBeGreaterThan(1);
@@ -209,7 +218,7 @@ describe('gradeRailFor', () => {
   });
 
   it('a hero outside every observed extreme stretches the domain instead of being clamped', () => {
-    const beyond = LETTER_BANDS.evidence[LETTER_BANDS.evidence.length - 1].observedMax + 5;
+    const beyond = LAST_EVIDENCE.observedMax + 5;
     const rail = gradeRailFor(beyond);
 
     expect(rail.domainMax).toBe(beyond);

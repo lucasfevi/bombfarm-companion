@@ -1,5 +1,5 @@
 /**
- * Also settles design hazard 9 (T2): a `.test.tsx` under `renderer/` must not break
+ * Also settles a build hazard: a `.test.tsx` under `renderer/` must not break
  * `next build renderer` (verified by running `pnpm --filter @bombfarm/desktop build` with this
  * file present) and must run under the desktop Vitest project (node env, `esbuild.jsx: 'automatic'`,
  * `renderToStaticMarkup` — the `packages/ui/vitest.config.ts` precedent).

@@ -6,7 +6,7 @@ Desktop companion and web planner for [Bomb Farm](https://store.steampowered.com
 
 Monorepo with `@bombfarm/desktop` (Electron) and `@bombfarm/web` (Next.js static export). Shared math lives in `@bombfarm/domain`; UI primitives in `@bombfarm/ui`.
 
-**Web hosts:** production [https://bombfarm-companion.vercel.app](https://bombfarm-companion.vercel.app) (`main`); pre-production preview [https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app](https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app) (`develop`, Vercel Authentication). DNS/redirect from the old planner host is manual and out of band.
+**Web hosts:** production [https://bombfarm-companion.app](https://bombfarm-companion.app) (`main`); pre-production preview [https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app](https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app) (`develop`, Vercel Authentication). DNS/redirect from the old planner host is manual and out of band.
 
 ## Requirements
 
@@ -57,7 +57,7 @@ Path-filtered GitHub Actions (quality only — **no** deploy workflow):
 
 Desktop installers are built by the **release-PR beta job** and **release-prod** — not on every `main` push. See [`docs/releases.md`](docs/releases.md).
 
-**Vercel (Git integration):** production deploys from `main` to [https://bombfarm-companion.vercel.app](https://bombfarm-companion.vercel.app). Every push to `develop` updates the pre-production preview at [https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app](https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app). That preview is behind **Vercel Authentication** and is not a shareable playtester link. No Custom Environment, custom domain, or new GitHub Actions secret is involved. Framework: Next.js. **Root Directory:** `apps/web`. Branching: [`docs/branching.md`](docs/branching.md). Prefer green `ci-web` (including `pnpm --filter @bombfarm/web build`) before treating prod as healthy.
+**Vercel (Git integration):** production deploys from `main` and is served at the custom domain [https://bombfarm-companion.app](https://bombfarm-companion.app). Every push to `develop` updates the pre-production preview at [https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app](https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app). That preview is behind **Vercel Authentication** and is not a shareable playtester link. The preview needs no Custom Environment, custom domain, or new GitHub Actions secret. Framework: Next.js. **Root Directory:** `apps/web`. Branching: [`docs/branching.md`](docs/branching.md). Prefer green `ci-web` (including `pnpm --filter @bombfarm/web build`) before treating prod as healthy.
 
 ## Version chrome
 

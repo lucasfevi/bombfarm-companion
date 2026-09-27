@@ -10,4 +10,4 @@ export type HomeCardState =
   | 'blocked'
   | 'error';
 
-export type HomeCardSection = Exclude<SiteSection, 'home' | 'skills'>;
+export type HomeCardSection = Exclude<SiteSection, 'home' | 'skills' | 'privacy'>;

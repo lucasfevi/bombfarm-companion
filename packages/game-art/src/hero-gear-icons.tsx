@@ -7,16 +7,21 @@ import { slotLabel } from '@bombfarm/domain/game-labels';
 
 import { cn, Tooltip } from '@bombfarm/ui';
 import { ItemIcon } from './item-icon';
-import { emptyGearSlotClass, rosterIconTooltipTriggerClass } from './game-art.recipe';
+import type { ArtFrameSize } from './art-frame';
+import { emptyGearSlotRecipe, rosterIconTooltipTriggerClass } from './game-art.recipe';
 
 type Props = {
   loadout: Loadout;
   lang: Lang;
   className?: string;
+  /** The footprint of every tile, filled or empty. */
+  size?: ArtFrameSize;
   /** Accessible name for an empty gear slot's tooltip trigger, given the slot's own label. */
   emptySlotAriaLabel?: (slotName: string) => string;
   /** Tooltip body for an empty gear slot. */
   emptySlotTip?: string;
+  /** Off, a tile is its art and rarity frame alone; the item's card still reads both numbers. */
+  showLevels?: boolean;
 };
 
 function stopRowActivation(event: SyntheticEvent) {
@@ -28,8 +33,10 @@ export function HeroGearIcons({
   loadout,
   lang,
   className,
+  size = 'lg',
   emptySlotAriaLabel = (slotName) => `${slotName} — empty`,
   emptySlotTip = 'Empty',
+  showLevels = true,
 }: Props) {
   return (
     <span
@@ -53,7 +60,7 @@ export function HeroGearIcons({
                 onClick={stopRowActivation}
                 onKeyDown={stopRowActivation}
               >
-                <span className={emptyGearSlotClass} aria-hidden="true" />
+                <span className={emptyGearSlotRecipe({ size })} aria-hidden="true" />
               </Tooltip.Trigger>
               <Tooltip.Portal>
                 <Tooltip.Positioner sideOffset={6}>
@@ -67,7 +74,16 @@ export function HeroGearIcons({
           );
         }
 
-        return <ItemIcon key={slot} item={equipped} size="lg" peek={{ lang, stopRowActivation: true }} />;
+        return (
+          <ItemIcon
+            key={slot}
+            item={equipped}
+            size={size}
+            showLevel={showLevels}
+            showUpgrade={showLevels}
+            peek={{ lang, stopRowActivation: true }}
+          />
+        );
       })}
     </span>
   );

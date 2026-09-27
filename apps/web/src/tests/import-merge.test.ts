@@ -237,7 +237,7 @@ describe('mergeImportedHero', () => {
     expect(merged.skin).toBe(5);
   });
 
-  it('M3 discrimination: unlike the old gear-refresh body, this one does not keep stale naked/pts/level/rarity', () => {
+  it('discrimination: unlike the old gear-refresh body, this one does not keep stale naked/pts/level/rarity', () => {
     const existing = existingWithStaleData();
     const incoming = incomingFresh();
     const merged = mergeImportedHero(existing, incoming);
@@ -256,7 +256,7 @@ describe('mergeImportedHero', () => {
     expect(merged.gearedOverride).not.toEqual(wouldHaveRecomputed);
   });
 
-  it('merge does not reintroduce any field W1 deleted; its key set matches the canonical HeroRecord shape', () => {
+  it('merge does not reintroduce any field the record cleanup deleted; its key set matches the canonical HeroRecord shape', () => {
     const existing = existingWithStaleData();
     const incoming = incomingFresh();
     const merged = mergeImportedHero(existing, incoming);

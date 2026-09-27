@@ -19,7 +19,7 @@ import {
   tipClass,
 } from '@bombfarm/ui';
 import type { Lang, StatPanelCopy } from '../copy';
-import { sheetStatUnit } from '../model/breakdown-labels';
+import { sheetStatUnit, sheetTotalText } from '../model/breakdown-labels';
 
 /** Drawn only for a hero carrying a rune — a column of `—` on every other hero is noise. */
 const RUNE_DELTA_KEY = 'deltaRune' as const;
@@ -163,7 +163,7 @@ export function SheetTable({
                     </DataTable.Cell>
                   ))}
                   <DataTable.Cell align="right" numeric>
-                    <b>{row ? formatStageCell(row.total, boundFormatNumber, false, unit) : '—'}</b>
+                    <b>{row ? sheetTotalText(statKey, row.total, boundFormatNumber) : '—'}</b>
                   </DataTable.Cell>
                   <DataTable.Cell align="right" numeric className={mutedClass}>
                     {row ? formatOverCapCell(row, boundFormatNumber, unit) : '—'}

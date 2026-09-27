@@ -85,7 +85,7 @@ describe('computeAdvisorPipeline', () => {
     expect(out.teamCritFlat).toBeGreaterThanOrEqual(0);
   });
 
-  it('propRows and gateRows carry correct per-row values, not just correct lengths (T4 extraction guard)', () => {
+  it('propRows and gateRows carry correct per-row values, not just correct lengths (extraction guard)', () => {
     const out = computeAdvisorPipeline(baseInput());
 
     const firstProp = out.propRows[0];

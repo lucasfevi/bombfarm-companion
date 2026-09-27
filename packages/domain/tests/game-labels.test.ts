@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { RUNE_AXES, RUNE_AXIS_SHEET_KEY } from '../src/runes';
 import {
   abilityEffectText,
   abilityName,
@@ -13,6 +14,7 @@ import {
   peekLabel,
   propLabel,
   rarityLabel,
+  runeAxisLabel,
   setName,
   sheetStatLabel,
   sheetStatShortLabel,
@@ -44,7 +46,7 @@ describe('abilityName / abilityEffectText', () => {
     }
   });
 
-  it('keeps effect-text numbers aligned with AbilityEffect.perLevel (W3 rank-20 curves)', () => {
+  it('keeps effect-text numbers aligned with AbilityEffect.perLevel', () => {
     // Spot-check modeled abilities: EN copy must mention the same perLevel figure.
     expect(abilityEffectText('ponta_diamante', 'en')).toMatch(/\+1 /);
     expect(abilityEffectText('olho_clinico', 'en')).toMatch(/\+2 crit chance points/);
@@ -53,9 +55,9 @@ describe('abilityName / abilityEffectText', () => {
     expect(abilityEffectText('marcha_acelerada', 'en')).toMatch(/0\.185%/);
     expect(abilityEffectText('pressagio_mortal', 'en')).toMatch(/\+1 TEAM crit chance point/);
     expect(abilityEffectText('misericordia', 'en')).toMatch(/0\.75%/);
-    expect(abilityEffectText('explosao_ampla', 'en')).toMatch(/0\.1 /);
+    expect(abilityEffectText('explosao_ampla', 'en')).toMatch(/\+1 cell of explosion radius every 10 levels/);
     expect(abilityEffectText('contra_relogio', 'en')).toMatch(/2%/);
-    expect(abilityEffectText('detonacao_dupla', 'en')).toMatch(/1\.5%/);
+    expect(abilityEffectText('detonacao_dupla', 'en')).toMatch(/2\.5%/);
     expect(abilityEffectText('folego_mineiro', 'en')).toMatch(/1%/);
     expect(abilityEffectText('grito_guerra', 'en')).toMatch(/1%/);
     expect(abilityEffectText('golpe_brutal', 'en')).toMatch(/4%/);
@@ -125,6 +127,7 @@ describe('abilityName / abilityEffectText', () => {
       'matilha',
       'fortuna',
       'brecha',
+      'estilhacos',
     ]);
   });
 });
@@ -349,7 +352,8 @@ describe('abilityReadoutText', () => {
     expect(abilityReadoutText(ownAbilityReadout('golpe_brutal', 13), 'en', format)).toBe('+52% crit damage');
     expect(abilityReadoutText(ownAbilityReadout('golpe_brutal', 13), 'pt', format)).toBe('+52% de dano crítico');
     expect(abilityReadoutText(ownAbilityReadout('bateria_extra', 12), 'en', format)).toBe('−12% drain');
-    expect(abilityReadoutText(ownAbilityReadout('explosao_ampla', 10), 'en', format)).toBe('+1.0 range');
+    expect(abilityReadoutText(ownAbilityReadout('explosao_ampla', 10), 'en', format)).toBe('+1 range');
+    expect(abilityReadoutText(ownAbilityReadout('explosao_ampla', 15), 'en', format)).toBe('+1 range');
     expect(abilityReadoutText(ownAbilityReadout('marcha_acelerada', 20), 'en', format)).toBe('+3.70% speed');
     expect(abilityReadoutText(ownAbilityReadout('olho_clinico', 20), 'en', format)).toBe('+40% crit');
     expect(abilityReadoutText(ownAbilityReadout('ponta_diamante', 20), 'pt', format)).toBe('+20% de penetração');
@@ -357,7 +361,7 @@ describe('abilityReadoutText', () => {
   });
 
   it('a second blast reads as its chance and the multiplier; an execute as its threshold and the multiplier', () => {
-    expect(abilityReadoutText(ownAbilityReadout('detonacao_dupla', 20), 'en', format)).toBe('30.0% chance (×1.15 dmg)');
+    expect(abilityReadoutText(ownAbilityReadout('detonacao_dupla', 20), 'en', format)).toBe('50.0% chance (×1.25 dmg)');
     expect(abilityReadoutText(ownAbilityReadout('misericordia', 20), 'pt', format)).toBe('executa < 15.0% HP (×1.18 dano)');
   });
 
@@ -371,5 +375,23 @@ describe('peekLabel', () => {
     expect(peekLabel('atCap', 'en')).toBe('At cap');
     expect(peekLabel('atCap', 'pt')).toBe('No teto');
     expect(peekLabel('rankOf', 'en')).toContain('{rank}');
+  });
+});
+
+/** The label map carries its own axis → stat table (a value import of the runes module would close
+ *  an import cycle through `model`), so it has to agree with the one the sheet math uses. */
+describe('runeAxisLabel', () => {
+  it.each(RUNE_AXES.filter((axis) => RUNE_AXIS_SHEET_KEY[axis] !== null))(
+    'names the %s rune by the sheet statistic it multiplies',
+    (axis) => {
+      const stat = RUNE_AXIS_SHEET_KEY[axis]!;
+      expect(runeAxisLabel(axis, 'en')).toBe(sheetStatLabel(stat, 'en'));
+      expect(runeAxisLabel(axis, 'pt')).toBe(sheetStatLabel(stat, 'pt'));
+    },
+  );
+
+  it('names the two reward runes, which multiply no statistic', () => {
+    expect(runeAxisLabel('xp', 'en')).toBe('Experience');
+    expect(runeAxisLabel('gold', 'pt')).toBe('Ouro');
   });
 });

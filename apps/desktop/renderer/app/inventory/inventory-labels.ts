@@ -14,7 +14,9 @@ import type {
   InventoryViewStat,
   ItemKind,
 } from '@bombfarm/domain/inventory-view';
-import { itemRarityLabel, itemStatLabel, setName, slotLabel } from '@bombfarm/domain/game-labels';
+import { itemRarityLabel, itemStatLabel, runeAxisLabel, setName, slotLabel } from '@bombfarm/domain/game-labels';
+import { runeFromDefId } from '@bombfarm/domain/runes';
+import { boughtSkinHashFor } from '@bombfarm/pricing';
 import type { Copy } from '../../lib/copy';
 
 const GROUP_KEY: Record<ItemKind, keyof Copy> = {
@@ -24,6 +26,8 @@ const GROUP_KEY: Record<ItemKind, keyof Copy> = {
   time: 'inventoryGroupTime',
   stone: 'inventoryGroupStone',
   chest: 'inventoryGroupChest',
+  rune: 'inventoryGroupRune',
+  skin: 'inventoryGroupSkin',
   other: 'inventoryGroupOther',
 };
 
@@ -42,6 +46,19 @@ const GEM_KEY: Record<string, keyof Copy> = {
 
 function fill(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_match, key: string) => String(vars[key] ?? ''));
+}
+
+/** An unpacked skin is `skin_<index>`, named as the market lists it — the heading already says "Skins". */
+function skinName(defId: string): string {
+  const index = /^skin_(\d+)$/.exec(defId)?.[1];
+  const listing = index === undefined ? null : boughtSkinHashFor(Number(index));
+  return listing === null ? defId : listing.replace(/ Skin$/, '');
+}
+
+/** `rune_critdmg_comum` is named by the statistic it raises; its tier is the line below. */
+function runeName(item: InventoryViewItem, lang: 'pt' | 'en'): string {
+  const rune = runeFromDefId(item.defId, item.rarityIdx);
+  return rune ? runeAxisLabel(rune.axis, lang) : item.defId;
 }
 
 /**
@@ -77,6 +94,8 @@ function itemName(item: InventoryViewItem, t: Copy, lang: 'pt' | 'en'): string {
   const gem = GEM_KEY[item.defId];
   if (gem) return t[gem];
   if (item.kind === 'chest') return chestName(item.defId, t);
+  if (item.kind === 'skin') return skinName(item.defId);
+  if (item.kind === 'rune') return runeName(item, lang);
   return itemRarityLabel(item.rarityIdx, lang);
 }
 
@@ -88,7 +107,7 @@ const NAMED_BY_RARITY = new Set<ItemKind>(['key', 'time', 'stone']);
  * their tier, which is what tells the card to colour the name instead of the line below it.
  */
 function itemRarity(item: InventoryViewItem, lang: 'pt' | 'en'): string {
-  if (NAMED_BY_RARITY.has(item.kind)) return '';
+  if (NAMED_BY_RARITY.has(item.kind) || item.kind === 'skin') return '';
   return itemRarityLabel(item.rarityIdx, lang);
 }
 

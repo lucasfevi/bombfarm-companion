@@ -102,8 +102,8 @@ export function readConfig(env) {
       .split(',')
       .map((code) => code.trim().toUpperCase())
       .filter(Boolean),
-    // Where row identities are read from, and the local file they fall back to. That file is
-    // private working state written by the last pass, not an artifact anyone reads.
+    // Where the snapshot a pass resumes from is read, and the local file it falls back to. That
+    // file is private working state written by the last pass, not an artifact anyone reads.
     snapshotUrl: firstSet(env, ['MARKET_SNAPSHOT_URL']) ?? SNAPSHOT_URL,
     snapshotPath: firstSet(env, ['SNAPSHOT', 'MARKET_SNAPSHOT_PATH']) ?? 'market-prices.json',
   };
@@ -149,6 +149,9 @@ export function logSweepStats(log, stats) {
       'warn',
     );
   }
+  // Named for the run table's own column. What fills it is the market spelling an item's name
+  // differently from the name this repository generates for it — the warning that arrives before a
+  // rename takes every equipment price with it.
   if (stats.unmappedTags.length > 0) {
     log(
       'tags.unmapped',
@@ -224,16 +227,15 @@ export function itemRowsFrom(snapshot, lastSeen) {
 const PRIOR_TIMEOUT_MS = 15_000;
 
 /**
- * The row identities a pass starts from.
+ * The snapshot a pass resumes from.
  *
- * Read from the published snapshot rather than from this process's own last pass. Identifying a
- * row costs a burst of facet queries, and it fires whenever the enumeration turns up a row the
- * prior cannot name — so the fresher the prior, the less often it fires. The published file is
- * rebuilt every half hour or so against a pass here that takes hours, which makes it the better
- * answer to "what is already known" by an order of magnitude.
+ * Read from the published file rather than from this process's own last pass. It supplies the rows a
+ * walk cut short by the quota never reached, and the coverage the publish gate compares against —
+ * both of which want the freshest board there is, and the published file is rebuilt every half hour
+ * against a pass here that takes hours.
  *
- * Never throws, and never lets a fetch failure cost the pass. Identity is an optimisation at this
- * point: falling back to the file the last pass wrote is exactly the behaviour this replaced.
+ * Never throws, and never lets a fetch failure cost the pass: falling back to the file the last pass
+ * wrote is exactly the behaviour this replaced.
  */
 export function createPriorReader({ url, fetchImpl, parsePrior, loadFile, log }) {
   return async (path) => {
@@ -421,7 +423,9 @@ export function nextCoolDown(currentMs) {
 
 const PASS_STAGES = [
   ['enumerate', 'enumerationComplete'],
-  ['tag', 'discoveryComplete'],
+  // Distinct from the one above: the walk failing to reach the market's own total is a transport
+  // failure, while this one is the quota breaker tripping. Both incomplete means the address is spent.
+  ['discover', 'discoveryComplete'],
   ['quote', 'quotesComplete'],
 ];
 

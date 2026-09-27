@@ -171,7 +171,7 @@ describe('upsertTrackerIssue — the five cases', () => {
     expect(openMarked).toHaveLength(1);
 
     // The second call's body differs from the first's (a differing observation timestamp) —
-    // the same shape the post-merge dispatch (T12) will prove end-to-end.
+    // the same shape the post-merge dispatch proves end-to-end.
     expect(openMarked[0].body).not.toBe(
       `${MARKER}\nobserved at: 2026-08-14T05:17:00.000Z`,
     );
@@ -233,7 +233,7 @@ describe('upsertTrackerIssue — the five cases', () => {
 
 describe('upsertTrackerIssue — the caller contract for an ok outcome', () => {
   it('this module is never invoked at all when the outcome is ok — no fetch call happens because nothing calls it', () => {
-    // upsertTrackerIssue has no "no-op" branch of its own: the CLI (T7) simply does not call it
+    // upsertTrackerIssue has no "no-op" branch of its own: the CLI simply does not call it
     // when there is no drift. Demonstrated here as a contract, not a behaviour of this module.
     const fetchImpl = vi.fn();
     const diffs = [];

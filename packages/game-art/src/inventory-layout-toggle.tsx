@@ -2,17 +2,21 @@ import { cn, Icon, Tooltip } from '@bombfarm/ui';
 
 export type InventoryLayout = 'cards' | 'list';
 
-export interface InventoryLayoutToggleLabels {
-  /** Names the pair for assistive technology, e.g. "Layout". */
-  group: string;
-  cards: string;
-  list: string;
-}
+/** Every shape the toggle can offer. The Inventory offers two; the Heroes roster adds a table. */
+export type LayoutToggleOption = InventoryLayout | 'table';
 
-const LAYOUTS = [
-  { id: 'cards', icon: 'layout-grid' },
-  { id: 'list', icon: 'layout-list' },
-] as const;
+export type InventoryLayoutToggleLabels<Layout extends LayoutToggleOption = InventoryLayout> = {
+  /** Names the group for assistive technology, e.g. "Layout". */
+  readonly group: string;
+} & { readonly [L in Layout]: string };
+
+const LAYOUT_ICON = {
+  cards: 'layout-grid',
+  list: 'layout-list',
+  table: 'layout-table',
+} as const satisfies Record<LayoutToggleOption, string>;
+
+const INVENTORY_LAYOUTS: readonly InventoryLayout[] = ['cards', 'list'];
 
 /**
  * Cards or list, as two icons in the corner of the thing they switch.
@@ -22,15 +26,18 @@ const LAYOUTS = [
  * words would crowd the filters. Each still carries its word as its accessible name and its tip,
  * so nothing is lost to anyone who cannot use the picture.
  */
-export function InventoryLayoutToggle({
+export function InventoryLayoutToggle<Layout extends LayoutToggleOption = InventoryLayout>({
   layout,
   onChange,
   labels,
+  layouts = INVENTORY_LAYOUTS as readonly Layout[],
   className,
 }: {
-  layout: InventoryLayout;
-  onChange: (next: InventoryLayout) => void;
-  labels: InventoryLayoutToggleLabels;
+  layout: Layout;
+  onChange: (next: Layout) => void;
+  labels: InventoryLayoutToggleLabels<Layout>;
+  /** The shapes offered, in order. Defaults to the Inventory's cards and list. */
+  layouts?: readonly Layout[];
   className?: string;
 }) {
   return (
@@ -39,8 +46,8 @@ export function InventoryLayoutToggle({
       aria-label={labels.group}
       className={cn('flex items-center gap-0.5 rounded-sm border border-line p-0.5', className)}
     >
-      {LAYOUTS.map(({ id, icon }) => {
-        const label = id === 'cards' ? labels.cards : labels.list;
+      {layouts.map((id) => {
+        const label = labels[id];
         const active = layout === id;
         return (
           <Tooltip.Root key={id}>
@@ -57,7 +64,7 @@ export function InventoryLayoutToggle({
                 active ? 'bg-accent text-accent-ink' : 'text-muted hover:text-accent',
               )}
             >
-              <Icon name={icon} size="sm" />
+              <Icon name={LAYOUT_ICON[id]} size="sm" />
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Positioner sideOffset={6}>

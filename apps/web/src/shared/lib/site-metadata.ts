@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
+import { SITE_URL } from '@bombfarm/ui/site-address';
 import previews from './site-previews.json';
 import { SITE_SECTION_HREF, type SiteSection } from './site-sections';
 
-export const SITE_URL = 'https://bombfarm-companion.vercel.app';
+export { SITE_URL };
 export const SITE_NAME = 'Bomb Farm Companion';
 
 /**

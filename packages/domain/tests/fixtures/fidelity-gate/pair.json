@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "accountLabel": "MP5 reference account (5 heroes, 2026-08-13 post-wipe capture)",
+  "accountLabel": "reference account (5 heroes, 2026-08-13 post-wipe capture)",
   "export": {
     "file": "export-capture.json",
     "gameBuild": "2026.08.13",

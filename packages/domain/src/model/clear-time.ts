@@ -9,6 +9,16 @@
  * - **Hits per plant grow with density.** A blast cross covers `blastCells` cells; the props it
  *   lands on scale with `n / 304`. Heroes plant next to clusters, so the slope runs ~1.25× the
  *   uniform expectation, and it saturates near 0.37 hits per cross cell.
+ * - **The cells Wide Blast adds hit for less.** Since the 2026-09-26 patch every cell past the
+ *   base cross deals {@link EXTRA_RANGE_FRAC} of the hit. The props a cross lands on are
+ *   unchanged, so those hits are counted as before and each carries its own hits-to-kill at the
+ *   reduced hit — the same way hits from two heroes of different strength combine. A prop that
+ *   the full hit kills in N needs more than N there, and a hit well above the HP still one-shots
+ *   at half, so the extra cells are worth neither their full count nor a flat half of it.
+ * - **A kill can shatter.** A hero with Estilhaços splits a rock it destroys with its ability's
+ *   chance, and each rock on the four sides takes {@link SHATTER_FRAC} of the killing hit. The
+ *   shards are hits like any other, priced at their own hits-to-kill; a rock they fell does not
+ *   shatter again, so the term needs no fixed point.
  * - **A plant can miss.** When the targeted prop dies to someone else before the fuse ends, the
  *   bomb hits nothing. Under 10 props a 13-cell cross averaged 0.96 hits per plant. The chance
  *   grows with the per-prop kill rate over the fuse, which is why more damage buys less than a
@@ -34,6 +44,15 @@
  * at a time under ten — so the last prop is priced at the `n = 1` rate and the clear is a smooth
  * function of every input; integrating a fractional count to zero would take unbounded time.
  */
+
+import { EXTRA_RANGE_FRAC, SHATTER_FRAC } from '../phase-wiki';
+import { BASE_BLAST_RANGE } from './combat';
+
+/** Cells of the cross every hero's blast covers at full damage: the epicentre and one per arm. */
+export const BASE_BLAST_CELLS = 1 + 4 * BASE_BLAST_RANGE;
+
+/** Rocks an Estilhaços shatter reaches: the four sides of the one destroyed. */
+export const SHATTER_SIDES = 4;
 
 /** Playable cells of the battlefield grid (19 × 16). */
 export const GRID_CELLS = 304;
@@ -86,7 +105,8 @@ export type ClearHero = {
   fuseSecs: number;
   /** Cells per second. */
   walkSpeedCells: number;
-  /** Cells a blast covers: `1 + 4 × blastRange` for a plus-shaped cross. */
+  /** Cells a blast covers: `1 + 4 × blastRange` for a plus-shaped cross. Those past
+   *  {@link BASE_BLAST_CELLS} take {@link EXTRA_RANGE_FRAC} of the hit. */
   blastCells: number;
   /** The NON-CRIT hit, after phase mitigation and any field-wide multiplier. */
   hitNoCrit: number;
@@ -94,6 +114,8 @@ export type ClearHero = {
   critChance: number;
   /** A crit deals `hitNoCrit × critMult`. */
   critMult: number;
+  /** Estilhaços: the chance, 0..1, that a rock this hero destroys shatters. Absent means none. */
+  shatterChance?: number;
 };
 
 export type ClearPropType = {
@@ -164,6 +186,19 @@ export function expectedHitsToKill(hp: number, hitNoCrit: number, critChance: nu
   return expected;
 }
 
+/** Kills per hit over the standing mix, for a per-type row; 0 for a hero without that row. */
+function mixKillsPerHit(
+  perType: readonly number[] | null,
+  share: readonly number[],
+  standingTypes: readonly number[],
+  standingCount: number,
+): number {
+  if (perType === null) return 0;
+  let perHit = 0;
+  for (let i = 0; i < standingCount; i++) perHit += share[standingTypes[i]] * perType[standingTypes[i]];
+  return perHit;
+}
+
 /**
  * Seconds to clear `propCount` props with this squad, and the hits it took per kill.
  *
@@ -208,7 +243,35 @@ export function simulateClear(
     Math.max(fuseBound[h], REPLANT_HOP_CELLS / hero.walkSpeedCells + WALK_CYCLE_OVERHEAD_SEC),
   );
   const killsPerHit = new Array<number>(heroCount).fill(0);
+  // The same per-type and per-mix figures for the hits the extra cells land, `null` for a hero
+  // whose cross stops at the base reach.
+  const extraCells = active.map((hero) => Math.max(0, hero.blastCells - BASE_BLAST_CELLS));
+  const extraKillsPerHitByType = active.map((hero, h) =>
+    extraCells[h] > 0
+      ? props.map((prop) => 1 / expectedHitsToKill(prop.hp, hero.hitNoCrit * EXTRA_RANGE_FRAC, hero.critChance, hero.critMult))
+      : null,
+  );
+  const extraKillsPerHit = new Array<number>(heroCount).fill(0);
+  const hitsPerPlantExtra = new Array<number>(heroCount).fill(0);
   const heroHits = new Array<number>(heroCount).fill(0);
+  const heroExtraHits = new Array<number>(heroCount).fill(0);
+  const heroKills = new Array<number>(heroCount).fill(0);
+  // Estilhaços, per hero: kills per shard hit off a kill from the base cross (`SHATTER_FRAC` of the
+  // hit) and off one from the extra cells (that share of the reduced hit). `null` without it.
+  const shatter = active.map((hero) => Math.min(1, Math.max(0, hero.shatterChance ?? 0)));
+  const shardKillsPerHitFor = (hit: (hero: ClearHero) => number, eligible: (h: number) => boolean) =>
+    active.map((hero, h) =>
+      eligible(h) ? props.map((prop) => 1 / expectedHitsToKill(prop.hp, hit(hero), hero.critChance, hero.critMult)) : null,
+    );
+  const shardKillsPerHitByType = shardKillsPerHitFor((hero) => hero.hitNoCrit * SHATTER_FRAC, (h) => shatter[h] > 0);
+  const extraShardKillsPerHitByType = shardKillsPerHitFor(
+    (hero) => hero.hitNoCrit * EXTRA_RANGE_FRAC * SHATTER_FRAC,
+    (h) => shatter[h] > 0 && extraCells[h] > 0,
+  );
+  const shardKillsPerHit = new Array<number>(heroCount).fill(0);
+  const extraShardKillsPerHit = new Array<number>(heroCount).fill(0);
+  const heroShardHits = new Array<number>(heroCount).fill(0);
+  const heroExtraShardHits = new Array<number>(heroCount).fill(0);
   const killsByHero = new Array<number>(heroCount).fill(0);
   const meanFuse = active.reduce((sum, hero) => sum + hero.presence * hero.fuseSecs, 0) / squad;
   const killShare = new Array<number>(typeCount).fill(0);
@@ -266,6 +329,14 @@ export function simulateClear(
         perHit += share[t] * perTypeKills[t];
       }
       killsPerHit[h] = perHit;
+      const extraKills = extraKillsPerHitByType[h];
+      if (extraKills !== null) {
+        let perExtraHit = 0;
+        for (let i = 0; i < standingCount; i++) perExtraHit += share[standingTypes[i]] * extraKills[standingTypes[i]];
+        extraKillsPerHit[h] = perExtraHit;
+      }
+      shardKillsPerHit[h] = mixKillsPerHit(shardKillsPerHitByType[h], share, standingTypes, standingCount);
+      extraShardKillsPerHit[h] = mixKillsPerHit(extraShardKillsPerHitByType[h], share, standingTypes, standingCount);
       const replantShare = Number.isFinite(mixHits) ? Math.max(0, 1 - 1 / mixHits) : 1;
       // The mean of the two cycles, not the cycle of the mean hop: a prop that needs `E` hits
       // costs one free-hop cycle and `E − 1` re-plant cycles, so the time per kill is
@@ -274,6 +345,7 @@ export function simulateClear(
       const cycle = (1 - replantShare) * freeCycle + replantShare * replantCycle[h];
       plantRate[h] = (hero.presence * activeShare) / cycle;
       hitsPerPlantFull[h] = densityHits * (hero.blastCells - 1);
+      hitsPerPlantExtra[h] = densityHits * extraCells[h];
     }
 
     // The miss term is a fixed point — plants miss because of the kill rate the plants produce.
@@ -291,10 +363,29 @@ export function simulateClear(
       const surviveMean = Math.exp(-perProp * meanFuse);
       for (let h = 0; h < heroCount; h++) {
         const miss = 1 - surviveMean * (1 - perProp * (active[h].fuseSecs - meanFuse));
-        const hitsPerPlant = Math.min(HITS_PER_PLANT_BASE * (1 - miss) + hitsPerPlantFull[h], hitsPerPlantCap[h]);
+        const uncapped = HITS_PER_PLANT_BASE * (1 - miss) + hitsPerPlantFull[h];
+        const hitsPerPlant = Math.min(uncapped, hitsPerPlantCap[h]);
         heroHits[h] = plantRate[h] * hitsPerPlant;
         hitRate += heroHits[h];
-        killRate += heroHits[h] * killsPerHit[h];
+        if (extraKillsPerHitByType[h] === null) {
+          heroKills[h] = heroHits[h] * killsPerHit[h];
+        } else {
+          // The saturation cap bounds how many props a cross lands on, not where they stand, so
+          // the extra cells keep their share of a capped plant.
+          heroExtraHits[h] = heroHits[h] * (hitsPerPlantExtra[h] / uncapped);
+          heroKills[h] = (heroHits[h] - heroExtraHits[h]) * killsPerHit[h] + heroExtraHits[h] * extraKillsPerHit[h];
+        }
+        if (shatter[h] > 0) {
+          // Shards come off the hero's own kills only — a rock felled by a shard does not shatter
+          // again — and each side holds a rock as often as a cross cell does.
+          const baseKills = (heroHits[h] - heroExtraHits[h]) * killsPerHit[h];
+          const shardsPerKill = shatter[h] * SHATTER_SIDES * Math.min(1, densityHits);
+          heroShardHits[h] = baseKills * shardsPerKill;
+          heroExtraShardHits[h] = (heroKills[h] - baseKills) * shardsPerKill;
+          hitRate += heroShardHits[h] + heroExtraShardHits[h];
+          heroKills[h] += heroShardHits[h] * shardKillsPerHit[h] + heroExtraShardHits[h] * extraShardKillsPerHit[h];
+        }
+        killRate += heroKills[h];
       }
       missBasis = (missBasis + killRate) / 2;
     }
@@ -303,10 +394,29 @@ export function simulateClear(
     killShare.fill(0);
     for (let h = 0; h < heroCount; h++) {
       const perTypeKills = killsPerHitByType[h];
-      const hitsNow = heroHits[h];
-      for (let i = 0; i < standingCount; i++) {
-        const t = standingTypes[i];
-        killShare[t] += hitsNow * share[t] * perTypeKills[t];
+      const extraKills = extraKillsPerHitByType[h];
+      if (extraKills === null) {
+        const hitsNow = heroHits[h];
+        for (let i = 0; i < standingCount; i++) {
+          const t = standingTypes[i];
+          killShare[t] += hitsNow * share[t] * perTypeKills[t];
+        }
+      } else {
+        const extraHitsNow = heroExtraHits[h];
+        const baseHitsNow = heroHits[h] - extraHitsNow;
+        for (let i = 0; i < standingCount; i++) {
+          const t = standingTypes[i];
+          killShare[t] += share[t] * (baseHitsNow * perTypeKills[t] + extraHitsNow * extraKills[t]);
+        }
+      }
+      const shardKills = shardKillsPerHitByType[h];
+      if (shardKills !== null) {
+        const extraShardKills = extraShardKillsPerHitByType[h];
+        for (let i = 0; i < standingCount; i++) {
+          const t = standingTypes[i];
+          killShare[t] +=
+            share[t] * (heroShardHits[h] * shardKills[t] + (extraShardKills ? heroExtraShardHits[h] * extraShardKills[t] : 0));
+        }
       }
     }
 
@@ -314,7 +424,7 @@ export function simulateClear(
     seconds += dt;
     hitsLanded += hitRate * dt;
     killed += chunk;
-    for (let h = 0; h < heroCount; h++) killsByHero[h] += heroHits[h] * killsPerHit[h] * dt;
+    for (let h = 0; h < heroCount; h++) killsByHero[h] += heroKills[h] * dt;
     for (let t = 0; t < typeCount; t++) {
       counts[t] = Math.max(0, counts[t] - (chunk * killShare[t]) / killRate);
     }

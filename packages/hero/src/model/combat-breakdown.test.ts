@@ -43,6 +43,12 @@ describe('the pipeline\'s rows and wires', () => {
     const rowOf = new Map<BreakdownStatId, number>();
     COMBAT_BREAKDOWN_ROWS.forEach((row, index) => row.cards.forEach((card) => rowOf.set(card, index)));
     const facts = factsForHero(fixture, minato);
+    const partKeyOf: Partial<Record<BreakdownStatId, string>> = {
+      attack: 'attack', energy: 'energy', speed: 'walk', critChance: 'critChance', critDmg: 'critDmg',
+      penetration: 'penetration', cdr: 'cdr', mitF: 'mitF', dmg: 'dmg', critFactor: 'critFactor',
+      fuse: 'fuse', fieldSeconds: 'field', rest: 'restSeconds', hit: 'hit', avgHit: 'avgHit',
+      bombsPerSecond: 'bombs', uptime: 'field', activeDps: 'activeDps',
+    };
     for (const edge of COMBAT_BREAKDOWN_EDGES) {
       expect(rowOf.has(edge.from), edge.from).toBe(true);
       expect(rowOf.has(edge.to), edge.to).toBe(true);
@@ -51,12 +57,7 @@ describe('the pipeline\'s rows and wires', () => {
       expect(target.kind).toBe('formula');
       if (target.kind !== 'formula') return;
       const keys = target.parts.filter((part) => typeof part !== 'string').map((part) => part.key);
-      const named = {
-        attack: 'attack', energy: 'energy', speed: 'walk', critChance: 'critChance', critDmg: 'critDmg',
-        penetration: 'penetration', cdr: 'cdr', mitF: 'mitF', dmg: 'dmg', critFactor: 'critFactor',
-        fuse: 'fuse', fieldSeconds: 'field', rest: 'restSeconds', hit: 'hit', avgHit: 'avgHit',
-        bombsPerSecond: 'bombs', uptime: 'field', activeDps: 'activeDps',
-      }[edge.from];
+      const named = partKeyOf[edge.from];
       expect(keys, `${edge.to} reads ${edge.from} as ${named}`).toContain(named);
     }
   });
@@ -78,10 +79,10 @@ describe('the pipeline\'s rows and wires', () => {
 });
 
 describe('which card an ability lands on', () => {
-  it('is decided by the catalog\'s effect kind, so every modelled ability has a card and the loot ones have none', () => {
+  it('is decided by the catalog\'s effect kind, so every per-bomb ability has a card and the loot and per-kill ones have none', () => {
     for (const ability of ABILITIES) {
       const card = cardForAbility(ability.id);
-      if (ability.effect.kind === 'none') expect(card, ability.id).toBeNull();
+      if (ability.effect.kind === 'none' || ability.effect.kind === 'shatterPct') expect(card, ability.id).toBeNull();
       else expect(card, ability.id).not.toBeNull();
     }
     expect(cardForAbility('grito_guerra')).toBe('attack');
@@ -90,6 +91,7 @@ describe('which card an ability lands on', () => {
     expect(cardForAbility('brecha')).toBe('penetration');
     expect(cardForAbility('detonacao_dupla')).toBe('activeDps');
     expect(cardForAbility('misericordia')).toBe('activeDps');
+    expect(cardForAbility('estilhacos')).toBeNull();
     expect(cardForAbility('matilha')).toBe('dmg');
     expect(cardForAbility('passagem_bastao')).toBe('dmg');
     expect(cardForAbility('folego_mineiro')).toBe('fieldSeconds');
@@ -306,12 +308,14 @@ describe('the Active DPS card names its two constants', () => {
     expect(cardNoteFor('activeDps', facts, minato, switchesOff)).toEqual({
       kind: 'activeDpsConstants',
       rangeCells: facts.context.blastRange,
+      damageRangeCells: 1 + 0.5 * (facts.context.blastRange - 1),
+      extraCellDamagePct: 50,
     });
     const active = buildStatBreakdown('activeDps', facts);
     if (active.kind !== 'formula') throw new Error('expected formula');
     const terms = active.parts.filter((part) => typeof part !== 'string');
     expect(terms.map((term) => term.key)).toEqual(['avgHit', 'abilities', 'bombs', 'rangeMult', 'aiEfficiency']);
-    expect(terms[3]?.value).toBeCloseTo(1 + 0.5 * facts.context.blastRange, 9);
+    expect(terms[3]?.value).toBeCloseTo(1 + 0.5 * (1 + 0.5 * (facts.context.blastRange - 1)), 9);
     expect(terms[4]?.value).toBe(0.9);
   });
 });

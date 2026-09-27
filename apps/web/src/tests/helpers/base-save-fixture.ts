@@ -230,7 +230,7 @@ export function baseSave() {
       levels: [20, 20, 6, 0, 0],
       slots: 9,
     },
-    // MP5 F4: post-patch skills shape — parseSaveFile's positive discriminator on the new keys
+    // Post-patch skills shape —parseSaveFile's positive discriminator on the new keys
     // requires skills.refunds / skills.totals.vagas_campo / skills.totals.bag_tabs_bonus to be
     // present, or the whole file is rejected.
     skills: {

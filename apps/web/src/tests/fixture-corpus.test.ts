@@ -1,6 +1,6 @@
 /**
- * (T9) — the post-patch corpus guard. Mirrors `fixtures-scrubbed.test.ts`'s directory-walk
- * shape. Every assertion here would have been RED on every commit before T8's deletion — that is
+ * The post-patch corpus guard. Mirrors `fixtures-scrubbed.test.ts`'s directory-walk
+ * shape. Every assertion here would have been RED on every commit before the old corpus was deleted — that is
  * the point: the corpus guard is written last, once nothing references the old corpus any more.
  *
  * Every red state below has been demonstrated manually (restore one deleted fixture / perturb one

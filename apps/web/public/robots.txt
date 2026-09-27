@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://bombfarm-companion.vercel.app/sitemap.xml
+Sitemap: https://bombfarm-companion.app/sitemap.xml

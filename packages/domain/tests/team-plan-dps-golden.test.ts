@@ -45,6 +45,23 @@
  * with it: 37 moves for 54, one fewer forge, two fewer point resets, and the seed that won went
  * from the greedy per-hero seed back to the roster as it stands. Same method again.
  *
+ * RE-RECORDED A FIFTH TIME 2026-09-23, when Explosão Ampla's reach became whole cells only
+ * (`wholeRangeCells`): the game banks the 0.1-per-level fraction until it makes a cell, and the
+ * model had credited it unrounded. Soulbound's WB c3 carries rank 17, priced at 2.7 cells of reach
+ * where the game gives 2; both DPS figures moved −0.31% and the plan is byte-identical. The other
+ * two captures carry the ability only at rank 0 or 20 and did not move. Same method again.
+ *
+ * RE-RECORDED A SIXTH TIME 2026-09-26, for the Wide Blast game patch: the cells it adds past the
+ * base reach now deal half the hit, so a rank-20 carrier's blast spread falls 2.5 -> 2.0 (-20%)
+ * and a rank 10-19 one's 2.0 -> 1.75. Every capture carries rank-20 carriers, so all three moved,
+ * by how much of each roster's DPS they hold: 11882 current -3.99% / plan -4.08%, two more moves
+ * (22) and a different proposal; crit-points -9.07% / -8.16%, eight more moves (120) and one more
+ * forge (19), a different proposal; soulbound -14.41% / -14.42%, one fewer point reset (7), the
+ * proposal byte-identical. The same patch raised Double Detonation from 1.5% to 2.5% a level, which
+ * moved the two captures carrying it back up: 11882 +1.62% / +1.70% with the proposal unchanged;
+ * crit-points +0.28% / +0.66%, four more moves (124) and the greedy per-hero seed winning over the
+ * roster as it stands, a different proposal. Soulbound carries none and did not move. Same method.
+ *
  * NOT regime-bound: the claim is "this code still plans what it planned", an identity between two
  * revisions of the same arithmetic, not a statement about what the game rewards.
  */
@@ -80,33 +97,33 @@ const GOLDENS = [
   {
     file: 'save-20260819-11882-7heroes.json',
     forgeFloor: 10,
-    currentDps: 2790.210159891838,
-    planDps: 3316.9354467552575,
-    moves: 20,
+    currentDps: 2722.2791594059136,
+    planDps: 3235.6757694672774,
+    moves: 22,
     forges: 40,
     pointResets: 5,
     seedUsed: 'current',
-    loadoutDigest: 'afd4e3c50dcfaab9',
+    loadoutDigest: 'c1cf3e98af22de34',
   },
   {
     file: 'save-20260823-13heroes-crit-points.json',
     forgeFloor: 10,
-    currentDps: 45459.16519724657,
-    planDps: 70558.72634133865,
-    moves: 112,
-    forges: 18,
+    currentDps: 41452.349093163386,
+    planDps: 65228.53633220728,
+    moves: 124,
+    forges: 19,
     pointResets: 11,
-    seedUsed: 'current',
-    loadoutDigest: 'df9ebf69f5367bc8',
+    seedUsed: 'greedyHeroDps',
+    loadoutDigest: '41246284f54ff901',
   },
   {
     file: 'save-20260831-13heroes-soulbound.json',
     forgeFloor: 10,
-    currentDps: 5798.730447486583,
-    planDps: 6312.744998349591,
+    currentDps: 4947.672089127424,
+    planDps: 5385.571001356697,
     moves: 37,
     forges: 68,
-    pointResets: 8,
+    pointResets: 7,
     seedUsed: 'current',
     loadoutDigest: '8b0a3d02618aedb7',
   },

@@ -33,7 +33,7 @@ describe('AccountPayload / fidelity — type-level assertions', () => {
     expect(missing.capturedAt).toBeUndefined();
   });
 
-  it('accepts a degraded section carrying capturedAt, missingKeys and addedKeys (mp2-live-account-read T6)', () => {
+  it('accepts a degraded section carrying capturedAt, missingKeys and addedKeys', () => {
     const degraded: SectionFidelity = {
       status: 'degraded',
       capturedAt: '2026-08-12T00:00:00.000Z',
@@ -128,10 +128,10 @@ const _capturedAtOnMissing: SectionFidelity = { status: 'missing', capturedAt: '
 // @ts-expect-error - "partial" is not one of the four SectionStatus literals
 const _invalidStatusLiteral: SectionFidelity = { status: 'partial', capturedAt: '2026-08-12T00:00:00.000Z' };
 
-// @ts-expect-error - a degraded section requires capturedAt (mp2-live-account-read T6)
+// @ts-expect-error - a degraded section requires capturedAt
 const _degradedWithoutCapturedAt: SectionFidelity = { status: 'degraded', missingKeys: ['gold'], addedKeys: [] };
 
-// @ts-expect-error - a degraded section requires missingKeys (mp2-live-account-read T6)
+// @ts-expect-error - a degraded section requires missingKeys
 const _degradedWithoutMissingKeys: SectionFidelity = {
   status: 'degraded',
   capturedAt: '2026-08-12T00:00:00.000Z',
@@ -149,7 +149,7 @@ const _degradedWithoutAddedKeys: SectionFidelity = {
 const _missingKeysOnResolved: SectionFidelity = {
   status: 'resolved',
   capturedAt: '2026-08-12T00:00:00.000Z',
-  // @ts-expect-error - missingKeys is not a member of the resolved/stale branch (mp2-live-account-read T6)
+  // @ts-expect-error - missingKeys is not a member of the resolved/stale branch
   missingKeys: ['gold'],
 };
 
