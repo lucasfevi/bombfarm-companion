@@ -99,6 +99,8 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'feedsCycleMinutes',
   'applySkipCounted',
   'applyModalCallEquip',
+  // The Portuguese client calls them skins too.
+  'inventoryGroupSkin',
 ];
 
 function placeholderSet(value: string): Set<string> {

@@ -12,7 +12,7 @@ const FORGE_MAX = 15;
 const rarityByIdx = new Map(catalog.rarities.map((rarity) => [rarity.idx, rarity]));
 const statNames: readonly string[] = catalog.itemStats;
 
-export type ItemKind = 'equipment' | 'chest' | 'gem' | 'time' | 'key' | 'stone' | 'other';
+export type ItemKind = 'equipment' | 'chest' | 'gem' | 'time' | 'key' | 'stone' | 'rune' | 'skin' | 'other';
 
 export const ITEM_KINDS: readonly ItemKind[] = [
   'equipment',
@@ -21,14 +21,17 @@ export const ITEM_KINDS: readonly ItemKind[] = [
   'time',
   'stone',
   'chest',
+  'rune',
+  'skin',
   'other',
 ];
 
 /**
  * The wire's `category` code → kind. Read off a 63-save corpus where the six codes partition
  * every one of 11,785 item rows with no overlap and no gaps: 0 gear, 1 chest, 2 gem, 3 time
- * part, 4 map key, 5 skill stone. This is the game's own classification, so it outranks both the
- * `def_id` prefix and the catalog lookup below.
+ * part, 4 map key, 5 skill stone. Two more arrived later on a live account read: 6 an unpacked
+ * skin (`skin_6`) and 7 a rune (`rune_critdmg_comum`). This is the game's own classification, so
+ * it outranks both the `def_id` prefix and the catalog lookup below.
  */
 const KIND_BY_CATEGORY: Record<number, ItemKind> = {
   0: 'equipment',
@@ -37,6 +40,8 @@ const KIND_BY_CATEGORY: Record<number, ItemKind> = {
   3: 'time',
   4: 'key',
   5: 'stone',
+  6: 'skin',
+  7: 'rune',
 };
 
 /** Only gear varies per instance (level, forge, rolled stats). Everything else is fungible, so a
@@ -141,6 +146,8 @@ const KIND_BY_DEF_PREFIX: readonly (readonly [string, ItemKind])[] = [
   ['time_part_', 'time'],
   ['skill_stone_', 'stone'],
   ['chest_', 'chest'],
+  ['rune_', 'rune'],
+  ['skin_', 'skin'],
 ];
 
 /**
@@ -185,6 +192,19 @@ export function chestRarityIdx(defId: string, wireRarity: number): number {
   if (!tail) return wireRarity;
   const tier = Number(tail[1]);
   return tier >= 0 && tier <= 5 ? tier : wireRarity;
+}
+
+const rarityIdxByCode = new Map(catalog.rarities.map((rarity) => [rarity.code, rarity.idx]));
+
+/**
+ * A rune's tier rides in its id's tail as the catalog's rarity word (`rune_critdmg_comum`), the
+ * same way a tiered chest carries it as a digit, and the wire's `rarity` beside it reads 0. Only
+ * `comum` has been witnessed, so a tail the catalog does not know keeps the wire's value.
+ */
+export function runeRarityIdx(defId: string, wireRarity: number): number {
+  if (!defId.startsWith('rune_')) return wireRarity;
+  const tail = defId.slice(defId.lastIndexOf('_') + 1);
+  return rarityIdxByCode.get(tail) ?? wireRarity;
 }
 
 function statUnit(name: string | null): ItemStatUnit {
@@ -266,7 +286,7 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
 
   const definition = defById.get(defId);
   const equippedBy = asString(raw.equipped_on ?? raw.equippedBy);
-  const rarityIdx = chestRarityIdx(defId, Math.round(asNumber(raw.rarity ?? raw.rarityIdx, 0)));
+  const rarityIdx = runeRarityIdx(defId, chestRarityIdx(defId, Math.round(asNumber(raw.rarity ?? raw.rarityIdx, 0))));
   const level = asNumber(raw.level, definition?.nativeLevel ?? 0);
   const upgrade = Math.round(asNumber(raw.upgrade, 0));
   const stats = mapStats(raw.stats);

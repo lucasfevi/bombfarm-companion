@@ -355,6 +355,8 @@ export const en = {
   inventoryGroupTime: 'House parts',
   inventoryGroupStone: 'Skill stones',
   inventoryGroupChest: 'Chests',
+  inventoryGroupRune: 'Runes',
+  inventoryGroupSkin: 'Skins',
   inventoryGemAmethyst: 'Amethyst',
   inventoryGemAquamarine: 'Aquamarine',
   inventoryGemCitrine: 'Citrine',

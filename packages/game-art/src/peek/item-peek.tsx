@@ -2,7 +2,8 @@
 
 import type { ReactNode } from 'react';
 import { itemValores, upgradeMult } from '@bombfarm/domain/gear';
-import { itemName, itemRarityLabel, itemStatLabel, levelLabel, peekLabel } from '@bombfarm/domain/game-labels';
+import { itemName, itemRarityLabel, itemStatLabel, levelLabel, peekLabel, runeAxisLabel } from '@bombfarm/domain/game-labels';
+import { runeFromDefId } from '@bombfarm/domain/runes';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn, formatNumber } from '@bombfarm/ui';
 import { rarityTextClass } from '../game-art.recipe';
@@ -100,6 +101,14 @@ function Dot() {
   );
 }
 
+/** The line a rune prints: the statistic it raises and by how much, the way a gear roll reads. */
+function runeEffect(item: ItemPeekItem, lang: Lang): { label: string; value: string } | null {
+  if (item.kind !== 'rune') return null;
+  const rune = runeFromDefId(item.defId, item.rarityIdx);
+  if (!rune || rune.strengthPct === null) return null;
+  return { label: runeAxisLabel(rune.axis, lang), value: `+${formatNumber(rune.strengthPct, lang, 0)}%` };
+}
+
 /** The card an item opens: name and forge, tier, level and forge multiplier, every stat it rolls, and what it is worth. */
 export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'item' | 'lang' | 'name' | 'price'>) {
   const gear = isGear(item);
@@ -109,6 +118,7 @@ export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'i
   const stats: readonly ItemPeekStat[] = gear ? (item.stats ?? itemValores(item)) : [];
   const count = item.count ?? 1;
   const gold = item.sellValueGold ?? 0;
+  const rune = runeEffect(item, lang);
 
   return (
     <div data-slot="item-peek">
@@ -134,6 +144,8 @@ export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'i
                   </>
                 ) : null}
               </>
+            ) : rune ? (
+              <span className={cn('font-semibold', tier)}>{itemRarityLabel(item.rarityIdx, lang)}</span>
             ) : count > 1 ? (
               <span className="text-muted">×{formatNumber(count, lang, 0)}</span>
             ) : null}
@@ -153,6 +165,18 @@ export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'i
                 </span>
               </span>
             ))}
+          </div>
+        </>
+      ) : null}
+      {rune ? (
+        <>
+          <div className={peekRuleClass} />
+          <div className={peekRowsClass}>
+            <span data-slot="item-peek-rune" className={cn(inventoryStatRowClass, 'text-[11px]')}>
+              <span className={inventoryStatLabelClass}>{rune.label}</span>
+              <span className={inventoryStatLeaderClass} aria-hidden="true" />
+              <span className={inventoryStatValueClass}>{rune.value}</span>
+            </span>
           </div>
         </>
       ) : null}

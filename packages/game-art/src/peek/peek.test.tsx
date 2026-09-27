@@ -135,6 +135,25 @@ describe('ItemPeekCard', () => {
     expect(html).toContain('+947,1');
     expect(html).toContain('Forja ×1,64');
   });
+
+  /** An inventory rune carries no stats on the wire, so its hover card used to show the name alone. */
+  it('prints what a rune raises and by how much, at its tier', () => {
+    const rune = { defId: 'rune_critdmg_comum', kind: 'rune', rarityIdx: 0, level: 0, upgrade: 0 } as const;
+    const common = render(createElement(ItemPeekCard, { item: rune, lang: 'en', name: 'Crit Damage' }));
+    expect(common).toContain('data-slot="item-peek-rune"');
+    expect(statLabels(common)).toEqual(['Crit Damage']);
+    expect(common).toContain('+5%');
+    expect(common).toContain('Common');
+
+    const mythic = render(createElement(ItemPeekCard, { item: { ...rune, defId: 'rune_attack_mitico', rarityIdx: 5 }, lang: 'pt' }));
+    expect(statLabels(mythic)).toEqual(['Ataque']);
+    expect(mythic).toContain('+25%');
+  });
+
+  it('prints no rune line on anything but a rune', () => {
+    const gem = { defId: 'gem_ruby', kind: 'gem', rarityIdx: 4, level: 0, upgrade: 0 } as const;
+    expect(render(createElement(ItemPeekCard, { item: gem, lang: 'en' }))).not.toContain('item-peek-rune');
+  });
 });
 
 describe('AbilityPeekCard', () => {

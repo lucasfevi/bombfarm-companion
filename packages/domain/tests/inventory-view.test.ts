@@ -163,7 +163,7 @@ describe('groupInventoryByKind', () => {
 
   it('returns no groups for an empty inventory rather than one empty group per kind', () => {
     expect(groupInventoryByKind([])).toEqual([]);
-    expect(ITEM_KINDS.length).toBe(7);
+    expect(ITEM_KINDS.length).toBe(9);
   });
 });
 
@@ -191,10 +191,10 @@ describe('mapInventoryViewItem round-trips its own output', () => {
   });
 
   it('keeps an unresolved row in other across the round trip rather than promoting it', () => {
-    const once = mapInventoryViewItem({ id: '9', def_id: 'sparkle_thing', category: 7 });
+    const once = mapInventoryViewItem({ id: '9', def_id: 'sparkle_thing', category: 42 });
     const twice = mapInventoryViewItem(once as unknown as Record<string, unknown>);
     expect(twice!.kind).toBe('other');
-    expect(twice!.categoryCode).toBe(7);
+    expect(twice!.categoryCode).toBe(42);
   });
 });
 
@@ -292,9 +292,9 @@ describe('mapInventoryHeroes', () => {
 });
 
 /**
- * The wire's `category` is the game's own classification and partitions every row. These six
+ * The wire's `category` is the game's own classification and partitions every row. The first six
  * codes are read off a 63-save corpus; before this, only code 0 was known and a chest or a skill
- * stone fell through to `other`.
+ * stone fell through to `other`. Skins and runes arrived later and fell through the same way.
  */
 describe('resolveItemKind reads the wire category as the total classifier', () => {
   const CODES: [number, string, ItemKind][] = [
@@ -304,6 +304,8 @@ describe('resolveItemKind reads the wire category as the total classifier', () =
     [3, 'time_part_lendaria', 'time'],
     [4, 'map_key_mitico', 'key'],
     [5, 'skill_stone_comum', 'stone'],
+    [6, 'skin_6', 'skin'],
+    [7, 'rune_critdmg_comum', 'rune'],
   ];
 
   it.each(CODES)('files category %i (%s) as %s', (code, defId, kind) => {
@@ -313,6 +315,26 @@ describe('resolveItemKind reads the wire category as the total classifier', () =
   it('still classifies a chest and a skill stone from the def_id when no category is sent', () => {
     expect(resolveItemKind(null, 'chest_gem_2')).toBe('chest');
     expect(resolveItemKind(null, 'skill_stone_mitico')).toBe('stone');
+    expect(resolveItemKind(null, 'skin_8')).toBe('skin');
+    expect(resolveItemKind(null, 'rune_attack_raro')).toBe('rune');
+  });
+});
+
+/** A rune reads `rarity: 0` on the wire; its tier is the catalog rarity word ending its id. */
+describe('rune tiers from the def_id tail', () => {
+  const rarityOf = (defId: string, wire = 0) =>
+    mapInventoryViewItem({ id: 'r', def_id: defId, category: 7, rarity: wire })!.rarityIdx;
+
+  it.each([
+    ['rune_critdmg_comum', 0],
+    ['rune_attack_raro', 2],
+    ['rune_speed_mitico', 5],
+  ])('reads %s as rarity %i', (defId, expected) => {
+    expect(rarityOf(defId)).toBe(expected);
+  });
+
+  it('keeps the wire rarity for a tail the catalog does not name', () => {
+    expect(rarityOf('rune_gold_shiny', 3)).toBe(3);
   });
 });
 

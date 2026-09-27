@@ -9,6 +9,7 @@ import type { RarityKey, StatKey } from './model';
 import type { AbilityEffectReadout } from './ability-effect-readout';
 import { type Slot } from './gear';
 import type { SheetKey } from './planner-constants';
+import type { RuneAxis } from './runes';
 import type { TeamBuffId } from './team-buffs';
 import catalog from './data/catalog.json' with { type: 'json' };
 import { EXTRA_RANGE_FRAC, SHATTER_FRAC } from './phase-wiki';
@@ -68,6 +69,12 @@ export function statLabel(stat: StatKey, lang: Lang): string {
 /** Every sheet row's label, luck included — the eight the sheet panel prints. */
 export function sheetStatLabel(stat: SheetKey, lang: Lang): string {
   return stat === 'luck' ? pick(LUCK_LABEL, lang, stat) : statLabel(stat, lang);
+}
+
+/** The statistic a rune multiplies, or the reward it raises for the two that are not statistics. */
+export function runeAxisLabel(axis: RuneAxis, lang: Lang): string {
+  const stat = RUNE_AXIS_STAT[axis];
+  return stat === null ? pick(RUNE_REWARD_LABELS[axis], lang, axis) : sheetStatLabel(stat, lang);
 }
 
 /** The same eight, abbreviated for a column too narrow to spell "Chance de Crítico". */
@@ -415,6 +422,22 @@ const STAT_LABEL_MAP: Record<StatKey, Bilingual> = {
   critChance: { pt: 'Chance de Crítico', en: 'Crit Chance' },
   penetration: { pt: 'Penetração', en: 'Penetration' },
   cdr: { pt: 'Red. de Cooldown', en: 'CDR' },
+};
+
+const RUNE_AXIS_STAT: Record<RuneAxis, SheetKey | null> = {
+  attack: 'attack',
+  energy: 'energy',
+  speed: 'speed',
+  crit: 'critChance',
+  critdmg: 'critDmg',
+  cdr: 'cdr',
+  xp: null,
+  gold: null,
+};
+
+const RUNE_REWARD_LABELS: Partial<Record<RuneAxis, Bilingual>> = {
+  xp: { pt: 'Experiência', en: 'Experience' },
+  gold: { pt: 'Ouro', en: 'Gold' },
 };
 
 const ITEM_STAT_LABELS: Record<string, Bilingual> = {
