@@ -1,7 +1,7 @@
 import catalog from './data/catalog.json' with { type: 'json' };
 import type { Slot } from './gear';
 import type { DropRateId } from './phase-wiki';
-import type { RuneAxis } from './runes';
+import { runeFromDefId, type RuneAxis } from './runes';
 import type { SkillEffectKind } from './skill-tree/catalog';
 
 /**
@@ -112,6 +112,17 @@ export function raritySlotPlateSrc(rarityIdx: number): string | null {
  */
 export function itemKindIconSrc(defId: string, rarityIdx: number): string | null {
   if (defId.startsWith('gem_')) return `${WIKI_ASSETS_BASE}/gems/${defId}.png`;
+
+  const unpackedSkin = /^skin_(\d+)$/.exec(defId);
+  if (unpackedSkin) {
+    const skin = Number(unpackedSkin[1]);
+    return isKnownSkin(skin) ? heroAvatarSrc(skin) : null;
+  }
+
+  if (defId.startsWith('rune_')) {
+    const rune = runeFromDefId(defId, rarityIdx);
+    return rune ? runeIconSrc(rune.axis, rarityIdx) : null;
+  }
 
   if (defId.startsWith('time_part_')) {
     const slug = CRYSTAL_SLUG[Math.round(rarityIdx)];

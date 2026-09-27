@@ -115,7 +115,10 @@ const slot = (html: string, testId: string) =>
 const slots = (html: string, testId: string) =>
   [...html.matchAll(new RegExp(`data-testid="${testId}"[^>]*>([^<]*)<`, 'g'))].map((match) => match[1]);
 
-const SIX_KINDS = ITEM_KINDS.filter((kind) => kind !== 'other');
+const SIX_KINDS = ITEM_KINDS.filter(
+  (kind): kind is Exclude<typeof kind, 'other' | 'rune' | 'skin'> =>
+    kind !== 'other' && kind !== 'rune' && kind !== 'skin',
+);
 const GROUP_LABEL = {
   equipment: 'inventoryGroupEquipment',
   gem: 'inventoryGroupGem',

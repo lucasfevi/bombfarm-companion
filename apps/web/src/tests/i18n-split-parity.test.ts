@@ -442,7 +442,8 @@ const KEYS_REMOVED: readonly string[] = [
  * route listing every item a save carries, not just the gear the optimizer pools. The five
  * `inventoryGroup*` keys name the item kinds; `inventoryGroupOther` and
  * `inventoryUnknownCategory` exist because the catalog names gear only, so an item type a patch
- * adds is shown and labelled unknown rather than silently filed as gear.
+ * adds is shown and labelled unknown rather than silently filed as gear. `inventoryGroupRune` and
+ * `inventoryGroupSkin` followed when runes and unpacked skins began arriving as inventory rows.
  *
  * The market-price data layer (2026-08-29) adds the `market*` block. Two of the strings exist
  * because Steam prices each region independently instead of converting: a native quote is the
@@ -744,6 +745,8 @@ const KEYS_ADDED: readonly string[] = [
   'inventoryGroupTime',
   'inventoryGroupStone',
   'inventoryGroupChest',
+  'inventoryGroupRune',
+  'inventoryGroupSkin',
   'inventoryGroupOther',
   'inventoryBadgeLocked',
   'inventoryBadgeMarketBlocked',

@@ -10,6 +10,7 @@ import {
   itemKindIconSrc,
   normalizeSkin,
   propIconSrc,
+  runeIconSrc,
 } from '../src/wiki-assets';
 import { PROPS } from '../src/phases';
 
@@ -98,6 +99,25 @@ describe('propIconSrc', () => {
  * art for a different item. The tail is the act the cage was caught in, and the wiki draws that
  * cage per act, so the row shows the cage itself.
  */
+describe('itemKindIconSrc for skins and runes', () => {
+  it('draws an unpacked skin as the avatar a hero wearing it shows', () => {
+    expect(itemKindIconSrc('skin_6', 0)).toBe(heroAvatarSrc(6));
+  });
+
+  it('draws nothing for a skin index past the bundled art, rather than another skin face', () => {
+    expect(itemKindIconSrc('skin_99', 0)).toBeNull();
+  });
+
+  it('draws a rune as its axis sprite at the tier it carries', () => {
+    expect(itemKindIconSrc('rune_critdmg_comum', 0)).toBe(runeIconSrc('critdmg', 0));
+    expect(itemKindIconSrc('rune_attack_raro', 2)).toBe(runeIconSrc('attack', 2));
+  });
+
+  it('draws nothing for an axis the game has not been seen to use', () => {
+    expect(itemKindIconSrc('rune_luck_comum', 0)).toBeNull();
+  });
+});
+
 describe('itemKindIconSrc for a hero cage', () => {
   it.each([1, 2, 3, 4, 5])('draws the act-%i cage, never the item chest', (act) => {
     const src = itemKindIconSrc(`chest_hero_${act}`, act);

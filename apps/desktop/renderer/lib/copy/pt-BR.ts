@@ -346,6 +346,8 @@ export const ptBR: Copy = {
   inventoryGroupTime: 'Peças de Casa',
   inventoryGroupStone: 'Pedras de habilidade',
   inventoryGroupChest: 'Baús',
+  inventoryGroupRune: 'Runas',
+  inventoryGroupSkin: 'Skins',
   inventoryGemAmethyst: 'Ametista',
   inventoryGemAquamarine: 'Água-marinha',
   inventoryGemCitrine: 'Citrino',

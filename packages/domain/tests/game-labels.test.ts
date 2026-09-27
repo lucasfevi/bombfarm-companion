@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { RUNE_AXES, RUNE_AXIS_SHEET_KEY } from '../src/runes';
 import {
   abilityEffectText,
   abilityName,
@@ -13,6 +14,7 @@ import {
   peekLabel,
   propLabel,
   rarityLabel,
+  runeAxisLabel,
   setName,
   sheetStatLabel,
   sheetStatShortLabel,
@@ -373,5 +375,23 @@ describe('peekLabel', () => {
     expect(peekLabel('atCap', 'en')).toBe('At cap');
     expect(peekLabel('atCap', 'pt')).toBe('No teto');
     expect(peekLabel('rankOf', 'en')).toContain('{rank}');
+  });
+});
+
+/** The label map carries its own axis → stat table (a value import of the runes module would close
+ *  an import cycle through `model`), so it has to agree with the one the sheet math uses. */
+describe('runeAxisLabel', () => {
+  it.each(RUNE_AXES.filter((axis) => RUNE_AXIS_SHEET_KEY[axis] !== null))(
+    'names the %s rune by the sheet statistic it multiplies',
+    (axis) => {
+      const stat = RUNE_AXIS_SHEET_KEY[axis]!;
+      expect(runeAxisLabel(axis, 'en')).toBe(sheetStatLabel(stat, 'en'));
+      expect(runeAxisLabel(axis, 'pt')).toBe(sheetStatLabel(stat, 'pt'));
+    },
+  );
+
+  it('names the two reward runes, which multiply no statistic', () => {
+    expect(runeAxisLabel('xp', 'en')).toBe('Experience');
+    expect(runeAxisLabel('gold', 'pt')).toBe('Ouro');
   });
 });
