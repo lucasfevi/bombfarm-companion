@@ -1,5 +1,39 @@
 # @bombfarm/game-art
 
+## 0.7.2
+
+### Patch Changes
+
+- 35108e3: Two more changes from the 2026-09-26 game patch.
+
+  Double Detonation (Detonação Dupla) now gives +2.5% chance of a second blast per level, up from 1.5%, so a rank-20 hero sets one off on half its bombs instead of 30% of them. That hero's damage multiplier rises from ×1.15 to ×1.25 (about +8.7%) on the Farm board, active DPS and the Optimizer, and the ability's description and readout say 2.5%.
+
+  Shrapnel (Estilhaços), the game's new 21st ability, is modelled. Each level gives +2.5% chance that a rock the hero destroys shatters, hitting every rock on its four sides for half the killing hit. It hits only rocks, never the boss or the cage, and a rock felled by a shard does not shatter again. The farm estimate counts the shards as extra hits, each needing its own hits-to-kill, so they help most where half a hit can still break a rock. Active DPS figures leave it out, because it pays per rock destroyed rather than per bomb. Heroes with Shrapnel used to import with an "Unknown ability" warning and got no credit for it. They now import cleanly and show the ability with its icon.
+
+- 6d34bfe: Hero cards shown on hover now include spent stat points, matching the hero's stat sheet. A hero whose spent points could not be read shows its card without figures, as its stat sheet does, instead of figures that leave those points out.
+- 35108e3: The seven hero skins added by the 2026-09-26 game patch are supported: Mage, Dolphin, Vampire Count, Cauldron Witch, Shadow Ninja, Golden Paladin and Nurse. A hero wearing one now imports with its own avatar instead of an "Unknown skin" issue and the placeholder face, and an account that owns one prices it at its Steam market listing (`<Name> Skin`, e.g. `Nurse Skin`) alongside the five bought skins already known.
+- 64e7fe3: Show skins and runes in the inventory. An unpacked skin or a rune used to land under "Other" as a blank tile named only "Common". Each now has its own group. A skin is drawn with its avatar and named as the market lists it, for example "White Oracle". A rune is drawn with its sprite and named by the statistic it raises, with its tier below; hovering it shows what it raises and by how much, for example "Crit Damage +5%".
+- 6d34bfe: The hero roster is easier to read and easier to show off. Each hero is now a showcase card — power up front, what the hero is built for in words, its birth roll as small meters (the grade and overall roll on a grade ladder, then its two highest rolls as a share of their range), its abilities and gear drawn large enough to fill the card's width, with a Show levels switch that prints every item level, forge and ability level on them — under a roster summary strip with squad power, the rarity mix, the furthest phase and the squad's average gear. These cards replace the old Compact/Combat/Full board, so its density switch is gone. A third layout lists the roster as a sortable leaderboard, one row per hero with every stat written out; a searchable Columns list picks which columns show, and hovering a hero's portrait opens its card.
+
+  In the desktop app, a Share button on the Heroes screen opens a share card: your player name, current and furthest phase, total power, your three strongest heroes with their gear and abilities, the team auras your squad covers, and everyone else on it, each with the same DPS the Heroes screen shows at a phase you pick with the Optimizer's searchable phase picker. Pick which heroes go on it — a name filter and rarity chips narrow the list — hide the gear or the auras, show item and ability levels, add your account number if you want it there, and press Copy as image to paste the card into a chat.
+
+  In the web planner, a roster with no hero picked yet (or whose last picked hero is gone) now opens on its strongest hero instead of a blank one, and that hero is marked in the list and the leaderboard.
+
+- Updated dependencies [35108e3]
+- Updated dependencies [9f09846]
+- Updated dependencies [35108e3]
+- Updated dependencies [64e7fe3]
+- Updated dependencies [6d34bfe]
+- Updated dependencies [35108e3]
+- Updated dependencies [6d34bfe]
+- Updated dependencies [6d34bfe]
+- Updated dependencies [02dc923]
+- Updated dependencies [35108e3]
+- Updated dependencies [35108e3]
+- Updated dependencies [5b64748]
+  - @bombfarm/domain@1.6.0
+  - @bombfarm/ui@0.16.0
+
 ## 0.7.1
 
 ### Patch Changes
