@@ -1,5 +1,31 @@
 # @bombfarm/team-plan
 
+## 0.4.1
+
+### Patch Changes
+
+- 6d34bfe: Hero cards shown on hover now include spent stat points, matching the hero's stat sheet. A hero whose spent points could not be read shows its card without figures, as its stat sheet does, instead of figures that leave those points out.
+- 35108e3: The Optimizer's PVP objective now plans for the squad slots your account actually has. A duel squad's slots grow with the squad house (two, four, six, eight, then nine), and the desktop app already read yours from the game with the PVP standing, but the plan always assumed nine. An account with six slots could get a plan for a squad of seven or more that it cannot field. The plan now scores the duel on a room with your own slot count, the Duel field reads "5 of 6 fielded" against that number, and the warning says how many slots you have and how many heroes to move to Donate. Until the game has reported your slots, the plan assumes nine, the top house's count, and the field's tooltip says so. A change in your slot count after a PVP plan is built marks the plan out of date. The web planner has no PVP data and does not offer the objective. Its Optimizer explanation no longer says a duel always seats nine. In `@bombfarm/domain/combat-window`, `PVP_SQUAD_SLOTS` is now `PVP_TOP_HOUSE_SQUAD_SLOTS`, `pvpSquadSlots()` resolves a reported count to the slots a plan uses, and `TeamPlanInput` gains `pvpSquadSlots`.
+- Updated dependencies [35108e3]
+- Updated dependencies [6d34bfe]
+- Updated dependencies [9f09846]
+- Updated dependencies [35108e3]
+- Updated dependencies [64e7fe3]
+- Updated dependencies [6d34bfe]
+- Updated dependencies [35108e3]
+- Updated dependencies [6d34bfe]
+- Updated dependencies [6d34bfe]
+- Updated dependencies [02dc923]
+- Updated dependencies [9f09846]
+- Updated dependencies [35108e3]
+- Updated dependencies [35108e3]
+- Updated dependencies [5b64748]
+  - @bombfarm/domain@1.6.0
+  - @bombfarm/hero@0.4.0
+  - @bombfarm/game-art@0.7.2
+  - @bombfarm/farm@1.2.7
+  - @bombfarm/ui@0.16.0
+
 ## 0.4.0
 
 ### Minor Changes
