@@ -46,7 +46,7 @@
  */
 
 import { BASE_BLAST_RANGE, EXTRA_RANGE_FRAC, SHATTER_FRAC } from '../phase-wiki';
-import { freeHopCells, meanPlantCycleSeconds } from './plant-cycle';
+import { freeHopCells, hopSpeedFactor, meanPlantCycleSeconds } from './plant-cycle';
 
 /** Cells of the cross every hero's blast covers at full damage: the epicentre and one per arm. */
 export const BASE_BLAST_CELLS = 1 + 4 * BASE_BLAST_RANGE;
@@ -241,6 +241,7 @@ export function simulateClear(
   const plantRate = new Array<number>(heroCount).fill(0);
   const hitsPerPlantFull = new Array<number>(heroCount).fill(0);
   const hitsPerPlantCap = active.map((hero) => HITS_PER_PLANT_CAP_BASE + HITS_PER_PLANT_CAP_PER_CELL * hero.blastCells);
+  const speedFactor = active.map((hero) => hopSpeedFactor(hero.walkSpeedCells));
   const killsPerHit = new Array<number>(heroCount).fill(0);
   // The same per-type and per-mix figures for the hits the extra cells land, `null` for a hero
   // whose cross stops at the base reach.
@@ -335,7 +336,7 @@ export function simulateClear(
       }
       shardKillsPerHit[h] = mixKillsPerHit(shardKillsPerHitByType[h], share, standingTypes, standingCount);
       extraShardKillsPerHit[h] = mixKillsPerHit(extraShardKillsPerHitByType[h], share, standingTypes, standingCount);
-      plantRate[h] = (hero.presence * activeShare) / meanPlantCycleSeconds(hero.fuseSecs, hero.walkSpeedCells, freeHop);
+      plantRate[h] = (hero.presence * activeShare) / meanPlantCycleSeconds(hero.fuseSecs, hero.walkSpeedCells, freeHop * speedFactor[h]);
       hitsPerPlantFull[h] = densityHits * (hero.blastCells - 1);
       hitsPerPlantExtra[h] = densityHits * extraCells[h];
     }

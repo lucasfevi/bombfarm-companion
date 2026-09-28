@@ -69,8 +69,13 @@ export function freeHopCells(standing: number): number {
   return FREE_HOP_BASE_CELLS + FREE_HOP_SQRT_CELLS / Math.sqrt(Math.max(1, standing));
 }
 
+/**
+ * `exp(k × ln x)` rather than `Math.pow(x, k)`: the two agree to the last few bits, but `pow` with
+ * a fractional exponent rounded differently on the Linux runners than on Windows, and the
+ * optimizer goldens are pinned to the bit.
+ */
 export function hopSpeedFactor(walkSpeedCells: number): number {
-  return Math.pow(walkSpeedCells / HOP_SPEED_PIVOT, HOP_SPEED_EXPONENT);
+  return Math.exp(HOP_SPEED_EXPONENT * Math.log(walkSpeedCells / HOP_SPEED_PIVOT));
 }
 
 export function plantCycleSeconds(fuseSecs: number, walkSpeedCells: number, hopCells: number): number {
@@ -79,10 +84,10 @@ export function plantCycleSeconds(fuseSecs: number, walkSpeedCells: number, hopC
 
 /**
  * The mean cycle over the free-hop spread and the re-plants, never the cycle of the mean hop.
- * `densityHopCells` is {@link freeHopCells} at the standing count; the hero's speed scales it here.
+ * `meanFreeHop` is {@link freeHopCells} at the standing count times the hero's
+ * {@link hopSpeedFactor} — taken by the caller, which prices one hero at many counts.
  */
-export function meanPlantCycleSeconds(fuseSecs: number, walkSpeedCells: number, densityHopCells: number): number {
-  const meanFreeHop = densityHopCells * hopSpeedFactor(walkSpeedCells);
+export function meanPlantCycleSeconds(fuseSecs: number, walkSpeedCells: number, meanFreeHop: number): number {
   let free = 0;
   for (const multiplier of FREE_HOP_SHAPE) free += plantCycleSeconds(fuseSecs, walkSpeedCells, meanFreeHop * multiplier);
   return (

@@ -80,7 +80,7 @@ describe('FREE_HOP_SHAPE — a spread around the density mean, not a second mean
     const fuse = 1.3;
     const w = 3;
     const meanHop = freeHopCells(40) * hopSpeedFactor(w);
-    expect(meanPlantCycleSeconds(fuse, w, freeHopCells(40))).toBeGreaterThan(plantCycleSeconds(fuse, w, meanHop));
+    expect(meanPlantCycleSeconds(fuse, w, meanHop)).toBeGreaterThan(plantCycleSeconds(fuse, w, meanHop));
   });
 
   it('shortens the free hop as the map fills and lengthens it for a faster hero', () => {
@@ -113,7 +113,7 @@ describe('cycleSecondsForHero — seconds per bomb over a whole clear of the ban
   it('never beats the fuse-bound floor, and runs slower than the steady cycle — the head and the starved tail plant nothing', () => {
     const fuse = 1.972;
     expect(cycleSecondsForHero(fuse, 1e9)).toBeGreaterThan(fuse + FUSE_CYCLE_OVERHEAD_SEC);
-    expect(cycleSecondsForHero(fuse, 3, 3)).toBeGreaterThan(meanPlantCycleSeconds(fuse, 3, freeHopCells(100)));
+    expect(cycleSecondsForHero(fuse, 3, 3)).toBeGreaterThan(meanPlantCycleSeconds(fuse, 3, freeHopCells(100) * hopSpeedFactor(3)));
   });
 
   it('plants faster on a denser band', () => {
