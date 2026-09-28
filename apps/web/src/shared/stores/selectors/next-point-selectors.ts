@@ -139,7 +139,7 @@ export function selectDraftFarmBasis(state: PlannerStore): HeroFarmBasis | null 
 // -----------------------------------------------------------------------------------------
 
 export type NextPointRanking = {
-  /** Always 7 — never null at this layer. */
+  /** 7 damage rows, or 8 when farm ranking succeeded (Luck is priced there) — never null. */
   rows: readonly PointValue[];
   /** What was ASKED for. */
   mode: RankMode;

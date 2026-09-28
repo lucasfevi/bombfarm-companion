@@ -24,7 +24,7 @@ import { farmPointsPass, FARM_POINTS_PASS_MAX_EVALUATIONS } from '@bombfarm/doma
 import { loadoutForScoring } from '@bombfarm/domain/team-plan/evaluate';
 import { buildHeroPlanContexts } from '@bombfarm/domain/team-plan/hero-context';
 import { createScoreMemo } from '@bombfarm/domain/team-plan/score';
-import { REOPT_KEYS } from '@bombfarm/domain/points-reopt-core';
+import { RESPEC_KEYS } from '@bombfarm/domain/points-reopt-core';
 import type { Loadout, PointAlloc } from '@bombfarm/domain/gear/types';
 import { assertInRegime } from './helpers/capture-regime';
 import { loadTeamPlanFarmFixture, type TeamPlanFarmFixture } from './helpers/team-plan-farm-fixtures';
@@ -103,7 +103,7 @@ describe('the farm point pass earns gold the gear alone does not', () => {
  */
 describe('the pass moves only what the plan is allowed to move', () => {
   for (const file of CAPTURES) {
-    it(`${file}: a left-alone hero keeps its points, and Luck never moves`, () => {
+    it(`${file}: a left-alone hero keeps its points`, () => {
       const fixture = loadTeamPlanFarmFixture(file, { scopeByIndex: { 1: 'leaveAlone', 2: 'leaveAlone' } });
       const contexts = buildHeroPlanContexts(
         fixture.teamPlanInput.heroes,
@@ -135,9 +135,6 @@ describe('the pass moves only what the plan is allowed to move', () => {
       for (const ctx of nonOptimize) {
         expect(result.ptsByHeroId[ctx.heroId], `${ctx.heroId} was moved despite being left alone`).toEqual(ctx.pts);
       }
-      for (const ctx of squad) {
-        expect(result.ptsByHeroId[ctx.heroId]?.luck).toBe(ctx.pts.luck);
-      }
     }, 600_000);
   }
 });
@@ -148,7 +145,7 @@ describe('a reset is only written when it actually changes the build', () => {
       const fixture = loadTeamPlanFarmFixture(file);
       const plan = farmPlan(fixture);
       for (const reset of plan.pointResets) {
-        const changed = REOPT_KEYS.some((key) => reset.pts[key] !== reset.ptsBefore[key]);
+        const changed = RESPEC_KEYS.some((key) => reset.pts[key] !== reset.ptsBefore[key]);
         expect(changed, `${reset.heroId} reported an unchanged reset`).toBe(true);
       }
     }, 600_000);

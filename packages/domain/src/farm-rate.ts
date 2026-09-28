@@ -343,7 +343,8 @@ export type HeroFarmBasis = {
   /** Ability damage multiplier, Matilha's pack factor at the field the basis was priced for
    *  included — a function of the abilities and the field size, never of gear or points. */
   dmgMult: number;
-  /** Hero-only Sorte, PERCENTAGE POINTS. Frozen: luck is outside the reallocatable budget. */
+  /** Hero-only Sorte at `pts`, PERCENTAGE POINTS. A candidate vector moves it by
+   *  `effectiveDelta.luck` per Luck point. */
   heroLuckPct: number;
   /** Clamped ability levels — build-independent. */
   veiaOuroLevel: number;
@@ -717,7 +718,7 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
     critDmgPct: sheet.critDmg,
     blastCells: 1 + 4 * basis.context.blastRange,
     uptime,
-    heroLuckPct: basis.heroLuckPct,
+    heroLuckPct: Math.max(0, basis.heroLuckPct + (pts.luck - basis.pts.luck) * (basis.effectiveDelta.luck ?? 0)),
     veiaOuroLevel: basis.veiaOuroLevel,
     fortunaLevel: basis.fortunaLevel,
     ...(basis.estilhacosLevel > 0

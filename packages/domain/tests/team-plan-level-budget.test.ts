@@ -118,7 +118,7 @@ describe('team-plan point budget — solver-search.ts pointsPass (via runTeamPla
     expect(reset).toBeDefined();
 
     const hero = input.heroes.find((entry) => entry.heroId === reset!.heroId)!;
-    // `reoptBudget(ZERO_PTS(), level)` is `level` — the Points panel's own ceiling
+    // `reoptBudget(level)` is `level` — the Points panel's own ceiling
     // (`clampPointStep`). Placed + unplaced must account for exactly that, no more.
     expect(sumPts(reset!.pts)).toBeLessThanOrEqual(hero.level);
   });

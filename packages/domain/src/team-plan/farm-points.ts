@@ -23,7 +23,7 @@ import {
   FARM_OPT_FULL_MAX_EVALUATIONS,
   FARM_OPT_JOINT_BUDGET_SHARE,
 } from '../farm-optimize-search';
-import { reoptBudget, REOPT_KEYS } from '../points-reopt-core';
+import { reoptBudget, RESPEC_KEYS } from '../points-reopt-core';
 import { FARM_GOLD_OBJECTIVE, FARM_UNREAD_SCALES, farmBasesForBuild } from './farm-objective';
 import type { Loadout, PointAlloc } from '../gear/types';
 import type { ScoreMemo, TeamPlanFarmObjective } from './types';
@@ -70,7 +70,7 @@ export function farmPointsPass(input: FarmPointsPassInput): FarmPointsPassResult
     const movable =
       objective.heroes[index].ctx.scope === 'optimize' &&
       !heroFactsFromBasis(basis, basis.pts).degenerate;
-    const budget = movable ? reoptBudget(basis.pts, basis.level) : 0;
+    const budget = movable ? reoptBudget(basis.level) : 0;
     budgetById.set(basis.heroId, budget);
     if (budget > 0) searchableIds.push(basis.heroId);
   });
@@ -92,8 +92,8 @@ export function farmPointsPass(input: FarmPointsPassInput): FarmPointsPassResult
     if (!proposed) continue;
     // An equal-scoring reshuffle is not worth a reset the player has to buy, and the search's own
     // tie-break already prefers the current vector — this only refuses to write one back.
-    if (!REOPT_KEYS.some((key) => proposed[key] !== basis.pts[key])) continue;
-    nextPts[basis.heroId] = { ...proposed, luck: basis.pts.luck };
+    if (!RESPEC_KEYS.some((key) => proposed[key] !== basis.pts[key])) continue;
+    nextPts[basis.heroId] = { ...proposed };
   }
 
   return { ptsByHeroId: nextPts, evaluations: search.evaluations };

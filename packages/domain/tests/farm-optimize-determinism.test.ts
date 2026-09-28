@@ -174,25 +174,23 @@ describe('the fixed point: re-solving on the solver\'s own proposal changes noth
   });
 });
 
-describe('proposed luck always equals current luck, under every objective', () => {
+describe('Luck is refundable budget, under every objective', () => {
   for (const objective of OBJECTIVES) {
     it(`objective=${JSON.stringify(objective)}`, () => {
       const { heroes, account, maxPhase } = loadFarmRateFixture();
       const jon = heroes.find((h) => h.name === 'Jon')!;
-      // A hero whose luck is the majority of its level (level 38, luck 30) — the case that would
-      // catch a search that treats luck as spendable budget.
+      // A hero whose luck is the majority of its level (level 38, luck 30): a search that held
+      // Luck back would leave it with 8 points to work with instead of 38.
       const highLuckJon: HeroRecord = { ...jon, pts: { ...jon.pts, luck: 30 } };
       const mutatedHeroes = heroes.map((h) => (h.id === jon.id ? highLuckJon : h));
 
       const result = solveFarmRespec({ heroes: mutatedHeroes, account, objective, maxPhase });
-      expect(result.heroes.length).toBeGreaterThan(0);
-      for (const hero of result.heroes) {
-        expect(hero.proposedPts.luck).toBe(hero.currentPts.luck);
-      }
-      // The fixture's own heroes all carry luck 0 — covered by every other case in this file too.
-      const untouchedHero = result.heroes.find((h) => h.heroId !== jon.id)!;
-      expect(untouchedHero.currentPts.luck).toBe(0);
-      expect(untouchedHero.proposedPts.luck).toBe(0);
+      const jonEntry = result.heroes.find((h) => h.heroId === jon.id)!;
+      expect(jonEntry.changed).toBe(true);
+      expect(jonEntry.proposedPts.luck).toBeLessThan(30);
+      expect(jonEntry.requiresReset).toBe(true);
+      const spent = Object.values(jonEntry.proposedPts).reduce((sum, value) => sum + value, 0);
+      expect(spent).toBeLessThanOrEqual(jon.level);
     });
   }
 });

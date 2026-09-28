@@ -20,8 +20,8 @@ import {
   cappedStatsOf,
   greedyWalk,
   REOPT_GATE_MAX_EVALUATIONS,
-  REOPT_KEYS,
   reoptBudget,
+  zeroedRespecKeys,
 } from './points-reopt-core';
 import {
   buildSeeds,
@@ -32,6 +32,7 @@ import {
 
 export {
   REOPT_KEYS,
+  RESPEC_KEYS,
   REOPT_GATE_MAX_EVALUATIONS,
   buildCandidateSheet,
   cappedStatsOf,
@@ -39,6 +40,7 @@ export {
   greedyWalk,
   reoptBudget,
   resetBudget,
+  zeroedRespecKeys,
 } from './points-reopt-core';
 export type { GreedyWalkResult } from './points-reopt-core';
 export {
@@ -49,7 +51,8 @@ export {
 } from './points-reopt-search';
 
 export type ReoptInput = {
-  /** Full 8-key current allocation. `pts.luck` is copied through untouched. */
+  /** Full 8-key current allocation. Luck is refundable like every other key, but worth no DPS,
+   *  so a winning search spends it elsewhere. */
   pts: Record<SheetKey, number>;
   /** The pipeline's already-computed effective combat sheet. */
   effective: HeroSheet;
@@ -69,7 +72,7 @@ export type ReoptInput = {
 };
 
 export type ReoptResult = {
-  /** Full 8-key vector. `luck` is copied from the input untouched. */
+  /** Full 8-key vector. Luck is 0 unless the player's own vector (`S1`) won. */
   pts: Record<SheetKey, number>;
   /** Budget the search could not place because every candidate scored <= 0. */
   unallocated: number;
@@ -143,9 +146,8 @@ export function findGateCandidate(input: ReoptInput): ReoptResult {
   const s1Score = sustainedDps(effective, context);
   evaluations += 1;
 
-  // S2: greedy-from-zero over the seven DPS keys, Luck untouched.
-  const zeroStart: Record<SheetKey, number> = { ...pts };
-  for (const key of REOPT_KEYS) zeroStart[key] = 0;
+  // S2: greedy-from-zero — the whole reset, Luck refunded with the rest.
+  const zeroStart = zeroedRespecKeys(pts);
   const zeroSheet = buildCandidateSheet(effective, pts, effectiveDelta, zeroStart);
   const zeroScore = sustainedDps(zeroSheet, context);
   const greedy = greedyWalk(
@@ -198,7 +200,7 @@ export function findGateCandidate(input: ReoptInput): ReoptResult {
  */
 export function optimizeBuild(input: ReoptInput): ReoptResult {
   const { pts, effective, effectiveDelta, context, level } = input;
-  const budget = reoptBudget(pts, level);
+  const budget = reoptBudget(level);
   const cappedOnEntry = cappedStatsOf(effective);
 
   if (budget <= 0) {

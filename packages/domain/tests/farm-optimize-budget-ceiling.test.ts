@@ -24,7 +24,7 @@ import { solveFarmRespec } from '@bombfarm/domain/farm-optimize';
 import { computeHeroFarmBases } from '@bombfarm/domain/farm-rate';
 import { runFarmSearch } from '@bombfarm/domain/farm-optimize-search';
 import { resolveFarmObjective } from '@bombfarm/domain/farm-optimize-objective';
-import { budgetOf, reoptBudget, clampPtsToBudget, REOPT_KEYS } from '@bombfarm/domain/points-reopt-core';
+import { budgetOf, reoptBudget, clampPtsToBudget, RESPEC_KEYS } from '@bombfarm/domain/points-reopt-core';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 import { holdSuiteUntilInRegime } from './helpers/capture-regime';
@@ -54,7 +54,7 @@ describe('the corpus this runs on is clean, so the anomaly is the one under test
 describe('no proposal exceeds the hero own reoptBudget, even from an over-spent start', () => {
   function expectWithinBudget(result: { heroes: readonly { heroName: string; currentPts: Record<string, number>; proposedPts: Record<string, number>; level: number }[] }): void {
     for (const hero of result.heroes) {
-      const budget = reoptBudget(hero.currentPts as never, hero.level);
+      const budget = reoptBudget(hero.level);
       expect(
         budgetOf(hero.proposedPts as never),
         `${hero.heroName} proposed ${budgetOf(hero.proposedPts as never)} against a budget of ${budget}`,
@@ -66,7 +66,7 @@ describe('no proposal exceeds the hero own reoptBudget, even from an over-spent 
   // and carry the parameter sweep, so the file stays under a second beyond this.
   it('the full solve, with every hero over-spent at once', () => {
     const roster = heroes.map((hero) => overSpend(hero, 5));
-    expect(budgetOf(roster[0].pts)).toBeGreaterThan(reoptBudget(roster[0].pts, roster[0].level));
+    expect(budgetOf(roster[0].pts)).toBeGreaterThan(reoptBudget(roster[0].level));
     expectWithinBudget(solveFarmRespec({ heroes: roster, account, maxPhase }));
   });
 
@@ -84,7 +84,7 @@ describe('no proposal exceeds the hero own reoptBudget, even from an over-spent 
   it('the incumbent itself is clamped — forced to win with an evaluation budget of 1', () => {
     const roster = heroes.map((hero, index) => (index === 0 ? overSpend(hero, 12) : hero));
     const bases = computeHeroFarmBases({ heroes: roster, account });
-    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
+    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.level)] as const));
     const overSpentId = bases[0].heroId;
     expect(budgetOf(bases[0].pts)).toBeGreaterThan(budgetById.get(overSpentId)!);
 
@@ -111,7 +111,7 @@ describe('no proposal exceeds the hero own reoptBudget, even from an over-spent 
   for (const extra of [1, 6, 40]) {
     it(`the solve, one hero over-spent by ${extra} points`, () => {
       const roster = heroes.map((hero, index) => (index === 0 ? overSpend(hero, extra) : hero));
-      expect(budgetOf(roster[0].pts)).toBeGreaterThan(reoptBudget(roster[0].pts, roster[0].level));
+      expect(budgetOf(roster[0].pts)).toBeGreaterThan(reoptBudget(roster[0].level));
       expectWithinBudget(solveFarmRespec({ heroes: roster, account, maxPhase }));
     });
   }
@@ -129,12 +129,12 @@ describe('clampPtsToBudget', () => {
     for (const budget of [0, 1, 5, 20, 33]) {
       const out = clampPtsToBudget(pts, budget);
       expect(budgetOf(out)).toBe(Math.min(budgetOf(pts), budget));
-      for (const key of REOPT_KEYS) expect(out[key]).toBeGreaterThanOrEqual(0);
+      for (const key of RESPEC_KEYS) expect(out[key]).toBeGreaterThanOrEqual(0);
     }
   });
 
-  it('leaves Luck alone — it is outside the reallocatable budget', () => {
-    expect(clampPtsToBudget(pts, 0).luck).toBe(pts.luck);
+  it('sheds Luck too — a reset refunds it like every other key', () => {
+    expect(clampPtsToBudget(pts, 0).luck).toBe(0);
   });
 
   it('is deterministic', () => {

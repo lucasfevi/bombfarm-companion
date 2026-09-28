@@ -61,7 +61,7 @@ function bestOverPhases(bases: readonly HeroFarmBasis[], assignment: Map<string,
 }
 
 const bases = computeHeroFarmBases({ heroes, account });
-const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
+const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.level)] as const));
 const factsById = new Map(bases.map((b) => [b.heroId, heroFactsFromBasis(b, b.pts)] as const));
 
 const allAttackBest = bestOverPhases(bases, buildNaiveAssignment(bases, budgetById, factsById, 'attack'));
@@ -149,13 +149,14 @@ describe('the chest objective reports a strictly higher chest rate and a differe
   // which came from an uncommitted capture nobody can re-read. The ratio itself is a drift
   // canary, not a contract: 1.426 on the same account's 2026-08-19 capture, 1.095 on 2026-09-14
   // — the chest-optimal build moved closer to the gold-optimal one as the roster matured.
-  it('the chest-optimal build lifts the current build\'s own chest ceiling (ratio > 1) and nowhere near the earlier 4x claim; measured 1.112', () => {
+  it('the chest-optimal build lifts the current build\'s own chest ceiling (ratio > 1) and nowhere near the earlier 4x claim; measured 1.115', () => {
     const ratio = chestSolve.proposedChestsPerHour / chestSolve.currentChestsPerHour;
     expect(ratio).toBeGreaterThan(1);
     expect(ratio).toBeLessThan(4);
     // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); the previous figure is in the git history.
     // RE-PINNED 2026-09-26 for the Wide Blast patch: the cells it adds past the base reach now take half the hit. 1.1254 before.
-    // Moved again the same day for Double Detonation's 2.5%/level.
-    expect(ratio).toBeCloseTo(1.1124, 3);
+    // Moved again the same day for Double Detonation's 2.5%/level (1.1124).
+    // RE-PINNED 2026-09-27: a reset now refunds Luck, and the chest objective prices each point of it.
+    expect(ratio).toBeCloseTo(1.1149, 3);
   });
 });

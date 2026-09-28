@@ -25,9 +25,8 @@ export function respecCostGold(level: number): number {
  * (`farm-optimize-search.ts`) — before that every proposal was a transfer, so every proposal that
  * changed anything necessarily took a point off something and the two questions had one answer.
  *
- * All eight keys, not the seven reallocatable ones: both callers copy `luck` through untouched
- * today, but a proposal that ever did lower it would need the same reset, and reading the extra
- * key costs nothing. Missing keys read as 0 — `buildPointResets` defaults an absent hero to `{}`,
+ * All eight keys: a proposal that takes points out of Luck needs the reset like any other.
+ * Missing keys read as 0 — `buildPointResets` defaults an absent hero to `{}`,
  * and an empty-to-empty comparison is correctly "no reset needed".
  */
 export function requiresPointReset(

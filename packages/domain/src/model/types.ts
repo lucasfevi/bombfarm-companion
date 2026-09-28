@@ -31,7 +31,11 @@ export interface Context {
 
 export type StatKey = 'energy' | 'attack' | 'critDmg' | 'speed' | 'critChance' | 'penetration' | 'cdr';
 
-export const STAT_LABELS: Record<StatKey, string> = {
+/** A stat a Next point ranking can name: the seven combat stats, plus Luck where the objective
+ *  prices drops (the farm ranking). */
+export type RankStatKey = StatKey | 'luck';
+
+export const STAT_LABELS: Record<RankStatKey, string> = {
   energy: 'Energia',
   attack: 'Ataque',
   critDmg: 'Dano Crítico',
@@ -39,10 +43,11 @@ export const STAT_LABELS: Record<StatKey, string> = {
   critChance: 'Chance de Crítico',
   penetration: 'Penetração',
   cdr: 'Red. de Cooldown',
+  luck: 'Sorte',
 };
 
 export interface PointValue {
-  stat: StatKey;
+  stat: RankStatKey;
   label: string;
   gainPct: number;
 }
@@ -56,8 +61,9 @@ export interface PointBases {
   cdr: number;
 }
 
-/** Per-point deltas on the effective combat sheet (from `derive`). */
-export type EffectiveDeltas = Record<StatKey, number>;
+/** Per-point deltas on the effective combat sheet (from `derive`). `luck` is PERCENTAGE POINTS
+ *  of Sorte per point — no combat stat reads it; the farm scorer prices it into drop rates. */
+export type EffectiveDeltas = Record<StatKey, number> & { luck?: number };
 
 export type RankMode = 'dps' | 'farm';
 

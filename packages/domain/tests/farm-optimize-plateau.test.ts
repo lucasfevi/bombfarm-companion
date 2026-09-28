@@ -91,7 +91,7 @@ describe('derivePlateauBounds — the contiguity and single-point rules, on synt
 describe('squadEnergyShare — the aggregate denominator', () => {
   it('is 0 when the searchable set is empty (the zero-pool guard)', () => {
     const bases = computeHeroFarmBases({ heroes, account });
-    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
+    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.level)] as const));
     expect(squadEnergyShare(bases, [], budgetById, null)).toBe(0);
   });
 });
@@ -127,7 +127,7 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
 
   it('peak === proposedObjective: no probed ladder share out-scores the winner', () => {
     const bases = computeHeroFarmBases({ heroes, account });
-    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
+    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.level)] as const));
     const searchableIds = bases.map((b) => b.heroId);
     const objective = resolveFarmObjective({ kind: 'gold' });
     const search = runFarmSearch(bases, searchableIds, budgetById, account, objective, { goldScale: 1, chestScale: 1 }, { maxPhase }, 4000);
@@ -208,8 +208,8 @@ describe('a zero-searchable-pool squad', () => {
     const sora = heroes.find((h) => h.name === 'Sora')!;
     const zeroBudgetSora: HeroRecord = {
       ...sora,
-      level: 5,
-      pts: { attack: 0, energy: 0, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 5 },
+      level: 0,
+      pts: { attack: 0, energy: 0, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 0 },
     };
     const result = solveFarmRespec({ heroes: [zeroBudgetSora], account, maxPhase });
     expect(result.outcome).toBe('noBudget');
@@ -226,7 +226,7 @@ describe('the plateau adds ZERO evaluations', () => {
     // evaluations to the same total.
     const oneId = [heroes.find((h) => h.name === 'Nolan')!.id];
     const bases = computeHeroFarmBases({ heroes, account, enabledHeroIds: oneId });
-    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
+    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.level)] as const));
     const searchableIds = bases.map((b) => b.heroId);
     const objective = resolveFarmObjective({ kind: 'gold' });
     const search = runFarmSearch(bases, searchableIds, budgetById, account, objective, { goldScale: 1, chestScale: 1 }, { maxPhase }, 4000);

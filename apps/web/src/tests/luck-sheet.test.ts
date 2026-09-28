@@ -186,9 +186,9 @@ describe('applyPoints consumes POINT_GAIN.luckPctOfBase from the production path
 });
 
 describe('luck never reaches DPS scoring', () => {
-  it('STAT_LABELS has exactly seven keys and never contains luck', () => {
-    expect(Object.keys(STAT_LABELS)).toHaveLength(7);
-    expect(Object.keys(STAT_LABELS)).not.toContain('luck');
+  it('STAT_LABELS names the seven combat stats plus luck, which only the farm ranking emits', () => {
+    expect(Object.keys(STAT_LABELS)).toHaveLength(8);
+    expect(STAT_LABELS.luck).toBe('Sorte');
   });
 
   it('rankNextPoint returns exactly 7 ranked stats and excludes luck even with a hostile effectiveDeltas.luck', () => {

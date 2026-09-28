@@ -24,7 +24,7 @@ import {
 } from '@bombfarm/domain/game-labels';
 import { ownAbilityReadout } from '@bombfarm/domain/ability-effect-readout';
 import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
-import { ABILITIES, HOUSES, STAT_LABELS, type RarityKey, type StatKey } from '@bombfarm/domain/model';
+import { ABILITIES, HOUSES, STAT_LABELS, type RankStatKey, type RarityKey } from '@bombfarm/domain/model';
 import { ITEM_RARITIES, SLOTS, type Slot } from '@bombfarm/domain/gear';
 import { TEAM_BUFF_ABILITY_IDS, TEAM_BUFF_FIELDS } from '@bombfarm/domain/team-buffs';
 import { PROPS } from '@bombfarm/domain/phases';
@@ -194,11 +194,11 @@ describe('slotLabel', () => {
 });
 
 describe('statLabel', () => {
-  it('covers every StatKey; PT matches STAT_LABELS', () => {
-    const keys = Object.keys(STAT_LABELS) as StatKey[];
+  it('covers every ranked stat, luck included; PT matches STAT_LABELS', () => {
+    const keys = Object.keys(STAT_LABELS) as RankStatKey[];
     for (const k of keys) {
-      expect(statLabel(k, 'pt')).toBe(STAT_LABELS[k]);
-      const en = statLabel(k, 'en');
+      expect(sheetStatLabel(k, 'pt')).toBe(STAT_LABELS[k]);
+      const en = sheetStatLabel(k, 'en');
       expect(en.length).toBeGreaterThan(0);
       expect(en).not.toBe(STAT_LABELS[k]);
     }

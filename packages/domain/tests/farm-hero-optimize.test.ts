@@ -20,7 +20,7 @@ import {
 import { computeHeroFarmBases, squadFactsFromBases } from '@bombfarm/domain/farm-rate';
 import { farmObjectiveScales } from '@bombfarm/domain/farm-optimize-objective';
 import { optimizeBuild } from '@bombfarm/domain/points-reopt';
-import { budgetOf, reoptBudget, REOPT_KEYS } from '@bombfarm/domain/points-reopt-core';
+import { budgetOf, reoptBudget, RESPEC_KEYS } from '@bombfarm/domain/points-reopt-core';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
 import { ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
@@ -56,11 +56,10 @@ describe('the search moves ONE hero and scores the whole rotation', () => {
     }
   });
 
-  it('never proposes more points than the hero owns, and never touches Luck', () => {
+  it('never proposes more points than the hero owns', () => {
     for (const basis of bases) {
       const result = optimize(basis.heroId);
-      expect(budgetOf(result.pts)).toBeLessThanOrEqual(reoptBudget(basis.pts, basis.level));
-      expect(result.pts.luck).toBe(basis.pts.luck);
+      expect(budgetOf(result.pts)).toBeLessThanOrEqual(reoptBudget(basis.level));
       expect(Object.keys(result.pts)).toHaveLength(8);
     }
   });
@@ -117,7 +116,7 @@ describe('the two targets are genuinely different searches', () => {
         level: basis.level,
       });
       const farm = optimize(basis.heroId);
-      return REOPT_KEYS.some((key: SheetKey) => dps.pts[key] !== farm.pts[key]);
+      return RESPEC_KEYS.some((key: SheetKey) => dps.pts[key] !== farm.pts[key]);
     });
 
     expect(divergent.length).toBeGreaterThan(0);

@@ -74,7 +74,7 @@ describe('the settled roster this runs on banks nothing, so the pool is the one 
   it('every settled hero spends its whole budget', () => {
     for (const hero of SETTLED) {
       expect(budgetOf(hero.pts), `${hero.name} banks points before this file takes any away`).toBe(
-        reoptBudget(hero.pts, hero.level),
+        reoptBudget(hero.level),
       );
     }
   });
@@ -87,7 +87,7 @@ describe('an unspent pool is placed, not left banked', () => {
     it(`a hero banking ${banked} point(s) is offered all of them`, () => {
       const roster = rosterBanking(banked);
       const target = roster.find((hero) => hero.name === TARGET.name)!;
-      const budget = reoptBudget(target.pts, target.level);
+      const budget = reoptBudget(target.level);
       expect(budgetOf(target.pts)).toBe(budget - banked);
 
       const entry = entryFor(solveFarmRespec({ heroes: roster, account, maxPhase }), TARGET.name);
@@ -104,7 +104,7 @@ describe('an unspent pool is placed, not left banked', () => {
       expect(
         budgetOf(entry.proposedPts),
         `${entry.heroName} proposed ${budgetOf(entry.proposedPts)} against level ${entry.level}`,
-      ).toBeLessThanOrEqual(reoptBudget(entry.currentPts, entry.level));
+      ).toBeLessThanOrEqual(reoptBudget(entry.level));
     }
   });
 
@@ -174,7 +174,7 @@ describe('requiresPointReset', () => {
     expect(requiresPointReset(before, { ...before, speed: 2, attack: 11 })).toBe(true);
   });
 
-  it('reads Luck too — it is outside the reallocatable budget, not outside the cost', () => {
+  it('reads Luck too — a reset refunds it like every other key', () => {
     expect(requiresPointReset(before, { ...before, luck: 6 })).toBe(true);
   });
 
