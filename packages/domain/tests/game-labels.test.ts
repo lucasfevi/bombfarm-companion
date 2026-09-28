@@ -19,7 +19,6 @@ import {
   sheetStatLabel,
   sheetStatShortLabel,
   slotLabel,
-  statLabel,
   teamBuffLabel,
 } from '@bombfarm/domain/game-labels';
 import { ownAbilityReadout } from '@bombfarm/domain/ability-effect-readout';

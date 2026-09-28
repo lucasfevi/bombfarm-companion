@@ -12,7 +12,6 @@ import {
   setName,
   sheetStatLabel,
   slotLabel,
-  statLabel,
   teamBuffLabel,
 } from '@bombfarm/domain/game-labels';
 import { ABILITIES, HOUSES, STAT_LABELS, type RankStatKey, type RarityKey } from '@bombfarm/domain/model';
