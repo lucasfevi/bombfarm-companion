@@ -70,6 +70,10 @@ describe('Num — committing what the user typed', () => {
 
     // A number field keeps this: it is a valid floating-point literal, it just overflows to
     // Infinity. `Number('1e400') > Number.MAX_VALUE`, so parsing alone does not reject it.
+    // The premise rests on the sanitiser, and happy-dom's is the looser of the two — it also keeps
+    // `1e`, `1.2.3`, `0x10` and `Infinity`, none of which reach a real browser. `1e400` is chosen
+    // because a real browser keeps it too; the assertion below fails loudly rather than vacuously
+    // if that ever stops being true.
     typeInto(field(), '1e400');
     expect(field().value).toBe('1e400');
     expect(onChange).not.toHaveBeenCalled();
@@ -256,12 +260,10 @@ describe('Num — decimals', () => {
 
     dom.fire(spinner('up'), new MouseEvent('click', { bubbles: true }));
 
-    const committed = onChange.mock.calls.at(-1)?.[0] as number;
-    expect(committed).toBeLessThanOrEqual(1.005);
-    expect(committed).toBe(Number(committed.toFixed(2)));
+    expect(onChange).toHaveBeenLastCalledWith(1);
   });
 
-  it('never commits above a max that rounding would carry upwards', () => {
+  it('holds a max that rounding would carry upwards to the tick below it', () => {
     const onChange = vi.fn();
     dom.render(
       <Num value={1.2} onChange={onChange} step={0.1} decimals={1} max={1.25} incrementLabel="up" decrementLabel="down" />,
@@ -269,10 +271,10 @@ describe('Num — decimals', () => {
 
     dom.fire(spinner('up'), new MouseEvent('click', { bubbles: true }));
 
-    expect(onChange.mock.calls.at(-1)?.[0]).toBeLessThanOrEqual(1.25);
+    expect(onChange).toHaveBeenLastCalledWith(1.2);
   });
 
-  it('never commits below a min that rounding would carry downwards', () => {
+  it('holds a min that rounding would carry downwards to the tick above it', () => {
     const onChange = vi.fn();
     dom.render(
       <Num value={1.3} onChange={onChange} step={0.1} decimals={1} min={1.24} incrementLabel="up" decrementLabel="down" />,
@@ -280,7 +282,40 @@ describe('Num — decimals', () => {
 
     dom.fire(spinner('down'), new MouseEvent('click', { bubbles: true }));
 
-    expect(onChange.mock.calls.at(-1)?.[0]).toBeGreaterThanOrEqual(1.24);
+    expect(onChange).toHaveBeenLastCalledWith(1.3);
+  });
+
+  // These bounds need no quantizing at all: they are exact at `decimals`. Scaling them by a power
+  // of ten says otherwise — `0.29 * 100` is `28.999999999999996` — which is how a bound gets
+  // walked a tick out of the caller's range.
+  it.each([
+    [0.29, '0.29'],
+    [1.15, '1.15'],
+  ])('leaves an already-exact max of %s alone', (max, attribute) => {
+    const onChange = vi.fn();
+    dom.render(
+      <Num value={0} onChange={onChange} step={0.01} decimals={2} max={max} incrementLabel="up" decrementLabel="down" />,
+    );
+
+    expect(field().max).toBe(attribute);
+    typeInto(field(), String(max));
+    expect(onChange).toHaveBeenLastCalledWith(max);
+  });
+
+  // The starting value has to differ from the bound being typed: a keystroke that leaves the
+  // field's text unchanged is not a change, and React reports no event for it.
+  it.each([
+    [0.07, '0.07', 5],
+    [8.22, '8.22', 20],
+  ])('leaves an already-exact min of %s alone', (min, attribute, start) => {
+    const onChange = vi.fn();
+    dom.render(
+      <Num value={start} onChange={onChange} step={0.01} decimals={2} min={min} incrementLabel="up" decrementLabel="down" />,
+    );
+
+    expect(field().min).toBe(attribute);
+    typeInto(field(), String(min));
+    expect(onChange).toHaveBeenLastCalledWith(min);
   });
 });
 

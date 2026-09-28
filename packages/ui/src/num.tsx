@@ -44,21 +44,28 @@ export function Num({
   }
 
   /**
-   * `decimals` is a promise about every committed value, so a bound finer than it is snapped
-   * inward — never outward, which would put the bound itself out of range.
+   * A bound rounded to `decimals`, then stepped one tick back if rounding crossed it — `decimals`
+   * is a promise about every committed value, so a finer bound has to move, and it has to move
+   * into range rather than out of it. Rounding is compared against the bound itself rather than
+   * scaling it by a power of ten: `0.29 * 100` is `28.999999999999996`, so scaling reports an
+   * ordinary two-decimal bound as finer than it is and walks it a tick the wrong way.
    */
-  function snap(n: number, inward: (scaled: number) => number): number {
+  function quantizeBound(n: number, direction: 'down' | 'up'): number {
     if (decimals == null || !Number.isFinite(n)) return n;
-    const scale = 10 ** decimals;
-    return Number((inward(n * scale) / scale).toFixed(decimals));
+    const rounded = Number(n.toFixed(decimals));
+    const crossed = direction === 'down' ? rounded > n : rounded < n;
+    if (!crossed) return rounded;
+    const tick = 10 ** -decimals;
+    return Number((direction === 'down' ? rounded - tick : rounded + tick).toFixed(decimals));
   }
 
-  const floor = min != null ? snap(min, Math.ceil) : undefined;
+  const floor = min != null ? quantizeBound(min, 'up') : undefined;
   /**
    * `min` outranks `max` when the two cross. Clamping applies the ceiling last, so a `max` below
    * `min` would otherwise void the floor and commit under it.
    */
-  const ceiling = max != null ? Math.max(snap(max, Math.floor), floor ?? -Infinity) : undefined;
+  const ceiling =
+    max != null ? Math.max(quantizeBound(max, 'down'), floor ?? -Infinity) : undefined;
 
   function clamp(n: number): number {
     const floored = floor != null ? Math.max(floor, n) : n;
@@ -76,6 +83,12 @@ export function Num({
    * A `value` this field did not ask for — a form reset, an import, a switch of subject — replaces
    * the draft, which described the one before it. A `value` that is what the draft asked for is
    * this field's own commit coming back, and leaves the half-typed text alone.
+   *
+   * Accepted, not a bug: an outside writer that lands on exactly the number the draft would commit
+   * is indistinguishable from this field's own echo, so the half-typed text survives it. Blur
+   * resolves it, and the text clamps to that same number anyway. Widening this to clear on any
+   * change is worse — it makes the field jump mid-entry, because a bounded entry commits its clamp
+   * on the keystroke that crosses the bound and the echo would then overwrite what is being typed.
    */
   if (!Object.is(lastValue, value)) {
     setLastValue(value);
