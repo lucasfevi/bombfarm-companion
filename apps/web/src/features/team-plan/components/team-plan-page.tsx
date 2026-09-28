@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { TeamPlanScreenView } from '@bombfarm/team-plan/components';
+import type { TeamPlanResultSort } from '@bombfarm/team-plan/model';
 import { useTeamPlanSolver } from '@/shared/hooks/use-team-plan-solver';
 import type { Lang, Strings } from '@/shared/i18n';
 import {
@@ -12,6 +14,7 @@ import {
   selectTeamPlanControls,
   selectTeamPlanInputs,
 } from '@/shared/stores/selectors/team-plan-selectors';
+import { loadTeamPlanResultSort, saveTeamPlanResultSort } from '@/shared/lib/team-plan-storage';
 import { webTeamPlanEmptyState } from './team-plan-empty-states';
 
 /**
@@ -52,12 +55,19 @@ export function TeamPlanPage({
   const setOpenHeroIds = usePlannerStore((state) => state.setOpenHeroIds);
   const { runner } = useTeamPlanSolver();
 
+  // Read during the first render: the shell's mount gate means this page never renders on the
+  // server, so there is no prerendered markup for the stored order to disagree with.
+  const [resultSort, setResultSort] = useState<TeamPlanResultSort>(loadTeamPlanResultSort);
+  useEffect(() => {
+    saveTeamPlanResultSort(resultSort);
+  }, [resultSort]);
+
   return (
     <TeamPlanScreenView
       t={t}
       lang={lang}
       runner={runner}
-      data={{ inputs, controls, plan, planHeroes, planBasis, runStatus, runId, isStale, openHeroIds }}
+      data={{ inputs, controls, plan, planHeroes, planBasis, runStatus, runId, isStale, openHeroIds, resultSort }}
       actions={{
         setScope,
         setForgeFloor,
@@ -71,6 +81,7 @@ export function TeamPlanPage({
         applyPlan,
         clearPlan,
         setOpenHeroIds,
+        setResultSort,
       }}
       slots={{ emptyState: (kind) => webTeamPlanEmptyState(kind, t, onImport) }}
     />

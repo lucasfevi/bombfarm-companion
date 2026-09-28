@@ -27,7 +27,7 @@ import {
   type TeamPlanInputs,
 } from '@bombfarm/team-plan/core';
 import { describePlanChanges } from '@bombfarm/team-plan/core';
-import type { TeamPlanEmptyStateKind } from '@bombfarm/team-plan/model';
+import type { TeamPlanEmptyStateKind, TeamPlanResultSort } from '@bombfarm/team-plan/model';
 import type { TeamPlanRunnerHandle, TeamPlanRunStatus } from '@bombfarm/team-plan/runner';
 import type { AccountSource } from '@bombfarm/contracts';
 import type { TeamPlan, TeamPlanAllowedChanges, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
@@ -56,6 +56,8 @@ export function OptimizerScreen({
   pvp,
   controls,
   setControls,
+  resultSort,
+  setResultSort,
   planState,
   runner,
   actions,
@@ -69,6 +71,8 @@ export function OptimizerScreen({
   pvp: Pick<TeamPlanInputs, 'pvpRoomPhase' | 'pvpSquadSlots'>;
   controls: OptimizerView;
   setControls: (next: OptimizerView) => void;
+  resultSort: TeamPlanResultSort;
+  setResultSort: (next: TeamPlanResultSort) => void;
   planState: OptimizerPlanState;
   runner: TeamPlanRunnerHandle;
   actions: OptimizerScreenActionsIn;
@@ -142,6 +146,7 @@ export function OptimizerScreen({
       runId: planState.runId,
       isStale,
       openHeroIds: planState.openHeroIds,
+      resultSort,
     }),
     [
       inputs,
@@ -153,6 +158,7 @@ export function OptimizerScreen({
       planState.runId,
       isStale,
       planState.openHeroIds,
+      resultSort,
     ],
   );
 
@@ -186,8 +192,9 @@ export function OptimizerScreen({
       applyPlan: actions.applyPlan,
       clearPlan: actions.clearPlan,
       setOpenHeroIds: actions.openHeroes,
+      setResultSort,
     }),
-    [onControlChange, actions],
+    [onControlChange, actions, setResultSort],
   );
 
   const emptyTitleBody: Record<TeamPlanEmptyStateKind, [string, string]> = {

@@ -11,6 +11,7 @@ import { describePlanChanges } from '../core';
 import type { TeamPlanScreenCopy } from '../copy';
 import { teamPlanObjectiveCopy } from '../model/objective-copy';
 import { teamPlanEmptyState, type TeamPlanEmptyStateKind } from '../model/empty-state';
+import type { TeamPlanResultSort } from '../model/result-order';
 import {
   useTeamPlanRunner,
   type TeamPlanRunnerHandle,
@@ -22,7 +23,7 @@ import { useOptimizeAction } from './use-optimize-action';
 import { ScopeList } from './scope-list';
 import { TeamPlanOptimizingModal } from './team-plan-optimizing-modal';
 import { WaterfallPanel } from './waterfall-panel';
-import { HeroDeltaTable } from './hero-delta-table';
+import { HeroDeltaTable, type HeroDeltaRowsView } from './hero-delta-table';
 import type { ForgeQueueAction } from './hero-forge-queue';
 
 export type TeamPlanScreenData = {
@@ -44,6 +45,8 @@ export type TeamPlanScreenData = {
   /** The result rows the player has opened, or `null` for the default — the first hero. Held by
    *  the host so it outlives the screen; reset to `null` by the host when a new plan lands. */
   openHeroIds: readonly string[] | null;
+  /** The order the result rows are drawn in. Held by the host so it outlives the screen. */
+  resultSort: TeamPlanResultSort;
 };
 
 export type TeamPlanScreenActions = {
@@ -59,6 +62,7 @@ export type TeamPlanScreenActions = {
   applyPlan: (runId: string, plan: TeamPlan) => void;
   clearPlan: () => void;
   setOpenHeroIds: (heroIds: readonly string[]) => void;
+  setResultSort: (next: TeamPlanResultSort) => void;
 };
 
 export type TeamPlanScreenSlots = {
@@ -122,6 +126,15 @@ export function TeamPlanScreenView({
   const ledger = useMemo(
     () => (data.planBasis === null ? null : describePlanChanges(data.planBasis, { inputs, controls }, displayPlan)),
     [data.planBasis, inputs, controls, displayPlan],
+  );
+  const rowsView = useMemo<HeroDeltaRowsView>(
+    () => ({
+      openHeroIds: data.openHeroIds,
+      onOpenHeroIdsChange: actions.setOpenHeroIds,
+      sort: data.resultSort,
+      onSortChange: actions.setResultSort,
+    }),
+    [data.openHeroIds, data.resultSort, actions.setOpenHeroIds, actions.setResultSort],
   );
   const blockedNames = runnerState.blockedHeroNames;
   const isRunning = data.runStatus === 'running' || runnerState.status === 'running';
@@ -242,8 +255,7 @@ export function TeamPlanScreenView({
                     plan={displayPlan}
                     heroes={data.planHeroes ?? heroes}
                     inventoryItems={inventoryItems}
-                    openHeroIds={data.openHeroIds}
-                    onOpenHeroIdsChange={actions.setOpenHeroIds}
+                    rowsView={rowsView}
                     forgeQueueAction={slots.forgeQueueAction}
                   />
                 </div>

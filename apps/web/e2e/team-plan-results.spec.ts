@@ -90,6 +90,31 @@ test.describe('Team plan results panels', () => {
     await expect(rowsAgain.nth(1)).toHaveAttribute('aria-expanded', 'true');
   });
 
+  test('the rows can be reordered, and the order outlives the page and the plan', async ({ page }) => {
+    const panel = () =>
+      page.getByRole('heading', { name: /Per-hero changes/i, level: 2 }).locator('xpath=ancestor::section[1]');
+    const rowNames = () =>
+      panel()
+        .getByRole('button', { name: /^Detailed breakdown for/i })
+        .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('aria-label')));
+
+    const byName = await rowNames();
+    expect(byName.length).toBeGreaterThan(1);
+    await panel().getByRole('button', { name: /^Ascending$/i }).click();
+    await expect.poll(rowNames).toEqual([...byName].reverse());
+
+    await page.getByRole('link', { name: /^Farm$/i }).click();
+    await page.getByRole('link', { name: /^Optimizer$/i }).click();
+    await expect.poll(rowNames).toEqual([...byName].reverse());
+
+    // A reload drops this plan, so the order is proved on the next one built.
+    await page.reload();
+    await clickOptimize(page);
+    await waitForOptimizeDone(page);
+    await expect(panel().getByRole('button', { name: /^Descending$/i })).toBeVisible();
+    await expect.poll(rowNames).toEqual([...byName].reverse());
+  });
+
   test('collapsing then expanding a hero row still reveals the breakdown', async ({ page }) => {
     const panel = page
       .getByRole('heading', { name: /Per-hero changes/i, level: 2 })

@@ -25,6 +25,10 @@
  * `bf-hp-team-plan-v1` is the Optimizer's last plan — a derived, replaceable artifact keyed to
  * the input signature it was solved under. Written whole on every solve and removed on clear,
  * never merged; a stored plan that fails to read whole is dropped rather than repaired.
+ *
+ * `bf-hp-team-plan-result-sort-v1` is the order the Optimizer's result rows are read in. A NEW
+ * key beside the plan envelope rather than a field on it: the order outlives every plan, and a
+ * plan dropped on clear must not take the player's chosen order with it.
  */
 export const PERSISTED_KEY_BASELINE = [
   'bf-hp-inventory-v1',
@@ -35,6 +39,7 @@ export const PERSISTED_KEY_BASELINE = [
   'bf-hp-active-hero-v1',
   'bf-hp-gear-scope-v1',
   'bf-hp-team-plan-v1',
+  'bf-hp-team-plan-result-sort-v1',
   'bf-hp-critdmg-flat-migrated-v1',
   'bf-hp-critchance-flat-migrated-v1',
   'bf-hp-critcdr-repool-migrated-v1',
