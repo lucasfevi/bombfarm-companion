@@ -251,7 +251,7 @@ describe('rankNextPoint', () => {
     }
   });
 
-  it('scores CDR at zero once the walk covers every hop, well before the 80% cap', () => {
+  it('keeps scoring CDR above zero up to the 80% cap — the shortest hops stay fuse-bound', () => {
     const deltas: EffectiveDeltas = {
       attack: 10,
       energy: 8,
@@ -266,9 +266,9 @@ describe('rankNextPoint', () => {
       const gain = rankNextPoint({ ...sampleHero(), cdr }, ctx, { effectiveDeltas: deltas }).find(
         (r) => r.stat === 'cdr',
       )!.gainPct;
-      expect(gain).toBe(0);
+      expect(gain).toBeGreaterThan(0);
     }
-    expect(sustainedDps({ ...sampleHero(), cdr: 75 }, ctx)).toBe(sustainedDps({ ...sampleHero(), cdr: 70 }, ctx));
+    expect(sustainedDps({ ...sampleHero(), cdr: 75 }, ctx)).toBeGreaterThan(sustainedDps({ ...sampleHero(), cdr: 70 }, ctx));
   });
 
   it('still ranks penetration above zero at 70% (below 100% combat bypass)', () => {

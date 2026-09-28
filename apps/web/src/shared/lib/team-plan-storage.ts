@@ -4,9 +4,12 @@ import type {
   TeamPlanObjective,
 } from '@bombfarm/domain/team-plan/types';
 import { isTeamPlanAllowedChanges, isTeamPlanObjective } from '@bombfarm/team-plan/core';
+import { normalizeTeamPlanResultSort, type TeamPlanResultSort } from '@bombfarm/team-plan/model';
 import { readJson, writeJson } from '@/shared/lib/storage';
 
 export const TEAM_PLAN_KEY = 'bf-hp-team-plan-v1';
+// Its own key, outside the plan envelope: the order the rows are read in outlives any one plan.
+export const TEAM_PLAN_RESULT_SORT_KEY = 'bf-hp-team-plan-result-sort-v1';
 
 export type TeamPlanEnvelope = {
   version: 1;
@@ -65,4 +68,12 @@ export function saveTeamPlanEnvelope(envelope: TeamPlanEnvelope): boolean {
 
 export function removeTeamPlanEnvelope(): void {
   localStorage.removeItem(TEAM_PLAN_KEY);
+}
+
+export function loadTeamPlanResultSort(): TeamPlanResultSort {
+  return normalizeTeamPlanResultSort(readJson<unknown>(TEAM_PLAN_RESULT_SORT_KEY, null));
+}
+
+export function saveTeamPlanResultSort(sort: TeamPlanResultSort): boolean {
+  return writeJson(TEAM_PLAN_RESULT_SORT_KEY, sort);
 }

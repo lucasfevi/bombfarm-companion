@@ -176,6 +176,9 @@ export const WIKI_RUNES: WikiRunes = wiki.runes;
  */
 export const EXTRA_RANGE_FRAC: number = wiki.combat.extraRangeFrac;
 
+/** Cells of blast reach every hero has before Wide Blast — wiki `combate.grid_range_base`. */
+export const BASE_BLAST_RANGE = 1;
+
 /** The share of the killing hit each Estilhaços shard deals to a rock on the destroyed one's four
  *  sides. ← `combate.shatter_frac`; live 0.5 since the ability arrived on 2026-09-26. */
 export const SHATTER_FRAC: number = wiki.combat.shatterFrac;

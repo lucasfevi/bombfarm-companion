@@ -1056,6 +1056,8 @@ const KEYS_ADDED: readonly string[] = [
   'skillsNodeTitleC07', 'skillsNodeTitleC12', 'skillsNodeTitleD07', 'skillsNodeTitleD12', 'skillsNodeTitleE07', 'skillsNodeTitleE11', 'skillsNodeTitleN01', 'skillsNodeTitleN03', 'skillsNodeTitleN05', 'skillsNodeTitleN07', 'skillsNodeTitleN09', 'skillsNodeTitleN11', 'skillsNodeTitleN13', 'skillsNodeTitleN15', 'skillsNodeTitleO08', 'skillsNodeTitleO12', 'skillsNodeTitleP01', 'skillsNodeTitleP02', 'skillsNodeTitleP03', 'skillsNodeTitleP04', 'skillsNodeTitleP05', 'skillsNodeTitleP06', 'skillsNodeTitleP07', 'skillsNodeTitleS02', 'skillsNodeTitleS05', 'skillsNodeTitleS07', 'skillsNodeTitleS11', 'skillsNodeTitleT01', 'skillsNodeTitleT02', 'skillsNodeTitleT03', 'skillsNodeTitleT04', 'skillsNodeTitleT05', 'skillsNodeTitleT06', 'skillsNodeTitleV08', 'skillsNodeTitleV13', 'skillsDpsLeftOut', 'skillsAffordableNow', 'skillsCloseNode', 'skillsPreview', 'skillsPreviewTip', 'skillsPreviewGold', 'skillsPreviewGate', 'skillsPreviewPvp', 'skillsTotalNowNext', 'skillsRequires', 'skillsGate', 'skillsArm', 'skillsTier', 'skillsEffects', 'skillsTotals', 'skillsTotalsTip', 'skillsTotalTeamDmg', 'skillsTotalCritChance', 'skillsTotalCritDmg', 'skillsTotalSpeed', 'skillsTotalCoin', 'skillsTotalLuck', 'skillsTotalEnergia', 'skillsTotalDmgStatic', 'skillsTotalGeo', 'skillsTotalXp', 'skillsTotalFieldSlots', 'skillsTotalBagTabs', 'skillsLevelsBought', 'skillsCountOf', 'skillsGoldSpent', 'skillsGoldToMax', 'skillsFitToView', 'skillsZoomIn', 'skillsZoomOut', 'skillsLegend', 'skillsLegendOwned', 'skillsLegendBuyable', 'skillsLegendUnaffordable', 'skillsLegendLocked', 'skillsLegendRecommended', 'skillsCanvasAria', 'skillsNodeAria', 'skillsPaths', 'skillsNodesMaxed', 'skillsLegendPathNote',
   // Privacy policy page (2026-09-23): what the desktop usage ping sends and how to stop it. One line for the cap.
   'privacyNavLabel', 'privacyTitle', 'privacyUpdated', 'privacyIntro', 'privacyPingTitle', 'privacyPingIntro', 'privacyPingFields', 'privacyPingAccountFields', 'privacyPingOptOut', 'privacySections',
+  // Optimizer result rows' sort control (2026-09-27). One line for the cap.
+  'teamPlanResultSortLabel', 'teamPlanResultSortName', 'teamPlanResultSortDelta', 'teamPlanResultSortDeltaPct', 'teamPlanResultSortAfter', 'teamPlanResultSortBefore', 'teamPlanResultSortLevel', 'teamPlanResultSortAscending', 'teamPlanResultSortDescending',
 ];
 
 /**
@@ -1195,8 +1197,8 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // measured cycle — max(fuse, hop / walk speed) over measured hop lengths — whose code block
   // follows; its third paragraph now says the same cycle prices every figure the planner
   // prints. `bdTermWalk` stops naming a walk DELAY and names the walk SPEED the cycle divides by.
-  // One line: this file sits at the max-lines cap.
-  'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1', 'explainSections.2.p.0', 'explainSections.2.p.2', 'explainSections.2.code',
+  // Plant-cycle refit (2026-09-27): p.0 and the code again, plus a 4th paragraph (p.3); one line, at the cap.
+  'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1', 'explainSections.2.p.0', 'explainSections.2.p.2', 'explainSections.2.code', 'explainSections.2.p.3',
   // Abilities pass (2026-09-13): the "what the app does not model" paragraph stops listing
   // Baton Pass — a team aura in pulses, counted for the hero's own pulse here and for every
   // carrier on the Farm page and the Optimizer — and describes Pack (Matilha, per deployed ally)

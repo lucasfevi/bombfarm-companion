@@ -66,7 +66,7 @@ describe('computeHeroFarmFacts — blocksPerBomb (trap #3)', () => {
   });
 });
 
-describe('computeHeroFarmFacts — cycleSecs = E[max(fuseSecs, hop/w)] + latency over HOP_DISTRIBUTION', () => {
+describe('computeHeroFarmFacts — cycleSecs is the per-hero cadence, seconds per bomb over a clear', () => {
   it('a normal fixture hero matches cycleSecondsForHero exactly (the fact is the function, not a copy of it)', () => {
     const jon = heroes.find((h) => h.name === 'Jon')!;
     const [fact] = computeHeroFarmFacts({ heroes: [jon], account });
@@ -87,18 +87,6 @@ describe('computeHeroFarmFacts — cycleSecs = E[max(fuseSecs, hop/w)] + latency
     const fastJon: HeroRecord = { ...jon, birth: { ...jon.birth!, speed: jon.birth!.speed * 50 } };
     const [fact] = computeHeroFarmFacts({ heroes: [fastJon], account });
     expect(fact.cycleSecs).toBeCloseTo(cycleSecondsForHero(fact.fuseSecs, 1e9), 6);
-  });
-
-  it('the distribution-averaged cycle is STRICTLY SLOWER than the retired max(fuse, 4.5/w) — the regression this fix repairs', () => {
-    const jon = heroes.find((h) => h.name === 'Jon')!;
-    const [fact] = computeHeroFarmFacts({ heroes: [jon], account });
-    const retired = Math.max(fact.fuseSecs, 4.5 / fact.walkSpeedCells);
-    expect(fact.cycleSecs).toBeGreaterThan(retired);
-    // Measured on the live capture at ~1.3-1.4x for this roster's speeds; pinned loosely so a
-    // re-fit of the distribution does not trip it, but tightly enough to catch a collapse back
-    // to a mean-first model, which would land at exactly 1.0.
-    expect(fact.cycleSecs / retired).toBeGreaterThan(1.2);
-    expect(fact.cycleSecs / retired).toBeLessThan(1.6);
   });
 
   it('w <= 0 (constructed via zero speed) ⇒ cycleSecs Infinity, plantsPerSec 0, degenerate true', () => {

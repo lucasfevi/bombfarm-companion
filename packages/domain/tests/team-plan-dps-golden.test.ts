@@ -62,6 +62,13 @@
  * crit-points +0.28% / +0.66%, four more moves (124) and the greedy per-hero seed winning over the
  * roster as it stands, a different proposal. Soulbound carries none and did not move. Same method.
  *
+ * RE-RECORDED A SEVENTH TIME 2026-09-27, for the plant-cycle refit (ADR-018): a hero's bombs/s is
+ * now its plant rate over a whole clear, measured per plant on two accounts, where the old cycle
+ * ran ~10–25% fast. 11882 current −12.46% / plan −12.48% with the plan byte-identical;
+ * crit-points −14.58% / −14.76%, four fewer moves (120) and the roster as it stands winning over
+ * the greedy per-hero seed, a different proposal; soulbound −13.50% / −13.57%, one more point
+ * reset (8), the proposal byte-identical. Same method.
+ *
  * NOT regime-bound: the claim is "this code still plans what it planned", an identity between two
  * revisions of the same arithmetic, not a statement about what the game rewards.
  */
@@ -97,8 +104,8 @@ const GOLDENS = [
   {
     file: 'save-20260819-11882-7heroes.json',
     forgeFloor: 10,
-    currentDps: 2722.2791594059136,
-    planDps: 3235.6757694672774,
+    currentDps: 2383.138656271333,
+    planDps: 2831.880178380798,
     moves: 22,
     forges: 40,
     pointResets: 5,
@@ -108,22 +115,22 @@ const GOLDENS = [
   {
     file: 'save-20260823-13heroes-crit-points.json',
     forgeFloor: 10,
-    currentDps: 41452.349093163386,
-    planDps: 65228.53633220728,
-    moves: 124,
+    currentDps: 35410.76182208422,
+    planDps: 55603.895542942206,
+    moves: 120,
     forges: 19,
     pointResets: 11,
-    seedUsed: 'greedyHeroDps',
-    loadoutDigest: '41246284f54ff901',
+    seedUsed: 'current',
+    loadoutDigest: '7e202368bf453048',
   },
   {
     file: 'save-20260831-13heroes-soulbound.json',
     forgeFloor: 10,
-    currentDps: 4947.672089127424,
-    planDps: 5385.571001356697,
+    currentDps: 4279.5946997318515,
+    planDps: 4654.977828113092,
     moves: 37,
     forges: 68,
-    pointResets: 7,
+    pointResets: 8,
     seedUsed: 'current',
     loadoutDigest: '8b0a3d02618aedb7',
   },

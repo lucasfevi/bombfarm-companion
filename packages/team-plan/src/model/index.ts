@@ -29,5 +29,13 @@ export {
 } from './run-summary-copy';
 export { optimizeAriaFor, allowedChangesHint, ignoreCrowdingHint } from './setup-copy';
 export { formatElapsed } from './optimizing-elapsed';
+export {
+  DEFAULT_TEAM_PLAN_RESULT_SORT,
+  TEAM_PLAN_RESULT_SORT_KEYS,
+  firstResultSortDirection,
+  normalizeTeamPlanResultSort,
+  sortTeamPlanResultRows,
+} from './result-order';
+export type { TeamPlanResultSort, TeamPlanResultSortDirection, TeamPlanResultSortKey } from './result-order';
 export { runnerMarksAtMount, runnerMarksBeforeRun, runnerReports } from './runner-reports';
 export type { RunnerMarks, RunnerReport, RunnerReportSource } from './runner-reports';

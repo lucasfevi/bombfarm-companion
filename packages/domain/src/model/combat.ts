@@ -1,5 +1,7 @@
-import { EXTRA_RANGE_FRAC } from '../phase-wiki';
+import { BASE_BLAST_RANGE, EXTRA_RANGE_FRAC } from '../phase-wiki';
 import { cycleSecondsForHero } from './cadence';
+
+export { BASE_BLAST_RANGE };
 import { POINT_GAIN, STAT_CAPS } from './rarity-constants';
 import type { Context, HeroSheet } from './types';
 
@@ -26,9 +28,6 @@ function bombsPerSecondWithFuse(hero: Pick<HeroSheet, 'speed'>, context: Context
   const cycle = cycleSecondsForHero(fuseSec, hero.speed * GRID_SPEED_COEF, context.ato);
   return Number.isFinite(cycle) && cycle > 0 ? 1 / cycle : 0;
 }
-
-/** Cells of blast reach every hero has before Wide Blast — wiki `combate.grid_range_base`. */
-export const BASE_BLAST_RANGE = 1;
 
 /**
  * The blast reach as a damage total sees it: the base cell at full weight and every cell Wide

@@ -112,11 +112,12 @@ export const en = {
     {
       h: "3 · Bombs per second",
       p: [
-        "Measured bomb cycle: each hero keeps one live bomb and walks to its next plant while the fuse burns, so the time between plants is whichever is longer — the fuse or the walk — plus a short re-targeting pause. Fuse time is 2 s reduced by CDR with a 0.4 s floor (20% of cycle / 80% CDR cap). Walk time is the hop to the next plant divided by walk speed (Speed × 0.0386 cells/s), averaged over the hop lengths measured in real clears and packed closer on denser difficulties — so Speed shortens every hop the fuse does not already cover, and CDR pays until the walk takes over.",
+        "Measured bomb cycle: each hero keeps one live bomb and walks to its next plant while the fuse burns, so the time between plants is whichever is longer — the fuse or the walk — plus a short pause (about 0.5 s on average, counting waits for other heroes' blasts). Fuse time is 2 s reduced by CDR with a 0.4 s floor (20% of cycle / 80% CDR cap). Walk time is the hop to the next plant divided by walk speed (Speed × 0.0386 cells/s). Hops shorten as the map fills and lengthen for faster heroes, who pick farther targets, and the cycle is averaged over their measured spread — so CDR pays on the short hops the fuse still covers, and Speed pays less than its raw value.",
         "Blocks per bomb uses the wiki expected coefficient (1 + 0.5 × range ≈ 2.5 at max range), not the geometric cross maximum (~13 cells). Early in a map, packed props can yield much higher burst DPS; the last corner prop caps at ~2 simultaneous bombers.",
         "One cycle model prices every figure the planner prints: this hero's bombs/s, the Points ranking, the Optimizer and the Farm page's clear time all read the same cycle at the same difficulty.",
+        "Bombs per second is counted over a whole clear of this difficulty: the walk-in at the start of a wave and the tail, where only about two heroes have the last prop to bomb, both count as time on the field without a plant.",
       ],
-      code: "fuse    = max(2 × (1 − min(cdr, 80%)), 0.4)\nwalk    = speed × 0.0386 cells/s\ncycle   = avg over hops of max(fuse, hop / walk) + 0.39\nbombs/s = 1 / cycle",
+      code: "fuse    = max(2 × (1 − min(cdr, 80%)), 0.4)\nwalk    = speed × 0.0386 cells/s\ncycle   = avg over hops of max(fuse + 0.47, hop / walk + 0.58)\nbombs/s = plants over a clear / seconds on the field",
     },
     {
       h: "4 · Active DPS",
@@ -255,11 +256,12 @@ export const pt: typeof en = {
     {
       h: "3 · Bombas por segundo",
       p: [
-        "Ciclo de bomba medido: cada herói mantém uma bomba ativa e caminha até o próximo plantio enquanto o pavio queima, então o tempo entre plantios é o que for mais longo — o pavio ou a caminhada — mais uma pausa curta para mirar. O pavio é 2 s reduzido pela redução de recarga, com piso de 0.4 s (20% do ciclo / teto de 80%). A caminhada é o salto até o próximo plantio dividido pela velocidade de caminhada (Velocidade × 0,0386 células/s), em média sobre os saltos medidos em limpezas reais e mais curtos em dificuldades mais densas — então Velocidade encurta todo salto que o pavio ainda não cobre, e redução de recarga rende até a caminhada passar a mandar.",
+        "Ciclo de bomba medido: cada herói mantém uma bomba ativa e caminha até o próximo plantio enquanto o pavio queima, então o tempo entre plantios é o que for mais longo — o pavio ou a caminhada — mais uma pausa curta (cerca de 0,5 s em média, contando as esperas pelas explosões dos outros heróis). O pavio é 2 s reduzido pela redução de recarga, com piso de 0.4 s (20% do ciclo / teto de 80%). A caminhada é o salto até o próximo plantio dividido pela velocidade de caminhada (Velocidade × 0,0386 células/s). Os saltos encurtam conforme o mapa enche e alongam para heróis mais rápidos, que escolhem alvos mais distantes, e o ciclo é a média sobre a dispersão medida — então redução de recarga rende nos saltos curtos que o pavio ainda cobre, e Velocidade rende menos que o valor bruto.",
         "Blocos por bomba usa o coeficiente esperado da wiki (1 + 0.5 × alcance ≈ 2.5 no máximo), não o máximo geométrico da cruz (~13 células). No início do mapa, props densos geram burst bem acima do DPS sustentado; o último prop no canto limita a ~2 bombardeiros simultâneos.",
         "Um único modelo de ciclo precifica tudo que o planner mostra: as bombas/s deste herói, o ranking de Pontos, o Otimizador e o tempo de limpeza da página Farm leem o mesmo ciclo na mesma dificuldade.",
+        "Bombas por segundo contam uma limpeza inteira desta dificuldade: a chegada no começo da onda e a cauda, onde só uns dois heróis têm o último prop para bombardear, contam como tempo em campo sem plantio.",
       ],
-      code: "pavio     = max(2 × (1 − min(cdr, 80%)), 0.4)\ncaminhada = vel × 0.0386 células/s\nciclo     = média nos saltos de max(pavio, salto / caminhada) + 0.39\nbombas/s  = 1 / ciclo",
+      code: "pavio     = max(2 × (1 − min(cdr, 80%)), 0.4)\ncaminhada = vel × 0.0386 células/s\nciclo     = média nos saltos de max(pavio + 0.47, salto / caminhada + 0.58)\nbombas/s  = plantios numa limpeza / segundos em campo",
     },
     {
       h: "4 · DPS ativo",

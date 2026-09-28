@@ -19,7 +19,7 @@ export interface Context {
   restSeconds: number;
   mitigation: number; // 0..1 phase mitigation
   blastRange: number; // alcance; blocos/bomba = 1 + 0.5 × range. Whole cells: base 1, raised only by Explosão Ampla (at levels 10 and 20), whose cells deal EXTRA_RANGE_FRAC of the hit — damage reads `damageWeightedBlastRange`.
-  ato: number; // difficulty band (1..5) of the phase being priced — selects the bomb cycle's hop histogram
+  ato: number; // difficulty band (1..5) of the phase being priced — selects the prop count the bomb cycle is priced over
   drainMult: number; // energy drain multiplier (<1 with Bateria Extra / Fôlego)
   /**
    * A timed combat window, in seconds — a gate clear, a duel — that the hero enters at full

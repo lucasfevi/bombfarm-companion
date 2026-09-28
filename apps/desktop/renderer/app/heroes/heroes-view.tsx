@@ -11,7 +11,7 @@
  * Nothing here reads the game. It draws the account the shared seam already holds, and that seam
  * sits behind the consent gate with every other screen.
  */
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import {
   Banner,
@@ -52,15 +52,7 @@ import {
   SheetTable,
 } from '@bombfarm/hero/components';
 import type { ShareCardActions, ShareCardData } from '@bombfarm/hero/components';
-import {
-  DEFAULT_LEADERBOARD_VIEW,
-  DEFAULT_ROSTER_BOARD_SORT,
-  DEFAULT_SHOWCASE_VIEW,
-  EMPTY_ROSTER_BOARD_FILTER,
-  filterRosterRows,
-  heroPickOutcome,
-  sortRosterRows,
-} from '@bombfarm/hero/model';
+import { filterRosterRows, heroPickOutcome, ownedRosterBoardFilter, sortRosterRows } from '@bombfarm/hero/model';
 import type {
   HeroMarketPrice,
   LeaderboardStatSource,
@@ -94,6 +86,7 @@ import { accountAroundHero, type AccountBlock } from '../../lib/account/account-
 import { rosterHeroStatSource } from '../../lib/account/account-roster';
 import { useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
+import { loadHeroesView, saveHeroesView } from '../../lib/heroes/heroes-view-storage';
 import {
   farmScreenCopy,
   rosterBoardCopyFrom,
@@ -194,18 +187,21 @@ function HeroesRoster({
   const farmCopy = useFarmCopy();
   const [pickedHeroId, setPickedHeroId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  // View-local and stored nowhere, like the phase override and the rank mode below it: the board
-  // is a way of looking at the roster you are in now, not a setting about this account.
-  const [viewMode, setViewMode] = useState<RosterViewMode>('list');
-  // The roster's order and narrowing, view-local like the mode itself: they are ways of looking
-  // at the roster you are in now, not settings about this account. Shared by both presentations,
-  // so switching between them never changes which heroes are on screen.
-  const [rosterSort, setRosterSort] = useState<RosterBoardSort>(DEFAULT_ROSTER_BOARD_SORT);
-  const [rosterFilter, setRosterFilter] = useState<RosterBoardFilter>(EMPTY_ROSTER_BOARD_FILTER);
-  const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>(DEFAULT_LEADERBOARD_VIEW);
-  const [showcaseView, setShowcaseView] = useState<ShowcaseView>(DEFAULT_SHOWCASE_VIEW);
-  // View-local, and stored nowhere: leaving the screen unmounts this and the next visit opens on
-  // the Farm selection again. It outlives a hero switch on purpose — comparing two heroes at one
+  // How the roster is being looked at — its presentation, order and narrowing — remembered across
+  // visits, so coming back to the screen shows the roster the way it was left. Read during the
+  // first render: this component only mounts with a roster in hand, never in the prerender. The
+  // sort and filter are shared by every presentation, so switching never changes who is on screen.
+  const [storedView] = useState(loadHeroesView);
+  const [viewMode, setViewMode] = useState<RosterViewMode>(storedView.viewMode);
+  const [rosterSort, setRosterSort] = useState<RosterBoardSort>(storedView.sort);
+  const [rosterFilter, setRosterFilter] = useState<RosterBoardFilter>(storedView.filter);
+  const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>(storedView.leaderboardView);
+  const [showcaseView, setShowcaseView] = useState<ShowcaseView>(storedView.showcaseView);
+  useEffect(() => {
+    saveHeroesView({ viewMode, sort: rosterSort, filter: rosterFilter, leaderboardView, showcaseView });
+  }, [viewMode, rosterSort, rosterFilter, leaderboardView, showcaseView]);
+  // View-local, and stored nowhere, unlike the roster view above: leaving the screen unmounts this
+  // and the next visit opens on the Farm selection again. It outlives a hero switch on purpose — comparing two heroes at one
   // phase is the reason to override at all.
   const [overridePhase, setOverridePhase] = useState<number | null>(null);
   // Which target the next-point ranking is read against. View-local and stored nowhere, like the
@@ -334,9 +330,12 @@ function HeroesRoster({
   // What either presentation draws. `active` is resolved from the WHOLE roster above, so
   // narrowing the list never changes which hero the detail beside it is about — a filter is a
   // question about the roster, not a hero switch.
+  // A remembered filter drops any ability this roster no longer owns, or it would hide every hero
+  // behind a tile the strip will not let anyone press.
+  const shownFilter = useMemo(() => ownedRosterBoardFilter(rows, rosterFilter), [rows, rosterFilter]);
   const shownRows = useMemo(
-    () => filterRosterRows(orderedRows, rosterFilter),
-    [orderedRows, rosterFilter],
+    () => filterRosterRows(orderedRows, shownFilter),
+    [orderedRows, shownFilter],
   );
   const toolbarActions = useMemo(
     () => ({ onSort: setRosterSort, onFilter: setRosterFilter, onViewMode: setViewMode }),
@@ -368,7 +367,7 @@ function HeroesRoster({
           <RosterToolbar
             rows={rows}
             sort={rosterSort}
-            filter={rosterFilter}
+            filter={shownFilter}
             viewMode={viewMode}
             actions={toolbarActions}
             t={rosterCopy}

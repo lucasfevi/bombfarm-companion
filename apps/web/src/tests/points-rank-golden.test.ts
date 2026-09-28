@@ -88,15 +88,18 @@ describe('DPS next-point ranking — golden fixture (pinned byte-for-byte)', () 
   // RE-PINNED 2026-09-26 for the Wide Blast patch. Footprint: both subjects carry it at rank 20,
   // and a point's gain is a ratio in which the blast multiplier cancels, so nothing moved but the
   // last digits — three of Devin's seven and two of Isolde's, each under 3e-14, the order intact.
+  // RE-PINNED 2026-09-27 for the plant-cycle refit (ADR-018): only the cadence keys move. Speed
+  // halves (0.4586 → 0.2251 here, 0.7083 → 0.3004 on Isolde) because a faster hero reaches for
+  // farther targets, which drops it below energy on Devin; CDR moves by a tenth either way.
   it('Devin L87 (geared, Olho Clínico) — full ranking pinned to full precision, crit damage first', () => {
     const result = pipelineForHero(heroByName('Devin'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
       { stat: 'critDmg', gainPct: 1.6258384769856526 },
       { stat: 'attack', gainPct: 1.0900754392397793 },
-      { stat: 'speed', gainPct: 0.4586162938889915 },
       { stat: 'energy', gainPct: 0.3079450009872753 },
-      { stat: 'critChance', gainPct: 0.08676728467884587 },
-      { stat: 'cdr', gainPct: 0.017504299940207524 },
+      { stat: 'speed', gainPct: 0.22511447803439388 },
+      { stat: 'critChance', gainPct: 0.08676728467882366 },
+      { stat: 'cdr', gainPct: 0.015676144031773198 },
       { stat: 'penetration', gainPct: 0.00244876856141385 },
     ]);
   });
@@ -110,13 +113,13 @@ describe('DPS next-point ranking — golden fixture (pinned byte-for-byte)', () 
   it('Isolde L67 (naked, no points spent) — full ranking pinned to full precision, attack dominant', () => {
     const result = pipelineForHero(heroByName('Isolde'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 5.04711144179415 },
+      { stat: 'attack', gainPct: 5.047111441794128 },
       { stat: 'energy', gainPct: 2.305569985939271 },
-      { stat: 'speed', gainPct: 0.7083292471643077 },
+      { stat: 'speed', gainPct: 0.3004427589206049 },
       { stat: 'critDmg', gainPct: 0.23330731000406058 },
       { stat: 'critChance', gainPct: 0.08375991220037626 },
-      { stat: 'cdr', gainPct: 0.015242262447401345 },
-      { stat: 'penetration', gainPct: 0.0012742229402507022 },
+      { stat: 'cdr', gainPct: 0.014988082442557449 },
+      { stat: 'penetration', gainPct: 0.0012742229402729066 },
     ]);
   });
 });
@@ -147,7 +150,7 @@ describe('DPS next-point ranking — CDR marginal-fuse special case (golden, ros
     const ranking = rankNextPoint(sampleHero(), baseCtx());
     const cdr = ranking.find((r) => r.stat === 'cdr')!;
     expect(cdr.gainPct).toBeGreaterThan(0);
-    expect(cdr.gainPct).toBe(0.013615513971942939);
+    expect(cdr.gainPct).toBe(0.016500108510575373);
   });
 
   it('cdr at the 80% cap: exactly zero gain, pinned to full precision', () => {
@@ -161,12 +164,12 @@ describe('DPS next-point ranking — CDR marginal-fuse special case (golden, ros
     const withBareObject = rankNextPoint(sampleHero(), baseCtx(), {});
     expect(pick(withBareObject)).toEqual(pick(withNoOptions));
     expect(pick(withNoOptions)).toEqual([
-      { stat: 'attack', gainPct: 2.499999999999969 },
-      { stat: 'speed', gainPct: 1.07671627058179 },
+      { stat: 'attack', gainPct: 2.5000000000000133 },
       { stat: 'energy', gainPct: 0.9381107491856611 },
       { stat: 'critDmg', gainPct: 0.5474452554744547 },
-      { stat: 'critChance', gainPct: 0.10218978102187748 },
-      { stat: 'cdr', gainPct: 0.013615513971942939 },
+      { stat: 'speed', gainPct: 0.39405423770841885 },
+      { stat: 'critChance', gainPct: 0.10218978102192189 },
+      { stat: 'cdr', gainPct: 0.016500108510575373 },
       { stat: 'penetration', gainPct: 0.0035700583997488877 },
     ]);
   });

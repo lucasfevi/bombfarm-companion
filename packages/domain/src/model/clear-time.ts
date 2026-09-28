@@ -27,11 +27,11 @@
  *   deals a normal hit or a crit. A hero whose average hit one-shots a prop still needs ~1.5
  *   hits when only the crit does — measured 1.92 hits per kill on a field the averaged hit priced
  *   at 1.27 ({@link expectedHitsToKill}).
- * - **Hops depend on `n` and on re-planting.** The free hop between props runs
- *   `4.5 + 13 / sqrt(n)` cells; a hero re-bombing a prop that survived its last hit hops ~1 cell.
- *   The cycle is `max(fuse + overhead, hop / w + overhead)`, fuse-bound on a full field.
- * - **The tail is starved, not slow.** Under ~5 props only `1.9 n + 1.5` heroes have a target;
- *   the rest walk. The last prop still gets three or four bombers.
+ * - **Hops depend on `n`.** The free hop between props shortens as the map fills. The cycle is
+ *   `plant-cycle.ts`'s, shared with the per-hero bombs/s — including its re-plant share, which
+ *   does not grow with hits-to-kill: other heroes' crosses land the follow-up hits.
+ * - **The tail is starved, not slow.** Under ~5 props only `1.53 n + 0.29` heroes have a target;
+ *   the rest walk. The last prop gets about two bombers.
  * - **The head walks in.** Nothing dies for the first ~3 s (activation stagger plus the first
  *   fuse), and the first ten kills come at a reduced rate while heroes cross the map from
  *   wherever the last wave ended.
@@ -45,8 +45,8 @@
  * function of every input; integrating a fractional count to zero would take unbounded time.
  */
 
-import { EXTRA_RANGE_FRAC, SHATTER_FRAC } from '../phase-wiki';
-import { BASE_BLAST_RANGE } from './combat';
+import { BASE_BLAST_RANGE, EXTRA_RANGE_FRAC, SHATTER_FRAC } from '../phase-wiki';
+import { REPLANT_HOP_CELLS, freeHopCells, hopSpeedFactor, meanPlantCycleSeconds, plantCycleSeconds } from './plant-cycle';
 
 /** Cells of the cross every hero's blast covers at full damage: the epicentre and one per arm. */
 export const BASE_BLAST_CELLS = 1 + 4 * BASE_BLAST_RANGE;
@@ -70,17 +70,6 @@ export const HITS_PER_PLANT_CLUSTER = 1.5;
 export const HITS_PER_PLANT_CAP_BASE = 1.8;
 export const HITS_PER_PLANT_CAP_PER_CELL = 0.23;
 
-/** Seconds a fuse-bound cycle spends beyond the fuse itself (clearing the cross, re-targeting). */
-export const FUSE_CYCLE_OVERHEAD_SEC = 0.55;
-/** Seconds a walk-bound cycle spends beyond the walk itself — the retreat out of the cross,
- *  measured at ~0.25 s and independent of blast reach. */
-export const WALK_CYCLE_OVERHEAD_SEC = 0.2;
-/** Free hop between props, cells: `FREE_HOP_BASE + FREE_HOP_SQRT / sqrt(n)`. */
-export const FREE_HOP_BASE_CELLS = 4.5;
-export const FREE_HOP_SQRT_CELLS = 13;
-/** Hop when re-bombing the prop that survived the last hit, cells. */
-export const REPLANT_HOP_CELLS = 1;
-
 /** Seconds from the wave start to the first kill: activation stagger plus one fuse. */
 export const FIRST_KILL_SEC = 3.0;
 /** The kill rate the head starts at, as a share of steady state, ramping to 1 over `HEAD_RAMP_PROPS`. */
@@ -89,9 +78,14 @@ export const HEAD_RAMP_PROPS = 10;
 /** The first hop of a wave, cells — heroes cross the map from where the last wave ended. */
 export const HEAD_HOP_CELLS = 10;
 
-/** Heroes with a target on a starved field: `ACTIVE_PER_PROP × n + ACTIVE_EXTRA`, capped at the squad. */
-export const ACTIVE_PER_PROP = 1.9;
-export const ACTIVE_EXTRA = 1.5;
+/**
+ * Heroes with a target on a starved field: `ACTIVE_PER_PROP × n + ACTIVE_EXTRA`, capped at the squad.
+ * Fitted on both accounts' nine-hero fields under five props, where a sixth of all field time
+ * goes: 1.65–2.03 heroes plant on the last prop and 3.2–3.4 on the last two. Above five, every
+ * hero on the field plants at its full cycle.
+ */
+export const ACTIVE_PER_PROP = 1.53;
+export const ACTIVE_EXTRA = 0.29;
 
 /** Standing props per prop killed in one integration step; under this many, one prop per step. */
 const COARSE_STEP_ABOVE = 10;
@@ -131,16 +125,24 @@ export type ClearResult = {
   expectedHtk: number;
   /** Each hero's share of the kills, in `heroes` order, summing to 1; all zero with `clearSecs`. */
   killShareByHero: readonly number[];
+  /**
+   * Bombs each hero plants per second it stands on the field, over the whole clear — the head it
+   * spends walking in and the starved tail included, which is why it runs below `1 / cycle`.
+   */
+  plantRateByHero: readonly number[];
 };
 
 export const UNCLEARABLE: ClearResult = Object.freeze({
   clearSecs: Infinity,
   expectedHtk: Infinity,
   killShareByHero: Object.freeze([]),
+  plantRateByHero: Object.freeze([]),
 });
 
 function unclearable(heroCount: number): ClearResult {
-  return heroCount === 0 ? UNCLEARABLE : { clearSecs: Infinity, expectedHtk: Infinity, killShareByHero: new Array<number>(heroCount).fill(0) };
+  if (heroCount === 0) return UNCLEARABLE;
+  const zeros = new Array<number>(heroCount).fill(0);
+  return { clearSecs: Infinity, expectedHtk: Infinity, killShareByHero: zeros, plantRateByHero: zeros };
 }
 
 /**
@@ -212,7 +214,8 @@ export function simulateClear(
   propCount: number,
 ): ClearResult {
   if (!(propCount > 0) || props.length === 0) {
-    return { clearSecs: FIRST_KILL_SEC, expectedHtk: 0, killShareByHero: new Array<number>(heroes.length).fill(0) };
+    const zeros = new Array<number>(heroes.length).fill(0);
+    return { clearSecs: FIRST_KILL_SEC, expectedHtk: 0, killShareByHero: zeros, plantRateByHero: zeros };
   }
   const weightSum = props.reduce((sum, prop) => sum + Math.max(0, prop.weight), 0);
   if (!(weightSum > 0)) return unclearable(heroes.length);
@@ -238,10 +241,8 @@ export function simulateClear(
   const plantRate = new Array<number>(heroCount).fill(0);
   const hitsPerPlantFull = new Array<number>(heroCount).fill(0);
   const hitsPerPlantCap = active.map((hero) => HITS_PER_PLANT_CAP_BASE + HITS_PER_PLANT_CAP_PER_CELL * hero.blastCells);
-  const fuseBound = active.map((hero) => hero.fuseSecs + FUSE_CYCLE_OVERHEAD_SEC);
-  const replantCycle = active.map((hero, h) =>
-    Math.max(fuseBound[h], REPLANT_HOP_CELLS / hero.walkSpeedCells + WALK_CYCLE_OVERHEAD_SEC),
-  );
+  const speedFactor = active.map((hero) => hopSpeedFactor(hero.walkSpeedCells));
+  const replantCycle = active.map((hero) => plantCycleSeconds(hero.fuseSecs, hero.walkSpeedCells, REPLANT_HOP_CELLS));
   const killsPerHit = new Array<number>(heroCount).fill(0);
   // The same per-type and per-mix figures for the hits the extra cells land, `null` for a hero
   // whose cross stops at the base reach.
@@ -273,6 +274,8 @@ export function simulateClear(
   const heroShardHits = new Array<number>(heroCount).fill(0);
   const heroExtraShardHits = new Array<number>(heroCount).fill(0);
   const killsByHero = new Array<number>(heroCount).fill(0);
+  // Every hero plants once while the head's first fuse burns, before anything can die.
+  const plantsByHero = active.map((hero) => hero.presence);
   const meanFuse = active.reduce((sum, hero) => sum + hero.presence * hero.fuseSecs, 0) / squad;
   const killShare = new Array<number>(typeCount).fill(0);
   const share = new Array<number>(typeCount).fill(0);
@@ -307,7 +310,7 @@ export function simulateClear(
     const n = Math.max(1, standing - (chunk - 1) / 2);
     const propsKilled = propCount - n;
 
-    let freeHop = FREE_HOP_BASE_CELLS + FREE_HOP_SQRT_CELLS / Math.sqrt(n);
+    let freeHop = freeHopCells(n);
     let activeShare = Math.min(1, (ACTIVE_PER_PROP * n + ACTIVE_EXTRA) / squad);
     if (propsKilled < HEAD_RAMP_PROPS) {
       const ramp = Math.max(0, propsKilled) / HEAD_RAMP_PROPS;
@@ -319,13 +322,10 @@ export function simulateClear(
     // Per-hero cadence at this density; only the miss term depends on the kill rate itself.
     for (let h = 0; h < heroCount; h++) {
       const hero = active[h];
-      const hits = hitsToKill[h];
       const perTypeKills = killsPerHitByType[h];
-      let mixHits = 0;
       let perHit = 0;
       for (let i = 0; i < standingCount; i++) {
         const t = standingTypes[i];
-        mixHits += share[t] * hits[t];
         perHit += share[t] * perTypeKills[t];
       }
       killsPerHit[h] = perHit;
@@ -337,13 +337,7 @@ export function simulateClear(
       }
       shardKillsPerHit[h] = mixKillsPerHit(shardKillsPerHitByType[h], share, standingTypes, standingCount);
       extraShardKillsPerHit[h] = mixKillsPerHit(extraShardKillsPerHitByType[h], share, standingTypes, standingCount);
-      const replantShare = Number.isFinite(mixHits) ? Math.max(0, 1 - 1 / mixHits) : 1;
-      // The mean of the two cycles, not the cycle of the mean hop: a prop that needs `E` hits
-      // costs one free-hop cycle and `E − 1` re-plant cycles, so the time per kill is
-      // `C_free + (E − 1) × C_replant`, which never falls as the hit grows.
-      const freeCycle = Math.max(fuseBound[h], freeHop / hero.walkSpeedCells + WALK_CYCLE_OVERHEAD_SEC);
-      const cycle = (1 - replantShare) * freeCycle + replantShare * replantCycle[h];
-      plantRate[h] = (hero.presence * activeShare) / cycle;
+      plantRate[h] = (hero.presence * activeShare) / meanPlantCycleSeconds(hero.fuseSecs, hero.walkSpeedCells, freeHop * speedFactor[h], replantCycle[h]);
       hitsPerPlantFull[h] = densityHits * (hero.blastCells - 1);
       hitsPerPlantExtra[h] = densityHits * extraCells[h];
     }
@@ -424,7 +418,10 @@ export function simulateClear(
     seconds += dt;
     hitsLanded += hitRate * dt;
     killed += chunk;
-    for (let h = 0; h < heroCount; h++) killsByHero[h] += heroKills[h] * dt;
+    for (let h = 0; h < heroCount; h++) {
+      killsByHero[h] += heroKills[h] * dt;
+      plantsByHero[h] += plantRate[h] * dt;
+    }
     for (let t = 0; t < typeCount; t++) {
       counts[t] = Math.max(0, counts[t] - (chunk * killShare[t]) / killRate);
     }
@@ -436,5 +433,7 @@ export function simulateClear(
     const total = killsByHero.reduce((sum, kills) => sum + kills, 0);
     for (let h = 0; h < heroCount; h++) killShareByHero[activeIndex[h]] = total > 0 ? killsByHero[h] / total : 0;
   }
-  return { clearSecs: seconds, expectedHtk: killed > 0 ? hitsLanded / killed : Infinity, killShareByHero };
+  const plantRateByHero = new Array<number>(heroes.length).fill(0);
+  for (let h = 0; h < heroCount; h++) plantRateByHero[activeIndex[h]] = plantsByHero[h] / (active[h].presence * seconds);
+  return { clearSecs: seconds, expectedHtk: killed > 0 ? hitsLanded / killed : Infinity, killShareByHero, plantRateByHero };
 }
