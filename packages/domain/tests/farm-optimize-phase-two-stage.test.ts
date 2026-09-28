@@ -35,8 +35,7 @@ import {
 import { computeHeroFarmBases, squadFactsFromBases, type SquadFarmFacts } from '@bombfarm/domain/farm-rate';
 import { solveFarmRespec } from '@bombfarm/domain/farm-optimize';
 import { optimizeHeroForFarm } from '@bombfarm/domain/farm-hero-optimize';
-import { rankNextPointForFarm } from '@bombfarm/domain/farm-point-rank';
-import { RANK_STATS } from '@bombfarm/domain/model';
+import { FARM_RANK_STATS, rankNextPointForFarm } from '@bombfarm/domain/farm-point-rank';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
@@ -241,7 +240,7 @@ function referenceRankOrder(
   const currentSquad = squadFactsFromBases(bases, null, account);
   const base = bestFarmPhase(currentSquad, objective, UNIT_SCALES, options)!;
   const basis = bases[0];
-  return RANK_STATS.map((stat) => {
+  return FARM_RANK_STATS.map((stat) => {
     const candidate = { ...basis.pts, [stat]: basis.pts[stat] + 1 };
     const squad = squadFactsFromBases(bases, new Map([[basis.heroId, candidate]]), account);
     const pick = bestFarmPhase(squad, objective, UNIT_SCALES, options);

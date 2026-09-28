@@ -19,9 +19,9 @@ export const en = {
     cdr: "Cooldown Red.",
     luck: "Luck",
   },
-  // The Points Luck row's own hint — states plainly why it never appears in
-  // Next point or Optimize build, so the absence reads as intentional, not a bug.
-  pointsLuckHint: "Loot-facing — not scored for DPS, so it never shows up in Next point or Optimize build.",
+  // The Points Luck row's own hint — says where Next point ranks it and why Optimize build
+  // empties it, so both read as intentional, not a bug.
+  pointsLuckHint: "Loot-facing — worth no DPS or gold, so Next point ranks it only in Farm mode, and Optimize build spends its points elsewhere.",
 };
 
 export const pt: typeof en = {
@@ -45,5 +45,5 @@ export const pt: typeof en = {
     cdr: "Redução de recarga",
     luck: "Sorte",
   },
-  pointsLuckHint: "Voltado a loot — não pontua para DPS, por isso nunca aparece no Próximo ponto nem no Otimizar build.",
+  pointsLuckHint: "Voltado a loot — não vale DPS nem ouro, por isso o Próximo ponto só o classifica no modo Farm, e o Otimizar build usa esses pontos em outros atributos.",
 };

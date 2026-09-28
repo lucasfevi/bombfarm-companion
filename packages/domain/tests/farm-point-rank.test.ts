@@ -23,11 +23,11 @@ import {
   rankNextPointForFarm,
   computeHeroFarmBases,
   FARM_RANK_MAX_EVALUATIONS,
+  FARM_RANK_STATS,
   type FarmPointRankResult,
 } from '@bombfarm/domain/farm-point-rank';
 import { computeHeroFarmFacts, computeSquadFarmFacts, computeFarmRateRow } from '@bombfarm/domain/farm-rate';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
-import { RANK_STATS } from '@bombfarm/domain/model';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { FARM_POINT_RANK_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
@@ -170,10 +170,11 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     // rationed by the queue rather than added to the squad. Bellatrix's full order is pinned as
     // the recorded shape: cdr first and speed a close second (a faster hero reaches for farther
     // targets, so speed shortens her walks less than its raw value), energy a distant third, and
-    // the four damage-side keys tied at 0. Minato is the exception: energy edges speed by ~1%.
+    // the four damage-side keys and Luck tied at 0 (Luck because the default objective is gold,
+    // which reads no drop rate). Minato is the exception: energy edges speed by ~1%.
     // RE-PINNED 2026-09-27 for the plant-cycle refit (ADR-018): speed led for all thirteen before.
     const rows = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 }).rows!;
-    expect(rows.map((r) => r.stat)).toEqual(['cdr', 'speed', 'energy', 'attack', 'critDmg', 'critChance', 'penetration']);
+    expect(rows.map((r) => r.stat)).toEqual(['cdr', 'speed', 'energy', 'attack', 'critDmg', 'critChance', 'penetration', 'luck']);
     const firstStats = ONE_SHOTTERS.map((hero) => rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 }).rows![0].stat);
     expect(firstStats.filter((stat) => stat === 'speed' || stat === 'cdr')).toHaveLength(ONE_SHOTTERS.length - 1);
     expect(firstStats.filter((stat) => stat === 'energy')).toHaveLength(1);
@@ -353,8 +354,8 @@ describe('rankNextPointForFarm — edge/degenerate cases, full tuple', () => {
     const mixedBases = computeHeroFarmBases({ heroes: mixedHeroes, account, enabledHeroIds: POOL_IDS });
     const result = rankNextPointForFarm({ bases: mixedBases, account, heroId: bellatrix.id, maxPhase: 42 });
     expect(result.outcome).toBe('ranked');
-    expect(result.rows).toHaveLength(RANK_STATS.length);
-    expect(result.evaluations).toBe(8);
+    expect(result.rows).toHaveLength(FARM_RANK_STATS.length);
+    expect(result.evaluations).toBe(9);
     assertResultIsFinite(result);
   });
 
@@ -364,8 +365,8 @@ describe('rankNextPointForFarm — edge/degenerate cases, full tuple', () => {
     expect(result.outcome).toBe('ranked');
     // Solo, she is no longer competing for field slots, so the gold argmax walks up to the cap.
     expect(result.phase).toBe(42);
-    expect(result.rows).toHaveLength(RANK_STATS.length);
-    expect(result.evaluations).toBe(8);
+    expect(result.rows).toHaveLength(FARM_RANK_STATS.length);
+    expect(result.evaluations).toBe(9);
     assertResultIsFinite(result);
   });
 
@@ -396,6 +397,21 @@ describe('rankNextPointForFarm — edge/degenerate cases, full tuple', () => {
   });
 });
 
+describe('rankNextPointForFarm — Luck is a candidate, priced by the objective', () => {
+  const heroId = ONE_SHOTTERS[0].id;
+  const luckGain = (kind: 'gold' | 'chests') =>
+    rankNextPointForFarm({ bases, account, heroId, objective: { kind }, maxPhase: 42 }).rows!.find((row) => row.stat === 'luck')!
+      .gainPct;
+
+  it('scores a Luck point above 0 under the chest objective — drops read it', () => {
+    expect(luckGain('chests')).toBeGreaterThan(0);
+  });
+
+  it('scores a Luck point at exactly 0 under gold, which reads no drop rate', () => {
+    expect(luckGain('gold')).toBe(0);
+  });
+});
+
 describe('rankNextPointForFarm — an unknown maxPhase considers all 600 phases', () => {
   const bellatrix = heroByName('Bellatrix');
 
@@ -418,11 +434,11 @@ describe('rankNextPointForFarm — an unknown maxPhase considers all 600 phases'
 describe('rankNextPointForFarm — deterministic tie order', () => {
   const bellatrix = heroByName('Bellatrix');
 
-  it('the keys tied at 0 on Bellatrix come back in RANK_STATS relative order', () => {
+  it('the keys tied at 0 on Bellatrix come back in FARM_RANK_STATS relative order', () => {
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 });
     const tiedStats = result.rows!.filter((r) => r.gainPct === 0).map((r) => r.stat);
     expect(tiedStats.length, 'no ties to order — this guard needs a hero with some').toBeGreaterThan(1);
-    expect(tiedStats).toEqual(RANK_STATS.filter((stat) => tiedStats.includes(stat)));
+    expect(tiedStats).toEqual(FARM_RANK_STATS.filter((stat) => tiedStats.includes(stat)));
   });
 
   it('the tie order is unchanged when the bases array is reversed', () => {
@@ -442,15 +458,15 @@ describe('rankNextPointForFarm — deterministic tie order', () => {
 describe('rankNextPointForFarm — evaluation budget', () => {
   const bellatrix = heroByName('Bellatrix');
 
-  it('spends exactly 8 evaluations under gold/chests and never exceeds the exported constant', () => {
+  it('spends exactly 9 evaluations under gold/chests and never exceeds the exported constant', () => {
     const gold = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, objective: { kind: 'gold' }, maxPhase: 42 });
     const chests = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, objective: { kind: 'chests' }, maxPhase: 42 });
-    expect(gold.evaluations).toBe(8);
-    expect(chests.evaluations).toBe(8);
+    expect(gold.evaluations).toBe(9);
+    expect(chests.evaluations).toBe(9);
     expect(gold.evaluations).toBeLessThanOrEqual(FARM_RANK_MAX_EVALUATIONS);
   });
 
-  it('spends exactly 10 evaluations under blend (the 2 extra frozen-scale sweeps)', () => {
+  it('spends exactly 11 evaluations under blend (the 2 extra frozen-scale sweeps)', () => {
     const blend = rankNextPointForFarm({
       bases,
       account,
@@ -458,12 +474,12 @@ describe('rankNextPointForFarm — evaluation budget', () => {
       objective: { kind: 'blend', weight: 0.5 },
       maxPhase: 42,
     });
-    expect(blend.evaluations).toBe(10);
+    expect(blend.evaluations).toBe(11);
     expect(blend.evaluations).toBeLessThanOrEqual(FARM_RANK_MAX_EVALUATIONS);
   });
 
-  it('FARM_RANK_MAX_EVALUATIONS is exactly 10', () => {
-    expect(FARM_RANK_MAX_EVALUATIONS).toBe(10);
+  it('FARM_RANK_MAX_EVALUATIONS is exactly 11', () => {
+    expect(FARM_RANK_MAX_EVALUATIONS).toBe(11);
   });
 });
 

@@ -95,7 +95,7 @@ describe('re-solved, not truncated', () => {
     // publicly-observable signature "re-solved" and "truncated" disagree on, even on inputs
     // (like this fixture) where the two approaches land on numerically identical vectors.
     const bases = computeHeroFarmBases({ heroes, account });
-    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
+    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.level)] as const));
     const searchableIds = bases.map((b) => b.heroId);
     const objective = resolveFarmObjective({ kind: 'gold' });
     const jointOnly = runFarmSearch(

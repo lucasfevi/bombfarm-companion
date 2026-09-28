@@ -9,7 +9,7 @@
  *
  * This field lives on `HeroRecord` itself — a single top-level default rather than a nested one.
  * It records what the SAVE reported at import (`point-inference.ts`'s budget-mismatch check
- * reads it) and nothing more: the reopt budget is `reoptBudget(pts, level)`, which never
+ * reads it) and nothing more: the reopt budget is `reoptBudget(level)`, which never
  * consults it, so a legacy record missing the key cannot get a different search out of it.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -114,7 +114,7 @@ describe('legacy statPointsAvailable compat (unspent-points wave)', () => {
     // absence from a legacy record costs that record nothing: this level-30 hero with 0 spent
     // gets its full 30-point pool searched, exactly as a freshly imported one would.
     expect(hero.statPointsAvailable).toBe(0);
-    expect(reoptBudget(hero.pts, hero.level)).toBe(30);
+    expect(reoptBudget(hero.level)).toBe(30);
 
     const built = optimizeBuild({
       pts: hero.pts,

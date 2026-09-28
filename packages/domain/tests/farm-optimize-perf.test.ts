@@ -59,7 +59,7 @@ describe('the evaluation budget binds, and a truncated search still returns a va
 
   it('a lowered internal budget sets budgetExhausted: true, never overruns it, and still returns a valid incumbent', () => {
     const bases = computeHeroFarmBases({ heroes, account });
-    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
+    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.level)] as const));
     const searchableIds = bases.map((b) => b.heroId);
     const objective = resolveFarmObjective({ kind: 'gold' });
     const scales = { goldScale: 1, chestScale: 1 };

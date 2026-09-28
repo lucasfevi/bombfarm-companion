@@ -198,7 +198,7 @@ describe('i18n copy contract — Luck row states it is loot-facing, not scored f
   for (const lang of LANGS) {
     const t = STRINGS[lang];
 
-    it(`${lang}: pointsLuckHint names both Next point and Optimize build as excluding it`, () => {
+    it(`${lang}: pointsLuckHint names both Next point and Optimize build`, () => {
       const nextPointName = lang === 'en' ? /next point/i : /próximo ponto/i;
       const optimizeBuildName = t.optimizeBuildButton;
       expect(t.pointsLuckHint).toMatch(nextPointName);

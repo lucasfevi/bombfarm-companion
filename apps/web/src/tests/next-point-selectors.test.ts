@@ -297,7 +297,8 @@ describe('next-point-selectors', () => {
       expect(result.mode).toBe('farm');
       expect(result.addedToPool).toBe(true);
       expect(result.fallback).toBeNull();
-      expect(result.rows).toHaveLength(7);
+      // The farm ranking's eight: the seven combat stats and Luck.
+      expect(result.rows).toHaveLength(8);
     });
   });
 

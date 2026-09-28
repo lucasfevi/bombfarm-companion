@@ -107,7 +107,6 @@ export function PointsTable({
     // Spec edge case: a search with no measurable gain is a no-op, not a rewrite of an
     // equally-scoring reshuffle — and no respec note for zero player benefit.
     if (hasApplicableGain(preview)) {
-      // preview.pts already echoes pts.luck untouched — no special-casing needed.
       editing?.onPts(preview.pts);
       setJustApplied(true);
     }
@@ -120,7 +119,7 @@ export function PointsTable({
 
   // The same pool `optimizeBuild` searches over (`reoptBudget`) — a hero with 0 spent still has
   // its whole level to place, so the button must not read as disabled.
-  const budget = reoptBudget(pts, level);
+  const budget = reoptBudget(level);
   // Derived from the live vector, never from the save's banked count: `statPointsAvailable` is
   // frozen at import, so it would keep advertising "+46 unspent" after those 46 were spent here.
   const unspent = Math.max(0, level - spentDelta);

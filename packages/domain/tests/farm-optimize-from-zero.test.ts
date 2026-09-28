@@ -18,7 +18,7 @@ import { computeHeroFarmBases, type HeroFarmBasis } from '@bombfarm/domain/farm-
 import { FARM_OPT_FULL_MAX_EVALUATIONS, FARM_OPT_JOINT_BUDGET_SHARE } from '@bombfarm/domain/farm-optimize';
 import { runFarmSearch } from '@bombfarm/domain/farm-optimize-search';
 import { resolveFarmObjective } from '@bombfarm/domain/farm-optimize-objective';
-import { budgetOf, reoptBudget, REOPT_KEYS } from '@bombfarm/domain/points-reopt-core';
+import { budgetOf, reoptBudget, zeroedRespecKeys } from '@bombfarm/domain/points-reopt-core';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
@@ -36,19 +36,17 @@ const { heroes, account, maxPhase } = loadFarmRateFixture(FIXTURE);
 const TARGET = [...heroes].sort((left, right) => right.level - left.level)[0];
 const LOPSIDED_KEYS: readonly SheetKey[] = ['attack', 'critDmg', 'speed', 'energy'];
 
-/** The target's whole reallocatable budget on ONE key, luck untouched — the lopsided builds
- *  the old search echoed back. */
+/** The target's whole budget on ONE key — the lopsided builds the old search echoed back. */
 function rosterWith(target: HeroRecord, key: SheetKey): HeroRecord[] {
   const total = budgetOf(target.pts);
-  const pts = { ...target.pts };
-  for (const k of REOPT_KEYS) pts[k] = 0;
+  const pts = zeroedRespecKeys(target.pts);
   pts[key] = total;
   return heroes.map((hero) => (hero.id === target.id ? { ...hero, pts } : hero));
 }
 
 function searchOn(roster: readonly HeroRecord[]) {
   const bases = computeHeroFarmBases({ heroes: roster, account });
-  const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
+  const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.level)] as const));
   return runFarmSearch(
     bases,
     bases.map((b) => b.heroId),
@@ -109,7 +107,7 @@ describe('the current build is the bar, not the start', () => {
 
   it('a search that could evaluate nothing but the incumbent returns it, clamped, and says so', () => {
     const bases: HeroFarmBasis[] = computeHeroFarmBases({ heroes, account });
-    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
+    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.level)] as const));
     const search = runFarmSearch(
       bases,
       bases.map((b) => b.heroId),

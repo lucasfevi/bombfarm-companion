@@ -38,6 +38,7 @@ export type {
   HeroSheet,
   Context,
   StatKey,
+  RankStatKey,
   PointValue,
   PointBases,
   EffectiveDeltas,

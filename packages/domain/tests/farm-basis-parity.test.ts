@@ -122,6 +122,20 @@ describe('the moved-vector case — the affine claim itself', () => {
   });
 });
 
+describe('a moved Luck point — priced into the candidate, not frozen at the basis', () => {
+  it('reproduces a fresh pipeline at the moved vector, for every fixture hero', () => {
+    const bases = computeHeroFarmBases({ heroes, account });
+    const moved = heroes.map((hero) => ({ ...hero, pts: { ...hero.pts, luck: hero.pts.luck + 7 } }));
+    const fresh = computeHeroFarmFacts({ heroes: moved, account });
+
+    for (let i = 0; i < bases.length; i++) {
+      const candidate = heroFactsFromBasis(bases[i], moved[i].pts);
+      expectCloseRel(candidate.heroLuckPct, fresh[i].heroLuckPct, 1e-12);
+      expect(candidate.heroLuckPct).toBeGreaterThan(heroFactsFromBasis(bases[i], bases[i].pts).heroLuckPct);
+    }
+  });
+});
+
 describe('squadFactsFromBases — identity with computeSquadFarmFacts(computeHeroFarmFacts(...))', () => {
   it('squadFactsFromBases(bases, null, account) toEquals computeSquadFarmFacts(computeHeroFarmFacts(input), account)', () => {
     const bases = computeHeroFarmBases({ heroes, account });

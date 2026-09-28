@@ -6,7 +6,15 @@
  * constants below, never the search machinery itself).
  */
 import { generateMoves, REOPT_FULL_MAX_SWEEPS } from './points-reopt-search';
-import { budgetOf, buildCandidateSheet, clampPtsToBudget, greedyWalk, REOPT_KEYS } from './points-reopt-core';
+import {
+  budgetOf,
+  buildCandidateSheet,
+  clampPtsToBudget,
+  greedyWalk,
+  REOPT_KEYS,
+  RESPEC_KEYS,
+  zeroedRespecKeys,
+} from './points-reopt-core';
 import { sustainedDps } from './model';
 import {
   squadFactsFromBases,
@@ -98,7 +106,7 @@ function pointsRefundedTotal(assignment: PtsAssignment, bases: readonly HeroFarm
   let total = 0;
   for (const basis of bases) {
     const pts = assignment.get(basis.heroId) ?? basis.pts;
-    for (const key of REOPT_KEYS) total += Math.max(0, basis.pts[key] - pts[key]);
+    for (const key of RESPEC_KEYS) total += Math.max(0, basis.pts[key] - pts[key]);
   }
   return total;
 }
@@ -107,7 +115,7 @@ function pointsPlacedTotal(assignment: PtsAssignment, bases: readonly HeroFarmBa
   let total = 0;
   for (const basis of bases) {
     const pts = assignment.get(basis.heroId) ?? basis.pts;
-    for (const key of REOPT_KEYS) total += pts[key];
+    for (const key of RESPEC_KEYS) total += pts[key];
   }
   return total;
 }
@@ -116,7 +124,7 @@ function heroesChangedCount(assignment: PtsAssignment, bases: readonly HeroFarmB
   let count = 0;
   for (const basis of bases) {
     const pts = assignment.get(basis.heroId) ?? basis.pts;
-    if (REOPT_KEYS.some((key) => pts[key] !== basis.pts[key])) count++;
+    if (RESPEC_KEYS.some((key) => pts[key] !== basis.pts[key])) count++;
   }
   return count;
 }
@@ -129,7 +137,7 @@ function lexicographicCompare(a: PtsAssignment, b: PtsAssignment, bases: readonl
     const basis = bases.find((b) => b.heroId === heroId)!;
     const aPts = a.get(heroId) ?? basis.pts;
     const bPts = b.get(heroId) ?? basis.pts;
-    for (const key of REOPT_KEYS) {
+    for (const key of RESPEC_KEYS) {
       if (aPts[key] !== bPts[key]) return aPts[key] - bPts[key];
     }
   }
@@ -140,7 +148,7 @@ function lexicographicCompare(a: PtsAssignment, b: PtsAssignment, bases: readonl
  * The total tie-break order: higher objective value; then fewer points refunded from the current
  * vectors (a reset is what the player pays for, and an add-only proposal costs nothing); then
  * more points placed (banked points spent beat banked points left); then fewer heroes changed;
- * then lexicographic by `(heroId ascending, REOPT_KEYS declaration order)`. `compare(a, b) < 0`
+ * then lexicographic by `(heroId ascending, RESPEC_KEYS declaration order)`. `compare(a, b) < 0`
  * means `a` wins.
  */
 export function compareFarmCandidates(a: FarmCandidate, b: FarmCandidate, bases: readonly HeroFarmBasis[]): number {
@@ -205,8 +213,7 @@ function buildIncumbentAssignment(
 
 /** One hero's sustained-DPS greedy walk from zero over its whole budget — the hero-shaped seed. */
 function dpsGreedyFromZero(basis: HeroFarmBasis, budget: number): Record<SheetKey, number> {
-  const zero: Record<SheetKey, number> = { ...basis.pts };
-  for (const key of REOPT_KEYS) zero[key] = 0;
+  const zero = zeroedRespecKeys(basis.pts);
   const zeroSheet = buildCandidateSheet(basis.effective, basis.pts, basis.effectiveDelta, zero);
   const zeroScore = sustainedDps(zeroSheet, basis.context);
   return greedyWalk(zero, zeroScore, budget, basis.effective, basis.pts, basis.effectiveDelta, basis.context, Infinity).pts;
@@ -231,8 +238,7 @@ function buildSeedAssignment(
     const budget = budgetById.get(basis.heroId) ?? 0;
     const energy = Math.round(budget * energyShare);
     const attack = budget - energy;
-    const vector: Record<SheetKey, number> = { ...basis.pts };
-    for (const key of REOPT_KEYS) vector[key] = 0;
+    const vector = zeroedRespecKeys(basis.pts);
     vector.attack = attack;
     vector.energy = energy;
     assignment.set(basis.heroId, vector);
@@ -254,7 +260,7 @@ function shareBuild(
     if (!searchableSet.has(basis.heroId)) continue;
     const currentPts = incumbent.get(basis.heroId) ?? basis.pts;
     let fixed = 0;
-    for (const key of REOPT_KEYS) {
+    for (const key of RESPEC_KEYS) {
       if (key === 'attack' || key === 'energy') continue;
       fixed += currentPts[key];
     }
@@ -286,10 +292,10 @@ const SPEND_BLOCKS: readonly number[] = [Infinity, 10, 5, 3, 2, 1];
  * improvement: trying `key += everything` ahead of the block sizes settles the pool in one
  * accepted move and leaves the transfer family to spread it from there.
  */
-function generateSpendMoves(): SpendMoveFn[] {
+function generateSpendMoves(destinations: readonly SheetKey[]): SpendMoveFn[] {
   const moves: SpendMoveFn[] = [];
   for (const blockSize of SPEND_BLOCKS) {
-    for (const key of REOPT_KEYS) {
+    for (const key of destinations) {
       moves.push((pts, unplaced) => {
         const amount = Math.min(blockSize, unplaced);
         return amount <= 0 ? null : { ...pts, [key]: pts[key] + amount };
@@ -304,10 +310,10 @@ function generateSpendMoves(): SpendMoveFn[] {
  * `FARM_OPT_STEP_BLOCKS`, each clamped to what the stat holds and skipped where a ten-point
  * block already covers it. Tried before the fine transfers so a sweep moves coarse to fine.
  */
-function generateStepMoves(): SpendMoveFn[] {
+function generateStepMoves(destinations: readonly SheetKey[]): SpendMoveFn[] {
   const moves: SpendMoveFn[] = [];
-  for (const from of REOPT_KEYS) {
-    for (const destination of REOPT_KEYS) {
+  for (const from of RESPEC_KEYS) {
+    for (const destination of destinations) {
       if (from === destination) continue;
       moves.push((pts) =>
         pts[from] < 2 ? null : { ...pts, [from]: 0, [destination]: pts[destination] + pts[from] },
@@ -315,8 +321,8 @@ function generateStepMoves(): SpendMoveFn[] {
     }
   }
   for (const blockSize of FARM_OPT_STEP_BLOCKS) {
-    for (const from of REOPT_KEYS) {
-      for (const destination of REOPT_KEYS) {
+    for (const from of RESPEC_KEYS) {
+      for (const destination of destinations) {
         if (from === destination) continue;
         moves.push((pts) => {
           const amount = Math.min(blockSize, pts[from]);
@@ -326,6 +332,15 @@ function generateStepMoves(): SpendMoveFn[] {
     }
   }
   return moves;
+}
+
+/**
+ * The keys a point may be moved INTO. Gold per hour reads no Luck, so under the gold objective a
+ * probe that lands on Luck can only lose — skipping it saves a sixth of every sweep. Luck is
+ * still a source everywhere: a reset refunds it whatever the objective.
+ */
+function respecDestinations(objective: ResolvedFarmObjective): readonly SheetKey[] {
+  return objective.kind === 'gold' ? REOPT_KEYS : RESPEC_KEYS;
 }
 
 /** `budget` desc, then `heroId` asc (plain `<`) — the fixed per-hero local-search order. */
@@ -356,7 +371,7 @@ export function squadEnergyShare(
     if (!basis) continue;
     const pts = assignment?.get(heroId) ?? basis.pts;
     let fixed = 0;
-    for (const key of REOPT_KEYS) {
+    for (const key of RESPEC_KEYS) {
       if (key === 'attack' || key === 'energy') continue;
       fixed += pts[key];
     }
@@ -445,7 +460,12 @@ export function runFarmSearch(
 ): FarmSearchOutcome {
   const basesById = new Map(bases.map((b) => [b.heroId, b] as const));
   const searchableSet = new Set(searchableIds);
-  const moves: SpendMoveFn[] = [...generateSpendMoves(), ...generateStepMoves(), ...generateMoves()];
+  const destinations = respecDestinations(objective);
+  const moves: SpendMoveFn[] = [
+    ...generateSpendMoves(destinations),
+    ...generateStepMoves(destinations),
+    ...generateMoves(destinations),
+  ];
 
   let evaluations = 0;
   let budgetExhausted = false;
