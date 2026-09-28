@@ -1,6 +1,6 @@
 # ADR-017: Clear time is an integral over the props still standing
 
-**Status:** accepted  
+**Status:** accepted, amended by [ADR-018](018-one-plant-cycle.md) — the cycle, hop, re-plant and starvation constants are now measured per plant  
 **Date:** 2026-09-19
 
 ## Context

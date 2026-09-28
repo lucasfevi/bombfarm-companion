@@ -23,11 +23,11 @@ import {
   rankNextPointForFarm,
   computeHeroFarmBases,
   FARM_RANK_MAX_EVALUATIONS,
+  FARM_RANK_STATS,
   type FarmPointRankResult,
 } from '@bombfarm/domain/farm-point-rank';
 import { computeHeroFarmFacts, computeSquadFarmFacts, computeFarmRateRow } from '@bombfarm/domain/farm-rate';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
-import { RANK_STATS } from '@bombfarm/domain/model';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { FARM_POINT_RANK_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
@@ -124,18 +124,20 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
    * a regression that zeroed attack unconditionally would read as a squad of one-shotters and
    * pass. These five are that control.
    */
-  it('the naked heroes do NOT one-shot at maxPhase 42 — among themselves an attack point scores clearly above 0 on most of them', () => {
+  it('the naked heroes do NOT one-shot at maxPhase 42 — among themselves an attack point scores clearly above 0 on several of them', () => {
     // On the full squad a naked hero's attack point is worth about nothing either way: thirteen
     // one-shotters clear the map, and a hero landing 2k hits moves the clear by parts per million
     // that the clear's own dynamics (easy props dying first, the tail starving) can tip either
     // side of zero. Among the naked heroes alone the point is the difference between two hits
     // and one on most of them, and it scores clearly above zero — the control a regression
-    // zeroing attack unconditionally cannot pass. "Most", because hits-to-kill is still a step
+    // zeroing attack unconditionally cannot pass. "Several", because hits-to-kill is still a step
     // function of the hit under the per-hit crit roll (a finer one), and one point can land
-    // between two steps for a hero — Gale's does here — and read exactly 0.
+    // between two steps for a hero and read exactly 0. Since the plant-cycle refit (ADR-018) an
+    // energy point leads for six of the seven among themselves, and attack clears 0.01% on three
+    // — Bram, BP 03 and BP 05 — where it did on four of five before.
     const nakedBases = computeHeroFarmBases({ heroes, account, enabledHeroIds: NON_ONE_SHOTTERS.map((hero) => hero.id) });
     let clearlyPositive = 0;
-    for (const name of NAKED_ATTACK_POSITIVE) {
+    for (const name of [...NAKED_ATTACK_POSITIVE, ...NAKED_ATTACK_ON_A_STEP]) {
       const result = rankNextPointForFarm({ bases: nakedBases, account, heroId: heroByName(name).id, maxPhase: 42 });
       expect(result.outcome).toBe('ranked');
       assertResultIsFinite(result);
@@ -144,7 +146,7 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
       const onFullSquad = rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 });
       expect(Math.abs(gainOf(onFullSquad, 'attack'))).toBeLessThan(0.05);
     }
-    expect(clearlyPositive).toBeGreaterThanOrEqual(4);
+    expect(clearlyPositive).toBeGreaterThanOrEqual(3);
   });
 
   it('both sides are populated at maxPhase 42 — the thirteen one-shotters score attack exactly 0, and every naked hero moves it', () => {
@@ -162,18 +164,20 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     for (const name of NAKED_ATTACK_ON_A_STEP) expect(oneShotsPhase42(heroByName(name))).toBe(false);
   });
 
-  it('farm ranks SPEED first for every one-shotter at maxPhase 42, energy for none — the field is saturated, so cadence beats uptime', () => {
-    // Speed shortens every walk-bound plant a hero makes while she holds a field slot; energy
+  it('farm ranks a cadence stat first for every one-shotter at maxPhase 42 but one, and a damage stat for none — the field is saturated', () => {
+    // Speed and CDR both shorten the plants a hero makes while she holds a field slot; energy
     // buys more field seconds, but with twenty heroes queued for nine slots those seconds are
     // rationed by the queue rather than added to the squad. Bellatrix's full order is pinned as
-    // the recorded shape: cdr a close second (the fuse-bound plants speed cannot help are the
-    // ones CDR can), energy a distant third, and the four damage-side keys tied at 0.
+    // the recorded shape: cdr first and speed a close second (a faster hero reaches for farther
+    // targets, so speed shortens her walks less than its raw value), energy a distant third, and
+    // the four damage-side keys and Luck tied at 0 (Luck because the default objective is gold,
+    // which reads no drop rate). Minato is the exception: energy edges speed by ~1%.
+    // RE-PINNED 2026-09-27 for the plant-cycle refit (ADR-018): speed led for all thirteen before.
     const rows = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 }).rows!;
-    expect(rows.map((r) => r.stat)).toEqual(['speed', 'cdr', 'energy', 'attack', 'critDmg', 'critChance', 'penetration']);
-    const firstStatById = new Map(
-      ONE_SHOTTERS.map((hero) => [hero.id, rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 }).rows![0].stat] as const),
-    );
-    expect([...firstStatById.values()].every((stat) => stat === 'speed')).toBe(true);
+    expect(rows.map((r) => r.stat)).toEqual(['cdr', 'speed', 'energy', 'attack', 'critDmg', 'critChance', 'penetration', 'luck']);
+    const firstStats = ONE_SHOTTERS.map((hero) => rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 }).rows![0].stat);
+    expect(firstStats.filter((stat) => stat === 'speed' || stat === 'cdr')).toHaveLength(ONE_SHOTTERS.length - 1);
+    expect(firstStats.filter((stat) => stat === 'energy')).toHaveLength(1);
   });
 
   it('DPS mode scores attack first on a hero farm scores attack at 0 (the inversion)', () => {
@@ -221,7 +225,8 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
     // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); -0.12713347066902747 before.
     // RE-PINNED 2026-09-26 for the Wide Blast patch: the cells it adds past the base reach now take half the hit. -0.07899834560854968 before.
     // Moved again the same day for Double Detonation's 2.5%/level.
-    expect(gainOf(result, 'energy')).toBeCloseTo(-0.0790154592172354, 9);
+    // RE-PINNED 2026-09-27 for the plant-cycle refit (ADR-018): -0.0790154592172354 before.
+    expect(gainOf(result, 'energy')).toBeCloseTo(-0.08137438484647763, 9);
     // Not a collapse: the sign is decided hero by hero. On this queued field it is positive on
     // every geared hero — more of a one-shotter's field time is more kills — and negative on
     // every naked one, whose extra field seconds displace a faster clearer's.
@@ -235,25 +240,26 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
   });
 });
 
-describe('rankNextPointForFarm — cdr scores SMALL BUT POSITIVE under farm (it used to be exactly 0)', () => {
-  // This block previously pinned `cdr.gainPct === 0` with a note telling future readers not to
-  // "fix" it. That note was correct about the OLD model and wrong about the game.
-  //
-  // Under `cycle = max(fuseSecs, E_D_CELLS / walkSpeed)`, the walk term dominated at every
-  // fixture speed, so a shorter fuse could never change the plant rate and CDR was worth
-  // literally nothing. Averaging over the measured hop distribution instead, roughly 45% of a
-  // slow hero's plants land on hops short enough that `hop/w < fuse` — the fuse-bound branch,
-  // observed live as a flat floor across hops 2-4. On those plants a CDR point DOES buy cadence.
-  //
-  // So CDR is no longer free to ignore, but it stays far below speed and energy because it only
-  // pays on the short-hop mass. Asserted as a shape (positive, small, never top) rather than
-  // per-hero constants: the exact values move with any re-fit of the distribution.
-  it.each(['Bellatrix', 'Jon', 'Bram', 'Gale'])('%s: cdr gainPct >= 0 and never ranks first', (name) => {
+describe('rankNextPointForFarm — cdr pays under farm (it used to be exactly 0)', () => {
+  // This block once pinned `cdr.gainPct === 0`, then "small, never first". Both were right about
+  // the model of their day and wrong about the game. Measured plants wait on the fuse on 50–84%
+  // of cycles in a full field, and a CDR point pays on every one of those; since the plant-cycle
+  // refit (ADR-018) it leads for Bellatrix and Jon, whose plants the fuse binds most. Asserted as
+  // a shape (never negative, first for those two, below the top pick for the naked two) rather
+  // than per-hero constants: the exact values move with any re-fit.
+  it.each(['Bellatrix', 'Jon', 'Bram', 'Gale'])('%s: cdr gainPct >= 0', (name) => {
     const result = rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 });
-    const cdr = gainOf(result, 'cdr');
-    expect(cdr).toBeGreaterThanOrEqual(0);
-    expect(result.rows![0].stat).not.toBe('cdr');
-    expect(cdr).toBeLessThan(result.rows![0].gainPct);
+    expect(gainOf(result, 'cdr')).toBeGreaterThanOrEqual(0);
+  });
+
+  it.each(['Bellatrix', 'Jon'])('%s: cdr ranks first — the one-shotters whose plants the fuse binds most', (name) => {
+    const result = rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 });
+    expect(result.rows![0].stat).toBe('cdr');
+  });
+
+  it.each(['Bram', 'Gale'])('%s: cdr stays below the top pick — a naked hero gains more from damage', (name) => {
+    const result = rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 });
+    expect(gainOf(result, 'cdr')).toBeLessThan(result.rows![0].gainPct);
   });
 
   it('at least one fixture hero now scores cdr strictly above 0 — the fuse-bound branch is reachable', () => {
@@ -348,8 +354,8 @@ describe('rankNextPointForFarm — edge/degenerate cases, full tuple', () => {
     const mixedBases = computeHeroFarmBases({ heroes: mixedHeroes, account, enabledHeroIds: POOL_IDS });
     const result = rankNextPointForFarm({ bases: mixedBases, account, heroId: bellatrix.id, maxPhase: 42 });
     expect(result.outcome).toBe('ranked');
-    expect(result.rows).toHaveLength(RANK_STATS.length);
-    expect(result.evaluations).toBe(8);
+    expect(result.rows).toHaveLength(FARM_RANK_STATS.length);
+    expect(result.evaluations).toBe(9);
     assertResultIsFinite(result);
   });
 
@@ -359,8 +365,8 @@ describe('rankNextPointForFarm — edge/degenerate cases, full tuple', () => {
     expect(result.outcome).toBe('ranked');
     // Solo, she is no longer competing for field slots, so the gold argmax walks up to the cap.
     expect(result.phase).toBe(42);
-    expect(result.rows).toHaveLength(RANK_STATS.length);
-    expect(result.evaluations).toBe(8);
+    expect(result.rows).toHaveLength(FARM_RANK_STATS.length);
+    expect(result.evaluations).toBe(9);
     assertResultIsFinite(result);
   });
 
@@ -391,6 +397,21 @@ describe('rankNextPointForFarm — edge/degenerate cases, full tuple', () => {
   });
 });
 
+describe('rankNextPointForFarm — Luck is a candidate, priced by the objective', () => {
+  const heroId = ONE_SHOTTERS[0].id;
+  const luckGain = (kind: 'gold' | 'chests') =>
+    rankNextPointForFarm({ bases, account, heroId, objective: { kind }, maxPhase: 42 }).rows!.find((row) => row.stat === 'luck')!
+      .gainPct;
+
+  it('scores a Luck point above 0 under the chest objective — drops read it', () => {
+    expect(luckGain('chests')).toBeGreaterThan(0);
+  });
+
+  it('scores a Luck point at exactly 0 under gold, which reads no drop rate', () => {
+    expect(luckGain('gold')).toBe(0);
+  });
+});
+
 describe('rankNextPointForFarm — an unknown maxPhase considers all 600 phases', () => {
   const bellatrix = heroByName('Bellatrix');
 
@@ -413,11 +434,11 @@ describe('rankNextPointForFarm — an unknown maxPhase considers all 600 phases'
 describe('rankNextPointForFarm — deterministic tie order', () => {
   const bellatrix = heroByName('Bellatrix');
 
-  it('the keys tied at 0 on Bellatrix come back in RANK_STATS relative order', () => {
+  it('the keys tied at 0 on Bellatrix come back in FARM_RANK_STATS relative order', () => {
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 });
     const tiedStats = result.rows!.filter((r) => r.gainPct === 0).map((r) => r.stat);
     expect(tiedStats.length, 'no ties to order — this guard needs a hero with some').toBeGreaterThan(1);
-    expect(tiedStats).toEqual(RANK_STATS.filter((stat) => tiedStats.includes(stat)));
+    expect(tiedStats).toEqual(FARM_RANK_STATS.filter((stat) => tiedStats.includes(stat)));
   });
 
   it('the tie order is unchanged when the bases array is reversed', () => {
@@ -437,15 +458,15 @@ describe('rankNextPointForFarm — deterministic tie order', () => {
 describe('rankNextPointForFarm — evaluation budget', () => {
   const bellatrix = heroByName('Bellatrix');
 
-  it('spends exactly 8 evaluations under gold/chests and never exceeds the exported constant', () => {
+  it('spends exactly 9 evaluations under gold/chests and never exceeds the exported constant', () => {
     const gold = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, objective: { kind: 'gold' }, maxPhase: 42 });
     const chests = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, objective: { kind: 'chests' }, maxPhase: 42 });
-    expect(gold.evaluations).toBe(8);
-    expect(chests.evaluations).toBe(8);
+    expect(gold.evaluations).toBe(9);
+    expect(chests.evaluations).toBe(9);
     expect(gold.evaluations).toBeLessThanOrEqual(FARM_RANK_MAX_EVALUATIONS);
   });
 
-  it('spends exactly 10 evaluations under blend (the 2 extra frozen-scale sweeps)', () => {
+  it('spends exactly 11 evaluations under blend (the 2 extra frozen-scale sweeps)', () => {
     const blend = rankNextPointForFarm({
       bases,
       account,
@@ -453,12 +474,12 @@ describe('rankNextPointForFarm — evaluation budget', () => {
       objective: { kind: 'blend', weight: 0.5 },
       maxPhase: 42,
     });
-    expect(blend.evaluations).toBe(10);
+    expect(blend.evaluations).toBe(11);
     expect(blend.evaluations).toBeLessThanOrEqual(FARM_RANK_MAX_EVALUATIONS);
   });
 
-  it('FARM_RANK_MAX_EVALUATIONS is exactly 10', () => {
-    expect(FARM_RANK_MAX_EVALUATIONS).toBe(10);
+  it('FARM_RANK_MAX_EVALUATIONS is exactly 11', () => {
+    expect(FARM_RANK_MAX_EVALUATIONS).toBe(11);
   });
 });
 

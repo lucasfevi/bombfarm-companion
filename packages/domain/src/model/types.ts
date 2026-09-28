@@ -19,7 +19,7 @@ export interface Context {
   restSeconds: number;
   mitigation: number; // 0..1 phase mitigation
   blastRange: number; // alcance; blocos/bomba = 1 + 0.5 × range. Whole cells: base 1, raised only by Explosão Ampla (at levels 10 and 20), whose cells deal EXTRA_RANGE_FRAC of the hit — damage reads `damageWeightedBlastRange`.
-  ato: number; // difficulty band (1..5) of the phase being priced — selects the bomb cycle's hop histogram
+  ato: number; // difficulty band (1..5) of the phase being priced — selects the prop count the bomb cycle is priced over
   drainMult: number; // energy drain multiplier (<1 with Bateria Extra / Fôlego)
   /**
    * A timed combat window, in seconds — a gate clear, a duel — that the hero enters at full
@@ -31,7 +31,11 @@ export interface Context {
 
 export type StatKey = 'energy' | 'attack' | 'critDmg' | 'speed' | 'critChance' | 'penetration' | 'cdr';
 
-export const STAT_LABELS: Record<StatKey, string> = {
+/** A stat a Next point ranking can name: the seven combat stats, plus Luck where the objective
+ *  prices drops (the farm ranking). */
+export type RankStatKey = StatKey | 'luck';
+
+export const STAT_LABELS: Record<RankStatKey, string> = {
   energy: 'Energia',
   attack: 'Ataque',
   critDmg: 'Dano Crítico',
@@ -39,10 +43,11 @@ export const STAT_LABELS: Record<StatKey, string> = {
   critChance: 'Chance de Crítico',
   penetration: 'Penetração',
   cdr: 'Red. de Cooldown',
+  luck: 'Sorte',
 };
 
 export interface PointValue {
-  stat: StatKey;
+  stat: RankStatKey;
   label: string;
   gainPct: number;
 }
@@ -56,8 +61,9 @@ export interface PointBases {
   cdr: number;
 }
 
-/** Per-point deltas on the effective combat sheet (from `derive`). */
-export type EffectiveDeltas = Record<StatKey, number>;
+/** Per-point deltas on the effective combat sheet (from `derive`). `luck` is PERCENTAGE POINTS
+ *  of Sorte per point — no combat stat reads it; the farm scorer prices it into drop rates. */
+export type EffectiveDeltas = Record<StatKey, number> & { luck?: number };
 
 export type RankMode = 'dps' | 'farm';
 

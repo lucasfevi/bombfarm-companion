@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FORJA_MAX } from '@bombfarm/domain/gear';
-import { DEFAULT_OPTIMIZER_VIEW, loadOptimizerView, saveOptimizerView, type OptimizerView } from './optimizer-view-storage';
+import { DEFAULT_TEAM_PLAN_RESULT_SORT } from '@bombfarm/team-plan/model';
+import {
+  DEFAULT_OPTIMIZER_VIEW,
+  loadOptimizerResultSort,
+  loadOptimizerView,
+  saveOptimizerResultSort,
+  saveOptimizerView,
+  type OptimizerView,
+} from './optimizer-view-storage';
 
 const KEY = 'bfc-optimizer-view';
 
@@ -149,5 +157,30 @@ describe('optimizer view preferences', () => {
   it('ignores a stored plan-shaped value, reading it as the defaults', () => {
     entries.set(KEY, JSON.stringify({ plan: { gain: 1 } }));
     expect(loadOptimizerView()).toEqual(DEFAULT_OPTIMIZER_VIEW);
+  });
+});
+
+describe('optimizer result order', () => {
+  let entries: Map<string, string>;
+
+  beforeEach(() => {
+    entries = installStorage();
+  });
+
+  afterEach(() => {
+    delete (globalThis as unknown as { window?: FakeWindow }).window;
+  });
+
+  it('is stored apart from the controls, so reordering the rows never touches what a plan is solved from', () => {
+    saveOptimizerResultSort({ key: 'delta', direction: 'desc' });
+    expect(entries.has(KEY)).toBe(false);
+    expect(loadOptimizerResultSort()).toEqual({ key: 'delta', direction: 'desc' });
+    expect(loadOptimizerView()).toEqual(DEFAULT_OPTIMIZER_VIEW);
+  });
+
+  it('reads the default order when nothing, or nothing readable, was stored', () => {
+    expect(loadOptimizerResultSort()).toEqual(DEFAULT_TEAM_PLAN_RESULT_SORT);
+    entries.set('bfc-optimizer-result-sort', '{not json');
+    expect(loadOptimizerResultSort()).toEqual(DEFAULT_TEAM_PLAN_RESULT_SORT);
   });
 });

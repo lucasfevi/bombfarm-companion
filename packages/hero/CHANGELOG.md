@@ -1,5 +1,30 @@
 # @bombfarm/hero
 
+## 0.5.0
+
+### Minor Changes
+
+- cf8f8a1: The Heroes tab now opens the way you left it. Your layout (list, cards or leaderboard), sort order, "Enabled heroes" switch, ability filters, the leaderboard's hidden columns and squad/bench filter, and the cards' "Show levels" switch all stay the same when you leave the tab, reload, or restart the app. If a remembered ability filter names an ability none of your heroes has any more, it is ignored, so the roster never comes back empty.
+
+  The Optimizer's per-hero results can now be sorted by name, DPS gain, DPS gain %, DPS after, DPS before or level, in either direction. The order you pick is remembered and applies to every later plan.
+
+### Patch Changes
+
+- 2318b9d: A stat reset refunds Luck along with every other stat, and the point optimizers now count those
+  points too. Optimize build, the reset advice, the farm respec, the Team Plan and the desktop
+  Optimizer used to hold Luck at its current value and search only the other seven stats, so a hero
+  with points in Luck was never offered the build a reset actually buys. Goals that score damage or
+  gold now move those points into combat stats. The Chests and Blend farm goals price each Luck
+  point by the drop chance it adds, and keep it wherever it pays.
+
+  Next point's Farm mode ranks Luck alongside the other stats, scored by the chests a point adds.
+
+- Updated dependencies [1a11f0b]
+- Updated dependencies [2318b9d]
+  - @bombfarm/domain@1.7.0
+  - @bombfarm/ui@0.16.1
+  - @bombfarm/game-art@0.7.3
+
 ## 0.4.0
 
 ### Minor Changes

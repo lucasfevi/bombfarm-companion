@@ -111,7 +111,7 @@ describe('one entry per enabled hero, including unchanged ones with their own co
 });
 
 describe('every proposedPts is a full 8-key absolute target, within the hero\'s own budget', () => {
-  it('all 8 keys present, integer-valued, non-negative, and budgetOf <= reoptBudget(currentPts, level)', () => {
+  it('all 8 keys present, integer-valued, non-negative, and budgetOf <= reoptBudget(level)', () => {
     const result = solveFarmRespec({ heroes, account, maxPhase });
     for (const hero of result.heroes) {
       const keys = Object.keys(hero.proposedPts) as SheetKey[];
@@ -122,7 +122,7 @@ describe('every proposedPts is a full 8-key absolute target, within the hero\'s 
         expect(Number.isInteger(hero.proposedPts[key])).toBe(true);
         expect(hero.proposedPts[key]).toBeGreaterThanOrEqual(0);
       }
-      const budget = reoptBudget(hero.currentPts, hero.level);
+      const budget = reoptBudget(hero.level);
       expect(budgetOf(hero.proposedPts)).toBeLessThanOrEqual(budget);
     }
   });

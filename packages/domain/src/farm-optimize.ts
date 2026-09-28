@@ -6,8 +6,8 @@
  * Every exported function here is pure: same arguments, same result, no memo cache, no
  * module-level mutable state, no clock, no `Math.random`. Re-running the solver on its own
  * proposed build is a fixed point — the same non-compounding property `reoptBudget` was fixed
- * for. `pts.luck` is never touched: Luck sits outside the seven reallocatable stat keys
- * structurally, not by a runtime check.
+ * for. Luck is refunded and re-placed like every other key, priced only where the objective
+ * reads it (chests).
  */
 import type { HeroRecord } from './shims/storage';
 import type { SheetKey } from './planner-constants';
@@ -31,7 +31,7 @@ import {
   type FarmObjectiveScales,
   type FarmPhasePick,
 } from './farm-optimize-objective';
-import { reoptBudget, REOPT_KEYS } from './points-reopt-core';
+import { reoptBudget, RESPEC_KEYS } from './points-reopt-core';
 import { requiresPointReset, respecCostGold } from './respec-cost';
 import {
   runFarmSearch,
@@ -85,11 +85,11 @@ export type FarmRespecHeroEntry = {
   /** Full 8-key CURRENT allocation. */
   currentPts: Record<SheetKey, number>;
   /** Full 8-key ABSOLUTE TARGET allocation — sufficient to re-spend from zero after an in-game
-   *  refund. No key is omitted for being unchanged. `luck` always equals `currentPts.luck`. */
+   *  refund. No key is omitted for being unchanged. */
   proposedPts: Record<SheetKey, number>;
-  /** True iff `proposedPts` differs from `currentPts` on any of the seven reallocatable keys. */
+  /** True iff `proposedPts` differs from `currentPts` on any key. */
   changed: boolean;
-  /** `Σ |proposed − current|` over the seven reallocatable keys. 0 when unchanged. */
+  /** `Σ |proposed − current|` over all eight keys. 0 when unchanged. */
   pointsMoved: number;
   /** ABSOLUTE GOLD, `1000 × level` — what a respec for this hero COSTS, reported for EVERY hero
    *  whether or not this proposal needs one. For an unchanged hero it is the gold the player is
@@ -232,10 +232,9 @@ function buildHeroEntries(
   winnerAssignment: PtsAssignment | null,
 ): FarmRespecHeroEntry[] {
   return bases.map((basis) => {
-    const proposedPtsSource = winnerAssignment?.get(basis.heroId) ?? basis.pts;
-    const proposedPts: Record<SheetKey, number> = { ...proposedPtsSource, luck: basis.pts.luck };
-    const changed = REOPT_KEYS.some((key) => proposedPts[key] !== basis.pts[key]);
-    const pointsMoved = REOPT_KEYS.reduce((sum, key) => sum + Math.abs(proposedPts[key] - basis.pts[key]), 0);
+    const proposedPts: Record<SheetKey, number> = { ...(winnerAssignment?.get(basis.heroId) ?? basis.pts) };
+    const changed = RESPEC_KEYS.some((key) => proposedPts[key] !== basis.pts[key]);
+    const pointsMoved = RESPEC_KEYS.reduce((sum, key) => sum + Math.abs(proposedPts[key] - basis.pts[key]), 0);
     const facts = currentFactsById.get(basis.heroId)!;
     const budget = budgetById.get(basis.heroId) ?? 0;
     return {
@@ -387,7 +386,7 @@ function buildTerminalResult(params: {
   const { bases, objective, outcome, evaluation, evaluations, account, phaseOptions, plateau } = params;
   const currentFactsById =
     params.currentFactsById ?? new Map(bases.map((b) => [b.heroId, heroFactsFromBasis(b, b.pts)] as const));
-  const budgetById = params.budgetById ?? new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
+  const budgetById = params.budgetById ?? new Map(bases.map((b) => [b.heroId, reoptBudget(b.level)] as const));
   const heroEntries = buildHeroEntries(bases, currentFactsById, budgetById, null);
   const squad = evaluation ? evaluation.squad : squadFactsFromBases(bases, null, account);
   const pick = evaluation ? evaluation.pick : null;
@@ -595,7 +594,7 @@ function prepareFarmRespecSolve(input: FarmRespecInput): FarmRespecSetup {
   }
 
   const currentFactsById = new Map(bases.map((b) => [b.heroId, heroFactsFromBasis(b, b.pts)] as const));
-  const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
+  const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.level)] as const));
 
   const allDegenerate = bases.every((b) => currentFactsById.get(b.heroId)!.degenerate);
   if (allDegenerate) {

@@ -45,13 +45,13 @@ export const LockedRow: Story = {
     rows: [
       { id: 'attack', label: 'Attack', now: 10, target: 42 },
       {
-        id: 'luck',
-        label: 'Luck',
+        id: 'penetration',
+        label: 'Penetration',
         now: 7,
         target: 7,
         locked: true,
         lockLabel: 'Keep',
-        lockHint: "Luck is left alone on purpose — this planner never moves it.",
+        lockHint: 'Held where it is — you locked this stat.',
       },
     ],
   },

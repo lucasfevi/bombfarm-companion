@@ -6,7 +6,7 @@
  */
 import { rankNextPoint, sustainedDps, type Context, type EffectiveDeltas, type HeroSheet } from './model';
 import type { SheetKey } from './planner-constants';
-import { buildCandidateSheet, greedyWalk, REOPT_KEYS } from './points-reopt-core';
+import { buildCandidateSheet, greedyWalk, REOPT_KEYS, RESPEC_KEYS, zeroedRespecKeys } from './points-reopt-core';
 
 export const REOPT_FULL_MAX_EVALUATIONS = 200_000;
 export const REOPT_FULL_MAX_SWEEPS = 24;
@@ -18,12 +18,6 @@ export const REOPT_REFUND_ROUNDS = 50;
 const EPS = 1e-9;
 
 export type Seed = { name: string; pts: Record<SheetKey, number> };
-
-function zeroedReoptKeys(pts: Record<SheetKey, number>): Record<SheetKey, number> {
-  const out = { ...pts };
-  for (const key of REOPT_KEYS) out[key] = 0;
-  return out;
-}
 
 function scoreOf(
   effective: HeroSheet,
@@ -75,7 +69,7 @@ function refundReplaceWalk(
     const currentScore = scoreOf(effective, basePts, effectiveDelta, context, current);
     let cheapestStat: SheetKey | null = null;
     let cheapestScore = -Infinity;
-    for (const key of REOPT_KEYS) {
+    for (const key of RESPEC_KEYS) {
       if (current[key] <= 0) continue;
       const removed = { ...current, [key]: current[key] - 1 };
       const removedScore = scoreOf(effective, basePts, effectiveDelta, context, removed);
@@ -108,7 +102,7 @@ export function buildSeeds(
   effectiveDelta: EffectiveDeltas,
   context: Context,
 ): Seed[] {
-  const zeroStart = zeroedReoptKeys(pts);
+  const zeroStart = zeroedRespecKeys(pts);
   const greedyFromZeroScore = scoreOf(effective, pts, effectiveDelta, context, zeroStart);
   const greedyFromZero = greedyWalk(
     zeroStart,
@@ -157,13 +151,17 @@ export function buildSeeds(
 
 type MoveFn = (pts: Record<SheetKey, number>) => Record<SheetKey, number> | null;
 
-/** The three-family neighbourhood, generated in this fixed order (260 probes). */
-export function generateMoves(): MoveFn[] {
+/**
+ * The three-family neighbourhood, generated in this fixed order. Points leave any refundable key
+ * and land only on `destinations`: a DPS search passes {@link REOPT_KEYS}, since a point moved
+ * INTO Luck can never raise DPS, while a search whose objective prices Luck passes every key.
+ */
+export function generateMoves(destinations: readonly SheetKey[] = RESPEC_KEYS): MoveFn[] {
   const moves: MoveFn[] = [];
 
-  // N1 — single-point transfer i -> j (42).
-  for (const from of REOPT_KEYS) {
-    for (const destination of REOPT_KEYS) {
+  // N1 — single-point transfer i -> j.
+  for (const from of RESPEC_KEYS) {
+    for (const destination of destinations) {
       if (from === destination) continue;
       moves.push((pts) =>
         pts[from] < 1 ? null : { ...pts, [from]: pts[from] - 1, [destination]: pts[destination] + 1 },
@@ -171,10 +169,10 @@ export function generateMoves(): MoveFn[] {
     }
   }
 
-  // Nk — block transfer of blockSize in REOPT_BLOCK_SIZES, i -> j, clamped to pts[i] (168).
+  // Nk — block transfer of blockSize in REOPT_BLOCK_SIZES, i -> j, clamped to pts[i].
   for (const blockSize of REOPT_BLOCK_SIZES) {
-    for (const from of REOPT_KEYS) {
-      for (const destination of REOPT_KEYS) {
+    for (const from of RESPEC_KEYS) {
+      for (const destination of destinations) {
         if (from === destination) continue;
         moves.push((pts) => {
           const amount = Math.min(blockSize, pts[from]);

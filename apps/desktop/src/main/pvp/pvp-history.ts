@@ -80,7 +80,7 @@ const RANK_KEY = 'rank';
 const LIST_SQL = `
 SELECT d.*, (f.film_id IS NOT NULL) AS film_stored
 FROM pvp_duels d LEFT JOIN pvp_films f ON f.film_id = d.film_id
-ORDER BY d.id DESC LIMIT ?
+ORDER BY d.id DESC
 `;
 
 const TOTALS_SQL = `
@@ -98,7 +98,7 @@ export interface PvpHistory {
   /** Replaces the standing with a newer report, dating it; `false` only with no store behind it. */
   recordStanding(snapshot: PvpStateSnapshot, opts: { readonly capturedAt: string }): boolean;
   recordRank(rank: Omit<PvpRank, 'capturedAt'>, opts: { readonly capturedAt: string }): boolean;
-  list(opts: { readonly limit: number }): PvpHistoryResult;
+  list(): PvpHistoryResult;
   /** The film's body as the tap caught it � the ~2 MB stays in main. `null` when not held. */
   readFilm(filmId: number): string | null;
 }
@@ -337,12 +337,12 @@ export function createPvpHistory(db: SqliteDb | null, log: LogPort = NOOP_LOG): 
       }
     },
 
-    list({ limit }) {
+    list() {
       if (!db) return EMPTY_PVP_HISTORY;
       try {
         const rows = db
           .prepare(LIST_SQL)
-          .all(limit) as StoredRow[];
+          .all() as StoredRow[];
         const totals = db
           .prepare(TOTALS_SQL)
           .get() as TotalsRow | undefined;

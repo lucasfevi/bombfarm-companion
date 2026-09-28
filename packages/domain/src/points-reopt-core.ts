@@ -8,20 +8,17 @@ import { rankNextPoint, STAT_CAPS, type Context, type EffectiveDeltas, type Hero
 import type { SheetKey } from './planner-constants';
 
 /**
- * Luck is excluded from the reallocatable budget and from both sides of the
- * search: it is not part of `HeroSheet`/`StatKey` at all, so a search built on
- * `HeroSheet` structurally cannot touch it. The seven literal keys below are `SHEET_KEYS` minus
- * `luck` — matches `points-rank.ts`'s hand-written `stats` array as a SET (a test
- * asserts the set equality against a `SHEET_KEYS.filter` at runtime, in a test file, where
- * there is no risk of the cycle below).
+ * The seven keys a combat sheet reads — `SHEET_KEYS` minus `luck`, which has no `HeroSheet`
+ * field and so never moves DPS. These are the keys the affine reconstruction writes and the only
+ * keys a DPS-scored search ever spends INTO; Luck is still refunded by a reset and may be spent
+ * OUT of (see {@link RESPEC_KEYS}). Matches `points-rank.ts`'s hand-written `stats` array as a
+ * SET (a test asserts the set equality against a `SHEET_KEYS.filter` at runtime).
  *
  * Deliberately NOT computed as `SHEET_KEYS.filter(...)` at module load time: `planner-constants
  * .ts` imports `BASE_ROLLS`/`RarityKey` from this barrel (`@/shared/domain/model`), and this
  * module is re-exported from that same barrel — a top-level `SHEET_KEYS.filter` here can
  * observe `SHEET_KEYS` as `undefined` depending on which module a test happens to import
- * first, because the two modules import each other. Every other consumer of `SHEET_KEYS` in
- * this wave's new modules only reads it inside a function body (deferred past module-init
- * time), which is safe; this is the one place a bare top-level array literal is required.
+ * first, because the two modules import each other. The same holds for {@link RESPEC_KEYS}.
  */
 export const REOPT_KEYS: readonly Exclude<SheetKey, 'luck'>[] = [
   'attack',
@@ -32,6 +29,14 @@ export const REOPT_KEYS: readonly Exclude<SheetKey, 'luck'>[] = [
   'penetration',
   'cdr',
 ];
+
+/**
+ * Every key a stat reset refunds and a respec may place — all eight, Luck included. A reset in
+ * game buys back Luck with everything else, so a search that left it out held those points
+ * hostage: a hero with 20 points in Luck was offered the best build of its other points, never
+ * the build a reset actually buys.
+ */
+export const RESPEC_KEYS: readonly SheetKey[] = [...REOPT_KEYS, 'luck'];
 
 /** Verbatim: bounded, automatic, drives the `HeroStrip` warn badge. */
 export const REOPT_GATE_MAX_EVALUATIONS = 1024;
@@ -66,101 +71,66 @@ export function cappedStatsOf(sheet: HeroSheet): ('critChance' | 'cdr')[] {
   return out;
 }
 
+/** Every point the vector holds, Luck included — what a reset would refund. */
 export function budgetOf(pts: Record<SheetKey, number>): number {
-  return REOPT_KEYS.reduce((sum, key) => sum + pts[key], 0);
+  return RESPEC_KEYS.reduce((sum, key) => sum + pts[key], 0);
 }
 
 /**
- * Tier 2's budget over `REOPT_KEYS`: `max(level - pts.luck, budgetOf(pts))`.
+ * Tier 2's budget: the hero's whole pool, `level`.
  *
- * Tier 2 only. Tier 1 budgets on `budgetOf(pts)` alone, because it answers "is a reset worth
- * buying" rather than "what is the best build" — see `findGateCandidate`.
+ * Tier 2 only. Tier 1 budgets on what is already placed, because it answers "is a reset worth
+ * buying" rather than "what is the best build" — see {@link resetBudget}.
  *
- * Two lower bounds, and the search gets the larger:
+ * A hero is granted exactly one point per level, and every one of them — Luck's too — is back in
+ * the pool after a reset. It does not depend on how `pts` currently splits, which is what makes
+ * re-optimizing the same hero a fixed point.
  *
- * - **The level pool.** A hero's total is its level — `clampPointStep`'s ceiling for the manual
- *   steppers and the denominator of the Points panel's `spent / level` counter — and Luck is
- *   outside the search's reach, so the seven DPS keys may hold at most
- *   `level - pts.luck` between them. This term does not depend on how `pts` currently splits,
- *   which is what makes re-optimizing the same hero a fixed point.
- * - **What is already placed.** An over-spent hero (the one reachable overspend, per
- *   `clampPointStep`: lowering a level while points are spent) really does hold those points and
- *   really can reallocate them in game. Without this floor, `level - pts.luck` could fall below
- *   `budgetOf(pts)` — or to 0 outright once Luck alone covers the level — and the search would
- *   refuse to touch points the player demonstrably has.
- *
- * NOT `budgetOf(pts) + statPointsAvailable`, which is what this used to be. A save's banked
- * count is a snapshot of `level - spent` taken at import; it goes stale the instant the planner
+ * NOT `budgetOf(pts) + statPointsAvailable`, which is what this once was. A save's banked count
+ * is a snapshot of `level - spent` taken at import; it goes stale the instant the planner
  * reallocates, so adding it to a `pts` that already absorbed those points counts them twice.
  * Every Optimize -> Apply round then handed the search another full banked allowance
- * (46 -> 92 -> 138 -> ...), walking the hero straight past its level cap while the manual +/-
- * steppers, which have always clamped to `level`, refused the very same spend.
+ * (46 -> 92 -> 138 -> ...), walking the hero straight past its level cap.
  *
- * The `budgetOf(pts)` floor cannot bring that compounding back: the search never places more
- * than the budget it was given, so feeding a result back yields `budgetOf(pts) <= previous
- * budget` and the sequence is non-increasing, settling immediately rather than growing.
- *
- * **CLAMPED to `level`, no matter what** (reversed from the earlier "not clamped, deliberately"
- * stance reviewed at the flat-crit-damage fix). The floor above is still real — an over-spent
- * hero really does hold those points — but leaving the result un-clamped let a single bad
- * `pts` (from `inferSpentPoints` or anywhere else upstream) turn into a proposal the hero cannot
- * actually hold, and the advisor cannot tell the difference between "this budget is real" and
- * "this budget is a bug" once it has a number in hand. Concretely, on a level-69 hero the
- * un-clamped floor produced a 210-point respec budget; the advisor sold a +18.9% gold/hr
- * proposal for 429,000 gold, of which the achievable gain was 0% — 101% of the advertised gain
- * was phantom, because the search had ~3× the points the hero can ever hold. Clamping here does
- * not remove the need to fix an upstream bug that overshoots `level` —
- * `tests/points-within-level-budget.test.ts` still asserts `Σ pts ≤ level` over every committed
- * capture and is still the guard that should go red first if `inferSpentPoints` regresses — but
- * it does mean this function can no longer amplify that bug into a proposal, which is worth more
- * than the theoretical case for staying unclamped.
+ * Never above `level`, even for a hero whose `pts` claim more: a budget above the level is an
+ * upstream `pts` bug, never a real hero. On a level-69 hero an unclamped budget of 210 once sold
+ * a +18.9% gold/hr proposal for 429,000 gold whose achievable gain was 0% — every point of it
+ * phantom. `tests/points-within-level-budget.test.ts` asserts `Σ pts ≤ level` over every
+ * committed capture and is the guard that should go red first if inference regresses.
  */
-export function reoptBudget(pts: Record<SheetKey, number>, level: number): number {
-  return Math.max(0, Math.min(level, Math.max(level - pts.luck, budgetOf(pts))));
+export function reoptBudget(level: number): number {
+  return Math.max(0, level);
 }
 
 /**
- * Tier 1's budget: `budgetOf(pts)`, under the same level ceiling Tier 2 carries.
+ * Tier 1's budget: every point already placed, Luck included, under the same `level` ceiling
+ * Tier 2 carries.
  *
- * The floor is deliberately absent — a reset only redistributes points that are already spent,
- * so unplaced pool is not this tier's budget (see `findGateCandidate`). The ceiling is the same
- * `level` Tier 2 already carries, and for the same reason: a hero is granted exactly one point
- * per level, so a budget above its level is an upstream `pts` bug and never a real hero.
- *
- * `level`, not the tighter `level - pts.luck` the seven non-Luck keys can actually hold: an
- * over-spent hero (`clampPointStep`'s one reachable overspend — a level lowered while points are
- * spent) can hold Luck alone worth its whole level, and the tighter bound would drop such a hero
- * to a 0 budget and the `budget <= 0` fast path, refusing to reallocate points it demonstrably
- * has. The looser ceiling still satisfies the display rule in full.
+ * A reset only redistributes points that are already spent, so unplaced pool is not this tier's
+ * budget (see `findGateCandidate`) — but everything spent is, because the game refunds all eight
+ * keys at once.
  *
  * The point-reset panel prints this number as points the player would have to re-place. Showing
  * more of them than the hero's level advertises a build the game will not let anyone buy — a
- * level-97 hero was offered 98, one crit-damage point of it phantom, because the skill tree's
- * `crit_dmg_add` was being charged percent-of-base and the unexplained residual landed in
- * `critDmg`. That specific bug is fixed (`applySkillTree`), and
- * `tests/points-within-level-budget.test.ts` is still the guard that should go red first if
- * inference regresses again; this ceiling only stops the next one reaching the panel.
+ * level-97 hero was once offered 98, one crit-damage point of it phantom.
  */
 export function resetBudget(pts: Record<SheetKey, number>, level: number): number {
   return Math.max(0, Math.min(budgetOf(pts), level));
 }
 
 /**
- * `pts` with its reallocatable spend brought down to `budget`, shedding from the LAST
- * {@link REOPT_KEYS} first. Luck is untouched — it is outside the reallocatable budget.
+ * `pts` with its spend brought down to `budget`, shedding from the LAST {@link RESPEC_KEYS}
+ * first.
  *
  * WHY THIS EXISTS. A search seeded from a hero's CURRENT build inherits that build's total, and
  * every move the local search makes is a transfer, so the total never changes again. Seeds built
  * from the budget are therefore safe by construction and the current-build seed is not: a hero
  * spending more than {@link reoptBudget} allows carries the excess all the way into the proposal,
- * and the advisor recommends a build the game will not sell. That went unnoticed because a
- * budget-built seed happened to win; a change to the objective moved the winner and it surfaced.
+ * and the advisor recommends a build the game will not sell.
  *
  * The state is UNREACHABLE in real play — the game grants one point per level and a level never
- * goes down, owner-confirmed, and the 13-hero 2026-08-23 capture spends exactly its level on all
- * thirteen. So this is a guard against malformed input, not a rule with gameplay meaning, and the
- * shed ORDER only has to be deterministic rather than clever: no real roster reaches it, and a
- * roster that does is already describing a hero that cannot exist.
+ * goes down, owner-confirmed. So this is a guard against malformed input, not a rule with
+ * gameplay meaning, and the shed ORDER only has to be deterministic rather than clever.
  */
 export function clampPtsToBudget(
   pts: Record<SheetKey, number>,
@@ -169,12 +139,19 @@ export function clampPtsToBudget(
   let excess = budgetOf(pts) - Math.max(0, budget);
   if (excess <= 0) return pts;
   const out = { ...pts };
-  for (let index = REOPT_KEYS.length - 1; index >= 0 && excess > 0; index--) {
-    const key = REOPT_KEYS[index];
+  for (let index = RESPEC_KEYS.length - 1; index >= 0 && excess > 0; index--) {
+    const key = RESPEC_KEYS[index];
     const shed = Math.min(out[key], excess);
     out[key] -= shed;
     excess -= shed;
   }
+  return out;
+}
+
+/** `pts` with every refundable key at zero — the empty build a reset starts from. */
+export function zeroedRespecKeys(pts: Record<SheetKey, number>): Record<SheetKey, number> {
+  const out = { ...pts };
+  for (const key of RESPEC_KEYS) out[key] = 0;
   return out;
 }
 

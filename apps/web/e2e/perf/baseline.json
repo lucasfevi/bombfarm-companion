@@ -1,11 +1,11 @@
 {
   "captureMode": "prod-profile",
   "fixture": "importedRoster",
-  "_note": "REFRESHED (20) for Shrapnel (Estilhaços), the game’s 21st ability (2026-09-26), per docs/react-performance.md rule 10’s deliberate-change path - never by widening the guard. All four planner scenarios moved UP: P-02 6503->6511 (+8), P-03 12592->12616 (+24), P-04 6495->6502 (+7), P-05 2138->2141 (+3). The roster toolbar’s ability filter strip draws one AbilityIcon per catalogued ability, so each commit in the window renders one more (9/17/7/3 commits). The rest is pointer travel over the one-icon-wider strip: +7 TooltipTrigger renders on P-03 and -1 on P-02. Numbers are the CI runner’s own capture, identical across all seven repetitions.",
+  "_note": "REFRESHED (21) for the plant-cycle refit (ADR-018, 2026-09-27), per docs/react-performance.md rule 10’s deliberate-change path - never by widening the guard. P-02 6511->6512 (+1); P-03, P-04 and P-05 unchanged. No UI code changed: the one extra render is the hero strip metric’s TooltipTrigger (HeroStripMetrics > MetricValue, 20 -> 21), whose displayed value now changes on one more commit of the attack-point window because the refit moved the number behind it. Numbers are the CI runner’s own capture against develop’s, identical across all seven repetitions.",
   "scenarios": [
     {
       "id": "P-02",
-      "medianComponentRenders": 6511
+      "medianComponentRenders": 6512
     },
     {
       "id": "P-03",

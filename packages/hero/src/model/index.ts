@@ -22,6 +22,8 @@ export type {
 } from './roster-board-order';
 export { ROSTER_VIEW_MODES, heroPickOutcome } from './roster-view-mode';
 export type { HeroPickOutcome, RosterViewMode } from './roster-view-mode';
+export { DEFAULT_ROSTER_VIEW_PREFS, normalizeRosterViewPrefs, ownedRosterBoardFilter } from './roster-view-prefs';
+export type { RosterViewPrefs } from './roster-view-prefs';
 export { SHEET_STAT_CODES } from './sheet-stat-codes';
 export { formatClearTime } from './format-clear-time';
 export {

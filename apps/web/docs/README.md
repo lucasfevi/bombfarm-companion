@@ -13,7 +13,9 @@ Planner/web-specific durable rules. Shared monorepo rules live at the companion 
 | [e2e.md](e2e.md) | Playwright smoke e2e — Docker vs host runs, CI layout, the `e2e-smoke` gate |
 | [adr/013-app-shell-route-group.md](adr/013-app-shell-route-group.md) | Shared `(app)` shell + `@planner` keep-alive |
 | [adr/015-cdn-cache-headers.md](adr/015-cdn-cache-headers.md) | `vercel.json` cache windows, and why the art is 30 days and the prefetch payloads 5 minutes |
-| [adr/016-one-cadence-model.md](adr/016-one-cadence-model.md) | One measured bomb-cycle model behind every DPS figure; the advisor's serial model is retired |
+| [adr/016-one-cadence-model.md](adr/016-one-cadence-model.md) | One measured bomb-cycle model behind every DPS figure; the advisor's serial model is retired (superseded by 018) |
+| [adr/017-clear-time-standing-props.md](adr/017-clear-time-standing-props.md) | Clear time is an integral over the props still standing, crits rolled per hit |
+| [adr/018-one-plant-cycle.md](adr/018-one-plant-cycle.md) | One plant cycle, measured per plant on two accounts, behind both the clear and the per-hero bombs/s |
 
 ## Shared (root)
 

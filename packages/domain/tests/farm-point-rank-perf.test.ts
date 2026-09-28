@@ -64,19 +64,19 @@ describe('evaluation budget — exact counts, at both a bounded and an unbounded
   const bases = computeHeroFarmBases({ heroes, account });
   const bellatrix = heroes.find((h) => h.name === 'Bellatrix')!;
 
-  it.each([42, 600])('gold: exactly 8 evaluations at maxPhase %i', (mp) => {
+  it.each([42, 600])('gold: exactly 9 evaluations at maxPhase %i', (mp) => {
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, objective: { kind: 'gold' }, maxPhase: mp });
-    expect(result.evaluations).toBe(8);
+    expect(result.evaluations).toBe(9);
     expect(result.evaluations).toBeLessThanOrEqual(FARM_RANK_MAX_EVALUATIONS);
   });
 
-  it.each([42, 600])('chests: exactly 8 evaluations at maxPhase %i', (mp) => {
+  it.each([42, 600])('chests: exactly 9 evaluations at maxPhase %i', (mp) => {
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, objective: { kind: 'chests' }, maxPhase: mp });
-    expect(result.evaluations).toBe(8);
+    expect(result.evaluations).toBe(9);
     expect(result.evaluations).toBeLessThanOrEqual(FARM_RANK_MAX_EVALUATIONS);
   });
 
-  it.each([42, 600])('blend: exactly 10 evaluations at maxPhase %i (the 2 extra frozen-scale sweeps)', (mp) => {
+  it.each([42, 600])('blend: exactly 11 evaluations at maxPhase %i (the 2 extra frozen-scale sweeps)', (mp) => {
     const result = rankNextPointForFarm({
       bases,
       account,
@@ -84,7 +84,7 @@ describe('evaluation budget — exact counts, at both a bounded and an unbounded
       objective: { kind: 'blend', weight: 0.5 },
       maxPhase: mp,
     });
-    expect(result.evaluations).toBe(10);
+    expect(result.evaluations).toBe(11);
     expect(result.evaluations).toBeLessThanOrEqual(FARM_RANK_MAX_EVALUATIONS);
   });
 

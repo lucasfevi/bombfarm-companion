@@ -126,11 +126,11 @@ describe('two searchable heroes — the frontier is capped by |S|', () => {
 describe('every reoptBudget is 0', () => {
   it("noBudget, keptCurrent, evaluations <= 1, recommendedPhase is the current build's argmax", () => {
     const sora = heroes.find((h) => h.name === 'Sora')!;
-    // level 5, all 5 points already sunk into luck ⇒ level - luck = 0 AND budgetOf(pts) = 0.
+    // A level-0 hero is the only one with no pool: every point, Luck's too, is refundable.
     const zeroBudgetHero: HeroRecord = {
       ...sora,
-      level: 5,
-      pts: { attack: 0, energy: 0, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 5 },
+      level: 0,
+      pts: { attack: 0, energy: 0, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 0 },
     };
     const result = solveFarmRespec({ heroes: [zeroBudgetHero], account, maxPhase });
     expect(result.outcome).toBe('noBudget');

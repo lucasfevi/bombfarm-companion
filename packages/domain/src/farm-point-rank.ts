@@ -26,23 +26,27 @@ import {
   type ResolvedFarmObjective,
   type FarmObjectiveScales,
 } from './farm-optimize-objective';
-import { RANK_STATS, STAT_LABELS, type PointValue } from './model';
+import { RANK_STATS, STAT_LABELS, type PointValue, type RankStatKey } from './model';
 import type { SheetKey } from './planner-constants';
 
 export { computeHeroFarmBases, type HeroFarmBasis } from './farm-rate';
 
+/** The damage ranking's seven stats, then Luck: drop rates read it, so a farm objective can price
+ *  it where a damage one never can. */
+export const FARM_RANK_STATS: readonly RankStatKey[] = [...RANK_STATS, 'luck'];
+
 /**
- * Sweeps spent by one call: 1 baseline + 7 candidates, plus 2 more only under a `'blend'`
+ * Sweeps spent by one call: 1 baseline + 8 candidates, plus 2 more only under a `'blend'`
  * objective (the frozen gold/chest normalizers). Exported and asserted so this can never quietly
  * become a per-candidate re-solve or a second phase sweep per key.
  */
-export const FARM_RANK_MAX_EVALUATIONS = 10;
+export const FARM_RANK_MAX_EVALUATIONS = 11;
 
 /** Never read: `farmObjectiveValue`'s `'gold'`/`'chests'` branches ignore scales entirely. */
 const UNIT_SCALES: FarmObjectiveScales = { goldScale: 1, chestScale: 1 };
 
 export type FarmPointRankOutcome =
-  | 'ranked' // rows is a full 7-entry ranking
+  | 'ranked' // rows is a full 8-entry ranking
   | 'emptyPool' // bases is empty
   | 'heroNotInPool' // heroId names no basis — a caller error, reported not thrown
   | 'allDegenerate' // every basis is degenerate at its own current points
@@ -50,7 +54,7 @@ export type FarmPointRankOutcome =
 
 export type FarmPointRankResult = {
   outcome: FarmPointRankOutcome;
-  /** Exactly 7 entries in `RANK_STATS` order, sorted by `gainPct` descending with a stable sort.
+  /** Exactly 8 entries in `FARM_RANK_STATS` order, sorted by `gainPct` descending with a stable sort.
    *  `null` for every outcome except `'ranked'` — the caller falls back to its own DPS ranking
    *  rather than being handed a table of zeros. */
   rows: readonly PointValue[] | null;
@@ -91,7 +95,7 @@ export function rankNextPointForFarm(input: FarmPointRankInput): FarmPointRankRe
   const { bases, account, heroId } = input;
   const objective = resolveFarmObjective(input.objective);
   // Every sweep this function spends becomes a figure the player reads — the baseline phase, the
-  // seven gains ranked against it, and under `'blend'` the normalizer they share — so none may
+  // eight gains ranked against it, and under `'blend'` the normalizer they share — so none may
   // take `bestFarmPhase`'s screen-and-refine shortcut, which is a heuristic and can miss.
   const options: BestFarmPhaseOptions = {
     maxPhase: input.maxPhase,
@@ -118,7 +122,7 @@ export function rankNextPointForFarm(input: FarmPointRankInput): FarmPointRankRe
     return emptyResult('noBaseline', objective, baselineEvaluations);
   }
 
-  const rows: PointValue[] = RANK_STATS.map((stat) => {
+  const rows: PointValue[] = FARM_RANK_STATS.map((stat) => {
     const candidatePts: Record<SheetKey, number> = { ...basis.pts, [stat]: basis.pts[stat] + 1 };
     const candidateSquad = squadFactsFromBases(bases, new Map([[heroId, candidatePts]]), account);
     const pick = bestFarmPhase(candidateSquad, objective, scales, options);
@@ -135,6 +139,6 @@ export function rankNextPointForFarm(input: FarmPointRankInput): FarmPointRankRe
     rows,
     phase: base.phase,
     objective,
-    evaluations: baselineEvaluations + RANK_STATS.length,
+    evaluations: baselineEvaluations + FARM_RANK_STATS.length,
   };
 }

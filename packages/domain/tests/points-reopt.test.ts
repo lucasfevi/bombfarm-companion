@@ -20,6 +20,7 @@ import {
   REOPT_FULL_MAX_EVALUATIONS,
   REOPT_GATE_MAX_EVALUATIONS,
   REOPT_KEYS,
+  RESPEC_KEYS,
   type ReoptInput,
   type ReoptResult,
 } from '@bombfarm/domain/points-reopt';
@@ -52,7 +53,7 @@ const context: Context = {
 
 /**
  * The level of a hero who has spent every point it owns on exactly this vector — `reoptBudget`
- * then hands the search `Σ pts over REOPT_KEYS`, which is the budget every case below the
+ * then hands the search `Σ pts` over all eight keys, which is the budget every case below the
  * dedicated `reoptBudget` describe was written against. Cases about a hero with points still
  * unplaced pass their own `level` and call the tiers directly.
  */
@@ -150,6 +151,12 @@ describe('REOPT_KEYS', () => {
   });
 });
 
+describe('RESPEC_KEYS', () => {
+  it('is every sheet key — a reset refunds Luck with the rest', () => {
+    expect(new Set(RESPEC_KEYS)).toEqual(new Set(SHEET_KEYS));
+  });
+});
+
 describe('findGateCandidate — Tier 1', () => {
   it('budget 0 returns the input vector, gainPct 0, evaluations <= 1, no seed generated', () => {
     const { effective, effectiveDelta } = syntheticHero();
@@ -235,28 +242,22 @@ describe('findGateCandidate — Tier 1', () => {
     expect(result.reoptDps).toBeGreaterThan(result.currentDps);
   });
 
-  it('budget is Σ pts over REOPT_KEYS; pts.luck copied through; Σ result.pts equals budget - unallocated', () => {
+  it('a reset refunds Luck: the budget counts it, and the winning build spends it on DPS keys', () => {
     const { pts, effective, effectiveDelta } = syntheticHero();
-    const hostilePts = { ...pts, luck: 42 };
-    const result = gate({ pts: hostilePts, effective, effectiveDelta, context });
-    expect(result.pts.luck).toBe(42);
-    const budget = REOPT_KEYS.reduce((sum, key) => sum + hostilePts[key], 0);
-    const resultSum = REOPT_KEYS.reduce((sum, key) => sum + result.pts[key], 0);
-    expect(resultSum).toBe(budget - result.unallocated);
+    const withLuck = { ...pts, luck: 12 };
+    const result = gate({ pts: withLuck, effective, effectiveDelta, context });
+    expect(result.keptCurrent).toBe(false);
+    expect(result.pts.luck).toBe(0);
+    expect(budgetOf(result.pts)).toBe(budgetOf(withLuck) - result.unallocated);
+    expect(result.reoptDps).toBeGreaterThan(result.currentDps);
   });
 
-  it('pts.luck=0 vs a hostile pts.luck=9999 produce byte-identical DPS entries', () => {
+  it('points held in Luck buy the same DPS build as points held anywhere else', () => {
     const { pts, effective, effectiveDelta } = syntheticHero();
-    const honest = gate({ pts: { ...pts, luck: 0 }, effective, effectiveDelta, context });
-    const hostile = gate({ pts: { ...pts, luck: 9999 }, effective, effectiveDelta, context });
-    for (const key of REOPT_KEYS) {
-      expect(hostile.pts[key], key).toBe(honest.pts[key]);
-    }
-    expect(hostile.gainPct).toBe(honest.gainPct);
-    expect(hostile.reoptDps).toBe(honest.reoptDps);
-    expect(hostile.currentDps).toBe(honest.currentDps);
-    expect(hostile.pts.luck).toBe(9999);
-    expect(honest.pts.luck).toBe(0);
+    const inAttack = gate({ pts: { ...pts, attack: pts.attack + 12 }, effective, effectiveDelta, context });
+    const inLuck = gate({ pts: { ...pts, luck: 12 }, effective, effectiveDelta, context });
+    expect(inLuck.pts.luck).toBe(0);
+    expect(budgetOf(inLuck.pts) + inLuck.unallocated).toBe(budgetOf(inAttack.pts) + inAttack.unallocated);
   });
 
   it('penetration above STAT_CAPS.penetration is not clamped; the search simply scores no further gain there', () => {
@@ -519,13 +520,13 @@ describe('optimizeBuild — Tier 2', () => {
     expect(median).toBeLessThan(250);
   });
 
-  it('for Tier 2: budget/Luck handling matches Tier 1', () => {
+  it('for Tier 2: Luck is refunded into DPS keys, as in Tier 1', () => {
     const { pts, effective, effectiveDelta } = ridgeHero();
-    const hostile = full({ pts: { ...pts, luck: 9999 }, effective, effectiveDelta, context });
-    const honest = full({ pts: { ...pts, luck: 0 }, effective, effectiveDelta, context });
-    for (const key of REOPT_KEYS) expect(hostile.pts[key]).toBe(honest.pts[key]);
-    expect(hostile.gainPct).toBe(honest.gainPct);
-    expect(hostile.pts.luck).toBe(9999);
+    const withLuck = { ...pts, luck: 10 };
+    const result = full({ pts: withLuck, effective, effectiveDelta, context });
+    expect(result.pts.luck).toBe(0);
+    expect(budgetOf(result.pts) + result.unallocated).toBe(budgetOf(withLuck));
+    expect(result.reoptDps).toBeGreaterThan(result.currentDps);
   });
 });
 
@@ -540,10 +541,9 @@ describe('optimizeBuild — Tier 2', () => {
  *
  * The replacement is not one budget but two, because the tiers ask different questions:
  *
- * - **Tier 2 / `optimizeBuild`** — "what is the best build?" — takes `reoptBudget(pts, level)`,
- *   `max(level - luck, budgetOf(pts))`: the level pool (what `clampPointStep` has always let
- *   the steppers reach), floored at what the hero already holds so an over-spent hero can still
- *   reallocate it.
+ * - **Tier 2 / `optimizeBuild`** — "what is the best build?" — takes `reoptBudget(level)`,
+ *   the whole level pool — Luck's share too, since a reset refunds it — which is what
+ *   `clampPointStep` has always let the steppers reach.
  * - **Tier 1 / `findGateCandidate`** — "is a reset worth buying?" — takes `resetBudget(pts,
  *   level)`, `min(budgetOf(pts), level)`. A reset only moves points already spent, so unplaced
  *   pool is not its budget; counting it would tell every freshly imported, unallocated hero to
@@ -554,32 +554,12 @@ describe('optimizeBuild — Tier 2', () => {
  * is non-increasing.
  */
 describe('reoptBudget / the per-tier point budgets', () => {
-  it('is level minus Luck, and does not move when the same pool is re-split across the seven DPS keys', () => {
-    const spread: Record<SheetKey, number> = { ...ZERO_PTS(), attack: 10, energy: 6, critDmg: 4, luck: 3 };
-    const lumped: Record<SheetKey, number> = { ...ZERO_PTS(), attack: 20, luck: 3 };
-    const unspent: Record<SheetKey, number> = { ...ZERO_PTS(), luck: 3 };
-    expect(reoptBudget(spread, 23)).toBe(20);
-    expect(reoptBudget(lumped, 23)).toBe(20);
-    expect(reoptBudget(unspent, 23)).toBe(20);
-    expect(reoptBudget(ZERO_PTS(), 0)).toBe(0);
+  it('is the whole level, Luck included, and never negative', () => {
+    expect(reoptBudget(23)).toBe(23);
+    expect(reoptBudget(0)).toBe(0);
+    expect(reoptBudget(-5)).toBe(0);
   });
 
-  it('floors at what is already placed, but is ALWAYS clamped to level — the placed-points floor cannot exceed it', () => {
-    // The one reachable overspend (`clampPointStep`): a level lowered while points are spent.
-    const overSpent: Record<SheetKey, number> = { ...ZERO_PTS(), attack: 32, luck: 8 };
-    // CLAMPED (reversed from the earlier "not clamped, deliberately" stance — see the
-    // `reoptBudget` doc comment in `points-reopt-core.ts`). 32 Attack points are really placed
-    // and really reallocatable in game, but the search may never be handed more than the hero's
-    // OWN level to work with, even when more is technically "already spent": on a level-69 hero
-    // the un-clamped floor produced a 210-point respec budget and the advisor sold a +18.9%
-    // gold/hr proposal whose achievable gain was 0% — 101% phantom.
-    expect(reoptBudget(overSpent, 8)).toBe(8);
-    expect(reoptBudget(overSpent, 20)).toBe(20);
-    // Once the level pool overtakes what is placed, the pool wins and the clamp is a no-op.
-    expect(reoptBudget(overSpent, 45)).toBe(37);
-    // Never negative, and 0 only when there is genuinely nothing on either side.
-    expect(reoptBudget(ZERO_PTS(), -5)).toBe(0);
-  });
 
   it('Tier 1 is capped at the hero level — a reset never offers more points than the game grants', () => {
     // The shape the reported defect arrived in: inference recovered 98 points for a level-97
@@ -597,10 +577,8 @@ describe('reoptBudget / the per-tier point budgets', () => {
 
     // The floor stays absent: banked-but-unspent pool is still not a reset's budget.
     expect(resetBudget(ZERO_PTS(), 97)).toBe(0);
-    // Under the ceiling, the budget is exactly what is placed — the clamp is a no-op.
-    expect(resetBudget({ ...ZERO_PTS(), attack: 30, luck: 5 }, 97)).toBe(30);
-    // `level`, not `level - luck`: an over-spent hero holding Luck worth its whole level keeps a
-    // searchable budget rather than dropping to the `budget <= 0` fast path.
+    // Under the ceiling, the budget is exactly what is placed, Luck included — a reset refunds it.
+    expect(resetBudget({ ...ZERO_PTS(), attack: 30, luck: 5 }, 97)).toBe(35);
     expect(resetBudget({ ...ZERO_PTS(), cdr: 32, luck: 8 }, 8)).toBe(8);
     expect(resetBudget(ZERO_PTS(), -5)).toBe(0);
   });
@@ -611,32 +589,23 @@ describe('reoptBudget / the per-tier point budgets', () => {
     for (const tier of [findGateCandidate, optimizeBuild]) {
       const result = tier({ pts: overSpent, effective, effectiveDelta, context, level: 8 });
       expect(result.evaluations).toBeGreaterThan(1);
-      const placed = REOPT_KEYS.reduce((sum, key) => sum + result.pts[key], 0);
-      // Conserved, not invented: the 32 points move around, and no 33rd appears.
-      expect(placed + result.unallocated).toBe(32);
-      expect(result.pts.luck).toBe(8);
+      // 40 points are held and the level-8 hero can re-place only 8: none is ever invented.
+      expect(result.keptCurrent || budgetOf(result.pts) + result.unallocated === 8).toBe(true);
       expect(result.reoptDps).toBeGreaterThanOrEqual(result.currentDps);
     }
   });
 
-  it('the placed-points floor cannot reintroduce compounding — feeding a result back is non-increasing', () => {
-    // The floor is the one term that reads `pts`, so it is the one that could in principle grow
-    // round over round the way `statPointsAvailable` did. It cannot: the search never places
-    // more than the budget it was handed, so the floor is bounded by the previous budget — and
-    // now, additionally, by `level` itself (the clamp). `pts` here is deliberately over-spent
-    // (34 placed against level 12); the FIRST `reoptBudget` call already clamps to 12, so this
-    // guards the clamp's own fixed point, not just the floor's.
+  it('feeding a result back cannot compound the spend', () => {
+    // `statPointsAvailable` once grew the budget round over round. The budget no longer reads
+    // `pts`, and the search places at most the budget, so an over-spent start (34 held against
+    // level 12) never climbs.
     const { effective, effectiveDelta } = syntheticHero();
     let pts: Record<SheetKey, number> = { ...ZERO_PTS(), cdr: 30, luck: 4 };
-    let previous = reoptBudget(pts, 12);
-    expect(previous).toBe(12);
     for (let round = 0; round < 5; round++) {
+      const previous = budgetOf(pts);
       pts = optimizeBuild({ pts, effective, effectiveDelta, context, level: 12 }).pts;
-      const budget = reoptBudget(pts, 12);
-      expect(budget, `round ${round}`).toBeLessThanOrEqual(previous);
-      previous = budget;
+      expect(budgetOf(pts), `round ${round}`).toBeLessThanOrEqual(previous);
     }
-    expect(previous).toBe(12);
   });
 
   it('Tier 2: a hero with 0 spent gets its whole level placed, not the budget<=0 fast path', () => {
@@ -737,9 +706,9 @@ describe('reoptBudget / the per-tier point budgets', () => {
 
   it('budget conservation on a real fixture hero — the pool for Tier 2, what is spent for Tier 1', () => {
     const real = realHeroDerive('payload-20260812-8heroes.json', 'Bellatrix', 27);
-    const spent = REOPT_KEYS.reduce((sum, key) => sum + real.pts[key], 0);
+    const spent = budgetOf(real.pts);
     // A hero partway through its level: `spent` placed, 20 more of the pool still unplaced.
-    const level = spent + real.pts.luck + 20;
+    const level = spent + 20;
 
     const tier1 = findGateCandidate({
       pts: real.pts,
@@ -748,7 +717,7 @@ describe('reoptBudget / the per-tier point budgets', () => {
       context,
       level,
     });
-    const tier1Placed = REOPT_KEYS.reduce((sum, key) => sum + tier1.pts[key], 0);
+    const tier1Placed = budgetOf(tier1.pts);
     expect(tier1Placed + tier1.unallocated).toBe(spent);
 
     const tier2 = optimizeBuild({
@@ -758,8 +727,8 @@ describe('reoptBudget / the per-tier point budgets', () => {
       context,
       level,
     });
-    const tier2Placed = REOPT_KEYS.reduce((sum, key) => sum + tier2.pts[key], 0);
-    expect(tier2Placed + tier2.unallocated).toBe(level - real.pts.luck);
+    const tier2Placed = budgetOf(tier2.pts);
+    expect(tier2Placed + tier2.unallocated).toBe(level);
     // Tier 2 reaches strictly further, which is the whole reason the two budgets differ.
     expect(tier2Placed).toBeGreaterThan(tier1Placed);
   });

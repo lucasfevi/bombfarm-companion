@@ -25,6 +25,8 @@ const CAPTURE = 'save-20260819-11882-7heroes.json';
 /** Both feasible for this squad, and far enough apart that the phase's own economy differs. */
 const LOW_PHASE = 1;
 const HIGH_PHASE = 51;
+/** The last phase of {@link LOW_PHASE}'s band: harder, but on the same 50-prop map. */
+const SAME_BAND_HARD_PHASE = 50;
 
 function inputFor(): TeamPlanInput {
   return loadTeamPlanFarmFixture(CAPTURE).teamPlanInput;
@@ -62,8 +64,11 @@ describe('a chosen phase changes what the search optimises', () => {
     expect(low.scoredPhase).toBe(LOW_PHASE);
     expect(high.scoredPhase).toBe(HIGH_PHASE);
     expect(low.planDps).not.toBe(high.planDps);
-    // Not merely "different": the harder phase mitigates more, so it must be the lower figure.
-    expect(high.planDps).toBeLessThan(low.planDps);
+    // Not merely "different": within one band the harder phase mitigates more, so it must be the
+    // lower figure. Across bands it need not be — phase 51's denser map plants faster by more than
+    // its extra mitigation costs.
+    const sameBandHard = planAt(input, 'dps', SAME_BAND_HARD_PHASE);
+    expect(sameBandHard.planDps).toBeLessThan(low.planDps);
   });
 
   it('the mitigation a pin scores against is that phase\'s wiki row, not the save\'s', () => {

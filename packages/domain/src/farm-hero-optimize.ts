@@ -9,7 +9,7 @@
  * single id in it.
  *
  * Pure, and makes ZERO advisor-pipeline calls: it consumes `HeroFarmBasis[]` the caller already
- * paid for, exactly like `rankNextPointForFarm`. `pts.luck` is copied through untouched.
+ * paid for, exactly like `rankNextPointForFarm`.
  */
 import {
   heroFactsFromBasis,
@@ -28,7 +28,7 @@ import {
   type ResolvedFarmObjective,
 } from './farm-optimize-objective';
 import { runFarmSearch, FARM_OPT_FULL_MAX_EVALUATIONS } from './farm-optimize-search';
-import { reoptBudget, REOPT_KEYS } from './points-reopt-core';
+import { reoptBudget, RESPEC_KEYS } from './points-reopt-core';
 import { ZERO_PTS, type SheetKey } from './planner-constants';
 
 export type HeroFarmOptimizeInput = {
@@ -52,14 +52,14 @@ export type HeroFarmOptimizeOutcome =
   | 'emptyPool' // no rotation to score against
   | 'heroNotInPool' // heroId names no basis — a caller error, reported not thrown
   | 'degenerate' // the estimator cannot rate this hero at its current points
-  | 'noBudget' // `reoptBudget` is 0 — nothing placed and no level pool
+  | 'noBudget' // `reoptBudget` is 0 — a level-0 hero has no pool
   | 'noFeasiblePhase'; // no phase in range is farmable under the current build
 
 export type HeroFarmOptimizeResult = {
   outcome: HeroFarmOptimizeOutcome;
   objective: ResolvedFarmObjective;
   /** Full 8-key vector for the optimized hero. Equals the input vector on every outcome except
-   *  `'improved'`; `luck` always equals the input's. */
+   *  `'improved'`. */
   pts: Record<SheetKey, number>;
   /** PERCENT, `>= 0`, in `objective.unit`. 0 whenever the current build is not beaten. */
   gainPct: number;
@@ -133,7 +133,7 @@ export function optimizeHeroForFarm(input: HeroFarmOptimizeInput): HeroFarmOptim
 
   if (heroFactsFromBasis(basis, basis.pts).degenerate) return bail('degenerate');
 
-  const budget = reoptBudget(basis.pts, basis.level);
+  const budget = reoptBudget(basis.level);
   if (budget <= 0) return bail('noBudget');
   if (currentPick === null) return bail('noFeasiblePhase');
 
@@ -149,9 +149,8 @@ export function optimizeHeroForFarm(input: HeroFarmOptimizeInput): HeroFarmOptim
     FARM_OPT_FULL_MAX_EVALUATIONS,
   );
 
-  const proposedSource = search.winner.assignment.get(heroId) ?? basis.pts;
-  const pts: Record<SheetKey, number> = { ...proposedSource, luck: basis.pts.luck };
-  const changed = REOPT_KEYS.some((key) => pts[key] !== basis.pts[key]);
+  const pts: Record<SheetKey, number> = { ...(search.winner.assignment.get(heroId) ?? basis.pts) };
+  const changed = RESPEC_KEYS.some((key) => pts[key] !== basis.pts[key]);
   // Re-derived rather than read off `search.winner.pick`: the search's own picks may take the
   // screen-and-refine shortcut, and `gainPct` divides this by an exhaustive `currentObjective`.
   const proposedPick = bestFarmPhase(search.winner.squad, objective, scales, reportedOptions);
