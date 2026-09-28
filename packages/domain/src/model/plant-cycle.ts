@@ -82,14 +82,30 @@ export function plantCycleSeconds(fuseSecs: number, walkSpeedCells: number, hopC
   return Math.max(fuseSecs + FUSE_CYCLE_OVERHEAD_SEC, hopCells / walkSpeedCells + WALK_CYCLE_OVERHEAD_SEC);
 }
 
+/** `FREE_HOP_SUFFIX_SUMS[k]` is the sum of {@link FREE_HOP_SHAPE} from index `k` to the end. */
+const FREE_HOP_SUFFIX_SUMS: readonly number[] = Object.freeze(
+  FREE_HOP_SHAPE.reduceRight<number[]>((sums, multiplier) => [multiplier + (sums[0] ?? 0), ...sums], [0]),
+);
+
 /**
  * The mean cycle over the free-hop spread and the re-plants, never the cycle of the mean hop.
  * `meanFreeHop` is {@link freeHopCells} at the standing count times the hero's
  * {@link hopSpeedFactor} — taken by the caller, which prices one hero at many counts.
+ *
+ * Closed form, because the clear calls this for every hero at every step: the multipliers are
+ * ascending, so the fuse-bound hops are exactly the first `k`, and the walk-bound rest sum to
+ * `hop/w × (suffix sum) + overhead` each.
  */
 export function meanPlantCycleSeconds(fuseSecs: number, walkSpeedCells: number, meanFreeHop: number): number {
-  let free = 0;
-  for (const multiplier of FREE_HOP_SHAPE) free += plantCycleSeconds(fuseSecs, walkSpeedCells, meanFreeHop * multiplier);
+  const fuseBound = fuseSecs + FUSE_CYCLE_OVERHEAD_SEC;
+  const walkPerMultiplier = meanFreeHop / walkSpeedCells;
+  const threshold = (fuseBound - WALK_CYCLE_OVERHEAD_SEC) / walkPerMultiplier;
+  let fuseBoundHops = 0;
+  while (fuseBoundHops < FREE_HOP_SHAPE.length && FREE_HOP_SHAPE[fuseBoundHops] <= threshold) fuseBoundHops++;
+  const walkBoundHops = FREE_HOP_SHAPE.length - fuseBoundHops;
+  const free =
+    fuseBoundHops * fuseBound +
+    (walkBoundHops > 0 ? walkPerMultiplier * FREE_HOP_SUFFIX_SUMS[fuseBoundHops] + walkBoundHops * WALK_CYCLE_OVERHEAD_SEC : 0);
   return (
     ((1 - REPLANT_SHARE) * free) / FREE_HOP_SHAPE.length +
     REPLANT_SHARE * plantCycleSeconds(fuseSecs, walkSpeedCells, REPLANT_HOP_CELLS)
