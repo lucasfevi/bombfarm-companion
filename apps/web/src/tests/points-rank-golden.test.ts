@@ -99,7 +99,7 @@ describe('DPS next-point ranking — golden fixture (pinned byte-for-byte)', () 
       { stat: 'energy', gainPct: 0.3079450009872753 },
       { stat: 'speed', gainPct: 0.22511447803439388 },
       { stat: 'critChance', gainPct: 0.08676728467882366 },
-      { stat: 'cdr', gainPct: 0.01567614403172879 },
+      { stat: 'cdr', gainPct: 0.015676144031773198 },
       { stat: 'penetration', gainPct: 0.00244876856141385 },
     ]);
   });
@@ -113,13 +113,13 @@ describe('DPS next-point ranking — golden fixture (pinned byte-for-byte)', () 
   it('Isolde L67 (naked, no points spent) — full ranking pinned to full precision, attack dominant', () => {
     const result = pipelineForHero(heroByName('Isolde'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 5.047111441794105 },
+      { stat: 'attack', gainPct: 5.047111441794128 },
       { stat: 'energy', gainPct: 2.305569985939271 },
       { stat: 'speed', gainPct: 0.3004427589206049 },
-      { stat: 'critDmg', gainPct: 0.23330731000403837 },
-      { stat: 'critChance', gainPct: 0.08375991220035406 },
+      { stat: 'critDmg', gainPct: 0.23330731000406058 },
+      { stat: 'critChance', gainPct: 0.08375991220037626 },
       { stat: 'cdr', gainPct: 0.014988082442557449 },
-      { stat: 'penetration', gainPct: 0.0012742229402507022 },
+      { stat: 'penetration', gainPct: 0.0012742229402729066 },
     ]);
   });
 });

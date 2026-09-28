@@ -94,9 +94,15 @@ const FREE_HOP_SUFFIX_SUMS: readonly number[] = Object.freeze(
  *
  * Closed form, because the clear calls this for every hero at every step: the multipliers are
  * ascending, so the fuse-bound hops are exactly the first `k`, and the walk-bound rest sum to
- * `hop/w × (suffix sum) + overhead` each.
+ * `hop/w × (suffix sum) + overhead` each. `replantCycle` depends on the hero alone, so a caller
+ * pricing one hero at many counts passes it in.
  */
-export function meanPlantCycleSeconds(fuseSecs: number, walkSpeedCells: number, meanFreeHop: number): number {
+export function meanPlantCycleSeconds(
+  fuseSecs: number,
+  walkSpeedCells: number,
+  meanFreeHop: number,
+  replantCycle: number = plantCycleSeconds(fuseSecs, walkSpeedCells, REPLANT_HOP_CELLS),
+): number {
   const fuseBound = fuseSecs + FUSE_CYCLE_OVERHEAD_SEC;
   const walkPerMultiplier = meanFreeHop / walkSpeedCells;
   const threshold = (fuseBound - WALK_CYCLE_OVERHEAD_SEC) / walkPerMultiplier;
@@ -106,8 +112,5 @@ export function meanPlantCycleSeconds(fuseSecs: number, walkSpeedCells: number, 
   const free =
     fuseBoundHops * fuseBound +
     (walkBoundHops > 0 ? walkPerMultiplier * FREE_HOP_SUFFIX_SUMS[fuseBoundHops] + walkBoundHops * WALK_CYCLE_OVERHEAD_SEC : 0);
-  return (
-    ((1 - REPLANT_SHARE) * free) / FREE_HOP_SHAPE.length +
-    REPLANT_SHARE * plantCycleSeconds(fuseSecs, walkSpeedCells, REPLANT_HOP_CELLS)
-  );
+  return ((1 - REPLANT_SHARE) * free) / FREE_HOP_SHAPE.length + REPLANT_SHARE * replantCycle;
 }

@@ -126,7 +126,7 @@ const GOLDENS = [
   {
     file: 'save-20260831-13heroes-soulbound.json',
     forgeFloor: 10,
-    currentDps: 4279.594699731851,
+    currentDps: 4279.5946997318515,
     planDps: 4654.977828113092,
     moves: 37,
     forges: 68,
