@@ -11,7 +11,6 @@ export interface PvpRecorderDeps {
   readonly accountId: () => string | null;
   readonly emit: (history: PvpHistoryResult) => void;
   readonly log?: LogPort;
-  readonly listLimit?: number;
 }
 
 export interface PvpRecorder {
@@ -19,7 +18,6 @@ export interface PvpRecorder {
 }
 
 const NOOP_LOG: LogPort = { info: () => undefined, warn: () => undefined, error: () => undefined };
-const DEFAULT_LIST_LIMIT = 50;
 
 /**
  * Keeps what the tap saw. A result is a row on its own — a duel whose film never arrives (the
@@ -29,10 +27,9 @@ const DEFAULT_LIST_LIMIT = 50;
  */
 export function createPvpRecorder(deps: PvpRecorderDeps): PvpRecorder {
   const log = deps.log ?? NOOP_LOG;
-  const limit = deps.listLimit ?? DEFAULT_LIST_LIMIT;
 
   function announce(): void {
-    deps.emit(deps.history.list({ limit }));
+    deps.emit(deps.history.list());
   }
 
   return {
