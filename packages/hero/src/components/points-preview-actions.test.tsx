@@ -42,10 +42,6 @@ describe('PointsPreviewActions', () => {
     expect(html).not.toContain('title=');
   });
 
-  it('prints no reason while Optimize can run', () => {
-    expect(render(runnable)).not.toContain(t.optimizeBuildNoBudgetReason);
-  });
-
   it('a reason attached to an enabled control is not printed — the reason describes the refusal', () => {
     const html = render({ ...runnable, disabledReason: t.optimizeBuildNoBudgetReason });
     expect(html).not.toContain(t.optimizeBuildNoBudgetReason);

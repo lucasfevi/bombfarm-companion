@@ -185,6 +185,23 @@ export function titleVerdict(tagName, file, exports) {
   return exports.has(tagName.split('.')[0]) ? 'unclassified' : 'host';
 }
 
+/**
+ * Every top-level tree holding a tracked component file. Derived rather than listed a second time:
+ * comparing `SCANNED_ROOTS` against another constant would only catch an edit to one of the two,
+ * while this also fails when a NEW top-level tree of components appears that nobody added to the
+ * scan — the way a guard stops covering the repo without anyone touching the guard.
+ */
+function rootsHoldingComponents() {
+  const tracked = execFileSync('git', ['ls-files', '-z', '*.tsx'], {
+    cwd: root,
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  })
+    .split('\0')
+    .filter(Boolean);
+  return [...new Set(tracked.map((file) => file.split('/')[0]))].sort();
+}
+
 function scannedFiles() {
   return execFileSync('git', ['ls-files', '-z', ...SCANNED_ROOTS], {
     cwd: root,
@@ -219,7 +236,11 @@ describe('native-tooltip hygiene — no design-system component forwards `title`
     expect(files.filter((file) => file.startsWith(UI_SRC)).length).toBeGreaterThan(100);
   });
 
-  it('every scanned root contributes files (a renamed root must not silently drop out)', () => {
+  it('the scan covers every top-level tree that holds components, and each contributes files', () => {
+    expect(
+      [...SCANNED_ROOTS].sort(),
+      'a tree of components this guard never reads is a tree where a native tooltip lives forever',
+    ).toEqual(rootsHoldingComponents());
     for (const dir of SCANNED_ROOTS) {
       expect(files.filter((file) => file.startsWith(`${dir}/`)).length, dir).toBeGreaterThan(0);
     }
@@ -344,7 +365,17 @@ describe('native-tooltip hygiene — the scan discriminates', () => {
   });
 
   it('the export reader finds the primitives and skips the type-only names', () => {
-    const index = "export { Button, type ButtonProps } from './button';\nexport type { BannerProps } from './banner';\n";
+    // One clause per filter, so each is load-bearing on its own: a RENAMED type export survives the
+    // name regex (`SortableDir` looks like a component) and only the `type ` skip rejects it, while
+    // a lowercase helper survives the `type ` skip and only the name regex rejects it. A type-only
+    // export BLOCK must never be read at all. Drop any one of the three and this fixture fails.
+    const index = [
+      "export { Button, type ButtonProps } from './button';",
+      "export { cn } from './cn';",
+      "export { type SortDir as SortableDir } from './data-table';",
+      "export type { BannerProps } from './banner';",
+      '',
+    ].join('\n');
     expect([...designSystemExports(index)]).toEqual(['Button']);
   });
 });

@@ -20,7 +20,7 @@ export function Num({
   step?: number;
   /** When set, display and round the value to this many fraction digits. */
   decimals?: number;
-  /** Lower bound for every committed value, typed or stepped. */
+  /** Lower bound for every committed value, typed or stepped. Outranks `max` if the two cross. */
   min?: number;
   /** Upper bound for every committed value, typed or stepped. */
   max?: number;
@@ -37,20 +37,63 @@ export function Num({
    * real `0` to the consumer and rescales everything downstream of it.
    */
   const [draft, setDraft] = useState<string | null>(null);
+  const [lastValue, setLastValue] = useState(value);
 
-  const shown =
-    decimals != null && Number.isFinite(value) ? Number(value.toFixed(decimals)) : value;
-
-  function commit(next: number) {
-    if (!Number.isFinite(next)) return;
-    const rounded = decimals != null ? Number(next.toFixed(decimals)) : next;
-    const floored = min != null ? Math.max(min, rounded) : rounded;
-    onChange(max != null ? Math.min(max, floored) : floored);
+  function round(n: number): number {
+    return decimals != null && Number.isFinite(n) ? Number(n.toFixed(decimals)) : n;
   }
+
+  /**
+   * `decimals` is a promise about every committed value, so a bound finer than it is snapped
+   * inward — never outward, which would put the bound itself out of range.
+   */
+  function snap(n: number, inward: (scaled: number) => number): number {
+    if (decimals == null || !Number.isFinite(n)) return n;
+    const scale = 10 ** decimals;
+    return Number((inward(n * scale) / scale).toFixed(decimals));
+  }
+
+  const floor = min != null ? snap(min, Math.ceil) : undefined;
+  /**
+   * `min` outranks `max` when the two cross. Clamping applies the ceiling last, so a `max` below
+   * `min` would otherwise void the floor and commit under it.
+   */
+  const ceiling = max != null ? Math.max(snap(max, Math.floor), floor ?? -Infinity) : undefined;
+
+  function clamp(n: number): number {
+    const floored = floor != null ? Math.max(floor, n) : n;
+    return ceiling != null ? Math.min(ceiling, floored) : floored;
+  }
+
+  /** The value a raw field entry asks for, or `null` when no finite number can be read from it. */
+  function entryOf(raw: string): number | null {
+    if (raw.trim() === '') return null;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? clamp(round(parsed)) : null;
+  }
+
+  /**
+   * A `value` this field did not ask for — a form reset, an import, a switch of subject — replaces
+   * the draft, which described the one before it. A `value` that is what the draft asked for is
+   * this field's own commit coming back, and leaves the half-typed text alone.
+   */
+  if (!Object.is(lastValue, value)) {
+    setLastValue(value);
+    const asked = draft == null ? null : entryOf(draft);
+    if (asked == null || !Object.is(asked, value)) setDraft(null);
+  }
+
+  /**
+   * An out-of-bounds `value` is shown, and stepped from, as its in-bounds equivalent. A field that
+   * displays what its own bounds forbid also steps from it, which sends the arrows the wrong way:
+   * incrementing 9999 under `max=500` commits 500, so the up arrow walks the value down.
+   */
+  const shown = Number.isFinite(value) ? clamp(round(value)) : value;
 
   function stepBy(delta: number) {
     setDraft(null);
-    commit(value + delta);
+    if (!Number.isFinite(shown)) return;
+    onChange(clamp(round(shown + delta)));
   }
 
   return (
@@ -81,13 +124,13 @@ export function Num({
         type="number"
         value={draft ?? shown}
         step={step}
-        min={min}
-        max={max}
+        min={floor}
+        max={ceiling}
         onChange={(event) => {
           const raw = event.target.value;
           setDraft(raw);
-          if (raw.trim() === '') return;
-          commit(Number(raw));
+          const next = entryOf(raw);
+          if (next != null) onChange(next);
         }}
         onBlur={() => setDraft(null)}
       />
