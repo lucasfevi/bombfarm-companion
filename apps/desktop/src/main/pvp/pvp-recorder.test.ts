@@ -49,7 +49,7 @@ describe('pvp recorder', () => {
     recorder.observe(observationOf(ranking, 5_000));
 
     expect(emitted).toHaveLength(5);
-    const view = history.list({ limit: 10 });
+    const view = history.list();
     expect(view.totals).toEqual({ duels: 2, won: 1, films: 1 });
     expect(view.standing).toMatchObject({ points: 113, tier: 'r1', tierFloor: 50, duelsUsed: 3, duelsMax: 5, slots: 6, slotsMax: 9, capturedAt: new Date(4_000).toISOString() });
     expect(view.standing?.squadHeroIds).toHaveLength(5);
@@ -68,9 +68,9 @@ describe('pvp recorder', () => {
     if (!result || !film) throw new Error('fixture holds fewer than two bodies');
 
     recorder.observe(observationOf(film, 1_000));
-    expect(history.list({ limit: 10 }).rows).toEqual([]);
+    expect(history.list().rows).toEqual([]);
     recorder.observe(observationOf(result, 2_000));
-    expect(history.list({ limit: 10 }).rows[0]).toMatchObject({ filmId: 48117, filmStored: true });
+    expect(history.list().rows[0]).toMatchObject({ filmId: 48117, filmStored: true });
   });
 
   it('keeps the film bytes as they came rather than re-serialising them', () => {
@@ -88,7 +88,7 @@ describe('pvp recorder', () => {
     const [result] = fixtureBodies();
     if (!result) throw new Error('fixture is empty');
     recorder.observe(observationOf(result, 1_000));
-    expect(history.list({ limit: 10 }).standing).toMatchObject({ points: 123, tier: 'r1', capturedAt: new Date(1_000).toISOString() });
+    expect(history.list().standing).toMatchObject({ points: 123, tier: 'r1', capturedAt: new Date(1_000).toISOString() });
   });
 
   it('keeps a rank from the PVP points board only, never from the hero or power boards', () => {
@@ -101,7 +101,7 @@ describe('pvp recorder', () => {
     other.by = 'hero';
     recorder.observe(observationOf(Buffer.from(JSON.stringify(other), 'utf8'), 1_000));
     expect(emit).not.toHaveBeenCalled();
-    expect(history.list({ limit: 10 }).rank).toBeNull();
+    expect(history.list().rank).toBeNull();
   });
 
   it('keeps one row for a result seen twice, though each sighting re-dates the standing it carries', () => {
@@ -112,7 +112,7 @@ describe('pvp recorder', () => {
     if (!result) throw new Error('fixture is empty');
     recorder.observe(observationOf(result, 1_000));
     recorder.observe(observationOf(result, 2_000));
-    const view = history.list({ limit: 10 });
+    const view = history.list();
     expect(view.totals.duels).toBe(1);
     expect(view.standing?.capturedAt).toBe(new Date(2_000).toISOString());
     expect(emit).toHaveBeenCalledTimes(2);
@@ -141,7 +141,7 @@ describe('pvp recorder', () => {
 
     recorder.observe(observationOf(filmless, 1_000));
     expect(records.map((entry) => entry.record.event)).toEqual(['duel.recorded']);
-    expect(history.list({ limit: 10 }).rows[0]).toMatchObject({ won: false, prize: null, pointsBefore: 123, pointsAfter: 113 });
+    expect(history.list().rows[0]).toMatchObject({ won: false, prize: null, pointsBefore: 123, pointsAfter: 113 });
   });
 
   it('names an unreadable body in the log, with the record fields it lacked, and keeps nothing', () => {
@@ -157,6 +157,6 @@ describe('pvp recorder', () => {
       missing: ['phase', 'rooms', 'seconds', 'attacker', 'defender', 'pointsBefore', 'pointsAfter', 'duelsLeft', 'duelsMax', 'tier', 'tierFloor'],
     });
     expect(emit).not.toHaveBeenCalled();
-    expect(history.list({ limit: 10 }).totals.duels).toBe(0);
+    expect(history.list().totals.duels).toBe(0);
   });
 });

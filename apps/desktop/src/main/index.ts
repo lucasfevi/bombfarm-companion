@@ -171,9 +171,6 @@ let applyInjector: ApplyInjector | null = null;
 let pvpHistory: PvpHistory | null = null;
 let pvpRecorder: PvpRecorder | null = null;
 let pvpReader: PvpReader | null = null;
-/** Enough for a session's duels several times over at the quota the state reports (`duelos_max`
- *  of 5 observed), and the same page the forge ledger serves. */
-const PVP_HISTORY_LIST_LIMIT = 50;
 let forgeInjector: ForgeInjector | null = null;
 /** Fixture mode only — see `gameReader.onAccountCommitted` for why a re-ingest of an unchanged
  *  rotation is not free. */
@@ -385,7 +382,7 @@ function listForgeHistory(): ForgeHistoryResult {
 }
 
 function listPvpHistory(): PvpHistoryResult {
-  return pvpHistory?.list({ limit: PVP_HISTORY_LIST_LIMIT }) ?? EMPTY_PVP_HISTORY;
+  return pvpHistory?.list() ?? EMPTY_PVP_HISTORY;
 }
 
 function readPvpFilm(filmId: number): PvpFilmView | null {
@@ -1008,7 +1005,6 @@ async function bootstrap(): Promise<void> {
       emitEvent('pvp:changed', history);
     },
     log,
-    listLimit: PVP_HISTORY_LIST_LIMIT,
   });
 
   liveSource = new LiveSource({

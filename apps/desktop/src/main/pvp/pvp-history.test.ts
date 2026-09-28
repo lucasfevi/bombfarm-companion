@@ -69,15 +69,26 @@ describe('pvp history', () => {
       ),
     ).toBe(true);
 
-    const listed = history.list({ limit: 10 });
+    const listed = history.list();
     expect(listed.rows.map((row) => row.filmId)).toEqual([0, 48117]);
     expect(listed.rows[1]).toEqual({ id: 1, ...AT, filmStored: true, ...duel() });
     expect(listed.rows[0]).toMatchObject({ id: 2, accountId: null, filmStored: false, won: false, prize: null });
     expect(listed.totals).toEqual({ duels: 2, won: 1, films: 1 });
     expect(listed.standing).toBeNull();
     expect(listed.rank).toBeNull();
+  });
 
-    expect(history.list({ limit: 1 }).rows).toHaveLength(1);
+  it('lists every duel held, not only the most recent ones', () => {
+    const open = openTestAccountDb(firstBinding());
+    const history = createPvpHistory(open.db);
+    const held = 120;
+    for (let filmId = 1; filmId <= held; filmId += 1) history.recordDuel(duel({ filmId }), AT);
+
+    const listed = history.list();
+    expect(listed.rows).toHaveLength(held);
+    expect(listed.rows.at(0)?.filmId).toBe(held);
+    expect(listed.rows.at(-1)?.filmId).toBe(1);
+    expect(listed.totals.duels).toBe(held);
   });
 
   it('keeps one standing and one rank, each replaced and re-dated by a newer report even when its figures repeat', () => {
@@ -92,7 +103,7 @@ describe('pvp history', () => {
     expect(history.recordRank({ position: 2, points: 200 }, { capturedAt: '2026-09-16T09:00:00.000Z' })).toBe(true);
     expect(history.recordRank({ position: 2, points: 200 }, { capturedAt: '2026-09-16T09:30:00.000Z' })).toBe(true);
 
-    const listed = history.list({ limit: 10 });
+    const listed = history.list();
     expect(listed.standing).toEqual({ ...snapshot, points: 205, duelsUsed: 8, capturedAt: '2026-09-16T10:05:00.000Z' });
     expect(listed.rank).toEqual({ position: 2, points: 200, capturedAt: '2026-09-16T09:30:00.000Z' });
     expect(open.db?.prepare('SELECT COUNT(*) AS n FROM pvp_standing').get()).toEqual({ n: 2 });
@@ -103,7 +114,7 @@ describe('pvp history', () => {
     const history = createPvpHistory(open.db);
     expect(history.recordDuel(duel(), AT)).toBe(true);
     expect(history.recordDuel(duel(), AT)).toBe(false);
-    expect(history.list({ limit: 10 }).totals.duels).toBe(1);
+    expect(history.list().totals.duels).toBe(1);
   });
 
   it('keeps a filmless duel once per set of figures: a re-sent result is one row, the next duel is another', () => {
@@ -112,7 +123,7 @@ describe('pvp history', () => {
     expect(history.recordDuel(duel({ filmId: 0 }), AT)).toBe(true);
     expect(history.recordDuel(duel({ filmId: 0 }), { recordedAt: '2026-09-16T10:00:09.000Z', accountId: '486' })).toBe(false);
     expect(history.recordDuel(duel({ filmId: 0, pointsBefore: 123, pointsAfter: 128 }), AT)).toBe(true);
-    expect(history.list({ limit: 10 }).totals).toEqual({ duels: 2, won: 2, films: 0 });
+    expect(history.list().totals).toEqual({ duels: 2, won: 2, films: 0 });
   });
 
   it('keys a duel by its film id when it has one, and by its figures when it does not', () => {
@@ -125,10 +136,10 @@ describe('pvp history', () => {
     const history = createPvpHistory(open.db);
     expect(history.storeFilm(film(), '{"first":true}', { storedAt: '2026-09-16T09:59:59.000Z' })).toBe(true);
     expect(history.storeFilm(film(), '{"second":true}', { storedAt: '2026-09-16T10:00:00.000Z' })).toBe(false);
-    expect(history.list({ limit: 10 }).totals.films).toBe(0);
+    expect(history.list().totals.films).toBe(0);
 
     history.recordDuel(duel(), AT);
-    const listed = history.list({ limit: 10 });
+    const listed = history.list();
     expect(listed.rows[0]?.filmStored).toBe(true);
     expect(listed.totals.films).toBe(1);
     const stored = open.db?.prepare('SELECT body FROM pvp_films WHERE film_id = ?').get(48117) as { body: string } | undefined;
@@ -150,7 +161,7 @@ describe('pvp history', () => {
     expect(history.storeFilm(film(), '{}', { storedAt: AT.recordedAt })).toBe(false);
     expect(history.recordStanding({ points: 1, tier: 'r1', tierNumber: null, nextTierAt: null, tierFloor: 1, duelsUsed: null, duelsMax: null, slots: null, slotsMax: null, squadHeroIds: [] }, { capturedAt: AT.recordedAt })).toBe(false);
     expect(history.recordRank({ position: 1, points: 1 }, { capturedAt: AT.recordedAt })).toBe(false);
-    expect(history.list({ limit: 10 })).toEqual(EMPTY_PVP_HISTORY);
+    expect(history.list()).toEqual(EMPTY_PVP_HISTORY);
     expect(history.readFilm(48117)).toBeNull();
   });
 });
