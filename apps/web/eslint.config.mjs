@@ -349,7 +349,7 @@ export default tseslint.config(
           ],
         },
       ],
-      // Public API barrels + the design-system recipe carve-out (Q-5).
+      // Public API barrels + the design-system recipe carve-out.
       'boundaries/entry-point': [
         'error',
         {

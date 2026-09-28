@@ -109,7 +109,7 @@ test.describe('points panel UX', () => {
     ).toBeVisible();
   });
 
-  // Rewritten (user Q-1 override): ±1 now shares the SAME budget ceiling as ±5, so
+  // ±1 shares the SAME budget ceiling as ±5, so
   // overspend is no longer reachable via either stepper — only by a hero record that already
   // has more spent than its level (e.g. the level was lowered in-game after the points were
   // spent). The text-warn counter stays live UI for that path (it is not deleted).

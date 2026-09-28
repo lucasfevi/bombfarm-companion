@@ -13,6 +13,7 @@ export default defineConfig({
   // contend for the same machine resources and produce spurious failures/timeouts that have
   // nothing to do with the feature under test — force strictly sequential smoke runs.
   workers: 1,
+  forbidOnly: !!process.env.CI,
   use: {
     trace: 'on-first-retry',
   },

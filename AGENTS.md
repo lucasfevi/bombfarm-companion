@@ -201,9 +201,14 @@ markdown, commit messages, branch names, changesets, and PR/issue text**:
 `ISO-8601`, `IEEE-754`, `RFC-*`. They share the shape and are not planning ids. So are the
 numbering schemes **this repo publishes itself** — `ADR-*` (`apps/web/docs/adr/`), `CMT-*`
 ([`docs/comments.md`](docs/comments.md)), `MOD-*` ([`docs/naming.md`](docs/naming.md)), `DS-*`
-([`docs/design-system.md`](docs/design-system.md)): the rule is about references only the private
-planning tree can resolve, and these resolve here. Adding a prefix to that list means committing
-to publish its definition.
+([`docs/design-system.md`](docs/design-system.md)), and the perf-scenario ids `P-01`–`P-05`
+(declared by the `ScenarioId` union in `apps/web/e2e/perf/scenarios.ts`, documented in
+[`docs/react-performance.md`](docs/react-performance.md)): the rule is about references only the
+private planning tree can resolve, and these resolve here. Adding to that list means committing
+to publish its definition — and the perf ids are exempt as **exact tokens**, not as a `P-` prefix,
+so a future `P-7` is still caught. Two tokens of this project's own vocabulary are exempt the same
+exact-token way: `X-10` (the game's boss-room phase interval) and `N-1` (array-index prose) —
+`X-11` and `N-3` are still caught.
 
 **Two deliberate exceptions.** Guard sources and their red-state fixtures must name the tokens they
 forbid — `tools/`'s hygiene guards and `pre-push-guard.test.mjs`'s `feat/ACS-06` fixture are code,

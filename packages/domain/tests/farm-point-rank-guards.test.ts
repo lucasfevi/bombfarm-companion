@@ -206,13 +206,9 @@ describe('guard (c) — no retired one-shot identifier survives, with a consider
 });
 
 describe('guard (e) — public-repo hygiene: no research-private identifier in this item\'s own files', () => {
-  // Neither this guard's own implementation nor item A's sibling `farm-optimize-guards.test.ts`
-  // can avoid naming the pattern they match against — a scanner does not scan its own rule
-  // definition. item A's file spells its pattern as a literal regex (pre-existing, not rewritten
-  // by this item); this one builds the same pattern from split fragments instead, so THIS file's
-  // own source never contains the forbidden substrings verbatim — a stricter bar than mere
-  // self-exclusion, and the reason both guard files are still self-excluded from the scan below
-  // as well (each would otherwise flag the other's literal spelling).
+  // A scanner cannot scan its own rule definition: this file and its sibling
+  // `farm-optimize-guards.test.ts` both have to name the tokens they match against, so both are
+  // excluded from the package-wide scan below — each would otherwise flag the other's spelling.
   const SELF_FILENAMES = ['farm-point-rank-guards.test.ts', 'farm-optimize-guards.test.ts'];
   const HYGIENE_TOKENS = [
     ['FRA', 'D-'].join(''),
@@ -254,8 +250,7 @@ describe('guard (e) — public-repo hygiene: no research-private identifier in t
   });
 
   it('DEMONSTRATED RED STATE: a research-private id is caught by the hygiene scan', () => {
-    // Built via concatenation so this line does not itself contain the forbidden substring.
-    const forbiddenToken = ['FRA', 'C-03'].join('');
+    const forbiddenToken = 'FRAC-03';
     const mutated = `// per ${forbiddenToken}, the discrimination test proves...`;
     expect(mutated).toMatch(HYGIENE_PATTERN);
   });

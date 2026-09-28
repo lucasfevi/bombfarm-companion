@@ -134,7 +134,11 @@ const GUARD_1_EXCLUDE = (path: string): boolean =>
   // game's own on-disk binary, not text this app ever displays — the same "technical, never
   // rendered" shape the two exclusions above cover, just reached as a plain array instead of an
   // execSync() argument.
-  path.endsWith(join('live-source', 'image-scan.ts'));
+  path.endsWith(join('live-source', 'image-scan.ts')) ||
+  // storage/test-support.ts is a test HELPER, not a `.test.ts`, so `isTestFile` above misses it:
+  // every importer is a suite and nothing in the shipped bundle reaches it, so its English throw
+  // messages address a developer whose Node build cannot open the store — never a player.
+  path.endsWith(join('storage', 'test-support.ts'));
 
 describe('Guard 1 — no player-facing literal outside the i18n source', () => {
   // What this rule CANNOT catch, stated rather than glossed: a one-word

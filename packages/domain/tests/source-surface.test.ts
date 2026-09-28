@@ -1,6 +1,6 @@
 /**
- * The skip-directive guard: no static `.skip` / `.todo` DIRECTIVE anywhere in this package unless
- * it is named in the manifest below — and the manifest is empty.
+ * The skip-directive guard: no static always-off DIRECTIVE anywhere in this package unless it is
+ * named in the manifest below — and the manifest is empty.
  *
  * It governs directives only. A suite held at run time through `helpers/capture-regime.ts`
  * (`holdSuiteUntilInRegime`, `skipUnlessInRegime`) is invisible to this pattern by design and is
@@ -18,17 +18,27 @@ const SRC_ROOT = join(DOMAIN_ROOT, 'src');
 const TESTS_ROOT = join(DOMAIN_ROOT, 'tests');
 
 /**
- * Anchored to `describe|it|test` immediately before `.skip`/`.todo`, plus the legacy `xit`/
- * `xdescribe` call aliases — matching `tools/fixture-corpus-parity.test.mjs`'s sibling pattern
- * exactly (a cross-file check there fails if the two diverge). Anchoring, rather than an
- * unanchored `.skip`/`.todo` substring match, is what excludes `capture-regime.ts`'s runtime
- * `context.skip` call — a per-test decision made at run time, not the static suite-skip directive
- * this guard is about. (Deliberately worded without a trailing open-paren above: this file's own
- * `SKIP_PATTERN` would otherwise match its own explanatory prose.)
+ * Two patterns, both anchored to a runner keyword and both mirrored verbatim in
+ * `tools/fixture-corpus-parity.test.mjs` (a cross-file check there fails if either diverges).
+ *
+ * `SKIP_PATTERN` is the unconditional one — an always-off test — over the suffixes `.skip`,
+ * `.todo`, `.fixme` and `.fails`, plus the legacy `x`-prefixed call aliases. The
+ * `(\.\w+(\([^()]*(\([^()]*\)[^()]*)*\))?)*` chain is what reaches a suffix through intervening
+ * modifiers, in either chain order, including a modifier that takes arguments and a modifier
+ * whose argument is itself a call — a parameterised table built by a helper, followed by a todo
+ * suffix, is one directive, not two names. Two exclusions
+ * are deliberate and load-bearing: the `\b` after the suffix group keeps the conditional
+ * spellings below out of this one, and the keyword anchor keeps out both `capture-regime.ts`'s
+ * runtime `context.skip` call — a per-test decision made at run time, not a static directive —
+ * and the domain's own `fails` record field, which an unanchored suffix match hits in shipped
+ * source. (Deliberately worded with no anchor token immediately before a suffix above: these
+ * patterns would otherwise match their own explanatory prose.)
  */
-const SKIP_PATTERN = /\b(describe|it|test)\.(skip|todo)\b|\bxit[(]|\bxdescribe[(]/;
-/** The same pattern, global, so the manifest below can COUNT matches and not just detect one. */
+const SKIP_PATTERN = /\b(describe|it|test)(\.\w+(\([^()]*(\([^()]*\)[^()]*)*\))?)*\.(skip|todo|fixme|fails)\b|\bx(it|test|describe)[(]/;
+const CONDITIONAL_SKIP_PATTERN = /\b(describe|it|test)(\.\w+(\([^()]*(\([^()]*\)[^()]*)*\))?)*\.(skipIf|runIf)\b/;
+/** The same patterns, global, so the manifests below can COUNT matches and not just detect one. */
 const SKIP_PATTERN_GLOBAL = new RegExp(SKIP_PATTERN.source, 'g');
+const CONDITIONAL_SKIP_PATTERN_GLOBAL = new RegExp(CONDITIONAL_SKIP_PATTERN.source, 'g');
 
 /**
  * This guard was a HARD ZERO: no skip directive anywhere in this package, ever. It became an exact
@@ -53,6 +63,24 @@ const SKIP_PATTERN_GLOBAL = new RegExp(SKIP_PATTERN.source, 'g');
  */
 const F8_SKIP_MANIFEST: Record<string, number> = {};
 
+/**
+ * Conditional holds are manifested apart from the unconditional ones because their remediation
+ * differs: a predicate that has quietly stopped varying turns its suite off for good while the
+ * source still reads as live, so an entry has to name the predicate and who checks that it still
+ * goes both ways — where an unconditional directive is simply deleted or re-armed.
+ */
+const CONDITIONAL_SKIPS: Record<string, { count: number; condition: string; verifiedBy: string }> = {};
+
+function conditionalEntryProblems(entry: unknown): string[] {
+  if (entry === null || typeof entry !== 'object') return ['entry is not an object'];
+  const { count, condition, verifiedBy } = entry as Record<string, unknown>;
+  const problems: string[] = [];
+  if (!Number.isInteger(count)) problems.push('count is not an integer');
+  if (typeof condition !== 'string') problems.push('condition is not a string');
+  if (typeof verifiedBy !== 'string') problems.push('verifiedBy is not a string');
+  return problems;
+}
+
 function listFiles(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
@@ -74,13 +102,18 @@ describe('source-surface — the skip-directive guard', () => {
     expect(testFiles.length, `scanned ${TESTS_ROOT}`).toBeGreaterThanOrEqual(50);
   });
 
-  it('skip directives in packages/domain are exactly the declared F8 manifest', () => {
+  function countMatches(pattern: RegExp): Record<string, number> {
     const actual: Record<string, number> = {};
     for (const file of [...srcFiles, ...testFiles]) {
       const rel = relative(DOMAIN_ROOT, file).split(sep).join('/');
-      const hits = readFileSync(file, 'utf8').match(SKIP_PATTERN_GLOBAL);
+      const hits = readFileSync(file, 'utf8').match(pattern);
       if (hits) actual[rel] = hits.length;
     }
+    return actual;
+  }
+
+  it('unconditional skip directives in packages/domain are exactly the declared F8 manifest', () => {
+    const actual = countMatches(SKIP_PATTERN_GLOBAL);
 
     const expectedFiles = Object.keys(F8_SKIP_MANIFEST).sort();
     const actualFiles = Object.keys(actual).sort();
@@ -91,6 +124,35 @@ describe('source-surface — the skip-directive guard', () => {
 
     for (const file of expectedFiles) {
       expect(actual[file], `${file}: skip count`).toBe(F8_SKIP_MANIFEST[file]);
+    }
+  });
+
+  it('every conditional-skip manifest entry has the shape the count assertions read', () => {
+    const malformed = Object.entries(CONDITIONAL_SKIPS as Record<string, unknown>)
+      .map(([file, entry]) => ({ file, problems: conditionalEntryProblems(entry) }))
+      .filter(({ problems }) => problems.length > 0)
+      .map(({ file, problems }) => `${file}: ${problems.join('; ')}`);
+    expect(malformed, `a conditional-skip entry the assertions below cannot read: ${malformed.join(', ')}`).toEqual([]);
+  });
+
+  it('conditional skip directives in packages/domain are exactly the declared conditional manifest', () => {
+    const actual = countMatches(CONDITIONAL_SKIP_PATTERN_GLOBAL);
+
+    const expectedFiles = Object.keys(CONDITIONAL_SKIPS).sort();
+    const actualFiles = Object.keys(actual).sort();
+    expect(
+      actualFiles,
+      'a conditional skip appeared outside the conditional manifest, or a manifested file no longer has one',
+    ).toEqual(expectedFiles);
+
+    for (const file of expectedFiles) {
+      const entry = CONDITIONAL_SKIPS[file];
+      expect(actual[file], `${file}: conditional skip count`).toBe(entry?.count);
+      expect(String(entry?.condition ?? '').trim().length, `${file}: names the predicate it turns on`).toBeGreaterThan(0);
+      expect(
+        String(entry?.verifiedBy ?? '').trim().length,
+        `${file}: names who checks the predicate still varies`,
+      ).toBeGreaterThan(0);
     }
   });
 

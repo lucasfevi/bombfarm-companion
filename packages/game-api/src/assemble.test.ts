@@ -35,7 +35,7 @@ const DRIFT_ADDED_REFUNDS: SectionOutcome = {
   addedKeys: ['refunds'],
 };
 
-describe('assembleAccountPayload — arity and no history/grade (R-1 closed by signature)', () => {
+describe('assembleAccountPayload — arity and no history/grade (carry-over closed by signature)', () => {
   it('has arity 2 — no history parameter', () => {
     expect(assembleAccountPayload.length).toBe(2);
   });

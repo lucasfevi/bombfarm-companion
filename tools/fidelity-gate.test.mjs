@@ -174,7 +174,7 @@ describe('path-filter parity', () => {
 // Source guards over the fidelity-gate test files (anti-self-greening devices 5 and 6)
 // ---------------------------------------------------------------------------------------------
 
-const F4_HELPERS = [
+const NO_SKIP_HELPERS = [
   'fidelity-pair.ts',
   'fidelity-gate-error.ts',
   'fidelity-grade.ts',
@@ -182,7 +182,7 @@ const F4_HELPERS = [
   'fidelity-gate.ts',
 ].map((f) => join(root, 'packages/domain/tests/helpers', f));
 
-const F4_TESTS = [
+const NO_SKIP_TESTS = [
   'fidelity-pair.test.ts',
   'fidelity-grade.test.ts',
   'fidelity-compare.test.ts',
@@ -190,11 +190,11 @@ const F4_TESTS = [
   'fidelity-gate-discrimination.test.ts',
 ].map((f) => join(root, 'packages/domain/tests', f));
 
-const F4_FILES = [...F4_HELPERS, ...F4_TESTS];
+const NO_SKIP_FILES = [...NO_SKIP_HELPERS, ...NO_SKIP_TESTS];
 
-describe('F4 file inventory', () => {
-  it('every declared F4 file exists (the source guards below would silently check nothing otherwise)', () => {
-    for (const file of F4_FILES) {
+describe('no-skip file inventory', () => {
+  it('every declared no-skip file exists (the source guards below would silently check nothing otherwise)', () => {
+    for (const file of NO_SKIP_FILES) {
       expect(existsSync(file), file).toBe(true);
     }
   });
@@ -263,8 +263,8 @@ function hasBareEarlyReturnInTestBody(text) {
   return extractTestCallBodies(text).some((body) => BARE_RETURN_RE.test(body));
 }
 
-describe('no-skip source guard — none of the ten F4 files may skip (R-5, the catalog-v4 quarantine precedent)', () => {
-  for (const file of F4_FILES) {
+describe('no-skip source guard — none of the ten fidelity-gate files may skip', () => {
+  for (const file of NO_SKIP_FILES) {
     const label = file.slice(root.length + 1).replace(/\\/g, '/');
 
     it(`${label}: no describe.skip / it.skip / test.skip / .todo / .concurrent.skip (either chain order)`, () => {
@@ -290,7 +290,7 @@ describe('no-skip source guard — none of the ten F4 files may skip (R-5, the c
 });
 
 describe('no second tolerance (edge case 5) — SHEET_ABS_TOL is imported, never redefined', () => {
-  for (const file of F4_FILES) {
+  for (const file of NO_SKIP_FILES) {
     const label = file.slice(root.length + 1).replace(/\\/g, '/');
 
     it(`${label}: declares no ABS_TOL-shaped constant of its own`, () => {

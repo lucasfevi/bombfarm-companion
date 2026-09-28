@@ -440,6 +440,48 @@ so is `SKIPS_NOT_F8`: the one deliberate skip it carried, a whole-suite skip dir
 Playwright screenshot baselines, was deleted with that suite on 2026-09-21, so no static skip
 directive remains anywhere in the scanned roots.
 
+**What "the scanned roots" now means.** The parity guard used to hand-list four roots; it derives
+them instead, so a package added later is in range the day it gets a test project. Each entry in
+the root `vitest.config.ts` `projects` array contributes its containing directory — fifteen roots
+today, the twelve `packages/*` plus `apps/web`, `apps/desktop` and `tools` — and every `testDir`
+declared in a tracked `playwright.config.ts`, top-level or per-project, must resolve inside one of
+them or the guard fails rather than leaving that suite unscanned. The scan set is the tracked
+`.ts .tsx .mts .cts .mjs .cjs .js` files under those roots (2,262 today, with a committed floor),
+tracked only so a sibling guard's untracked scratch file cannot register as a skip.
+
+**One derivation, two consumers.** That derivation lives in `tools/runner-scan-roots.mjs` — Node
+builtins only, so it needs no build — and both halves of the skip family import it: the static
+directive census here and the runtime-hold manifest of §14. It is shared rather than copied
+because the two used to hand-list their roots independently, and a suite held in a package only
+one of them reached was invisible to both: unseen by the census by design, since a hold is a
+runtime call and not a directive, and unseen by the hold manifest because its roots stopped at
+`packages/domain/tests` and `apps/web/src/tests`. A hold planted in `packages/farm` was reported
+by neither guard. Both now scan the same fifteen roots and each asserts a floor on them, so the
+family cannot reopen a gap between the two lists — there is only one list.
+
+**What it now recognises.** The unconditional pattern covers the `.skip`, `.todo`, `.fixme` and
+`.fails` suffixes and the `x`-prefixed call aliases, reached through any chain of intervening
+modifiers in either order — including one that takes arguments, and one whose argument is itself a
+call, so a parameterised table built by a helper and then marked as pending is caught — and
+anchored to a runner keyword: the anchor is what keeps
+the runtime `context.skip` of §14 and the domain's own `fails` record field out. A second covers
+the conditional `skipIf` / `runIf` spellings into a separate `CONDITIONAL_SKIPS` manifest, because
+their remediation differs: a predicate that has quietly stopped varying holds its suite off for
+good while the source still reads as live, so an entry must name the predicate and who checks that
+it still goes both ways. That manifest is empty today, and each of its entries is shape-checked so
+a malformed one names itself instead of throwing. Scanning `tools/` puts the hygiene guards' own
+sources in range, so a named `GUARD_SOURCE_EXEMPTIONS` map carries the one file that has to spell
+what it forbids (`tools/fidelity-gate.test.mjs`).
+
+**An exemption is a counted allowance, not a mute button.** It declares the exact number of
+occurrences of each kind its file may carry — 3 unconditional and 0 conditional today, all three
+on the one test name that lists the spellings its subjects may not use — and the guard asserts the
+file's actual counts EQUAL those numbers. Skipping the file outright is what the map used to do,
+and it meant a new directive anywhere in an exempted file was silent: turning one `describe` into
+a held suite there took three tests out of the run with nothing red. The exemption is also
+asserted to still be in the scan set and to still cover something, so a stale one fails instead of
+widening the hole.
+
 The last four resolutions were not re-points, and each is worth naming:
 
 - **Two frozen refactor-parity artifacts were DELETED**, with their tests:
@@ -1037,8 +1079,10 @@ capture holding one item at level 50 or past settles it.
 
 **What the hold had cost.** Between 2026-08-28 and 2026-09-16 the twenty-four suites of §13 plus one
 `import-merge` assertion — 845 tests — reported green while running nothing, and nothing said so:
-`source-surface.test.ts` and the parity manifest see only static `describe.skip` / `it.skip`
-directives, and a counted runtime skip inside a green run reads as green. Meanwhile three captures
+`source-surface.test.ts` and the parity manifest see only static directives — the widened
+spellings and derived roots of §11.7 do not change that, because the anchor that finds a directive
+is exactly what excludes a runtime `ctx.skip()` — and a counted runtime skip inside a green run
+reads as green. Meanwhile three captures
 admissible for `sheet` sat in the registry unread — the two waived saves of 2026-08-28 and
 2026-08-31, and the 2026-09-13 live read — and no suite asked whether it could move onto one.
 
@@ -1069,7 +1113,9 @@ suites (`farm-optimize-frontier`, `farm-optimize-plateau`) turned out to have be
 name their capture. The corpus growing by 29 heroes also moved two letter-grade cut points in
 `roll-quality.ts` (C/B +0.05, A/S −0.06), carried by a changeset.
 
-**A hold is now a manifested decision.** `tools/held-suite-manifest.test.mjs` resolves every
+**A hold is now a manifested decision.** `tools/held-suite-manifest.test.mjs` scans the same
+fifteen runner roots as the directive census, from the same `tools/runner-scan-roots.mjs`
+derivation (§11.7), over the tracked `.ts`/`.tsx` sources under them. It resolves every
 `holdSuiteUntilInRegime` / `holdTeamPlanSuiteUntilInRegime` / `skipUnlessInRegime` call site to
 the capture and mechanic it reads, asks the registry whether that capture is admissible, and
 requires every hold to have an entry in `tools/held-suites.manifest.mjs` naming, for each capture

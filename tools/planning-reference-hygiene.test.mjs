@@ -61,6 +61,8 @@ const GUARD_SOURCES = new Set([
   'tools/wiki-drift-narrowed-rule.test.mjs',
   'apps/web/src/tests/farm-ranking-guards.test.ts',
   'packages/domain/tests/farm-optimize-guards.test.ts',
+  // Scans the domain package for retired planning ids; its red-state case must spell one.
+  'packages/domain/tests/farm-point-rank-guards.test.ts',
 ]);
 
 /**
@@ -85,8 +87,35 @@ const EXEMPT_PREFIXES = [
   'DS-',
 ];
 
+/**
+ * The perf harness's scenario ids resolve here — `apps/web/e2e/perf/scenarios.ts` declares them
+ * and `docs/react-performance.md` documents them — so they meet the same criterion as the
+ * prefixes above. They are exempted as whole tokens rather than as a `P-` prefix on purpose: a
+ * single-letter prefix exemption would wave through a future genuine `P-7`, which is exactly the
+ * hole the identifier scan was widened to close. The test below reads the union back out of
+ * `scenarios.ts`, so deleting a scenario fails this guard instead of leaving a dead exemption.
+ */
+const PERF_SCENARIOS_FILE = 'apps/web/e2e/perf/scenarios.ts';
+const PERF_SCENARIO_IDS = ['P-01', 'P-02', 'P-03', 'P-04', 'P-05'];
+
+/**
+ * Two hyphenated tokens this project's own vocabulary owns, which only became offenses when the
+ * identifier scan widened to single-letter prefixes. Exempted as whole tokens for the same reason
+ * the perf ids are: an `X-` or `N-` prefix exemption would reopen exactly that hole. The test
+ * below fails once a token stops appearing in the tracked tree, so neither can go stale here.
+ */
+const VOCABULARY_TOKENS = [
+  'X-10', // the game's name for the boss-room phase interval — "every X-10 phase"
+  'N-1', // ordinary array-index prose — `0..N-1`
+];
+
+const EXEMPT_IDENTIFIERS = [
+  ...EXEMPT_PREFIXES,
+  ...[...PERF_SCENARIO_IDS, ...VOCABULARY_TOKENS].map((id) => String.raw`${id}\b`),
+];
+
 const PLANNING_IDENTIFIER = new RegExp(
-  String.raw`\b(?!${EXEMPT_PREFIXES.join('|')})[A-Z][A-Z0-9]{1,6}-[0-9]{1,3}[a-z]?\b`,
+  String.raw`\b(?!${EXEMPT_IDENTIFIERS.join('|')})[A-Z][A-Z0-9]{0,6}-[0-9]{1,3}[a-z]?\b`,
 );
 
 /**
@@ -229,6 +258,21 @@ function scannedFiles() {
   );
 }
 
+/** Tracked files naming `token`, this file excluded — an exemption must not be its own witness. */
+function trackedFilesContaining(token) {
+  try {
+    return execFileSync('git', ['grep', '-lIF', '-e', token, '--', ':!tools/planning-reference-hygiene.test.mjs'], {
+      cwd: root,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+    })
+      .split('\n')
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 describe('planning-reference hygiene — no planning identifier or planning-document path in tracked files', () => {
   const files = scannedFiles();
 
@@ -264,11 +308,54 @@ describe('planning-reference hygiene — no planning identifier or planning-docu
       expect(() => readFileSync(join(root, file), 'utf8'), file).not.toThrow();
     }
   });
+
+  it('every exempted perf-scenario id is still declared by the harness (a deleted scenario must not leave a dead exemption)', () => {
+    const union = /export type ScenarioId =[^\n]*/.exec(
+      readFileSync(join(root, PERF_SCENARIOS_FILE), 'utf8'),
+    )?.[0];
+    expect(union, `no ScenarioId union in ${PERF_SCENARIOS_FILE}`).toBeDefined();
+    for (const id of PERF_SCENARIO_IDS) {
+      expect(union, `${id} is exempted but no longer a scenario`).toContain(`'${id}'`);
+    }
+  });
+
+  it('every exempted vocabulary token still appears in the tracked tree (a dead exemption must not linger)', () => {
+    const dead = VOCABULARY_TOKENS.filter((token) => trackedFilesContaining(token).length === 0);
+    expect(dead, 'exempted but named by no tracked file outside this guard').toEqual([]);
+  });
 });
 
 describe('planning-reference hygiene — the scan discriminates', () => {
   it('red state: a planning identifier is caught', () => {
     expect(planningReferenceOffenses('gate on usability (QQZ-07).')).toEqual(['planning identifier']);
+  });
+
+  it('red state: a single-letter prefix is caught (it used to need two characters and walked through)', () => {
+    expect(planningReferenceOffenses('the piece in flight (Z-5)')).toEqual(['planning identifier']);
+    expect(planningReferenceOffenses(' * and Z-03 forbids one file serving both roles')).toEqual([
+      'planning identifier',
+    ]);
+  });
+
+  it("green state: the perf harness's own scenario ids are not offenses", () => {
+    expect(planningReferenceOffenses('| P-02 | type in attack | 6512 |', { file: 'docs/x.md' })).toEqual([]);
+    expect(planningReferenceOffenses("export type ScenarioId = 'P-01' | 'P-05'")).toEqual([]);
+  });
+
+  it('red state: a number outside the declared scenarios is still caught', () => {
+    expect(planningReferenceOffenses('a sixth scenario (P-7)')).toEqual(['planning identifier']);
+    expect(planningReferenceOffenses('a sixth scenario (P-06)')).toEqual(['planning identifier']);
+  });
+
+  it("green state: this project's own vocabulary tokens are not offenses", () => {
+    expect(planningReferenceOffenses('every X-10 phase is a timed boss room', { file: 'docs/x.md' })).toEqual([]);
+    expect(planningReferenceOffenses('resolves every skin index `0..N-1` through the table')).toEqual([]);
+  });
+
+  it('red state: a neighbour of a vocabulary token is still caught', () => {
+    for (const line of ['every X-11 phase', 'the N-3 slot', 'the piece in flight (Z-5)']) {
+      expect(planningReferenceOffenses(line), line).toEqual(['planning identifier']);
+    }
   });
 
   it('red state: a space-separated milestone-and-feature citation is caught', () => {

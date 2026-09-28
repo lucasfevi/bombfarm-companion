@@ -7,7 +7,7 @@ function partiallySpent(): Record<SheetKey, number> {
   return { ...ZERO_PTS(), attack: 20, energy: 10, critChance: 3 };
 }
 
-describe('clampPointStep (full form per the user Q-1 override)', () => {
+describe('clampPointStep (full form — ±1 shares the ±5 ceiling, not just its floor)', () => {
   it('floors at 0 for a -1 step at pts=0', () => {
     const pts = ZERO_PTS();
     const next = clampPointStep(pts, 'attack', -1, 38);
@@ -36,7 +36,7 @@ describe('clampPointStep (full form per the user Q-1 override)', () => {
     expect(spentAfter).toBe(level);
   });
 
-  it('+1 past budget is REFUSED — a no-op (Q-1 override: ±1 shares the ±5 ceiling)', () => {
+  it('+1 past budget is REFUSED — a no-op (±1 shares the ±5 ceiling)', () => {
     const pts = { ...ZERO_PTS(), attack: 38 };
     const next = clampPointStep(pts, 'attack', 1, 38);
     expect(next.attack).toBe(38);
