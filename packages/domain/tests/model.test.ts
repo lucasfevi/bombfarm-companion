@@ -270,7 +270,7 @@ describe('rankNextPoint', () => {
     }
   });
 
-  it('scores CDR at zero once the walk covers every hop, well before the 80% cap', () => {
+  it('keeps scoring CDR above zero up to the 80% cap — the shortest hops stay fuse-bound', () => {
     const deltas: EffectiveDeltas = {
       attack: 10,
       energy: 8,
@@ -285,12 +285,12 @@ describe('rankNextPoint', () => {
       const gain = rankNextPoint({ ...sampleHero(), cdr }, ctx, { effectiveDeltas: deltas }).find(
         (r) => r.stat === 'cdr',
       )!.gainPct;
-      expect(gain).toBe(0);
+      expect(gain).toBeGreaterThan(0);
     }
-    expect(sustainedDps({ ...sampleHero(), cdr: 75 }, ctx)).toBe(sustainedDps({ ...sampleHero(), cdr: 70 }, ctx));
+    expect(sustainedDps({ ...sampleHero(), cdr: 75 }, ctx)).toBeGreaterThan(sustainedDps({ ...sampleHero(), cdr: 70 }, ctx));
   });
 
-  it('a faster hero keeps paying for CDR longer than a slower one — its walks are the shorter leg more often', () => {
+  it('a faster hero gets more from CDR than a slower one — its walks are the shorter leg more often', () => {
     const deltas: EffectiveDeltas = {
       attack: 10,
       energy: 8,
@@ -304,8 +304,8 @@ describe('rankNextPoint', () => {
       rankNextPoint({ ...sampleHero(), speed, cdr: 40 }, baseCtx(), { effectiveDeltas: deltas }).find(
         (r) => r.stat === 'cdr',
       )!.gainPct;
-    expect(cdrGain(55)).toBeGreaterThan(0);
-    expect(cdrGain(30)).toBe(0);
+    expect(cdrGain(30)).toBeGreaterThan(0);
+    expect(cdrGain(55)).toBeGreaterThan(cdrGain(30));
   });
 
   it('still ranks penetration above zero at 70% (below 100% combat bypass)', () => {

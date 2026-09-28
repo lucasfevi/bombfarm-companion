@@ -97,7 +97,7 @@ describe('bestFarmPhase — the non-unimodality pin', () => {
   // (30,449,438/h), four rows to its left. Both neighbours are FEASIBLE, where on the retired
   // roster the left neighbour was infeasible: the trough is what makes the curve non-unimodal,
   // and it does not need to be an unclearable phase to do it.
-  it('phase 71 is a strict local maximum under the current build (> phases 70 and 72) that is not the global peak (65)', () => {
+  it('phase 71 is a strict local maximum under the current build (> phases 70 and 72) that is not the global peak (63)', () => {
     const row70 = computeFarmRateRow(70, squad)!;
     const row71 = computeFarmRateRow(71, squad)!;
     const row72 = computeFarmRateRow(72, squad)!;
@@ -107,7 +107,8 @@ describe('bestFarmPhase — the non-unimodality pin', () => {
     expect(row71.goldPerHour).toBeGreaterThan(row72.goldPerHour);
     const fullSweep = bestFarmPhase(squad, goldObjective, scales, { maxPhase: null });
     // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); the previous figure is in the git history.
-    expect(fullSweep!.phase).toBe(65);
+    // RE-PINNED 2026-09-27 for the plant-cycle refit (ADR-018): 65 before.
+    expect(fullSweep!.phase).toBe(63);
     expect(fullSweep!.value).toBeGreaterThan(row71.goldPerHour);
   });
 

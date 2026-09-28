@@ -162,13 +162,14 @@ describe('farmObjectiveScales — the frozen blend normalizers, exported (lifted
    * re-record can only ever restate the model, never paper over a disagreement between the two
    * routes to it.
    */
-  it('on the committed fixture (maxPhase 155): goldScale ≈ 28 127 919.34, chestScale ≈ 15.169753', () => {
+  it('on the committed fixture (maxPhase 155): goldScale ≈ 28 880 183.78, chestScale ≈ 16.026448', () => {
     const scales = farmObjectiveScales(squad, { maxPhase });
     // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); the previous figure is in the git history.
     // RE-PINNED 2026-09-26 for the Wide Blast patch: the cells it adds past the base reach now take half the hit. Gold fell
     // 4.95% (29,563,288.87) and chests 2.68% (15.587677): by different factors, so the patch is
     // phase-dependent, as it should be — the half hit costs most where props need the most hits. Moved again the same day for Double Detonation's 2.5%/level.
-    expect(scales.goldScale).toBeCloseTo(28127919.34, 1);
-    expect(scales.chestScale).toBeCloseTo(15.169753, 5);
+    // RE-PINNED 2026-09-27 for the plant-cycle refit (ADR-018): 28,127,919.34 and 15.169753 before.
+    expect(scales.goldScale).toBeCloseTo(28880183.78, 1);
+    expect(scales.chestScale).toBeCloseTo(16.026448, 5);
   });
 });

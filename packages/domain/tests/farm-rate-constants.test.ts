@@ -2,36 +2,30 @@
  * Constants, provenance and store-agnosticism.
  *
  * A source scan over `src/farm-rate.ts` for forbidden literals (every wiki-tunable number must
- * come from a named import), plus value assertions that the two derived constants and
- * `returnBonusMultiplier` equal the bundle's own numbers.
+ * come from a named import), the shape of the shared plant cycle, plus value assertions that the
+ * derived constants and `returnBonusMultiplier` equal the bundle's own numbers.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { cycleSecondsForHero, FORTUNA_AURA_CAP, returnBonusMultiplier } from '@bombfarm/domain/farm-rate';
 import {
-  CYCLE_LATENCY_SEC,
-  cycleSecondsForHero,
-  FORTUNA_AURA_CAP,
-  HOP1_CYCLE_SEC,
-  HOP_DISTRIBUTION,
-  returnBonusMultiplier,
-} from '@bombfarm/domain/farm-rate';
+  FREE_HOP_SHAPE,
+  FUSE_CYCLE_OVERHEAD_SEC,
+  freeHopCells,
+  hopSpeedFactor,
+  meanPlantCycleSeconds,
+  plantCycleSeconds,
+} from '@bombfarm/domain/model';
 import { RETURN_BONUS_ADD, RETURN_BONUS_ADD_VIP, LOOT_ABILITY_VALUES } from '@bombfarm/domain/phase-wiki';
 import { requireFixture } from './helpers/require-fixture';
 
 const DOMAIN_ROOT = join(__dirname, '..');
 const FARM_RATE_SRC = join(DOMAIN_ROOT, 'src', 'farm-rate.ts');
-/** The hop histogram and its cycle moved here when the cadence model became the advisor's too. */
-const CADENCE_SRC = join(DOMAIN_ROOT, 'src', 'model', 'cadence.ts');
 
 function loadSource(): string | null {
   if (!requireFixture(FARM_RATE_SRC, 'farm-rate.ts source scan')) return null;
   return readFileSync(FARM_RATE_SRC, 'utf8');
-}
-
-function loadCadenceSource(): string | null {
-  if (!requireFixture(CADENCE_SRC, 'model/cadence.ts source scan')) return null;
-  return readFileSync(CADENCE_SRC, 'utf8');
 }
 
 describe('store-agnosticism — no framework, storage or clock/randomness import', () => {
@@ -56,17 +50,7 @@ describe('forbidden-literal scan — wiki-tunable numbers must come from an impo
     // Strip import statements and comments before scanning — the point is to catch a VALUE
     // used in an EXPRESSION, not the identifier names or documentation that legitimately name
     // these figures (e.g. this file's own JSDoc, which quotes them for provenance).
-    //
-    // HOP_DISTRIBUTION's array literal is stripped for the same reason `farm-optimize-guards`
-    // strips its plateau share-grid: it is a measured calibration table, so its 26 probabilities
-    // ARE the data rather than a retyped wiki constant. Several of them ("0.00151", "0.0015")
-    // contain forbidden strings as substrings, which is a collision, not a violation. Only the
-    // literal is exempt — everything else in this file is still scanned.
-    const withoutHopTable = source.replace(
-      /export const HOP_DISTRIBUTION[\s\S]*?\]\);/,
-      'export const HOP_DISTRIBUTION = [];',
-    );
-    const codeOnly = withoutHopTable
+    const codeOnly = source
       .split('\n')
       .filter((line) => {
         const trimmed = line.trim();
@@ -84,45 +68,29 @@ describe('forbidden-literal scan — wiki-tunable numbers must come from an impo
   });
 });
 
-describe('HOP_DISTRIBUTION — provenance-carrying, and a distribution rather than a mean', () => {
-  it('is a normalised probability mass function over hops 0..25', () => {
-    expect(HOP_DISTRIBUTION.length).toBe(26);
-    for (const p of HOP_DISTRIBUTION) expect(p).toBeGreaterThanOrEqual(0);
-    expect(HOP_DISTRIBUTION.reduce((s, p) => s + p, 0)).toBeCloseTo(1, 3);
+describe('FREE_HOP_SHAPE — a spread around the density mean, not a second mean', () => {
+  it('is ten ascending, frozen multipliers averaging 1', () => {
+    expect(FREE_HOP_SHAPE).toHaveLength(10);
+    expect(Object.isFrozen(FREE_HOP_SHAPE)).toBe(true);
+    for (let i = 1; i < FREE_HOP_SHAPE.length; i++) expect(FREE_HOP_SHAPE[i]).toBeGreaterThan(FREE_HOP_SHAPE[i - 1]);
+    expect(FREE_HOP_SHAPE.reduce((sum, m) => sum + m, 0) / FREE_HOP_SHAPE.length).toBeCloseTo(1, 2);
   });
 
-  it('is frozen — a shipped calibration, not a scratch array', () => {
-    expect(Object.isFrozen(HOP_DISTRIBUTION)).toBe(true);
+  it('prices a hero whose walk straddles the fuse slower than the cycle of the mean hop — max() is convex', () => {
+    const fuse = 1.3;
+    const w = 3;
+    const meanHop = freeHopCells(40) * hopSpeedFactor(w);
+    expect(meanPlantCycleSeconds(fuse, w, meanHop)).toBeGreaterThan(plantCycleSeconds(fuse, w, meanHop));
   });
 
-  it('has a mean hop of ~4.77 and a tail that a mean would discard', () => {
-    const meanHop = HOP_DISTRIBUTION.reduce((s, p, hop) => s + p * hop, 0);
-    expect(meanHop).toBeCloseTo(4.77, 1);
-    // The retired E_D_CELLS was 4.5, i.e. the old constant was barely wrong about the MEAN.
-    // What it could not represent is this tail, which is where the missing cycle time lives.
-    const tail = HOP_DISTRIBUTION.slice(15).reduce((s, p) => s + p, 0);
-    expect(tail).toBeGreaterThan(0.02);
-  });
-
-  it('its JSDoc carries the capture provenance and the Jensen reason for being a distribution', () => {
-    const source = loadCadenceSource();
-    if (!source) return;
-    const docBlock = source.slice(0, source.indexOf('export const HOP_DISTRIBUTION'));
-    expect(docBlock).toMatch(/capture-486-r3/i);
-    expect(docBlock).toMatch(/jensen/i);
-    expect(docBlock).toMatch(/KNOWN LIMITATION/i);
+  it('shortens the free hop as the map fills and lengthens it for a faster hero', () => {
+    expect(freeHopCells(90)).toBeLessThan(freeHopCells(10));
+    expect(hopSpeedFactor(5)).toBeGreaterThan(hopSpeedFactor(2.5));
+    expect(hopSpeedFactor(3)).toBe(1);
   });
 });
 
-describe('cycleSecondsForHero — averages max() over the distribution, never max() of the mean', () => {
-  it('exceeds max(fuse, meanHop/w) for a walk-bound hero — the Jensen gap this fix exists to close', () => {
-    const fuse = 1.972;
-    const w = 2.0721; // Jon, the fastest hero on the 486 anchor
-    const meanHop = HOP_DISTRIBUTION.reduce((s, p, hop) => s + p * hop, 0);
-    const collapsedFirst = Math.max(fuse, meanHop / w);
-    expect(cycleSecondsForHero(fuse, w)).toBeGreaterThan(collapsedFirst);
-  });
-
+describe('cycleSecondsForHero — seconds per bomb over a whole clear of the band', () => {
   it('is monotonically non-increasing in walk speed', () => {
     const fuse = 1.972;
     let previous = Infinity;
@@ -133,17 +101,23 @@ describe('cycleSecondsForHero — averages max() over the distribution, never ma
     }
   });
 
-  it('floors at the fuse-bound branch: an arbitrarily fast hero still pays fuse + latency, weighted', () => {
+  it('pays for every step of cooldown down to the cap, because short hops stay fuse-bound', () => {
+    let previous = Infinity;
+    for (const fuse of [2, 1.6, 1.2, 0.8, 0.4]) {
+      const cycle = cycleSecondsForHero(fuse, 3.4, 3);
+      expect(cycle).toBeLessThan(previous);
+      previous = cycle;
+    }
+  });
+
+  it('never beats the fuse-bound floor, and runs slower than the steady cycle — the head and the starved tail plant nothing', () => {
     const fuse = 1.972;
-    const infinitelyFast = cycleSecondsForHero(fuse, 1e9);
-    // Weighted with the table's OWN masses rather than `1 - hop1Share`: the shipped
-    // probabilities are rounded to 5dp and sum to 0.99999, not exactly 1, and assuming otherwise
-    // makes this assertion fail on a rounding artifact instead of on a behaviour change.
-    const expected = HOP_DISTRIBUTION.reduce(
-      (sum, p, hop) => sum + p * (hop <= 1 ? HOP1_CYCLE_SEC : fuse + CYCLE_LATENCY_SEC),
-      0,
-    );
-    expect(infinitelyFast).toBeCloseTo(expected, 9);
+    expect(cycleSecondsForHero(fuse, 1e9)).toBeGreaterThan(fuse + FUSE_CYCLE_OVERHEAD_SEC);
+    expect(cycleSecondsForHero(fuse, 3, 3)).toBeGreaterThan(meanPlantCycleSeconds(fuse, 3, freeHopCells(100) * hopSpeedFactor(3)));
+  });
+
+  it('plants faster on a denser band', () => {
+    expect(cycleSecondsForHero(1.8, 3, 5)).toBeLessThan(cycleSecondsForHero(1.8, 3, 1));
   });
 
   it('w <= 0 or non-finite ⇒ Infinity, so a degenerate hero contributes zero rather than dividing by zero', () => {

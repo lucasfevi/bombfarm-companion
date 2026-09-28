@@ -1197,8 +1197,8 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // measured cycle — max(fuse, hop / walk speed) over measured hop lengths — whose code block
   // follows; its third paragraph now says the same cycle prices every figure the planner
   // prints. `bdTermWalk` stops naming a walk DELAY and names the walk SPEED the cycle divides by.
-  // One line: this file sits at the max-lines cap.
-  'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1', 'explainSections.2.p.0', 'explainSections.2.p.2', 'explainSections.2.code',
+  // Plant-cycle refit (2026-09-27): p.0 and the code again, plus a 4th paragraph (p.3); one line, at the cap.
+  'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1', 'explainSections.2.p.0', 'explainSections.2.p.2', 'explainSections.2.code', 'explainSections.2.p.3',
   // Abilities pass (2026-09-13): the "what the app does not model" paragraph stops listing
   // Baton Pass — a team aura in pulses, counted for the hero's own pulse here and for every
   // carrier on the Farm page and the Optimizer — and describes Pack (Matilha, per deployed ally)

@@ -1,6 +1,6 @@
 # ADR-016: One bombing-cadence model behind every DPS figure
 
-**Status:** accepted  
+**Status:** superseded by [ADR-018](018-one-plant-cycle.md) — the one-model decision stands; the histogram cycle it shipped does not  
 **Date:** 2026-09-11
 
 ## Context
