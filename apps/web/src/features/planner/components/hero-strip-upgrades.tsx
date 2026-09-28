@@ -6,6 +6,7 @@ import {
   nextLevelStep,
   nextStarsStep,
 } from '@bombfarm/domain/gear';
+import { HERO_MAX_LEVEL } from '@bombfarm/domain/model';
 import { useAppLang } from '@/shared/context/app-lang';
 import { Button, Num, Select, cn } from '@bombfarm/ui';
 import { usePlannerStore, selectHeroLevel, selectHeroStars } from '@/shared/stores';
@@ -35,6 +36,8 @@ export function HeroStripUpgrades() {
           value={level}
           onChange={onLevelChange}
           step={1}
+          min={0}
+          max={HERO_MAX_LEVEL}
           incrementLabel={t.levelStepUp}
           decrementLabel={t.levelStepDown}
         />

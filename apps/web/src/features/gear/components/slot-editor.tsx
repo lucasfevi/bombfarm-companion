@@ -49,7 +49,6 @@ export const SlotEditor = memo(function SlotEditor({
           variant="icon"
           className="absolute -top-1 -right-1 z-10 hover:bg-transparent"
           aria-label={t.clear}
-          title={t.clear}
           onClick={() => onPatch(slot, null)}
         >
           <HiMiniXMark size={14} aria-hidden="true" />
@@ -61,7 +60,6 @@ export const SlotEditor = memo(function SlotEditor({
       <Select
         size="compact"
         aria-label={t.itemLevel}
-        title={t.itemLevel}
         value={level}
         onChange={(event) => {
           const next = Number(event.target.value);
@@ -81,7 +79,6 @@ export const SlotEditor = memo(function SlotEditor({
       <Select
         size="compact"
         aria-label={t.itemRarity}
-        title={t.itemRarity}
         value={equipped?.rarityIdx ?? 0}
         onChange={(event) =>
           onPatch(slot, {
@@ -101,7 +98,6 @@ export const SlotEditor = memo(function SlotEditor({
       <Select
         size="compact"
         aria-label={t.forgeLevel}
-        title={t.forgeLevel}
         value={upgrade}
         onChange={(event) =>
           onPatch(slot, {

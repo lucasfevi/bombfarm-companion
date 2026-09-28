@@ -12,7 +12,7 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
  * Native HTML/ARIA attribute names (and `aria-*`/`data-*` props) that a component simply
  * forwards to an underlying element or Base UI primitive are excluded — the rule's intent
  * is catching prop-drilled god-components, not penalizing thin DOM pass-through
- * primitives. `switch.tsx`'s `SwitchProps` is 14 props, all but two (`onCheckedChange`,
+ * primitives. `switch.tsx`'s `SwitchProps` is 13 props, all but two (`onCheckedChange`,
  * `size`) standard HTML/ARIA attributes forwarded to Base UI; `select.tsx`'s
  * `SelectProps` is `Omit<ComponentPropsWithoutRef<'select'>, …> & {…}` — it inherits the
  * whole native `<select>` surface and adds only a couple of its own. Under this counting

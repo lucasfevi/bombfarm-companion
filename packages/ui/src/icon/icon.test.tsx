@@ -1,10 +1,10 @@
-import { createElement } from 'react';
+import { createElement, type ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { Icon } from './icon';
 import { isIconName, type IconName } from './registry';
 
-function renderIcon(props: Record<string, unknown>) {
+function renderIcon(props: ComponentProps<typeof Icon>) {
   return renderToStaticMarkup(createElement(Icon, props));
 }
 
