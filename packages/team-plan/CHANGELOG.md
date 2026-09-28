@@ -1,5 +1,24 @@
 # @bombfarm/team-plan
 
+## 0.5.0
+
+### Minor Changes
+
+- cf8f8a1: The Heroes tab now opens the way you left it. Your layout (list, cards or leaderboard), sort order, "Enabled heroes" switch, ability filters, the leaderboard's hidden columns and squad/bench filter, and the cards' "Show levels" switch all stay the same when you leave the tab, reload, or restart the app. If a remembered ability filter names an ability none of your heroes has any more, it is ignored, so the roster never comes back empty.
+
+  The Optimizer's per-hero results can now be sorted by name, DPS gain, DPS gain %, DPS after, DPS before or level, in either direction. The order you pick is remembered and applies to every later plan.
+
+### Patch Changes
+
+- Updated dependencies [1a11f0b]
+- Updated dependencies [cf8f8a1]
+- Updated dependencies [2318b9d]
+  - @bombfarm/domain@1.7.0
+  - @bombfarm/hero@0.5.0
+  - @bombfarm/ui@0.16.1
+  - @bombfarm/farm@1.2.8
+  - @bombfarm/game-art@0.7.3
+
 ## 0.4.1
 
 ### Patch Changes
