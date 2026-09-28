@@ -1,13 +1,25 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { CAPTURE_REGISTRY, isInRegimeFor, MECHANICS } from '../packages/domain/tests/helpers/capture-regime.ts';
 import { HELD_SUITES } from './held-suites.manifest.mjs';
+import {
+  deriveVitestRoots,
+  isUnder,
+  REPO_ROOT as root,
+  trackedFilesUnderRunnerRoots,
+  TS_SOURCE_FILE,
+} from './runner-scan-roots.mjs';
 
-const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
+/**
+ * The same roots the static directive census derives, from the same module: a hold placed in a
+ * package one guard reaches and the other does not is a suite that reports green while running
+ * nothing, and two hand-kept lists are how that gap opened.
+ */
+const SCAN_ROOTS = deriveVitestRoots();
 
-const SCAN_ROOTS = ['packages/domain/tests', 'apps/web/src/tests'];
+/** Kept only as a floor — the derivation may widen these roots, never drop one. */
+const LEGACY_SCAN_ROOTS = ['packages/domain/tests', 'apps/web/src/tests'];
 
 const HOLD_HELPERS = ['holdSuiteUntilInRegime', 'holdTeamPlanSuiteUntilInRegime', 'skipUnlessInRegime'];
 const THROWING_HELPER = 'assertInRegime';
@@ -26,18 +38,7 @@ const CAPTURE_ARGS_PATTERN = /^(?:\w+,\s*)?`([\w./-]*)\$\{(\w+)\}`,\s*'(\w+)'\s*
 const WRAPPER_BODY_PATTERN =
   /function holdTeamPlanSuiteUntilInRegime\(\)[^{]*\{\s*for \(const (\w+) of \[([^\]]+)\]\) \{\s*holdSuiteUntilInRegime\(`([\w./-]*)\$\{\1\}`, '(\w+)'\)/;
 
-function toRepoPath(absolute) {
-  return relative(root, absolute).split('\\').join('/');
-}
-
-function listTestSources(dir, acc = []) {
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) listTestSources(full, acc);
-    else if (/\.tsx?$/.test(entry)) acc.push(full);
-  }
-  return acc;
-}
+const SCANNED_SOURCES = trackedFilesUnderRunnerRoots(TS_SOURCE_FILE, SCAN_ROOTS);
 
 function importedNames(clause) {
   return clause
@@ -87,41 +88,39 @@ function scanHoldCallSites() {
   const throwingCallSites = [];
   const unresolvable = [];
   const wrapperExpansion = expandTeamPlanWrapper();
-  for (const scanRoot of SCAN_ROOTS) {
-    for (const absolute of listTestSources(join(root, scanRoot))) {
-      const suite = toRepoPath(absolute);
-      if (NOT_CONSUMERS.includes(suite)) continue;
-      const source = blankComments(readFileSync(absolute, 'utf8'));
-      for (const match of source.matchAll(CALL_PATTERN)) {
-        const helper = match[1];
-        const line = source.slice(0, match.index).split('\n').length;
-        const where = `${suite}:${line}`;
-        if (helper === THROWING_HELPER) {
-          throwingCallSites.push(where);
-          continue;
-        }
-        const rest = source.slice(match.index + match[0].length);
-        if (helper === 'holdTeamPlanSuiteUntilInRegime') {
-          if (!rest.startsWith(')')) {
-            unresolvable.push(`${where}: ${helper}( takes no arguments`);
-            continue;
-          }
-          for (const { capture, mechanic } of wrapperExpansion) holds.push({ suite, helper, capture, mechanic, where });
-          continue;
-        }
-        const args = CAPTURE_ARGS_PATTERN.exec(rest);
-        if (!args) {
-          unresolvable.push(`${where}: ${helper}( arguments are not \`<dir>/\${CONST}\`, '<mechanic>'`);
-          continue;
-        }
-        const [, dir, constant, mechanic] = args;
-        const file = resolveStringConstant(absolute, constant);
-        if (file === null) {
-          unresolvable.push(`${where}: ${constant} is neither a string const in this file nor imported from a helper that defines one`);
-          continue;
-        }
-        holds.push({ suite, helper, capture: `${dir}${file}`, mechanic, where });
+  for (const suite of SCANNED_SOURCES) {
+    if (NOT_CONSUMERS.includes(suite)) continue;
+    const absolute = join(root, suite);
+    const source = blankComments(readFileSync(absolute, 'utf8'));
+    for (const match of source.matchAll(CALL_PATTERN)) {
+      const helper = match[1];
+      const line = source.slice(0, match.index).split('\n').length;
+      const where = `${suite}:${line}`;
+      if (helper === THROWING_HELPER) {
+        throwingCallSites.push(where);
+        continue;
       }
+      const rest = source.slice(match.index + match[0].length);
+      if (helper === 'holdTeamPlanSuiteUntilInRegime') {
+        if (!rest.startsWith(')')) {
+          unresolvable.push(`${where}: ${helper}( takes no arguments`);
+          continue;
+        }
+        for (const { capture, mechanic } of wrapperExpansion) holds.push({ suite, helper, capture, mechanic, where });
+        continue;
+      }
+      const args = CAPTURE_ARGS_PATTERN.exec(rest);
+      if (!args) {
+        unresolvable.push(`${where}: ${helper}( arguments are not \`<dir>/\${CONST}\`, '<mechanic>'`);
+        continue;
+      }
+      const [, dir, constant, mechanic] = args;
+      const file = resolveStringConstant(absolute, constant);
+      if (file === null) {
+        unresolvable.push(`${where}: ${constant} is neither a string const in this file nor imported from a helper that defines one`);
+        continue;
+      }
+      holds.push({ suite, helper, capture: `${dir}${file}`, mechanic, where });
     }
   }
   return { holds, throwingCallSites, unresolvable };
@@ -144,6 +143,18 @@ describe('held-suite manifest — every runtime regime hold is a recorded decisi
 
   it('every hold call site resolves to a capture and a mechanic', () => {
     expect(unresolvable, 'call sites this guard could not resolve').toEqual([]);
+  });
+
+  it('the hold scan covers every runner root the directive census scans', () => {
+    expect(SCAN_ROOTS.length, `runner roots scanned for holds: ${SCAN_ROOTS.join(', ')}`).toBeGreaterThanOrEqual(15);
+
+    const uncovered = LEGACY_SCAN_ROOTS.filter((legacy) => !SCAN_ROOTS.some((scanRoot) => isUnder(legacy, scanRoot)));
+    expect(
+      uncovered,
+      `a root this guard used to scan is no longer covered by any runner root: ${uncovered.join(', ')}`,
+    ).toEqual([]);
+
+    expect(SCANNED_SOURCES.length, 'tracked .ts/.tsx sources under the runner roots').toBeGreaterThanOrEqual(1000);
   });
 
   it('non-vacuity: the scan finds the known helpers on a committed floor of files', () => {

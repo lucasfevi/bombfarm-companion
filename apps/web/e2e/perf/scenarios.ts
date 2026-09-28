@@ -40,7 +40,7 @@ export async function ensurePlannerTab(page: Page, tab: PlannerTabId): Promise<v
 }
 
 /**
- * P-01 default (Q-1 locked): unreachable — setHeroName has no UI call site;
+ * P-01 is permanently skipped: unreachable — setHeroName has no UI call site;
  * no hero-name text input under src/components (import-only roster).
  */
 export const scenarios: Scenario[] = [

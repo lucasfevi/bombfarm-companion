@@ -9,15 +9,21 @@
  * exactly that set — same members, either direction. Deliberately dumb text slicing over
  * `playwright.config.ts` (the `tools/design-system-gate.test.mjs` / `ci-desktop-paths.test.mjs`
  * convention), not a TypeScript parse.
+ *
+ * The second block below covers the same family from the other end: a committed `.only`
+ * narrows a suite to one test and still reports green, so every Playwright config in the repo
+ * must set `forbidOnly` on CI.
  */
+import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const PLAYWRIGHT_CONFIG_PATH = join(root, 'apps/desktop/playwright.config.ts');
 const SMOKE_DIR = join(root, 'apps/desktop/tests/smoke');
+const FORBID_ONLY = /forbidOnly:\s*!!process\.env\.CI\s*,/;
 
 function readTestMatch(configText) {
   const match = configText.match(/testMatch:\s*\[([^\]]*)\]/);
@@ -31,6 +37,27 @@ function readTestMatch(configText) {
 
 function readSmokeDirSpecFiles() {
   return readdirSync(SMOKE_DIR).filter((name) => name.endsWith('.spec.mjs'));
+}
+
+function readPlaywrightConfigPaths() {
+  let output;
+  try {
+    output = execFileSync('git', ['-c', 'core.quotePath=false', 'ls-files'], {
+      cwd: root,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      windowsHide: true,
+    });
+  } catch (error) {
+    throw new Error(
+      `could not list tracked files to discover Playwright configs: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  return output
+    .split('\n')
+    .map((line) => line.replace(/\r$/, '').trim())
+    .filter((line) => basename(line) === 'playwright.config.ts')
+    .sort();
 }
 
 describe('playwright.config.ts testMatch equals the tests/smoke/*.spec.mjs directory listing', () => {
@@ -67,5 +94,37 @@ describe('playwright.config.ts testMatch equals the tests/smoke/*.spec.mjs direc
       if (existsSync(probePath)) rmSync(probePath);
     }
     expect(existsSync(probePath)).toBe(false);
+  });
+});
+
+describe('every Playwright config sets forbidOnly on CI', () => {
+  it('discovers at least the web and desktop configs from the tracked file list', () => {
+    const configs = readPlaywrightConfigPaths();
+
+    expect(
+      configs.length,
+      `discovery of tracked playwright.config.ts files found {${configs.join(', ')}} — fewer than the ` +
+        `two apps that have one. A guard that globs and finds nothing passes while guarding nothing.`,
+    ).toBeGreaterThanOrEqual(2);
+  });
+
+  it('a committed .only would otherwise reduce a suite to one test and still report green', () => {
+    const configs = readPlaywrightConfigPaths();
+    const withForbidOnly = configs.filter((path) => FORBID_ONLY.test(readFileSync(join(root, path), 'utf8')));
+    const missing = configs.filter((path) => !withForbidOnly.includes(path));
+
+    expect(
+      missing,
+      `these Playwright configs do not set \`forbidOnly: !!process.env.CI\`: ${missing.join(', ')}. ` +
+        `A committed \`.only\` in one of their specs silently narrows the suite to that one test and ` +
+        `still reports green. Configs checked: {${configs.join(', ')}}.`,
+    ).toEqual([]);
+  });
+
+  it('red state demonstrated: a config text without the option is reported as an offender', () => {
+    const withoutOption = 'export default defineConfig({\n  workers: 1,\n  retries: 0,\n});\n';
+
+    expect(FORBID_ONLY.test(withoutOption)).toBe(false);
+    expect(FORBID_ONLY.test(withoutOption.replace('  workers: 1,\n', '  forbidOnly: !!process.env.CI,\n'))).toBe(true);
   });
 });

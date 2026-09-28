@@ -122,8 +122,8 @@ export class GameReaderService {
     const mode = config.mode ?? resolveDefaultMode(this.isPackaged);
     this.config = { ...DEFAULT_CONFIG, ...config, mode };
 
-    // Never restore `status` from disk (design R-2): a cold boot with the game
-    // closed always reports `not_running`, never a previous session's `connected`.
+    // Never restore `status` from disk: a cold boot with the game closed always
+    // reports `not_running`, never a previous session's `connected`.
     const now = new Date().toISOString();
     this.status = {
       status: this.config.mode === 'fixture' ? 'connected' : 'not_running',

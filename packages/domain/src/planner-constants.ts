@@ -100,8 +100,8 @@ export const ZERO_PTS_TEMPLATE: Record<keyof SheetStats, number> = {
 export const RANK_ORDER = ['S', 'A', 'B', 'C', 'D', 'E', 'F'] as const;
 
 /**
- * Apply a partial point step to a single stat (full form — the user's Q-1 decision
- * widens the old floor-only rule: ±1 shares the **same** clamp as ±5, not just its floor). Two rules,
+ * Apply a partial point step to a single stat (full form — widening the old floor-only rule:
+ * ±1 shares the **same** clamp as ±5, not just its floor). Two rules,
  * expressed once so every stepper shares them (`clampPointStep` takes `delta`, not a sign):
  *
  * - **Floor** — `pts[key]` never goes below 0, for any `delta` (positive or negative). A
