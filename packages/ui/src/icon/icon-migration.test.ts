@@ -56,7 +56,7 @@ describe('icon migration parity — confirm-dialog close mark (row 4)', () => {
   });
 
   it('keeps Dialog.Close label and drops vendor icon imports', () => {
-    expect(src).toContain('<Dialog.Close aria-label={cancelLabel}>');
+    expect(src).toContain('<Dialog.Close aria-label={closeLabel}>');
     expectNoVendorIconImports(src);
   });
 });
