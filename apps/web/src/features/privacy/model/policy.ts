@@ -3,7 +3,7 @@ import type { Lang } from '@/shared/i18n';
 export const PRIVACY_CONTACT_EMAIL = 'black.gamingacc@gmail.com';
 
 /** Moves whenever the policy's substance does — the page promises to date every change. */
-export const PRIVACY_UPDATED_ON = '2026-09-23';
+export const PRIVACY_UPDATED_ON = '2026-09-29';
 
 export function formatPolicyDate(isoDay: string, lang: Lang): string {
   return new Intl.DateTimeFormat(lang === 'pt' ? 'pt-BR' : 'en-US', { dateStyle: 'long', timeZone: 'UTC' }).format(
