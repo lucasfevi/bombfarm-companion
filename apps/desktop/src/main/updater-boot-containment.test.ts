@@ -14,6 +14,7 @@ import { describe, expect, it } from 'vitest';
 
 /** `__dirname`, not `import.meta.url`: `tsconfig.main.json` builds this tree to CommonJS. */
 const INDEX_PATH = resolve(__dirname, 'index.ts');
+const HANDLERS_PATH = resolve(__dirname, 'ipc-handlers.ts');
 
 function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -75,7 +76,7 @@ describe('a failing updater cannot take down boot', () => {
  * shown "updates are off in this build" with no control to disprove it.
  */
 describe('the answer given before the service exists', () => {
-  const source = stripComments(readFileSync(INDEX_PATH, 'utf8'));
+  const source = stripComments(readFileSync(HANDLERS_PATH, 'utf8'));
 
   it('derives from the flavor, so it cannot claim a build that updates does not', () => {
     expect(source).toContain('function preServiceUpdateStatus()');
@@ -94,5 +95,6 @@ describe('the answer given before the service exists', () => {
 
   it('never answers disabled outright — that is a claim about the build, not about readiness', () => {
     expect(source).not.toContain('disabledUpdateStatus');
+    expect(stripComments(readFileSync(INDEX_PATH, 'utf8'))).not.toContain('disabledUpdateStatus');
   });
 });

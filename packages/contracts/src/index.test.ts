@@ -4,7 +4,9 @@ import {
   FLAVORS,
   IPC_CHANNELS,
   IPC_EVENT_CHANNELS,
+  IPC_EVENT_PREFIX,
   createPingResponse,
+  ipcEventName,
   isIpcChannel,
   isIpcEventChannel,
   type AccountView,
@@ -133,6 +135,22 @@ describe('contracts IPC surface', () => {
 
   it('IPC_EVENT_CHANNELS has no duplicate entries', () => {
     expect(new Set(IPC_EVENT_CHANNELS).size).toBe(IPC_EVENT_CHANNELS.length);
+  });
+
+  it('pins the renderer event-channel prefix both hosts put on the wire', () => {
+    expect(IPC_EVENT_PREFIX).toBe('bfc:event:');
+  });
+
+  it('composes every event channel into its prefixed wire name', () => {
+    expect(IPC_EVENT_CHANNELS.map((channel) => ipcEventName(channel))).toEqual(
+      IPC_EVENT_CHANNEL_LIST.map((channel) => `bfc:event:${channel}`),
+    );
+  });
+
+  it('composes a wire name that no other event channel answers to', () => {
+    const names = IPC_EVENT_CHANNELS.map((channel) => ipcEventName(channel));
+    expect(new Set(names).size).toBe(IPC_EVENT_CHANNELS.length);
+    expect(names).not.toContain('bfc:event:');
   });
 
   it('maps flavor descriptor fields to AppEnvironmentInfo for dev', () => {

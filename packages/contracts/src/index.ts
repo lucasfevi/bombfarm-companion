@@ -687,6 +687,15 @@ export const IPC_EVENT_CHANNELS = [
   'window:changed',
 ] as const satisfies readonly IpcEventChannel[];
 
+export const IPC_EVENT_PREFIX = 'bfc:event:';
+
+export type IpcEventName<C extends IpcEventChannel = IpcEventChannel> =
+  `${typeof IPC_EVENT_PREFIX}${C}`;
+
+export function ipcEventName<C extends IpcEventChannel>(channel: C): IpcEventName<C> {
+  return `${IPC_EVENT_PREFIX}${channel}`;
+}
+
 export function isIpcChannel(value: string): value is IpcInvokeChannel {
   return (IPC_CHANNELS as readonly string[]).includes(value);
 }

@@ -7,7 +7,7 @@ import type {
   LiveFrame,
   LiveTick,
 } from '@bombfarm/contracts';
-import { isLiveCurrency } from '@bombfarm/contracts';
+import { ipcEventName, isLiveCurrency } from '@bombfarm/contracts';
 import { tickToRawGameState } from '../live-source/tick-to-raw-state.js';
 import { log } from '../logging.js';
 import { buildFixtureAccountPayload } from './fixture-account.js';
@@ -443,7 +443,7 @@ export class GameReaderService {
 
   private emit(payload: GameStatusInfo): void {
     const window = this.windowProvider?.();
-    window?.webContents.send('bfc:event:game:status', payload);
+    window?.webContents.send(ipcEventName('game:status'), payload);
     log.debug({ scope: 'game-reader', event: 'game:status' });
   }
 }

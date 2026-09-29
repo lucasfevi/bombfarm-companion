@@ -3,43 +3,15 @@ import fs from 'node:fs';
 import { app, BrowserWindow, clipboard, ipcMain, Menu, nativeImage, screen, shell, type WebContents } from 'electron';
 import {
   DEFAULT_SETTINGS,
-  EMPTY_FORGE_HISTORY,
-  EMPTY_PVP_HISTORY,
-  emptyMarketSnapshotView,
-  initialUpdateStatus,
-  isIpcChannel,
-  isMarketQuoteTarget,
-  liveGap,
   resolveStartupLocale,
   type AccountReadResult,
   type AccountSource,
   type AccountView,
-  type ApplyStartRequest,
-  type ApplyStartResult,
   type AppLocale,
   type AppSettings,
-  type ConsentRecord,
-  type ForgeHistoryResult,
-  type ForgeStartRequest,
-  type ForgeStartResult,
-  type IpcEventChannel,
-  type IpcEvents,
-  type IpcInvokeArgs,
-  type IpcInvokeChannel,
-  type IpcInvokeResult,
-  type LiveDiagnosticsDumpOutcome,
-  type LiveView,
-  type MarketQuoteCurrency,
-  type MarketCheckResult,
-  type MarketQuoteResult,
-  type MarketQuoteTarget,
-  type PvpFilmView,
-  type PvpHistoryResult,
   type SettingsWriteResult,
-  type UpdateStatus,
-  type WindowStateView,
 } from '@bombfarm/contracts';
-import { createPacingGate, initialConsent, isGranted, summarizePvpFilm, trayTextFor } from '@bombfarm/game-api';
+import { createPacingGate, initialConsent, isGranted, trayTextFor } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView, resolveCachedAccountView } from './account-view.js';
 import { createApplyInjector, type ApplyInjector } from './apply/apply-inject.js';
 import { createApplyService, type ApplyService } from './apply/apply-service.js';
@@ -51,6 +23,10 @@ import { createForgeService, type ForgeService } from './forge/forge-service.js'
 import { createPvpHistory, type PvpHistory } from './pvp/pvp-history.js';
 import { createPvpReader, type PvpReader } from './pvp/pvp-reader.js';
 import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
+import { createIpcDispatch, createIpcHandlers, defaultLiveView } from './ipc-handlers.js';
+import { createEventEmitter } from './event-emitter.js';
+import { createRedactingTokenReader } from './redacting-token-reader.js';
+import { shutdownInOrder } from './shutdown.js';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { fuseSecondsForCdr } from './domain-edge.js';
@@ -68,12 +44,7 @@ import { createConsentApplier } from './game-api/consent-applier.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
 import { createLiveConsentGate } from './game-api/live-consent-gate.js';
 import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
-import {
-  createWindowLayoutStore,
-  DEFAULT_MINI_LAYOUT_VIEW,
-  parseMiniLiveLayoutPatch,
-  type WindowLayoutStore,
-} from './game-api/window-layout-store.js';
+import { createWindowLayoutStore, type WindowLayoutStore } from './game-api/window-layout-store.js';
 import { companionUserAgent, createNodeHttpsTransport } from './game-api/https-transport.js';
 import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
 import { createTriggeredRefresh, type TriggeredRefresh } from './game-api/triggered-refresh.js';
@@ -136,8 +107,6 @@ import {
   type ShellLifecycle,
   type WindowPort,
 } from './shell/window-lifecycle.js';
-import { broadcastEventToWindows } from './shell/broadcast-event.js';
-import { writeClipboardImage } from './shell/clipboard-image.js';
 import { isWindowRevealSuppressed } from './shell/window-reveal.js';
 import {
   createMiniLiveController,
@@ -189,9 +158,7 @@ let miniLayoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
 let gameKeepAlive: GameKeepAlive | null = null;
 let usagePing: UsagePing | null = null;
 
-function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C]): void {
-  broadcastEventToWindows(BrowserWindow.getAllWindows(), `bfc:event:${channel}`, payload);
-}
+const emitEvent = createEventEmitter({ getWindows: () => BrowserWindow.getAllWindows() });
 
 /** Reads, transitions, persists, and announces one consent event — the single path every
  *  consent:* handler below goes through. Every dep below reads the module-level
@@ -304,55 +271,17 @@ function applyMarketQuoteCurrency(next: unknown): SettingsWriteResult {
   return applyMarketQuoteCurrencySettings({ current: currentSettings, next, persist: persistSettings });
 }
 
-function defaultLiveView(): LiveView {
-  const now = new Date().toISOString();
-  return {
-    currency: liveGap('neverAttached', now),
-    field: [],
-    recovery: [],
-    energies: [],
-    rotation: null,
-    onFieldHeroIds: [],
-    earnings: null,
-    map: null,
-    updatedAt: now,
-  };
-}
-
-type IpcHandlers = {
-  [C in IpcInvokeChannel]: (...args: IpcInvokeArgs<C>) => IpcInvokeResult<C> | Promise<IpcInvokeResult<C>>;
-};
-
-function startForgeRun(request: ForgeStartRequest): ForgeStartResult {
-  return forgeService?.start(request) ?? { ok: false, reason: 'unavailable' };
-}
-
-function startApplyRun(request: ApplyStartRequest): ApplyStartResult {
-  return applyService?.start(request) ?? { ok: false, reason: 'unavailable' };
-}
-
-function stopApplyRun(runId: string): boolean {
-  return applyService?.stop(runId) ?? false;
-}
-
-function injectApplyScript(payload: unknown): { ok: boolean } {
-  return applyInjector?.arm(payload) ?? { ok: false };
-}
-
 // Threads Electron's real `app.isPackaged` (via `resolveAppEnv()`) so `sessionCfgPath`'s
-// `BFC_TOKEN_PATH_OVERRIDE` escape hatch can ever apply — and, symmetrically, cannot apply in
-// a packaged build no matter what is set in its environment. See `session-token-file.ts`'s
-// `SessionCfgPathDeps` doc comment. Shared by the account cycle, the forge run and the
-// on-demand read, so all three read the same file and all three redact the same token.
-const readToken: NonNullable<AccountRefreshDeps['readToken']> = (consent) => {
-  const result = readSessionToken(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged }));
-  if (result.ok) {
-    const redact = (text: string): string => result.token.redactFrom(text);
-    log.setCredentialRedactor(redact);
-    liveSource?.setCredentialRedactor(redact);
-  }
-  return result;
-};
+// `BFC_TOKEN_PATH_OVERRIDE` escape hatch can ever apply unpackaged — and, symmetrically, cannot
+// apply in a packaged build no matter what is set in its environment. Shared by the account cycle,
+// the forge run and the on-demand read, so all three read the same file and all three redact the
+// same token.
+const readToken: NonNullable<AccountRefreshDeps['readToken']> = createRedactingTokenReader({
+  readToken: (consent) =>
+    readSessionToken(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged })),
+  logSink: log,
+  getLiveSource: () => liveSource,
+});
 
 function currentAccountSource(): AccountSource {
   return gameReader?.getMode() === 'fixture' ? 'fixture' : 'server';
@@ -377,213 +306,58 @@ function requestAccountReadNow(): AccountReadResult {
   });
 }
 
-function listForgeHistory(): ForgeHistoryResult {
-  return forgeHistory?.list({ limit: 50 }) ?? EMPTY_FORGE_HISTORY;
-}
-
-function listPvpHistory(): PvpHistoryResult {
-  return pvpHistory?.list() ?? EMPTY_PVP_HISTORY;
-}
-
-function readPvpFilm(filmId: number): PvpFilmView | null {
-  const body = pvpHistory?.readFilm(filmId) ?? null;
-  if (body === null) return null;
-  try {
-    const view = summarizePvpFilm(JSON.parse(body));
-    if (view === null) log.warn({ scope: 'pvp', event: 'film.unreadable', filmId });
-    return view;
-  } catch (err) {
-    log.warn({ scope: 'pvp', event: 'film.unreadable', filmId, error: String(err) });
-    return null;
-  }
-}
-
-/** A manual check is the clock's own conditional request, taken early. The floor keeps a held
- *  button from becoming a stream of them: below the five-minute `max-age` the published file is
- *  served with, a second check could not see anything newer anyway. */
-const MARKET_CHECK_FLOOR_MS = 30_000;
-let lastMarketCheckAt = 0;
-
-async function checkMarketNow(): Promise<MarketCheckResult> {
-  if (marketService === null) return { ok: false, reason: 'unavailable' };
-  const now = Date.now();
-  if (now - lastMarketCheckAt < MARKET_CHECK_FLOOR_MS) return { ok: false, reason: 'rate_limited' };
-  lastMarketCheckAt = now;
-  const view = await marketService.refreshSnapshot();
-  // A check that found nothing new adopts nothing and so announces nothing on its own; the press
-  // still moved the checked-at clock, and every window showing it should see that.
-  emitEvent('market:changed', view);
-  return { ok: true, view };
-}
-
-function refreshMarketItem(target: MarketQuoteTarget): Promise<MarketQuoteResult> {
-  if (!isMarketQuoteTarget(target) || marketService === null) {
-    return Promise.resolve({
-      ok: false,
-      key: null,
-      hashName: null,
-      reason: 'unknown-item',
-      keptAmount: null,
-      at: new Date().toISOString(),
-    });
-  }
-  return marketService.refreshItem(target);
-}
-
-/**
- * `bootstrap()` builds the update service after the window opens, so the renderer's one
- * `updates:get` on mount regularly lands before it exists. What that gap answers has to be what
- * the built service will answer, because the Updates section greys out its own check button on
- * `disabled` and nothing re-reads until the first scheduled check half a minute later — a
- * `disabled` here told installed players their build never updates, for thirty seconds, with no
- * control to correct it.
- */
-function preServiceUpdateStatus(): UpdateStatus {
-  return initialUpdateStatus({
-    currentVersion: app.getVersion(),
-    channel: resolveAppEnv().descriptor.updateChannel,
-    isPackaged: app.isPackaged,
-  });
-}
-
 function registerIpcHandlers(): void {
-  const handlers: IpcHandlers = {
-    'app:getFlavor': () => resolveAppEnv().flavor,
-    'app:getEnvironment': () => {
-      const env = resolveAppEnv();
-      return {
-        flavor: env.flavor,
-        productName: env.productName,
-        badgeLabel: env.descriptor.badgeLabel,
-        updateChannel: env.descriptor.updateChannel,
-        isPackaged: env.isPackaged,
-        version: app.getVersion(),
-        accountSource: currentAccountSource(),
-      };
-    },
-    'app:ping': () => ({ ok: true as const, from: 'main' as const }),
-    // The resolved settings (stored override, else OS detection, else
-    // DEFAULT_SETTINGS.locale), not the constant this used to return.
-    'settings:get': (): AppSettings => currentSettings,
-    'settings:useEnglish': (): SettingsWriteResult => applyLocale('en'),
-    'settings:usePortuguese': (): SettingsWriteResult => applyLocale('pt-BR'),
-    'settings:setAlwaysOnTopMain': (enabled: boolean): SettingsWriteResult => applyAlwaysOnTopMain(enabled),
-    'settings:setAlwaysOnTopMini': (enabled: boolean): SettingsWriteResult => applyAlwaysOnTopMini(enabled),
-    'settings:setForgeWritesEnabled': (enabled: boolean): SettingsWriteResult => applyForgeWritesEnabled(enabled),
-    'settings:setRestartGameOnExit': (enabled: boolean): SettingsWriteResult => applyRestartGameOnExit(enabled),
-    'settings:setMarketQuoteCurrency': (currency: MarketQuoteCurrency): SettingsWriteResult =>
-      applyMarketQuoteCurrency(currency),
-    'settings:setUsagePingEnabled': (enabled: boolean): SettingsWriteResult => applyUsagePingEnabled(enabled),
-    'storage:health': () => storage?.healthCheck() ?? { binding: 'unknown', ok: false },
-    'game:getStatus': () => gameReader?.getStatus() ?? {
-      status: 'not_running' as const,
-      updatedAt: new Date().toISOString(),
-    },
-    // The handler's pre-F3 body now lives, verbatim, in account-view.ts's
-    // resolveAccountView(); this is a one-line call to it. See that file for the T-fix-6
-    // precedence comment this used to carry inline.
-    'account:get': (): AccountView => resolveAccountView({ gameReader, consentStore, accountRefresh, accountStore }),
-    'account:readNow': (): AccountReadResult => requestAccountReadNow(),
-    'consent:get': (): ConsentRecord => consentStore?.read() ?? initialConsent(),
-    'consent:accept': (): Promise<ConsentRecord> =>
-      applyConsentEvent({ type: 'accept', now: new Date().toISOString(), locale: currentSettings.locale }),
-    'consent:decline': (): Promise<ConsentRecord> =>
-      applyConsentEvent({ type: 'decline', locale: currentSettings.locale }),
-    'consent:revoke': (): Promise<ConsentRecord> => applyConsentEvent({ type: 'revoke' }),
-    'live:get': (): LiveView => liveSource?.getView() ?? defaultLiveView(),
-    'live:dumpDiagnostics': (): LiveDiagnosticsDumpOutcome =>
-      liveSource?.dumpDiagnostics() ?? { written: false, reason: 'no-source' },
-    'live:resetEarnings': (): null => {
-      liveSource?.resetEarnings();
-      return null;
-    },
-    'updates:get': (): UpdateStatus => updateService?.getStatus() ?? preServiceUpdateStatus(),
-    'updates:check': (): Promise<UpdateStatus> | UpdateStatus =>
-      updateService?.check() ?? preServiceUpdateStatus(),
-    'updates:download': (): Promise<UpdateStatus> | UpdateStatus =>
-      updateService?.download() ?? preServiceUpdateStatus(),
-    'updates:installOnRestart': (): UpdateStatus =>
-      updateService?.installOnRestart() ?? preServiceUpdateStatus(),
-    'market:getSnapshot': () => marketService?.getView() ?? emptyMarketSnapshotView(),
-    'market:refreshItem': refreshMarketItem,
-    'market:check': checkMarketNow,
-    'forge:start': startForgeRun,
-    'forge:cancel': (runId: string) => forgeService?.cancel(runId) ?? false,
-    'forge:history': listForgeHistory,
-    'forge:clearHistory': () => {
-      forgeHistory?.clear();
-      return listForgeHistory();
-    },
-    'forge:inject': (events: unknown) => forgeInjector?.inject(events) ?? { ok: false },
-    'apply:start': startApplyRun,
-    'apply:stop': stopApplyRun,
-    'apply:inject': injectApplyScript,
-    'pvp:history': listPvpHistory,
-    'pvp:refresh': (): AccountReadResult => pvpReader?.refresh() ?? { ok: false, reason: 'unavailable' },
-    'pvp:film': readPvpFilm,
-    'window:minimize': () => {
-      mainWindow?.minimize();
-      return null;
-    },
-    'window:toggleMaximize': (): WindowStateView => {
-      if (!mainWindow || mainWindow.isDestroyed()) {
-        return { maximized: false };
-      }
-      if (mainWindow.isMaximized()) {
-        mainWindow.unmaximize();
-      } else {
-        mainWindow.maximize();
-      }
-      return { maximized: mainWindow.isMaximized() };
-    },
-    // `close()`, never `destroy()` or `app.quit()`: what a close means is the shell lifecycle's
-    // decision, and on Windows with a tray present it hides the window instead of ending the
-    // process. A caption button that quit outright would be a second, contradictory answer.
-    'window:close': () => {
-      mainWindow?.close();
-      return null;
-    },
-    'window:getState': (): WindowStateView => ({
-      maximized: mainWindow?.isMaximized() ?? false,
-    }),
-    'miniLive:open': () => {
-      if (isMiniAvailable()) {
-        miniLiveController?.open();
-      }
-      return null;
-    },
-    'miniLive:close': () => {
-      miniLiveController?.close();
-      return null;
-    },
-    'miniLive:getLayout': () => windowLayoutStore?.getLayout() ?? DEFAULT_MINI_LAYOUT_VIEW,
-    'miniLive:setLayout': (patch) => {
-      const validPatch = parseMiniLiveLayoutPatch(patch);
-      if (!validPatch || !windowLayoutStore) {
-        return windowLayoutStore?.getLayout() ?? DEFAULT_MINI_LAYOUT_VIEW;
-      }
-      return windowLayoutStore.setLayout(validPatch);
-    },
-    'miniLive:fitGrowthAxis': (content) => {
-      miniLiveController?.fitGrowthAxis(content);
-      return null;
-    },
-    'clipboard:writeImage': (bytes: unknown) =>
-      writeClipboardImage(bytes, {
+  const dispatch = createIpcDispatch(
+    createIpcHandlers({
+      now: () => Date.now(),
+      warn: (record) => {
+        log.warn(record);
+      },
+      resolveEnv: resolveAppEnv,
+      appVersion: () => app.getVersion(),
+      appIsPackaged: () => app.isPackaged,
+      getStorage: () => storage,
+      getGameReader: () => gameReader,
+      getConsentStore: () => consentStore,
+      getLiveSource: () => liveSource,
+      getUpdateService: () => updateService,
+      getMarketService: () => marketService,
+      getForgeService: () => forgeService,
+      getForgeHistory: () => forgeHistory,
+      getForgeInjector: () => forgeInjector,
+      getApplyService: () => applyService,
+      getApplyInjector: () => applyInjector,
+      getPvpHistory: () => pvpHistory,
+      getPvpReader: () => pvpReader,
+      getMainWindow: () => mainWindow,
+      getMiniLiveController: () => miniLiveController,
+      getWindowLayoutStore: () => windowLayoutStore,
+      getSettings: () => currentSettings,
+      accountSource: currentAccountSource,
+      isMiniAvailable,
+      getAccountView: () => resolveAccountView({ gameReader, consentStore, accountRefresh, accountStore }),
+      requestAccountReadNow,
+      applyConsentEvent,
+      emitMarketChanged: (view) => {
+        emitEvent('market:changed', view);
+      },
+      applyLocale,
+      applyAlwaysOnTopMain,
+      applyAlwaysOnTopMini,
+      applyForgeWritesEnabled,
+      applyRestartGameOnExit,
+      applyUsagePingEnabled,
+      applyMarketQuoteCurrency,
+      imageClipboard: {
         decodePng: (buffer) => nativeImage.createFromBuffer(buffer),
         writeImage: (image) => {
           clipboard.writeImage(image);
         },
-      }),
-  };
+      },
+    }),
+  );
 
-  ipcMain.handle('bfc:invoke', (_event, channel: string, ...args: unknown[]) => {
-    if (!isIpcChannel(channel)) {
-      throw new Error(`Unknown IPC channel: ${channel}`);
-    }
-    const handler = handlers[channel] as (...forwarded: unknown[]) => unknown;
-    return handler(...args);
-  });
+  ipcMain.handle('bfc:invoke', (_event, channel: string, ...args: unknown[]) => dispatch(channel, ...args));
 }
 
 async function createMainWindow(): Promise<void> {
@@ -1058,7 +832,7 @@ async function bootstrap(): Promise<void> {
   // game becomes detected as running, which arrives too late to catch at boot.
   gameReader.onConnected = () => triggeredRefresh?.notify();
   liveFastPublisher = createLiveFastPublisher({
-    getView: () => liveSource?.getView() ?? defaultLiveView(),
+    getView: () => liveSource?.getView() ?? defaultLiveView(new Date().toISOString()),
     emit: (event) => {
       emitEvent('live:event', event);
     },
@@ -1379,73 +1153,138 @@ if (!gotLock) {
     app.quit();
   });
 
-  // `before-quit` is the single shutdown path in this app (reached identically whether it fires
-  // directly or via `window-all-closed`'s `app.quit()` above; there is no separate `will-quit`
-  // handler and none is needed). The ordering below is load-bearing, not incidental: every
-  // producer that can call `accountStore.commit()` — the game reader's fixture-mode ticker and
-  // the game-API account-refresh cycle — must be told to stop *before* the SQLite handles are
-  // closed. `GameReaderService.stop()` clears its own timer and latches a `stopped` flag so a
-  // tick already in flight can never reach the store afterward; `AccountStore.close()` is
-  // additionally defensive (a closed-store guard) in case a producer's shutdown ever races it
-  // anyway. See fix/fixture-tick-after-db-close — closing storage before stopping the fixture
-  // ticker produced an uncaught "database is not open" exception on quit.
   app.on('before-quit', () => {
-    shellLifecycle?.markQuitting();
-    updateService?.stop();
-    updateService = null;
-    gameReader?.stop();
-    gameReader = null;
-    gameKeepAlive?.stop();
-    gameKeepAlive = null;
-    usagePing?.stop();
-    usagePing = null;
-    accountRefresh?.stop();
-    accountRefresh = null;
-    liveFastPublisher?.stop();
-    liveFastPublisher = null;
-    marketService?.stop();
-    marketService = null;
-    forgeService = null;
-    forgeInjector = null;
-    applyService = null;
-    applyInjector = null;
-    // forgeHistory borrows accountOpen.db the way settingsStore does; accountStore.close()
-    // below owns the handle, so it gains no close() of its own.
-    forgeHistory = null;
-    pvpReader = null;
-    pvpRecorder = null;
-    pvpHistory = null;
-    triggeredRefresh = null;
-    void liveSource?.teardown();
-    liveSource = null;
-    observationMarkWatch?.stop();
-    observationMarkWatch = null;
-    observationCapture?.close();
-    observationCapture = null;
-    lastIngestedRotationBody = null;
-    consentStore = null;
-    persistMainWindowLayout(true);
-    if (layoutPersistTimer) {
-      clearTimeout(layoutPersistTimer);
-      layoutPersistTimer = null;
-    }
-    if (miniLayoutPersistTimer) {
-      clearTimeout(miniLayoutPersistTimer);
-      miniLayoutPersistTimer = null;
-    }
-    shellLifecycle?.destroyTray();
-    clearShellSmokeBridge();
-    shellLifecycle = null;
-    miniLiveController?.dispose();
-    miniLiveController = null;
-    // settingsStore borrows accountOpen.db, which accountStore.close() already owns
-    // below; it holds no timer and opens no handle of its own, so it must not gain a close().
-    settingsStore = null;
-    windowLayoutStore = null;
-    storage?.close();
-    storage = null;
-    accountStore?.close();
-    accountStore = null;
-    log.flush();
+    shutdownInOrder({
+      onStepFailed: (step, error) => {
+        log.error({ scope: 'main', event: 'shutdown.step_failed', step, error: String(error) });
+      },
+      steps: {
+        markQuitting: () => {
+          shellLifecycle?.markQuitting();
+        },
+        stopUpdateService: () => {
+          updateService?.stop();
+          updateService = null;
+        },
+        stopGameReader: () => {
+          gameReader?.stop();
+          gameReader = null;
+        },
+        stopGameKeepAlive: () => {
+          gameKeepAlive?.stop();
+          gameKeepAlive = null;
+        },
+        stopUsagePing: () => {
+          usagePing?.stop();
+          usagePing = null;
+        },
+        stopAccountRefresh: () => {
+          accountRefresh?.stop();
+          accountRefresh = null;
+        },
+        stopLiveFastPublisher: () => {
+          liveFastPublisher?.stop();
+          liveFastPublisher = null;
+        },
+        stopMarketService: () => {
+          marketService?.stop();
+          marketService = null;
+        },
+        releaseForgeService: () => {
+          forgeService = null;
+        },
+        releaseForgeInjector: () => {
+          forgeInjector = null;
+        },
+        releaseApplyService: () => {
+          applyService = null;
+        },
+        releaseApplyInjector: () => {
+          applyInjector = null;
+        },
+        // forgeHistory borrows accountOpen.db the way settingsStore does; accountStore.close()
+        // below owns the handle, so it gains no close() of its own.
+        releaseForgeHistory: () => {
+          forgeHistory = null;
+        },
+        releasePvpReader: () => {
+          pvpReader = null;
+        },
+        releasePvpRecorder: () => {
+          pvpRecorder = null;
+        },
+        releasePvpHistory: () => {
+          pvpHistory = null;
+        },
+        releaseTriggeredRefresh: () => {
+          triggeredRefresh = null;
+        },
+        teardownLiveSource: () => {
+          void liveSource?.teardown();
+          liveSource = null;
+        },
+        stopObservationMarkWatch: () => {
+          observationMarkWatch?.stop();
+          observationMarkWatch = null;
+        },
+        closeObservationCapture: () => {
+          observationCapture?.close();
+          observationCapture = null;
+        },
+        releaseRotationIngestMemo: () => {
+          lastIngestedRotationBody = null;
+        },
+        releaseConsentStore: () => {
+          consentStore = null;
+        },
+        persistMainWindowLayout: () => {
+          persistMainWindowLayout(true);
+        },
+        clearLayoutPersistTimer: () => {
+          if (layoutPersistTimer) {
+            clearTimeout(layoutPersistTimer);
+            layoutPersistTimer = null;
+          }
+        },
+        clearMiniLayoutPersistTimer: () => {
+          if (miniLayoutPersistTimer) {
+            clearTimeout(miniLayoutPersistTimer);
+            miniLayoutPersistTimer = null;
+          }
+        },
+        destroyTray: () => {
+          shellLifecycle?.destroyTray();
+        },
+        clearShellSmokeBridge: () => {
+          clearShellSmokeBridge();
+        },
+        releaseShellLifecycle: () => {
+          shellLifecycle = null;
+        },
+        disposeMiniLiveController: () => {
+          miniLiveController?.dispose();
+          miniLiveController = null;
+        },
+        // settingsStore borrows accountOpen.db, which accountStore.close() already owns
+        // below; it holds no timer and opens no handle of its own, so it must not gain a close().
+        releaseSettingsStore: () => {
+          settingsStore = null;
+        },
+        releaseWindowLayoutStore: () => {
+          windowLayoutStore = null;
+        },
+        closeStorage: () => {
+          storage?.close();
+          storage = null;
+        },
+        closeAccountStore: () => {
+          accountStore?.close();
+          accountStore = null;
+        },
+        flushLog: () => {
+          log.flush();
+        },
+      },
+    });
   });
 }
