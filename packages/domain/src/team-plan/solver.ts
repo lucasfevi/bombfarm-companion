@@ -235,9 +235,9 @@ export function runTeamPlan(
     farmObjective: reportedObjective,
   });
 
-  // The waterfall is the decision point (AC-RGO monotonicity fix) — it may reject the search's
-  // assignment/points in favor of the baseline, so `regime`/`sumDuty`/`slots`/`proposedLoadouts`
-  // must describe the winning state, not `best.evaluation` / `best.assignment` directly.
+  // The waterfall is the decision point — it may reject the search's assignment/points in favor of
+  // the baseline, so `regime`/`sumDuty`/`slots`/`proposedLoadouts` must describe the winning state,
+  // not `best.evaluation` / `best.assignment` directly.
   const proposedLoadouts: Record<string, Loadout> = loadoutsFromAssignment(
     waterfall.assignment,
     itemById,

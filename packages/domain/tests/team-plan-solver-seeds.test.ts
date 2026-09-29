@@ -338,6 +338,34 @@ describe('the greedy starting assignments follow the roster damage ranking', () 
     expect(bySlotValue.slots['hero-1']!.arma).toBe('light');
   });
 
+  it('seats the best item on the strongest wearer and the next one down on the next hero, keeping neither in the bag', () => {
+    const heavy = spare('heavy', 'clay_arma', 'arma', 40, 5, 10);
+    const mid = spare('mid', 'clay_arma', 'arma', 40, 5, 0);
+    const light = spare('light', 'ember_arma', 'arma', 10, 0, 0);
+    const bench = twoHeroBench({ 'hero-0': 10, 'hero-1': 1 }, [light, mid, heavy]);
+    const byBestItem = seedsFor(bench).find((entry) => entry.name === 'bestItemFirst')!.assignment;
+    expect(byBestItem.slots['hero-0']!.arma).toBe('heavy');
+    expect(byBestItem.slots['hero-1']!.arma).toBe('mid');
+    expect([...byBestItem.pool].sort()).toEqual(['light']);
+  });
+
+  it('offers a starting assignment no weaker than the slot-value one when both fill the same slots', () => {
+    const heavy = spare('heavy', 'clay_arma', 'arma', 40, 5, 10);
+    const mid = spare('mid', 'clay_arma', 'arma', 40, 5, 0);
+    const light = spare('light', 'ember_arma', 'arma', 10, 0, 0);
+    const bench = twoHeroBench({ 'hero-0': 10, 'hero-1': 1 }, [light, mid, heavy]);
+    const seeds = seedsFor(bench);
+    const byBestItem = seeds.find((entry) => entry.name === 'bestItemFirst')!.assignment;
+    const bySlotValue = seeds.find((entry) => entry.name === 'greedySlotValue')!.assignment;
+    const disagreements: string[] = [];
+    for (const heroId of Object.keys(bySlotValue.slots)) {
+      const wanted = bySlotValue.slots[heroId]!.arma;
+      const got = byBestItem.slots[heroId]!.arma;
+      if (wanted !== got) disagreements.push(`${heroId}: slot value seats ${wanted}, best item first seats ${got}`);
+    }
+    expect(disagreements.sort()).toEqual([]);
+  });
+
   it('leaves a spare no hero is high enough to wear in the bag, on every starting assignment', () => {
     const reachable = spare('reachable', 'ember_arma', 'arma', 10, 2, 0);
     const tooHigh = spare('too-high', 'glacier_arma', 'arma', 60, 5, 0);
