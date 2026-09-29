@@ -137,6 +137,7 @@ export function ForgeQueueActions({
         description={confirmBody}
         confirmLabel={t.forgeQueueConfirm}
         cancelLabel={t.forgeQueueConfirmCancel}
+        closeLabel={t.confirmDialogClose}
         onConfirm={startForgeQueue}
       />
     </div>

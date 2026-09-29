@@ -314,7 +314,7 @@ function ShowSwitch({
 }) {
   return (
     <label className="flex cursor-pointer items-center gap-2 text-[13px] text-muted" data-testid={testId}>
-      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
+      <Switch checked={checked} onCheckedChange={onChange} />
       {label}
     </label>
   );

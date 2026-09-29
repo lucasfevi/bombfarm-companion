@@ -11,6 +11,7 @@ export const en = {
   panelCompare: "Gear compare",
   panelGates: "Gates",
   slotStats: "Stats by slot",
+  slotEditor: "Edit gear by slot",
   gearTotals: "Totals",
   slotStatLabels: {
     dmg: "Dmg",
@@ -79,6 +80,7 @@ export const pt: typeof en = {
   panelCompare: "Comparar equipamento",
   panelGates: "Portais",
   slotStats: "Stats por slot",
+  slotEditor: "Editar equipamento por slot",
   gearTotals: "Totais",
   slotStatLabels: {
     dmg: "Dano",

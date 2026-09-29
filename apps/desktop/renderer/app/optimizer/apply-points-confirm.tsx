@@ -155,7 +155,7 @@ export function ApplyPointsConfirm({
         <Dialog.Backdrop />
         <Dialog.Popup className="!w-[min(92vw,34rem)]" data-testid="apply-points-confirm">
           <span className="absolute top-2 right-2">
-            <Dialog.Close aria-label={t.applyConfirmCancel}>
+            <Dialog.Close aria-label={t.confirmDialogClose}>
               <Icon name="x-mark" />
             </Dialog.Close>
           </span>

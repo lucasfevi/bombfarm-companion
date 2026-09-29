@@ -764,6 +764,7 @@ export const ptBR: Copy = {
   applyConfirmQueuePauses:
     'A fila de forja está rodando: ela pausa depois da peça em andamento e retoma quando esta etapa terminar.',
   applyConfirmCancel: 'Agora não',
+  confirmDialogClose: 'Fechar',
   applyModalEquipTitle: 'Equipando itens',
   applyModalPointsTitle: 'Redistribuindo pontos',
   applyModalProgress: '{elapsed} decorrido · cerca de {left} restante',

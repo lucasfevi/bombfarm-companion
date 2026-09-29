@@ -14,7 +14,7 @@ import type { ReactNode } from 'react';
 import { ConfirmDialog } from '@bombfarm/ui';
 import { sub, useCopy, type Copy } from '../../lib/copy';
 
-export type ConfirmCopy = { readonly title: string; readonly description: ReactNode; readonly confirmLabel: string; readonly cancelLabel: string };
+export type ConfirmCopy = { readonly title: string; readonly description: ReactNode; readonly confirmLabel: string; readonly cancelLabel: string; readonly closeLabel: string };
 
 export function equipConfirmCopy(pendingCount: number, queueRunning: boolean, t: Copy): ConfirmCopy {
   return {
@@ -22,6 +22,7 @@ export function equipConfirmCopy(pendingCount: number, queueRunning: boolean, t:
     description: queueRunning ? `${t.applyConfirmEquipBody} ${t.applyConfirmQueuePauses}` : t.applyConfirmEquipBody,
     confirmLabel: sub(t.applyConfirmEquip, { count: pendingCount }),
     cancelLabel: t.applyConfirmCancel,
+    closeLabel: t.confirmDialogClose,
   };
 }
 
@@ -31,6 +32,7 @@ export function forgeConfirmCopy(count: number, t: Copy): ConfirmCopy {
     description: t.applyConfirmForgeBody,
     confirmLabel: sub(t.applyConfirmForge, { count }),
     cancelLabel: t.applyConfirmCancel,
+    closeLabel: t.confirmDialogClose,
   };
 }
 

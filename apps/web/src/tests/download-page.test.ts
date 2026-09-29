@@ -337,13 +337,15 @@ describe('the mini window section', () => {
     expect(early).not.toBe(late);
   });
 
-  it('hides the drawing from assistive technology, and leaves the controls in the tree', () => {
+  it('hides the drawing from assistive technology, and names each control once', () => {
     const markup = renderToStaticMarkup(
       createElement(MiniWindowSection, { t: STRINGS.en, lang: 'en' }),
     );
     expect(markup).toContain('aria-hidden="true"');
     for (const key of ['liveEarningsTitle', 'liveMapTitle', 'liveHeroesTitle'] as const) {
-      expect(markup).toContain(`aria-label="${liveLabel(key, 'en')}"`);
+      const panel = liveLabel(key, 'en');
+      expect(markup, panel).toMatch(new RegExp(`<span[^>]*>${panel}</span><span[^>]*role="switch"`));
+      expect(markup, panel).not.toContain(`aria-label="${panel}"`);
     }
   });
 });
