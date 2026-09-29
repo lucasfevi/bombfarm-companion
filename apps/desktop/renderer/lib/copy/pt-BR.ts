@@ -864,6 +864,8 @@ export const ptBR: Copy = {
   pvpRivalsTitle: 'Rivais',
   pvpRivalsNote: 'Seu retrospecto por oponente — um clique define o filtro.',
   pvpRivalsFew: 'Os rivais aparecem depois de dois oponentes diferentes enfrentados.',
+  pvpRivalsSearchPlaceholder: 'Buscar rivais…',
+  pvpRivalsSearchLabel: 'Buscar rivais pelo nome',
   pvpRivalsColumnRecord: 'Retrospecto',
   pvpRivalsColumnLast: 'Último',
   pvpRivalsRecord: '{won}–{lost}',

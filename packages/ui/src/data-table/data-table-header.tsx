@@ -26,10 +26,36 @@ export function DataTableHeader<T extends string>(props: DataTableHeaderProps<T>
       align = 'left',
       className,
       children,
+      aside,
       sortable: _sortable,
       ...thProps
     } = props;
     const active = sortKey === col;
+    const button = (
+      <button
+        type="button"
+        className={cn(
+          dataTableHeadButtonClass,
+          active ? 'text-accent' : 'text-inherit hover:text-ink',
+          headAlignClass(align),
+        )}
+        onClick={(event) => {
+          if (stopPropagation) event.stopPropagation();
+          onSort(col);
+        }}
+      >
+        <span>{children}</span>
+        {active ? (
+          sortDir === 'asc' ? (
+            <Icon name="chevron-up" size="xs" />
+          ) : (
+            <Icon name="chevron-down" size="xs" />
+          )
+        ) : (
+          <SortIdleIcon />
+        )}
+      </button>
+    );
 
     return (
       <th
@@ -37,29 +63,14 @@ export function DataTableHeader<T extends string>(props: DataTableHeaderProps<T>
         aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
         {...thProps}
       >
-        <button
-          type="button"
-          className={cn(
-            dataTableHeadButtonClass,
-            active ? 'text-accent' : 'text-inherit hover:text-ink',
-            headAlignClass(align),
-          )}
-          onClick={(event) => {
-            if (stopPropagation) event.stopPropagation();
-            onSort(col);
-          }}
-        >
-          <span>{children}</span>
-          {active ? (
-            sortDir === 'asc' ? (
-              <Icon name="chevron-up" size="xs" />
-            ) : (
-              <Icon name="chevron-down" size="xs" />
-            )
-          ) : (
-            <SortIdleIcon />
-          )}
-        </button>
+        {aside === undefined ? (
+          button
+        ) : (
+          <div className="flex items-center">
+            {button}
+            <span className="flex shrink-0 items-center pr-2">{aside}</span>
+          </div>
+        )}
       </th>
     );
   }

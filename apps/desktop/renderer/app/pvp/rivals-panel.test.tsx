@@ -100,11 +100,29 @@ describe('RivalsPanel', () => {
   });
 
   it('shows ten rows under the header and scrolls the rest, the same height beside the replay as alone', () => {
+    const many = render(Array.from({ length: 12 }, (_, index) => row(index + 1, `Rival ${String(index)}`, true)));
+    expect(many).toMatch(/class="isolate min-h-0 overflow-auto" style="height:339px" data-testid="pvp-rivals-scroll"/);
+
     const html = render([row(1, 'Ana', true), row(2, 'Bruno', false)]);
     expect(html).toMatch(/<section class="[^"]*xl:self-start" data-testid="pvp-rivals" data-state="rivals">/);
-    expect(html).toMatch(/class="isolate min-h-0 overflow-auto" style="max-height:339px" data-testid="pvp-rivals-scroll"/);
+    expect(html).toMatch(/class="isolate min-h-0 overflow-auto" style="height:91px" data-testid="pvp-rivals-scroll"/);
     expect(html).toMatch(/data-testid="pvp-rival-row"[^>]*style="height:31px"/);
     expect(html).not.toContain('data-fill=');
+  });
+
+  it('pins every column width, so the rows the window swaps in on a scroll cannot resize them', () => {
+    const html = render([row(1, 'Ana', true), row(2, 'Bruno', false)]);
+    expect(html).toMatch(/<table class="[^"]*table-fixed"/);
+    expect(html).toContain('<colgroup><col/><col class="w-32"/><col class="w-28"/><col class="w-32"/></colgroup>');
+  });
+
+  it('sorts by record, worst first, until another column is picked, and offers a name search with a count', () => {
+    const html = render([row(1, 'Ana', true), row(2, 'Bruno', false)]);
+    expect(html.match(/aria-sort="ascending"/g)).toHaveLength(1);
+    expect(html.match(/aria-sort="none"/g)).toHaveLength(3);
+    expect(html).toContain(`aria-label="${en.pvpRivalsSearchLabel}"`);
+    expect(html).toMatch(/data-testid="pvp-rivals-count"[^>]*>2 of 2</);
+    expect(html).not.toContain('data-testid="pvp-rivals-no-match"');
   });
 
   it('mounts only the first twenty of many rivals and a spacer standing in for the rest, counting them all for assistive tech', () => {

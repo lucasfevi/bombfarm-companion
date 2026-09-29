@@ -156,8 +156,22 @@ export function DuelHistoryPanel({
               onScroll={windowed.onScroll}
               data-testid="pvp-history-scroll"
             >
-              <DataTable.Table aria-rowcount={windowed.total}>
+              {/* Fixed layout, as on the Rivals table: an auto table sizes its columns from the rows
+                  mounted right now, and the row window swaps those rows on every scroll step.
+                  Score is the widest: real duels reach ~1.5 billion a side, which prints as
+                  "1.515.741.823 contra 1.384.035.757" in Portuguese. */}
+              <DataTable.Table aria-rowcount={windowed.total} className="table-fixed">
                 <DataTable.Caption>{t.pvpCaption}</DataTable.Caption>
+                <colgroup>
+                  <col className="w-20" />
+                  <col className="w-48" />
+                  <col />
+                  <col className="w-24" />
+                  <col className="w-72" />
+                  <col className="w-40" />
+                  <col className="w-36" />
+                  <col className="w-28" />
+                </colgroup>
                 <DataTable.Head>
                   <DataTable.Row>
                     <DataTable.Header scope="col">{t.pvpColumnWhen}</DataTable.Header>
@@ -255,8 +269,8 @@ function DuelRow({
       <DataTable.Cell data-testid="pvp-squad" data-count={row.squadHeroIds.length}>
         <SquadStack heroIds={row.squadHeroIds} heroById={heroById} />
       </DataTable.Cell>
-      <DataTable.Cell nowrap={false}>
-        <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+      <DataTable.Cell className="truncate">
+        <span className="flex min-w-0 items-baseline gap-x-2">
           <span className="truncate" data-testid="pvp-opponent">
             {row.defender.name}
           </span>

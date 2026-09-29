@@ -12,8 +12,17 @@ export interface RivalRecord {
   readonly latest: PvpDuelRow;
 }
 
-/** The record against every opponent fought, worst first: the lowest wins-minus-losses, then the
- *  most duels, then the name — the rivalry the player is losing sits at the top. */
+export type RivalSortKey = 'name' | 'record' | 'score' | 'last';
+
+export interface RivalSort {
+  readonly key: RivalSortKey;
+  readonly direction: 'asc' | 'desc';
+}
+
+/** Worst record first — the rivalry the player is losing sits at the top. */
+export const DEFAULT_RIVAL_SORT: RivalSort = { key: 'record', direction: 'asc' };
+
+/** The record against every opponent fought, in {@link DEFAULT_RIVAL_SORT} order. */
 export function rivalRecords(rows: readonly PvpDuelRow[]): RivalRecord[] {
   const byName = new Map<string, PvpDuelRow[]>();
   for (const row of rows) {
@@ -21,12 +30,52 @@ export function rivalRecords(rows: readonly PvpDuelRow[]): RivalRecord[] {
     if (against === undefined) byName.set(row.defender.name, [row]);
     else against.push(row);
   }
-  return [...byName.entries()]
-    .map(([name, against]) => recordOf(name, against))
-    .sort(
-      (left, right) =>
-        left.won - left.lost - (right.won - right.lost) || right.duels - left.duels || left.name.localeCompare(right.name),
-    );
+  return sortRivals(
+    [...byName.entries()].map(([name, against]) => recordOf(name, against)),
+    DEFAULT_RIVAL_SORT,
+  );
+}
+
+/** A second press on the sorted column flips it; a new column opens names A→Z and figures
+ *  highest (or newest) first. */
+export function nextRivalSort(sort: RivalSort, key: RivalSortKey): RivalSort {
+  if (sort.key === key) return { key, direction: sort.direction === 'asc' ? 'desc' : 'asc' };
+  return { key, direction: key === 'name' ? 'asc' : 'desc' };
+}
+
+/** Ties fall to the most duels fought, then the name. An opponent with no margin yet sorts
+ *  after every scored one in either direction — a missing figure is not a small one. */
+export function sortRivals(rivals: readonly RivalRecord[], sort: RivalSort): RivalRecord[] {
+  const sign = sort.direction === 'asc' ? 1 : -1;
+  const tieBreak = (left: RivalRecord, right: RivalRecord) =>
+    right.duels - left.duels || left.name.localeCompare(right.name);
+  const compare = (left: RivalRecord, right: RivalRecord): number => {
+    switch (sort.key) {
+      case 'name':
+        return sign * left.name.localeCompare(right.name);
+      case 'record':
+        return sign * (left.won - left.lost - (right.won - right.lost)) || tieBreak(left, right);
+      case 'score':
+        if (left.marginPct === null || right.marginPct === null) {
+          return Number(left.marginPct === null) - Number(right.marginPct === null) || tieBreak(left, right);
+        }
+        return sign * (left.marginPct - right.marginPct) || tieBreak(left, right);
+      case 'last':
+        return sign * (Date.parse(left.latest.recordedAt) - Date.parse(right.latest.recordedAt)) || tieBreak(left, right);
+    }
+  };
+  return [...rivals].sort(compare);
+}
+
+/** Names containing the query, ignoring case and accents — "joao" finds "João". */
+export function searchRivals(rivals: readonly RivalRecord[], query: string): readonly RivalRecord[] {
+  const needle = foldForSearch(query.trim());
+  if (needle === '') return rivals;
+  return rivals.filter((rival) => foldForSearch(rival.name).includes(needle));
+}
+
+function foldForSearch(text: string): string {
+  return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase();
 }
 
 function recordOf(name: string, against: readonly PvpDuelRow[]): RivalRecord {
