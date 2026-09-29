@@ -921,6 +921,8 @@ export const en = {
   pvpRivalsTitle: 'Rivals',
   pvpRivalsNote: 'Your record per opponent — a click sets the filter.',
   pvpRivalsFew: 'Rivals appear once two different opponents have been fought.',
+  pvpRivalsSearchPlaceholder: 'Search rivals…',
+  pvpRivalsSearchLabel: 'Search rivals by name',
   pvpRivalsColumnRecord: 'Record',
   pvpRivalsColumnLast: 'Last',
   pvpRivalsRecord: '{won}–{lost}',
