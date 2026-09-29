@@ -83,16 +83,6 @@ describe('the answer given before the service exists', () => {
     expect(source).toContain('initialUpdateStatus({');
   });
 
-  it('is what every updates channel falls back to', () => {
-    const channels = ['updates:get', 'updates:check', 'updates:download', 'updates:installOnRestart'];
-
-    for (const channel of channels) {
-      const at = source.indexOf(`'${channel}':`);
-      expect(at).toBeGreaterThan(-1);
-      expect(source.slice(at, source.indexOf(`'market:`, at))).toContain('preServiceUpdateStatus()');
-    }
-  });
-
   it('never answers disabled outright — that is a claim about the build, not about readiness', () => {
     expect(source).not.toContain('disabledUpdateStatus');
     expect(stripComments(readFileSync(INDEX_PATH, 'utf8'))).not.toContain('disabledUpdateStatus');

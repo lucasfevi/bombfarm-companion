@@ -618,6 +618,10 @@ describe('the market', () => {
     expect(f.spies.emitMarketChanged).toHaveBeenCalledWith(ADOPTED_SNAPSHOT);
   });
 
+  it('holds a manual check to one every thirty seconds, the figure the names below quote', () => {
+    expect(MARKET_CHECK_FLOOR_MS).toBe(30_000);
+  });
+
   it('refuses a second check inside thirty seconds without going to the network or announcing', async () => {
     const { handlers, f } = wired();
     await handlers['market:check']();

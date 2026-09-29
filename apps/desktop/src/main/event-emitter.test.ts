@@ -50,11 +50,11 @@ function preloadBridge(): PreloadBridge {
   return call[1] as PreloadBridge;
 }
 
-function fakeWindow(): EventWindow & { sent: [string, unknown][] } {
+function fakeWindow(destroyed = false): EventWindow & { sent: [string, unknown][] } {
   const sent: [string, unknown][] = [];
   return {
     sent,
-    isDestroyed: () => false,
+    isDestroyed: () => destroyed,
     webContents: {
       send: (channel, payload) => {
         sent.push([channel, payload]);
@@ -107,7 +107,7 @@ describe('createEventEmitter', () => {
   it('reaches every live window and skips a destroyed one', () => {
     const living = fakeWindow();
     const second = fakeWindow();
-    const destroyed = { ...fakeWindow(), isDestroyed: () => true, sent: [] as [string, unknown][] };
+    const destroyed = fakeWindow(true);
     const emit = createEventEmitter({ getWindows: () => [living, destroyed, second] });
 
     emit('window:changed', { maximized: true });
@@ -120,7 +120,7 @@ describe('createEventEmitter', () => {
   it('asks for the window list on every emit, so a window opened after boot still receives', () => {
     const first = fakeWindow();
     const windows: EventWindow[] = [first];
-    const emit = createEventEmitter({ getWindows: () => windows });
+    const emit = createEventEmitter({ getWindows: () => [...windows] });
 
     emit('window:changed', { maximized: false });
     const late = fakeWindow();
@@ -159,7 +159,7 @@ describe('main and preload compose the same wire name', () => {
       .filter((entry) => entry.source.includes(IPC_EVENT_PREFIX))
       .map((entry) => relative(resolve(__dirname, '..'), entry.path));
 
-    expect(sources.length).toBeGreaterThanOrEqual(80);
+    expect(sources.length).toBeGreaterThanOrEqual(90);
     expect(offenders).toEqual([]);
   });
 });
