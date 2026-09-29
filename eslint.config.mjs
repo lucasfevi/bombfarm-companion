@@ -118,6 +118,10 @@ export default tseslint.config(
       // `packages/farm` and `packages/game-art` are NOT here: each carries its own
       // `tsconfig.eslint.json` that includes its tests, so they lint like every other test in
       // the repo.
+      // `packages/ui` carries one too, and is still here on purpose: that project exists so the
+      // package's non-test sources — the DOM test harness among them — lint with type-aware rules,
+      // NOT to switch lint on over these test files. Turning them on is its own change; carrying a
+      // `tsconfig.eslint.json` is not by itself the reason a package leaves this list.
       'packages/ui/**/*.{test,spec}.{ts,tsx}',
     ],
   },
@@ -163,6 +167,22 @@ export default tseslint.config(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
+    },
+  },
+  {
+    // The `ui` half of the pair above needs a dedicated project, keeping the same rule tier: its
+    // package tsconfig excludes the DOM test harness so the harness never ships in `dist/`, and
+    // `projectService` then refuses a file belonging to no project — which is how the harness came
+    // to be linted not at all. This project includes it, so it lints type-aware like every other
+    // source file here. `projectService` is turned off explicitly because it wins over `project`
+    // when both are set, and the block above sets it for both planner-origin packages.
+    files: ['packages/ui/src/**/*.{ts,tsx}', 'packages/ui/vitest.config.ts'],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+        project: './packages/ui/tsconfig.eslint.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
   },
   {
@@ -325,7 +345,10 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'packages/hero/**/*.{ts,tsx}', 'packages/team-plan/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
+    // Every package, by wildcard rather than by name: the five named packages left
+    // `packages/account`'s screens unlinted for as long as they existed, and a hand-maintained
+    // list makes the next package opt in by being remembered.
+    files: ['packages/*/**/*.{ts,tsx}', 'apps/desktop/**/*.{ts,tsx}'],
     plugins: { react },
     rules: { 'react/forbid-dom-props': nativeTooltipRule },
   },

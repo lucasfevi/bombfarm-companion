@@ -20,7 +20,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.typecheck.json --noEmit",
+    "typecheck:tests": "tsc -p tsconfig.typecheck.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run",
     "storybook": "storybook dev -p 6006",
@@ -54,6 +55,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "concurrently": "^10.0.4",
+    "happy-dom": "^20.0.0",
     "http-server": "^14.1.1",
     "motion": "^12.42.2",
     "react": "^19.1.0",

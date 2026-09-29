@@ -170,7 +170,7 @@ describe('SettingsRow — no control primitive lands in the label cell', () => {
 
   it.each([
     ['Switch', createElement(Switch, { checked: false, 'aria-label': 'Row label' })],
-    ['Num', createElement(Num, { value: 1, onChange: () => {} })],
+    ['Num', createElement(Num, { value: 1, onChange: () => {}, incrementLabel: 'More', decrementLabel: 'Less' })],
     ['Select', createElement(Select, { value: 'a', onChange: () => {} }, createElement('option', { value: 'a' }, 'A'))],
     ['Button', createElement(Button, { type: 'button' }, 'Act')],
     ['Slider', createElement(Slider, { value: 1, onValueChange: () => {}, 'aria-label': 'Row label' })],

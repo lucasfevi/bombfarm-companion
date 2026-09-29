@@ -68,7 +68,6 @@ export function HeroStrip() {
               disabled={!heroId}
               onClick={() => setDeleteOpen(true)}
               aria-label={t.deleteHeroAria}
-              title={t.del}
             >
               <HiMiniTrash size={16} aria-hidden="true" />
             </Button>

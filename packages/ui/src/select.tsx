@@ -79,7 +79,10 @@ function useStableOptions(children: ReactNode): OptionItem[] {
   return cache.current;
 }
 
-export type SelectProps = Omit<ComponentPropsWithoutRef<'select'>, 'size' | 'onChange' | 'multiple'> & {
+export type SelectProps = Omit<
+  ComponentPropsWithoutRef<'select'>,
+  'size' | 'onChange' | 'multiple' | 'title'
+> & {
   /** Visual density — not the HTML `size` attribute (rows). */
   size?: SelectSize;
   onChange?: (event: ChangeEvent<HTMLSelectElement>) => void;
@@ -102,7 +105,7 @@ export type SelectMultipleHeader = {
 
 export type SelectMultipleProps = Omit<
   ComponentPropsWithoutRef<'select'>,
-  'size' | 'onChange' | 'value' | 'defaultValue' | 'multiple'
+  'size' | 'onChange' | 'value' | 'defaultValue' | 'multiple' | 'title'
 > & {
   size?: SelectSize;
   value?: readonly string[];
@@ -163,7 +166,6 @@ export function SelectMultiple({
   name,
   id,
   'aria-label': ariaLabel,
-  title,
 }: SelectMultipleProps) {
   const items = useStableOptions(children);
   const itemClass = size === 'compact' ? selectItemCompactClass : selectItemClass;
@@ -183,7 +185,6 @@ export function SelectMultiple({
       <BaseSelect.Trigger
         data-select
         data-select-multiple
-        title={title}
         aria-label={ariaLabel}
         className={cn(selectFieldRecipe({ size }), className)}
       >
@@ -254,7 +255,6 @@ export function Select({
   id,
   required,
   'aria-label': ariaLabel,
-  title,
 }: SelectProps) {
   const items = useStableOptions(children);
   const itemClass = size === 'compact' ? selectItemCompactClass : selectItemClass;
@@ -287,7 +287,6 @@ export function Select({
     >
       <BaseSelect.Trigger
         data-select
-        title={title}
         aria-label={ariaLabel}
         className={cn(selectFieldRecipe({ size }), className)}
       >

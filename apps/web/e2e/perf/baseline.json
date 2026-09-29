@@ -1,23 +1,23 @@
 {
   "captureMode": "prod-profile",
   "fixture": "importedRoster",
-  "_note": "REFRESHED (21) for the plant-cycle refit (ADR-018, 2026-09-27), per docs/react-performance.md rule 10’s deliberate-change path - never by widening the guard. P-02 6511->6512 (+1); P-03, P-04 and P-05 unchanged. No UI code changed: the one extra render is the hero strip metric’s TooltipTrigger (HeroStripMetrics > MetricValue, 20 -> 21), whose displayed value now changes on one more commit of the attack-point window because the refit moved the number behind it. Numbers are the CI runner’s own capture against develop’s, identical across all seven repetitions.",
+  "_note": "REFRESHED (22) for the Optimizer's disabled reason moving onto the page, per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard. P-02 6512->6521 (+9); P-03 12616->12633 (+17); P-04 6502->6509 (+7); P-05 2141->2144 (+3). The reason the Optimize button cannot run used to live only in a native title attribute, which never reached touch or the keyboard; it now renders through a PointsPreviewNotice in the rail beside the button. That notice stays mounted and toggles `open`, like its two siblings, so it reserves its layout instead of shifting the panel - which costs exactly one component render per commit of that panel, and every delta above is that count. Bisected, not inferred: removing that one element and re-capturing reproduces the previous four numbers exactly, and reverting the number-field change instead leaves all four unchanged. Numbers are the CI runner's capture, which this machine's own capture reproduced digit for digit, identical across all seven repetitions.",
   "scenarios": [
     {
       "id": "P-02",
-      "medianComponentRenders": 6512
+      "medianComponentRenders": 6521
     },
     {
       "id": "P-03",
-      "medianComponentRenders": 12616
+      "medianComponentRenders": 12633
     },
     {
       "id": "P-04",
-      "medianComponentRenders": 6502
+      "medianComponentRenders": 6509
     },
     {
       "id": "P-05",
-      "medianComponentRenders": 2141
+      "medianComponentRenders": 2144
     }
   ]
 }

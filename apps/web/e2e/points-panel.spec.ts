@@ -487,7 +487,10 @@ test.describe('points panel reset advice gain line + Optimize build result', () 
     const panel = pointsPanel(page);
     const optimizeBtn = panel.getByRole('button', { name: /^Otimizar build$/i });
     await expect(optimizeBtn).toBeDisabled();
-    await expect(optimizeBtn).toHaveAttribute('title', /nenhum ponto para alocar/i);
+    // On the page, not in a native tooltip: a disabled button receives no hover, and a `title`
+    // never reaches touch or keyboard at all.
+    await expect(panel.getByText(/nenhum ponto para alocar/i)).toBeVisible();
+    await expect(optimizeBtn).not.toHaveAttribute('title');
   });
 
   test('Optimize build is ENABLED for a hero with a level but nothing spent yet', async ({

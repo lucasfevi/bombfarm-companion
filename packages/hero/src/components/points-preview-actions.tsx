@@ -58,6 +58,7 @@ export function PointsPreviewActions({
   const farmNotice = preview?.mode === 'farm' ? farmOptimizeNotice(t, preview.result.outcome) : null;
   const showBudgetExhausted = !!preview?.result.budgetExhausted;
   const showDisabledNote = !heroEnabled;
+  const disabledReason = optimize.disabled ? optimize.disabledReason : null;
 
   return (
     <div className="mt-2.5 flex flex-col gap-1.5">
@@ -69,7 +70,6 @@ export function PointsPreviewActions({
             className={optimizeGroupButtonClass}
             onClick={onOptimize}
             disabled={optimize.disabled}
-            title={optimize.disabled ? (optimize.disabledReason ?? undefined) : undefined}
           >
             {t.optimizeBuildButton}
           </Button>
@@ -92,6 +92,9 @@ export function PointsPreviewActions({
         </Button>
       </div>
       <div className="flex w-full min-w-0 flex-col">
+        <PointsPreviewNotice open={disabledReason !== null} tone="warn">
+          {disabledReason}
+        </PointsPreviewNotice>
         <PointsPreviewNotice open={showDisabledNote} tone="warn">
           {t.optimizeBuildHeroDisabledNote}
         </PointsPreviewNotice>

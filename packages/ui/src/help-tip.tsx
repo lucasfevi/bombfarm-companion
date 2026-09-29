@@ -39,7 +39,6 @@ export function HelpTip({
           className,
         )}
         aria-label={label}
-        title={label}
         aria-hidden={!show}
         tabIndex={show ? undefined : -1}
         disabled={!show}
