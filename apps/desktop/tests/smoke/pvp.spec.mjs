@@ -235,7 +235,7 @@ test.describe('PVP tab — every duel the replayed tap saw settle, kept and list
     // D: the kept film opens as the replay, with the facts the fixture film settles.
     const rivalsScrollportHeight = await page
       .getByTestId('pvp-rivals-scroll')
-      .evaluate((scroll) => parseFloat(getComputedStyle(scroll).maxHeight));
+      .evaluate((scroll) => parseFloat(getComputedStyle(scroll).height));
     await page.getByTestId('pvp-open-replay').click();
     await expect(page.getByTestId('pvp-replay')).toBeVisible();
     await expect(page.getByTestId('pvp-replay-chart')).toBeVisible({ timeout: 10_000 });
@@ -244,7 +244,7 @@ test.describe('PVP tab — every duel the replayed tap saw settle, kept and list
     // The axis reads compact figures, and the rivals table beside the replay keeps its own
     // ten-row height rather than taking the replay's.
     await expect(page.getByTestId('pvp-replay-chart')).toContainText('100k');
-    await expect(page.getByTestId('pvp-rivals-scroll')).toHaveCSS('max-height', `${rivalsScrollportHeight}px`);
+    await expect(page.getByTestId('pvp-rivals-scroll')).toHaveCSS('height', `${rivalsScrollportHeight}px`);
     // Moving the pointer over the plot names the second under it, in the chart and in the legend.
     const chart = page.getByTestId('pvp-replay-chart');
     const box = await chart.boundingBox();
@@ -261,7 +261,7 @@ test.describe('PVP tab — every duel the replayed tap saw settle, kept and list
     await expect(close).toHaveText('');
     await close.click();
     await expect(page.getByTestId('pvp-replay')).toHaveCount(0);
-    await expect(page.getByTestId('pvp-rivals-scroll')).toHaveCSS('max-height', `${rivalsScrollportHeight}px`);
+    await expect(page.getByTestId('pvp-rivals-scroll')).toHaveCSS('height', `${rivalsScrollportHeight}px`);
   });
 
   test('the duels survive a relaunch on the same user data, and the replay serving them again adds nothing', async () => {
