@@ -87,7 +87,7 @@ describe('counts and order', () => {
   });
 });
 
-describe('the piece in flight (A-5)', () => {
+describe('the piece in flight', () => {
   it('counts as queued at any target, never as a retarget', () => {
     const queue: ForgeQueueState = { ...EMPTY_FORGE_QUEUE, active: { itemId: 'a', runId: 'r1' } };
     const batch = planForgeQueueBatch([{ itemId: 'a', to: 20 }], queue, upgrades([['a', 8]]));

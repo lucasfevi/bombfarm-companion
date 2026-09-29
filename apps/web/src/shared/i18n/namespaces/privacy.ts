@@ -10,7 +10,7 @@ export const en = {
     "Bomb Farm Companion is an unofficial, open-source fan tool for Bomb Farm, made by an independent developer and not affiliated with the game's makers. This page covers the Windows desktop app and this website: what each one collects, why, how long it is kept, and how to have it deleted.",
   privacyPingTitle: "What the desktop app sends us",
   privacyPingIntro:
-    "The installed desktop app sends one short message to our server about a minute after it opens, then once an hour while it runs. We use it to count how many people use the app, how many come back, and which versions are still in use. Each message contains:",
+    "The installed desktop app sends one short message to our server about a minute after it opens, then once an hour while it runs. We use it to count how many people use the app, how many come back, and which versions are still in use, and so the developer can see which game accounts use the app and when each was last active. Each message contains:",
   privacyPingFields: {
     v: "The version of the message format.",
     kind: "Whether it is the start-up message or an hourly one.",
@@ -39,6 +39,7 @@ export const en = {
       title: "Where it is stored and who else handles it",
       p: [
         "Messages arrive at a server we rent from DigitalOcean in New York, United States, and are stored in a database run by Supabase in the eastern United States. Both act only on our instructions. Because both are outside Brazil, providing this service transfers your data internationally.",
+        "Only the developer can look up the account records — game account id, player name, and when each account was first and last seen — in a private dashboard that only the developer can sign in to. It runs on Vercel in the eastern United States, which, like the two above, is outside Brazil and acts only on our instructions. The dashboard does not show installation codes.",
         "We do not sell your data, share it with the game's makers, or use it for advertising.",
       ],
     },
@@ -97,7 +98,7 @@ export const pt: typeof en = {
     "O Bomb Farm Companion é uma ferramenta de fã, não oficial e de código aberto, para o Bomb Farm, feita por um desenvolvedor independente e sem vínculo com os criadores do jogo. Esta página cobre o app para Windows e este site: o que cada um coleta, por quê, por quanto tempo guardamos e como pedir a exclusão.",
   privacyPingTitle: "O que o app envia para nós",
   privacyPingIntro:
-    "O app instalado envia uma mensagem curta ao nosso servidor cerca de um minuto depois de abrir e, em seguida, uma vez por hora enquanto estiver aberto. Usamos isso para contar quantas pessoas usam o app, quantas voltam e quais versões ainda estão em uso. Cada mensagem contém:",
+    "O app instalado envia uma mensagem curta ao nosso servidor cerca de um minuto depois de abrir e, em seguida, uma vez por hora enquanto estiver aberto. Usamos isso para contar quantas pessoas usam o app, quantas voltam e quais versões ainda estão em uso, e para que o desenvolvedor possa ver quais contas do jogo usam o app e quando cada uma esteve ativa pela última vez. Cada mensagem contém:",
   privacyPingFields: {
     v: "A versão do formato da mensagem.",
     kind: "Se é a mensagem de abertura ou uma das mensagens de hora em hora.",
@@ -126,6 +127,7 @@ export const pt: typeof en = {
       title: "Onde fica guardado e quem mais tem acesso",
       p: [
         "As mensagens chegam a um servidor que alugamos da DigitalOcean em Nova York, Estados Unidos, e são guardadas num banco de dados operado pela Supabase no leste dos Estados Unidos. As duas atuam apenas conforme as nossas instruções. Como ambas ficam fora do Brasil, prestar este serviço envolve transferência internacional dos seus dados.",
+        "Só o desenvolvedor pode consultar os registros das contas — o id da conta do jogo, o nome de jogador e quando cada conta foi vista pela primeira e pela última vez — num painel privado em que só o desenvolvedor consegue entrar. Ele roda na Vercel, no leste dos Estados Unidos, que, como as duas acima, fica fora do Brasil e atua apenas conforme as nossas instruções. O painel não mostra os códigos de instalação.",
         "Não vendemos os seus dados, não os compartilhamos com os criadores do jogo e não os usamos para publicidade.",
       ],
     },

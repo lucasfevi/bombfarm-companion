@@ -34,10 +34,10 @@ export function ItemPriceRefresh({
         <Tooltip.Trigger
           type="button"
           aria-label={label}
-          disabled={pending}
+          aria-disabled={pending}
           data-testid="item-price-refresh"
           data-item={itemName}
-          className="inline-grid size-4 shrink-0 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-muted hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-grid size-4 shrink-0 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-muted hover:text-accent aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
           onClick={(event) => {
             event.stopPropagation();
             if (pending) return;

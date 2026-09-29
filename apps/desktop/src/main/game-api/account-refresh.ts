@@ -15,8 +15,8 @@ import { readSessionToken, type SessionTokenFileResult } from './session-token-f
 
 /**
  * The cycle. Ties the pure
- * `packages/game-api` pieces to F3's `AccountStore.commit()` — the only carry-over seam in the
- * product (`R-1`).
+ * `packages/game-api` pieces to `AccountStore.commit()` — the one place a cycle's result is
+ * carried over into last-known-good state.
  *
  * Per cycle: read consent → not `granted`? treat every section as `failed('not_consented')` →
  * else the game not running? treat every section as `failed('game_not_running')` → else read the

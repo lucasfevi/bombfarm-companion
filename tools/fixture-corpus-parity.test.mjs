@@ -1,11 +1,16 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-
-const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
+import {
+  derivePlaywrightTestDirs,
+  deriveVitestRoots,
+  isUnder,
+  REPO_ROOT as root,
+  trackedFiles,
+  trackedFilesUnderRunnerRoots,
+} from './runner-scan-roots.mjs';
 
 const DOMAIN_SHEET_MATH = join(root, 'packages/domain/tests/fixtures/sheet-math');
 const WEB_SHEET_MATH = join(root, 'apps/web/src/tests/fixtures/sheet-math');
@@ -16,10 +21,46 @@ function sha256(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
-function trackedFiles() {
-  return execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
-    .split('\n')
-    .filter(Boolean);
+const SKIP_PATTERN = '\\b(describe|it|test)(\\.\\w+(\\([^()]*(\\([^()]*\\)[^()]*)*\\))?)*\\.(skip|todo|fixme|fails)\\b|\\bx(it|test|describe)[(]';
+const CONDITIONAL_SKIP_PATTERN = '\\b(describe|it|test)(\\.\\w+(\\([^()]*(\\([^()]*\\)[^()]*)*\\))?)*\\.(skipIf|runIf)\\b';
+
+/**
+ * The four roots this scan used to hand-list. They are kept only as a floor: whatever the shared
+ * derivation produces has to cover every one of them, so the scan can widen but never narrow.
+ */
+const LEGACY_SCAN_ROOTS = ['packages/domain/tests', 'apps/web/src/tests', 'apps/web/e2e', 'apps/desktop'];
+
+/**
+ * Scanning `tools/` puts the hygiene guards' own sources in range, and a guard source has to
+ * spell what it forbids. An exemption is an ALLOWANCE OF A COUNTED NUMBER, never a mute button:
+ * the file is held to exactly the occurrences declared here, so a directive added to it later
+ * pushes the count past its allowance and goes red like anywhere else.
+ */
+const GUARD_SOURCE_EXEMPTIONS = {
+  'tools/fidelity-gate.test.mjs': {
+    unconditional: 3,
+    conditional: 0,
+    reason: "a test name that lists the directive spellings that file's subjects may not carry",
+  },
+};
+
+function conditionalEntryProblems(entry) {
+  if (entry === null || typeof entry !== 'object') return ['entry is not an object'];
+  const problems = [];
+  if (!Number.isInteger(entry.count)) problems.push('count is not an integer');
+  if (typeof entry.condition !== 'string') problems.push('condition is not a string');
+  if (typeof entry.verifiedBy !== 'string') problems.push('verifiedBy is not a string');
+  return problems;
+}
+
+function countOccurrences(files, patternSource) {
+  const counts = {};
+  for (const file of files) {
+    if (Object.hasOwn(GUARD_SOURCE_EXEMPTIONS, file)) continue;
+    const hits = readFileSync(join(root, file), 'utf8').match(new RegExp(patternSource, 'g'));
+    if (hits) counts[file] = hits.length;
+  }
+  return counts;
 }
 
 /**
@@ -127,33 +168,79 @@ describe('cross-package fixture corpus parity', () => {
 
   const SKIPS_NOT_F8 = {};
 
-  it('skip/todo directives across the test roots are exactly the declared manifests', () => {
-    const SKIP_PATTERN = '\\b(describe|it|test)\\.(skip|todo)\\b|\\bxit[(]|\\bxdescribe[(]';
-    const SKIP_PATTERN_GLOBAL = new RegExp(SKIP_PATTERN, 'g');
-    const scanRoots = ['packages/domain/tests', 'apps/web/src/tests', 'apps/web/e2e', 'apps/desktop'];
-    const actual = {};
-    for (const scanRoot of scanRoots) {
-      let files = [];
-      try {
-        // `-l` lists matching files, not lines: `-c` counts matching LINES, which undercounts a
-        // file carrying two skip directives on one physical line. Occurrences are counted below
-        // instead, the same way the sibling guard (packages/domain/tests/source-surface.test.ts)
-        // does it, by reading the whole file and matching the pattern globally.
-        const out = execFileSync('git', ['grep', '-lE', SKIP_PATTERN, '--', scanRoot], {
-          cwd: root,
-          encoding: 'utf8',
-        });
-        files = out.split('\n').filter(Boolean);
-      } catch (err) {
-        // git grep exits 1 when it finds nothing in that root — that is a root with no skips.
-        if (err.status !== 1) throw err;
-      }
-      for (const file of files) {
-        const hits = readFileSync(join(root, file), 'utf8').match(SKIP_PATTERN_GLOBAL);
-        actual[file] = hits ? hits.length : 0;
+  /**
+   * Conditional holds are manifested apart from the unconditional ones because their remediation
+   * differs: a predicate that has quietly stopped varying turns its suite off for good while the
+   * source still reads as live, so an entry has to name the predicate and who checks that it
+   * still goes both ways — where an unconditional directive is simply deleted or re-armed.
+   */
+  const CONDITIONAL_SKIPS = {};
+
+  const vitestRoots = deriveVitestRoots();
+  const playwrightTestDirs = derivePlaywrightTestDirs();
+  const scannedFiles = trackedFilesUnderRunnerRoots(undefined, vitestRoots);
+
+  it('the scan roots are derived from the runner configs and cover every legacy root', () => {
+    expect(vitestRoots.length, `vitest project roots: ${vitestRoots.join(', ')}`).toBeGreaterThanOrEqual(15);
+
+    const uncovered = LEGACY_SCAN_ROOTS.filter((legacy) => !vitestRoots.some((scanRoot) => isUnder(legacy, scanRoot)));
+    expect(
+      uncovered,
+      `a root this guard used to scan is no longer covered by any vitest project root: ${uncovered.join(', ')}`,
+    ).toEqual([]);
+
+    const configs = [...new Set(playwrightTestDirs.map((entry) => entry.config))].sort();
+    expect(configs.length, `playwright configs: ${configs.join(', ')}`).toBeGreaterThanOrEqual(2);
+    expect(
+      playwrightTestDirs.length,
+      `playwright testDirs: ${playwrightTestDirs.map((entry) => entry.dir).join(', ')}`,
+    ).toBeGreaterThanOrEqual(3);
+
+    const outside = playwrightTestDirs
+      .filter((entry) => !vitestRoots.some((scanRoot) => isUnder(entry.dir, scanRoot)))
+      .map((entry) => `${entry.dir} (${entry.config})`);
+    expect(
+      outside,
+      `a playwright suite lives outside every derived root and would go unscanned — add its root: ${outside.join(', ')}`,
+    ).toEqual([]);
+
+    expect(scannedFiles.length, 'tracked code files under the derived roots').toBeGreaterThanOrEqual(2000);
+  });
+
+  function occurrencesIn(file, patternSource) {
+    return readFileSync(join(root, file), 'utf8').match(new RegExp(patternSource, 'g'))?.length ?? 0;
+  }
+
+  it('every guard-source exemption is still in the scan set and carries exactly its declared counts', () => {
+    const exempted = Object.keys(GUARD_SOURCE_EXEMPTIONS).sort();
+    const missing = exempted.filter((file) => !scannedFiles.includes(file));
+    expect(missing, `an exempted file is not in the scan set: ${missing.join(', ')}`).toEqual([]);
+
+    const stale = exempted.filter((file) => {
+      const entry = GUARD_SOURCE_EXEMPTIONS[file];
+      return entry.unconditional + entry.conditional === 0;
+    });
+    expect(stale, `an exemption no longer covers anything and is widening the hole: ${stale.join(', ')}`).toEqual([]);
+
+    const drifted = [];
+    for (const file of exempted) {
+      const entry = GUARD_SOURCE_EXEMPTIONS[file];
+      const unconditional = occurrencesIn(file, SKIP_PATTERN);
+      const conditional = occurrencesIn(file, CONDITIONAL_SKIP_PATTERN);
+      if (unconditional !== entry.unconditional || conditional !== entry.conditional) {
+        drifted.push(
+          `${file}: declared ${entry.unconditional} unconditional and ${entry.conditional} conditional, found ${unconditional} and ${conditional}`,
+        );
       }
     }
+    expect(
+      drifted,
+      `an exempted file's directive count moved — an exemption allows a number, it does not silence a file: ${drifted.join('; ')}`,
+    ).toEqual([]);
+  });
 
+  it('unconditional skip directives across the derived roots are exactly the declared manifests', () => {
+    const actual = countOccurrences(scannedFiles, SKIP_PATTERN);
     const declared = { ...F8_SKIP_MANIFEST, ...SKIPS_NOT_F8 };
     const expectedFiles = Object.keys(declared).sort();
     const actualFiles = Object.keys(actual).sort();
@@ -164,6 +251,34 @@ describe('cross-package fixture corpus parity', () => {
 
     for (const file of expectedFiles) {
       expect(actual[file], `${file}: skip count`).toBe(declared[file]);
+    }
+  });
+
+  it('every conditional-skip manifest entry has the shape the count assertions read', () => {
+    const malformed = Object.entries(CONDITIONAL_SKIPS)
+      .map(([file, entry]) => ({ file, problems: conditionalEntryProblems(entry) }))
+      .filter(({ problems }) => problems.length > 0)
+      .map(({ file, problems }) => `${file}: ${problems.join('; ')}`);
+    expect(malformed, `a conditional-skip entry the assertions below cannot read: ${malformed.join(', ')}`).toEqual([]);
+  });
+
+  it('conditional skip directives across the derived roots are exactly the conditional manifest', () => {
+    const actual = countOccurrences(scannedFiles, CONDITIONAL_SKIP_PATTERN);
+    const expectedFiles = Object.keys(CONDITIONAL_SKIPS).sort();
+    const actualFiles = Object.keys(actual).sort();
+    expect(
+      actualFiles,
+      'a conditional skip appeared outside the conditional manifest, or a manifested file no longer has one',
+    ).toEqual(expectedFiles);
+
+    for (const file of expectedFiles) {
+      const entry = CONDITIONAL_SKIPS[file];
+      expect(actual[file], `${file}: conditional skip count`).toBe(entry?.count);
+      expect(String(entry?.condition ?? '').trim().length, `${file}: names the predicate it turns on`).toBeGreaterThan(0);
+      expect(
+        String(entry?.verifiedBy ?? '').trim().length,
+        `${file}: names who checks the predicate still varies`,
+      ).toBeGreaterThan(0);
     }
   });
 
@@ -224,22 +339,24 @@ describe('cross-package fixture corpus parity', () => {
     ).toEqual([]);
   });
 
-  // The domain package's own skip-directive pattern (packages/domain/tests/source-surface.test.ts)
-  // is a hand-copied JS RegExp equivalent of this file's ERE string, with nothing else keeping the
+  // The domain package's own skip-directive patterns (packages/domain/tests/source-surface.test.ts)
+  // are hand-copied JS RegExp equivalents of this file's ERE strings, with nothing else keeping the
   // two in sync — read both files' source and compare the literal pattern text.
-  it('the skip-directive pattern here matches packages/domain/tests/source-surface.test.ts exactly', () => {
+  it('both skip-directive patterns here match packages/domain/tests/source-surface.test.ts exactly', () => {
     const selfSource = readFileSync(join(root, 'tools/fixture-corpus-parity.test.mjs'), 'utf8');
-    const selfMatch = /const SKIP_PATTERN = '([^']+)'/.exec(selfSource);
-    expect(selfMatch, "could not find this file's own SKIP_PATTERN literal").not.toBeNull();
+    const siblingSource = readFileSync(join(root, 'packages/domain/tests/source-surface.test.ts'), 'utf8');
 
-    const siblingPath = join(root, 'packages/domain/tests/source-surface.test.ts');
-    const siblingSource = readFileSync(siblingPath, 'utf8');
-    const siblingMatch = /const SKIP_PATTERN = \/(.+)\/;/.exec(siblingSource);
-    expect(siblingMatch, 'could not find SKIP_PATTERN in source-surface.test.ts').not.toBeNull();
+    for (const name of ['SKIP_PATTERN', 'CONDITIONAL_SKIP_PATTERN']) {
+      const selfMatch = new RegExp(`^const ${name} = '([^']+)';$`, 'm').exec(selfSource);
+      expect(selfMatch, `could not find this file's own ${name} literal`).not.toBeNull();
 
-    expect(
-      selfMatch[1].replace(/\\\\/g, '\\'),
-      'the skip-directive pattern here and in source-surface.test.ts have diverged',
-    ).toBe(siblingMatch[1]);
+      const siblingMatch = new RegExp(`^const ${name} = /(.+)/;$`, 'm').exec(siblingSource);
+      expect(siblingMatch, `could not find ${name} in source-surface.test.ts`).not.toBeNull();
+
+      expect(
+        selfMatch[1].replace(/\\\\/g, '\\'),
+        `${name} here and in source-surface.test.ts have diverged`,
+      ).toBe(siblingMatch[1]);
+    }
   });
 });

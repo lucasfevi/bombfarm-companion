@@ -1,5 +1,28 @@
 # @bombfarm/web
 
+## 0.25.1
+
+### Patch Changes
+
+- 3b64976: Clearing the hero level field no longer drops the hero to level 0 and rescales the sheet - it can
+  sit empty while your last level is kept. Levels now hold to 0-500 however they are entered, and a
+  level already outside that range is shown, and stepped, as the nearest one inside it.
+- b7d64b1: The privacy policy now says, in English and Portuguese, that the developer can look up the account
+  records the desktop app's usage count already keeps (game account id, player name, and when each
+  account was first and last seen) in a private dashboard only the developer can sign in to, hosted
+  by Vercel in the eastern United States, and that this is one of the reasons the records are kept.
+  What the app collects, and how long it is kept, is unchanged. The page's date moves to
+  2026-09-29.
+- Updated dependencies [3b64976]
+- Updated dependencies [3b64976]
+- Updated dependencies [3b64976]
+  - @bombfarm/ui@0.16.2
+  - @bombfarm/hero@0.5.1
+  - @bombfarm/account@0.3.7
+  - @bombfarm/farm@1.2.9
+  - @bombfarm/game-art@0.7.4
+  - @bombfarm/team-plan@0.5.1
+
 ## 0.25.0
 
 ### Minor Changes

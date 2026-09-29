@@ -32,8 +32,13 @@ describe('privacy page', () => {
   }
 
   it('dates the policy in each language', () => {
-    expect(render('en')).toContain('Last updated September 23, 2026');
-    expect(render('pt')).toContain('Atualizada em 23 de setembro de 2026');
+    expect(render('en')).toContain('Last updated September 29, 2026');
+    expect(render('pt')).toContain('Atualizada em 29 de setembro de 2026');
+  });
+
+  it('says who can see the account records, and where, in each language', () => {
+    expect(render('en')).toContain('in a private dashboard that only the developer can sign in to. It runs on Vercel');
+    expect(render('pt')).toContain('num painel privado em que só o desenvolvedor consegue entrar. Ele roda na Vercel');
   });
 
   it('the two languages carry the same sections, paragraph for paragraph', () => {

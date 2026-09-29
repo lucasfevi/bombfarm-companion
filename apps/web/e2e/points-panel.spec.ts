@@ -109,7 +109,7 @@ test.describe('points panel UX', () => {
     ).toBeVisible();
   });
 
-  // Rewritten (user Q-1 override): ±1 now shares the SAME budget ceiling as ±5, so
+  // ±1 shares the SAME budget ceiling as ±5, so
   // overspend is no longer reachable via either stepper — only by a hero record that already
   // has more spent than its level (e.g. the level was lowered in-game after the points were
   // spent). The text-warn counter stays live UI for that path (it is not deleted).
@@ -487,7 +487,10 @@ test.describe('points panel reset advice gain line + Optimize build result', () 
     const panel = pointsPanel(page);
     const optimizeBtn = panel.getByRole('button', { name: /^Otimizar build$/i });
     await expect(optimizeBtn).toBeDisabled();
-    await expect(optimizeBtn).toHaveAttribute('title', /nenhum ponto para alocar/i);
+    // On the page, not in a native tooltip: a disabled button receives no hover, and a `title`
+    // never reaches touch or keyboard at all.
+    await expect(panel.getByText(/nenhum ponto para alocar/i)).toBeVisible();
+    await expect(optimizeBtn).not.toHaveAttribute('title');
   });
 
   test('Optimize build is ENABLED for a hero with a level but nothing spent yet', async ({

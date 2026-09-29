@@ -4,7 +4,8 @@ import type { SectionOutcome } from './routes.js';
 /**
  * Assembles one cycle's outcomes into an `AccountPayload`. Deliberately shorter than the retired memory-era version: there
  * is no carry-over here, no grade, and no history parameter — `assembleAccountPayload.length` is
- * 2, closing `R-1` by signature. F3's `commit()` is the single place last-known-good exists.
+ * 2, so carry-over is closed by the signature itself. `commit()` is the single place
+ * last-known-good exists.
  *
  * | Outcome  | Body            | Fidelity                                                    |
  * |----------|-----------------|--------------------------------------------------------------|

@@ -420,7 +420,7 @@ describe('derive', () => {
 
   it('delta.energy needs NO explicit tree factor — gem already carries energia_add once naked is tree-free', () => {
     // Rebuilt for the tree-free naked sheet (was a pre-tree `geared` shape — `{...naked, energy: naked.energy
-    // * 1.2}` — that cannot occur once import is birth-backed; L-05: the INPUT
+    // * 1.2}` — that cannot occur once import is birth-backed; the INPUT
     // changes, the assertion rigour does not). `naked` here already stands in for
     // `nakedFromBirth`'s genuinely tree-free output; `geared` must therefore be
     // TREE-INCLUSIVE (post gear AND post skill tree, exactly what `applySkillTree`

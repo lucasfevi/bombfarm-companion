@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "../.."
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/dom-test-harness.ts",
+    "vitest.config.ts"
+  ],
+  "exclude": ["node_modules", "dist", "src/**/*.stories.ts", "src/**/*.stories.tsx"]
+}

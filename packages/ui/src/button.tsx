@@ -5,7 +5,7 @@ import { cn } from './cn';
 
 type BaseButtonProps = ComponentProps<typeof BaseButton>;
 
-export type ButtonProps = Omit<BaseButtonProps, 'className'> & {
+export type ButtonProps = Omit<BaseButtonProps, 'className' | 'title'> & {
   variant?: ButtonVariant;
   className?: string;
 };

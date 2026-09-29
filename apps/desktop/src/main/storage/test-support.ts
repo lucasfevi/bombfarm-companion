@@ -2,7 +2,11 @@
 import type { LogPort, OpenResult, SqliteBinding, SqliteDb, SqliteOpener } from './index.js';
 import { openAccountDatabase } from './index.js';
 
-/** Probes which SQLite bindings actually work in this environment, without caching. */
+/**
+ * Probes which SQLite bindings actually work in this environment, without caching. Returns a
+ * non-empty list or throws: every caller passes the result straight to `describe.each` at module
+ * scope, and a `describe.each` over an empty array is a file that passes having asserted nothing.
+ */
 export function detectAvailableBindings(): SqliteBinding[] {
   const bindings: SqliteBinding[] = [];
   try {
@@ -19,12 +23,19 @@ export function detectAvailableBindings(): SqliteBinding[] {
   } catch {
     // not available in this environment
   }
+  if (bindings.length === 0) {
+    throw new Error(
+      'No SQLite binding could be loaded in this environment (tried better-sqlite3 and node:sqlite), ' +
+        'so the store suites would run zero tests and report green. Build better-sqlite3 for this Node ' +
+        'version, or run on a Node build that ships node:sqlite.',
+    );
+  }
   return bindings;
 }
 
 const ALL_BINDINGS: SqliteBinding[] = ['better-sqlite3', 'node:sqlite'];
 
-/** Prints a visible warning for every binding that could not be probed (Risk R-5) —
+/** Prints a visible warning for every binding that could not be probed —
  * a skipped binding must never vanish silently from the test output. */
 export function warnForUnavailableBindings(available: SqliteBinding[]): void {
   for (const binding of ALL_BINDINGS) {
