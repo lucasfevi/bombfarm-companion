@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 import log from 'electron-log/renderer.js';
 import {
   createPingResponse,
+  ipcEventName,
   isIpcEventChannel,
   type IpcEventChannel,
   type IpcEvents,
@@ -27,9 +28,10 @@ function on<C extends IpcEventChannel>(
   const listener = (_event: Electron.IpcRendererEvent, payload: IpcEvents[C]) => {
     handler(payload);
   };
-  ipcRenderer.on(`bfc:event:${channel}`, listener);
+  const name = ipcEventName(channel);
+  ipcRenderer.on(name, listener);
   return () => {
-    ipcRenderer.removeListener(`bfc:event:${channel}`, listener);
+    ipcRenderer.removeListener(name, listener);
   };
 }
 

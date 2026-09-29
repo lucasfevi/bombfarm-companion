@@ -48,7 +48,7 @@ vi.mock('../live-source/tick-to-raw-state.js', async (importOriginal) => {
 });
 
 import type { AccountPayload, AccountView, LiveCurrency, LiveFrame, LiveTick } from '@bombfarm/contracts';
-import { liveGap } from '@bombfarm/contracts';
+import { ipcEventName, liveGap } from '@bombfarm/contracts';
 import { log } from '../logging.js';
 import { tickToRawGameState } from '../live-source/tick-to-raw-state.js';
 import type { AccountCommitter } from './game-reader-service.js';
@@ -508,7 +508,7 @@ describe('GameReaderService — status pushes', () => {
   }
 
   const statusPushes = (channels: string[]) =>
-    channels.filter((channel) => channel === 'bfc:event:game:status').length;
+    channels.filter((channel) => channel === ipcEventName('game:status')).length;
 
   it('does not push a status event for ticks that only carry a newer read timestamp', async () => {
     const { provider, channels } = statusSpy();

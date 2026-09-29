@@ -15,6 +15,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const INDEX_PATH = resolve(__dirname, 'index.ts');
+const HANDLERS_PATH = resolve(__dirname, 'ipc-handlers.ts');
 
 function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -55,7 +56,7 @@ describe('consent:revoke wires forceDetach into the applier as a pre-persist hoo
   });
 
   it('leaves the consent:revoke handler with no detach-then-record ordering of its own', () => {
-    const body = revokeHandlerBody(source);
+    const body = revokeHandlerBody(stripComments(readFileSync(HANDLERS_PATH, 'utf8')));
 
     expect(body).not.toContain('forceDetach');
     expect(body).not.toContain('await');
