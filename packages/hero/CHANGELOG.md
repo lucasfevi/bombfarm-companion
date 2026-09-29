@@ -1,5 +1,16 @@
 # @bombfarm/hero
 
+## 0.5.1
+
+### Patch Changes
+
+- 3b64976: The Optimizer's Build button now says on the page why it cannot run, instead of only in a hover
+  tooltip that never appeared on touch or for keyboard users.
+- Updated dependencies [3b64976]
+- Updated dependencies [3b64976]
+  - @bombfarm/ui@0.16.2
+  - @bombfarm/game-art@0.7.4
+
 ## 0.5.0
 
 ### Minor Changes
