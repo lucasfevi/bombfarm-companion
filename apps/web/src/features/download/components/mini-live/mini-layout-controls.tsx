@@ -47,7 +47,6 @@ export function MiniLayoutControls({
               onCheckedChange={(next) => {
                 onLayoutChange(withMiniSection(layout, key, next));
               }}
-              aria-label={label}
             />
           </label>
         );

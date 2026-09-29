@@ -96,7 +96,6 @@ export function RosterCards({
             onCheckedChange={(showLevels) => {
               onViewChange({ ...view, showLevels });
             }}
-            aria-label={copy.cardShowLevels}
           />
           {copy.cardShowLevels}
         </label>

@@ -812,6 +812,9 @@ export const en = {
   applyConfirmQueuePauses:
     'The forge queue is rolling: it pauses after the piece in flight and resumes when this step ends.',
   applyConfirmCancel: 'Not now',
+  // confirm* — the shared confirmation shell's own corner close. Every confirmation in the app
+  // names it with this, so it is told apart by name from whatever that confirmation calls Cancel.
+  confirmDialogClose: 'Close',
   applyModalEquipTitle: 'Equipping items',
   applyModalPointsTitle: 'Resetting points',
   applyModalProgress: '{elapsed} elapsed · about {left} left',

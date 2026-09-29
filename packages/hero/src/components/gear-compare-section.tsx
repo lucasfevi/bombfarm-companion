@@ -62,7 +62,7 @@ export function GearCompareSection({
     hasAltLoadout: !!altLoadout,
   });
 
-  const { B, dps, predHit, bDiff, bHitDiff } = pipeline;
+  const { B, dps, predHit, bDiff, bHitDiff, entryPulse } = pipeline;
 
   const hasGear = SLOTS.some((slot) => loadout[slot] != null);
   const gearBonuses = sumGearBonuses(loadout);
@@ -86,7 +86,7 @@ export function GearCompareSection({
         {
           id: 'dps-clone',
           label: `${t.metricSustained} · ${t.compareAlt}`,
-          value: formatNumber(B.dps, lang, 0),
+          value: formatNumber(B.dps * entryPulse.expectedMult, lang, 0),
           tone: 'accent',
           delta: `${bDiff >= 0 ? '+' : ''}${formatNumber(bDiff, lang, 1)}%`,
           deltaTone: bDiff >= 0 ? 'up' : 'down',
@@ -94,7 +94,7 @@ export function GearCompareSection({
         {
           id: 'hit-clone',
           label: `${t.compareHit} · ${t.compareAlt}`,
-          value: formatNumber(B.hit, lang, 0),
+          value: formatNumber(B.hit * entryPulse.expectedMult, lang, 0),
           tone: 'accent',
           delta: `${bHitDiff >= 0 ? '+' : ''}${formatNumber(bHitDiff, lang, 1)}%`,
           deltaTone: bHitDiff >= 0 ? 'up' : 'down',
@@ -197,7 +197,11 @@ export function GearCompareSection({
                 <MetricScoreboard cells={metricCells!} aria-label={metricsAriaLabel} />
               )}
               {reading.showSlotEditors && editing && renderSlot ? (
-                <div className={slotsGridClass}>
+                <div
+                  className={slotsGridClass}
+                  role="group"
+                  aria-label={`${t.slotEditor} · ${t.compareAlt}`}
+                >
                   {SLOTS.map((slot) => {
                     const current = loadout[slot];
                     const alt = altLoadout[slot];

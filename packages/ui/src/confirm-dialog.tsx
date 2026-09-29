@@ -14,6 +14,8 @@ export type ConfirmDialogProps = {
   description?: ReactNode;
   confirmLabel: string;
   cancelLabel: string;
+  /** Names the corner close on its own, so it and the Cancel action are told apart by name. */
+  closeLabel: string;
   onConfirm: () => void;
   /** When true, confirm button uses primary variant (default). Set false for neutral confirms. */
   destructive?: boolean;
@@ -30,6 +32,7 @@ export function ConfirmDialog({
   description,
   confirmLabel,
   cancelLabel,
+  closeLabel,
   onConfirm,
   destructive = true,
 }: ConfirmDialogProps) {
@@ -46,7 +49,7 @@ export function ConfirmDialog({
           {/* The close sits in the popup's own corner rather than inside the padding, so it
               reads as the box's control and the title keeps the full line. */}
           <span className="absolute top-2 right-2">
-            <Dialog.Close aria-label={cancelLabel}>
+            <Dialog.Close aria-label={closeLabel}>
               <Icon name="x-mark" />
             </Dialog.Close>
           </span>

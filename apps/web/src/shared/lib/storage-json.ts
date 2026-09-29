@@ -47,6 +47,16 @@ export function readJson<T>(key: string, fallback: T): T {
   }
 }
 
+/**
+ * Array-shaped read. A stored value of any other shape is treated as absent rather than handed
+ * on: every caller goes straight to array methods, and a hand-edited or half-written entry would
+ * otherwise reach them and take the whole boot down.
+ */
+export function readJsonArray<T>(key: string): T[] {
+  const parsed = readJson<unknown>(key, null);
+  return Array.isArray(parsed) ? (parsed as T[]) : [];
+}
+
 /** Returns true on success, false on any setItem throw — never rethrows. */
 export function writeJson(key: string, value: unknown): boolean {
   try {

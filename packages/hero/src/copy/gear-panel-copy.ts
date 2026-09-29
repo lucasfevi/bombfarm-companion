@@ -16,6 +16,11 @@
  * `gearSlotEmptyAria`, `gearSlotEmptyTip` and `rankLv` are the three the slot card shares with
  * `RosterCopy`; a host that satisfies both from one dictionary supplies each once.
  *
+ * `slotEditor` names the two EDITABLE slot grids, each composing it with `compareCurrent` or
+ * `compareAlt` — without that, current gear and the clone offer the same 24 controls under the
+ * same names and nothing says which loadout a reader is editing. `slotStats` stays the read-only
+ * cards' name.
+ *
  * `slotStatLabels` and `slotStatFullLabels` name their seven item stats individually rather than
  * as a record over the catalog's `ItemStat`, which widens to `string` — under that key type every
  * lookup would come back possibly-undefined and a missing stat would print nothing instead of
@@ -27,6 +32,7 @@ export type GearPanelCopy = {
 
   panelItems: string;
   slotStats: string;
+  slotEditor: string;
   gearSlotEmptyAria: string;
   gearSlotEmptyTip: string;
   rankLv: string;

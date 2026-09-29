@@ -28,7 +28,7 @@ function SectionSwitch({
   return (
     <label className="flex items-center justify-between gap-3 py-1">
       <span className="text-sm text-ink">{label}</span>
-      <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} aria-label={label} />
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
     </label>
   );
 }
