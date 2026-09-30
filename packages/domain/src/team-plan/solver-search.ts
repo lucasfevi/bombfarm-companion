@@ -460,6 +460,10 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
     // points frozen a second round provably finds nothing — and would pay for another whole
     // neighbourhood screen to discover that.
     if (!pointsAllowed) break;
+    // The gear pass may have just spent the last of the budget. A points pass from here costs an
+    // evaluation nothing has paid for, and the cap is a promise about total work, so stop instead —
+    // the gear pass's own result is already consistent and is what this seed returns.
+    if (input.budget.exhausted) break;
     const prePointsObjective = evaluation.objective;
     const prePointsVector = ptsByHeroId;
     const nextPts = input.farmObjective
@@ -490,7 +494,7 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
     prevObjective = evaluation.objective;
   }
 
-  if (pointsAllowed) {
+  if (pointsAllowed && !input.budget.exhausted) {
     const ptsBeforeFinal = ptsByHeroId;
     const evalBeforeFinal = evaluation;
     ptsByHeroId = input.farmObjective

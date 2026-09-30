@@ -372,10 +372,10 @@ describe.each(ROSTERS)('runTeamPlan on synthetic roster seed $seed', ({ seed }) 
     expect(overspent.sort(), `seed ${seed}: point resets`).toEqual([]);
   });
 
-  it('charges the run no more than the two evaluations that can be in flight when the cap trips', () => {
+  it('charges the run no evaluation past the cap it was given', () => {
     const { plan } = caseFor(seed);
     expect(plan.run.evaluations, `seed ${seed}`).toBeGreaterThan(0);
-    expect(plan.run.evaluations, `seed ${seed}`).toBeLessThanOrEqual(MAX_EVALUATIONS + 2);
+    expect(plan.run.evaluations, `seed ${seed}`).toBeLessThanOrEqual(MAX_EVALUATIONS);
   });
 });
 
@@ -395,17 +395,13 @@ describe('the roster table keeps covering every branch it is there for', () => {
 describe('the evaluation budget', () => {
   const shape = ROSTERS[0]!;
 
-  it('reports itself exhausted, and stops within the two evaluations already in flight, when the cap cannot converge', () => {
+  it('reports itself exhausted, and spends no evaluation past the cap, when the cap cannot converge', () => {
     const cap = 4;
     const result = runTeamPlan(syntheticTeamPlanInput(shape.seed, shape.options), { maxEvaluations: cap });
     if (result.blocked) throw new Error('plan blocked');
     expect(result.plan.run.budgetExhausted).toBe(true);
     expect(result.plan.run.evaluations).toBeGreaterThanOrEqual(cap);
-    // The cap is checked only after an evaluation is charged, and two calls can be in flight when
-    // it trips — the one after the round loop's points pass, and the closing points pass. This
-    // roster reaches the cap with one of them served from the cache, so it overshoots by one; a
-    // roster that misses that cache legitimately spends both, which is why the ceiling is two.
-    expect(result.plan.run.evaluations).toBeLessThanOrEqual(cap + 2);
+    expect(result.plan.run.evaluations).toBeLessThanOrEqual(cap);
   });
 
   it('converges without reporting itself exhausted when the cap is generous', () => {

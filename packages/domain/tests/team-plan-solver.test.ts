@@ -81,12 +81,17 @@ describe('runTeamPlan', () => {
     assertOk(result);
     expect(result.plan.run.budgetExhausted).toBe(true);
     expect(result.plan.planDps).toBeGreaterThanOrEqual(result.plan.currentDps);
-    // The cap is a stopping signal, not a hard ceiling: it is checked only after an evaluation has
-    // been charged. Two calls can then still be in flight — the one after the round loop's points
-    // pass, and the closing points pass — so the ceiling is the cap plus exactly those two. A run
-    // that spends a THIRD is spending unbudgeted work and should be read as a defect, not retuned.
     expect(result.plan.run.evaluations).toBeGreaterThanOrEqual(cap);
-    expect(result.plan.run.evaluations).toBeLessThanOrEqual(cap + 2);
+    expect(result.plan.run.evaluations).toBeLessThanOrEqual(cap);
+  });
+
+  it('spends one evaluation on a cap of zero, because a seed it has not evaluated has no result', () => {
+    // The only case where the count exceeds the cap, and it is arithmetic rather than slack: the
+    // first seed must be evaluated once for the search to have anything to return or compare.
+    const result = runTeamPlan(teamPlanInputFromFixture(TEAM_PLAN_FIXTURE), { maxEvaluations: 0 });
+    assertOk(result);
+    expect(result.plan.run.budgetExhausted).toBe(true);
+    expect(result.plan.run.evaluations).toBe(1);
   });
 
   it('never returns an empty proposedLoadouts map for optimize heroes', () => {
