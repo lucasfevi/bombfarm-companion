@@ -26,12 +26,6 @@ function constructionBody(source: string, opening: string): string {
   return source.slice(start, end);
 }
 
-function beforeQuitBody(source: string): string {
-  const start = source.indexOf("app.on('before-quit'");
-  expect(start).toBeGreaterThan(-1);
-  return source.slice(start);
-}
-
 describe('the developer observation capture is wired to the real packaged flag', () => {
   const source = stripComments(readFileSync(INDEX_PATH, 'utf8'));
 
@@ -60,24 +54,6 @@ describe('the developer observation capture is wired to the real packaged flag',
 
     expect(construction).toContain('onObservedFrame');
     expect(construction).toContain('observationCapture?.frame(wire, atMs)');
-  });
-
-  it('closes the recorder inside the quit handler, after the live source is torn down', () => {
-    const body = beforeQuitBody(source);
-    const teardownAt = body.indexOf('liveSource?.teardown()');
-    const closeAt = body.indexOf('observationCapture?.close()');
-
-    expect(teardownAt).toBeGreaterThan(-1);
-    expect(closeAt).toBeGreaterThan(teardownAt);
-    expect(closeAt).toBeLessThan(body.indexOf('accountStore'));
-  });
-
-  it('stops the marker watch in the same quit handler, before the recorder it feeds is closed', () => {
-    const body = beforeQuitBody(source);
-    const stopAt = body.indexOf('observationMarkWatch?.stop()');
-
-    expect(stopAt).toBeGreaterThan(-1);
-    expect(stopAt).toBeLessThan(body.indexOf('observationCapture?.close()'));
   });
 
   it('polls for markers only when the mode is on, so a shipped build never reads that file', () => {

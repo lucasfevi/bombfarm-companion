@@ -33,6 +33,7 @@ function open(): Handlers {
       description="This cannot be undone."
       confirmLabel="Delete"
       cancelLabel="Keep"
+      closeLabel="Close"
       onConfirm={handlers.onConfirm}
     />,
   );
@@ -54,8 +55,8 @@ function buttonLabelled(text: string): HTMLElement {
 }
 
 function cornerClose(): HTMLElement {
-  const node = document.body.querySelector<HTMLElement>('button[aria-label="Keep"]');
-  if (!node) throw new Error('no corner close labelled with the cancel label');
+  const node = document.body.querySelector<HTMLElement>('button[aria-label="Close"]');
+  if (!node) throw new Error('no corner close labelled with the close label');
   return node;
 }
 
@@ -96,11 +97,12 @@ describe('ConfirmDialog', () => {
     expect(openStates(onOpenChange)).toEqual([false]);
   });
 
-  it('treats the corner close as cancel, and names it with the cancel label', () => {
+  it('treats the corner close as cancel, and gives it a name of its own', () => {
     const { onConfirm, onOpenChange } = open();
 
     const close = cornerClose();
     expect(close).not.toBe(buttonLabelled('Keep'));
+    expect(document.body.querySelectorAll('button[aria-label="Keep"]')).toHaveLength(0);
 
     click(close);
 

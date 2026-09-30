@@ -22,6 +22,9 @@ export const ptBR: Copy = {
   gameFeedStaleTip: 'O jogo está aberto, mas nada chega dele há {age}',
   gameFeedStaleNoAgeTip: 'O jogo está aberto, mas nada está chegando dele',
   gameFeedNotRunningTip: 'Nenhum processo do jogo encontrado — o app continua procurando sozinho',
+  // onlinePlayers* — a contagem ao lado da conexão com o jogo, na ponta esquerda da barra de status.
+  onlinePlayersLabel: 'Jogadores',
+  onlinePlayersTip: 'Jogadores online no jogo agora, como o servidor conta. Atualiza a cada poucos minutos.',
   shellLoadingLabel: 'Carregando…',
   shellUpdateAvailable: 'Atualização disponível',
   shellUpdateDownloading: 'Atualizando… {percent}%',
@@ -764,6 +767,7 @@ export const ptBR: Copy = {
   applyConfirmQueuePauses:
     'A fila de forja está rodando: ela pausa depois da peça em andamento e retoma quando esta etapa terminar.',
   applyConfirmCancel: 'Agora não',
+  confirmDialogClose: 'Fechar',
   applyModalEquipTitle: 'Equipando itens',
   applyModalPointsTitle: 'Redistribuindo pontos',
   applyModalProgress: '{elapsed} decorrido · cerca de {left} restante',
@@ -864,6 +868,8 @@ export const ptBR: Copy = {
   pvpRivalsTitle: 'Rivais',
   pvpRivalsNote: 'Seu retrospecto por oponente — um clique define o filtro.',
   pvpRivalsFew: 'Os rivais aparecem depois de dois oponentes diferentes enfrentados.',
+  pvpRivalsSearchPlaceholder: 'Buscar rivais…',
+  pvpRivalsSearchLabel: 'Buscar rivais pelo nome',
   pvpRivalsColumnRecord: 'Retrospecto',
   pvpRivalsColumnLast: 'Último',
   pvpRivalsRecord: '{won}–{lost}',

@@ -4,6 +4,7 @@ import type { LiveDiagnosticsDumpOutcome, LiveEvent, LiveView } from './live-sou
 import type { UpdateStatus } from './update.js';
 import type { MarketQuoteCurrency, MarketQuoteResult, MarketQuoteTarget, MarketSnapshotView } from './market.js';
 import { DEFAULT_MARKET_QUOTE_CURRENCY } from './market.js';
+import type { OnlinePlayersView } from './online-players.js';
 import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
 import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
 import type { ApplyEvent, ApplyStartRequest, ApplyStartResult } from './apply.js';
@@ -144,6 +145,14 @@ export {
   isMarketQuoteCurrency,
   isMarketQuoteTarget,
 } from './market.js';
+export type { OnlinePlayersReading, OnlinePlayersView } from './online-players.js';
+export {
+  ONLINE_PLAYERS_CHECK_MS,
+  ONLINE_PLAYERS_MAX,
+  ONLINE_PLAYERS_MAX_AGE_MS,
+  emptyOnlinePlayersView,
+  readOnlinePlayersBody,
+} from './online-players.js';
 export type {
   AccountStoreReason,
   AccountStoreStatus,
@@ -517,6 +526,9 @@ export interface IpcChannels {
    *  not `ready` it is a no-op and the unchanged status comes back. */
   'updates:installOnRestart': { args: []; result: UpdateStatus };
   'market:getSnapshot': { args: []; result: MarketSnapshotView };
+  /** How many players the game's server counts right now — the number the status strip prints.
+   *  Empty until the first reading lands, and again once the one held is too old to show. */
+  'onlinePlayers:get': { args: []; result: OnlinePlayersView };
   /** The first channel to carry an argument. Its target is re-validated in main with
    *  `isMarketQuoteTarget` before anything acts on it — the renderer is not trusted to have sent
    *  a well-formed one. */
@@ -606,6 +618,7 @@ export const IPC_CHANNELS = [
   'updates:download',
   'updates:installOnRestart',
   'market:getSnapshot',
+  'onlinePlayers:get',
   'market:refreshItem',
   'market:check',
   'forge:start',
@@ -629,6 +642,7 @@ export type IpcEventChannel =
   | 'live:event'
   | 'updates:changed'
   | 'market:changed'
+  | 'onlinePlayers:changed'
   | 'settings:changed'
   | 'forge:event'
   | 'apply:event'
@@ -655,6 +669,9 @@ export interface IpcEvents {
   /** Fired whenever main adopts a different snapshot body, or merges a fresh per-item quote into
    *  the one it holds. A check that changed nothing (a 304, a failed fetch) does not fire it. */
   'market:changed': MarketSnapshotView;
+  /** Fired when the count, or whether one is shown at all, changed — a check that read the same
+   *  number again does not fire it. */
+  'onlinePlayers:changed': OnlinePlayersView;
   /** Fired whenever main adopts new settings — persisted or not, since a locale or always-on-top
    *  change applies for the session either way — so every window follows without a relaunch. */
   'settings:changed': AppSettings;
@@ -680,12 +697,22 @@ export const IPC_EVENT_CHANNELS = [
   'live:event',
   'updates:changed',
   'market:changed',
+  'onlinePlayers:changed',
   'settings:changed',
   'forge:event',
   'apply:event',
   'pvp:changed',
   'window:changed',
 ] as const satisfies readonly IpcEventChannel[];
+
+export const IPC_EVENT_PREFIX = 'bfc:event:';
+
+export type IpcEventName<C extends IpcEventChannel = IpcEventChannel> =
+  `${typeof IPC_EVENT_PREFIX}${C}`;
+
+export function ipcEventName<C extends IpcEventChannel>(channel: C): IpcEventName<C> {
+  return `${IPC_EVENT_PREFIX}${channel}`;
+}
 
 export function isIpcChannel(value: string): value is IpcInvokeChannel {
   return (IPC_CHANNELS as readonly string[]).includes(value);

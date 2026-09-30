@@ -20,13 +20,15 @@ export function GearSlotsGrid({
   loadout,
   onPatchSlot,
   renderSlot,
+  'aria-label': ariaLabel,
 }: {
   loadout: Loadout;
   onPatchSlot: SlotPatchHandler;
   renderSlot: GearSlotEditorSlot;
+  'aria-label': string;
 }) {
   return (
-    <div className={slotsGridClass}>
+    <div className={slotsGridClass} role="group" aria-label={ariaLabel}>
       {SLOTS.map((slot) => (
         <Fragment key={slot}>
           {renderSlot({ slot, equipped: loadout[slot], onPatch: onPatchSlot })}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PvpDuelRow } from '@bombfarm/contracts';
-import { rivalRecords } from './pvp-rivals';
+import { nextRivalSort, rivalRecords, searchRivals, sortRivals } from './pvp-rivals';
 
 function row(id: number, defender: string, won: boolean, yours = 100, theirs = 50, recordedAt = '2026-09-16T10:00:00.000Z'): PvpDuelRow {
   return {
@@ -65,5 +65,52 @@ describe('rivalRecords', () => {
 
   it('is empty with no duels', () => {
     expect(rivalRecords([])).toEqual([]);
+  });
+});
+
+describe('sortRivals', () => {
+  const rivals = rivalRecords([
+    row(1, 'Caio', true, 200, 100, '2026-09-14T10:00:00.000Z'),
+    row(2, 'Ana', false, 50, 100, '2026-09-16T10:00:00.000Z'),
+    row(3, 'Bruno', true, 100, 0, '2026-09-15T10:00:00.000Z'),
+  ]);
+  const names = (key: 'name' | 'record' | 'score' | 'last', direction: 'asc' | 'desc') =>
+    sortRivals(rivals, { key, direction }).map((rival) => rival.name);
+
+  it('orders by name, record, margin or the newest duel, either way', () => {
+    expect(names('name', 'asc')).toEqual(['Ana', 'Bruno', 'Caio']);
+    expect(names('name', 'desc')).toEqual(['Caio', 'Bruno', 'Ana']);
+    expect(names('record', 'desc')).toEqual(['Bruno', 'Caio', 'Ana']);
+    expect(names('last', 'desc')).toEqual(['Ana', 'Bruno', 'Caio']);
+    expect(names('last', 'asc')).toEqual(['Caio', 'Bruno', 'Ana']);
+  });
+
+  it('keeps an opponent with no margin yet below every scored one, whichever way the margin runs', () => {
+    expect(names('score', 'desc')).toEqual(['Caio', 'Ana', 'Bruno']);
+    expect(names('score', 'asc')).toEqual(['Ana', 'Caio', 'Bruno']);
+  });
+});
+
+describe('nextRivalSort', () => {
+  it('flips the sorted column, and opens a new one A→Z for names and highest first for figures', () => {
+    expect(nextRivalSort({ key: 'record', direction: 'asc' }, 'record')).toEqual({ key: 'record', direction: 'desc' });
+    expect(nextRivalSort({ key: 'record', direction: 'asc' }, 'name')).toEqual({ key: 'name', direction: 'asc' });
+    expect(nextRivalSort({ key: 'name', direction: 'asc' }, 'last')).toEqual({ key: 'last', direction: 'desc' });
+  });
+});
+
+describe('searchRivals', () => {
+  const rivals = rivalRecords([row(1, 'João', true), row(2, 'BRDOIDAO', true), row(3, 'haarveyS', true)]);
+  const names = (query: string) => searchRivals(rivals, query).map((rival) => rival.name);
+
+  it('matches any part of a name, ignoring case and accents', () => {
+    expect(names('joao')).toEqual(['João']);
+    expect(names('doid')).toEqual(['BRDOIDAO']);
+    expect(names('  VEY ')).toEqual(['haarveyS']);
+  });
+
+  it('keeps everyone for an empty query and no one for a name never fought', () => {
+    expect(names('')).toHaveLength(3);
+    expect(names('zzz')).toEqual([]);
   });
 });

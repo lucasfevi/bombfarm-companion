@@ -1,5 +1,48 @@
 # @bombfarm/domain
 
+## 1.7.1
+
+### Patch Changes
+
+- 47d106f: Team Plan starts one of its four searches from the best gear again, not the worst
+
+  The starting assignment named for putting the best items on the strongest heroes was doing the
+  opposite. It walked the spares best-first and gave each one to the first hero that could wear it, so
+  a hero eligible for several items in a slot kept whichever arrived last — the weakest — while every
+  better item it displaced sat back in the bag behind the walk, never reconsidered. With three weapons
+  and two heroes it seated the weakest weapon on the strongest hero and left the other hero's weapon
+  slot empty.
+
+  Plans were never wrong because of this: the search keeps whichever of its four starting points ends
+  up best, and a plan is never adopted unless it beats the roster it started from. But one of the four
+  was spending its whole climb starting from a strictly worse position than the other two, so it added
+  none of the variety it exists for. Fixing it means Team Plan searches from four genuinely different
+  places, and a roster with several comparable items in one slot can now find a better plan than it
+  did before.
+
+- 47d106f: Team Plan stops at its evaluation budget instead of two evaluations past it
+
+  The budget was checked only after an evaluation had already been charged, and two more could still
+  be in flight when it tripped: a points pass after the gear pass had spent the last of the budget, and
+  the closing points pass. On the committed fixture that meant a search told to stop at N evaluations
+  did N+2 at every budget tested.
+
+  Nobody would have noticed the two evaluations. What they buy is the reason to fix it: on a roster
+  whose search runs out of budget, those unbudgeted passes were where the last improvement came from,
+  so the budget did not bound the work and the plan quietly depended on overrunning it. A search that
+  exhausts its budget now returns what it had when the budget ran out, which is what an exhausted
+  budget is supposed to mean.
+
+  A budget of zero still costs one evaluation: the search has to price the roster it started from
+  before it can return or compare anything.
+
+  No plan a converging search produces changes — all three committed reference plans converge well
+  inside the budget and are byte-identical. A roster that exhausts the budget may now get a very
+  slightly less optimised plan than before, and never one worse than the roster it started from.
+
+- Updated dependencies [7cf247e]
+  - @bombfarm/contracts@0.12.0
+
 ## 1.7.0
 
 ### Minor Changes

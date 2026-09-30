@@ -106,7 +106,6 @@ export function RosterToolbar({
             onCheckedChange={(next) => {
               actions.onFilter({ ...filter, activeOnly: next });
             }}
-            aria-label={t.heroesFilterActiveHeroes}
           />
           {t.heroesFilterActiveHeroes}
         </label>

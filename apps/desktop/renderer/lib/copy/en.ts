@@ -23,6 +23,9 @@ export const en = {
   gameFeedStaleTip: 'The game is open, but nothing has arrived from it for {age}',
   gameFeedStaleNoAgeTip: 'The game is open, but nothing is arriving from it',
   gameFeedNotRunningTip: 'No game process found — the app keeps looking on its own',
+  // onlinePlayers* — the count beside the game connection at the status strip's left.
+  onlinePlayersLabel: 'Players',
+  onlinePlayersTip: 'Players online in the game right now, as its server counts them. Refreshed every few minutes.',
   shellUpdateAvailable: 'Update available',
   shellUpdateDownloading: 'Updating… {percent}%',
   shellUpdateReady: 'Restart to update',
@@ -812,6 +815,9 @@ export const en = {
   applyConfirmQueuePauses:
     'The forge queue is rolling: it pauses after the piece in flight and resumes when this step ends.',
   applyConfirmCancel: 'Not now',
+  // confirm* — the shared confirmation shell's own corner close. Every confirmation in the app
+  // names it with this, so it is told apart by name from whatever that confirmation calls Cancel.
+  confirmDialogClose: 'Close',
   applyModalEquipTitle: 'Equipping items',
   applyModalPointsTitle: 'Resetting points',
   applyModalProgress: '{elapsed} elapsed · about {left} left',
@@ -918,6 +924,8 @@ export const en = {
   pvpRivalsTitle: 'Rivals',
   pvpRivalsNote: 'Your record per opponent — a click sets the filter.',
   pvpRivalsFew: 'Rivals appear once two different opponents have been fought.',
+  pvpRivalsSearchPlaceholder: 'Search rivals…',
+  pvpRivalsSearchLabel: 'Search rivals by name',
   pvpRivalsColumnRecord: 'Record',
   pvpRivalsColumnLast: 'Last',
   pvpRivalsRecord: '{won}–{lost}',

@@ -119,6 +119,7 @@ export const gearPanelPtBR: GearPanelCopy = {
   fieldRequired: 'obrigatório',
   panelItems: 'Itens',
   slotStats: 'Stats por slot',
+  slotEditor: 'Editar equipamento por slot',
   gearSlotEmptyAria: '{slot} — vazio',
   gearSlotEmptyTip: 'Vazio',
   rankLv: 'Nv',

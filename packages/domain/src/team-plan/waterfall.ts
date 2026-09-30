@@ -161,7 +161,7 @@ export function buildForgeList(
     if (item.equippedBy && !rosterHeroIds.has(item.equippedBy)) continue;
     if (item.upgrade >= forgeFloor) continue;
     // Never recommend forging gear the plan leaves sitting in the shared pool — it isn't in
-    // combat, so the forge floor buys nothing (RGO ask: don't list what won't be worn).
+    // combat, so the forge floor buys nothing.
     const location = finalLocation.get(item.id);
     const finalHeroId = location ? location.heroId : item.equippedBy;
     if (!finalHeroId) continue;

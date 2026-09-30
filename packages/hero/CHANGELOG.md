@@ -1,5 +1,30 @@
 # @bombfarm/hero
 
+## 0.5.2
+
+### Patch Changes
+
+- c99325d: The Gear compare scoreboard now scores the clone the same way it scores your current gear. On a
+  hero whose own entry pulse is up — the ability that lifts damage for a stint — the two columns were
+  read off different bases, so a clone copied straight from current gear printed a Sustained DPS and
+  a Hit well below the figures right beside it while the delta under them still said +0.0%. Copy your
+  gear now and both columns read the same numbers. The percentage deltas are unchanged, and the
+  hits-to-kill rows still count a hit at the level the field sits at rather than an average.
+- c99325d: Controls that a screen reader announced twice, or that two controls answered to at once, now carry
+  one correct name each. A confirmation's corner close is announced as Close rather than repeating
+  the name of the Cancel button beside it; the two editable gear grids on the Items panel say which
+  loadout they edit, so the item level, rarity and forge pickers are no longer twenty-four controls
+  with eight names between them; and the panel switches — the compact-window controls on the download
+  page, the roster board's filters and the share card's — announce their panel once instead of twice.
+  Nothing moves on screen and every visible word is unchanged.
+- Updated dependencies [c99325d]
+- Updated dependencies [2c54735]
+- Updated dependencies [47d106f]
+- Updated dependencies [47d106f]
+  - @bombfarm/ui@0.17.0
+  - @bombfarm/domain@1.7.1
+  - @bombfarm/game-art@0.7.5
+
 ## 0.5.1
 
 ### Patch Changes

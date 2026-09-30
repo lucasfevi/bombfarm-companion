@@ -13,7 +13,7 @@ import {
   type HeroContext,
   type TreeState,
 } from './account-shared';
-import { readJson, writeJson } from './storage-json';
+import { readJson, readJsonArray, writeJson } from './storage-json';
 import { migrateCritDmgFlatBakeOnce } from './storage-critdmg-migration';
 import { migrateCritChanceFlatBakeOnce } from './storage-critchance-migration';
 import { migrateCritCdrRepoolBakeOnce } from './storage-critcdr-repool-migration';
@@ -33,6 +33,7 @@ export {
   clearStorageWriteErrorListenersForTests,
   onStorageWriteError,
   readJson,
+  readJsonArray,
   writeJson,
 } from './storage-json';
 export type { StorageWriteErrorListener } from './storage-json';
@@ -198,11 +199,11 @@ function reconcileActiveHero(heroes: HeroRecord[]) {
 
 
 export function loadHeroes(): HeroRecord[] {
-  let list = readJson<Partial<HeroRecord>[]>(HEROES_KEY, []);
+  let list = readJsonArray<Partial<HeroRecord>>(HEROES_KEY);
   let fromLegacy = false;
   if (list.length === 0) {
     for (const key of LEGACY_HEROES_KEYS) {
-      list = readJson<Partial<HeroRecord>[]>(key, []);
+      list = readJsonArray<Partial<HeroRecord>>(key);
       if (list.length > 0) {
         fromLegacy = true;
         break;
@@ -261,7 +262,7 @@ export function loadAccountShared(): AccountShared {
     }
   }
 
-  const heroes = readJson<Partial<HeroRecord>[]>(HEROES_KEY, []);
+  const heroes = readJsonArray<Partial<HeroRecord>>(HEROES_KEY);
   const activeId = getActiveHeroId();
   const donor =
     (activeId ? heroes.find((hero) => hero.id === activeId) : undefined) ?? heroes[0] ?? null;

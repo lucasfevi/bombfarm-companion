@@ -41,6 +41,9 @@ export type DataTableHeaderSortableProps<T extends string> = HeaderBaseProps & {
   sortDir: SortDir;
   onSort: (key: T) => void;
   stopPropagation?: boolean;
+  /** Drawn beside the sort button rather than inside it — an interactive glyph such as an
+   *  `InfoTip` is itself a button, and a button may not nest in another. */
+  aside?: ReactNode;
 };
 
 export type DataTableHeaderProps<T extends string = string> =

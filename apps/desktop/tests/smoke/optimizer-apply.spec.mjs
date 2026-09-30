@@ -248,16 +248,12 @@ test.describe('the Apply panel, solved, switched, confirmed and run through the 
     await expect(page.getByTestId('apply-step-points-press')).toBeEnabled();
   });
 
-  // `ConfirmDialog` names its own corner close icon `aria-label={cancelLabel}` too, so "Not now"
-  // matches two elements: the icon-only close and the ghost button carrying the same text as its
-  // visible label. The ghost button is the last "Not now"-named element in DOM order (the corner
-  // icon sits above the title, the actions row comes after the body).
   test('the Equip and Reset confirms open with their primary labels, and Not now cancels them', async () => {
     await page.getByTestId('apply-step-equip-press').click();
     const equipConfirm = page.getByRole('dialog').filter({ hasText: en('applyConfirmEquipTitle') });
     await expect(equipConfirm).toBeVisible({ timeout: 10_000 });
     await expect(equipConfirm.getByRole('button').last()).toHaveText(templateRegex(en('applyConfirmEquip')));
-    const equipCancel = equipConfirm.getByRole('button', { name: en('applyConfirmCancel') }).last();
+    const equipCancel = equipConfirm.getByRole('button', { name: en('applyConfirmCancel') });
     await expect(equipCancel).toBeVisible();
     await equipCancel.click();
     await expect(equipConfirm).toBeHidden();
@@ -266,7 +262,7 @@ test.describe('the Apply panel, solved, switched, confirmed and run through the 
     const pointsConfirm = page.getByRole('dialog').filter({ hasText: en('applyConfirmPointsTitle') });
     await expect(pointsConfirm).toBeVisible({ timeout: 10_000 });
     await expect(pointsConfirm.getByRole('button').last()).toHaveText(templateRegex(en('applyConfirmPoints')));
-    await pointsConfirm.getByRole('button', { name: en('applyConfirmCancel') }).last().click();
+    await pointsConfirm.getByRole('button', { name: en('applyConfirmCancel') }).click();
     await expect(pointsConfirm).toBeHidden();
   });
 

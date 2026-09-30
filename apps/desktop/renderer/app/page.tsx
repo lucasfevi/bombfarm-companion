@@ -38,6 +38,7 @@ import { InventoryView } from './inventory/inventory-view';
 import { ForgeQueueBar, isForgeQueueShown } from './forge/forge-queue-bar';
 import { FeedsRail } from './feeds-rail';
 import { GameFeed, liveTabMark } from './game-feed';
+import { OnlinePlayersFeed } from './online-players-feed';
 import { useFeeds } from '../lib/feeds/use-feeds';
 import { useForgeQueue } from '../lib/forge/forge-queue-store';
 import { ForgeView } from './forge/forge-view';
@@ -409,7 +410,12 @@ function HomePageContent({
             onLocaleChange={onLocaleChange}
           />
         }
-        status={<GameFeed status={status} />}
+        status={
+          <>
+            <GameFeed status={status} />
+            <OnlinePlayersFeed />
+          </>
+        }
         banner={
           granted && forgeQueueShown ? (
             <ForgeQueueBar

@@ -60,7 +60,12 @@ export function GearTab({
           <FieldRequired show={!hasGear}>{t.fieldRequired}</FieldRequired>
         </div>
         {reading.showSlotEditors && editing && renderSlot ? (
-          <GearSlotsGrid loadout={loadout} onPatchSlot={editing.onPatchSlot} renderSlot={renderSlot} />
+          <GearSlotsGrid
+            loadout={loadout}
+            onPatchSlot={editing.onPatchSlot}
+            renderSlot={renderSlot}
+            aria-label={`${t.slotEditor} · ${t.compareCurrent}`}
+          />
         ) : (
           <GearSlotCardsGrid
             loadout={loadout}

@@ -357,6 +357,7 @@ export function ForgeView({
         description={t.forgeLedgerClearDescription}
         confirmLabel={t.forgeLedgerClearConfirm}
         cancelLabel={t.forgeLedgerClearCancel}
+        closeLabel={t.confirmDialogClose}
         onConfirm={onClearHistory}
       />
 

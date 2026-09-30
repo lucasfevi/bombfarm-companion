@@ -1058,6 +1058,9 @@ const KEYS_ADDED: readonly string[] = [
   'privacyNavLabel', 'privacyTitle', 'privacyUpdated', 'privacyIntro', 'privacyPingTitle', 'privacyPingIntro', 'privacyPingFields', 'privacyPingAccountFields', 'privacyPingOptOut', 'privacySections',
   // Optimizer result rows' sort control (2026-09-27). One line for the cap.
   'teamPlanResultSortLabel', 'teamPlanResultSortName', 'teamPlanResultSortDelta', 'teamPlanResultSortDeltaPct', 'teamPlanResultSortAfter', 'teamPlanResultSortBefore', 'teamPlanResultSortLevel', 'teamPlanResultSortAscending', 'teamPlanResultSortDescending',
+  // The Items panel's two editable slot grids (2026-09-29) name themselves with this plus the
+  // compare side, so current gear and the clone are told apart by name rather than by position.
+  'slotEditor',
 ];
 
 /**

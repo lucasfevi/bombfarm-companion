@@ -139,7 +139,7 @@ describe('PvpView', () => {
     expect(html).toContain('2 of 10');
     expect(html).toContain('9 of 9');
     expect(html).toContain('>#2</p>');
-    expect(html).not.toContain('r2');
+    expect(html).not.toMatch(/\br2\b/);
   });
 
   it('draws the tier meter under the figures: the tier pair, the fill over the next threshold, the ticks, and the wins and days still to go', () => {
@@ -259,6 +259,14 @@ describe('PvpView', () => {
     expect(html).toContain('data-testid="pvp-squad" data-count="2"');
     expect(html.match(/data-testid="pvp-squad-unknown"/g)).toHaveLength(2);
     expect(html).not.toContain('<img');
+  });
+
+  it('pins every duel column width, so the rows the window swaps in on a scroll cannot resize them', () => {
+    const html = render(ready([row({})]));
+    expect(html).toMatch(/<table class="[^"]*table-fixed" aria-rowcount="1">/);
+    expect(html).toContain(
+      '<colgroup><col class="w-20"/><col class="w-48"/><col/><col class="w-24"/><col class="w-72"/><col class="w-40"/><col class="w-36"/><col class="w-28"/></colgroup>',
+    );
   });
 
   it('shows ten duels under the header and scrolls the rest, mounting a window of twenty over a spacer for the others', () => {

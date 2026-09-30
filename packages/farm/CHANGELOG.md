@@ -1,5 +1,19 @@
 # @bombfarm/farm
 
+## 1.2.10
+
+### Patch Changes
+
+- Updated dependencies [c99325d]
+- Updated dependencies [c99325d]
+- Updated dependencies [2c54735]
+- Updated dependencies [47d106f]
+- Updated dependencies [47d106f]
+  - @bombfarm/hero@0.5.2
+  - @bombfarm/ui@0.17.0
+  - @bombfarm/domain@1.7.1
+  - @bombfarm/game-art@0.7.5
+
 ## 1.2.9
 
 ### Patch Changes

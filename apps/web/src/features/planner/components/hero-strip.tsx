@@ -93,6 +93,7 @@ export function HeroStrip() {
         description={sub(t.confirmDelete, { name: heroName })}
         confirmLabel={t.del}
         cancelLabel={t.importCancel}
+        closeLabel={t.importClose}
         onConfirm={onDelete}
       />
     </>
