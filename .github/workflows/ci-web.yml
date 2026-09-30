@@ -80,10 +80,17 @@ jobs:
     needs: changes
     if: github.event_name != 'pull_request' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
-    # The domain suite alone is ~12 minutes of wall clock on this runner since the farm board
-    # prices a clear as an integral (the optimizer tests sweep thousands of rows); ci-desktop
-    # runs the same suite inside a 30-minute job.
-    timeout-minutes: 30
+    # The domain suite dominates this job and is GROWING. Measured on develop 2026-09-29, three
+    # runs in one day: 19m27s, 21m33s, 22m44s for that step alone, putting the whole job at
+    # 24m24s, 26m56s, 28m29s. The 30 minutes this once had left ~90 seconds of headroom, and the
+    # next PR to add a domain test spent it — the job was cancelled at 30m07s with every test in
+    # it passing, which reads as a failure and is not one.
+    #
+    # Raised rather than answered by trimming the suite: the runtime is real work (the farm board
+    # prices a clear as an integral, and the optimizer tests sweep thousands of rows), so a cap
+    # that forces tests out is the cap deciding coverage. Re-measure before assuming this is
+    # still enough. ci-desktop runs the same suite under no explicit cap at all.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 

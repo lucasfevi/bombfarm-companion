@@ -65,20 +65,33 @@ describe('runTeamPlan', () => {
     expect(result.plan.run.rounds).toBeLessThanOrEqual(MAX_ROUNDS);
   });
 
-  it('records evaluation count within the budget cap', () => {
+  it('converges strictly inside the evaluation cap on this fixture, so the cap is not what stops it', () => {
     const result = runTeamPlan(teamPlanInputFromFixture(TEAM_PLAN_FIXTURE));
     assertOk(result);
     expect(result.plan.run.evaluations).toBeGreaterThan(0);
-    expect(result.plan.run.evaluations).toBeLessThanOrEqual(TEAM_PLAN_MAX_EVALUATIONS);
+    expect(result.plan.run.evaluations).toBeLessThan(TEAM_PLAN_MAX_EVALUATIONS);
+    expect(result.plan.run.budgetExhausted).toBe(false);
   });
 
   it('returns budgetExhausted with planDps >= currentDps on a tiny evaluation cap', () => {
+    const cap = 3;
     const result = runTeamPlan(teamPlanInputFromFixture(TEAM_PLAN_FIXTURE), {
-      maxEvaluations: 3,
+      maxEvaluations: cap,
     });
     assertOk(result);
     expect(result.plan.run.budgetExhausted).toBe(true);
     expect(result.plan.planDps).toBeGreaterThanOrEqual(result.plan.currentDps);
+    expect(result.plan.run.evaluations).toBeGreaterThanOrEqual(cap);
+    expect(result.plan.run.evaluations).toBeLessThanOrEqual(cap);
+  });
+
+  it('spends one evaluation on a cap of zero, because a seed it has not evaluated has no result', () => {
+    // The only case where the count exceeds the cap, and it is arithmetic rather than slack: the
+    // first seed must be evaluated once for the search to have anything to return or compare.
+    const result = runTeamPlan(teamPlanInputFromFixture(TEAM_PLAN_FIXTURE), { maxEvaluations: 0 });
+    assertOk(result);
+    expect(result.plan.run.budgetExhausted).toBe(true);
+    expect(result.plan.run.evaluations).toBe(1);
   });
 
   it('never returns an empty proposedLoadouts map for optimize heroes', () => {
