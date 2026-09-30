@@ -1,5 +1,27 @@
 # @bombfarm/ui
 
+## 0.17.0
+
+### Minor Changes
+
+- 2c54735: The PVP tab's Rivals table can now be searched by name and sorted by any column. A search box
+  above the table narrows it to the opponents whose name contains what you type — ignoring case and
+  accents — with a count of how many are shown; pressing a column header sorts by it, and pressing
+  it again flips the order. It still opens worst record first. The columns of both the Rivals and
+  the Duel History tables also keep their width while you scroll: they used to be sized from
+  whichever rows happened to be drawn, so they shifted as new rows scrolled in. The design system's
+  sortable table header gains an `aside` slot for an info tip beside the sort button.
+
+### Patch Changes
+
+- c99325d: Controls that a screen reader announced twice, or that two controls answered to at once, now carry
+  one correct name each. A confirmation's corner close is announced as Close rather than repeating
+  the name of the Cancel button beside it; the two editable gear grids on the Items panel say which
+  loadout they edit, so the item level, rarity and forge pickers are no longer twenty-four controls
+  with eight names between them; and the panel switches — the compact-window controls on the download
+  page, the roster board's filters and the share card's — announce their panel once instead of twice.
+  Nothing moves on screen and every visible word is unchanged.
+
 ## 0.16.2
 
 ### Patch Changes
