@@ -1,5 +1,47 @@
 # @bombfarm/web
 
+## 0.25.2
+
+### Patch Changes
+
+- c99325d: The Gear compare scoreboard now scores the clone the same way it scores your current gear. On a
+  hero whose own entry pulse is up — the ability that lifts damage for a stint — the two columns were
+  read off different bases, so a clone copied straight from current gear printed a Sustained DPS and
+  a Hit well below the figures right beside it while the delta under them still said +0.0%. Copy your
+  gear now and both columns read the same numbers. The percentage deltas are unchanged, and the
+  hits-to-kill rows still count a hit at the level the field sits at rather than an average.
+- c99325d: Controls that a screen reader announced twice, or that two controls answered to at once, now carry
+  one correct name each. A confirmation's corner close is announced as Close rather than repeating
+  the name of the Cancel button beside it; the two editable gear grids on the Items panel say which
+  loadout they edit, so the item level, rarity and forge pickers are no longer twenty-four controls
+  with eight names between them; and the panel switches — the compact-window controls on the download
+  page, the roster board's filters and the share card's — announce their panel once instead of twice.
+  Nothing moves on screen and every visible word is unchanged.
+- 7cf247e: The status strip now shows how many players are online in the game right now, beside the game
+  connection, on every tab. It is the count the game's server records, refreshed every few minutes;
+  the cell stays empty rather than showing a zero when no fresh number is available. The app reads
+  it from the project's own server, once every five minutes, and the request carries nothing about
+  you. The privacy policy now lists that request.
+- c99325d: The web planner no longer fails to open when the roster your browser has saved is damaged — a
+  half-written entry, or one edited by hand into something that is no longer a list of heroes. It
+  used to be handed straight to the code that walks the roster, which stopped on it before any part
+  of the planner had drawn, leaving a blank page with no way back. The planner now starts with an
+  empty roster instead, so you can import your save again and carry on. A well-formed roster is read
+  exactly as before.
+- Updated dependencies [c99325d]
+- Updated dependencies [c99325d]
+- Updated dependencies [2c54735]
+- Updated dependencies [47d106f]
+- Updated dependencies [47d106f]
+  - @bombfarm/hero@0.5.2
+  - @bombfarm/ui@0.17.0
+  - @bombfarm/domain@1.7.1
+  - @bombfarm/farm@1.2.10
+  - @bombfarm/team-plan@0.5.2
+  - @bombfarm/account@0.3.8
+  - @bombfarm/game-art@0.7.5
+  - @bombfarm/pricing@0.4.1
+
 ## 0.25.1
 
 ### Patch Changes

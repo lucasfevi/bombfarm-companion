@@ -1,5 +1,61 @@
 # @bombfarm/desktop
 
+## 0.24.0
+
+### Minor Changes
+
+- 7cf247e: The status strip now shows how many players are online in the game right now, beside the game
+  connection, on every tab. It is the count the game's server records, refreshed every few minutes;
+  the cell stays empty rather than showing a zero when no fresh number is available. The app reads
+  it from the project's own server, once every five minutes, and the request carries nothing about
+  you. The privacy policy now lists that request.
+- 2c54735: The PVP tab's Rivals table can now be searched by name and sorted by any column. A search box
+  above the table narrows it to the opponents whose name contains what you type — ignoring case and
+  accents — with a count of how many are shown; pressing a column header sorts by it, and pressing
+  it again flips the order. It still opens worst record first. The columns of both the Rivals and
+  the Duel History tables also keep their width while you scroll: they used to be sized from
+  whichever rows happened to be drawn, so they shifted as new rows scrolled in. The design system's
+  sortable table header gains an `aside` slot for an info tip beside the sort button.
+
+### Patch Changes
+
+- c99325d: The Gear compare scoreboard now scores the clone the same way it scores your current gear. On a
+  hero whose own entry pulse is up — the ability that lifts damage for a stint — the two columns were
+  read off different bases, so a clone copied straight from current gear printed a Sustained DPS and
+  a Hit well below the figures right beside it while the delta under them still said +0.0%. Copy your
+  gear now and both columns read the same numbers. The percentage deltas are unchanged, and the
+  hits-to-kill rows still count a hit at the level the field sits at rather than an average.
+- c99325d: Controls that a screen reader announced twice, or that two controls answered to at once, now carry
+  one correct name each. A confirmation's corner close is announced as Close rather than repeating
+  the name of the Cancel button beside it; the two editable gear grids on the Items panel say which
+  loadout they edit, so the item level, rarity and forge pickers are no longer twenty-four controls
+  with eight names between them; and the panel switches — the compact-window controls on the download
+  page, the roster board's filters and the share card's — announce their panel once instead of twice.
+  Nothing moves on screen and every visible word is unchanged.
+- d0d924a: Quitting the app now always closes its database and writes out its log, even when something goes
+  wrong on the way down. The shutdown was a single unguarded sequence, so one failing step — a
+  service that threw while stopping — abandoned every step after it, leaving the database open and
+  the last of the log unwritten. That log is often the only evidence of whatever caused the failure,
+  and it was the part most reliably lost. Each step is now contained: a step that fails is recorded
+  by name and the rest still run, so the database closes and the log reaches disk either way.
+- Updated dependencies [c99325d]
+- Updated dependencies [c99325d]
+- Updated dependencies [7cf247e]
+- Updated dependencies [2c54735]
+- Updated dependencies [47d106f]
+- Updated dependencies [47d106f]
+  - @bombfarm/hero@0.5.2
+  - @bombfarm/ui@0.17.0
+  - @bombfarm/contracts@0.12.0
+  - @bombfarm/domain@1.7.1
+  - @bombfarm/farm@1.2.10
+  - @bombfarm/team-plan@0.5.2
+  - @bombfarm/account@0.3.8
+  - @bombfarm/game-art@0.7.5
+  - @bombfarm/game-api@0.6.4
+  - @bombfarm/game-data@0.0.20
+  - @bombfarm/pricing@0.4.1
+
 ## 0.23.1
 
 ### Patch Changes
