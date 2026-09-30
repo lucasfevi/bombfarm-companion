@@ -9,6 +9,7 @@ import {
   EMPTY_FORGE_HISTORY,
   EMPTY_PVP_HISTORY,
   emptyMarketSnapshotView,
+  emptyOnlinePlayersView,
   initialUpdateStatus,
   isIpcChannel,
   isMarketQuoteTarget,
@@ -34,6 +35,7 @@ import {
   type MarketQuoteResult,
   type MarketQuoteTarget,
   type MarketSnapshotView,
+  type OnlinePlayersView,
   type MiniLiveLayoutView,
   type PvpFilmView,
   type PvpHistoryResult,
@@ -70,6 +72,10 @@ export interface UpdateServicePort {
   check(): Promise<UpdateStatus>;
   download(): Promise<UpdateStatus>;
   installOnRestart(): UpdateStatus;
+}
+
+export interface OnlinePlayersServicePort {
+  getView(): OnlinePlayersView;
 }
 
 export interface MarketServicePort {
@@ -153,6 +159,7 @@ export interface IpcHandlerDeps<Image extends ClipboardImageLike = ClipboardImag
   getLiveSource: () => LiveSourcePort | null;
   getUpdateService: () => UpdateServicePort | null;
   getMarketService: () => MarketServicePort | null;
+  getOnlinePlayersService: () => OnlinePlayersServicePort | null;
   getForgeService: () => ForgeServicePort | null;
   getForgeHistory: () => ForgeHistoryPort | null;
   getForgeInjector: () => InjectorPort | null;
@@ -326,6 +333,7 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
     'updates:installOnRestart': (): UpdateStatus =>
       deps.getUpdateService()?.installOnRestart() ?? preServiceUpdateStatus(),
     'market:getSnapshot': () => deps.getMarketService()?.getView() ?? emptyMarketSnapshotView(),
+    'onlinePlayers:get': () => deps.getOnlinePlayersService()?.getView() ?? emptyOnlinePlayersView,
     'market:refreshItem': refreshMarketItem,
     'market:check': checkMarketNow,
     'forge:start': (request: ForgeStartRequest): ForgeStartResult =>

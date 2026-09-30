@@ -75,6 +75,9 @@ import {
 import { marketCachePath } from './market/market-cache.js';
 import { createMarketService, type MarketService } from './market/market-service.js';
 import { marketHttpGet } from './market/market-transport.js';
+import { offlineOnlinePlayersGet } from './online-players/online-players-offline.js';
+import { createOnlinePlayersService, type OnlinePlayersService } from './online-players/online-players-service.js';
+import { onlinePlayersHttpGet } from './online-players/online-players-transport.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 import {
@@ -133,6 +136,7 @@ let observationMarkWatch: MarkWatch | null = null;
 let liveFastPublisher: LiveFastPublisher | null = null;
 let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
+let onlinePlayersService: OnlinePlayersService | null = null;
 let forgeService: ForgeService | null = null;
 let forgeHistory: ForgeHistory | null = null;
 let applyService: ApplyService | null = null;
@@ -322,6 +326,7 @@ function registerIpcHandlers(): void {
       getLiveSource: () => liveSource,
       getUpdateService: () => updateService,
       getMarketService: () => marketService,
+      getOnlinePlayersService: () => onlinePlayersService,
       getForgeService: () => forgeService,
       getForgeHistory: () => forgeHistory,
       getForgeInjector: () => forgeInjector,
@@ -1045,6 +1050,17 @@ async function bootstrap(): Promise<void> {
     },
   });
 
+  // Public and player-free like the price list: it asks the project's own relay for one number
+  // and sends nothing about the account. Offline mode reads a fixed count instead of the network.
+  onlinePlayersService = createOnlinePlayersService({
+    httpGet: currentAccountSource() === 'fixture' ? offlineOnlinePlayersGet(() => Date.now()) : onlinePlayersHttpGet,
+    log,
+    now: () => Date.now(),
+    onChanged: (view) => {
+      emitEvent('onlinePlayers:changed', view);
+    },
+  });
+
   registerIpcHandlers();
   registerRendererProtocol(path.join(__dirname, '../../renderer/out'));
   await createMainWindow();
@@ -1081,6 +1097,7 @@ async function bootstrap(): Promise<void> {
   // that could not start is no reason to open the app without them.
   marketService.start();
   log.info({ scope: 'main', event: 'market.started' });
+  onlinePlayersService.start();
 }
 
 function resolveBootEnv(): AppEnv {
@@ -1189,6 +1206,10 @@ if (!gotLock) {
         stopMarketService: () => {
           marketService?.stop();
           marketService = null;
+        },
+        stopOnlinePlayersService: () => {
+          onlinePlayersService?.stop();
+          onlinePlayersService = null;
         },
         releaseForgeService: () => {
           forgeService = null;
