@@ -65,20 +65,28 @@ describe('runTeamPlan', () => {
     expect(result.plan.run.rounds).toBeLessThanOrEqual(MAX_ROUNDS);
   });
 
-  it('records evaluation count within the budget cap', () => {
+  it('converges strictly inside the evaluation cap on this fixture, so the cap is not what stops it', () => {
     const result = runTeamPlan(teamPlanInputFromFixture(TEAM_PLAN_FIXTURE));
     assertOk(result);
     expect(result.plan.run.evaluations).toBeGreaterThan(0);
-    expect(result.plan.run.evaluations).toBeLessThanOrEqual(TEAM_PLAN_MAX_EVALUATIONS);
+    expect(result.plan.run.evaluations).toBeLessThan(TEAM_PLAN_MAX_EVALUATIONS);
+    expect(result.plan.run.budgetExhausted).toBe(false);
   });
 
   it('returns budgetExhausted with planDps >= currentDps on a tiny evaluation cap', () => {
+    const cap = 3;
     const result = runTeamPlan(teamPlanInputFromFixture(TEAM_PLAN_FIXTURE), {
-      maxEvaluations: 3,
+      maxEvaluations: cap,
     });
     assertOk(result);
     expect(result.plan.run.budgetExhausted).toBe(true);
     expect(result.plan.planDps).toBeGreaterThanOrEqual(result.plan.currentDps);
+    // The cap is a stopping signal, not a hard ceiling: it is checked only after an evaluation has
+    // been charged. Two calls can then still be in flight — the one after the round loop's points
+    // pass, and the closing points pass — so the ceiling is the cap plus exactly those two. A run
+    // that spends a THIRD is spending unbudgeted work and should be read as a defect, not retuned.
+    expect(result.plan.run.evaluations).toBeGreaterThanOrEqual(cap);
+    expect(result.plan.run.evaluations).toBeLessThanOrEqual(cap + 2);
   });
 
   it('never returns an empty proposedLoadouts map for optimize heroes', () => {
