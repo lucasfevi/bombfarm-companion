@@ -12,34 +12,34 @@ const fasesNomes = JSON.parse(readFileSync(join(FIXTURES, 'fases-nomes.captured.
 const baseline = JSON.parse(readFileSync(join(root, 'wiki-drift/fingerprint.baseline.json'), 'utf8'));
 
 // Recomputed from the frozen capture with the same function, and reproduced here as literals so
-// a reviewer can compare by eye without running anything. The capture is the 2026-09-26 pull of
+// a reviewer can compare by eye without running anything. The capture is the 2026-09-29 pull of
 // the live endpoint, the same one the committed baseline was taken from — the test below that
 // compares the two is what keeps this capture from going stale again (it sat at 2026-08-14 for a
 // month while the catalog moved under it).
-const API_DATA_PAYLOAD_SHA256 = 'c248ee6849ab5b41c2c72ca77042add9b9150ceda9369bdee69788810413da41';
+const API_DATA_PAYLOAD_SHA256 = '1c2145bfabaed1dcdbd3e3b638f4cccb651a1db20c24af5fdcdfb41c1134ac09';
 const API_DATA_SECTION_SHA256 = {
   bolsa: '32e0d7a1eeb1e027b19c8efe0c9731792167b68346fc626adf5e1cb4bda7c6fb',
   boost: '69a3669fbad66c90a7ea19a41b6e0d69605f66fcb4e1b7f2850435b2c1dd813b',
   combate: 'b97475c0fc8784cc0e748bef836373f504522845198212cfe48f462f7e4cf725',
   conquistas: '45307b99ead1f60b7b95e5a3d2e390a4ea795831f69b9473e4c0f00ca38074c5',
   convite: '734f099a3c27f91869764bd8b7446a05b0121632a3c5c14719138f7221b30015',
-  diaria: 'c9a95b57f74a143144085b0cfa949d2ae107bb8f263aaa834c6fcb94b8b1eb58',
+  diaria: '37139dc0f4c183ace7593b9a8161aae20d36807d94cf3e29308dfbe48152231e',
   drops: '126937a4c0e30373e8b6ffe9a46ad3e6dc3ed45eb5e27ca7dd1579c9a9cded47',
   entidades: '8abc9272d059d18c5a1af18f2542f98579f7d84130a87fc93ec41d46f9925c86',
   fases: '837853ea4e700d6973ca675a9efcea85036da849d7b6b564fe327193078d8c4a',
   gemas: '611140ce2878ce4290580a2efaea428a765313efcf58e08b5a1459985df0bc83',
-  habilidades: '39bb65f65d23693be02066b70cf75e85a305fbbb2b7b94203c5c1bc06146effc',
+  habilidades: 'e5c161312052c07fc85d0946e75f67788fc876e160f6369b50a854b2339597a7',
   herois: '580aa49dbf4cf58cd4532ba36972525d13263d1fa39deb1e9d3b622c672215e1',
   inventario: 'f53ee894e7ca1e5b9bb78c589912f33fa099c175f66030b439fbb0ccc2edf74a',
   item_stats: '94041e8cad48122447a273106df9ecccec1c44d569659737dfd73fa44bb7cd79',
   itens: '3c62de2a14ac4dc705f23e3443986d3ffe9658fafd921c0f8998e760c75f11dc',
   mercado: 'a0f334373960949666fb787087fe2dde632de09c54cbca6080ada5e772f1aa25',
   pedra: 'baedadf2ed982b0c12570e2c82d6b4ce2f305d6c9ff401fc5b9f70f714196a43',
-  premios: '8f56c679d3d9d8503c9e75d346303130f9b540b6d0c3533ea60d1143f7ab9f1a',
-  pvp: 'd17015302379dc558d2c1c8559f576f308fc563bafa52d7ac709b9fc6d4474a6',
+  premios: 'e5e42ac4bd041411e9ece92b3ee3f3e337bf3f7f0e6fb79575118ebaed81e4ef',
+  pvp: '94da20fd028ee53086eeb4465738364af88d39fb07ac13a5d9ba478269233806',
   ranking_premio: '370ec771247cf90ab821e8ea75ae808802362cb38b9069c50f52813875d184a7',
   raridades: 'e014307c9fa181014e6669a97b435adf1813069b2cba314bb8623ee89b0bd070',
-  ritual: 'a486a2038923a790260fed88a7da126d44a922f223f2bcb12f7052e275619234',
+  ritual: '7651edd4871d5be5aeb13774ad41b2c05caee3a679d7fc8cf1928451fd01fd43',
   rotacao: '73e7c9aaa8005f213c3c956d180e13d028424e2b3cc5caf07fa01d886cf0dc5a',
   runas: '8fa20b25d9ca493cb44845d19621031f33bb8fc9a9a10cd932fa26e6129a4b78',
   skill_tree: 'eb974ad0de05cb0005f9652f651337795eb3d161a2abc0b1a91777ec7eec9e59',
