@@ -23,6 +23,9 @@ export const en = {
   gameFeedStaleTip: 'The game is open, but nothing has arrived from it for {age}',
   gameFeedStaleNoAgeTip: 'The game is open, but nothing is arriving from it',
   gameFeedNotRunningTip: 'No game process found — the app keeps looking on its own',
+  // onlinePlayers* — the count beside the game connection at the status strip's left.
+  onlinePlayersLabel: 'Players',
+  onlinePlayersTip: 'Players online in the game right now, as its server counts them. Refreshed every few minutes.',
   shellUpdateAvailable: 'Update available',
   shellUpdateDownloading: 'Updating… {percent}%',
   shellUpdateReady: 'Restart to update',

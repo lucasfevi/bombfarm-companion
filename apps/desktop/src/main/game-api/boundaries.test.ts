@@ -26,6 +26,10 @@ const MARKET_SNAPSHOT_HOST = 'raw.githubusercontent.com';
  *  its one host. The account path's rules are not widened for anything else. */
 const USAGE_PING_TRANSPORT_FILE = join(DESKTOP_MAIN, 'usage-ping/usage-ping-transport.ts');
 const USAGE_PING_HOST = 'api.bombfarm-companion.app';
+/** The online-players readout's one socket. A GET of one public number from the same host the
+ *  usage ping posts to; it carries no identity and reads nothing from the account. Exempted by
+ *  file for the host and the socket only — its GET-only shape is asserted below. */
+const ONLINE_PLAYERS_TRANSPORT_FILE = join(DESKTOP_MAIN, 'online-players/online-players-transport.ts');
 const SESSION_TOKEN_FILE_FILE = join(DESKTOP_MAIN, 'game-api/session-token-file.ts');
 const REQUEST_FILE = join(GAME_API_SRC, 'request.ts');
 /** The one write surface. It may name `POST` and exactly the six write routes below, and nothing
@@ -156,7 +160,7 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
       const allowed = new Set([
         'app.bombfarm.net',
         ...(file === MARKET_TRANSPORT_FILE ? [MARKET_SNAPSHOT_HOST] : []),
-        ...(file === USAGE_PING_TRANSPORT_FILE ? [USAGE_PING_HOST] : []),
+        ...(file === USAGE_PING_TRANSPORT_FILE || file === ONLINE_PLAYERS_TRANSPORT_FILE ? [USAGE_PING_HOST] : []),
       ]);
       for (const pattern of hostPatterns) {
         const re = new RegExp(pattern);
@@ -268,7 +272,14 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
     const fetchPattern = /\bfetch\s*\(/;
     const offenders: string[] = [];
     for (const file of scannedFiles) {
-      if (file === HTTPS_TRANSPORT_FILE || file === MARKET_TRANSPORT_FILE || file === USAGE_PING_TRANSPORT_FILE) continue;
+      if (
+        file === HTTPS_TRANSPORT_FILE ||
+        file === MARKET_TRANSPORT_FILE ||
+        file === USAGE_PING_TRANSPORT_FILE ||
+        file === ONLINE_PLAYERS_TRANSPORT_FILE
+      ) {
+        continue;
+      }
       const text = readFileSync(file, 'utf8');
       if (importPattern.test(text) || fetchPattern.test(text)) {
         offenders.push(file);
@@ -300,9 +311,22 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
 
   it('nothing outside usage-ping-transport.ts names the usage ping host', () => {
     const offenders = scannedFiles.filter(
-      (file) => file !== USAGE_PING_TRANSPORT_FILE && readFileSync(file, 'utf8').includes(USAGE_PING_HOST),
+      (file) =>
+        file !== USAGE_PING_TRANSPORT_FILE &&
+        file !== ONLINE_PLAYERS_TRANSPORT_FILE &&
+        readFileSync(file, 'utf8').includes(USAGE_PING_HOST),
     );
-    expect(offenders, `Only usage-ping-transport.ts names the usage host. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+    expect(offenders, `Only the usage ping and online-players transports name the API host. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+  });
+
+  it('the online-players transport names the API host, reaches the network, and sets no HTTP method, so it can only ever GET', () => {
+    const text = readFileSync(ONLINE_PLAYERS_TRANSPORT_FILE, 'utf8');
+    expect(text, 'sanity: the transport must name the host it reads').toContain(USAGE_PING_HOST);
+    expect(text, 'sanity: its exemption is not vacuous').toMatch(/\bfetch\s*\(/);
+    expect(/\bmethod\s*:/.test(foldStringConcatenation(text)), 'the online-players transport must never set a method').toBe(false);
+    expect(text, 'it must never import the game API or the session token').not.toMatch(
+      /from\s+['"](@bombfarm\/game-api|[^'"]*game-api\/[^'"]*|[^'"]*session-token[^'"]*)['"]/,
+    );
   });
 });
 

@@ -9,6 +9,7 @@ import {
   EMPTY_FORGE_HISTORY,
   EMPTY_PVP_HISTORY,
   emptyMarketSnapshotView,
+  emptyOnlinePlayersView,
   getFlavorDescriptor,
   IPC_CHANNELS,
   liveGap,
@@ -237,6 +238,7 @@ function wired(env: AppEnv = BETA_ENV) {
     getLiveSource: () => f.liveSource,
     getUpdateService: () => f.updateService,
     getMarketService: () => f.marketService,
+    getOnlinePlayersService: () => ({ getView: () => ONLINE_PLAYERS_VIEW }),
     getForgeService: () => f.forgeService,
     getForgeHistory: () => f.forgeHistory,
     getForgeInjector: () => f.forgeInjector,
@@ -278,6 +280,7 @@ function bare(env: AppEnv = BETA_ENV) {
     getLiveSource: () => null,
     getUpdateService: () => null,
     getMarketService: () => null,
+    getOnlinePlayersService: () => null,
     getForgeService: () => null,
     getForgeHistory: () => null,
     getForgeInjector: () => null,
@@ -599,6 +602,18 @@ describe('updates', () => {
 
   it('does say the updater is off for an unpackaged run with no channel, where it truly is', async () => {
     expect((await bare(DEV_ENV).handlers['updates:get']()).phase).toBe('disabled');
+  });
+});
+
+const ONLINE_PLAYERS_VIEW = { reading: { at: 1_790_727_000, players: 2537 } };
+
+describe('the online-players count', () => {
+  it('serves the reading main holds', () => {
+    expect(wired().handlers['onlinePlayers:get']()).toBe(ONLINE_PLAYERS_VIEW);
+  });
+
+  it('serves an empty view before the service is built', () => {
+    expect(bare().handlers['onlinePlayers:get']()).toEqual(emptyOnlinePlayersView);
   });
 });
 

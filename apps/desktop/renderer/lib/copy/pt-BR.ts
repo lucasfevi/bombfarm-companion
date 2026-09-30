@@ -22,6 +22,9 @@ export const ptBR: Copy = {
   gameFeedStaleTip: 'O jogo está aberto, mas nada chega dele há {age}',
   gameFeedStaleNoAgeTip: 'O jogo está aberto, mas nada está chegando dele',
   gameFeedNotRunningTip: 'Nenhum processo do jogo encontrado — o app continua procurando sozinho',
+  // onlinePlayers* — a contagem ao lado da conexão com o jogo, na ponta esquerda da barra de status.
+  onlinePlayersLabel: 'Jogadores',
+  onlinePlayersTip: 'Jogadores online no jogo agora, como o servidor conta. Atualiza a cada poucos minutos.',
   shellLoadingLabel: 'Carregando…',
   shellUpdateAvailable: 'Atualização disponível',
   shellUpdateDownloading: 'Atualizando… {percent}%',
