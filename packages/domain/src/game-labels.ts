@@ -305,12 +305,12 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: `+2.5% chance for a destroyed rock to shatter: each rock on its 4 sides takes ${SHATTER_FRAC * 100}% of the hit/level`,
   },
   pavio_curto: {
-    pt: '+0.5% redução de recarga (próprio)/nível, somada no fim, até o teto (não modelado)',
-    en: '+0.5% cooldown reduction (self)/level, added last, up to the cap (not modeled)',
+    pt: '+0.5% redução de recarga (próprio)/nível, somada no fim, até o teto',
+    en: '+0.5% cooldown reduction (self)/level, added last, up to the cap',
   },
   carnificina: {
-    pt: '+5% dano crítico do TIME/nível, somado ao bônus de crítico; dois portadores não passam do máximo de um (não modelado)',
-    en: "+5% TEAM crit damage/level, added to the crit bonus; two carriers never exceed one's maximum (not modeled)",
+    pt: '+5% dano crítico do TIME/nível, somado ao bônus de crítico; dois portadores não passam do máximo de um',
+    en: "+5% TEAM crit damage/level, added to the crit bonus; two carriers never exceed one's maximum",
   },
   matador_chefes: {
     pt: '+5% dano (próprio) no chefe do portão 2×2/nível, não vale para a Jaula (não modelado)',

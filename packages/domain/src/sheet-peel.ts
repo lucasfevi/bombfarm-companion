@@ -130,7 +130,10 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
     ...pooledLines(birth.penetration, star, 0, bonuses.penPct, POINT_GAIN.penetrationPctOfBase, pts.penetration, 0),
     ability: Math.max(0, sheetOther.penetration),
   };
-  const cdr = pooledLines(birth.cdr, star, sheetOther.cdr, bonuses.cdrPct, POINT_GAIN.cdrPctOfBase, pts.cdr, 0);
+  const cdr: SourceLines = {
+    ...pooledLines(birth.cdr, star, 0, bonuses.cdrPct, POINT_GAIN.cdrPctOfBase, pts.cdr, 0),
+    ability: Math.max(0, sheetOther.cdr),
+  };
   // Luck's tree term is a flat percentage-point addend, not base × pct.
   const luck: SourceLines = {
     ...pooledLines(birth.luck, star, 0, bonuses.luckPct, POINT_GAIN.luckPctOfBase, pts.luck, 0),

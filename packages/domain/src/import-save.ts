@@ -681,6 +681,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       critChanceFlat: mods.sheetCritChanceFlat,
       penetration: mods.sheetPenetrationFlat,
       critDmgFlat: mods.sheetCritDmgFlat,
+      cdr: mods.sheetCdrFlat,
     };
 
     // Birth-backed composition — birth_stats is guaranteed usable here,

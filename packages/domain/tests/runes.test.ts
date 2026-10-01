@@ -28,6 +28,7 @@ import { peelSheetStages } from '@bombfarm/domain/sheet-stages';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 const BIRTH = { attack: 180, energy: 200, speed: 60, critChance: 8, critDmg: 60, penetration: 6, cdr: 5, luck: 10 };
+const FLAT = { critDmgPct: 68, cdrFlat: 10 };
 const TREE: TreeSheetTotals = { danoStatic: 2.5, energyPct: 80, speedPct: 20, critChancePct: 25, critDmgPct: 68, luckFlatPct: 10 };
 const PTS = { attack: 40, energy: 30, speed: 10, critChance: 5, critDmg: 8, penetration: 0, cdr: 4, luck: 0 };
 const LEVEL = 97;
@@ -160,8 +161,18 @@ describe('a rune on the composed sheet', () => {
   it('strip is the exact inverse of apply', () => {
     const mult = runeSheetMultipliers(readHeroRunes(RUNE_AXES.map((axis) => rune(axis, 0.13))));
     const sheet = compose([]);
-    const back = stripRuneMultipliers(applyRuneMultipliers(sheet, TREE, mult), TREE, mult);
+    const back = stripRuneMultipliers(applyRuneMultipliers(sheet, FLAT, mult), FLAT, mult);
     for (const key of SHEET_KEYS) expect(back[key]).toBeCloseTo(sheet[key], 9);
+  });
+
+  it('a cooldown rune scales the roll, not Short Fuse: base × 1.10 + 10, not (base + 10) × 1.10', () => {
+    const runes = readHeroRunes([rune('cdr', 0.1)]);
+    const sheetOther = { ...emptySheetOther(), cdr: 10 };
+    const input = { birth: BIRTH, level: LEVEL, stars: STARS, sheetOther, loadout: emptyLoadout(), pts: PTS, tree: TREE };
+    const bare = composeSheetFromBirth(input);
+    const runed = composeSheetFromBirth({ ...input, runes });
+    expect(runed.cdr).toBeCloseTo((bare.cdr - 10) * 1.1 + 10, 9);
+    expect(runed.cdr).not.toBeCloseTo(bare.cdr * 1.1, 3);
   });
 
   it('the stages table gains a rune Δ that closes the telescoping sum', () => {
@@ -217,6 +228,24 @@ describe('spent-point recovery on a runed sheet', () => {
     const { pts, issues } = infer(compose(runes), runes);
     expect(issues).toEqual([]);
     expect(pts).toEqual(PTS);
+  });
+
+  it('a Short Fuse carrier under a cooldown rune still infers exactly the points spent', () => {
+    const runes = readHeroRunes([rune('cdr', 0.1)]);
+    const sheetOther = { ...emptySheetOther(), cdr: 10 };
+    const sheet = composeSheetFromBirth({ birth: BIRTH, level: LEVEL, stars: STARS, sheetOther, loadout: emptyLoadout(), pts: PTS, tree: TREE, runes });
+    const { pts, issues } = inferSpentPoints({ birth: BIRTH, level: LEVEL, stars: STARS, sheetOther, loadout: emptyLoadout(), tree: TREE, sheet, statPointsAvailable: 0, runes });
+    expect(issues).toEqual([]);
+    expect(pts).toEqual(PTS);
+  });
+
+  it('a Short Fuse carrier with no points spent on cooldown infers zero cooldown points', () => {
+    const runes = readHeroRunes([rune('cdr', 0.1)]);
+    const sheetOther = { ...emptySheetOther(), cdr: 10 };
+    const noCdr = { ...PTS, cdr: 0 };
+    const sheet = composeSheetFromBirth({ birth: BIRTH, level: LEVEL, stars: STARS, sheetOther, loadout: emptyLoadout(), pts: noCdr, tree: TREE, runes });
+    const { pts } = inferSpentPoints({ birth: BIRTH, level: LEVEL, stars: STARS, sheetOther, loadout: emptyLoadout(), tree: TREE, sheet, statPointsAvailable: 0, runes });
+    expect(pts.cdr).toBe(0);
   });
 
   it('charges the rune to points when the rune is not handed over — the failure this exists to prevent', () => {

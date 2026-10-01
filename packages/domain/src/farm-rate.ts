@@ -480,7 +480,7 @@ type FieldLayer = {
  * What the team auras and the field size do to one hero's pipeline terms, in closed form. The
  * pipeline applies the auras as the LAST step of `derive`: Grito multiplies attack (and so the
  * attack per point), Marcha multiplies speed (and its delta), Presságio adds flat crit points,
- * Brecha adds flat penetration points, and Fôlego combines with the hero's own drain reduction
+ * Carnificina adds flat crit-damage points, Brecha adds flat penetration points, and Fôlego combines with the hero's own drain reduction
  * ({@link combineDrainRate}) — nothing else in the sheet or the farm `Context` reads them.
  * Matilha's pack factor multiplies `dmgMult` at the allies the rotation keeps beside the
  * carrier. Applying the same operations to the aura-free terms reproduces the pipeline's output
@@ -501,6 +501,7 @@ function priceAuraLayer(basis: HeroFarmBasis, field: FieldLayer): HeroFarmBasis 
       attack: base.effective.attack * mults.attackMult,
       speed: base.effective.speed * mults.speedMult,
       critChance: base.effective.critChance + mults.teamCritFlat,
+      critDmg: base.effective.critDmg + mults.teamCritDmgFlat,
       penetration: base.effective.penetration + mults.teamPenFlat,
       attackPerPoint: base.effective.attackPerPoint * mults.attackMult,
     },

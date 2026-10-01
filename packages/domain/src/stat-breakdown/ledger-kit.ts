@@ -24,13 +24,18 @@ export function gearedFor(statKey: SheetDisplayKey, facts: PipelineFacts): numbe
 /**
  * {@link gearedFor} with the hero's runes taken back off, so the birth → gear → tree lines
  * are built from what the game built before the rune multiplied it. Crit damage's rune sits
- * inside the tree's flat add (`applyRuneMultipliers`), so that add is peeled first and put back.
+ * inside the tree's flat add and cooldown reduction's inside Short Fuse's (`applyRuneMultipliers`), so
+ * that add is peeled first and put back.
  */
 export function gearedBeforeRunesFor(statKey: SheetDisplayKey, facts: PipelineFacts, treePct: number): number {
   const geared = gearedFor(statKey, facts);
   const factor = runeFactorFor(statKey, facts);
   if (factor === 1) return geared;
   if (statKey === 'critDmg') return (geared - treePct) / factor + treePct;
+  if (statKey === 'cdr') {
+    const flat = Math.max(0, facts.sheetOther.cdr);
+    return (geared - flat) / factor + flat;
+  }
   return geared / factor;
 }
 
@@ -48,6 +53,10 @@ export function runeExpiringFirst(statKey: SheetDisplayKey, facts: PipelineFacts
   return soonest;
 }
 
+function heldOutOfRune(statKey: SheetDisplayKey, facts: PipelineFacts): number {
+  return statKey === 'cdr' ? Math.max(0, facts.sheetOther.cdr) : 0;
+}
+
 /** The `× (1 + p)` step for this key's runes; nothing is pushed on a hero carrying none. */
 export function pushRune(steps: LedgerStep[], statKey: SheetDisplayKey, facts: PipelineFacts): void {
   const factor = runeFactorFor(statKey, facts);
@@ -58,7 +67,7 @@ export function pushRune(steps: LedgerStep[], statKey: SheetDisplayKey, facts: P
     source: 'rune',
     op: '×',
     amount: factor,
-    running: previous.running * factor,
+    running: (previous.running - heldOutOfRune(statKey, facts)) * factor + heldOutOfRune(statKey, facts),
     runePlaySecondsLeft: runeExpiringFirst(statKey, facts)?.playSecondsLeft,
   });
 }
@@ -78,7 +87,6 @@ function sheetOtherFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): numbe
     case 'speed':
       return otherPct.speed;
     case 'cdr':
-      return otherPct.cdr;
     case 'penetration':
     case 'critChance':
     case 'critDmg':
@@ -93,6 +101,7 @@ function sheetAbilityFlatFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct):
   if (statKey === 'critDmg') return Math.max(0, otherPct.critDmgFlat);
   if (statKey === 'critChance') return Math.max(0, otherPct.critChanceFlat);
   if (statKey === 'penetration') return Math.max(0, otherPct.penetration);
+  if (statKey === 'cdr') return Math.max(0, otherPct.cdr);
   return 0;
 }
 
@@ -107,7 +116,7 @@ function sheetAbilityFlatFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct):
  * values rather than to this peeled figure.
  */
 export function birthFromNaked(statKey: SheetDisplayKey, facts: PipelineFacts): number {
-  // Peel the flat sheet-ability addend (crit damage, crit chance, penetration) before the
+  // Peel the flat sheet-ability addend (crit damage, crit chance, penetration, cooldown reduction) before the
   // multiplicative peels.
   const naked = facts.naked[statKey] - sheetAbilityFlatFor(statKey, facts.sheetOther);
   const levelMult = levelPowerMult(facts.level);
@@ -225,7 +234,7 @@ export function pushBirthThroughAbilities(
   if (other > EPS) {
     pushMul(steps, 'sheetAbilities', otherFactor(other), sheetAbilityNote(statKey));
   }
-  // Crit damage's, crit chance's and penetration's sheet abilities are flat addends, not pool factors.
+  // Crit damage's, crit chance's, penetration's and cooldown reduction's sheet abilities are flat addends, not pool factors.
   const abilityFlat = sheetAbilityFlatFor(statKey, facts.sheetOther);
   if (abilityFlat > EPS) {
     pushAdd(steps, 'sheetAbilities', abilityFlat, sheetAbilityNote(statKey));

@@ -61,7 +61,7 @@ type Scored = Shown & { readonly sheet: SheetStats };
  */
 const RUNED: Scored = {
   hero: { abilities: { explosao_ampla: 20 }, runes: RUNES, power: STORED_POWER },
-  sheet: gamePowerInputWithRunes(RUNE_FREE, RUNES, TREE_CRIT_DMG_PCT).sheet,
+  sheet: gamePowerInputWithRunes(RUNE_FREE, RUNES, { critDmgPct: TREE_CRIT_DMG_PCT, cdrFlat: 0 }).sheet,
 };
 
 const PLAIN: Scored = {

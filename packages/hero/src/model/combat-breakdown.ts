@@ -100,6 +100,8 @@ const CARD_FOR_EFFECT: Record<AbilityEffect['kind'], BreakdownStatId | null> = {
   critChanceFlat: 'critChance',
   critDmgFlat: 'critDmg',
   penetrationPp: 'penetration',
+  cdrFlat: 'cdr',
+  teamCritDmgFlat: 'critDmg',
   drainPct: 'fieldSeconds',
   rangeCells: 'activeDps',
   // Expectations, not blasts: the second blast is its own popup and the execute destroys the

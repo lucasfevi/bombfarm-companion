@@ -34,7 +34,7 @@ export function defaultNaked(
     critChance: base.critChance * mult + otherClamped(other.critChanceFlat),
     critDmg: base.critDmg * mult + otherClamped(other.critDmgFlat),
     penetration: base.penetration * mult + otherClamped(other.penetration),
-    cdr: base.cdr * (1 + otherClamped(other.cdr)) * mult,
+    cdr: base.cdr * mult + otherClamped(other.cdr),
     // Star-scaled, no `other` term and level-independent.
     luck: base.luck * mult,
   };
@@ -89,6 +89,21 @@ export function rescaleNakedCritDmg(
 }
 
 /**
+ * Spending/removing Pavio Curto swaps its FLAT cooldown-reduction addend on the naked sheet —
+ * the hero's own roll is preserved, exactly like `rescaleNakedCritChance`.
+ */
+export function rescaleNakedCdr(
+  naked: SheetStats,
+  oldFlat: number,
+  newFlat: number,
+): SheetStats {
+  const oldF = Math.max(0, oldFlat);
+  const newF = Math.max(0, newFlat);
+  if (oldF === newF) return naked;
+  return { ...naked, cdr: naked.cdr - oldF + newF };
+}
+
+/**
  * Spending/removing a sheet crit-chance ability (Olho Clínico) swaps its FLAT addend on the
  * naked sheet — the hero's own roll is preserved, exactly like `rescaleNakedCritDmg`. It was a
  * ratio rescale while the ability was a percentage of the roll; the 2026-08-23 patch made it
@@ -125,6 +140,8 @@ export function nakedAfterSheetAbilityChange(
       return rescaleNakedPen(naked, prevMods.sheetPenetrationFlat, nextMods.sheetPenetrationFlat);
     case 'critDmgFlat':
       return rescaleNakedCritDmg(naked, prevMods.sheetCritDmgFlat, nextMods.sheetCritDmgFlat);
+    case 'cdrFlat':
+      return rescaleNakedCdr(naked, prevMods.sheetCdrFlat, nextMods.sheetCdrFlat);
     default:
       return naked;
   }
@@ -134,8 +151,8 @@ export function nakedAfterSheetAbilityChange(
  * Adding/removing a ★ (gems ritual) rescales every naked sheet stat except Speed
  * (Attack, Energy, Crit %, Crit Dmg, Penetration, CDR, Luck).
  *
- * `critChanceFlat` / `critDmgFlat` are the two sheet-ability addends already inside `naked`
- * (`SheetOtherPct`). Both are held OUT of the ★ ratio so this stays the algebraic inverse of
+ * `critChanceFlat` / `critDmgFlat` / `cdrFlat` are the sheet-ability addends already inside
+ * `naked` (`SheetOtherPct`). All are held OUT of the ★ ratio so this stays the algebraic inverse of
  * `nakedFromBirth` (`birth × star + flat`); leaving them in would silently star-scale Olho
  * Clínico's and Golpe Brutal's contributions. Both default to `0`, which is exactly the old
  * behaviour for every hero without the abilities. Whether the game itself star-scales those
@@ -148,11 +165,13 @@ export function rescaleNakedForStars(
   toStars: number,
   critDmgFlat = 0,
   critChanceFlat = 0,
+  cdrFlat = 0,
 ): SheetStats {
   const ratio = starsMult(toStars) / starsMult(fromStars);
   if (ratio === 1) return naked;
   const flat = Math.max(0, critDmgFlat);
   const critFlat = Math.max(0, critChanceFlat);
+  const cdrFlatClamped = Math.max(0, cdrFlat);
   return {
     ...naked,
     attack: naked.attack * ratio,
@@ -160,7 +179,7 @@ export function rescaleNakedForStars(
     critChance: (naked.critChance - critFlat) * ratio + critFlat,
     critDmg: (naked.critDmg - flat) * ratio + flat,
     penetration: naked.penetration * ratio,
-    cdr: naked.cdr * ratio,
+    cdr: (naked.cdr - cdrFlatClamped) * ratio + cdrFlatClamped,
     luck: naked.luck * ratio,
   };
 }
@@ -227,7 +246,14 @@ export function rescaleHeroForStars(
     geared,
     loadout,
     sheetOther,
-    rescaleNakedForStars(naked, fromStars, toStars, sheetOther.critDmgFlat, sheetOther.critChanceFlat),
+    rescaleNakedForStars(
+      naked,
+      fromStars,
+      toStars,
+      sheetOther.critDmgFlat,
+      sheetOther.critChanceFlat,
+      sheetOther.cdr,
+    ),
   );
 }
 

@@ -21,9 +21,9 @@ describe('auraCoverageFor', () => {
       'marcha_acelerada',
       'folego_mineiro',
       'brecha',
+      'carnificina',
       'passagem_bastao',
       'fortuna',
-      'carnificina',
       'aprendiz',
     ]);
     expect(coverage.total).toBe(9);

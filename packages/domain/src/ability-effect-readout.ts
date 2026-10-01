@@ -65,8 +65,6 @@ type UnmodelledReadoutKind =
   | 'passageAttackPct'
   | 'dropTierPct'
   | 'goldPct'
-  | 'cdrPct'
-  | 'teamCritDmgPct'
   | 'bossDmgPct'
   | 'xpPct';
 
@@ -76,15 +74,13 @@ const UNMODELLED_PER_LEVEL: Record<string, { kind: UnmodelledReadoutKind; perLev
   olho_lapidador: { kind: 'dropTierPct', perLevel: 2.5 },
   veia_ouro: { kind: 'goldPct', perLevel: 2 },
   fortuna: { kind: 'goldPct', perLevel: 0.5 },
-  pavio_curto: { kind: 'cdrPct', perLevel: 0.5 },
-  carnificina: { kind: 'teamCritDmgPct', perLevel: 5 },
   matador_chefes: { kind: 'bossDmgPct', perLevel: 5 },
   aprendiz: { kind: 'xpPct', perLevel: 0.75 },
 };
 
 export const UNMODELLED_READOUT_PER_LEVEL: Readonly<typeof UNMODELLED_PER_LEVEL> = UNMODELLED_PER_LEVEL;
 
-const UNMODELLED_KINDS = new Set<AbilityEffectReadout['kind']>(['none', 'cageDmgPct', 'passageAttackPct', 'dropTierPct', 'goldPct', 'cdrPct', 'teamCritDmgPct', 'bossDmgPct', 'xpPct']);
+const UNMODELLED_KINDS = new Set<AbilityEffectReadout['kind']>(['none', 'cageDmgPct', 'passageAttackPct', 'dropTierPct', 'goldPct', 'bossDmgPct', 'xpPct']);
 
 /** Whether the combat model prices this readout, or merely repeats a figure the wiki publishes. */
 export function isPricedReadout(readout: AbilityEffectReadout): boolean {
@@ -97,10 +93,10 @@ const TEAM_AURA_IDS = new Set<string>(TEAM_AURA_SWITCH_IDS);
 
 /**
  * Every ability the game scopes to the TEAM: the switched auras plus the team auras the combat
- * model never prices (Fortuna's gold is the farm board's layer; Carnificina and Aprendiz are not
- * modelled yet), so they belong to no switch list.
+ * model never prices (Fortuna's gold is the farm board's layer; Aprendiz is not modelled yet), so
+ * they belong to no switch list.
  */
-export const TEAM_ABILITY_IDS = [...TEAM_AURA_SWITCH_IDS, 'fortuna', 'carnificina', 'aprendiz'] as const;
+export const TEAM_ABILITY_IDS = [...TEAM_AURA_SWITCH_IDS, 'fortuna', 'aprendiz'] as const;
 
 export type TeamAbilityId = (typeof TEAM_ABILITY_IDS)[number];
 
@@ -134,6 +130,10 @@ function readoutKind(effect: AbilityEffect): AbilityEffectReadout['kind'] {
       return 'penetrationPoints';
     case 'critDmgFlat':
       return 'critDmgPct';
+    case 'cdrFlat':
+      return 'cdrPct';
+    case 'teamCritDmgFlat':
+      return 'teamCritDmgPct';
     case 'rangeCells':
       return 'rangeCells';
     case 'secondBlastPct':
@@ -182,6 +182,8 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
       return { kind, value: mods.sheetPenetrationFlat };
     case 'critDmgPct':
       return { kind, value: mods.sheetCritDmgFlat };
+    case 'cdrPct':
+      return { kind, value: mods.sheetCdrFlat };
     case 'rangeCells':
       return { kind, value: mods.rangeCells };
     case 'secondBlast':
@@ -206,7 +208,6 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
     case 'passageAttackPct':
     case 'dropTierPct':
     case 'goldPct':
-    case 'cdrPct':
     case 'teamCritDmgPct':
     case 'bossDmgPct':
     case 'xpPct':

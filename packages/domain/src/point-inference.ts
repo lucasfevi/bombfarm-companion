@@ -9,7 +9,7 @@ import { POINT_GAIN, STAT_CAPS } from './model/rarity-constants';
 import { composeAttack, starsMult, sumGearBonuses } from './gear/catalog';
 import type { Loadout, SheetOtherPct, SheetStats } from './gear/types';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
-import { runeSheetMultipliers, stripRuneMultipliers, type HeroRune } from './runes';
+import { flatAddsOutsideRune, runeSheetMultipliers, stripRuneMultipliers, type HeroRune } from './runes';
 
 /**
  * Six orders of magnitude above the measured worst residual (8.9e-13) and six
@@ -90,7 +90,7 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
   const { birth, level, stars, sheetOther, loadout, tree, statPointsAvailable } = input;
   const sheet =
     input.runes && input.runes.length > 0
-      ? stripRuneMultipliers(input.sheet, tree, runeSheetMultipliers(input.runes))
+      ? stripRuneMultipliers(input.sheet, flatAddsOutsideRune(tree, sheetOther), runeSheetMultipliers(input.runes))
       : input.sheet;
 
   const naked = nakedFromBirth(birth, level, stars, sheetOther);
@@ -100,6 +100,8 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
   const baseCritChance = naked.critChance - critChanceFlat;
   const penetrationFlat = Math.max(0, sheetOther.penetration);
   const basePenetration = naked.penetration - penetrationFlat;
+  const cdrFlat = Math.max(0, sheetOther.cdr);
+  const baseCdr = naked.cdr - cdrFlat;
 
   // Invert applySkillTree to recover the pre-tree (gear + points) pool subtotal.
   const pool = {
@@ -152,7 +154,9 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
       0,
       POINT_GAIN.penetrationPctOfBase,
     ),
-    cdr: solveShared(pool.cdr, naked.cdr, bonuses.cdrPct, sheetOther.cdr, POINT_GAIN.cdrPctOfBase),
+    // Pavio Curto's points are subtracted off both sides like Ponta de Diamante's, or every
+    // carrier would import with phantom cooldown-reduction points.
+    cdr: solveShared(pool.cdr - cdrFlat, baseCdr, bonuses.cdrPct, 0, POINT_GAIN.cdrPctOfBase),
     luck: solveShared(pool.luck, naked.luck, bonuses.luckPct, 0, POINT_GAIN.luckPctOfBase),
   };
 
