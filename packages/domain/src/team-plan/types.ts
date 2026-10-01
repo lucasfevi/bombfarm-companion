@@ -149,8 +149,20 @@ export type RosterRegime = 'underSaturated' | 'saturated';
  * sits in (the account's next gate when none is named), or the one-minute duel. Energy is priced
  * for the field-seconds it buys INSIDE the window and nothing past it, which is what separates
  * them from `'dps'`: a rotation rewards a stint that outlasts the rest, a window does not.
+ *
+ * `'setFarm'` is the farm search scored on item chests of ONE equipment set per hour
+ * ({@link TeamPlanInput.farmSet}): the phase argmax runs over that set's drop band only, a phase
+ * whose clear outlasts {@link SET_FARM_MAX_CLEAR_SECS} does not count, and Luck is a point
+ * destination because it multiplies every chest roll.
  */
-export type TeamPlanObjective = 'dps' | 'farm' | 'gateClear' | 'pvp';
+export type TeamPlanObjective = 'dps' | 'farm' | 'gateClear' | 'pvp' | 'setFarm';
+
+/** A set-farming clear slower than this stops being a farm and becomes a fight. */
+export const SET_FARM_MAX_CLEAR_SECS = 20;
+
+export function isFarmSearchObjective(objective: TeamPlanObjective | undefined): boolean {
+  return objective === 'farm' || objective === 'setFarm';
+}
 
 export function isCombatWindowObjective(objective: TeamPlanObjective | undefined): boolean {
   return objective === 'gateClear' || objective === 'pvp';
@@ -309,6 +321,13 @@ export type TeamPlanInput = {
   forgeFloor: number;
   /** Omitted ⇒ `'dps'`, the historical behaviour. See {@link TeamPlanObjective}. */
   objective?: TeamPlanObjective;
+  /**
+   * Under `'setFarm'` only: the equipment set id to farm (`'ember'` … `'void'`, the catalog's
+   * `setsByLevel` values). Required there — an unknown or absent set makes the run throw, the
+   * same way a farm run with no `maxPhase` does. `targetPhase` is ignored under `'setFarm'`:
+   * the set decides which phases are candidates.
+   */
+  farmSet?: string | null;
   /**
    * Omitted ⇒ `'both'`, the historical behaviour. Honoured under EITHER objective — the
    * restriction is on what the plan may ask the player to do, not on how it scores.

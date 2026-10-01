@@ -24,7 +24,8 @@ export type {
   WaterfallStep,
 } from './types';
 
-export { isCombatWindowObjective } from './types';
+export { isCombatWindowObjective, isFarmSearchObjective, SET_FARM_MAX_CLEAR_SECS } from './types';
+export { itemLevelShareOnPhase, SET_FARM_SETS, setFarmBand, type SetFarmBand } from './set-farm';
 export { mayMoveGear, mayRespendPoints } from './allowed-changes';
 export { planFieldSlots, resolveCombatWindow, type ResolvedCombatWindow } from './combat-window';
 export { COMMIT_INDEX, COMMIT_ORDER, commitVectorEquals, pointsToCommitVector } from './apply-commit-vector';
