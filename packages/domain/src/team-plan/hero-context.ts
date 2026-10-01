@@ -46,6 +46,13 @@ export function buildHeroPlanContext(
   };
 }
 
+export function scopeOfHero(
+  hero: Pick<TeamPlanHeroInput, 'heroId' | 'battleAllowed'>,
+  scopeByHeroId: Record<string, ScopeState>,
+): ScopeState {
+  return scopeByHeroId[hero.heroId] ?? (hero.battleAllowed === false ? 'donate' : 'optimize');
+}
+
 export function buildHeroPlanContexts(
   heroes: TeamPlanHeroInput[],
   account: TeamPlanAccountInput,
@@ -55,7 +62,7 @@ export function buildHeroPlanContexts(
   const contexts: HeroPlanContext[] = [];
 
   for (const hero of heroes) {
-    const scope = scopeByHeroId[hero.heroId] ?? (hero.battleAllowed === false ? 'donate' : 'optimize');
+    const scope = scopeOfHero(hero, scopeByHeroId);
     if (scope === 'leaveAlone') {
       if (!hero.birth) continue;
       const ctx = buildHeroPlanContext(hero, account, scope);

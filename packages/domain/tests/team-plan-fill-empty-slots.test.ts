@@ -66,7 +66,7 @@ function planWith(ignoreFieldCrowding: boolean, forgeFloor: number) {
     { heroId: 'hero1', name: 'Hero One', level: 90, scope: 'optimize', pts: currentPts.hero1 },
   ] as unknown as HeroPlanContext[];
   const gearInput = {
-    heroes: [{ heroId: 'hero1', name: 'Hero One', level: 90, pts: currentPts.hero1 }],
+    heroes: [{ heroId: 'hero1', name: 'Hero One', level: 90, abilities: {}, pts: currentPts.hero1 }],
     inventory: [freeAmulet()],
     account: { slots: 1, fieldSlots: 1 },
     scopeByHeroId: { hero1: 'optimize' },

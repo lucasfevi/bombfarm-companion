@@ -107,6 +107,7 @@ export type DeriveInput = {
    *  crit points — see `CombatMults.teamCritFlat`. There is no separate "own" input here,
    *  matching `attackMult`/`speedMult`: the combination happens once, in `computeCombatMults`. */
   teamCritFlat: number;
+  critCeiling?: number;
   /** The whole skill tree, once — replaces the four scattered tree inputs. */
   treeSheet: TreeSheetTotals;
   /** FLAT penetration points added after the sheet — the roster's capped Brecha total
@@ -224,6 +225,7 @@ export function derive(input: DeriveInput): DeriveResult {
     cdr: adjusted.cdr,
     attackPerPoint: delta.attack * attackMult,
     energyPerPoint: delta.energy * energyMult,
+    ...(input.critCeiling !== undefined ? { critCeiling: input.critCeiling } : {}),
   };
   const effectiveDelta: Record<SheetKey, number> = {
     attack: effective.attackPerPoint,

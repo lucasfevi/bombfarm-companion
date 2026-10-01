@@ -69,6 +69,7 @@ export type FarmContext = {
    * nothing. Absent, the roster is a rotation and presence is duty.
    */
   windowSecs?: number;
+  critFlatAtFullPresence?: number;
 };
 
 export type HeroPlanContext = {
@@ -292,6 +293,7 @@ export type FrozenHeroFarmTerms = {
  */
 export type TeamPlanFarmObjective = {
   auras: Record<TeamBuffId, number>;
+  critFlatAtFullPresence: number;
   farm: FarmContext;
   account: SquadFarmAccount;
   /** Carries `pinnedPhase` when {@link TeamPlanInput.targetPhase} named one, which is what turns

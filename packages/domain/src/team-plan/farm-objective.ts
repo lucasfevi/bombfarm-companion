@@ -46,6 +46,7 @@ import { computeCombatMults } from '../derive';
 import { DEFAULT_CASA_SLOTS } from '../casa-slots';
 import { alliesOverRotation, fieldSeconds } from '../model';
 import { computeTeamBuffsOverRotation, holdAurasAtCap, type AurasAtCap, type TeamBuffId } from '../team-buffs';
+import { critPointCeilingOf, teamAuraLayer } from '../team-aura-layer';
 import { isSquadScope } from './auras';
 import { scoreHeroLoadout } from './score';
 import type { Loadout, PointAlloc } from '../gear/types';
@@ -157,7 +158,7 @@ function priceField(
   farm: FarmContext,
   fieldSlots: number,
   aurasAtCap: AurasAtCap | undefined,
-): { auras: Record<TeamBuffId, number>; alliesByHeroId: Record<string, number> } {
+): { auras: Record<TeamBuffId, number>; critFlatAtFullPresence: number; alliesByHeroId: Record<string, number> } {
   // Held at both steps, as the estimator holds them (`priceFieldForAssignment`).
   const atFullPresence = holdAurasAtCap(computeTeamBuffsOverRotation(squadContexts, null), aurasAtCap);
   const presence = squadContexts.map((ctx) =>
@@ -169,7 +170,11 @@ function priceField(
   squadContexts.forEach((ctx, index) => {
     alliesByHeroId[ctx.heroId] = alliesOverRotation(presence, index, fieldSlots);
   });
-  return { auras: holdAurasAtCap(computeTeamBuffsOverRotation(squadContexts, presence), aurasAtCap), alliesByHeroId };
+  return {
+    auras: holdAurasAtCap(computeTeamBuffsOverRotation(squadContexts, presence), aurasAtCap),
+    critFlatAtFullPresence: teamAuraLayer(atFullPresence).teamCritFlat,
+    alliesByHeroId,
+  };
 }
 
 /** The rule both objectives share now lives beside the aura total that applies it. */
@@ -191,7 +196,7 @@ export function buildFarmObjective(
 ): TeamPlanFarmObjective {
   const phaseOptions = phaseOptionsFor(account, targetPhase, ignoreFieldCrowding);
   const farm = farmContextFor(account);
-  const { auras, alliesByHeroId } = priceField(
+  const { auras, critFlatAtFullPresence, alliesByHeroId } = priceField(
     squadContexts,
     loadoutByHeroId,
     farm,
@@ -211,6 +216,7 @@ export function buildFarmObjective(
 
   return {
     auras,
+    critFlatAtFullPresence,
     farm,
     account: squadAccountFor(account, aurasAtCap),
     phaseOptions,
@@ -256,6 +262,11 @@ function basisForHero(
     adjustedLuckPct: score.adjusted.luck,
     treeLuckFlatPct: objective.treeLuckFlatPct,
     abilities: ctx.abilities,
+    critPointCeiling: critPointCeilingOf(
+      objective.critFlatAtFullPresence,
+      teamAuraLayer(objective.auras).teamCritFlat,
+    ),
+    critCeilingBindsSheet: true,
   });
 }
 

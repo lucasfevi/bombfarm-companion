@@ -106,7 +106,7 @@ import {
   type AurasAtCap,
   type TeamBuffId,
 } from './team-buffs';
-import { teamAuraLayer, teamDrainMultFromTeamBuffs } from './team-aura-layer';
+import { critPointCeilingOf, teamAuraLayer, teamDrainMultFromTeamBuffs } from './team-aura-layer';
 import { combineDrainRate } from './drain';
 import { abilityMods } from './model/abilities';
 import type { SheetKey } from './planner-constants';
@@ -350,6 +350,11 @@ export type HeroFarmBasis = {
    * aura layer it was built with.
    */
   auraFree?: AuraFreeFarmTerms;
+  /** See `critPointCeilingOf`. */
+  critPointCeiling?: number;
+  /** The plan prices builds it has yet to choose, so its ceiling clamps the whole sheet; a board
+   *  pricing the build a player owns clamps only what points add on top. */
+  critCeilingBindsSheet?: boolean;
 };
 
 /**
@@ -387,6 +392,8 @@ export type HeroFarmBasisParts = {
   treeLuckFlatPct: number;
   abilities: Record<string, number>;
   auraFree?: AuraFreeFarmTerms;
+  critPointCeiling?: number;
+  critCeilingBindsSheet?: boolean;
 };
 
 /**
@@ -413,6 +420,8 @@ export function heroFarmBasisFromParts(parts: HeroFarmBasisParts): HeroFarmBasis
     estilhacosLevel: clampAbilityLevel(parts.abilities.estilhacos ?? 0),
     blocksPerBomb: 1 + 0.5 * parts.context.blastRange,
     ...(parts.auraFree ? { auraFree: parts.auraFree } : {}),
+    ...(parts.critPointCeiling !== undefined ? { critPointCeiling: parts.critPointCeiling } : {}),
+    ...(parts.critCeilingBindsSheet ? { critCeilingBindsSheet: true } : {}),
   };
 }
 
@@ -463,6 +472,7 @@ function auraFreeBasesForAccount(
  *  field for one candidate assignment. */
 type FieldLayer = {
   teamBuffs: Record<TeamBuffId, number>;
+  critFlatAtFullPresence: number;
   alliesByHeroId: ReadonlyMap<string, number>;
 };
 
@@ -485,6 +495,7 @@ function priceAuraLayer(basis: HeroFarmBasis, field: FieldLayer): HeroFarmBasis 
   return {
     ...basis,
     dmgMult: base.dmgMult * matilhaMult(packRatePerAlly, field.alliesByHeroId.get(basis.heroId) ?? 0),
+    critPointCeiling: critPointCeilingOf(field.critFlatAtFullPresence, mults.teamCritFlat),
     effective: {
       ...base.effective,
       attack: base.effective.attack * mults.attackMult,
@@ -559,6 +570,7 @@ function priceFieldForAssignment(
   });
   return {
     teamBuffs: holdAurasAtCap(computeTeamBuffsOverRotation(carriers, presence), account.aurasAtCap),
+    critFlatAtFullPresence: teamAuraLayer(atFullPresence).teamCritFlat,
     alliesByHeroId,
   };
 }
@@ -650,6 +662,13 @@ export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
   return auraFreeBases.map((basis) => priceAuraLayer(basis, field));
 }
 
+export function critCeilingOfBasis(basis: HeroFarmBasis): number | undefined {
+  if (basis.critPointCeiling === undefined) return undefined;
+  return basis.critCeilingBindsSheet
+    ? basis.critPointCeiling
+    : Math.max(basis.critPointCeiling, basis.effective.critChance);
+}
+
 /**
  * Facts for ANY candidate 8-key vector. Pure scalar math; zero pipeline calls.
  * `heroFactsFromBasis(b, b.pts)` is byte-identical to `computeHeroFarmFacts`'s entry for `b`.
@@ -667,6 +686,8 @@ export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
  */
 export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, number>): HeroFarmFacts {
   const sheet = buildCandidateSheet(basis.effective, basis.pts, basis.effectiveDelta, pts);
+  const critCeiling = critCeilingOfBasis(basis);
+  if (critCeiling !== undefined) sheet.critChance = Math.min(sheet.critChance, critCeiling);
 
   const hitNoCritBase = predictHitDamage(sheet.attack, 0, sheet.penetration, basis.dmgMult);
   const avgHitBase = hitNoCritBase * critFactor(sheet.critChance, sheet.critDmg);
