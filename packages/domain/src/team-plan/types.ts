@@ -69,6 +69,13 @@ export type FarmContext = {
    * nothing. Absent, the roster is a rotation and presence is duty.
    */
   windowSecs?: number;
+  /**
+   * Presságio's crit points with every carrier on the squad fielded at once. Set, each hero's
+   * crit chance is credited only up to the cap less this, plus the average its own score carries
+   * (`critPointCeilingOf`): the cap is planned against the aura at full strength, however much
+   * of the rotation actually holds it.
+   */
+  critFlatAtFullPresence?: number;
 };
 
 export type HeroPlanContext = {
@@ -292,6 +299,9 @@ export type FrozenHeroFarmTerms = {
  */
 export type TeamPlanFarmObjective = {
   auras: Record<TeamBuffId, number>;
+  /** Presságio's crit points with every carrier on the field at once — the full-aura figure the
+   *  crit cap is planned against while `auras` carries the rotation average. */
+  critFlatAtFullPresence: number;
   farm: FarmContext;
   account: SquadFarmAccount;
   /** Carries `pinnedPhase` when {@link TeamPlanInput.targetPhase} named one, which is what turns

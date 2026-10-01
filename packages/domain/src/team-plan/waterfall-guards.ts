@@ -12,6 +12,9 @@ import { SLOTS } from '../gear/catalog';
 import type { PointAlloc } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { wikiPhaseLine } from '../phase-wiki';
+import { computeTeamBuffsOverRotation, holdAurasAtCap } from '../team-buffs';
+import { teamAuraLayer } from '../team-aura-layer';
+import { isSquadScope } from './auras';
 import { planFieldSlots, resolveCombatWindow } from './combat-window';
 import { dominates, statsForEntry } from './dominance';
 import { evaluateRoster } from './evaluate';
@@ -42,6 +45,7 @@ const EPS = 1e-9;
  */
 export function farmFromAccount(input: TeamPlanInput): FarmContext {
   const window = resolveCombatWindow(input);
+  const critFlatAtFullPresence = critFlatAtFullPresenceOf(input);
   const targetPhase = window ? window.phase : input.targetPhase;
   const line = targetPhase != null && Number.isFinite(targetPhase) ? wikiPhaseLine(targetPhase) : undefined;
   return {
@@ -52,8 +56,23 @@ export function farmFromAccount(input: TeamPlanInput): FarmContext {
     cycleSecs: input.account.cycleSecs,
     cycleSecsHouseIdx: input.account.cycleSecsHouseIdx,
     cycleSecsLevel: input.account.cycleSecsLevel,
+    critFlatAtFullPresence,
     ...(window ? { windowSecs: window.windowSecs } : {}),
   };
+}
+
+const critFlatAtFullPresenceCache = new WeakMap<TeamPlanInput, number>();
+
+/** Every fielded hero's Presságio at once, held at cap where the plan holds it — memoised on the
+ *  input, which this is read from once per roster evaluation. */
+function critFlatAtFullPresenceOf(input: TeamPlanInput): number {
+  const cached = critFlatAtFullPresenceCache.get(input);
+  if (cached !== undefined) return cached;
+  const carriers = input.heroes.filter((hero) => isSquadScope(input.scopeByHeroId[hero.heroId] ?? 'optimize'));
+  const total = holdAurasAtCap(computeTeamBuffsOverRotation(carriers, null), input.aurasAtCap);
+  const critFlat = teamAuraLayer(total).teamCritFlat;
+  critFlatAtFullPresenceCache.set(input, critFlat);
+  return critFlat;
 }
 
 export function evaluateAt(

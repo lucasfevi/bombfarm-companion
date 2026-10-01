@@ -53,6 +53,7 @@ export {
   marginalFuseSeconds,
   bombsPerSecond,
   critFactor,
+  readCritChance,
   mitigationFactor,
   HERO_MAX_LEVEL,
   levelPowerMult,

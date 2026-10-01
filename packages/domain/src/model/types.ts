@@ -13,6 +13,9 @@ export interface HeroSheet {
   // measure in-game by spending a point and reading the sheet delta.
   attackPerPoint: number;
   energyPerPoint: number;
+  /** A planner's ceiling on the crit chance DPS credits (`readCritChance`); the sheet keeps its
+   *  own value. Absent, the plain cap is the only limit. */
+  critCeiling?: number;
 }
 
 export interface Context {

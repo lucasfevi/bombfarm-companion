@@ -1,4 +1,15 @@
+import { STAT_CAPS } from './model/rarity-constants';
 import { TEAM_BUFF_CAP, type TeamBuffId } from './team-buffs';
+
+/**
+ * The most crit chance a plan credits a hero with, on the scale of a sheet that already carries
+ * the rotation-average Presságio: the cap less the aura's full-field total, plus the average it
+ * is priced at. Past it, crit chance only pays in the stretch of the rotation where the carrier
+ * is off the field, so a plan that priced it at the average would send a hero past the cap.
+ */
+export function critPointCeilingOf(critFlatAtFullPresence: number, critFlatInRotation: number): number {
+  return STAT_CAPS.critChance - critFlatAtFullPresence + critFlatInRotation;
+}
 
 /**
  * Team auras are a property of the FIELD (confirmed 2026-08-19): every deployed hero — carrier
