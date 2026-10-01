@@ -447,6 +447,18 @@ describe('parseSaveFile', () => {
     expect(abilityIssue).not.toContain('slot');
   });
 
+  it('keeps the abilities the 2026-09-30 patch added instead of reporting them unknown', () => {
+    const save = baseSave();
+    (save.heroes[2] as { abilities?: unknown }).abilities = [
+      { code: 'pavio_curto', level: 7, max: 20, slot: 22 },
+      { code: 'aprendiz', level: 3, max: 20, slot: 25 },
+    ];
+    const { candidates } = parseSaveFile(save, []);
+    const weird = candidates.find((c) => c.sourceId === '1003')!;
+    expect(weird.issues.filter((i) => i.includes('Unknown ability'))).toEqual([]);
+    expect(weird.record.abilities).toMatchObject({ pavio_curto: 7, aprendiz: 3 });
+  });
+
   it('the hero is still imported and the unknown ability contributes nothing', () => {
     const { candidates } = parseSaveFile(baseSave(), []);
     const weird = candidates.find((c) => c.sourceId === '1003')!;

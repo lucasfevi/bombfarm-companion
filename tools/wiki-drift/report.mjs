@@ -15,7 +15,7 @@ export const TRACKER_MARKER = '<!-- bfc-wiki-drift-tracker -->';
  * source belongs here too — `data.rotacao`'s field and House ceilings are exactly that, and
  * listing only `phase-wiki.json` for it sent a reader to a file that does not hold them.
  *
- * `data.bolsa`/`ritual`/`stat_kinds` and `fasesNomes.disponivel`/`mundos`/`sufixos`/`zonas` back
+ * `data.bolsa`/`ritual`/`stat_kinds` and `fasesNomes.disponivel`/`mundos`/`zonas` back
  * nothing today and are deliberately absent; their absence here only affects how the "backs
  * nothing" note reads.
  */
@@ -70,8 +70,6 @@ export const ARTIFACT_BACKED_SECTIONS = {
   'data.item_stats': ['packages/domain/src/data/catalog.json'],
   // rarities
   'data.raridades': ['packages/domain/src/data/catalog.json'],
-  // atoLabels
-  'fasesNomes.atos': ['packages/domain/src/data/phase-wiki.json'],
   // phaseNames
   'fasesNomes.fases': ['packages/domain/src/data/phase-wiki.json'],
 };

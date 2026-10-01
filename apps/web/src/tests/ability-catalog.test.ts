@@ -28,7 +28,7 @@ const IDENTITY_MODS = {
 };
 
 describe('catalog completeness', () => {
-  it('ABILITIES has exactly 21 entries in slot order', () => {
+  it('ABILITIES has exactly 25 entries in slot order', () => {
     expect(ABILITIES.map((a) => a.id)).toEqual([
       'bateria_extra',
       'caca_hero',
@@ -51,6 +51,10 @@ describe('catalog completeness', () => {
       'fortuna',
       'brecha',
       'estilhacos',
+      'pavio_curto',
+      'carnificina',
+      'matador_chefes',
+      'aprendiz',
     ]);
   });
 

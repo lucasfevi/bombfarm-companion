@@ -142,6 +142,10 @@ export const ABILITIES: AbilityDef[] = [
   // Added 2026-09-26 (wiki `kind: shatter`, `per_level` 0.025): rocks only, never the boss or the
   // cage, and a rock felled by a shard does not shatter again.
   { id: 'estilhacos', name: 'Estilhaços', max: 20, effectText: `+2.5% de chance de a rocha destruída estilhaçar: cada rocha nos 4 lados leva ${SHATTER_FRAC * 100}% do golpe/nível`, effect: { kind: 'shatterPct', perLevel: 2.5 } },
+  { id: 'pavio_curto', name: 'Pavio Curto', max: 20, effectText: '+0.5% redução de recarga (próprio)/nível, somada no fim, até o teto (não modelado)', effect: { kind: 'none' } },
+  { id: 'carnificina', name: 'Carnificina', max: 20, effectText: '+5% dano crítico do TIME/nível, somado ao bônus de crítico; dois portadores não passam do máximo de um (não modelado)', effect: { kind: 'none' } },
+  { id: 'matador_chefes', name: 'Matador de Chefes', max: 20, effectText: '+5% dano (próprio) no chefe do portão 2×2/nível, não vale para a Jaula (não modelado)', effect: { kind: 'none' } },
+  { id: 'aprendiz', name: 'Aprendiz', max: 20, effectText: '+0.75% XP do TIME/nível por rocha quebrada com ele em campo, dividido como o XP normal; dois portadores não passam do máximo de um (não modelado)', effect: { kind: 'none' } },
 ];
 
 /** Inventory-sheet abilities (shared Σ with gear) — kept out of the combat ability grid. */

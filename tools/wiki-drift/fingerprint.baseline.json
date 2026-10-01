@@ -1,8 +1,8 @@
 {
-  "capturedAt": "2026-09-30T00:03:26.128Z",
+  "capturedAt": "2026-10-01T02:58:19.460Z",
   "endpoints": {
     "data": {
-      "payloadSha256": "1c2145bfabaed1dcdbd3e3b638f4cccb651a1db20c24af5fdcdfb41c1134ac09",
+      "payloadSha256": "ed1994cfe45d5e90f6ced8f72596bd27b1c4adfcaae10e4c90575fccc689a3df",
       "sectionNames": [
         "bolsa",
         "boost",
@@ -45,7 +45,7 @@
         "entidades": "8abc9272d059d18c5a1af18f2542f98579f7d84130a87fc93ec41d46f9925c86",
         "fases": "837853ea4e700d6973ca675a9efcea85036da849d7b6b564fe327193078d8c4a",
         "gemas": "611140ce2878ce4290580a2efaea428a765313efcf58e08b5a1459985df0bc83",
-        "habilidades": "e5c161312052c07fc85d0946e75f67788fc876e160f6369b50a854b2339597a7",
+        "habilidades": "229ca91579752fc96e9c4bc68070f183cf748edf27875bdedfbb6b1a499be480",
         "herois": "580aa49dbf4cf58cd4532ba36972525d13263d1fa39deb1e9d3b622c672215e1",
         "inventario": "f53ee894e7ca1e5b9bb78c589912f33fa099c175f66030b439fbb0ccc2edf74a",
         "item_stats": "94041e8cad48122447a273106df9ecccec1c44d569659737dfd73fa44bb7cd79",
@@ -69,21 +69,17 @@
       "versaoCatalogo": 4
     },
     "fasesNomes": {
-      "payloadSha256": "1e86671a6c65ab2fd58ff17a1d301eabac7683a275c179d3572588c9d844b116",
+      "payloadSha256": "bd18e2884696db862e5fdd402c838c5cdb4564645392f0f3a39b8b6d9b91a19a",
       "sectionNames": [
-        "atos",
         "disponivel",
         "fases",
         "mundos",
-        "sufixos",
         "zonas"
       ],
       "sectionSha256": {
-        "atos": "327db39dbafc7d09004aa9473b9b224951ca7876dbda804e68ccc0adbff9731c",
         "disponivel": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
         "fases": "c4071c42cc1125c4427abe56a1b2e9fbdc9031bab3f42b470eed7db1503fc684",
         "mundos": "9b9020478fe5a38119b22ca9ff4b176d7833c0cfcb4bd6fc5911463d2cc2c568",
-        "sufixos": "542027bfad2da67c4431695ac445bc1b369b8e247299ba149772769cd92aeb0f",
         "zonas": "f09ebb77590a1122a2658739cde5c0b65cb230f2a3348892e205015a5c9ceb14"
       },
       "url": "https://wiki.bombfarm.net/wiki/api/fases-nomes",
