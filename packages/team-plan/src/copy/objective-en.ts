@@ -13,7 +13,7 @@ export const teamPlanObjectivePairsEn = {
   teamPlanPhaseHintNoneFarm:
     'No phase pinned. The search picks the best phase your squad can hold, and says which one it settled on.',
   teamPlanPhaseHintNoneSetFarm:
-    'The set decides the phases: the search picks the best one where it drops that your squad clears in {secs} s or less.',
+    'The set decides the phases: the search picks the one where it drops the most chests per hour for your squad, weighing clear speed against Luck.',
   /** Under the phase card of a finished plan, where a rotation plan says whether the phase was
    *  picked or found. */
   teamPlanScoredPhaseGate: 'The gate you picked, scored over its timer.',
@@ -29,7 +29,7 @@ export const teamPlanObjectivePairsEn = {
   teamPlanObjectiveHintFarm:
     'Ranks builds by the gold per hour the squad brings in at the phase beside this. A roster that earns more can hit softer.',
   teamPlanObjectiveHintSetFarm:
-    'Searches only the phases where the set you pick drops, and ranks builds by how many of that set’s item chests drop per hour. Luck is worth points here, because it multiplies every chest roll; a phase the squad cannot clear in {secs} s or less does not count. Rarity cannot be steered — Luck changes how many chests drop, not which rarity they roll.',
+    'Searches only the phases where the set you pick drops, and ranks builds by how many of that set’s item chests drop per hour. Luck is worth points here, because it multiplies every chest roll — but it is weighed against clear speed, since a slower clear drops fewer chests. Rarity cannot be steered — Luck changes how many chests drop, not which rarity they roll.',
   teamPlanObjectiveHintGate:
     'Ranks builds by the damage the squad lands inside the gate timer. Energy counts only for the field time it buys before the timer runs out; gold per hour is not scored.',
   teamPlanObjectiveHintPvp:
@@ -68,13 +68,17 @@ export const teamPlanObjectivePairsEn = {
   teamPlanFarmSetPlaceholder: 'Pick a set',
   teamPlanFarmSetOption: '{set} · phases {min}–{max}',
   teamPlanFarmSetOptionLocked: '{set} · phases {min}–{max} · not reached yet',
-  teamPlanFarmSetHint: 'Only the phases where this set drops are searched, each cleared in {secs} s or less.',
+  teamPlanFarmSetHint:
+    'Only the phases where this set drops are searched. The search balances clear speed against Luck, because a slower clear drops fewer chests.',
   teamPlanFarmSetNeeded: 'Pick a set to farm before building this plan.',
   teamPlanFarmSetNeedsMaxPhase:
     'Farming a set needs the furthest phase your account has reached, which is not known yet.',
   /** Under the phase card of a finished Set farm plan. */
-  teamPlanScoredPhaseSetSearched: 'Picked automatically — the best phase where this set drops that the squad clears in {secs} s or less.',
-  teamPlanScoredPhaseSetTooSlow: 'No phase where this set drops clears in {secs} s or less with this squad.',
+  teamPlanScoredPhaseSetSearched: 'Picked automatically — the phase where this set drops the most chests per hour for this squad.',
+  teamPlanScoredPhaseSetUnfarmable: 'This squad cannot clear any phase it has reached where this set drops.',
+  teamPlanScoredPhaseClearTime: 'About {secs} s per clear.',
+  teamPlanScoredPhaseSlowClear:
+    'Clears take {secs} s here — this set’s phases are hard for your squad, and the estimate is least certain at slow clears.',
   /** The gate picker that stands in for the phase control under Gate clear. */
   teamPlanGatePhaseLabel: 'Gate to clear',
   teamPlanGatePhaseAria: 'Which gate this search plans for',

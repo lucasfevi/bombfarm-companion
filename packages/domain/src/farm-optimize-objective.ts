@@ -131,8 +131,6 @@ export type BestFarmPhaseOptions = FarmRateOptions & {
    * `[1, maxPhase]`, swept linearly. An empty intersection means nothing is a candidate.
    */
   phaseRange?: { min: number; max: number } | null;
-  /** A row whose clear takes longer than this does not count, as if it were infeasible. */
-  maxClearSecs?: number | null;
 };
 
 /** `null`/non-positive/non-finite ⇒ every phase in `[1, 600]`; a finite value ⇒ `[1, min(v, 600)]`. */
@@ -193,12 +191,6 @@ function phasesAroundWorld(center: number, upper: number): number[] {
   return phases;
 }
 
-/** `null`/non-finite/non-positive ⇒ no cap. */
-function resolveMaxClearSecs(maxClearSecs: number | null | undefined): number | null {
-  if (maxClearSecs == null || !Number.isFinite(maxClearSecs) || maxClearSecs <= 0) return null;
-  return maxClearSecs;
-}
-
 /** `phaseRange` ∩ `[1, upper]`, ascending; `null` when no range was given. */
 function rangedPhases(range: BestFarmPhaseOptions['phaseRange'], upper: number): number[] | null {
   if (range == null) return null;
@@ -230,13 +222,11 @@ function scanPhases(
   objective: ResolvedFarmObjective,
   scales: FarmObjectiveScales,
   rowOptions: FarmRateOptions,
-  maxClearSecs: number | null,
 ): FarmPhasePick | null {
   let best: FarmPhasePick | null = null;
   for (const phase of phases) {
     const row = computeFarmRateRow(phase, squad, rowOptions);
     if (row === null || row.infeasible) continue;
-    if (maxClearSecs !== null && !(row.clearSecs <= maxClearSecs)) continue;
     const value = farmObjectiveValue(row, objective, scales);
     if (!Number.isFinite(value)) continue;
     if (best === null || value > best.value * (1 + EPS_REL)) {
@@ -261,8 +251,7 @@ function scanPhases(
  * phase, and this is the whole speedup — the sweep is ~96% of what a farm evaluation costs.
  *
  * A `phaseRange` is swept linearly whatever the stride: a set's band is at most thirty phases,
- * fewer rows than the screen itself reads. `maxClearSecs` applies on every path, the pinned one
- * included.
+ * fewer rows than the screen itself reads.
  */
 export function bestFarmPhase(
   squad: SquadFarmFacts,
@@ -271,9 +260,7 @@ export function bestFarmPhase(
   options?: BestFarmPhaseOptions,
 ): FarmPhasePick | null {
   const rowOptions = sanitizeRowOptions(options);
-  const maxClearSecs = resolveMaxClearSecs(options?.maxClearSecs);
-  const scan = (phases: readonly number[]) =>
-    scanPhases(phases, squad, objective, scales, rowOptions, maxClearSecs);
+  const scan = (phases: readonly number[]) => scanPhases(phases, squad, objective, scales, rowOptions);
 
   const pinned = resolvePinnedPhase(options?.pinnedPhase);
   if (pinned !== null) return scan([pinned]);
@@ -292,35 +279,4 @@ export function bestFarmPhase(
   // The refine window contains the screened phase itself, so this can only match or beat the
   // screen — no second comparison against it is needed.
   return scan(phasesAroundWorld(screened.phase, upper));
-}
-
-/**
- * The candidate phase the squad clears fastest, ignoring `maxClearSecs` and any objective — what
- * to point at when nothing clears inside the cap, being the phase closest to farmable. Ties keep
- * the lower phase. With no row to read (an empty range, or nothing clearable at all) it falls
- * back to the range's own first phase, so a reader is still told which phases the question was
- * about; `null` only when there is no range either.
- */
-export function fastestClearPhase(squad: SquadFarmFacts, options?: BestFarmPhaseOptions): number | null {
-  const fastest = fastestClear(squad, options);
-  if (fastest !== null) return fastest.phase;
-  const range = options?.phaseRange;
-  return range == null ? null : resolvePinnedPhase(range.min);
-}
-
-/** The candidate row with the shortest finite clear, `null` when no candidate clears at all. */
-function fastestClear(
-  squad: SquadFarmFacts,
-  options?: BestFarmPhaseOptions,
-): { phase: number; clearSecs: number } | null {
-  const rowOptions = sanitizeRowOptions(options);
-  const upper = resolveUpperPhase(options?.maxPhase);
-  const phases = rangedPhases(options?.phaseRange, upper) ?? candidatePhases(upper, 1);
-  let best: { phase: number; clearSecs: number } | null = null;
-  for (const phase of phases) {
-    const row = computeFarmRateRow(phase, squad, rowOptions);
-    if (row === null || !Number.isFinite(row.clearSecs)) continue;
-    if (best === null || row.clearSecs < best.clearSecs) best = { phase, clearSecs: row.clearSecs };
-  }
-  return best;
 }

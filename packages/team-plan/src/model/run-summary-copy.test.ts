@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
-import { teamPlanEn } from '../copy';
+import { SET_FARM_SLOW_CLEAR_SECS, type TeamPlan } from '@bombfarm/domain/team-plan/types';
+import { teamPlanEn, teamPlanPtBR } from '../copy';
 import {
   formatElapsedSeconds,
+  scoredPhaseClearTime,
   scoredPhaseHint,
   scoredPhaseMovedFrom,
   scoredPhaseValue,
   seedStartLabel,
+  slowClearWarning,
 } from './run-summary-copy';
 
 function plan(overrides: Partial<TeamPlan>): TeamPlan {
@@ -75,16 +77,56 @@ describe('scoredPhaseHint', () => {
 });
 
 describe('scoredPhaseHint under a set farm', () => {
-  it('names the band search and its ceiling for a phase the solver picked', () => {
+  it('names the band search for a phase the solver picked, with no clear-time ceiling', () => {
     const hint = scoredPhaseHint(teamPlanEn, plan({ scoredPhase: 75, scoredPhaseSource: 'searched' }), 'setFarm');
-    expect(hint).toContain('where this set drops');
-    expect(hint).toContain('20 s');
+    expect(hint).toBe(teamPlanEn.teamPlanScoredPhaseSetSearched);
+    expect(hint).toContain('this set drops');
+    expect(hint).not.toMatch(/or less/);
   });
 
-  it('says no phase of the band clears in time, whether the plan names one or not', () => {
-    const tooSlow = 'No phase where this set drops clears in 20 s or less with this squad.';
-    expect(scoredPhaseHint(teamPlanEn, plan({ scoredPhase: 75, scoredPhaseSource: 'searched', scoredPhaseInfeasible: true }), 'setFarm')).toBe(tooSlow);
-    expect(scoredPhaseHint(teamPlanEn, plan({ scoredPhase: null, scoredPhaseSource: 'searched' }), 'setFarm')).toBe(tooSlow);
+  it('says the squad cannot clear the band, whether the plan names a phase or not', () => {
+    const unfarmable = teamPlanEn.teamPlanScoredPhaseSetUnfarmable;
+    expect(scoredPhaseHint(teamPlanEn, plan({ scoredPhase: 75, scoredPhaseSource: 'searched', scoredPhaseInfeasible: true }), 'setFarm')).toBe(unfarmable);
+    expect(scoredPhaseHint(teamPlanEn, plan({ scoredPhase: null, scoredPhaseSource: 'searched' }), 'setFarm')).toBe(unfarmable);
+  });
+});
+
+describe('the clear time of a set farm plan, and the slow-clear warning', () => {
+  const setPlan = (scoredPhaseClearSecs: number | null | undefined, extra: Partial<TeamPlan> = {}) =>
+    plan({ scoredPhase: 51, scoredPhaseSource: 'searched', scoredPhaseClearSecs, ...extra });
+
+  it('warns at the threshold and above, never below it', () => {
+    expect(slowClearWarning(teamPlanEn, 'en', setPlan(SET_FARM_SLOW_CLEAR_SECS), 'setFarm')).toBe(
+      `Clears take ${SET_FARM_SLOW_CLEAR_SECS} s here — this set’s phases are hard for your squad, and the estimate is least certain at slow clears.`,
+    );
+    expect(slowClearWarning(teamPlanEn, 'en', setPlan(179.35), 'setFarm')).toContain('Clears take 179 s here');
+    expect(slowClearWarning(teamPlanEn, 'en', setPlan(SET_FARM_SLOW_CLEAR_SECS - 0.1), 'setFarm')).toBeNull();
+    expect(slowClearWarning(teamPlanEn, 'en', setPlan(16.66), 'setFarm')).toBeNull();
+  });
+
+  it('warns in Portuguese with the same figure', () => {
+    expect(slowClearWarning(teamPlanPtBR, 'pt', setPlan(82.12), 'setFarm')).toBe(
+      'As limpezas levam 82 s aqui — as fases deste conjunto são difíceis para seu esquadrão, e a estimativa é menos certa em limpezas lentas.',
+    );
+  });
+
+  it('prints the clear time below the threshold, and leaves it to the warning at or above', () => {
+    expect(scoredPhaseClearTime(teamPlanEn, 'en', setPlan(16.66), 'setFarm')).toBe('About 17 s per clear.');
+    expect(scoredPhaseClearTime(teamPlanEn, 'en', setPlan(4.26), 'setFarm')).toBe('About 4.3 s per clear.');
+    expect(scoredPhaseClearTime(teamPlanPtBR, 'pt', setPlan(4.26), 'setFarm')).toBe('Cerca de 4,3 s por limpeza.');
+    expect(scoredPhaseClearTime(teamPlanEn, 'en', setPlan(SET_FARM_SLOW_CLEAR_SECS), 'setFarm')).toBeNull();
+  });
+
+  it('says nothing about clear time outside a set farm, on an unclearable phase, or without a figure', () => {
+    for (const objective of ['farm', 'dps', 'gateClear', 'pvp'] as const) {
+      expect(slowClearWarning(teamPlanEn, 'en', setPlan(500), objective)).toBeNull();
+      expect(scoredPhaseClearTime(teamPlanEn, 'en', setPlan(10), objective)).toBeNull();
+    }
+    expect(slowClearWarning(teamPlanEn, 'en', setPlan(500, { scoredPhaseInfeasible: true }), 'setFarm')).toBeNull();
+    for (const missing of [null, undefined]) {
+      expect(slowClearWarning(teamPlanEn, 'en', setPlan(missing), 'setFarm')).toBeNull();
+      expect(scoredPhaseClearTime(teamPlanEn, 'en', setPlan(missing), 'setFarm')).toBeNull();
+    }
   });
 });
 

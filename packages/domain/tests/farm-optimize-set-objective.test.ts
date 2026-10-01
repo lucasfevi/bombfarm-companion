@@ -1,9 +1,8 @@
 /**
- * The set objective at the phase-argmax layer: one set's chests per hour, over that set's band,
- * with a clear-time cap.
+ * The set objective at the phase-argmax layer: one set's chests per hour, over that set's band.
  *
- * Every claim here is arithmetic over a squad — which phases are candidates, what a row is worth,
- * which rows a cap removes — so it holds whatever the game has since patched and is not gated on
+ * Every claim here is arithmetic over a squad — which phases are candidates, what a row is worth —
+ * so it holds whatever the game has since patched and is not gated on
  * the capture's regime. The squads come from captures only because they are realistic, not
  * because any figure is pinned.
  */
@@ -11,7 +10,6 @@ import { describe, expect, it } from 'vitest';
 import {
   bestFarmPhase,
   farmObjectiveValue,
-  fastestClearPhase,
   resolveFarmObjective,
   type BestFarmPhaseOptions,
   type FarmObjectiveScales,
@@ -23,7 +21,7 @@ import {
   type SquadFarmFacts,
 } from '@bombfarm/domain/farm-rate';
 import { itemLevelsForPhase } from '@bombfarm/domain/phase-wiki';
-import { SET_FARM_MAX_CLEAR_SECS, SET_FARM_SETS, setFarmBand } from '@bombfarm/domain/team-plan';
+import { SET_FARM_SETS, setFarmBand } from '@bombfarm/domain/team-plan';
 import { FARM_OPTIMIZE_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
 const SCALES: FarmObjectiveScales = { goldScale: 1, chestScale: 1 };
@@ -34,7 +32,7 @@ function squadOf(file: string): { squad: SquadFarmFacts; maxPhase: number } {
   return { squad: computeSquadFarmFacts(computeHeroFarmFacts({ heroes, account }), account), maxPhase };
 }
 
-/** Fast clears on its low phases, slow past ~phase 50 — both sides of the cap in one squad. */
+/** Fast clears on its low phases, slow past ~phase 50 — quick and slow sets in one squad. */
 const { squad, maxPhase } = squadOf(FARM_OPTIMIZE_FIXTURE);
 
 function setOptions(setId: string, overrides: Partial<BestFarmPhaseOptions> = {}): BestFarmPhaseOptions {
@@ -42,7 +40,6 @@ function setOptions(setId: string, overrides: Partial<BestFarmPhaseOptions> = {}
   return {
     maxPhase,
     phaseRange: { min: band.minPhase, max: band.maxPhase },
-    maxClearSecs: SET_FARM_MAX_CLEAR_SECS,
     ...overrides,
   };
 }
@@ -52,13 +49,13 @@ function setObjective(setId: string) {
 }
 
 /** Every row the brute force would consider, independently of `bestFarmPhase`'s own loop. */
-function bruteForceBest(setId: string, maxClearSecs: number) {
+function bruteForceBest(setId: string) {
   const band = setFarmBand(setId)!;
   const objective = setObjective(setId);
   let best: { phase: number; value: number } | null = null;
   for (let phase = band.minPhase; phase <= Math.min(band.maxPhase, maxPhase); phase++) {
     const row = computeFarmRateRow(phase, squad, { maxPhase })!;
-    if (row.infeasible || row.clearSecs > maxClearSecs) continue;
+    if (row.infeasible) continue;
     const value = farmObjectiveValue(row, objective, SCALES);
     if (best === null || value > best.value) best = { phase, value };
   }
@@ -106,35 +103,35 @@ describe('farmObjectiveValue — a set is worth its share of the phase’s chest
   });
 });
 
-describe('bestFarmPhase — the band sweep under a clear cap', () => {
-  for (const setId of SET_FARM_SETS.filter((id) => setFarmBand(id)!.minPhase <= maxPhase)) {
-    it(`${setId}: the pick is the brute-force best inside the band, unlocked, and clears inside the cap`, () => {
+describe('bestFarmPhase — the band sweep', () => {
+  const reachable = SET_FARM_SETS.filter((id) => setFarmBand(id)!.minPhase <= maxPhase);
+
+  for (const setId of reachable) {
+    it(`${setId}: the pick is the brute-force best inside the band and unlocked`, () => {
       const band = setFarmBand(setId)!;
       const pick = bestFarmPhase(squad, setObjective(setId), SCALES, setOptions(setId));
-      const reference = bruteForceBest(setId, SET_FARM_MAX_CLEAR_SECS);
+      const reference = bruteForceBest(setId);
       expect(pick?.phase ?? null).toBe(reference?.phase ?? null);
       if (pick === null) return;
       expect(pick.phase).toBeGreaterThanOrEqual(band.minPhase);
       expect(pick.phase).toBeLessThanOrEqual(Math.min(band.maxPhase, maxPhase));
-      expect(pick.row.clearSecs).toBeLessThanOrEqual(SET_FARM_MAX_CLEAR_SECS);
-      expect(pick.value).toBeGreaterThan(0);
     });
   }
 
-  it('non-vacuity: the sweep above finds a farmable phase for several sets on this squad', () => {
-    const farmable = SET_FARM_SETS.filter(
-      (setId) => bestFarmPhase(squad, setObjective(setId), SCALES, setOptions(setId)) !== null,
-    );
-    expect(farmable.length).toBeGreaterThanOrEqual(3);
+  it('every set whose band the account has reached gets a finite, positive rate — none is unfarmable', () => {
+    expect(reachable.length, 'non-vacuity').toBeGreaterThanOrEqual(3);
+    for (const setId of reachable) {
+      const pick = bestFarmPhase(squad, setObjective(setId), SCALES, setOptions(setId));
+      expect(pick, setId).not.toBeNull();
+      expect(Number.isFinite(pick!.value) && pick!.value > 0, setId).toBe(true);
+    }
   });
 
-  it('the cap is load-bearing on this squad: lifting it moves at least one set to a slower phase', () => {
-    const moved = SET_FARM_SETS.filter((setId) => setFarmBand(setId)!.minPhase <= maxPhase).some((setId) => {
-      const capped = bestFarmPhase(squad, setObjective(setId), SCALES, setOptions(setId));
-      const uncapped = bestFarmPhase(squad, setObjective(setId), SCALES, setOptions(setId, { maxClearSecs: null }));
-      return uncapped !== null && uncapped.row.clearSecs > SET_FARM_MAX_CLEAR_SECS && capped?.phase !== uncapped.phase;
-    });
-    expect(moved).toBe(true);
+  it('a slow clear still counts: some set on this squad is best farmed at a clear over 20 s', () => {
+    const slowPicks = reachable.filter(
+      (setId) => bestFarmPhase(squad, setObjective(setId), SCALES, setOptions(setId))!.row.clearSecs > 20,
+    );
+    expect(slowPicks.length).toBeGreaterThanOrEqual(1);
   });
 
   it('prefers a phase that rolls only this set over an overlap phase when their clears are comparable', () => {
@@ -150,47 +147,17 @@ describe('bestFarmPhase — the band sweep under a clear cap', () => {
     expect(itemLevelsForPhase(pick!.phase)).toEqual([band.itemLevel]);
   });
 
-  it('a band wholly above maxPhase has no candidate, and the fallback names its first phase', () => {
+  it('a band wholly above maxPhase has no candidate', () => {
     const above = SET_FARM_SETS.find((id) => setFarmBand(id)!.minPhase > maxPhase)!;
     expect(bestFarmPhase(squad, setObjective(above), SCALES, setOptions(above))).toBeNull();
-    expect(fastestClearPhase(squad, setOptions(above))).toBe(setFarmBand(above)!.minPhase);
   });
 
-  it('nothing inside the cap ⇒ no pick, and the fallback is the band phase the squad clears fastest', () => {
-    const options = setOptions('ember', { maxClearSecs: 1 });
-    expect(bestFarmPhase(squad, setObjective('ember'), SCALES, options)).toBeNull();
-    const fallback = fastestClearPhase(squad, options)!;
-    const band = setFarmBand('ember')!;
-    const fastest = Math.min(
-      ...Array.from({ length: band.maxPhase - band.minPhase + 1 }, (_, i) =>
-        computeFarmRateRow(band.minPhase + i, squad, { maxPhase })!.clearSecs,
-      ),
-    );
-    expect(computeFarmRateRow(fallback, squad, { maxPhase })!.clearSecs).toBe(fastest);
-  });
-
-  it('the cap applies to a pinned phase too', () => {
-    const slow = bestFarmPhase(squad, resolveFarmObjective({ kind: 'chests' }), SCALES, {
-      maxPhase,
-      pinnedPhase: maxPhase,
-    });
-    expect(slow, 'non-vacuity: the account’s top phase clears at all').not.toBeNull();
-    expect(slow!.row.clearSecs).toBeGreaterThan(SET_FARM_MAX_CLEAR_SECS);
-    expect(
-      bestFarmPhase(squad, resolveFarmObjective({ kind: 'chests' }), SCALES, {
-        maxPhase,
-        pinnedPhase: maxPhase,
-        maxClearSecs: SET_FARM_MAX_CLEAR_SECS,
-      }),
-    ).toBeNull();
-  });
-
-  it('absent range and cap leave the gold argmax exactly as it was', () => {
+  it('an absent range leaves the gold argmax exactly as it was', () => {
     const gold = resolveFarmObjective({ kind: 'gold' });
     for (const exhaustive of [false, true]) {
       const plain = bestFarmPhase(squad, gold, SCALES, { maxPhase, exhaustive });
-      const withNulls = bestFarmPhase(squad, gold, SCALES, { maxPhase, exhaustive, phaseRange: null, maxClearSecs: null });
-      expect(withNulls).toEqual(plain);
+      const withNull = bestFarmPhase(squad, gold, SCALES, { maxPhase, exhaustive, phaseRange: null });
+      expect(withNull).toEqual(plain);
     }
   });
 });

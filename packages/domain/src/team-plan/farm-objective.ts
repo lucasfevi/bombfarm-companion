@@ -38,7 +38,6 @@ import {
 import {
   bestFarmPhase,
   farmObjectiveValue,
-  fastestClearPhase,
   resolveFarmObjective,
   type BestFarmPhaseOptions,
   type FarmObjectiveScales,
@@ -51,7 +50,6 @@ import { computeTeamBuffsOverRotation, holdAurasAtCap, type AurasAtCap, type Tea
 import { isSquadScope } from './auras';
 import { scoreHeroLoadout } from './score';
 import type { SetFarmBand } from './set-farm';
-import { SET_FARM_MAX_CLEAR_SECS } from './types';
 import type { Loadout, PointAlloc } from '../gear/types';
 import type {
   FarmContext,
@@ -141,12 +139,7 @@ function setPhaseOptionsFor(
         `phase); got ${JSON.stringify(maxPhase)}.`,
     );
   }
-  return {
-    maxPhase,
-    ignoreFieldCrowding,
-    phaseRange: { min: band.minPhase, max: band.maxPhase },
-    maxClearSecs: SET_FARM_MAX_CLEAR_SECS,
-  };
+  return { maxPhase, ignoreFieldCrowding, phaseRange: { min: band.minPhase, max: band.maxPhase } };
 }
 
 function squadAccountFor(account: TeamPlanAccountInput, aurasAtCap: AurasAtCap | undefined): SquadFarmAccount {
@@ -210,8 +203,9 @@ export { isSquadScope };
  * uptime today, and it is also what a hero the search may not re-gear farms with for the whole
  * run.
  *
- * A `setBand` turns it into the set objective: that set's chests per hour, over its band, with
- * any phase slower than {@link SET_FARM_MAX_CLEAR_SECS} discounted; `targetPhase` is not read.
+ * A `setBand` turns it into the set objective: that set's chests per hour, over its band;
+ * `targetPhase` is not read. No clear is too slow to count — a slower clear already drops fewer
+ * chests per hour, which is what Luck is weighed against.
  */
 export function buildFarmObjective(
   squadContexts: readonly HeroPlanContext[],
@@ -341,8 +335,6 @@ function valueAt(
 ): number {
   const row = computeFarmRateRow(phase, computeSquadFarmFacts(facts, objective.account), objective.phaseOptions);
   if (row === null || row.infeasible) return 0;
-  const maxClearSecs = objective.phaseOptions.maxClearSecs;
-  if (maxClearSecs != null && !(row.clearSecs <= maxClearSecs)) return 0;
   const value = farmObjectiveValue(row, objective.rateObjective, FARM_UNREAD_SCALES);
   return Number.isFinite(value) ? value : 0;
 }
@@ -403,15 +395,15 @@ export function evaluateFarmObjective(
   return { objective: pick ? pick.value : 0, phase: pick ? pick.phase : null, facts };
 }
 
-/**
- * The phase to name when the evaluation found nothing to farm: the candidate the squad clears
- * fastest, the closest to farmable. See {@link fastestClearPhase}.
- */
-export function unfarmablePhase(
+/** How long one clear of `phase` takes the squad; `null` when it cannot clear it at all. */
+export function clearSecsAt(
   objective: TeamPlanFarmObjective,
   facts: readonly HeroFarmFacts[],
+  phase: number,
 ): number | null {
-  return fastestClearPhase(computeSquadFarmFacts(facts, objective.account), objective.phaseOptions);
+  const row = computeFarmRateRow(phase, computeSquadFarmFacts(facts, objective.account), objective.phaseOptions);
+  if (row === null || row.infeasible || !Number.isFinite(row.clearSecs)) return null;
+  return row.clearSecs;
 }
 
 /**

@@ -84,7 +84,8 @@ describe('teamPlanObjectiveCopy', () => {
     });
   }
 
-  it('the set farm bundle names neither damage nor gold, states its 20 s ceiling, and counts set chests', () => {
+  it('the set farm bundle names neither damage nor gold, weighs clear speed, and counts set chests', () => {
+    const CLEAR_SPEED: Record<Lang, RegExp> = { en: /clear speed/, pt: /velocidade de limpeza/ };
     const CHEST_WORDS: Record<Lang, RegExp> = { en: /set chests/, pt: /baús do conjunto/ };
     for (const lang of LANGS) {
       const copy = teamPlanObjectiveCopy(SCREEN_COPY[lang], 'setFarm');
@@ -95,12 +96,23 @@ describe('teamPlanObjectiveCopy', () => {
           expect(text, `${lang}.${field}: "${text}" matched ${pattern}`).not.toMatch(pattern);
         }
       }
-      expect(copy.objectiveHint).toContain('20 s');
+      expect(copy.objectiveHint).toMatch(CLEAR_SPEED[lang]);
+      expect(copy.phaseHintNone).toMatch(CLEAR_SPEED[lang]);
       expect(copy.totalGainValue).toMatch(CHEST_WORDS[lang]);
       expect(copy.gearDipNote).toMatch(CHEST_WORDS[lang]);
       const farm = teamPlanObjectiveCopy(SCREEN_COPY[lang], 'farm');
       for (const field of Object.keys(copy) as (keyof typeof copy)[]) {
         expect(copy[field], `${lang}.${field}`).not.toBe(farm[field]);
+      }
+    }
+  });
+
+  it('no set farm string promises a clear-time ceiling, in either language', () => {
+    for (const copy of [teamPlanEn, teamPlanPtBR]) {
+      const setFarmStrings = Object.entries(copy).filter(([key]) => /SetFarm|FarmSet|PhaseSet/.test(key));
+      expect(setFarmStrings.length, 'non-vacuity').toBeGreaterThanOrEqual(10);
+      for (const [key, text] of setFarmStrings) {
+        expect(text, key).not.toMatch(/or less|ou menos/);
       }
     }
   });

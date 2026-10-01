@@ -406,6 +406,22 @@ describe('the front page optimizer card', () => {
     }
   });
 
+  it('a set farm plan at a slow clear carries the slow-clear warning, a quick one does not', () => {
+    arrangeUsable();
+    usePlannerStore.setState({ objective: 'setFarm', farmSet: 'clay' });
+    const scored = { currentDps: 0.5, planDps: 0.6, scoredPhase: 71, scoredPhaseSource: 'searched' as const };
+
+    for (const lang of LANGS) {
+      usePlannerStore.setState({ lang });
+      const t = STRINGS[lang];
+      applyMatchingPlan(plan({ ...scored, scoredPhaseClearSecs: 82.1, moveList: [equip('1', null)] }));
+      expect(lineText(render(), 'home-optimizer-slow-clear')).toBe(escaped(sub(t.teamPlanScoredPhaseSlowClear, { secs: '82' })));
+
+      applyMatchingPlan(plan({ ...scored, scoredPhaseClearSecs: 26.9, moveList: [equip('1', null)] }));
+      expect(render()).not.toContain('home-optimizer-slow-clear');
+    }
+  });
+
   it('a damage plan names DPS in its headline', () => {
     arrangeUsable();
     usePlannerStore.setState({ objective: 'dps' });

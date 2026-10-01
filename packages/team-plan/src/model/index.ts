@@ -23,11 +23,13 @@ export { teamPlanEmptyState } from './empty-state';
 export type { TeamPlanEmptyStateKind } from './empty-state';
 export { isScopeState, SCOPE_COLUMNS, resolveDropScope, groupHeroesByScope } from './scope-board';
 export {
+  scoredPhaseClearTime,
   scoredPhaseHint,
   scoredPhaseMovedFrom,
   scoredPhaseValue,
   seedStartLabel,
   formatElapsedSeconds,
+  slowClearWarning,
 } from './run-summary-copy';
 export { optimizeAriaFor, allowedChangesHint, ignoreCrowdingHint } from './setup-copy';
 export { formatElapsed } from './optimizing-elapsed';

@@ -27,6 +27,7 @@ export const FactCell = memo(function FactCell({
   tag,
   tagTone = 'accent',
   note,
+  warning,
   testId,
 }: {
   label: string;
@@ -35,6 +36,7 @@ export const FactCell = memo(function FactCell({
   tag?: string | null;
   tagTone?: keyof typeof tagToneClass;
   note?: string | null;
+  warning?: string | null;
   testId?: string;
 }) {
   return (
@@ -52,6 +54,15 @@ export const FactCell = memo(function FactCell({
         {tag ? <span className={cn('text-[11px] font-semibold', tagToneClass[tagTone])}>{tag}</span> : null}
       </div>
       {note ? <p className={cn('m-0 leading-snug', mutedClass)}>{note}</p> : null}
+      {warning ? (
+        <p
+          className="m-0 text-xs leading-snug text-warn"
+          role="status"
+          data-testid={testId ? `${testId}-warning` : undefined}
+        >
+          {warning}
+        </p>
+      ) : null}
     </div>
   );
 });

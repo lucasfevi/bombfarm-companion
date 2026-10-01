@@ -2,8 +2,7 @@
 
 import { useMemo } from 'react';
 import { Select } from '@bombfarm/ui';
-import { sub, type Lang } from '@bombfarm/hero/copy';
-import { SET_FARM_MAX_CLEAR_SECS } from '@bombfarm/domain/team-plan/types';
+import type { Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanCopy } from '../copy';
 import { teamPlanFarmSetOptions } from '../model/set-farm-options';
 import { SetupField } from './setup-field';
@@ -28,7 +27,7 @@ export function FarmSetField({
   return (
     <SetupField
       label={t.teamPlanFarmSetLabel}
-      hint={sub(t.teamPlanFarmSetHint, { secs: String(SET_FARM_MAX_CLEAR_SECS) })}
+      hint={t.teamPlanFarmSetHint}
       className="min-w-52 max-w-sm flex-1"
       testId="team-plan-farm-set"
     >

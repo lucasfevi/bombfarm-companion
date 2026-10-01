@@ -1,9 +1,10 @@
 /**
  * The Team Plan under the set-farming objective.
  *
- * Every claim is a property of the plan — where its phase lies, that the clear stays quick, that
- * it reads the set and not the player's phase, how it reports a set it cannot farm — and none
- * pins a figure, so none is gated on a capture's regime. The squads are realistic shapes only.
+ * Every claim is a property of the plan — where its phase lies, that it is the best phase of the
+ * band for the build it proposes, how much Luck it buys, that it reads the set and not the
+ * player's phase, how it reports a set it cannot reach — and none pins a figure, so none is gated
+ * on a capture's regime. The squads are realistic shapes only.
  *
  * Each figure the plan reports is re-derived through the ordinary estimator path
  * (`computeHeroFarmBases` → `squadFactsFromBases`), never through the bridge that chose it.
@@ -12,31 +13,20 @@ import { describe, expect, it } from 'vitest';
 import { computeFarmRateRow, computeHeroFarmBases, squadFactsFromBases } from '@bombfarm/domain/farm-rate';
 import {
   bestFarmPhase,
-  fastestClearPhase,
+  farmObjectiveValue,
   resolveFarmObjective,
   type FarmObjectiveScales,
 } from '@bombfarm/domain/farm-optimize-objective';
-import { reoptBudget, RESPEC_KEYS } from '@bombfarm/domain/points-reopt-core';
-import {
-  runTeamPlan,
-  SET_FARM_MAX_CLEAR_SECS,
-  SET_FARM_SETS,
-  setFarmBand,
-  type TeamPlan,
-} from '@bombfarm/domain/team-plan';
-import { buildFarmObjective, evaluateFarmObjective, isSquadScope } from '@bombfarm/domain/team-plan/farm-objective';
-import { farmPointsPass, FARM_POINTS_PASS_MAX_EVALUATIONS } from '@bombfarm/domain/team-plan/farm-points';
-import { loadoutForScoring } from '@bombfarm/domain/team-plan/evaluate';
-import { buildHeroPlanContexts } from '@bombfarm/domain/team-plan/hero-context';
-import { createScoreMemo } from '@bombfarm/domain/team-plan/score';
+import { reoptBudget } from '@bombfarm/domain/points-reopt-core';
+import { runTeamPlan, SET_FARM_SETS, setFarmBand, type TeamPlan } from '@bombfarm/domain/team-plan';
 import type { Loadout, PointAlloc } from '@bombfarm/domain/gear/types';
 import { loadTeamPlanFarmFixture, type TeamPlanFarmFixture } from './helpers/team-plan-farm-fixtures';
 
 const UNIT_SCALES: FarmObjectiveScales = { goldScale: 1, chestScale: 1 };
 
-/** Clears its low phases in ~17 s, so some sets are farmable inside the cap and some are not. */
+/** Clears its low phases in ~17 s and its highest reached in minutes. */
 const FAST = 'save-20260914-9heroes-second-account.json';
-/** Never clears any map faster than ~22 s, so no set is farmable inside the cap. */
+/** Never clears a map in much under 20 s, even with the points spent for it. */
 const SLOW = 'save-20260831-13heroes-soulbound.json';
 
 function setPlan(fixture: TeamPlanFarmFixture, farmSet: string | null, extra: object = {}): TeamPlan {
@@ -101,22 +91,35 @@ describe('a set the account cannot reach is reported, not thrown', () => {
     expect(plan.pointResets).toEqual([]);
   }, 60_000);
 
-  it('a squad too slow for the cap anywhere: infeasible, named by the band phase it clears fastest', () => {
+});
+
+describe('a squad that clears slowly still farms the set — slow is not unfarmable', () => {
+  it('ember on the slow squad: a finite, positive rate at an unlocked band phase', () => {
     const fixture = loadTeamPlanFarmFixture(SLOW);
     const plan = setPlan(fixture, 'ember', { allowedChanges: 'points' });
     const band = setFarmBand('ember')!;
-    expect(plan.scoredPhaseInfeasible).toBe(true);
-    expect(plan.scoredPhaseSource).toBe('searched');
-    expect(plan.planDps).toBe(0);
-    const squad = estimatorSquad(fixture, plan.proposedLoadouts, resetsByHeroId(plan));
-    const options = {
-      maxPhase: fixture.teamPlanInput.account.maxPhase,
-      phaseRange: { min: band.minPhase, max: band.maxPhase },
-    };
-    expect(plan.scoredPhase).toBe(fastestClearPhase(squad, options));
-    // Non-vacuity: the named phase really is over the cap, on the estimator's own reading.
-    expect(computeFarmRateRow(plan.scoredPhase!, squad, options)!.clearSecs).toBeGreaterThan(SET_FARM_MAX_CLEAR_SECS);
+    expect(plan.scoredPhaseInfeasible).toBe(false);
+    expect(plan.scoredPhase).toBeGreaterThanOrEqual(band.minPhase);
+    expect(plan.scoredPhase).toBeLessThanOrEqual(band.maxPhase);
+    expect(Number.isFinite(plan.planDps) && plan.planDps > 0).toBe(true);
+    expect(plan.scoredPhaseClearSecs).toBeGreaterThan(0);
   }, 60_000);
+
+  it('every set the slow squad has reached is farmable, however slow the clear', () => {
+    const fixture = loadTeamPlanFarmFixture(SLOW);
+    const maxPhase = fixture.teamPlanInput.account.maxPhase!;
+    const reached = SET_FARM_SETS.filter((id) => setFarmBand(id)!.minPhase <= maxPhase);
+    expect(reached.length, 'non-vacuity').toBeGreaterThanOrEqual(3);
+    let slowest = 0;
+    for (const farmSet of reached) {
+      const plan = setPlan(fixture, farmSet, { allowedChanges: 'points' });
+      expect(plan.scoredPhaseInfeasible, farmSet).toBe(false);
+      expect(plan.planDps, farmSet).toBeGreaterThan(0);
+      slowest = Math.max(slowest, plan.scoredPhaseClearSecs ?? 0);
+    }
+    // Non-vacuity: at least one of those is a clear a fixed cap would have thrown away.
+    expect(slowest).toBeGreaterThan(60);
+  }, 120_000);
 });
 
 /**
@@ -138,13 +141,16 @@ function bandOptions(fixture: TeamPlanFarmFixture, farmSet: string) {
   return {
     maxPhase: fixture.teamPlanInput.account.maxPhase,
     phaseRange: { min: band.minPhase, max: band.maxPhase },
-    maxClearSecs: SET_FARM_MAX_CLEAR_SECS,
   };
 }
 
-describe('a farmable set: the plan farms inside its band and keeps the clear quick', () => {
+function setObjective(farmSet: string) {
+  return resolveFarmObjective({ kind: 'setChests', itemLevel: setFarmBand(farmSet)!.itemLevel });
+}
+
+describe('a farmable set: the plan farms the best phase of its band for the build it proposes', () => {
   for (const farmSet of ['ember', 'gold', 'coal']) {
-    it(`${farmSet}: the scored phase is in the band, unlocked, and clears inside the cap`, () => {
+    it(`${farmSet}: the scored phase is in the band, unlocked, and the brute-force best there`, () => {
       const fixture = loadTeamPlanFarmFixture(FAST);
       const plan = fastPointsPlan(farmSet);
       const band = setFarmBand(farmSet)!;
@@ -155,11 +161,29 @@ describe('a farmable set: the plan farms inside its band and keeps the clear qui
       expect(plan.planDps).toBeGreaterThan(0);
 
       const squad = estimatorSquad(fixture, plan.proposedLoadouts, resetsByHeroId(plan));
+      const maxPhase = fixture.teamPlanInput.account.maxPhase!;
+      let best: { phase: number; value: number } | null = null;
+      for (let phase = band.minPhase; phase <= Math.min(band.maxPhase, maxPhase); phase++) {
+        const row = computeFarmRateRow(phase, squad, { maxPhase })!;
+        if (row.infeasible) continue;
+        const value = farmObjectiveValue(row, setObjective(farmSet), UNIT_SCALES);
+        if (best === null || value > best.value) best = { phase, value };
+      }
+      expect(plan.scoredPhase).toBe(best!.phase);
+    }, 60_000);
+
+    it(`${farmSet}: the reported clear time is the scored phase's own`, () => {
+      const fixture = loadTeamPlanFarmFixture(FAST);
+      const plan = fastPointsPlan(farmSet);
+      const squad = estimatorSquad(fixture, plan.proposedLoadouts, resetsByHeroId(plan));
       const row = computeFarmRateRow(plan.scoredPhase!, squad, { maxPhase: fixture.teamPlanInput.account.maxPhase })!;
-      expect(row.infeasible).toBe(false);
-      expect(row.clearSecs).toBeLessThanOrEqual(SET_FARM_MAX_CLEAR_SECS);
+      expect(plan.scoredPhaseClearSecs).toBeCloseTo(row.clearSecs, 6);
     }, 60_000);
   }
+
+  it('the plan is free to farm a slow clear: coal settles on one over 20 s on this squad', () => {
+    expect(fastPointsPlan('coal').scoredPhaseClearSecs).toBeGreaterThan(20);
+  }, 60_000);
 
   it('a band split with its neighbours at both ends is farmed where it drops alone', () => {
     // 'gold' drops on 21–50 and shares 21–30 and 41–50; this squad's chests/hr are flat enough
@@ -178,89 +202,43 @@ describe('a farmable set: the plan farms inside its band and keeps the clear qui
   }, 60_000);
 });
 
-describe('Luck is a destination, and the clear cap bounds how much of it the plan buys', () => {
+/**
+ * Luck multiplies every chest, and every point in it is a point out of attack, which slows the
+ * clear and so drops fewer chests. The search weighs one against the other; these pin the shape
+ * of that balance loosely — measured on this squad, Luck took 20–31% of the budget across ember,
+ * gold and coal, and handing it all back to attack kept 95–97% of the rate.
+ */
+describe('Luck is a destination, balanced against clear speed', () => {
+  function lucklessOf(planned: Record<string, PointAlloc>): Record<string, PointAlloc> {
+    const out: Record<string, PointAlloc> = {};
+    for (const [heroId, pts] of Object.entries(planned)) out[heroId] = { ...pts, attack: pts.attack + pts.luck, luck: 0 };
+    return out;
+  }
+
+  function bandValue(fixture: TeamPlanFarmFixture, plan: TeamPlan, farmSet: string, pts: Record<string, PointAlloc>) {
+    const squad = estimatorSquad(fixture, plan.proposedLoadouts, pts);
+    return bestFarmPhase(squad, setObjective(farmSet), UNIT_SCALES, bandOptions(fixture, farmSet))?.value ?? 0;
+  }
+
   it('the plan buys Luck the build does not hold today, and it pays in set chests', () => {
     const fixture = loadTeamPlanFarmFixture(FAST);
     const plan = fastPointsPlan('ember');
     const planned = resetsByHeroId(plan);
     expect(totalLuck(fixture, planned)).toBeGreaterThan(totalLuck(fixture, {}));
-
-    // Same points with the Luck handed back to attack: the plan's Luck must be what earns.
-    const luckless: Record<string, PointAlloc> = {};
-    for (const [heroId, pts] of Object.entries(planned)) luckless[heroId] = { ...pts, attack: pts.attack + pts.luck, luck: 0 };
-    const objective = resolveFarmObjective({ kind: 'setChests', itemLevel: setFarmBand('ember')!.itemLevel });
-    const value = (pts: Record<string, PointAlloc>) =>
-      bestFarmPhase(estimatorSquad(fixture, plan.proposedLoadouts, pts), objective, UNIT_SCALES, bandOptions(fixture, 'ember'))
-        ?.value ?? 0;
-    expect(value(planned)).toBeGreaterThan(value(luckless));
+    expect(bandValue(fixture, plan, 'ember', planned)).toBeGreaterThan(bandValue(fixture, plan, 'ember', lucklessOf(planned)));
   }, 60_000);
 
-  it('all-in on Luck clears no band phase in time, so the plan stopped short of it', () => {
-    const fixture = loadTeamPlanFarmFixture(FAST);
-    const plan = fastPointsPlan('ember');
-    const allLuck: Record<string, PointAlloc> = {};
-    for (const hero of fixture.teamPlanInput.heroes) {
-      const zeroed = Object.fromEntries(RESPEC_KEYS.map((key) => [key, 0]));
-      allLuck[hero.heroId] = { ...hero.pts, ...zeroed, luck: reoptBudget(hero.level) } as PointAlloc;
-    }
-    const objective = resolveFarmObjective({ kind: 'setChests', itemLevel: setFarmBand('ember')!.itemLevel });
-    const allLuckPick = bestFarmPhase(
-      estimatorSquad(fixture, plan.proposedLoadouts, allLuck),
-      objective,
-      UNIT_SCALES,
-      bandOptions(fixture, 'ember'),
-    );
-    expect(allLuckPick).toBeNull();
-    expect(totalLuck(fixture, resetsByHeroId(plan))).toBeLessThan(totalLuck(fixture, allLuck));
-    expect(plan.scoredPhaseInfeasible).toBe(false);
-  }, 60_000);
-});
-
-describe('the clear cap acts on the search, not only on the report', () => {
-  it('coal: on the plan’s own build the uncapped best phase is too slow, yet the plan clears in time', () => {
-    // Non-vacuity first: if nothing past the cap paid more, a plan that ignored the cap would
-    // pass the in-band check above for free.
-    const fixture = loadTeamPlanFarmFixture(FAST);
-    const plan = fastPointsPlan('coal');
-    const squad = estimatorSquad(fixture, plan.proposedLoadouts, resetsByHeroId(plan));
-    const objective = resolveFarmObjective({ kind: 'setChests', itemLevel: setFarmBand('coal')!.itemLevel });
-    const uncapped = bestFarmPhase(squad, objective, UNIT_SCALES, { ...bandOptions(fixture, 'coal'), maxClearSecs: null });
-    expect(uncapped!.row.clearSecs).toBeGreaterThan(SET_FARM_MAX_CLEAR_SECS);
-    const scored = computeFarmRateRow(plan.scoredPhase!, squad, { maxPhase: fixture.teamPlanInput.account.maxPhase })!;
-    expect(scored.clearSecs).toBeLessThanOrEqual(SET_FARM_MAX_CLEAR_SECS);
-    expect(totalLuck(fixture, resetsByHeroId(plan))).toBeGreaterThan(totalLuck(fixture, {}));
-  }, 60_000);
-});
-
-describe('the point pass itself honours the cap', () => {
-  it('coal: points searched under the cap out-earn points searched blind to it, inside the cap', () => {
-    const fixture = loadTeamPlanFarmFixture(FAST);
-    const input = fixture.teamPlanInput;
-    const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
-    if (built.blocked) throw new Error('expected contexts');
-    const squad = built.contexts.filter((ctx) => isSquadScope(ctx.scope));
-    const loadouts: Record<string, Loadout> = {};
-    const today: Record<string, PointAlloc> = {};
-    for (const hero of input.heroes) {
-      loadouts[hero.heroId] = loadoutForScoring(hero.loadout, 0);
-      today[hero.heroId] = hero.pts;
-    }
-    const capped = buildFarmObjective(squad, input.account, loadouts, null, false, undefined, setFarmBand('coal'));
-    const blind = { ...capped, phaseOptions: { ...capped.phaseOptions, maxClearSecs: null } };
-    const searched = (objective: typeof capped) =>
-      farmPointsPass({
-        objective,
-        loadoutByHeroId: loadouts,
-        ptsByHeroId: today,
-        memo: createScoreMemo(),
-        evaluationBudget: FARM_POINTS_PASS_MAX_EVALUATIONS,
-      }).ptsByHeroId;
-    const inCap = (pts: Record<string, PointAlloc>) =>
-      evaluateFarmObjective(capped, loadouts, pts, createScoreMemo()).objective;
-
-    expect(inCap(searched(capped))).toBeGreaterThan(inCap(searched(blind)));
-    expect(inCap(searched(capped))).toBeGreaterThanOrEqual(inCap(today));
-  }, 60_000);
+  for (const farmSet of ['ember', 'gold', 'coal']) {
+    it(`${farmSet}: Luck stays a minority of the budget, and the rate leans on it only modestly`, () => {
+      const fixture = loadTeamPlanFarmFixture(FAST);
+      const plan = fastPointsPlan(farmSet);
+      const planned = resetsByHeroId(plan);
+      const budget = fixture.teamPlanInput.heroes.reduce((sum, hero) => sum + reoptBudget(hero.level), 0);
+      expect(totalLuck(fixture, planned) / budget).toBeLessThan(0.5);
+      const withLuck = bandValue(fixture, plan, farmSet, planned);
+      expect(bandValue(fixture, plan, farmSet, lucklessOf(planned)) / withLuck).toBeGreaterThan(0.85);
+    }, 60_000);
+  }
 });
 
 describe('the set, not the player’s phase, decides where the plan farms', () => {

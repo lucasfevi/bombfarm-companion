@@ -484,7 +484,6 @@ export function runFarmSearch(
   const basesById = new Map(bases.map((b) => [b.heroId, b] as const));
   const searchableSet = new Set(searchableIds);
   const destinations = respecDestinations(objective);
-  const clearCapped = phaseOptions.maxClearSecs != null;
   const moves: SpendMoveFn[] = [
     ...generateSpendMoves(destinations),
     ...generateStepMoves(destinations),
@@ -577,10 +576,7 @@ export function runFarmSearch(
               const pinnedPhase = winner.pick!.phase;
               const screen = evaluateAssignment(bases, candAssignment, account, objective, scales, { ...phaseOptions, pinnedPhase });
               evaluations += FARM_OPT_SCREEN_COST;
-              // Under a clear cap the winner's phase is a cliff: a probe that slows the clear past
-              // it there can still win on a faster phase, which is exactly a Luck transfer's shape.
-              const fellOffClearCap = clearCapped && screen.pick === null;
-              if (!fellOffClearCap && !(screen.value > winner.value * (1 + EPS_REL))) continue;
+              if (!(screen.value > winner.value * (1 + EPS_REL))) continue;
               if (!canAfford(1)) {
                 budgetExhausted = true;
                 break outer;

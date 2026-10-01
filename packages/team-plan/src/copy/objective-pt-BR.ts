@@ -6,7 +6,7 @@ export const teamPlanObjectivePairsPtBR: TeamPlanObjectivePairsCopy = {
   teamPlanPhaseHintNoneFarm:
     'Nenhuma fase fixada. A busca escolhe a melhor fase que seu esquadrão aguenta, e diz qual ficou.',
   teamPlanPhaseHintNoneSetFarm:
-    'O conjunto decide as fases: a busca escolhe a melhor fase onde ele cai que seu esquadrão limpa em {secs} s ou menos.',
+    'O conjunto decide as fases: a busca escolhe aquela onde ele rende mais baús por hora para seu esquadrão, pesando a velocidade de limpeza contra a Sorte.',
   teamPlanScoredPhaseGate: 'O portão que você escolheu, pontuado dentro do tempo dele.',
   teamPlanScoredPhasePvp: 'A fase em que a sala do duelo está endurecida.',
   teamPlanObjectiveLabel: 'Pontuar por',
@@ -20,7 +20,7 @@ export const teamPlanObjectivePairsPtBR: TeamPlanObjectivePairsCopy = {
   teamPlanObjectiveHintFarm:
     'Classifica builds pelo ouro por hora que o esquadrão rende na fase ao lado. Um roster que rende mais pode bater mais fraco.',
   teamPlanObjectiveHintSetFarm:
-    'Busca só nas fases onde o conjunto escolhido cai, e classifica builds por quantos baús de item desse conjunto caem por hora. Sorte vale pontos aqui, porque multiplica cada sorteio de baú; uma fase que o esquadrão não limpa em {secs} s ou menos não conta. A raridade não pode ser escolhida — a Sorte muda quantos baús caem, não a raridade que sai.',
+    'Busca só nas fases onde o conjunto escolhido cai, e classifica builds por quantos baús de item desse conjunto caem por hora. Sorte vale pontos aqui, porque multiplica cada sorteio de baú — mas ela é pesada contra a velocidade de limpeza, já que uma limpeza mais lenta derruba menos baús. A raridade não pode ser escolhida — a Sorte muda quantos baús caem, não a raridade que sai.',
   teamPlanObjectiveHintGate:
     'Classifica builds pelo dano que o esquadrão causa dentro do tempo do portão. Energia só conta pelo tempo em campo que compra antes de o tempo acabar; o ouro por hora não é pontuado.',
   teamPlanObjectiveHintPvp:
@@ -55,12 +55,16 @@ export const teamPlanObjectivePairsPtBR: TeamPlanObjectivePairsCopy = {
   teamPlanFarmSetPlaceholder: 'Escolha um conjunto',
   teamPlanFarmSetOption: '{set} · fases {min}–{max}',
   teamPlanFarmSetOptionLocked: '{set} · fases {min}–{max} · ainda não alcançado',
-  teamPlanFarmSetHint: 'Só as fases onde este conjunto cai entram na busca, cada uma limpa em {secs} s ou menos.',
+  teamPlanFarmSetHint:
+    'Só as fases onde este conjunto cai entram na busca. A busca equilibra a velocidade de limpeza com a Sorte, porque uma limpeza mais lenta derruba menos baús.',
   teamPlanFarmSetNeeded: 'Escolha um conjunto a farmar antes de montar este plano.',
   teamPlanFarmSetNeedsMaxPhase:
     'Farmar um conjunto exige a fase mais distante que sua conta alcançou, que ainda não é conhecida.',
-  teamPlanScoredPhaseSetSearched: 'Escolhida automaticamente — a melhor fase onde este conjunto cai que o esquadrão limpa em {secs} s ou menos.',
-  teamPlanScoredPhaseSetTooSlow: 'Nenhuma fase onde este conjunto cai é limpa em {secs} s ou menos com este esquadrão.',
+  teamPlanScoredPhaseSetSearched: 'Escolhida automaticamente — a fase onde este conjunto rende mais baús por hora para este esquadrão.',
+  teamPlanScoredPhaseSetUnfarmable: 'Este esquadrão não consegue limpar nenhuma fase já alcançada onde este conjunto cai.',
+  teamPlanScoredPhaseClearTime: 'Cerca de {secs} s por limpeza.',
+  teamPlanScoredPhaseSlowClear:
+    'As limpezas levam {secs} s aqui — as fases deste conjunto são difíceis para seu esquadrão, e a estimativa é menos certa em limpezas lentas.',
   teamPlanGatePhaseLabel: 'Portão a passar',
   teamPlanGatePhaseAria: 'Para qual portão esta busca planeja',
   teamPlanGatePhaseHint: 'Pontuado dentro dos {secs} s de tempo de portão deste ato, com o esquadrão entrando inteiro na abertura.',

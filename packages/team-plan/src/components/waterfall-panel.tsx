@@ -10,10 +10,12 @@ import type { TeamPlanObjectiveCopy } from '../model/objective-copy';
 import { formatObjectiveFigure, objectiveFigurePrecision } from '../model/objective-figure';
 import {
   formatElapsedSeconds,
+  scoredPhaseClearTime,
   scoredPhaseHint,
   scoredPhaseMovedFrom,
   scoredPhaseValue,
   seedStartLabel,
+  slowClearWarning,
 } from '../model/run-summary-copy';
 import { AbbreviatedNumber } from './abbreviated-number';
 import { FactCell } from './fact-cell';
@@ -34,6 +36,11 @@ function withDeltaPlaceholder(template: string, delta: ReactNode) {
       {after}
     </>
   );
+}
+
+function joinNotes(...notes: (string | null)[]): string | null {
+  const present = notes.filter((note): note is string => note !== null);
+  return present.length === 0 ? null : present.join(' ');
 }
 
 /** Renders the run meta line's `<em>` spans — the only markup its template ever carries. */
@@ -156,7 +163,8 @@ export function WaterfallPanel({
               value={scoredPhaseValue(lang, plan)}
               valueTone={plan.scoredPhaseInfeasible ? 'warn' : 'ink'}
               tag={scoredPhaseMovedFrom(t, lang, plan, accountPhase)}
-              note={scoredPhaseHint(t, plan, objective)}
+              note={joinNotes(scoredPhaseHint(t, plan, objective), scoredPhaseClearTime(t, lang, plan, objective))}
+              warning={slowClearWarning(t, lang, plan, objective)}
             />
             <FactCell
               testId="team-plan-battle-load-card"

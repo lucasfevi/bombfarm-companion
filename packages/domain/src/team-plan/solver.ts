@@ -3,7 +3,7 @@ import type { InventoryItem } from '../inventory';
 import { mayMoveGear } from './allowed-changes';
 import { resolveCombatWindow } from './combat-window';
 import { loadoutForScoring } from './evaluate';
-import { buildFarmObjective, exhaustiveFarmObjective, isSquadScope, unfarmablePhase } from './farm-objective';
+import { buildFarmObjective, clearSecsAt, exhaustiveFarmObjective, isSquadScope } from './farm-objective';
 import { SET_FARM_SETS, setFarmBand, type SetFarmBand } from './set-farm';
 import { isFarmSearchObjective } from './types';
 import { buildHeroPlanContexts } from './hero-context';
@@ -105,8 +105,8 @@ function requireSetBand(farmSet: string | null | undefined): SetFarmBand {
  * "what would I earn at phase 400" is allowed to be "nothing", and silently reporting some other
  * phase instead would be a different plan wearing this one's number.
  *
- * A set is searched, never chosen, whatever `targetPhase` says; when nothing in its band clears
- * in time the plan still names the band phase closest to farmable rather than no phase at all.
+ * A set is searched, never chosen, whatever `targetPhase` says; when no phase of its band is
+ * both unlocked and clearable the plan still names the band's first phase rather than none.
  */
 function scoredPhaseReport(
   input: TeamPlanInput,
@@ -116,7 +116,7 @@ function scoredPhaseReport(
   if (input.objective === 'setFarm' && farmObjective) {
     const searched = finalEvaluation.farmPhase ?? null;
     return {
-      scoredPhase: searched ?? unfarmablePhase(farmObjective, finalEvaluation.farmFacts ?? []),
+      scoredPhase: searched ?? farmObjective.phaseOptions.phaseRange?.min ?? null,
       scoredPhaseSource: 'searched',
       scoredPhaseInfeasible: searched === null,
     };
@@ -152,6 +152,15 @@ function scoredPhaseReport(
     scoredPhaseSource: 'account',
     scoredPhaseInfeasible: false,
   };
+}
+
+function scoredPhaseClearSecs(
+  report: Pick<TeamPlan, 'scoredPhase' | 'scoredPhaseInfeasible'>,
+  farmObjective: TeamPlanFarmObjective | undefined,
+  finalEvaluation: RosterEvaluation,
+): number | null {
+  if (!farmObjective || report.scoredPhase === null || report.scoredPhaseInfeasible) return null;
+  return clearSecsAt(farmObjective, finalEvaluation.farmFacts ?? [], report.scoredPhase);
 }
 
 /**
@@ -269,6 +278,7 @@ export function runTeamPlan(
     itemById,
   );
 
+  const phaseReport = scoredPhaseReport(input, reportedObjective, waterfall.finalEvaluation);
   const plan: TeamPlan = {
     steps: waterfall.steps,
     forgeList: waterfall.forgeList,
@@ -283,7 +293,8 @@ export function runTeamPlan(
     planDps: waterfall.steps[2]?.objective ?? 0,
     forgeFloorApplied: waterfall.forgeFloorApplied,
     allowedChanges,
-    ...scoredPhaseReport(input, reportedObjective, waterfall.finalEvaluation),
+    ...phaseReport,
+    scoredPhaseClearSecs: scoredPhaseClearSecs(phaseReport, reportedObjective, waterfall.finalEvaluation),
     gearBreakdown: waterfall.gearBreakdown,
     requiresFullPlan: waterfall.requiresFullPlan,
     gearDipDps: waterfall.gearDipDps,
