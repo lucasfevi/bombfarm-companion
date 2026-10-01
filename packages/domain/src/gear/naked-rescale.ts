@@ -134,13 +134,13 @@ export function nakedAfterSheetAbilityChange(
  * Adding/removing a ★ (gems ritual) rescales every naked sheet stat except Speed
  * (Attack, Energy, Crit %, Crit Dmg, Penetration, CDR, Luck).
  *
- * `critChanceFlat` / `critDmgFlat` / `penetrationFlat` are the sheet-ability addends already inside
- * `naked` (`SheetOtherPct`). All three are held OUT of the ★ ratio so this stays the algebraic inverse of
- * `nakedFromBirth` (`birth × star + flat`); leaving them in would silently star-scale Olho
- * Clínico's, Golpe Brutal's and Ponta de Diamante's contributions. Both default to `0`, which is exactly the old
- * behaviour for every hero without the abilities. Whether the game itself star-scales those
- * terms is unobserved — no capture pairs ★>0 with either contribution — so this follows
- * `nakedFromBirth` rather than inventing a second answer.
+ * `critChanceFlat` / `critDmgFlat` / `penetrationFlat` are the sheet-ability addends already
+ * inside `naked` (`SheetOtherPct`). All three are held OUT of the ★ ratio, so this stays the
+ * algebraic inverse of `nakedFromBirth` (`birth × star + flat`), and all default to `0`, which
+ * leaves every hero without the abilities unchanged. Ponta de Diamante's is measured: save
+ * exports fit exported penetration exactly with the +rank flat unscaled at ★1 and ★2, the same
+ * hero across a ★1→★2 change included, while scaling it misses by rank × 0.25 per star. The two
+ * crit flats have no ★>0 witness yet and follow `nakedFromBirth` rather than a second answer.
  */
 export function rescaleNakedForStars(
   naked: SheetStats,
