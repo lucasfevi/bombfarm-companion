@@ -1,4 +1,4 @@
-import type { TeamPlan, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
+import { SET_FARM_MAX_CLEAR_SECS, type TeamPlan, type TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
 import { formatNumber } from '@bombfarm/ui';
 import { formatPhaseLabel } from '@bombfarm/farm';
 import { sub, type Lang } from '@bombfarm/hero/copy';
@@ -29,6 +29,11 @@ export function seedStartLabel(t: TeamPlanCopy, seedUsed: string): string {
  * about their own account otherwise.
  */
 export function scoredPhaseHint(t: TeamPlanCopy, plan: TeamPlan, objective: TeamPlanObjective = 'dps'): string | null {
+  if (objective === 'setFarm') {
+    const secs = { secs: String(SET_FARM_MAX_CLEAR_SECS) };
+    if (plan.scoredPhase == null || plan.scoredPhaseInfeasible) return sub(t.teamPlanScoredPhaseSetTooSlow, secs);
+    return sub(t.teamPlanScoredPhaseSetSearched, secs);
+  }
   if (plan.scoredPhase == null) {
     return plan.scoredPhaseSource === 'searched' ? t.teamPlanScoredPhaseNoneFeasible : null;
   }

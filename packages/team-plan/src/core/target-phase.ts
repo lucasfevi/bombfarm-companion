@@ -20,7 +20,8 @@ export function resolveTeamPlanTargetPhase(
 
 /**
  * The phase the plan is scored at, per objective: the gate picked for a gate clear, the duel
- * room's phase for PVP, and the shared phase control for gold.
+ * room's phase for PVP, and the shared phase control for gold. A set farm has none to give: the
+ * set's drop band decides, and the search picks inside it.
  */
 export function planTargetPhase(
   inputs: Pick<TeamPlanInputs, 'farmChosenPhase' | 'phase' | 'pvpRoomPhase'>,
@@ -31,6 +32,8 @@ export function planTargetPhase(
       return resolveTeamPlanGatePhase(inputs, controls);
     case 'pvp':
       return inputs.pvpRoomPhase ?? inputs.phase;
+    case 'setFarm':
+      return null;
     default:
       return resolveTeamPlanTargetPhase(inputs, controls);
   }

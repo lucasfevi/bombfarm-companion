@@ -16,6 +16,8 @@ export { buildForgeQueue, forgeLadderRungs, type ForgeQueue, type ForgeQueueEntr
 export { HERO6_BOMB_ACTIVATION_FRAME_MS, HERO6_BOMB_ACTIVATION_FRAMES } from './hero6-bomb-activation';
 export { teamPlanPhaseOptions, teamPlanGateOptions, phaseOptionValue, phaseFromOptionValue, TEAM_PLAN_PHASE_NONE } from './phase-options';
 export { teamPlanObjectiveCopy } from './objective-copy';
+export { formatObjectiveFigure, objectiveFigurePrecision, type ObjectiveFigurePrecision } from './objective-figure';
+export { teamPlanFarmSetOptions, type FarmSetOption } from './set-farm-options';
 export type { TeamPlanObjectiveCopy } from './objective-copy';
 export { teamPlanEmptyState } from './empty-state';
 export type { TeamPlanEmptyStateKind } from './empty-state';

@@ -2,11 +2,12 @@
 
 import type { ReactNode } from 'react';
 import type { TeamPlan as DomainTeamPlan, TeamPlanObjective, WaterfallStep } from '@bombfarm/domain/team-plan/types';
-import { Panel, Tooltip, cn, formatCompactNumber, formatNumber, mutedClass, panelHClass, panelTitleClass } from '@bombfarm/ui';
+import { Panel, Tooltip, cn, formatNumber, mutedClass, panelHClass, panelTitleClass } from '@bombfarm/ui';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanCopy } from '../copy';
 import { parseEmphasis } from '../copy';
 import type { TeamPlanObjectiveCopy } from '../model/objective-copy';
+import { formatObjectiveFigure, objectiveFigurePrecision } from '../model/objective-figure';
 import {
   formatElapsedSeconds,
   scoredPhaseHint,
@@ -73,7 +74,8 @@ export function WaterfallPanel({
   const saturated = plan.regime === 'saturated';
   const totalDelta = plan.planDps - plan.currentDps;
   const totalPct = plan.currentDps > 0 ? (totalDelta / plan.currentDps) * 100 : 0;
-  const totalSign = totalDelta >= 0 ? '+' : '';
+  const precision = objectiveFigurePrecision(objective);
+  const totalFigure = formatObjectiveFigure(totalDelta, lang, precision, { signed: true });
   const pctSign = totalPct >= 0 ? '+' : '';
 
   const metaLine = sub(t.teamPlanRunMetaFooter, {
@@ -111,7 +113,7 @@ export function WaterfallPanel({
                 }
               >
                 {sub(copy.totalGainValue, {
-                  delta: `${totalSign}${formatCompactNumber(totalDelta, lang, 1)}`,
+                  delta: totalFigure.shown,
                   pct: `${pctSign}${formatNumber(totalPct, lang, 1)}`,
                 })}
               </Tooltip.Trigger>
@@ -120,7 +122,7 @@ export function WaterfallPanel({
                   <Tooltip.Popup>
                     <p className="m-0 font-mono">
                       {sub(copy.totalGainValue, {
-                        delta: `${totalSign}${formatNumber(totalDelta, lang, 0)}`,
+                        delta: totalFigure.exact,
                         pct: `${pctSign}${formatNumber(totalPct, lang, 1)}`,
                       })}
                     </p>
@@ -140,6 +142,7 @@ export function WaterfallPanel({
                   objective={step.objective}
                   delta={showDelta ? step.delta : null}
                   deltaTone={step.delta < 0 ? 'down' : 'up'}
+                  precision={precision}
                   lang={lang}
                 />
               );
@@ -172,7 +175,7 @@ export function WaterfallPanel({
         <p className="m-0 mt-2 text-center text-[12px] text-muted" role="status">
           {withDeltaPlaceholder(
             copy.gearDipNote,
-            <AbbreviatedNumber value={plan.gearDipDps} lang={lang} />,
+            <AbbreviatedNumber value={plan.gearDipDps} lang={lang} precision={precision} />,
           )}
         </p>
       ) : null}

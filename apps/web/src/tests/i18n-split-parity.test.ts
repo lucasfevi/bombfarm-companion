@@ -589,6 +589,10 @@ const KEYS_ADDED: readonly string[] = [
   // duel facts with their over-the-cap notice, and the front-page
   // card's two headline units. One line: this file sits at the max-lines cap.
   'teamPlanObjectiveOptionGate', 'teamPlanObjectiveOptionPvp', 'teamPlanObjectiveHintGate', 'teamPlanObjectiveHintPvp', 'teamPlanSetupSectionBodyGate', 'teamPlanSetupSectionBodyPvp', 'teamPlanTotalGainValueGate', 'teamPlanTotalGainValuePvp', 'teamPlanGearDipNoteGate', 'teamPlanGearDipNotePvp', 'teamPlanScoredPhaseGate', 'teamPlanScoredPhasePvp', 'teamPlanGatePhaseLabel', 'teamPlanGatePhaseAria', 'teamPlanGatePhaseHint', 'teamPlanGatePhaseSearchPlaceholder', 'teamPlanPvpSquadLabel', 'teamPlanPvpSquadValue', 'teamPlanPvpSquadHint', 'teamPlanPvpRoomUnknown', 'teamPlanPvpSquadTooMany', 'teamPlanChangesControlPvpSquadSlots', 'homeCardOptimizerHeadlineGate', 'homeCardOptimizerHeadlinePvp',
+  // The Optimizer's Set farm objective (2026-10-01): its option label and suffixed strings, the
+  // set picker that stands in for the phase control with its no-set notice, the phase card's two
+  // notes, the ledger's row label, and the front-page card's headline unit. One line, as above.
+  'teamPlanObjectiveOptionSet', 'teamPlanObjectiveHintSetFarm', 'teamPlanSetupSectionBodySetFarm', 'teamPlanTotalGainValueSetFarm', 'teamPlanGearDipNoteSetFarm', 'teamPlanPhaseHintNoneSetFarm', 'teamPlanFarmSetLabel', 'teamPlanFarmSetAria', 'teamPlanFarmSetPlaceholder', 'teamPlanFarmSetOption', 'teamPlanFarmSetOptionLocked', 'teamPlanFarmSetHint', 'teamPlanFarmSetNeeded', 'teamPlanFarmSetNeedsMaxPhase', 'teamPlanScoredPhaseSetSearched', 'teamPlanScoredPhaseSetTooSlow', 'teamPlanChangesControlFarmSet', 'homeCardOptimizerHeadlineSetFarm',
   'teamPlanChangesScope',
   'teamPlanChangesGroupBreaks',
   'teamPlanChangesHeroRemovedUsed',

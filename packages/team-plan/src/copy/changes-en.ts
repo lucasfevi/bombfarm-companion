@@ -57,5 +57,6 @@ export const teamPlanChangesEn = {
   teamPlanChangesControlAurasAtCap: 'auras at cap',
   teamPlanChangesControlTargetPhase: 'phase scored at',
   teamPlanChangesControlPvpSquadSlots: 'duel squad slots',
+  teamPlanChangesControlFarmSet: 'set farmed',
   teamPlanChangesScope: 'scope of {hero}',
 } as const;

@@ -2,7 +2,7 @@
  * The Optimizer screen's objective control, and every string on it whose wording depends on which
  * objective the search was scoring.
  *
- * Split out because the `…Dps`/`…Farm`/`…Gate`/`…Pvp` sets are read as sets — through
+ * Split out because the `…Dps`/`…Farm`/`…SetFarm`/`…Gate`/`…Pvp` sets are read as sets — through
  * `teamPlanObjectiveCopy`, never individually — and because a damage word in the gold set is the
  * failure this whole shape exists to prevent, which is easier to review with the sets side by
  * side than scattered through the screen's other hundred strings.
@@ -12,6 +12,8 @@ export const teamPlanObjectivePairsEn = {
     'No phase pinned. Damage is scored at the phase your account is on now.',
   teamPlanPhaseHintNoneFarm:
     'No phase pinned. The search picks the best phase your squad can hold, and says which one it settled on.',
+  teamPlanPhaseHintNoneSetFarm:
+    'The set decides the phases: the search picks the best one where it drops that your squad clears in {secs} s or less.',
   /** Under the phase card of a finished plan, where a rotation plan says whether the phase was
    *  picked or found. */
   teamPlanScoredPhaseGate: 'The gate you picked, scored over its timer.',
@@ -21,10 +23,13 @@ export const teamPlanObjectivePairsEn = {
   teamPlanObjectiveOptionGold: 'Gold / hr',
   teamPlanObjectiveOptionGate: 'Gate clear',
   teamPlanObjectiveOptionPvp: 'PVP',
+  teamPlanObjectiveOptionSet: 'Set farm',
   teamPlanObjectiveHintDps:
     'Ranks builds by combined roster DPS. Gold per hour is not scored, and can fall.',
   teamPlanObjectiveHintFarm:
     'Ranks builds by the gold per hour the squad brings in at the phase beside this. A roster that earns more can hit softer.',
+  teamPlanObjectiveHintSetFarm:
+    'Searches only the phases where the set you pick drops, and ranks builds by how many of that set’s item chests drop per hour. Luck is worth points here, because it multiplies every chest roll; a phase the squad cannot clear in {secs} s or less does not count. Rarity cannot be steered — Luck changes how many chests drop, not which rarity they roll.',
   teamPlanObjectiveHintGate:
     'Ranks builds by the damage the squad lands inside the gate timer. Energy counts only for the field time it buys before the timer runs out; gold per hour is not scored.',
   teamPlanObjectiveHintPvp:
@@ -36,22 +41,40 @@ export const teamPlanObjectivePairsEn = {
     'Builds a plan for the heroes you mark Optimize, out of the changes you allow below — scored for combined roster DPS.',
   teamPlanSetupSectionBodyFarm:
     'Builds a plan for the heroes you mark Optimize, out of the changes you allow below — scored for the gold per hour the squad brings in.',
+  teamPlanSetupSectionBodySetFarm:
+    'Builds a plan for the heroes you mark Optimize, out of the changes you allow below — scored for the item chests of the set you pick that drop per hour.',
   teamPlanSetupSectionBodyGate:
     'Builds a plan for the heroes you mark Optimize, out of the changes you allow below — scored for the damage they land inside the gate timer.',
   teamPlanSetupSectionBodyPvp:
     'Builds a plan for the duel squad you field on the scope board — at most as many heroes as your squad has slots, Optimize and Leave alone alike — out of the changes you allow below, scored for the damage it lands in the one-minute duel. Donors stay out of the room.',
   teamPlanTotalGainValueDps: '{delta} dps ({pct}%)',
   teamPlanTotalGainValueFarm: '{delta} gold/h ({pct}%)',
+  teamPlanTotalGainValueSetFarm: '{delta} set chests/h ({pct}%)',
   teamPlanTotalGainValueGate: '{delta} dps at the gate ({pct}%)',
   teamPlanTotalGainValuePvp: '{delta} dps in the duel ({pct}%)',
   teamPlanGearDipNoteDps:
     'Temporarily behind by {delta} dps — the Reset points step brings it past today.',
   teamPlanGearDipNoteFarm:
     'Temporarily behind by {delta} gold/h — the Reset points step brings it past today.',
+  teamPlanGearDipNoteSetFarm:
+    'Temporarily behind by {delta} set chests/h — the Reset points step brings it past today.',
   teamPlanGearDipNoteGate:
     'Temporarily behind by {delta} dps at the gate — the Reset points step brings it past today.',
   teamPlanGearDipNotePvp:
     'Temporarily behind by {delta} dps in the duel — the Reset points step brings it past today.',
+  /** The set picker that stands in for the phase control under Set farm. */
+  teamPlanFarmSetLabel: 'Set to farm',
+  teamPlanFarmSetAria: 'Which equipment set this search farms',
+  teamPlanFarmSetPlaceholder: 'Pick a set',
+  teamPlanFarmSetOption: '{set} · phases {min}–{max}',
+  teamPlanFarmSetOptionLocked: '{set} · phases {min}–{max} · not reached yet',
+  teamPlanFarmSetHint: 'Only the phases where this set drops are searched, each cleared in {secs} s or less.',
+  teamPlanFarmSetNeeded: 'Pick a set to farm before building this plan.',
+  teamPlanFarmSetNeedsMaxPhase:
+    'Farming a set needs the furthest phase your account has reached, which is not known yet.',
+  /** Under the phase card of a finished Set farm plan. */
+  teamPlanScoredPhaseSetSearched: 'Picked automatically — the best phase where this set drops that the squad clears in {secs} s or less.',
+  teamPlanScoredPhaseSetTooSlow: 'No phase where this set drops clears in {secs} s or less with this squad.',
   /** The gate picker that stands in for the phase control under Gate clear. */
   teamPlanGatePhaseLabel: 'Gate to clear',
   teamPlanGatePhaseAria: 'Which gate this search plans for',

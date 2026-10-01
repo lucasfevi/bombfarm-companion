@@ -57,6 +57,7 @@ export type TeamPlanScreenActions = {
   setIgnoreFieldCrowding: (value: boolean) => void;
   setTargetPhase: (value: number | null) => void;
   setGatePhase: (value: number | null) => void;
+  setFarmSet: (value: string | null) => void;
   startRun: (runId: string) => void;
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   applyPlan: (runId: string, plan: TeamPlan) => void;

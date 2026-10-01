@@ -1,4 +1,5 @@
-import type { TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
+import { SET_FARM_MAX_CLEAR_SECS, type TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
+import { sub } from '@bombfarm/hero/copy';
 import type { TeamPlanScreenCopy } from '../copy';
 
 /**
@@ -32,6 +33,16 @@ export function teamPlanObjectiveCopy(
         gearDipNote: strings.teamPlanGearDipNoteFarm,
         phaseHintNone: strings.teamPlanPhaseHintNoneFarm,
       };
+    case 'setFarm': {
+      const secs = { secs: String(SET_FARM_MAX_CLEAR_SECS) };
+      return {
+        setupSectionBody: strings.teamPlanSetupSectionBodySetFarm,
+        objectiveHint: sub(strings.teamPlanObjectiveHintSetFarm, secs),
+        totalGainValue: strings.teamPlanTotalGainValueSetFarm,
+        gearDipNote: strings.teamPlanGearDipNoteSetFarm,
+        phaseHintNone: sub(strings.teamPlanPhaseHintNoneSetFarm, secs),
+      };
+    }
     case 'gateClear':
       return {
         setupSectionBody: strings.teamPlanSetupSectionBodyGate,

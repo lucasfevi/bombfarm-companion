@@ -74,6 +74,20 @@ describe('scoredPhaseHint', () => {
   });
 });
 
+describe('scoredPhaseHint under a set farm', () => {
+  it('names the band search and its ceiling for a phase the solver picked', () => {
+    const hint = scoredPhaseHint(teamPlanEn, plan({ scoredPhase: 75, scoredPhaseSource: 'searched' }), 'setFarm');
+    expect(hint).toContain('where this set drops');
+    expect(hint).toContain('20 s');
+  });
+
+  it('says no phase of the band clears in time, whether the plan names one or not', () => {
+    const tooSlow = 'No phase where this set drops clears in 20 s or less with this squad.';
+    expect(scoredPhaseHint(teamPlanEn, plan({ scoredPhase: 75, scoredPhaseSource: 'searched', scoredPhaseInfeasible: true }), 'setFarm')).toBe(tooSlow);
+    expect(scoredPhaseHint(teamPlanEn, plan({ scoredPhase: null, scoredPhaseSource: 'searched' }), 'setFarm')).toBe(tooSlow);
+  });
+});
+
 describe('scoredPhaseValue', () => {
   it('writes the phase the way the game does', () => {
     expect(scoredPhaseValue('en', plan({ scoredPhase: 51 }))).toBe('Normal 1-1 (#51)');

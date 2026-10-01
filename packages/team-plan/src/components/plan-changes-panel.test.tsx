@@ -5,6 +5,7 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import { NO_AURAS_AT_CAP } from '@bombfarm/domain/team-buffs';
+import { setName } from '@bombfarm/domain/game-labels';
 import { teamPlanEn, type TeamPlanScreenCopy } from '../copy';
 import { sub } from '@bombfarm/hero/copy';
 import { describePlanChanges, type PlanBasis } from '../core/plan-changes';
@@ -54,7 +55,7 @@ function inputs(heroes: HeroRecord[], items: InventoryItem[], overrides: Partial
   };
 }
 
-const controls: TeamPlanControls = { scopeByHeroId: {}, forgeFloor: 12, objective: 'farm', allowedChanges: 'both', ignoreFieldCrowding: false, aurasAtCap: NO_AURAS_AT_CAP, targetPhase: null, targetPhaseChosen: false, gatePhase: null };
+const controls: TeamPlanControls = { scopeByHeroId: {}, forgeFloor: 12, objective: 'farm', allowedChanges: 'both', ignoreFieldCrowding: false, aurasAtCap: NO_AURAS_AT_CAP, targetPhase: null, targetPhaseChosen: false, gatePhase: null, farmSet: null };
 
 const rowan = hero({ id: 'rowan', name: 'Rowan' });
 const minato = hero({ id: 'minato', name: 'Minato' });
@@ -195,6 +196,18 @@ describe('wordPlanChange — every kind of change has words, and none is a raw f
       `${t.teamPlanChangesControlAllowedChanges}: ${t.teamPlanAllowedChangesOptionBoth} → ${t.teamPlanAllowedChangesOptionPoints}`,
       `${t.teamPlanChangesControlIgnoreFieldCrowding}: ${t.teamPlanChangesOff} → ${t.teamPlanChangesOn}`,
       `${t.teamPlanChangesControlTargetPhase}: 91 → 100`,
+    ]);
+  });
+
+  it('a set farm names the objective and the set by their labels, and the phase it no longer pins', () => {
+    const ledger = describePlanChanges(basis, { inputs: basis.inputs, controls: { ...controls, objective: 'setFarm', farmSet: 'gold' } }, null);
+    const words = ledger.other.map((entry) => wordPlanChange(entry, t, 'en', names));
+    expect(
+      words.map((w) => `${w.change}: ${w.before.kind === 'text' ? w.before.value : w.before.name} → ${w.after.kind === 'text' ? w.after.value : w.after.name}`),
+    ).toEqual([
+      `${t.teamPlanChangesControlObjective}: ${t.teamPlanObjectiveOptionGold} → ${t.teamPlanObjectiveOptionSet}`,
+      `${t.teamPlanChangesControlTargetPhase}: 91 → ${t.teamPlanPhaseNone}`,
+      `${t.teamPlanChangesControlFarmSet}: — → ${setName('gold', 'en')}`,
     ]);
   });
 

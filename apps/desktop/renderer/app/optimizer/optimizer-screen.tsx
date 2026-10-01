@@ -185,6 +185,9 @@ export function OptimizerScreen({
       setGatePhase: (value: number | null) => {
         onControlChange({ kind: 'gatePhase', value });
       },
+      setFarmSet: (value: string | null) => {
+        onControlChange({ kind: 'farmSet', value });
+      },
       startRun: (runId: string) => {
         actions.startRun(runId, liveSignatureRef.current, heroesRef.current, basisRef.current);
       },

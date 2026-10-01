@@ -16,6 +16,8 @@ function headlineFor(objective: PlannerStore['objective'], strings: Strings): st
   switch (objective) {
     case 'farm':
       return strings.homeCardOptimizerHeadlineFarm;
+    case 'setFarm':
+      return strings.homeCardOptimizerHeadlineSetFarm;
     case 'gateClear':
       return strings.homeCardOptimizerHeadlineGate;
     case 'pvp':

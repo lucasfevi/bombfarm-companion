@@ -6,6 +6,7 @@ import {
   countOptimizeScopeHeroes,
   isFarmObjectiveUnavailable,
   isPvpObjectiveUnavailable,
+  isSetFarmObjectiveUnavailable,
 } from '../core';
 import { resolveTeamPlanTargetPhase } from '../core/plan-lifecycle';
 import { runnerMarksAtMount, runnerMarksBeforeRun, runnerReports } from '../model/runner-reports';
@@ -15,10 +16,11 @@ import type { TeamPlanScreenActions, TeamPlanScreenData } from './team-plan-scre
 export type OptimizeAction = {
   readonly run: () => void;
   readonly busy: boolean;
-  /** Nothing in scope, a gold plan with no phase to score at, or a duel with no squad: the press
-   *  does nothing. */
+  /** Nothing in scope, a gold plan with no phase to score at, a set farm with no set, or a duel
+   *  with no squad: the press does nothing. */
   readonly blocked: boolean;
   readonly farmBlocked: boolean;
+  readonly setFarmBlocked: boolean;
   readonly pvpBlocked: boolean;
   readonly scopeEmpty: boolean;
 };
@@ -29,11 +31,13 @@ export type OptimizeAction = {
  */
 export function objectiveUnavailable(data: Pick<TeamPlanScreenData, 'inputs' | 'controls'>): {
   farmBlocked: boolean;
+  setFarmBlocked: boolean;
   pvpBlocked: boolean;
 } {
   const resolvedTargetPhase = resolveTeamPlanTargetPhase(data.inputs, data.controls);
   return {
     farmBlocked: data.controls.objective === 'farm' && isFarmObjectiveUnavailable(data.inputs.maxPhase, resolvedTargetPhase),
+    setFarmBlocked: data.controls.objective === 'setFarm' && isSetFarmObjectiveUnavailable(data.controls, data.inputs.maxPhase),
     pvpBlocked: data.controls.objective === 'pvp' && isPvpObjectiveUnavailable(data.inputs, data.controls),
   };
 }
@@ -44,7 +48,7 @@ export function objectiveUnavailable(data: Pick<TeamPlanScreenData, 'inputs' | '
  * exactly once however many buttons share the runner.
  */
 export function useOptimizeAction(data: TeamPlanScreenData, actions: TeamPlanScreenActions, runner: TeamPlanRunner): OptimizeAction {
-  const { farmBlocked, pvpBlocked } = objectiveUnavailable(data);
+  const { farmBlocked, setFarmBlocked, pvpBlocked } = objectiveUnavailable(data);
   const scopeEmpty = countOptimizeScopeHeroes(data.inputs.heroes, data.controls.scopeByHeroId) === 0;
   // Seeded from the runner as it stands at mount, never from nothing: a host-owned runner
   // outlives this screen, and a run it already finished was handed over on the mount that
@@ -55,7 +59,7 @@ export function useOptimizeAction(data: TeamPlanScreenData, actions: TeamPlanScr
   const run = useCallback(() => {
     if (countOptimizeScopeHeroes(inputs.heroes, controls.scopeByHeroId) === 0) return;
     const unavailable = objectiveUnavailable({ inputs, controls });
-    if (unavailable.farmBlocked || unavailable.pvpBlocked) return;
+    if (unavailable.farmBlocked || unavailable.setFarmBlocked || unavailable.pvpBlocked) return;
     marksRef.current = runnerMarksBeforeRun(marksRef.current);
     runner.run(buildTeamPlanInput(inputs, controls));
   }, [runner, inputs, controls]);
@@ -71,5 +75,13 @@ export function useOptimizeAction(data: TeamPlanScreenData, actions: TeamPlanScr
   }, [runner, actions]);
 
   const busy = runner.status === 'running' || data.runStatus === 'running';
-  return { run, busy, blocked: busy || scopeEmpty || farmBlocked || pvpBlocked, farmBlocked, pvpBlocked, scopeEmpty };
+  return {
+    run,
+    busy,
+    blocked: busy || scopeEmpty || farmBlocked || setFarmBlocked || pvpBlocked,
+    farmBlocked,
+    setFarmBlocked,
+    pvpBlocked,
+    scopeEmpty,
+  };
 }

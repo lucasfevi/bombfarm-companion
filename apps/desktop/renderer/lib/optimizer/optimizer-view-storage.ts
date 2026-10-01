@@ -16,6 +16,7 @@ import {
   clampForgeFloor,
   clampTargetPhase,
   normalizeAurasAtCap,
+  normalizeFarmSet,
   normalizeGatePhase,
   type ScopeState,
   type TeamPlanControls,
@@ -90,6 +91,7 @@ function normalizeOptimizerView(value: unknown): OptimizerView {
     targetPhase: normalizeTargetPhase(raw.targetPhase),
     targetPhaseChosen: normalizeTargetPhaseChosen(raw.targetPhaseChosen),
     gatePhase: normalizeGatePhase(raw.gatePhase),
+    farmSet: normalizeFarmSet(raw.farmSet),
   };
 }
 

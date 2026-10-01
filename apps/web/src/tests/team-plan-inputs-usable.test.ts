@@ -80,6 +80,14 @@ const fixtures: { name: string; arrange: () => void; usable: boolean }[] = [
     usable: false,
   },
   {
+    name: 'set farm with no set picked',
+    arrange: () => {
+      usePlannerStore.getState().hydrateRoster([hero('a')], 'a');
+      usePlannerStore.setState({ ...pool([item]), maxPhase: 137, objective: 'setFarm', farmSet: null });
+    },
+    usable: false,
+  },
+  {
     name: 'usable',
     arrange: () => {
       usePlannerStore.getState().hydrateRoster([hero('a')], 'a');
@@ -98,14 +106,14 @@ describe('the usable-inputs selector', () => {
     resetPlannerStoreForTests();
   });
 
-  it("agrees with the toolbar's enabling conditions over the four blocking fixtures and one usable one", () => {
+  it("agrees with the toolbar's enabling conditions over the five blocking fixtures and one usable one", () => {
     const answers = fixtures.map(({ arrange }) => {
       resetPlannerStoreForTests();
       arrange();
       return selectTeamPlanInputsUsable(usePlannerStore.getState());
     });
 
-    expect(answers).toEqual([false, false, false, false, true]);
+    expect(answers).toEqual([false, false, false, false, false, true]);
     expect(fixtures.map(({ usable }) => usable)).toEqual(answers);
   });
 

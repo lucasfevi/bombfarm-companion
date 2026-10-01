@@ -166,7 +166,7 @@ describe('the front page optimizer card', () => {
     resetTeamPlanSolverForTests();
   });
 
-  it("each of the four missing inputs prints the Optimizer page's own line", () => {
+  it("each missing input prints the Optimizer page's own line", () => {
     const fixtures: {
       name: string;
       arrange: () => void;
@@ -174,7 +174,8 @@ describe('the front page optimizer card', () => {
         | 'teamPlanEmptyNoRosterTitle'
         | 'teamPlanEmptyNoInventoryTitle'
         | 'teamPlanEmptyAllLeaveAloneTitle'
-        | 'teamPlanObjectiveFarmNeedsMaxPhase';
+        | 'teamPlanObjectiveFarmNeedsMaxPhase'
+        | 'teamPlanFarmSetNeeded';
     }[] = [
       { name: 'no roster', arrange: () => usePlannerStore.setState({ phase: 51 }), key: 'teamPlanEmptyNoRosterTitle' },
       {
@@ -206,6 +207,20 @@ describe('the front page optimizer card', () => {
           });
         },
         key: 'teamPlanObjectiveFarmNeedsMaxPhase',
+      },
+      {
+        name: 'a set farm with no set picked',
+        arrange: () => {
+          state().hydrateRoster([hero], 'a');
+          usePlannerStore.setState({
+            inventory: { version: 1, importedAt: 1, items: [item] },
+            scopeByHeroId: { a: 'optimize' },
+            objective: 'setFarm',
+            farmSet: null,
+            maxPhase: 137,
+          });
+        },
+        key: 'teamPlanFarmSetNeeded',
       },
     ];
 
@@ -372,6 +387,22 @@ describe('the front page optimizer card', () => {
       expect(seePlanLink(html)).toBe(t.homeCardOptimizerSeeFullPlan);
       expect(html.match(/<a /g)).toHaveLength(2);
       expect(footer(html)).toBe('');
+    }
+  });
+
+  it('a set farm plan names set chests in its headline', () => {
+    arrangeUsable();
+    usePlannerStore.setState({ objective: 'setFarm', farmSet: 'clay' });
+    applyMatchingPlan(plan({ currentDps: 0.5, planDps: 0.6, moveList: [equip('1', null)] }));
+
+    for (const lang of LANGS) {
+      usePlannerStore.setState({ lang });
+      const t = STRINGS[lang];
+      const html = render();
+
+      expect(html).toContain('data-home-card-state="plan"');
+      expect(lineText(html, 'home-optimizer-headline')).toBe(`${gainText(html)} ${t.homeCardOptimizerHeadlineSetFarm}`);
+      expect(html).not.toContain(t.homeCardOptimizerHeadlineFarm);
     }
   });
 
