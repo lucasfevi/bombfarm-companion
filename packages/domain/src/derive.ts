@@ -10,6 +10,7 @@ import {
   type RarityKey,
 } from './model';
 import type { TreeSheetTotals } from './birth-sheet';
+import { collectionSheetPct } from './collection';
 import { starsMult, type SheetOtherPct, type SheetStats } from './gear';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
 import { runeSheetMultipliers, type HeroRune } from './runes';
@@ -150,6 +151,10 @@ export type DeriveResult = {
  * naked.energy` already carries `energia_add` once `naked` is `nakedFromBirth`'s tree-free
  * output; an explicit `(1 + energyPct/100)` on top would double it.
  */
+function collectionFactor(pct: number): number {
+  return 1 + pct / 100;
+}
+
 export function derive(input: DeriveInput): DeriveResult {
   const {
     geared: gearedX,
@@ -171,6 +176,8 @@ export function derive(input: DeriveInput): DeriveResult {
     mitigationPct,
   } = input;
   const rune = runeSheetMultipliers(input.runes ?? []);
+  // Energy needs none of this: `gem` below is a ratio of two sheets that both carry it.
+  const collection = collectionSheetPct(treeSheet.collection);
 
   const gem = naked.energy > 0 ? gearedX.energy / naked.energy : 1;
   // Shared pool: +1 pt adds naked×perPt/(1+O), not naked×perPt.
@@ -203,11 +210,11 @@ export function derive(input: DeriveInput): DeriveResult {
     attack: atkPt * treeSheet.danoStatic * rune.attack,
     energy: POINT_GAIN.energyNative * gem * star,
     speed: ((POINT_GAIN.speedPctOfBase * naked.speed) / oSpeed) * rune.speed,
-    critChance: POINT_GAIN.critChancePctOfBase * baseCrit * rune.critChance,
+    critChance: POINT_GAIN.critChancePctOfBase * baseCrit * rune.critChance * collectionFactor(collection.critChancePct),
     // Flat — no `naked.critDmg` factor and no shared-pool divisor (POINT_GAIN.critDmgFlat).
-    critDmg: POINT_GAIN.critDmgFlat * rune.critDmg,
+    critDmg: POINT_GAIN.critDmgFlat * rune.critDmg * collectionFactor(collection.critDmgPct),
     penetration: POINT_GAIN.penetrationPctOfBase * basePen,
-    cdr: ((POINT_GAIN.cdrPctOfBase * naked.cdr) / oCdr) * rune.cdr,
+    cdr: ((POINT_GAIN.cdrPctOfBase * naked.cdr) / oCdr) * rune.cdr * collectionFactor(collection.cdrPct),
     // Luck has no `other` term — no divisor, unlike the shared-pool stats above.
     luck: POINT_GAIN.luckPctOfBase * naked.luck,
   };

@@ -1,4 +1,5 @@
 import type { TeamPlanInput } from '@bombfarm/domain/team-plan/types';
+import { collectionSheetPct } from '@bombfarm/domain/model';
 import type { TeamPlanInputs } from './team-plan-inputs';
 import type { TeamPlanControls } from './team-plan-controls';
 import { resolveHeroScope } from './hero-scope';
@@ -15,6 +16,7 @@ export function buildTeamPlanInput(
     critChancePct: inputs.treeCritChance,
     critDmgPct: inputs.treeCritDmg,
     luckFlatPct: inputs.treeLuckFlatPct,
+    collection: collectionSheetPct(inputs.treeCollection),
   };
 
   const heroes = inputs.heroes.map((hero) => ({
@@ -54,6 +56,7 @@ export function buildTeamPlanInput(
       // here so a caller switching a plan to gold cannot silently get the 600-phase ceiling.
       teamCoinPct: inputs.treeTeamCoinPct,
       xpMult: inputs.treeXpMult,
+      collection: inputs.treeCollection,
       maxPhase: inputs.maxPhase,
     },
     // Must match the scope board: missing keys use battleAllowed defaults (Donate when

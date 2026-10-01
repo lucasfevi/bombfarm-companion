@@ -634,6 +634,8 @@ const KEYS_ADDED: readonly string[] = [
   // dictionary gains its label; the cadence model's and abilities pass's formula and glossary
   // strings that were declared here left with the accordion (see `KEYS_REMOVED`). One line.
   'heroesAbilityFilterAbsent', 'colSheetDeltaRune', 'bdSrcRune', 'bdNoteRune', 'teamPlanRunedHeroes', 'effectiveAvgHit',
+  // Collections (2026-10-01): the breakdown's Collection step.
+  'bdSrcCollection',
   // The Optimizer's field-crowding opt-out (2026-09-09) and the removals section that made it
   // necessary. The plan could always take gear off a hero and hand it back — on a field that
   // cannot seat everyone, a weak hero wearing less crowds the others out less — but the page

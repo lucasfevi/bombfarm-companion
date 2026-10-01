@@ -73,5 +73,6 @@ export function usePipelineFacts(): PipelineFacts {
     uptime,
     rest,
     runes,
+    collection: treeSheet.collection,
   };
 }

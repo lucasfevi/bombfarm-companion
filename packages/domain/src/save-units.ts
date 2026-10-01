@@ -10,6 +10,7 @@
  * here (`(x − 1) × 100`) — e.g. Bellatrix's `1.67344467136338` → `67.344467136338…`.
  */
 import type { BirthStats, StatRanges, TreeSheetTotals } from './birth-sheet';
+import { collectionFromSave, collectionSheetPct } from './collection';
 import type { SheetStats } from './gear';
 import type { SheetKey } from './planner-constants';
 
@@ -49,6 +50,7 @@ export function treeTotalsFromSave(totalsRaw: Record<string, unknown>): TreeShee
     critChancePct: asNumber(totalsRaw.crit_chance_add) * 100,
     critDmgPct: asNumber(totalsRaw.crit_dmg_add) * 100,
     luckFlatPct: asNumber(totalsRaw.luck_add) * 100,
+    collection: collectionSheetPct(collectionFromSave(totalsRaw)),
   };
 }
 

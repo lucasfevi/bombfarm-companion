@@ -85,6 +85,7 @@ export function buildFarmInputs(view: AccountView, controls: FarmControls): Farm
     treeEnergy: tree.energy,
     treeTeamCoinPct: tree.teamCoinPct ?? 0,
     treeLuckFlatPct: tree.luckFlatPct,
+    treeCollection: tree.collection,
     houseIdx,
     houseLevel,
     slots: account.slots ?? undefined,

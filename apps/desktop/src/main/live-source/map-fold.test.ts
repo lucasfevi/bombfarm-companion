@@ -188,7 +188,7 @@ describe('MapFold: the map economy', () => {
     unboosted.consumeTick(baseTick({ phase: 61 }), 1);
 
     const boosted = makeFold(realWikiFactsFor);
-    boosted.setAccountBoosts({ xpMult: 1.5821538462, teamCoinPct: 196.7708333 });
+    boosted.setAccountBoosts({ xpMult: 1.5821538462, teamCoinPct: 196.7708333, collectionGoldPct: 0 });
     boosted.consumeTick(baseTick({ phase: 61 }), 1);
 
     const plain = unboosted.current?.economy;
@@ -203,7 +203,7 @@ describe('MapFold: the map economy', () => {
     fold.consumeTick(baseTick({ phase: 61 }), 1);
     const before = fold.current?.economy?.xpPerProp ?? 0;
 
-    fold.setAccountBoosts({ xpMult: 2, teamCoinPct: 0 });
+    fold.setAccountBoosts({ xpMult: 2, teamCoinPct: 0, collectionGoldPct: 0 });
     const after = fold.current?.economy?.xpPerProp ?? 0;
 
     expect(after).toBeCloseTo(before * 2, 6);
@@ -233,7 +233,7 @@ describe('MapFold: the map economy', () => {
 
   it('keeps the account boosts across a reset — a reset drops what the stream said, not what the account said', () => {
     const fold = makeFold(realWikiFactsFor);
-    fold.setAccountBoosts({ xpMult: 2, teamCoinPct: 0 });
+    fold.setAccountBoosts({ xpMult: 2, teamCoinPct: 0, collectionGoldPct: 0 });
     fold.consumeTick(baseTick({ phase: 61 }), 1);
     const boosted = fold.current?.economy?.xpPerProp ?? 0;
 
@@ -244,7 +244,7 @@ describe('MapFold: the map economy', () => {
   });
 
   it('matches the planner’s own figures for the same phase and boosts, so the two surfaces cannot drift', () => {
-    const boosts: MapAccountBoosts = { xpMult: 1.5821538462, teamCoinPct: 196.7708333 };
+    const boosts: MapAccountBoosts = { xpMult: 1.5821538462, teamCoinPct: 196.7708333, collectionGoldPct: 0 };
     const fold = makeFold(realWikiFactsFor);
     fold.setAccountBoosts(boosts);
     fold.consumeTick(baseTick({ phase: 61 }), 1);

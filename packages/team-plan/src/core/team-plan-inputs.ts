@@ -1,5 +1,6 @@
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { InventorySnapshot } from '@bombfarm/domain/inventory';
+import type { Collection } from '@bombfarm/domain/model';
 
 export type TeamPlanInputs = {
   heroes: readonly HeroRecord[];
@@ -10,6 +11,8 @@ export type TeamPlanInputs = {
   treeCritChance: number;
   treeCritDmg: number;
   treeLuckFlatPct: number;
+  /** `skills.totals.colecao`; absent reads as no Collections bonus. */
+  treeCollection?: Collection | undefined;
   treeTeamCoinPct: number;
   treeXpMult: number;
   houseIdx: number;

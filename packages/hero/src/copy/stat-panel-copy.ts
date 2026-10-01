@@ -93,6 +93,7 @@ export type StatPanelCopy = {
   bdSrcTeam: string;
   bdSrcAbilitiesTeam: string;
   bdSrcRune: string;
+  bdSrcCollection: string;
   bdSrcHero: string;
   bdSrcAbility: string;
   bdNoteCapped: string;

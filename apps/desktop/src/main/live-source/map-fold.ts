@@ -10,9 +10,11 @@ export interface MapAccountBoosts {
   readonly xpMult: number;
   /** Team Coin, PERCENTAGE POINTS — `skills.totals.coin_add * 100`. `0` is the identity. */
   readonly teamCoinPct: number;
+  /** The Collections gold bonus, percent — `skills.totals.colecao.ouro`. `0` is the identity. */
+  readonly collectionGoldPct: number;
 }
 
-export const NO_MAP_ACCOUNT_BOOSTS: MapAccountBoosts = { xpMult: 1, teamCoinPct: 0 };
+export const NO_MAP_ACCOUNT_BOOSTS: MapAccountBoosts = { xpMult: 1, teamCoinPct: 0, collectionGoldPct: 0 };
 
 /** What one phase is worth under one set of boosts. `null` for a phase with no wiki row. */
 export interface MapWikiFacts {
@@ -90,7 +92,7 @@ export class MapFold {
    *  poll, and the wiki lookup behind it walks the whole prop mix. All three inputs move rarely
    *  (a map change, an account read), so one cached entry covers the common case. */
   #factsFor(phase: number): MapWikiFacts | null {
-    const key = `${String(phase)}|${String(this.#boosts.xpMult)}|${String(this.#boosts.teamCoinPct)}`;
+    const key = `${String(phase)}|${String(this.#boosts.xpMult)}|${String(this.#boosts.teamCoinPct)}|${String(this.#boosts.collectionGoldPct)}`;
     if (this.#wikiFacts?.key === key) return this.#wikiFacts.facts;
     const facts = this.#deps.wikiFactsFor(phase, this.#boosts);
     this.#wikiFacts = { key, facts };

@@ -119,6 +119,16 @@ export {
 export { MATILHA_PER_RANK_PER_ALLY, MATILHA_CAP, matilhaMult, alliesOverRotation } from './matilha';
 
 export type { BirthStats, TreeSheetTotals, ComposeSheetFromBirthInput } from '../birth-sheet';
+export type { Collection, CollectionSheetPct } from '../collection';
+export {
+  NO_COLLECTION,
+  collectionFromSave,
+  collectionGoldMult,
+  collectionKey,
+  collectionLuckPct,
+  collectionSheetPct,
+  normalizeCollection,
+} from '../collection';
 export {
   nakedFromBirth,
   applySkillTree,
