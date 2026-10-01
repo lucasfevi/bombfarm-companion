@@ -166,6 +166,7 @@ describe('evaluateRoster', () => {
         sheetCritChanceFlat: 0,
         sheetPenetrationFlat: 0,
         sheetCritDmgFlat: 0,
+        sheetCdrFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,
@@ -226,6 +227,7 @@ describe('evaluateRoster', () => {
         sheetCritChanceFlat: 0,
         sheetPenetrationFlat: 0,
         sheetCritDmgFlat: 0,
+        sheetCdrFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,
@@ -287,6 +289,7 @@ describe('evaluateRoster', () => {
         sheetCritChanceFlat: 0,
         sheetPenetrationFlat: 0,
         sheetCritDmgFlat: 0,
+        sheetCdrFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,
@@ -354,6 +357,7 @@ describe('evaluateRoster', () => {
         sheetCritChanceFlat: 0,
         sheetPenetrationFlat: 0,
         sheetCritDmgFlat: 0,
+        sheetCdrFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,
@@ -415,6 +419,7 @@ describe('evaluateRoster', () => {
         sheetCritChanceFlat: 0,
         sheetPenetrationFlat: 0,
         sheetCritDmgFlat: 0,
+        sheetCdrFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,

@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import { NO_AURAS_AT_CAP, holdAurasAtCap, pulseHeldAtCap } from '@bombfarm/domain/team-buffs';
 
 describe('holdAurasAtCap — the named standing auras at their cap, the rest as priced', () => {
-  const totals = { grito_guerra: 11.57, pressagio_mortal: 4, marcha_acelerada: 1.2, folego_mineiro: 0, brecha: 20 };
+  const totals = { grito_guerra: 11.57, pressagio_mortal: 4, marcha_acelerada: 1.2, folego_mineiro: 0, brecha: 20, carnificina: 0 };
 
   it('holds each named standing aura at TEAM_BUFF_CAP and leaves the others alone', () => {
     expect(holdAurasAtCap(totals, ['grito_guerra', 'folego_mineiro'])).toEqual({
