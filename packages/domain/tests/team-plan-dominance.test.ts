@@ -60,6 +60,7 @@ function heroCtx(heroId: string, level: number): HeroPlanContext {
       sheetCritChanceFlat: 0,
       sheetPenetrationFlat: 0,
       sheetCritDmgFlat: 0,
+      sheetCdrFlat: 0,
     },
     treeSheet: { danoStatic: 1, energyPct: 0, speedPct: 0, critChancePct: 0, critDmgPct: 0, luckFlatPct: 0 },
     scope: 'optimize',
