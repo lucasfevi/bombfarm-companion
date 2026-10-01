@@ -126,9 +126,9 @@ describe('ShareCard', () => {
     expect(rest).not.toContain('data-slot="ability-level"');
   });
 
-  it('shows the seven team auras from the heroes on the card, and hides them when asked', () => {
+  it('shows every team aura from the heroes on the card, and hides them when asked', () => {
     const html = render();
-    expect(text(html)).toContain('Team auras · 2 of 7');
+    expect(text(html)).toContain('Team auras · 2 of 9');
     expect(html).toContain('data-testid="share-card-aura-fortuna" data-covered="true"');
     expect(html).toContain('data-testid="share-card-aura-brecha" data-covered="false"');
     expect(text(html)).toContain('Not on the team');
