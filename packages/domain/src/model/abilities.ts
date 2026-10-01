@@ -71,6 +71,7 @@ export type AbilityEffect =
   | { kind: 'attackPct'; perLevel: number }
   | { kind: 'speedPct'; perLevel: number }
   | { kind: 'gateAttackPct'; perLevel: number } // attack bonus in timed phases only
+  | { kind: 'bossDmgPct'; perLevel: number } // damage against the gate boss only, never rocks or the cage
   /**
    * FLAT crit-damage percentage points per ability level — planner units, the same units as
    * `SheetStats.critDmg` (`(save crit_dmg − 1) × 100`), so `perLevel: 4` moves the save's
@@ -162,7 +163,7 @@ export const ABILITIES: AbilityDef[] = [
   { id: 'estilhacos', name: 'Estilhaços', max: 20, effectText: `+2.5% de chance de a rocha destruída estilhaçar: cada rocha nos 4 lados leva ${SHATTER_FRAC * 100}% do golpe/nível`, effect: { kind: 'shatterPct', perLevel: 2.5 } },
   { id: 'pavio_curto', name: 'Pavio Curto', max: 20, effectText: '+0.5% redução de recarga (próprio)/nível, somada no fim, até o teto', effect: { kind: 'cdrFlat', perLevel: 0.5 } },
   { id: 'carnificina', name: 'Carnificina', max: 20, effectText: '+5% dano crítico do TIME/nível, somado ao bônus de crítico; dois portadores não passam do máximo de um', effect: { kind: 'teamCritDmgFlat', perLevel: 5 } },
-  { id: 'matador_chefes', name: 'Matador de Chefes', max: 20, effectText: '+5% dano (próprio) no chefe do portão 2×2/nível, não vale para a Jaula (não modelado)', effect: { kind: 'none' } },
+  { id: 'matador_chefes', name: 'Matador de Chefes', max: 20, effectText: '+5% dano (próprio) no chefe do portão 2×2/nível, não vale para a Jaula', effect: { kind: 'bossDmgPct', perLevel: 5 } },
   { id: 'aprendiz', name: 'Aprendiz', max: 20, effectText: '+0.75% XP do TIME/nível por rocha quebrada com ele em campo, dividido como o XP normal; dois portadores não passam do máximo de um (não modelado)', effect: { kind: 'none' } },
 ];
 
@@ -239,6 +240,8 @@ export interface AbilityMods {
   /** Estilhaços — percent chance a rock this hero destroys shatters, 0..100. */
   shatterChancePct: number;
   gateAttackMult: number; // applies only inside timed phases (self ability, Contra o Relógio)
+  /** Matador de Chefes — the carrier's own damage against the gate boss; never rocks, the cage or PVP. */
+  bossDmgMult: number;
 }
 
 /**
@@ -264,6 +267,7 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
     dmgMult: 1,
     shatterChancePct: 0,
     gateAttackMult: 1,
+    bossDmgMult: 1,
   };
   for (const ability of ABILITIES) {
     const count = levels[ability.id] ?? 0;
@@ -311,6 +315,9 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
         break;
       case 'gateAttackPct':
         mods.gateAttackMult *= 1 + (effect.perLevel * count) / 100;
+        break;
+      case 'bossDmgPct':
+        mods.bossDmgMult += (effect.perLevel * count) / 100;
         break;
       case 'packDmgPct':
         mods.packDmgPctPerAlly += effect.perLevel * count;

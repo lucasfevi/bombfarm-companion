@@ -65,7 +65,6 @@ type UnmodelledReadoutKind =
   | 'passageAttackPct'
   | 'dropTierPct'
   | 'goldPct'
-  | 'bossDmgPct'
   | 'xpPct';
 
 const UNMODELLED_PER_LEVEL: Record<string, { kind: UnmodelledReadoutKind; perLevel: number }> = {
@@ -74,13 +73,12 @@ const UNMODELLED_PER_LEVEL: Record<string, { kind: UnmodelledReadoutKind; perLev
   olho_lapidador: { kind: 'dropTierPct', perLevel: 2.5 },
   veia_ouro: { kind: 'goldPct', perLevel: 2 },
   fortuna: { kind: 'goldPct', perLevel: 0.5 },
-  matador_chefes: { kind: 'bossDmgPct', perLevel: 5 },
   aprendiz: { kind: 'xpPct', perLevel: 0.75 },
 };
 
 export const UNMODELLED_READOUT_PER_LEVEL: Readonly<typeof UNMODELLED_PER_LEVEL> = UNMODELLED_PER_LEVEL;
 
-const UNMODELLED_KINDS = new Set<AbilityEffectReadout['kind']>(['none', 'cageDmgPct', 'passageAttackPct', 'dropTierPct', 'goldPct', 'bossDmgPct', 'xpPct']);
+const UNMODELLED_KINDS = new Set<AbilityEffectReadout['kind']>(['none', 'cageDmgPct', 'passageAttackPct', 'dropTierPct', 'goldPct', 'xpPct']);
 
 /** Whether the combat model prices this readout, or merely repeats a figure the wiki publishes. */
 export function isPricedReadout(readout: AbilityEffectReadout): boolean {
@@ -144,6 +142,8 @@ function readoutKind(effect: AbilityEffect): AbilityEffectReadout['kind'] {
       return 'shatter';
     case 'gateAttackPct':
       return 'gateAttackPct';
+    case 'bossDmgPct':
+      return 'bossDmgPct';
     case 'packDmgPct':
       return 'packDmgPctPerAlly';
     case 'teamPulseDmgPct':
@@ -194,6 +194,8 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
       return { kind, chancePct: mods.shatterChancePct, shardHitPct: SHATTER_FRAC * 100 };
     case 'gateAttackPct':
       return { kind, value: (mods.gateAttackMult - 1) * 100 };
+    case 'bossDmgPct':
+      return { kind, value: (mods.bossDmgMult - 1) * 100 };
     case 'packDmgPctPerAlly':
       return { kind, value: mods.packDmgPctPerAlly };
     case 'teamPulseDmgPct':
@@ -209,7 +211,6 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
     case 'dropTierPct':
     case 'goldPct':
     case 'teamCritDmgPct':
-    case 'bossDmgPct':
     case 'xpPct':
       return { kind: 'none' };
   }
