@@ -1,20 +1,29 @@
 /**
  * The farm objective: what "better" means for the respec solver, and the phase argmax under it.
  *
- * A player farms for gold, for chests, or for some blend of the two. This module resolves that
- * choice into a single scalar value per phase row (`farmObjectiveValue`) and picks the best
- * feasible phase for a given squad under it (`bestFarmPhase`). Neither function ever throws —
- * every input, however malformed, resolves to a total, defined answer.
+ * A player farms for gold, for chests, for some blend of the two, or for one set's chests. This
+ * module resolves that choice into a single scalar value per phase row (`farmObjectiveValue`) and
+ * picks the best feasible phase for a given squad under it (`bestFarmPhase`). Neither function
+ * ever throws — every input, however malformed, resolves to a total, defined answer.
  */
 import { computeFarmRateRow, type FarmRateOptions, type FarmRateRow, type SquadFarmFacts } from './farm-rate';
 import { WIKI_PHASE_LINES } from './phase-wiki';
+import { itemLevelShareOnPhase } from './team-plan/set-farm';
 
 const EPS_REL = 1e-9;
 
-export type FarmObjectiveKind = 'gold' | 'chests' | 'blend';
+/**
+ * `'setChests'` counts only the item chests of ONE item level — one equipment set. Rarity is a
+ * flat roll that luck does not shift, so a set's chests per hour is the whole of what farming a
+ * set can improve.
+ */
+export type FarmObjectiveKind = 'gold' | 'chests' | 'blend' | 'setChests';
 
-/** `weight` applies to `'blend'` only and is the GOLD share: 1 ⇒ gold, 0 ⇒ chests. */
-export type FarmObjective = { kind: FarmObjectiveKind; weight?: number };
+/**
+ * `weight` applies to `'blend'` only and is the GOLD share: 1 ⇒ gold, 0 ⇒ chests. `itemLevel`
+ * applies to `'setChests'` only.
+ */
+export type FarmObjective = { kind: FarmObjectiveKind; weight?: number; itemLevel?: number };
 
 export type FarmObjectiveUnit = 'goldPerHour' | 'chestsPerHour' | 'normalized';
 
@@ -23,14 +32,24 @@ export type ResolvedFarmObjective = {
   /** Clamped to `[0, 1]`; non-finite ⇒ 1. Meaningless for `'gold'`/`'chests'`, reported as 1/0. */
   weight: number;
   unit: FarmObjectiveUnit;
+  /** Present exactly on `'setChests'`. */
+  itemLevel?: number;
 };
 
 /**
  * Total function. Unknown `kind` ⇒ `'gold'`. Never throws. Blend at `weight === 1` resolves to
  * the `'gold'` object and at `weight === 0` to the `'chests'` object, so those cases are
- * literally the same objective, not merely equivalent.
+ * literally the same objective, not merely equivalent. `'setChests'` without a positive finite
+ * `itemLevel` names no set and resolves to `'chests'`.
  */
 export function resolveFarmObjective(objective?: FarmObjective | null): ResolvedFarmObjective {
+  if (objective?.kind === 'setChests') {
+    const itemLevel = objective.itemLevel;
+    if (itemLevel != null && Number.isFinite(itemLevel) && itemLevel > 0) {
+      return { kind: 'setChests', weight: 0, unit: 'chestsPerHour', itemLevel };
+    }
+    return { kind: 'chests', weight: 0, unit: 'chestsPerHour' };
+  }
   const rawKind = objective?.kind;
   const kind: FarmObjectiveKind =
     rawKind === 'gold' || rawKind === 'chests' || rawKind === 'blend' ? rawKind : 'gold';
@@ -84,6 +103,9 @@ export function farmObjectiveValue(
 ): number {
   if (objective.kind === 'gold') return row.goldPerHour;
   if (objective.kind === 'chests') return row.chestsPerHour;
+  if (objective.kind === 'setChests') {
+    return row.chestsPerHour * itemLevelShareOnPhase(row.phase, objective.itemLevel ?? 0);
+  }
   const goldTerm = scales.goldScale > 0 ? row.goldPerHour / scales.goldScale : 0;
   const chestTerm = scales.chestScale > 0 ? row.chestsPerHour / scales.chestScale : 0;
   return objective.weight * goldTerm + (1 - objective.weight) * chestTerm;
@@ -104,6 +126,13 @@ export type BestFarmPhaseOptions = FarmRateOptions & {
    * yet. The row still reports `locked` so the caller can say so.
    */
   pinnedPhase?: number | null;
+  /**
+   * Candidate phases bounded below as well as above: the argmax runs over this range ∩
+   * `[1, maxPhase]`, swept linearly. An empty intersection means nothing is a candidate.
+   */
+  phaseRange?: { min: number; max: number } | null;
+  /** A row whose clear takes longer than this does not count, as if it were infeasible. */
+  maxClearSecs?: number | null;
 };
 
 /** `null`/non-positive/non-finite ⇒ every phase in `[1, 600]`; a finite value ⇒ `[1, min(v, 600)]`. */
@@ -164,6 +193,22 @@ function phasesAroundWorld(center: number, upper: number): number[] {
   return phases;
 }
 
+/** `null`/non-finite/non-positive ⇒ no cap. */
+function resolveMaxClearSecs(maxClearSecs: number | null | undefined): number | null {
+  if (maxClearSecs == null || !Number.isFinite(maxClearSecs) || maxClearSecs <= 0) return null;
+  return maxClearSecs;
+}
+
+/** `phaseRange` ∩ `[1, upper]`, ascending; `null` when no range was given. */
+function rangedPhases(range: BestFarmPhaseOptions['phaseRange'], upper: number): number[] | null {
+  if (range == null) return null;
+  const from = Number.isFinite(range.min) ? Math.max(1, Math.ceil(range.min)) : 1;
+  const to = Number.isFinite(range.max) ? Math.min(upper, Math.floor(range.max)) : upper;
+  const phases: number[] = [];
+  for (let phase = from; phase <= to; phase++) phases.push(phase);
+  return phases;
+}
+
 /**
  * `null`/non-positive/non-finite `maxPhase` is normalized to `null` before it reaches
  * `computeFarmRateRow`, so a row's own `locked` flag agrees with the "no row excluded for being
@@ -185,11 +230,13 @@ function scanPhases(
   objective: ResolvedFarmObjective,
   scales: FarmObjectiveScales,
   rowOptions: FarmRateOptions,
+  maxClearSecs: number | null,
 ): FarmPhasePick | null {
   let best: FarmPhasePick | null = null;
   for (const phase of phases) {
     const row = computeFarmRateRow(phase, squad, rowOptions);
     if (row === null || row.infeasible) continue;
+    if (maxClearSecs !== null && !(row.clearSecs <= maxClearSecs)) continue;
     const value = farmObjectiveValue(row, objective, scales);
     if (!Number.isFinite(value)) continue;
     if (best === null || value > best.value * (1 + EPS_REL)) {
@@ -212,6 +259,10 @@ function scanPhases(
  * A `pinnedPhase` short-circuits all of that and reads exactly ONE row. It wins over every other
  * option, `exhaustive` included: there is no argmax left to prove once the caller has named the
  * phase, and this is the whole speedup — the sweep is ~96% of what a farm evaluation costs.
+ *
+ * A `phaseRange` is swept linearly whatever the stride: a set's band is at most thirty phases,
+ * fewer rows than the screen itself reads. `maxClearSecs` applies on every path, the pinned one
+ * included.
  */
 export function bestFarmPhase(
   squad: SquadFarmFacts,
@@ -220,12 +271,16 @@ export function bestFarmPhase(
   options?: BestFarmPhaseOptions,
 ): FarmPhasePick | null {
   const rowOptions = sanitizeRowOptions(options);
-  const scan = (phases: readonly number[]) => scanPhases(phases, squad, objective, scales, rowOptions);
+  const maxClearSecs = resolveMaxClearSecs(options?.maxClearSecs);
+  const scan = (phases: readonly number[]) =>
+    scanPhases(phases, squad, objective, scales, rowOptions, maxClearSecs);
 
   const pinned = resolvePinnedPhase(options?.pinnedPhase);
   if (pinned !== null) return scan([pinned]);
 
   const upper = resolveUpperPhase(options?.maxPhase);
+  const ranged = rangedPhases(options?.phaseRange, upper);
+  if (ranged !== null) return scan(ranged);
   const stride = resolveStride(options?.phaseStride);
 
   if (stride > 1 || options?.exhaustive === true) return scan(candidatePhases(upper, stride));
@@ -237,4 +292,35 @@ export function bestFarmPhase(
   // The refine window contains the screened phase itself, so this can only match or beat the
   // screen — no second comparison against it is needed.
   return scan(phasesAroundWorld(screened.phase, upper));
+}
+
+/**
+ * The candidate phase the squad clears fastest, ignoring `maxClearSecs` and any objective — what
+ * to point at when nothing clears inside the cap, being the phase closest to farmable. Ties keep
+ * the lower phase. With no row to read (an empty range, or nothing clearable at all) it falls
+ * back to the range's own first phase, so a reader is still told which phases the question was
+ * about; `null` only when there is no range either.
+ */
+export function fastestClearPhase(squad: SquadFarmFacts, options?: BestFarmPhaseOptions): number | null {
+  const fastest = fastestClear(squad, options);
+  if (fastest !== null) return fastest.phase;
+  const range = options?.phaseRange;
+  return range == null ? null : resolvePinnedPhase(range.min);
+}
+
+/** The candidate row with the shortest finite clear, `null` when no candidate clears at all. */
+function fastestClear(
+  squad: SquadFarmFacts,
+  options?: BestFarmPhaseOptions,
+): { phase: number; clearSecs: number } | null {
+  const rowOptions = sanitizeRowOptions(options);
+  const upper = resolveUpperPhase(options?.maxPhase);
+  const phases = rangedPhases(options?.phaseRange, upper) ?? candidatePhases(upper, 1);
+  let best: { phase: number; clearSecs: number } | null = null;
+  for (const phase of phases) {
+    const row = computeFarmRateRow(phase, squad, rowOptions);
+    if (row === null || !Number.isFinite(row.clearSecs)) continue;
+    if (best === null || row.clearSecs < best.clearSecs) best = { phase, clearSecs: row.clearSecs };
+  }
+  return best;
 }

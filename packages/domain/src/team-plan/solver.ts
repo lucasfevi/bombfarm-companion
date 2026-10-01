@@ -3,7 +3,9 @@ import type { InventoryItem } from '../inventory';
 import { mayMoveGear } from './allowed-changes';
 import { resolveCombatWindow } from './combat-window';
 import { loadoutForScoring } from './evaluate';
-import { buildFarmObjective, exhaustiveFarmObjective, isSquadScope } from './farm-objective';
+import { buildFarmObjective, exhaustiveFarmObjective, isSquadScope, unfarmablePhase } from './farm-objective';
+import { SET_FARM_SETS, setFarmBand, type SetFarmBand } from './set-farm';
+import { isFarmSearchObjective } from './types';
 import { buildHeroPlanContexts } from './hero-context';
 import { buildPool } from './pool';
 import { createScoreMemo } from './score';
@@ -68,7 +70,8 @@ function farmObjectiveFor(
   input: TeamPlanInput,
   contexts: HeroPlanContext[],
 ): TeamPlanFarmObjective | undefined {
-  if (input.objective !== 'farm') return undefined;
+  if (!isFarmSearchObjective(input.objective)) return undefined;
+  const setBand = input.objective === 'setFarm' ? requireSetBand(input.farmSet) : null;
   const squadContexts = contexts.filter((ctx) => isSquadScope(ctx.scope));
   if (squadContexts.length === 0) return undefined;
   const loadoutByHeroId: Record<string, Loadout> = {};
@@ -80,7 +83,19 @@ function farmObjectiveFor(
     input.targetPhase,
     input.ignoreFieldCrowding,
     input.aurasAtCap,
+    setBand,
   );
+}
+
+function requireSetBand(farmSet: string | null | undefined): SetFarmBand {
+  const band = setFarmBand(farmSet);
+  if (band === null) {
+    throw new Error(
+      `team-plan: objective 'setFarm' needs farmSet to name an equipment set; got ` +
+        `${JSON.stringify(farmSet ?? null)}. Known sets: ${SET_FARM_SETS.join(', ')}.`,
+    );
+  }
+  return band;
 }
 
 /**
@@ -89,12 +104,23 @@ function farmObjectiveFor(
  * The chosen phase is reported as chosen even when the squad cannot clear it — the answer to
  * "what would I earn at phase 400" is allowed to be "nothing", and silently reporting some other
  * phase instead would be a different plan wearing this one's number.
+ *
+ * A set is searched, never chosen, whatever `targetPhase` says; when nothing in its band clears
+ * in time the plan still names the band phase closest to farmable rather than no phase at all.
  */
 function scoredPhaseReport(
   input: TeamPlanInput,
   farmObjective: TeamPlanFarmObjective | undefined,
   finalEvaluation: RosterEvaluation,
 ): Pick<TeamPlan, 'scoredPhase' | 'scoredPhaseSource' | 'scoredPhaseInfeasible'> {
+  if (input.objective === 'setFarm' && farmObjective) {
+    const searched = finalEvaluation.farmPhase ?? null;
+    return {
+      scoredPhase: searched ?? unfarmablePhase(farmObjective, finalEvaluation.farmFacts ?? []),
+      scoredPhaseSource: 'searched',
+      scoredPhaseInfeasible: searched === null,
+    };
+  }
   const chosen = input.targetPhase;
   // A gate clear fights the gate the window resolved to, which is the chosen phase only when
   // that phase was a gate; anything else fell through to the account's next one.

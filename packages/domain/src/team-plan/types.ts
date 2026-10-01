@@ -1,6 +1,6 @@
 import type { BirthStats, TreeSheetTotals } from '../birth-sheet';
 import type { HeroRune } from '../runes';
-import type { BestFarmPhaseOptions } from '../farm-optimize-objective';
+import type { BestFarmPhaseOptions, ResolvedFarmObjective } from '../farm-optimize-objective';
 import type { HeroFarmFacts, SquadFarmAccount } from '../farm-rate';
 import type { Loadout, PointAlloc, SheetStats } from '../gear/types';
 import type { InventoryItem } from '../inventory';
@@ -309,6 +309,9 @@ export type TeamPlanFarmObjective = {
   /** Carries `pinnedPhase` when {@link TeamPlanInput.targetPhase} named one, which is what turns
    *  every evaluation's phase argmax into a single row read. */
   phaseOptions: BestFarmPhaseOptions;
+  /** What a row is worth: gold per hour under `'farm'`, the set's item chests per hour under
+   *  `'setFarm'`. */
+  rateObjective: ResolvedFarmObjective;
   treeLuckFlatPct: number;
   heroes: readonly FrozenHeroFarmTerms[];
 };
@@ -324,8 +327,14 @@ export type TeamPlanInput = {
   /**
    * Under `'setFarm'` only: the equipment set id to farm (`'ember'` … `'void'`, the catalog's
    * `setsByLevel` values). Required there — an unknown or absent set makes the run throw, the
-   * same way a farm run with no `maxPhase` does. `targetPhase` is ignored under `'setFarm'`:
-   * the set decides which phases are candidates.
+   * same way a farm run with no `maxPhase` does, and so does a run without `account.maxPhase`.
+   * `targetPhase` is ignored under `'setFarm'`: the set decides which phases are candidates.
+   *
+   * A set the account cannot farm is not an error. When no unlocked phase of the set's band
+   * clears inside {@link SET_FARM_MAX_CLEAR_SECS} — including a band that starts above
+   * `account.maxPhase` — the plan scores zero, `scoredPhaseInfeasible` is `true`, and
+   * `scoredPhase` names the band phase the squad clears fastest (the band's first phase when
+   * none of it is unlocked), the one closest to farmable.
    */
   farmSet?: string | null;
   /**
@@ -491,8 +500,9 @@ export type TeamPlan = {
   scoredPhaseSource: 'chosen' | 'searched' | 'account';
   /**
    * The squad cannot clear {@link scoredPhase}, so the gold figures are zero rather than small.
-   * Only ever true for a chosen phase in farm mode — a sweep never settles on a phase it cannot
-   * hold, and the damage objective has no feasibility notion.
+   * True for a chosen phase in farm mode, and under `'setFarm'` when no phase of the set's band
+   * clears in time (see {@link TeamPlanInput.farmSet}) — a gold sweep never settles on a phase it
+   * cannot hold, and the damage objective has no feasibility notion.
    */
   scoredPhaseInfeasible: boolean;
   /** Internal split of the single `gear` step. EITHER may be negative; disclosure-only. */
