@@ -15,6 +15,7 @@ import { wikiPhaseLine } from '../phase-wiki';
 import { computeTeamBuffsOverRotation, holdAurasAtCap } from '../team-buffs';
 import { teamAuraLayer } from '../team-aura-layer';
 import { isSquadScope } from './auras';
+import { scopeOfHero } from './hero-context';
 import { planFieldSlots, resolveCombatWindow } from './combat-window';
 import { dominates, statsForEntry } from './dominance';
 import { evaluateRoster } from './evaluate';
@@ -61,18 +62,10 @@ export function farmFromAccount(input: TeamPlanInput): FarmContext {
   };
 }
 
-const critFlatAtFullPresenceCache = new WeakMap<TeamPlanInput, number>();
-
-/** Every fielded hero's Presságio at once, held at cap where the plan holds it — memoised on the
- *  input, which this is read from once per roster evaluation. */
 function critFlatAtFullPresenceOf(input: TeamPlanInput): number {
-  const cached = critFlatAtFullPresenceCache.get(input);
-  if (cached !== undefined) return cached;
-  const carriers = input.heroes.filter((hero) => isSquadScope(input.scopeByHeroId[hero.heroId] ?? 'optimize'));
+  const carriers = input.heroes.filter((hero) => isSquadScope(scopeOfHero(hero, input.scopeByHeroId)));
   const total = holdAurasAtCap(computeTeamBuffsOverRotation(carriers, null), input.aurasAtCap);
-  const critFlat = teamAuraLayer(total).teamCritFlat;
-  critFlatAtFullPresenceCache.set(input, critFlat);
-  return critFlat;
+  return teamAuraLayer(total).teamCritFlat;
 }
 
 export function evaluateAt(

@@ -350,17 +350,10 @@ export type HeroFarmBasis = {
    * aura layer it was built with.
    */
   auraFree?: AuraFreeFarmTerms;
-  /**
-   * The most crit chance, on `effective`'s own scale (the rotation-average Presságio already in
-   * it), that BOUGHT points may lift this hero to: the cap less the aura's full-field total, plus
-   * the average it is priced at. Points past it only pay in the stretch of the rotation where
-   * the carrier is off the field, so a search that priced them at the average would overbuy by
-   * the gap between the two. Absent leaves the plain cap.
-   */
+  /** See `critPointCeilingOf`. */
   critPointCeiling?: number;
-  /** When set, the ceiling clamps the whole sheet (gear included) instead of only what points
-   *  add above the build the basis was priced at — the plan, which prices builds it has yet to
-   *  choose, needs it; a board pricing the build a player owns must not move. */
+  /** The plan prices builds it has yet to choose, so its ceiling clamps the whole sheet; a board
+   *  pricing the build a player owns clamps only what points add on top. */
   critCeilingBindsSheet?: boolean;
 };
 
@@ -479,8 +472,6 @@ function auraFreeBasesForAccount(
  *  field for one candidate assignment. */
 type FieldLayer = {
   teamBuffs: Record<TeamBuffId, number>;
-  /** Presságio's crit points with every carrier on the field at once — what the crit cap is
-   *  planned against, whatever share of the rotation actually holds it. */
   critFlatAtFullPresence: number;
   alliesByHeroId: ReadonlyMap<string, number>;
 };
@@ -671,6 +662,13 @@ export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
   return auraFreeBases.map((basis) => priceAuraLayer(basis, field));
 }
 
+export function critCeilingOfBasis(basis: HeroFarmBasis): number | undefined {
+  if (basis.critPointCeiling === undefined) return undefined;
+  return basis.critCeilingBindsSheet
+    ? basis.critPointCeiling
+    : Math.max(basis.critPointCeiling, basis.effective.critChance);
+}
+
 /**
  * Facts for ANY candidate 8-key vector. Pure scalar math; zero pipeline calls.
  * `heroFactsFromBasis(b, b.pts)` is byte-identical to `computeHeroFarmFacts`'s entry for `b`.
@@ -688,12 +686,8 @@ export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
  */
 export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, number>): HeroFarmFacts {
   const sheet = buildCandidateSheet(basis.effective, basis.pts, basis.effectiveDelta, pts);
-  if (basis.critPointCeiling !== undefined) {
-    const ceiling = basis.critCeilingBindsSheet
-      ? basis.critPointCeiling
-      : Math.max(basis.critPointCeiling, basis.effective.critChance);
-    sheet.critChance = Math.min(sheet.critChance, ceiling);
-  }
+  const critCeiling = critCeilingOfBasis(basis);
+  if (critCeiling !== undefined) sheet.critChance = Math.min(sheet.critChance, critCeiling);
 
   const hitNoCritBase = predictHitDamage(sheet.attack, 0, sheet.penetration, basis.dmgMult);
   const avgHitBase = hitNoCritBase * critFactor(sheet.critChance, sheet.critDmg);

@@ -17,6 +17,7 @@ import {
 } from './points-reopt-core';
 import { sustainedDps } from './model';
 import {
+  critCeilingOfBasis,
   squadFactsFromBases,
   type HeroFarmBasis,
   type SquadFarmAccount,
@@ -214,9 +215,11 @@ function buildIncumbentAssignment(
 /** One hero's sustained-DPS greedy walk from zero over its whole budget — the hero-shaped seed. */
 function dpsGreedyFromZero(basis: HeroFarmBasis, budget: number): Record<SheetKey, number> {
   const zero = zeroedRespecKeys(basis.pts);
-  const zeroSheet = buildCandidateSheet(basis.effective, basis.pts, basis.effectiveDelta, zero);
+  const critCeiling = critCeilingOfBasis(basis);
+  const effective = critCeiling === undefined ? basis.effective : { ...basis.effective, critCeiling };
+  const zeroSheet = buildCandidateSheet(effective, basis.pts, basis.effectiveDelta, zero);
   const zeroScore = sustainedDps(zeroSheet, basis.context);
-  return greedyWalk(zero, zeroScore, budget, basis.effective, basis.pts, basis.effectiveDelta, basis.context, Infinity).pts;
+  return greedyWalk(zero, zeroScore, budget, effective, basis.pts, basis.effectiveDelta, basis.context, Infinity).pts;
 }
 
 function buildSeedAssignment(

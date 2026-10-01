@@ -107,7 +107,6 @@ export type DeriveInput = {
    *  crit points — see `CombatMults.teamCritFlat`. There is no separate "own" input here,
    *  matching `attackMult`/`speedMult`: the combination happens once, in `computeCombatMults`. */
   teamCritFlat: number;
-  /** A planner's ceiling on the crit chance the sheet's DPS credits — `HeroSheet.critCeiling`. */
   critCeiling?: number;
   /** The whole skill tree, once — replaces the four scattered tree inputs. */
   treeSheet: TreeSheetTotals;
