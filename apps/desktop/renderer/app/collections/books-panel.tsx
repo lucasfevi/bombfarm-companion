@@ -350,7 +350,7 @@ export function BooksPanel({
           />
         ) : (
           <DataTable.Root scrollable maxRows={LIST_ROWS} rowHeight={LIST_ROW_HEIGHT} data-testid="collections-books-scroll">
-            <DataTable.Table className="min-w-[54rem] table-fixed">
+            <DataTable.Table className="min-w-[53rem] table-fixed">
               <DataTable.Caption>{t.collectionsCaption}</DataTable.Caption>
               <colgroup>
                 <col />
