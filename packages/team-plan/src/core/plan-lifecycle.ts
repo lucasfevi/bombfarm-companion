@@ -1,7 +1,7 @@
 import type { TeamPlanInputs } from './team-plan-inputs';
 import type { TeamPlanControls } from './team-plan-controls';
 import type { ScopeState } from './hero-scope';
-import { clampForgeFloor, clampTargetPhase, normalizeGatePhase, withAuraAtCap } from './team-plan-controls';
+import { clampForgeFloor, clampTargetPhase, normalizeFarmSet, normalizeGatePhase, withAuraAtCap } from './team-plan-controls';
 import type { TeamAuraId } from '@bombfarm/domain/team-buffs';
 import { pvpSquadExcess, resolveTeamPlanGatePhase } from './combat-window';
 import { mergeScopeForRoster } from './hero-scope';
@@ -22,6 +22,17 @@ export function isFarmObjectiveUnavailable(
   resolvedTargetPhase: number | null,
 ): boolean {
   return maxPhase == null && resolvedTargetPhase == null;
+}
+
+/**
+ * A set farm searches the picked set's phases, so there is nothing to score until one is picked —
+ * and, like a gold sweep, it refuses to guess which of them the account has unlocked.
+ */
+export function isSetFarmObjectiveUnavailable(
+  controls: Pick<TeamPlanControls, 'farmSet'>,
+  maxPhase: number | null,
+): boolean {
+  return controls.farmSet === null || maxPhase == null;
 }
 
 /**
@@ -58,7 +69,8 @@ export type TeamPlanControlChange =
   | { kind: 'ignoreFieldCrowding'; value: boolean }
   | { kind: 'auraAtCap'; auraId: TeamAuraId; value: boolean }
   | { kind: 'targetPhase'; value: number | null }
-  | { kind: 'gatePhase'; value: number | null };
+  | { kind: 'gatePhase'; value: number | null }
+  | { kind: 'farmSet'; value: string | null };
 
 function scopeMapsEqual(left: Record<string, ScopeState>, right: Record<string, ScopeState>): boolean {
   const leftKeys = Object.keys(left);
@@ -159,6 +171,14 @@ export function applyTeamPlanControlChange(
         controls: { ...controls, gatePhase: next },
         clearsPlan: controls.objective === 'gateClear' && wasResolved !== willResolve,
       };
+    }
+
+    // A different set is a different band of phases and a different chest count, so a plan built
+    // for one is cleared — but only under Set farm; any other objective just remembers the pick.
+    case 'farmSet': {
+      const next = normalizeFarmSet(change.value);
+      if (controls.farmSet === next) return null;
+      return { controls: { ...controls, farmSet: next }, clearsPlan: controls.objective === 'setFarm' };
     }
 
     default: {

@@ -69,6 +69,8 @@ export function buildTeamPlanInput(
     ),
     forgeFloor: controls.forgeFloor,
     objective: controls.objective,
+    // Read under the set objective only, which refuses to run without it.
+    ...(controls.objective === 'setFarm' ? { farmSet: controls.farmSet } : {}),
     // Which kinds of change the plan may propose. The domain drops the forge floor above to 0 by
     // itself when gear is off the table, so this field alone decides it — the controls' stored
     // floor is never suppressed here.

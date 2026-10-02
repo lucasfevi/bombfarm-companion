@@ -9,9 +9,9 @@ import {
 } from './team-plan-controls';
 
 describe('the objective control', () => {
-  it('offers gold, a gate clear and the duel, in that order, and the default is gold', () => {
-    expect([...TEAM_PLAN_OBJECTIVES]).toEqual(['farm', 'gateClear', 'pvp']);
-    expect([...TEAM_PLAN_OBJECTIVES_WITHOUT_PVP]).toEqual(['farm', 'gateClear']);
+  it('offers gold, a set farm, a gate clear and the duel, in that order, and the default is gold', () => {
+    expect([...TEAM_PLAN_OBJECTIVES]).toEqual(['farm', 'setFarm', 'gateClear', 'pvp']);
+    expect([...TEAM_PLAN_OBJECTIVES_WITHOUT_PVP]).toEqual(['farm', 'setFarm', 'gateClear']);
     expect(DEFAULT_TEAM_PLAN_OBJECTIVE).toBe('farm');
     expect(DEFAULT_TEAM_PLAN_CONTROLS.gatePhase).toBeNull();
   });

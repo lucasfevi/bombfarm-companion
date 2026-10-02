@@ -10,6 +10,7 @@ import {
   metricScoreboardValueRecipe,
 } from '@bombfarm/ui';
 import type { Lang } from '@bombfarm/hero/copy';
+import type { ObjectiveFigurePrecision } from '../model/objective-figure';
 import { AbbreviatedNumber } from './abbreviated-number';
 
 /**
@@ -24,12 +25,14 @@ export const StepCell = memo(function StepCell({
   objective,
   delta,
   deltaTone,
+  precision,
   lang,
 }: {
   label: string;
   objective: number;
   delta: number | null;
   deltaTone?: 'up' | 'down';
+  precision: ObjectiveFigurePrecision;
   lang: Lang;
 }) {
   return (
@@ -37,11 +40,11 @@ export const StepCell = memo(function StepCell({
       <span className={metricScoreboardLabelClass}>{label}</span>
       <div className={cn(metricScoreboardRowClass, 'justify-center')}>
         <strong className={metricScoreboardValueRecipe({ tone: 'ink' })}>
-          <AbbreviatedNumber value={objective} lang={lang} />
+          <AbbreviatedNumber value={objective} lang={lang} precision={precision} />
         </strong>
         {delta != null ? (
           <span className={metricScoreboardDeltaRecipe({ deltaTone: deltaTone ?? 'up' })}>
-            <AbbreviatedNumber value={delta} lang={lang} signed />
+            <AbbreviatedNumber value={delta} lang={lang} precision={precision} signed />
           </span>
         ) : null}
       </div>

@@ -85,6 +85,7 @@ function controls(overrides: Partial<TeamPlanControls> = {}): TeamPlanControls {
     targetPhase: null,
     targetPhaseChosen: false,
     gatePhase: null,
+    farmSet: null,
     ...overrides,
   };
 }

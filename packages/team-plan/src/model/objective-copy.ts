@@ -32,6 +32,14 @@ export function teamPlanObjectiveCopy(
         gearDipNote: strings.teamPlanGearDipNoteFarm,
         phaseHintNone: strings.teamPlanPhaseHintNoneFarm,
       };
+    case 'setFarm':
+      return {
+        setupSectionBody: strings.teamPlanSetupSectionBodySetFarm,
+        objectiveHint: strings.teamPlanObjectiveHintSetFarm,
+        totalGainValue: strings.teamPlanTotalGainValueSetFarm,
+        gearDipNote: strings.teamPlanGearDipNoteSetFarm,
+        phaseHintNone: strings.teamPlanPhaseHintNoneSetFarm,
+      };
     case 'gateClear':
       return {
         setupSectionBody: strings.teamPlanSetupSectionBodyGate,

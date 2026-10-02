@@ -53,6 +53,7 @@ describe('optimizer view preferences', () => {
       targetPhase: 40,
       targetPhaseChosen: true,
       gatePhase: 150,
+      farmSet: 'clay',
     };
     saveOptimizerView(view);
     expect(loadOptimizerView()).toEqual(view);
@@ -63,6 +64,17 @@ describe('optimizer view preferences', () => {
     expect(loadOptimizerView().aurasAtCap).toEqual(['brecha']);
     entries.set(KEY, JSON.stringify({ aurasAtCap: true }));
     expect(loadOptimizerView().aurasAtCap).toBe(DEFAULT_OPTIMIZER_VIEW.aurasAtCap);
+  });
+
+  it('keeps a set the game drops and reads anything else as no set', () => {
+    entries.set(KEY, JSON.stringify({ objective: 'setFarm', farmSet: 'void' }));
+    expect(loadOptimizerView()).toMatchObject({ objective: 'setFarm', farmSet: 'void' });
+    entries.set(KEY, JSON.stringify({ farmSet: 'not-a-set' }));
+    expect(loadOptimizerView().farmSet).toBeNull();
+    entries.set(KEY, JSON.stringify({ farmSet: 7 }));
+    expect(loadOptimizerView().farmSet).toBeNull();
+    entries.set(KEY, JSON.stringify({ objective: 'pvp' }));
+    expect(loadOptimizerView().farmSet).toBeNull();
   });
 
   it('reads as the defaults when nothing is stored', () => {

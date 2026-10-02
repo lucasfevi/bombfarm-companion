@@ -57,6 +57,7 @@ function sampleEnvelope(targetPhase: number | null = null): TeamPlanEnvelope {
     allowedChanges: 'both',
     ignoreFieldCrowding: false,
     targetPhase,
+    farmSet: null,
     plan: samplePlan(),
   };
 }
@@ -109,8 +110,9 @@ describe('team plan envelope storage', () => {
       ['bad allowed changes', JSON.stringify({ ...sampleEnvelope(), allowedChanges: 'everything' })],
       ['non-boolean crowding flag', JSON.stringify({ ...sampleEnvelope(), ignoreFieldCrowding: 'yes' })],
       ['string target phase', JSON.stringify({ ...sampleEnvelope(), targetPhase: '51' })],
+      ['numeric farm set', JSON.stringify({ ...sampleEnvelope(), farmSet: 3 })],
     ];
-    expect(rows).toHaveLength(20);
+    expect(rows).toHaveLength(21);
 
     for (const [label, stored] of rows) {
       localStorage.clear();
@@ -127,6 +129,17 @@ describe('team plan envelope storage', () => {
       expect(loadTeamPlanEnvelope()).toEqual(envelope);
       expect(loadTeamPlanEnvelope()?.targetPhase).toBe(targetPhase);
     }
+  });
+
+  it('round-trips the set a Set farm plan was solved for', () => {
+    const envelope: TeamPlanEnvelope = { ...sampleEnvelope(), objective: 'setFarm', farmSet: 'clay' };
+    expect(saveTeamPlanEnvelope(envelope)).toBe(true);
+    expect(loadTeamPlanEnvelope()).toEqual(envelope);
+  });
+
+  it('reads an envelope written before the set control existed as one with no set', () => {
+    localStorage.setItem(TEAM_PLAN_KEY, envelopeWithout('farmSet'));
+    expect(loadTeamPlanEnvelope()).toEqual(sampleEnvelope());
   });
 
   it('removes the key on request and returns false when the write fails', () => {

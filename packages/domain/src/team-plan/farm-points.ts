@@ -24,7 +24,7 @@ import {
   FARM_OPT_JOINT_BUDGET_SHARE,
 } from '../farm-optimize-search';
 import { reoptBudget, RESPEC_KEYS } from '../points-reopt-core';
-import { FARM_GOLD_OBJECTIVE, FARM_UNREAD_SCALES, farmBasesForBuild } from './farm-objective';
+import { FARM_UNREAD_SCALES, farmBasesForBuild } from './farm-objective';
 import type { Loadout, PointAlloc } from '../gear/types';
 import type { ScoreMemo, TeamPlanFarmObjective } from './types';
 
@@ -81,7 +81,7 @@ export function farmPointsPass(input: FarmPointsPassInput): FarmPointsPassResult
     searchableIds,
     budgetById,
     objective.account,
-    FARM_GOLD_OBJECTIVE,
+    objective.rateObjective,
     FARM_UNREAD_SCALES,
     objective.phaseOptions,
     input.evaluationBudget,

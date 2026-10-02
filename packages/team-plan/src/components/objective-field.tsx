@@ -11,6 +11,8 @@ export function objectiveOptionLabel(objective: TeamPlanObjective, t: TeamPlanCo
   switch (objective) {
     case 'farm':
       return t.teamPlanObjectiveOptionGold;
+    case 'setFarm':
+      return t.teamPlanObjectiveOptionSet;
     case 'gateClear':
       return t.teamPlanObjectiveOptionGate;
     case 'pvp':
