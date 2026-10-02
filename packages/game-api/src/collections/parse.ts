@@ -43,7 +43,6 @@ const AXIS_BY_TOKEN: ReadonlyMap<string, CollectionAxis> = new Map(
 
 function parseAxisValues(value: unknown): CollectionAxisValues | null {
   if (!isPlainObject(value)) return null;
-  if (Object.keys(value).some((key) => !AXIS_BY_TOKEN.has(key))) return null;
   const values: Partial<Record<CollectionAxis, number>> = {};
   for (const axis of COLLECTION_AXES) {
     const amount = finiteNumber(value[wireKey(COLLECTION_AXIS_SYMBOLS[axis])]);
@@ -53,14 +52,21 @@ function parseAxisValues(value: unknown): CollectionAxisValues | null {
   return values as CollectionAxisValues;
 }
 
-function parseEffect(value: unknown): CollectionEffectState | null {
-  if (!isPlainObject(value)) return null;
-  const axisToken = value[wireKey('effectAxis')];
-  const axis = typeof axisToken === 'string' ? AXIS_BY_TOKEN.get(axisToken) : undefined;
-  const pageValues = numberRow(value[wireKey('effectPages')], PAGES);
-  const now = finiteNumber(value[wireKey('effectNow')]);
-  if (axis === undefined || pageValues === null || now === null) return null;
-  return { axis, pageValues, now };
+/** An effect on an axis the contract does not name is skipped rather than refused: the game adding
+ *  an eleventh axis must not blank the ten the screen can draw. */
+function parseEffects(value: unknown): CollectionEffectState[] | null {
+  if (!Array.isArray(value)) return null;
+  const effects: CollectionEffectState[] = [];
+  for (const entry of value) {
+    if (!isPlainObject(entry)) return null;
+    const axisToken = entry[wireKey('effectAxis')];
+    const pageValues = numberRow(entry[wireKey('effectPages')], PAGES);
+    const now = finiteNumber(entry[wireKey('effectNow')]);
+    if (typeof axisToken !== 'string' || pageValues === null || now === null) return null;
+    const axis = AXIS_BY_TOKEN.get(axisToken);
+    if (axis !== undefined) effects.push({ axis, pageValues, now });
+  }
+  return effects;
 }
 
 function parsePiecesByPage(value: unknown): number[] | null {
@@ -76,8 +82,7 @@ function parseSet(value: unknown): CollectionSetState | null {
   const code = value[wireKey('setCode')];
   const level = finiteNumber(value[wireKey('setLevel')]);
   const piecesByPage = parsePiecesByPage(value[wireKey('setPerPage')]);
-  const rawEffects = value[wireKey('setEffects')];
-  const effects = Array.isArray(rawEffects) ? mapAll(rawEffects, parseEffect) : null;
+  const effects = parseEffects(value[wireKey('setEffects')]);
   if (typeof code !== 'string' || level === null || piecesByPage === null || effects === null) return null;
   return { code, level, piecesByPage, effects };
 }
@@ -110,10 +115,11 @@ function parsePiece(value: unknown): CollectionPieceState | null {
 
 /**
  * Reads the Collections state: the axis caps and totals, every set book with its progress, and
- * every piece. `null` on any malformed part — a wrong-length page list, an unknown axis, a number
+ * every piece. `null` on any missing required key or wrong type — a wrong-length page list, a number
  * that is not finite — because a half-read book would draw progress the account does not have.
- * The version, the enabled flag, the upgrade table and the two page counters the server derives
- * from the per-page counts are not read.
+ * Keys the game adds are ignored, so the parser stays usable when the strict identifier has begun
+ * to refuse the body. The version, the enabled flag, the upgrade table and the two page counters
+ * the server derives from the per-page counts are not read.
  */
 export function parseCollectionsState(body: unknown): CollectionsSnapshot | null {
   if (!isPlainObject(body)) return null;

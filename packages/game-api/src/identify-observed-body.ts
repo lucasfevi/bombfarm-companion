@@ -1,5 +1,6 @@
 import type { AccountSection } from '@bombfarm/contracts';
 import { ROUTE_FINGERPRINTS, type RouteFingerprint } from './fingerprints.js';
+import { isCollectionsStateBody } from './collections/identify.js';
 import { identifyPvpBody, type PvpRoute } from './pvp/identify.js';
 import { checkShape } from './shape.js';
 import { isPlainObject } from './type-guards.js';
@@ -14,6 +15,10 @@ import { isPlainObject } from './type-guards.js';
  * `pvp` is the one non-section verdict: a duel result or a film, told apart by the key pair only
  * each carries (see {@link identifyPvpBody}). A section fingerprint names a complete key set that
  * contains neither pair, so a body can never be both a section and a PVP body.
+ *
+ * `collections` is the Collections state, told apart by its complete key set at every level
+ * ({@link isCollectionsStateBody}); like a section fingerprint, a key the game adds anywhere turns
+ * it into `unidentified`. The app's own read of the route does not need the verdict.
  */
 /**
  * Why an `unidentified` verdict happened, when the answer is "the game added a key".
@@ -37,6 +42,7 @@ export interface ObservedBodyDrift {
 export type ObservedBodyIdentification =
   | { readonly kind: 'identified'; readonly section: AccountSection }
   | { readonly kind: 'pvp'; readonly route: PvpRoute }
+  | { readonly kind: 'collections' }
   | { readonly kind: 'unidentified' }
   | { readonly kind: 'ambiguous'; readonly sections: readonly AccountSection[] };
 
@@ -48,6 +54,7 @@ export function identifyObservedBody(
 
   const pvpRoute = identifyPvpBody(body);
   if (pvpRoute !== null) return { kind: 'pvp', route: pvpRoute };
+  if (isCollectionsStateBody(body)) return { kind: 'collections' };
 
   const sections = Object.keys(fingerprints) as readonly AccountSection[];
   const matches = sections.filter((section) => checkShape(body, fingerprints[section]).ok);

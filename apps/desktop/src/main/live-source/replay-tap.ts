@@ -25,6 +25,7 @@ export const REPLAY_FRAME_INTERVAL_MS = 100;
 const LIVE_SOURCE_ENV_VAR = 'BFC_LIVE_SOURCE';
 const CAPTURE_PATH_ENV_VAR = 'BFC_REPLAY_CAPTURE';
 const PVP_FIXTURE_PATH_ENV_VAR = 'BFC_REPLAY_PVP_FIXTURE';
+const COLLECTIONS_FIXTURE_PATH_ENV_VAR = 'BFC_REPLAY_COLLECTIONS_FIXTURE';
 
 const FIXTURES_RELATIVE = path.join('src', 'main', 'live-source', 'fixtures');
 const COMMITTED_CAPTURE_RELATIVE = path.join(FIXTURES_RELATIVE, 'live-capture.bfcc');
@@ -32,6 +33,15 @@ const COMMITTED_CAPTURE_RELATIVE = path.join(FIXTURES_RELATIVE, 'live-capture.bf
  *  recorded before duels existed — so the replay serves these once, as HTTP responses through the
  *  same decoder, ahead of the first frame. */
 const COMMITTED_PVP_FIXTURE_RELATIVE = path.join(FIXTURES_RELATIVE, 'pvp-duels-offline.json');
+/** The synthetic Collections body the wire-reading package already commits, served as it is: a
+ *  second copy would be a second thing to keep in step with the body's shape. */
+const COMMITTED_COLLECTIONS_FIXTURE_RELATIVE = path.join(
+  'packages',
+  'game-api',
+  'src',
+  '__fixtures__',
+  'collections-state.json',
+);
 
 /**
  * `isPackaged` is a parameter rather than something read here, so the caller has to pass
@@ -69,6 +79,22 @@ export function resolveReplayPvpFixturePath(
   return resolveCommittedFixturePath(env[PVP_FIXTURE_PATH_ENV_VAR], COMMITTED_PVP_FIXTURE_RELATIVE, dirname);
 }
 
+/** Same walk again, for the single Collections body. An empty string opts out. */
+export function resolveReplayCollectionsFixturePath(
+  env: Readonly<Record<string, string | undefined>>,
+  dirname: string,
+): string {
+  const override = env[COLLECTIONS_FIXTURE_PATH_ENV_VAR];
+  if (override !== undefined) return override;
+
+  const candidates = [
+    path.resolve(dirname, '..', '..', '..', '..', COMMITTED_COLLECTIONS_FIXTURE_RELATIVE),
+    path.resolve(process.cwd(), COMMITTED_COLLECTIONS_FIXTURE_RELATIVE),
+    path.resolve(process.cwd(), '..', '..', COMMITTED_COLLECTIONS_FIXTURE_RELATIVE),
+  ];
+  return candidates.find((candidate) => existsSync(candidate)) ?? (candidates[0] as string);
+}
+
 function resolveCommittedFixturePath(override: string | undefined, relative: string, dirname: string): string {
   if (override !== undefined) return override;
 
@@ -95,6 +121,9 @@ export interface ReplayTapDeps {
   /** JSON `{ bodies: [...] }` served once as HTTP responses ahead of the first frame; absent or
    *  unreadable, the replay runs without it. */
   readonly pvpFixturePath?: string;
+  /** One Collections body, a JSON object, served once like the PVP bodies; absent or unreadable,
+   *  the replay runs without it. */
+  readonly collectionsFixturePath?: string;
   readonly goldContinuity: GoldContinuity;
   /** Checked on every frame, not just at start, so a revoke stops the stream mid-replay exactly
    *  as it detaches the real tap. */
@@ -113,6 +142,10 @@ const NOOP_LOG_PORT: LogPort = { info: () => undefined, warn: () => undefined };
 
 function loadRecords(capturePath: string): readonly CaptureRecord[] {
   return [...readCaptureRecords(readFileSync(capturePath))];
+}
+
+function loadCollectionsBody(fixturePath: string): readonly unknown[] {
+  return [JSON.parse(readFileSync(fixturePath, 'utf8'))];
 }
 
 function loadFixtureBodies(fixturePath: string): readonly unknown[] {
@@ -136,6 +169,7 @@ class ReplayTap implements TapHandle {
    *  second for the life of the session. */
   #loadFailed = false;
   #pvpFixtureServed = false;
+  #collectionsFixtureServed = false;
   #currency: LiveCurrency;
 
   constructor(deps: ReplayTapDeps) {
@@ -240,6 +274,7 @@ class ReplayTap implements TapHandle {
 
     if (!this.#ensureRecordsLoaded()) return;
     this.#servePvpFixtureOnce();
+    this.#serveCollectionsFixtureOnce();
 
     const record = this.#records[this.#cursor];
     if (record === undefined) return;
@@ -287,14 +322,43 @@ class ReplayTap implements TapHandle {
       return;
     }
 
+    this.#serveThroughDecoder('pvp-fixture', bodies);
+    this.#log.info({ scope: 'live-source', event: 'replay.pvp_fixture_served', path: fixturePath, bodies: bodies.length });
+  }
+
+  /** The same once-per-tap serving for the Collections body: the recorder keeps one snapshot per
+   *  account, so a tap rebuilt after a consent revoke serving it again changes nothing. */
+  #serveCollectionsFixtureOnce(): void {
+    if (this.#collectionsFixtureServed) return;
+    this.#collectionsFixtureServed = true;
+    const fixturePath = this.#deps.collectionsFixturePath;
+    if (fixturePath === undefined || fixturePath === '' || !existsSync(fixturePath)) return;
+
+    let bodies: readonly unknown[];
+    try {
+      bodies = loadCollectionsBody(fixturePath);
+    } catch (error) {
+      this.#log.warn({
+        scope: 'live-source',
+        event: 'replay.collections_fixture_unreadable',
+        path: fixturePath,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return;
+    }
+
+    this.#serveThroughDecoder('collections-fixture', bodies);
+    this.#log.info({ scope: 'live-source', event: 'replay.collections_fixture_served', path: fixturePath });
+  }
+
+  #serveThroughDecoder(connectionPrefix: string, bodies: readonly unknown[]): void {
     const decoder = new TlsConnections();
     bodies.forEach((body, index) => {
       const bytes = buildHttpResponse(200, 'OK', JSON.stringify(body));
-      for (const event of decoder.push(`pvp-fixture-${String(index)}`, bytes)) {
+      for (const event of decoder.push(`${connectionPrefix}-${String(index)}`, bytes)) {
         if (event.kind === 'http' && event.body !== undefined) this.#deps.onHttpBody?.(event.body, Date.now());
       }
     });
-    this.#log.info({ scope: 'live-source', event: 'replay.pvp_fixture_served', path: fixturePath, bodies: bodies.length });
   }
 
   /**
@@ -353,6 +417,7 @@ class ReplayTap implements TapHandle {
 export function createReplayTapFactory(deps: {
   readonly capturePath: string;
   readonly pvpFixturePath?: string;
+  readonly collectionsFixturePath?: string;
   readonly consent: () => boolean;
   readonly log?: LogPort;
   readonly intervalMs?: number;
@@ -369,6 +434,7 @@ export function createReplayTapFactory(deps: {
     new ReplayTap({
       capturePath: deps.capturePath,
       ...(deps.pvpFixturePath !== undefined ? { pvpFixturePath: deps.pvpFixturePath } : {}),
+      ...(deps.collectionsFixturePath !== undefined ? { collectionsFixturePath: deps.collectionsFixturePath } : {}),
       goldContinuity,
       consent: deps.consent,
       onEvent,

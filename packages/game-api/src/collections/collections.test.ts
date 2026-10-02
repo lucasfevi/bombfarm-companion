@@ -113,6 +113,15 @@ describe('isCollectionsStateBody', () => {
     for (const fingerprint of Object.values(ROUTE_FINGERPRINTS)) {
       expect(checkShape(body, fingerprint).ok).toBe(false);
     }
+  });
+
+  it('is its own verdict when observed on the tap, ahead of the section fingerprints', () => {
+    expect(identifyObservedBody(loadCollectionsBody())).toEqual({ kind: 'collections' });
+  });
+
+  it('is not a verdict for a body that merely carries a key the game added', () => {
+    const body = loadCollectionsBody();
+    body['added_by_a_later_patch'] = 1;
     expect(identifyObservedBody(body)).toEqual({ kind: 'unidentified' });
   });
 });
@@ -174,10 +183,30 @@ describe('parseCollectionsState', () => {
     expect(parseCollectionsState(body)?.pieces).toEqual([]);
   });
 
+  for (const level of LEVELS) {
+    it(`ignores a key the game added to ${level.name}`, () => {
+      const body = loadCollectionsBody();
+      level.target(body)['added_by_a_later_patch'] = 1;
+      expect(parseCollectionsState(body)).toEqual(snapshot);
+    });
+  }
+
+  it('ignores an axis key the contract does not name in an axis record', () => {
+    const body = loadCollectionsBody();
+    (body[wireKey('raw')] as Wire)['sabor'] = 1;
+    expect(parseCollectionsState(body)).toEqual(snapshot);
+  });
+
+  it('skips an effect on an axis the contract does not name and keeps the rest of the book', () => {
+    const body = loadCollectionsBody();
+    const effects = firstSet(body)[wireKey('setEffects')] as Wire[];
+    effects.push({ ...firstEffect(body), [wireKey('effectAxis')]: 'sabor' });
+    expect(parseCollectionsState(body)).toEqual(snapshot);
+  });
+
   const malformed: ReadonlyArray<readonly [string, (body: Wire) => void]> = [
     ['a non-finite axis total', (body) => ((body[wireKey('totals')] as Wire)[wireKey(COLLECTION_AXIS_SYMBOLS.gold)] = Number.NaN)],
     ['an infinite cap', (body) => ((body[wireKey('caps')] as Wire)[wireKey(COLLECTION_AXIS_SYMBOLS.xp)] = Infinity)],
-    ['an unknown axis key in the raw record', (body) => ((body[wireKey('raw')] as Wire)['sabor'] = 1)],
     ['an axis missing from the totals record', (body) => Reflect.deleteProperty(body[wireKey('totals')] as Wire, wireKey(COLLECTION_AXIS_SYMBOLS.luck))],
     ['a missing partial-page share', (body) => Reflect.deleteProperty(body, wireKey('partialPct'))],
     ['a set with five per-page counts', (body) => ((firstSet(body)[wireKey('setPerPage')] as number[]).length = 5)],
@@ -186,7 +215,7 @@ describe('parseCollectionsState', () => {
     ['a page holding a fraction of a piece', (body) => ((firstSet(body)[wireKey('setPerPage')] as number[])[0] = 2.5)],
     ['an effect with five page values', (body) => ((firstEffect(body)[wireKey('effectPages')] as number[]).length = 5)],
     ['an effect with a non-finite page value', (body) => ((firstEffect(body)[wireKey('effectPages')] as number[])[2] = Number.NaN)],
-    ['an effect on an unknown axis', (body) => (firstEffect(body)[wireKey('effectAxis')] = 'sabor')],
+    ['an effect with no axis', (body) => Reflect.deleteProperty(firstEffect(body), wireKey('effectAxis'))],
     ['an effect whose current bonus is a string', (body) => (firstEffect(body)[wireKey('effectNow')] = '12.8')],
     ['a set with a numeric code', (body) => (firstSet(body)[wireKey('setCode')] = 7)],
     ['a piece with a string slot', (body) => (firstPiece(body)[wireKey('pieceSlot')] = 'weapon')],

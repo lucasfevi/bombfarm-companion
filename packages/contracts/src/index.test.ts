@@ -66,6 +66,8 @@ const IPC_CHANNEL_LIST = [
   'pvp:history',
   'pvp:refresh',
   'pvp:film',
+  'collections:get',
+  'collections:refresh',
   'clipboard:writeImage',
 ] as const;
 
@@ -81,6 +83,7 @@ const IPC_EVENT_CHANNEL_LIST = [
   'forge:event',
   'apply:event',
   'pvp:changed',
+  'collections:changed',
   'window:changed',
 ] as const;
 

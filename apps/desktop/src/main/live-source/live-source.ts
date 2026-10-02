@@ -276,12 +276,21 @@ export interface ObservedPvpBody {
   readonly atMs: number;
 }
 
+/** The Collections state as the tap saw it. No raw bytes: it is read once and never kept whole. */
+export interface ObservedCollectionsBody {
+  readonly body: unknown;
+  readonly atMs: number;
+}
+
 export interface LiveSourceDeps {
   /** Checked at the attach site by the underlying tap, never inferred from construction order. */
   readonly consent: () => boolean;
   /** Where a duel result or a film goes the moment it is identified. Omitted, both are named in
    *  the log and dropped, the way every non-rotation section still is. */
   readonly onObservedPvpBody?: (observation: ObservedPvpBody) => void;
+  /** Where the Collections state goes when the client fetches it; omitted, it is named in the log
+   *  and dropped. */
+  readonly onObservedCollectionsBody?: (observation: ObservedCollectionsBody) => void;
   readonly userDataDir: string;
   /** Gates the frame capture inside the default tap factory — irrelevant, and safe to omit, when
    *  `createTap` overrides that factory entirely. Defaults to `'prod'`, the flavor capture never
@@ -587,6 +596,7 @@ export class LiveSource {
    *  shows a real (if aging) balance instead of an em dash. */
   readonly #observer: ObservationCapture | null;
   readonly #onObservedPvpBody: ((observation: ObservedPvpBody) => void) | null;
+  readonly #onObservedCollectionsBody: ((observation: ObservedCollectionsBody) => void) | null;
   #accountGoldBalance: number | null = null;
   /** When {@link #accountGoldBalance} was captured. `null` only alongside a `null` balance. */
   #accountGoldCapturedAt: string | null = null;
@@ -606,6 +616,7 @@ export class LiveSource {
     this.#log = deps.log ?? NOOP_LOG_PORT;
     this.#observer = deps.observer ?? null;
     this.#onObservedPvpBody = deps.onObservedPvpBody ?? null;
+    this.#onObservedCollectionsBody = deps.onObservedCollectionsBody ?? null;
     this.#now = deps.now ?? Date.now;
     this.#earningsFold = new EarningsFold({ now: this.#now, xpPerProp, log: this.#log });
     this.#mapFold = new MapFold({ wikiFactsFor });
@@ -805,7 +816,7 @@ export class LiveSource {
   /** Reads the client's own traffic before this app's own requests: {@link identifyObservedBody}
    *  is the strict, shape-only discriminator (the tap sees responses with no URL, so a path is
    *  never available to identify by) — a match resolves to exactly one route or not at all, never
-   *  a guess. The rotation route and the two PVP bodies are wired downstream; every other
+   *  a guess. The rotation route, the two PVP bodies and the Collections state are wired downstream; every other
    *  identified section is named in the log and otherwise left alone, the seam the next one plugs
    *  into. */
   #handleObservedHttpBody(bodyBuf: Buffer, atMs: number): void {
@@ -849,6 +860,11 @@ export class LiveSource {
     if (identification.kind === 'pvp') {
       this.#log.info({ scope: 'live-source', event: 'observed_body.pvp', route: identification.route, byteLength: bodyBuf.length });
       this.#onObservedPvpBody?.({ route: identification.route, body: parsed, raw: bodyBuf, atMs });
+      return;
+    }
+    if (identification.kind === 'collections') {
+      this.#log.info({ scope: 'live-source', event: 'observed_body.collections', byteLength: bodyBuf.length });
+      this.#onObservedCollectionsBody?.({ body: parsed, atMs });
       return;
     }
 
