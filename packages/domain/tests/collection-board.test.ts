@@ -325,16 +325,154 @@ describe('buildCollectionBoard: properties', () => {
     }
   });
 
-  it('keeps the rebuilt bonus equal to the sum of its page grants for any pieces per page', () => {
+  it('grants each page its increment times the partial share times k over eight, rounded half up, for any pieces per page', () => {
     const next = lcg(11);
+    const cumulativeCents = [330, 650, 980, 1460, 1950, 2600];
     for (let trial = 0; trial < 60; trial += 1) {
+      const partialPct = 10 + Math.floor(next() * 90);
       const perPage = Array.from({ length: 6 }, () => Math.floor(next() * 9));
-      const increments = collectionPageIncrementsCents(GOLD_PAGES);
-      const expected = increments.reduce((total, increment, rarity) => total + collectionPageGrantCents(increment, perPage[rarity] ?? 0, 60), 0);
-      const snapshot = snapshotOf([{ ...goldSet(), piecesByPage: perPage }], []);
+      let expected = 0;
+      cumulativeCents.forEach((cumulative, rarity) => {
+        const increment = cumulative - (cumulativeCents[rarity - 1] ?? 0);
+        const held = perPage[rarity] ?? 0;
+        expected += held === 8 ? increment : Math.floor((increment * partialPct * held + 400) / 800);
+      });
+      const snapshot = snapshotOf([{ ...goldSet(), piecesByPage: perPage }], [], { partialPct });
       const set = buildCollectionBoard(snapshot).sets[0];
-      const fromPages = set?.pages.reduce((total, page) => total + collectionCents(page.effects[0]?.granted ?? 0), 0);
+      const fromPages = set?.pages.reduce((total, page) => total + Math.round((page.effects[0]?.granted ?? 0) * 100), 0);
       expect(fromPages).toBe(expected);
     }
+  });
+});
+
+describe('buildCollectionBoard: bodies that disagree with themselves', () => {
+  const wire = (overrides: Record<string, unknown>) => ({
+    def_id: 'gold_luva',
+    rarity: 2,
+    equipped_on: null,
+    locked: false,
+    market_state: 0,
+    in_stash: false,
+    ...overrides,
+  });
+
+  it.each([
+    ['an empty equipped_on', { equipped_on: '' }],
+    ['a non-string equipped_on', { equipped_on: 42 }],
+    ['a null market_state', { market_state: null }],
+    ['a market_state spelled "0"', { market_state: '0' }],
+    ['a market_state that is not a number', { market_state: 'soon' }],
+  ])('still reads an item with %s as free, the way the inventory readers do', (_name, overrides) => {
+    const bag = collectionBagItemsFromInventory([wire(overrides)]);
+    expect(bag[0]?.free).toBe(true);
+    expect(goldBoard(bag).readyInBag).toBe(1);
+  });
+
+  it.each([
+    ['an equipped_on naming a hero', { equipped_on: '555' }],
+    ['a market_state spelled "1"', { market_state: '1' }],
+    ['a market_state of 2', { market_state: 2 }],
+  ])('reads an item with %s as not free', (_name, overrides) => {
+    expect(collectionBagItemsFromInventory([wire(overrides)])[0]?.free).toBe(false);
+  });
+
+  it('calls a set with no per-page counts empty, not complete', () => {
+    const board = buildCollectionBoard(snapshotOf([{ ...goldSet(), piecesByPage: [] }], []));
+    expect(board.sets[0]?.status).toBe('empty');
+    expect(board.summary.booksComplete).toBe(0);
+  });
+
+  it('calls a set with only three per-page counts, all full, started rather than complete', () => {
+    const board = buildCollectionBoard(snapshotOf([{ ...goldSet(), piecesByPage: [8, 8, 8] }], []));
+    expect(board.sets[0]?.status).toBe('started');
+  });
+
+  it('reports no ready piece on a page the counts say is full, though a mask bit is clear and the bag holds the item', () => {
+    const snapshot = snapshotOf([{ ...goldSet(), piecesByPage: [8, 8, 8, 0, 0, 0] }], pieces('gold', 20, GOLD_MASKS));
+    const set = buildCollectionBoard(snapshot, [free('gold_luva', 2)]).sets[0];
+    expect(set?.pages[2]).toMatchObject({ pieces: 8, complete: true, ready: 0 });
+    expect(set?.pieces.find((piece) => piece.slot === 5)?.ready[2]).toBe(false);
+    expect(set?.readyInBag).toBe(0);
+    expect(set?.pages[2]?.effects[0]).toMatchObject({ full: 3.3, granted: 3.3, withReady: 3.3 });
+  });
+
+  it('never lets a page gain past its full increment when the counts and masks disagree on a partial page', () => {
+    const snapshot = snapshotOf([{ ...goldSet(), piecesByPage: [8, 8, 7, 0, 0, 0] }], pieces('gold', 20, GOLD_MASKS));
+    const bag = [free('gold_luva', 2), free('gold_anel', 2), free('gold_amuleto', 2)];
+    const page = buildCollectionBoard(snapshot, bag).sets[0]?.pages[2];
+    expect(page?.ready).toBe(3);
+    expect(page?.effects[0]).toMatchObject({ full: 3.3, granted: 1.73, withReady: 3.3 });
+  });
+});
+
+describe('buildCollectionBoard: piece rows', () => {
+  it('lists pieces by slot however the server ordered them', () => {
+    const reversed = [...pieces('gold', 20, GOLD_MASKS)].reverse();
+    const board = buildCollectionBoard(snapshotOf([goldSet()], reversed));
+    expect(board.sets[0]?.pieces.map((piece) => piece.slot)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+  });
+
+  it('marks one piece ready on two pages at once, and both pages gain', () => {
+    const set = goldBoard([free('gold_luva', 2), free('gold_luva', 3)]);
+    expect(set.pieces.find((piece) => piece.slot === 5)?.ready).toEqual([false, false, true, true, false, false]);
+    expect(set.pages[2]?.effects[0]).toMatchObject({ granted: 1.24, withReady: 1.49 });
+    expect(set.pages[3]?.effects[0]).toMatchObject({ granted: 0, withReady: 0.36 });
+    expect(set.readyInBag).toBe(2);
+  });
+
+  it('keeps sacrificed and pending bits apart on one piece and offers only the page that is neither', () => {
+    const snapshot = goldSnapshot();
+    const mixed = snapshot.pieces.map((piece) => (piece.slot === 5 ? { ...piece, sacrificedMask: 3, pendingMask: 4 } : piece));
+    const bag = [free('gold_luva', 1), free('gold_luva', 2), free('gold_luva', 3)];
+    const row = buildCollectionBoard({ ...snapshot, pieces: mixed }, bag).sets[0]?.pieces.find((piece) => piece.slot === 5);
+    expect(row?.sacrificed).toEqual([true, true, false, false, false, false]);
+    expect(row?.pending).toEqual([false, false, true, false, false, false]);
+    expect(row?.ready).toEqual([false, false, false, true, false, false]);
+  });
+});
+
+describe('buildCollectionBoard: figures the server sends', () => {
+  const zero = snapshotOf([], []).caps;
+
+  it('calls an axis at its cap when the uncapped sum equals the cap exactly', () => {
+    const snapshot = snapshotOf([], [], { caps: { ...zero, damage: 30 }, raw: { ...zero, damage: 30 } });
+    expect(buildCollectionBoard(snapshot).axes[0]?.atCap).toBe(true);
+  });
+
+  it('does not call an axis with a cap of zero at its cap, whatever its sum', () => {
+    const snapshot = snapshotOf([], [], { raw: { ...zero, damage: 5 } });
+    expect(buildCollectionBoard(snapshot).axes[0]?.atCap).toBe(false);
+  });
+
+  it('leaves the snapshot it was given untouched', () => {
+    const deepFreeze = <T>(value: T): T => {
+      if (typeof value === 'object' && value !== null) {
+        Object.values(value).forEach(deepFreeze);
+        Object.freeze(value);
+      }
+      return value;
+    };
+    const frozen = deepFreeze(goldSnapshot());
+    const bag = deepFreeze([free('gold_luva', 2)]);
+    expect(buildCollectionBoard(frozen, bag)).toEqual(buildCollectionBoard(goldSnapshot(), [free('gold_luva', 2)]));
+  });
+
+  it('rounds every percent it reports to hundredths when the server sends float dust', () => {
+    const dust = 0.1 + 0.2;
+    const set: CollectionSetState = {
+      code: 'dusty',
+      level: 10,
+      piecesByPage: [8, 0, 0, 0, 0, 0],
+      effects: [effect('gold', [1, 2, 3, 4, 5, 26 + 4.4e-15], dust)],
+    };
+    const snapshot = snapshotOf([set], [], {
+      caps: { ...zero, gold: dust },
+      raw: { ...zero, gold: dust },
+      totals: { ...zero, gold: dust },
+    });
+    const board = buildCollectionBoard(snapshot);
+    const gold = board.axes.find((row) => row.axis === 'gold');
+    expect(gold).toMatchObject({ total: 0.3, raw: 0.3, cap: 0.3, maxRaw: 26 });
+    expect(board.sets[0]?.effects[0]).toMatchObject({ now: 0.3, max: 26, remaining: 25.7 });
   });
 });

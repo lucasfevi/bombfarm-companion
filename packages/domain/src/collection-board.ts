@@ -118,6 +118,10 @@ function fromCents(cents: number): number {
   return cents / 100;
 }
 
+function roundCents(percent: number): number {
+  return fromCents(collectionCents(percent));
+}
+
 /** What each page adds over the page before it, in cents. */
 export function collectionPageIncrementsCents(pageValues: readonly number[]): number[] {
   let previous = 0;
@@ -135,13 +139,19 @@ export function collectionPageGrantCents(incrementCents: number, pieces: number,
   return Math.floor((2 * incrementCents * partialPct * pieces + 800) / 1600);
 }
 
+function numericOrZero(value: unknown): number {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
 function isFreeItem(item: Record<string, unknown>): boolean {
-  return (
-    (item.equipped_on === null || item.equipped_on === undefined) &&
-    item.locked !== true &&
-    (item.market_state === undefined || item.market_state === 0) &&
-    item.in_stash !== true
-  );
+  const equipped = typeof item.equipped_on === 'string' && item.equipped_on.length > 0;
+  const listed = Math.round(numericOrZero(item.market_state)) !== 0;
+  return !equipped && !listed && item.locked !== true && item.in_stash !== true;
 }
 
 /** Reads the account's `items` section for the board: an item is free when it is not equipped, not
@@ -171,19 +181,28 @@ function bit(mask: number, rarity: number): boolean {
   return Math.floor(mask / 2 ** rarity) % 2 === 1;
 }
 
-function pieceRow(piece: CollectionPieceState, freeKeys: ReadonlySet<string>): CollectionPieceRow {
+function pieceRow(
+  piece: CollectionPieceState,
+  freeKeys: ReadonlySet<string>,
+  fullPages: readonly boolean[],
+): CollectionPieceRow {
   const pages = Array.from({ length: COLLECTION_PAGES }, (_, rarity) => rarity);
   const sacrificed = pages.map((rarity) => bit(piece.sacrificedMask, rarity));
   const pending = pages.map((rarity) => bit(piece.pendingMask, rarity));
   const ready = pages.map(
-    (rarity) => !sacrificed[rarity] && !pending[rarity] && freeKeys.has(bagKey(piece.defId, rarity)),
+    (rarity) => !fullPages[rarity] && !sacrificed[rarity] && !pending[rarity] && freeKeys.has(bagKey(piece.defId, rarity)),
   );
   return { slot: piece.slot, defId: piece.defId, sacrificed, pending, ready };
 }
 
+function pageCounts(piecesByPage: readonly number[]): number[] {
+  return Array.from({ length: COLLECTION_PAGES }, (_, rarity) => piecesByPage[rarity] ?? 0);
+}
+
 function setStatus(piecesByPage: readonly number[]): CollectionSetStatus {
-  if (piecesByPage.every((count) => count >= COLLECTION_PIECES_PER_PAGE)) return 'complete';
-  if (piecesByPage.every((count) => count === 0)) return 'empty';
+  const counts = pageCounts(piecesByPage);
+  if (counts.every((count) => count >= COLLECTION_PIECES_PER_PAGE)) return 'complete';
+  if (counts.every((count) => count === 0)) return 'empty';
   return 'started';
 }
 
@@ -225,8 +244,8 @@ function setEffectRows(effects: readonly CollectionEffectState[], pages: readonl
     );
     return {
       axis: effect.axis,
-      now: effect.now,
-      max,
+      now: roundCents(effect.now),
+      max: roundCents(max),
       remaining: fromCents(Math.max(0, collectionCents(max) - collectionCents(effect.now))),
       readyGain: fromCents(readyGainCents),
     };
@@ -234,9 +253,10 @@ function setEffectRows(effects: readonly CollectionEffectState[], pages: readonl
 }
 
 function setRow(set: CollectionSetState, allPieces: readonly CollectionPieceState[], freeKeys: ReadonlySet<string>, partialPct: number): CollectionSetRow {
+  const fullPages = pageCounts(set.piecesByPage).map((count) => count >= COLLECTION_PIECES_PER_PAGE);
   const pieces = allPieces
     .filter((piece) => piece.set === set.code)
-    .map((piece) => pieceRow(piece, freeKeys))
+    .map((piece) => pieceRow(piece, freeKeys, fullPages))
     .sort((left, right) => left.slot - right.slot);
   const pages = pageRows(set, pieces, partialPct);
   return {
@@ -259,9 +279,9 @@ function axisRows(snapshot: CollectionsSnapshot): CollectionAxisRow[] {
     const raw = snapshot.raw[axis];
     return {
       axis,
-      total: snapshot.totals[axis],
-      raw,
-      cap,
+      total: roundCents(snapshot.totals[axis]),
+      raw: roundCents(raw),
+      cap: roundCents(cap),
       maxRaw: fromCents(sum(effects.map((effect) => collectionCents(effect.pageValues[COLLECTION_PAGES - 1] ?? 0)))),
       atCap: cap > 0 && collectionCents(raw) >= collectionCents(cap),
       books: effects.length,
