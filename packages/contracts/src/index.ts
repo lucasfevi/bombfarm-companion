@@ -61,6 +61,16 @@ export type {
   ForgeStepEvent,
   ForgeStopReason,
 } from './forge.js';
+export { COLLECTION_AXES, EMPTY_COLLECTIONS_VIEW } from './collections.js';
+export type {
+  CollectionAxis,
+  CollectionAxisValues,
+  CollectionEffectState,
+  CollectionPieceState,
+  CollectionSetState,
+  CollectionsSnapshot,
+  CollectionsView,
+} from './collections.js';
 export { EMPTY_PVP_HISTORY } from './pvp.js';
 export type {
   PvpDuelPrize,
