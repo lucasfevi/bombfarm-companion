@@ -792,6 +792,7 @@ function effectiveFacts(
     uptime: combat.uptime,
     rest: combat.rest,
     runes: hero.runes,
+    collection: combat.treeSheet.collection,
   };
 }
 

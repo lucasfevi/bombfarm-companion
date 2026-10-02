@@ -5,6 +5,8 @@ export const teamPlanObjectivePairsPtBR: TeamPlanObjectivePairsCopy = {
     'Nenhuma fase fixada. O dano é pontuado na fase em que sua conta está agora.',
   teamPlanPhaseHintNoneFarm:
     'Nenhuma fase fixada. A busca escolhe a melhor fase que seu esquadrão aguenta, e diz qual ficou.',
+  teamPlanPhaseHintNoneSetFarm:
+    'O conjunto decide as fases: a busca escolhe aquela onde ele rende mais baús por hora para seu esquadrão, pesando a velocidade de limpeza contra a Sorte.',
   teamPlanScoredPhaseGate: 'O portão que você escolheu, pontuado dentro do tempo dele.',
   teamPlanScoredPhasePvp: 'A fase em que a sala do duelo está endurecida.',
   teamPlanObjectiveLabel: 'Pontuar por',
@@ -12,10 +14,13 @@ export const teamPlanObjectivePairsPtBR: TeamPlanObjectivePairsCopy = {
   teamPlanObjectiveOptionGold: 'Ouro / h',
   teamPlanObjectiveOptionGate: 'Passar o portão',
   teamPlanObjectiveOptionPvp: 'PVP',
+  teamPlanObjectiveOptionSet: 'Farmar conjunto',
   teamPlanObjectiveHintDps:
     'Classifica builds pelo DPS de roster combinado. O ouro por hora não é pontuado, e pode cair.',
   teamPlanObjectiveHintFarm:
     'Classifica builds pelo ouro por hora que o esquadrão rende na fase ao lado. Um roster que rende mais pode bater mais fraco.',
+  teamPlanObjectiveHintSetFarm:
+    'Busca só nas fases onde o conjunto escolhido cai, e classifica builds por quantos baús de item desse conjunto caem por hora. Sorte vale pontos aqui, porque multiplica cada sorteio de baú — mas ela é pesada contra a velocidade de limpeza, já que uma limpeza mais lenta derruba menos baús. A raridade não pode ser escolhida — a Sorte muda quantos baús caem, não a raridade que sai.',
   teamPlanObjectiveHintGate:
     'Classifica builds pelo dano que o esquadrão causa dentro do tempo do portão. Energia só conta pelo tempo em campo que compra antes de o tempo acabar; o ouro por hora não é pontuado.',
   teamPlanObjectiveHintPvp:
@@ -24,22 +29,42 @@ export const teamPlanObjectivePairsPtBR: TeamPlanObjectivePairsCopy = {
     'Monta um plano para os heróis marcados como Otimizar, com as mudanças que você permitir abaixo — pontuado pelo DPS de roster combinado.',
   teamPlanSetupSectionBodyFarm:
     'Monta um plano para os heróis marcados como Otimizar, com as mudanças que você permitir abaixo — pontuado pelo ouro por hora que o esquadrão rende.',
+  teamPlanSetupSectionBodySetFarm:
+    'Monta um plano para os heróis marcados como Otimizar, com as mudanças que você permitir abaixo — pontuado pelos baús de item do conjunto escolhido que caem por hora.',
   teamPlanSetupSectionBodyGate:
     'Monta um plano para os heróis marcados como Otimizar, com as mudanças que você permitir abaixo — pontuado pelo dano que causam dentro do tempo do portão.',
   teamPlanSetupSectionBodyPvp:
     'Monta um plano para o esquadrão de duelo que você coloca em campo no quadro de escopo — até tantos heróis quantas vagas o seu esquadrão tem, Otimizar e Deixar quieto igualmente — com as mudanças que você permitir abaixo, pontuado pelo dano que causa no duelo de um minuto. Doadores ficam fora da sala.',
   teamPlanTotalGainValueDps: '{delta} dps ({pct}%)',
   teamPlanTotalGainValueFarm: '{delta} ouro/h ({pct}%)',
+  teamPlanTotalGainValueSetFarm: '{delta} baús do conjunto/h ({pct}%)',
   teamPlanTotalGainValueGate: '{delta} dps no portão ({pct}%)',
   teamPlanTotalGainValuePvp: '{delta} dps no duelo ({pct}%)',
   teamPlanGearDipNoteDps:
     'Temporariamente atrás em {delta} dps — o passo Resetar pontos leva além de hoje.',
   teamPlanGearDipNoteFarm:
     'Temporariamente atrás em {delta} ouro/h — o passo Resetar pontos leva além de hoje.',
+  teamPlanGearDipNoteSetFarm:
+    'Temporariamente atrás em {delta} baús do conjunto/h — o passo Resetar pontos leva além de hoje.',
   teamPlanGearDipNoteGate:
     'Temporariamente atrás em {delta} dps no portão — o passo Resetar pontos leva além de hoje.',
   teamPlanGearDipNotePvp:
     'Temporariamente atrás em {delta} dps no duelo — o passo Resetar pontos leva além de hoje.',
+  teamPlanFarmSetLabel: 'Conjunto a farmar',
+  teamPlanFarmSetAria: 'Qual conjunto de equipamento esta busca farma',
+  teamPlanFarmSetPlaceholder: 'Escolha um conjunto',
+  teamPlanFarmSetOption: '{set} · fases {min}–{max}',
+  teamPlanFarmSetOptionLocked: '{set} · fases {min}–{max} · ainda não alcançado',
+  teamPlanFarmSetHint:
+    'Só as fases onde este conjunto cai entram na busca. A busca equilibra a velocidade de limpeza com a Sorte, porque uma limpeza mais lenta derruba menos baús.',
+  teamPlanFarmSetNeeded: 'Escolha um conjunto a farmar antes de montar este plano.',
+  teamPlanFarmSetNeedsMaxPhase:
+    'Farmar um conjunto exige a fase mais distante que sua conta alcançou, que ainda não é conhecida.',
+  teamPlanScoredPhaseSetSearched: 'Escolhida automaticamente — a fase onde este conjunto rende mais baús por hora para este esquadrão.',
+  teamPlanScoredPhaseSetUnfarmable: 'Este esquadrão não consegue limpar nenhuma fase já alcançada onde este conjunto cai.',
+  teamPlanScoredPhaseClearTime: 'Cerca de {secs} s por limpeza.',
+  teamPlanScoredPhaseSlowClear:
+    'As limpezas levam {secs} s aqui — as fases deste conjunto são difíceis para seu esquadrão, e a estimativa é menos certa em limpezas lentas.',
   teamPlanGatePhaseLabel: 'Portão a passar',
   teamPlanGatePhaseAria: 'Para qual portão esta busca planeja',
   teamPlanGatePhaseHint: 'Pontuado dentro dos {secs} s de tempo de portão deste ato, com o esquadrão entrando inteiro na abertura.',

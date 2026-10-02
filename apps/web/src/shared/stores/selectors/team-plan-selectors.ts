@@ -2,6 +2,7 @@ import {
   computeTeamPlanInputSignature,
   countOptimizeScopeHeroes,
   isFarmObjectiveUnavailable,
+  isSetFarmObjectiveUnavailable,
   isTeamPlanStale,
   planTargetPhase,
   resolveTeamPlanTargetPhase,
@@ -21,6 +22,7 @@ export function selectTeamPlanInputs(state: PlannerStore): TeamPlanInputs {
     treeCritChance: state.treeCritChance,
     treeCritDmg: state.treeCritDmg,
     treeLuckFlatPct: state.treeLuckFlatPct,
+    treeCollection: state.treeCollection ?? undefined,
     treeTeamCoinPct: state.treeTeamCoinPct,
     treeXpMult: state.treeXpMult,
     houseIdx: state.houseIdx,
@@ -52,6 +54,7 @@ export function selectTeamPlanControls(state: PlannerStore): TeamPlanControls {
     targetPhase: state.targetPhase,
     targetPhaseChosen: state.targetPhaseChosen,
     gatePhase: state.gatePhase,
+    farmSet: state.farmSet,
   };
 }
 
@@ -123,6 +126,7 @@ export function selectTeamPlanInputsUsable(state: PlannerStore): boolean {
     state.heroes.length > 0 &&
     state.inventory.items.length > 0 &&
     selectOptimizeScopeHeroCount(state) > 0 &&
-    !(state.objective === 'farm' && selectTeamPlanFarmUnavailable(state))
+    !(state.objective === 'farm' && selectTeamPlanFarmUnavailable(state)) &&
+    !(state.objective === 'setFarm' && isSetFarmObjectiveUnavailable(state, state.maxPhase))
   );
 }

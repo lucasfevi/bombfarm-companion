@@ -133,6 +133,7 @@ import {
 } from './phase-wiki';
 import { hitsToKill, propHp } from './phases';
 import type { HeroRecord, AccountShared } from './shims/storage';
+import { collectionGoldMult, collectionLuckPct } from './collection';
 
 /**
  * Seconds between consecutive hero activations at the head of a clear. Heroes do not all start
@@ -820,7 +821,7 @@ export type SquadFarmFacts = {
    * binding constraint: 5.21 vs 3 on account 486.
    */
   houseSlotDemand: number;
-  /** Sorte as a FRACTION: `(uptime-weighted mean heroLuckPct + treeLuckFlatPct) / 100`. */
+  /** Sorte as a FRACTION: `(uptime-weighted mean heroLuckPct + treeLuckFlatPct + Collections luck) / 100`. */
   sorteFraction: number;
   /**
    * Uptime-weighted mean bomb fuse over the pool, seconds — the fuse the head of a clear burns
@@ -840,7 +841,7 @@ export type SquadFarmFacts = {
    * cap instead when the account's `aurasAtCap` names the ability.
    */
   entryPulse: PassagemBastaoFieldPulse;
-  /** `1 + max(0, tree.teamCoinPct) / 100`. */
+  /** `1 + max(0, tree.teamCoinPct) / 100`, times the Collections gold bonus. */
   teamCoinMult: number;
   /** `tree.luckFlatPct ?? 0`, percentage points — echoed for the board's breakdown tooltip. */
   treeLuckFlatPct: number;
@@ -885,7 +886,8 @@ export function computeSquadFarmFacts(
   const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
 
   const heroLuckWeightedSum = heroFacts.reduce((sum, hero) => sum + hero.uptime * hero.heroLuckPct, 0);
-  const sorteFraction = ((uptimeSum > 0 ? heroLuckWeightedSum / uptimeSum : 0) + treeLuckFlatPct) / 100;
+  const sorteFraction =
+    ((uptimeSum > 0 ? heroLuckWeightedSum / uptimeSum : 0) + treeLuckFlatPct + collectionLuckPct(account.tree.collection)) / 100;
 
   const fuseWeightedSum = heroFacts.reduce((sum, hero) => sum + hero.uptime * hero.fuseSecs, 0);
   const meanFuseSecs = uptimeSum > 0 ? fuseWeightedSum / uptimeSum : 0;
@@ -894,7 +896,7 @@ export function computeSquadFarmFacts(
     ? PASSAGEM_BASTAO_CAPPED_PULSE
     : passagemBastaoFieldPulse(heroFacts.flatMap((hero) => (hero.passagemBastao ? [hero.passagemBastao] : [])));
 
-  const teamCoinMult = 1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100;
+  const teamCoinMult = (1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100) * collectionGoldMult(account.tree.collection);
 
   const rawXpMult = account.tree.xpMult;
   const xpMult = typeof rawXpMult === 'number' && Number.isFinite(rawXpMult) ? rawXpMult : 1;

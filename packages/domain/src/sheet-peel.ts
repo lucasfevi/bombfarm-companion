@@ -25,6 +25,7 @@ import { attackPointGain, levelPowerMult } from './model/combat';
 import { POINT_GAIN } from './model/rarity-constants';
 import { starsMult, sumGearBonuses } from './gear/catalog';
 import type { ComposeSheetFromBirthInput } from './birth-sheet';
+import { collectionSheetPct } from './collection';
 import { type SheetKey } from './planner-constants';
 
 /** The game's four tooltip lines for one sheet key, in tooltip order. */
@@ -140,5 +141,25 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
     skillTree: tree.luckFlatPct,
   };
 
-  return { attack, energy, speed, critChance, critDmg, penetration, cdr, luck };
+  const collection = collectionSheetPct(tree.collection);
+  return {
+    attack,
+    energy: withCollectionShare(energy, collection.energyPct, 0),
+    speed,
+    critChance: withCollectionShare(critChance, collection.critChancePct, 0),
+    critDmg: withCollectionShare(critDmg, collection.critDmgPct, tree.critDmgPct),
+    penetration,
+    cdr: withCollectionShare(cdr, collection.cdrPct, 0),
+    luck,
+  };
+}
+
+/**
+ * The Collections bonus has no line of its own here; it rides the skill-tree line, which keeps
+ * the four lines summing to the composed value. `unscaled` is the part of the total it does not
+ * multiply — the tree's flat crit-damage add.
+ */
+function withCollectionShare(lines: SourceLines, collectionPct: number, unscaled: number): SourceLines {
+  const total = lines.hero + lines.gear + lines.ability + lines.skillTree;
+  return { ...lines, skillTree: lines.skillTree + (total - unscaled) * (collectionPct / 100) };
 }

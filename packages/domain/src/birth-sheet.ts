@@ -13,6 +13,7 @@ import { starsMult } from './gear/catalog';
 import type { Loadout, PointAlloc, SheetOtherPct, SheetStats } from './gear/types';
 import { ZERO_PTS, type SheetKey } from './planner-constants';
 import { applyRuneMultipliers, flatAddsOutsideRune, runeSheetMultipliers, type HeroRune } from './runes';
+import { applyCollection, collectionSheetPct, type CollectionSheetPct } from './collection';
 
 /**
  * lv1 ★0 rolls in PLANNER units (already unit-converted — crit chance/luck/CDR are
@@ -52,6 +53,8 @@ export type TreeSheetTotals = {
   critDmgPct: number;
   /** `luck_add × 100` — FLAT percentage points, added after gear and points. */
   luckFlatPct: number;
+  /** The Collections axes that land on the sheet, applied with the tree; absent reads as none. */
+  collection?: CollectionSheetPct | undefined;
 };
 
 /** `1 + max(0, percent)` — the shared-pool clamp already used by `gear/apply.ts`. */
@@ -125,7 +128,7 @@ export function applySkillTree(
   // reads the birth roll alone. Perrin (`olho_clinico` 13/20, no gear, 2026-08-23 capture)
   // pins this — his tree line is `6.02142890221474 × 0.08042584275`, not `32.02… × …`.
   const baseCritChance = naked.critChance - Math.max(0, sheetOther.critChanceFlat);
-  return {
+  const withTree: SheetStats = {
     attack: sheet.attack * tree.danoStatic,
     energy: sheet.energy * (1 + tree.energyPct / 100),
     speed: sheet.speed + baseSpeed * (tree.speedPct / 100),
@@ -135,6 +138,7 @@ export function applySkillTree(
     cdr: sheet.cdr,
     luck: sheet.luck + tree.luckFlatPct,
   };
+  return applyCollection(withTree, collectionSheetPct(tree.collection), tree.critDmgPct, Math.max(0, sheetOther.cdr));
 }
 
 export type ComposeSheetFromBirthInput = {

@@ -127,6 +127,8 @@ export function sourceLabel(strings: StatPanelCopy, source: LedgerSource): strin
       return strings.bdSrcAbilitiesTeam;
     case 'rune':
       return strings.bdSrcRune;
+    case 'collection':
+      return strings.bdSrcCollection;
   }
 }
 
@@ -151,6 +153,7 @@ export function groupLabel(strings: StatPanelCopy, source: LedgerSource): string
       return strings.bdSrcTree;
     case 'combat':
     case 'rune':
+    case 'collection':
       return sourceLabel(strings, source);
   }
 }

@@ -1,6 +1,7 @@
 /** Domain-facing storage shapes (formerly `@/shared/lib/storage` types). */
 import type { StatRanges } from '../birth-sheet.js';
 import type { HeroRune } from '../runes.js';
+import type { Collection } from '../collection.js';
 import type { Loadout, SheetStats } from '../gear/types.js';
 import type { RankMode, RarityKey } from '../model/index.js';
 
@@ -21,6 +22,8 @@ export type TreeState = {
    * XP figure).
    */
   xpMult?: number;
+  /** `skills.totals.colecao` — absent on a save from before Collections existed. */
+  collection?: Collection;
 };
 
 export type HeroContext = {

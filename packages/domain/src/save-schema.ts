@@ -180,6 +180,9 @@ const SKILLS_TOTALS_LEVEL: SchemaLevel = {
     'vagas_campo',
     'bag_tabs_bonus',
   ],
+  // `colecao` — the Collections bonuses, added by the 2026-09-30 game patch. `optional`, not a
+  // key: every save and capture from before that patch lacks it, and those still import.
+  optional: ['colecao'],
 };
 
 const SKILLS_LEVEL: SchemaLevel = {

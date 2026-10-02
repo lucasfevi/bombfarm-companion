@@ -20,6 +20,7 @@ import {
   treeTotalsFromSave,
 } from './save-units';
 import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
+import { collectionFromSave, type Collection } from './collection';
 import { inferSpentPoints, spentPointsOf, type PointInferenceIssue } from './point-inference';
 import { readHeroRunes } from './runes';
 import { ACCOUNT_SECTIONS, sectionHasData } from './account-fidelity';
@@ -79,6 +80,8 @@ export type AccountImportData = {
     squadDmgPct?: number;
     /** `geo_mult` verbatim — the tree's "Multiplicative damage" factor. See {@link squadDmgPct}. */
     geoMult?: number;
+    /** `colecao` — the Collections bonuses; see `collection.ts` for where each axis lands. */
+    collection?: Collection;
     /** `vagas_campo` — field slots the TREE grants, one less than `skills.field_slots`. */
     fieldSlotsBonus?: number;
     /** `bag_tabs_bonus` — extra bag tabs the tree grants. */
@@ -352,6 +355,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       luckFlatPct: asNumber(totals.luck_add) * 100,
       squadDmgPct: asNumber(totals.team_dmg_add) * 100,
       geoMult: asNumber(totals.geo_mult, 1) || 1,
+      collection: collectionFromSave(totals),
       fieldSlotsBonus: asNumber(totals.vagas_campo),
       bagTabsBonus: asNumber(totals.bag_tabs_bonus),
     };

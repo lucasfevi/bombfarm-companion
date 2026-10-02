@@ -1,6 +1,7 @@
 import type { BirthStats, TreeSheetTotals } from '../birth-sheet';
+import type { Collection } from '../collection';
 import type { HeroRune } from '../runes';
-import type { BestFarmPhaseOptions } from '../farm-optimize-objective';
+import type { BestFarmPhaseOptions, ResolvedFarmObjective } from '../farm-optimize-objective';
 import type { HeroFarmFacts, SquadFarmAccount } from '../farm-rate';
 import type { Loadout, PointAlloc, SheetStats } from '../gear/types';
 import type { InventoryItem } from '../inventory';
@@ -150,8 +151,24 @@ export type RosterRegime = 'underSaturated' | 'saturated';
  * sits in (the account's next gate when none is named), or the one-minute duel. Energy is priced
  * for the field-seconds it buys INSIDE the window and nothing past it, which is what separates
  * them from `'dps'`: a rotation rewards a stint that outlasts the rest, a window does not.
+ *
+ * `'setFarm'` is the farm search scored on item chests of ONE equipment set per hour
+ * ({@link TeamPlanInput.farmSet}): the phase argmax runs over that set's drop band only, and Luck
+ * is a point destination because it multiplies every chest roll. No clear is too slow to count:
+ * chests per hour is props per hour times Luck, so a slower clear already pays for itself in
+ * fewer chests, and the search weighs that against what Luck adds.
  */
-export type TeamPlanObjective = 'dps' | 'farm' | 'gateClear' | 'pvp';
+export type TeamPlanObjective = 'dps' | 'farm' | 'gateClear' | 'pvp' | 'setFarm';
+
+/**
+ * A set-farming clear at least this slow earns a warning, never a penalty: the squad is fighting
+ * the set's phases rather than farming them, and the clear-time model is least certain there.
+ */
+export const SET_FARM_SLOW_CLEAR_SECS = 60;
+
+export function isFarmSearchObjective(objective: TeamPlanObjective | undefined): boolean {
+  return objective === 'farm' || objective === 'setFarm';
+}
 
 export function isCombatWindowObjective(objective: TeamPlanObjective | undefined): boolean {
   return objective === 'gateClear' || objective === 'pvp';
@@ -250,6 +267,8 @@ export type TeamPlanAccountInput = {
    */
   teamCoinPct?: number;
   xpMult?: number;
+  /** `skills.totals.colecao` — the farm objective reads its gold and luck. Absent reads as none. */
+  collection?: Collection | undefined;
   maxPhase?: number | null;
 };
 
@@ -299,6 +318,9 @@ export type TeamPlanFarmObjective = {
   /** Carries `pinnedPhase` when {@link TeamPlanInput.targetPhase} named one, which is what turns
    *  every evaluation's phase argmax into a single row read. */
   phaseOptions: BestFarmPhaseOptions;
+  /** What a row is worth: gold per hour under `'farm'`, the set's item chests per hour under
+   *  `'setFarm'`. */
+  rateObjective: ResolvedFarmObjective;
   treeLuckFlatPct: number;
   heroes: readonly FrozenHeroFarmTerms[];
 };
@@ -311,6 +333,19 @@ export type TeamPlanInput = {
   forgeFloor: number;
   /** Omitted ⇒ `'dps'`, the historical behaviour. See {@link TeamPlanObjective}. */
   objective?: TeamPlanObjective;
+  /**
+   * Under `'setFarm'` only: the equipment set id to farm (`'ember'` … `'void'`, the catalog's
+   * `setsByLevel` values). Required there — an unknown or absent set makes the run throw, the
+   * same way a farm run with no `maxPhase` does, and so does a run without `account.maxPhase`.
+   * `targetPhase` is ignored under `'setFarm'`: the set decides which phases are candidates.
+   *
+   * A set the account cannot farm is not an error. When no phase of the set's band is both
+   * unlocked and clearable — a band that starts above `account.maxPhase`, or one where every
+   * clear is unbounded or outlasts the gate timer — the plan scores zero, `scoredPhaseInfeasible`
+   * is `true`, and `scoredPhase` names the band's first phase. A merely slow clear is never
+   * infeasible; see {@link SET_FARM_SLOW_CLEAR_SECS}.
+   */
+  farmSet?: string | null;
   /**
    * Omitted ⇒ `'both'`, the historical behaviour. Honoured under EITHER objective — the
    * restriction is on what the plan may ask the player to do, not on how it scores.
@@ -474,10 +509,17 @@ export type TeamPlan = {
   scoredPhaseSource: 'chosen' | 'searched' | 'account';
   /**
    * The squad cannot clear {@link scoredPhase}, so the gold figures are zero rather than small.
-   * Only ever true for a chosen phase in farm mode — a sweep never settles on a phase it cannot
-   * hold, and the damage objective has no feasibility notion.
+   * True for a chosen phase in farm mode, and under `'setFarm'` when no phase of the set's band
+   * is unlocked and clearable (see {@link TeamPlanInput.farmSet}) — a gold sweep never settles on
+   * a phase it cannot hold, and the damage objective has no feasibility notion.
    */
   scoredPhaseInfeasible: boolean;
+  /**
+   * Seconds one clear of {@link scoredPhase} takes the planned squad, under the farm-search
+   * objectives (`'farm'`, `'setFarm'`). `null` under the damage objectives and whenever
+   * {@link scoredPhaseInfeasible} is true; absent on a plan from before the field existed.
+   */
+  scoredPhaseClearSecs?: number | null;
   /** Internal split of the single `gear` step. EITHER may be negative; disclosure-only. */
   gearBreakdown: { forgeDelta: number; moveDelta: number };
   /** True when the gear step sits below today. The plan is only ahead once the resets land. */

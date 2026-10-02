@@ -1,5 +1,6 @@
 /**
- * The Team Plan's farm objective: gold per hour, at the best phase the squad can hold.
+ * The Team Plan's farm objective: gold per hour, at the best phase the squad can hold — or, when
+ * farming one equipment set, that set's item chests per hour over the set's own drop band.
  *
  * The squad is every hero the player will field, whatever the search is allowed to touch — see
  * {@link isSquadScope} and {@link TeamPlanFarmObjective}.
@@ -49,6 +50,7 @@ import { computeTeamBuffsOverRotation, holdAurasAtCap, type AurasAtCap, type Tea
 import { critPointCeilingOf, teamAuraLayer } from '../team-aura-layer';
 import { isSquadScope } from './auras';
 import { scoreHeroLoadout } from './score';
+import type { SetFarmBand } from './set-farm';
 import type { Loadout, PointAlloc } from '../gear/types';
 import type {
   FarmContext,
@@ -121,6 +123,26 @@ function phaseOptionsFor(
   return { maxPhase, ignoreFieldCrowding };
 }
 
+/**
+ * The set's band, capped at the account's highest unlocked phase by the sweep itself. No pinned
+ * phase: the set, not the player, decides where to farm. `maxPhase` is required here as for a
+ * farm sweep — the band alone would happily plan a set on phases the account has never reached.
+ */
+function setPhaseOptionsFor(
+  account: TeamPlanAccountInput,
+  band: SetFarmBand,
+  ignoreFieldCrowding: boolean,
+): BestFarmPhaseOptions {
+  const maxPhase = account.maxPhase;
+  if (typeof maxPhase !== 'number' || !Number.isFinite(maxPhase) || maxPhase < 1) {
+    throw new Error(
+      "team-plan: objective 'setFarm' needs account.maxPhase (the account's highest unlocked " +
+        `phase); got ${JSON.stringify(maxPhase)}.`,
+    );
+  }
+  return { maxPhase, ignoreFieldCrowding, phaseRange: { min: band.minPhase, max: band.maxPhase } };
+}
+
 function squadAccountFor(account: TeamPlanAccountInput, aurasAtCap: AurasAtCap | undefined): SquadFarmAccount {
   return {
     slots: account.slots,
@@ -135,6 +157,7 @@ function squadAccountFor(account: TeamPlanAccountInput, aurasAtCap: AurasAtCap |
       teamCoinPct: account.teamCoinPct ?? 0,
       luckFlatPct: account.treeSheet.luckFlatPct,
       xpMult: account.xpMult,
+      ...(account.collection !== undefined ? { collection: account.collection } : {}),
     },
   };
 }
@@ -185,6 +208,10 @@ export { isSquadScope };
  * `loadoutByHeroId` must be the roster AS IT STANDS: it seeds the aura pricing off every hero's
  * uptime today, and it is also what a hero the search may not re-gear farms with for the whole
  * run.
+ *
+ * A `setBand` turns it into the set objective: that set's chests per hour, over its band;
+ * `targetPhase` is not read. No clear is too slow to count — a slower clear already drops fewer
+ * chests per hour, which is what Luck is weighed against.
  */
 export function buildFarmObjective(
   squadContexts: readonly HeroPlanContext[],
@@ -193,8 +220,14 @@ export function buildFarmObjective(
   targetPhase?: number | null,
   ignoreFieldCrowding = false,
   aurasAtCap?: AurasAtCap,
+  setBand?: SetFarmBand | null,
 ): TeamPlanFarmObjective {
-  const phaseOptions = phaseOptionsFor(account, targetPhase, ignoreFieldCrowding);
+  const phaseOptions = setBand
+    ? setPhaseOptionsFor(account, setBand, ignoreFieldCrowding)
+    : phaseOptionsFor(account, targetPhase, ignoreFieldCrowding);
+  const rateObjective = setBand
+    ? resolveFarmObjective({ kind: 'setChests', itemLevel: setBand.itemLevel })
+    : FARM_GOLD_OBJECTIVE;
   const farm = farmContextFor(account);
   const { auras, critFlatAtFullPresence, alliesByHeroId } = priceField(
     squadContexts,
@@ -220,6 +253,7 @@ export function buildFarmObjective(
     farm,
     account: squadAccountFor(account, aurasAtCap),
     phaseOptions,
+    rateObjective,
     treeLuckFlatPct: account.treeSheet.luckFlatPct,
     heroes,
   };
@@ -313,7 +347,7 @@ function valueAt(
 ): number {
   const row = computeFarmRateRow(phase, computeSquadFarmFacts(facts, objective.account), objective.phaseOptions);
   if (row === null || row.infeasible) return 0;
-  const value = farmObjectiveValue(row, FARM_GOLD_OBJECTIVE, FARM_UNREAD_SCALES);
+  const value = farmObjectiveValue(row, objective.rateObjective, FARM_UNREAD_SCALES);
   return Number.isFinite(value) ? value : 0;
 }
 
@@ -369,8 +403,19 @@ export function evaluateFarmObjective(
   );
 
   const squad = computeSquadFarmFacts(facts, objective.account);
-  const pick = bestFarmPhase(squad, FARM_GOLD_OBJECTIVE, FARM_UNREAD_SCALES, objective.phaseOptions);
+  const pick = bestFarmPhase(squad, objective.rateObjective, FARM_UNREAD_SCALES, objective.phaseOptions);
   return { objective: pick ? pick.value : 0, phase: pick ? pick.phase : null, facts };
+}
+
+/** How long one clear of `phase` takes the squad; `null` when it cannot clear it at all. */
+export function clearSecsAt(
+  objective: TeamPlanFarmObjective,
+  facts: readonly HeroFarmFacts[],
+  phase: number,
+): number | null {
+  const row = computeFarmRateRow(phase, computeSquadFarmFacts(facts, objective.account), objective.phaseOptions);
+  if (row === null || row.infeasible || !Number.isFinite(row.clearSecs)) return null;
+  return row.clearSecs;
 }
 
 /**
@@ -424,6 +469,7 @@ export function screenFarmObjective(
   // evaluation never asks. No incumbent phase means the incumbent farms nothing, so there is no
   // phase to price at; phase 1 is the easiest one and therefore the one a move is likeliest to
   // make feasible, which is exactly what the ranking needs to detect, and a candidate that cannot
-  // hold it scores 0 and ranks last on its own.
-  return valueAt(objective, facts, objective.phaseOptions.pinnedPhase ?? basePhase ?? 1);
+  // hold it scores 0 and ranks last on its own. A set's band starts at its own easiest phase.
+  const easiestPhase = objective.phaseOptions.phaseRange?.min ?? 1;
+  return valueAt(objective, facts, objective.phaseOptions.pinnedPhase ?? basePhase ?? easiestPhase);
 }

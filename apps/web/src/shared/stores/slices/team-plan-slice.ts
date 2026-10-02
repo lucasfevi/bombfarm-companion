@@ -54,6 +54,8 @@ export type TeamPlanSlice = {
   targetPhaseChosen: boolean;
   /** The gate a Gate clear plan fights; `null` resolves to the account's next gate. */
   gatePhase: number | null;
+  /** The set a Set farm plan collects; `null` until the player picks one. */
+  farmSet: string | null;
   runStatus: TeamPlanRunStatus;
   runId: string | null;
   plan: TeamPlan;
@@ -80,6 +82,7 @@ export type TeamPlanSlice = {
   setIgnoreFieldCrowding: (value: boolean) => void;
   setTargetPhase: (value: number | null) => void;
   setGatePhase: (value: number | null) => void;
+  setFarmSet: (value: string | null) => void;
   startRun: (runId: string) => void;
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   applyPlan: (runId: string, plan: DomainTeamPlan) => void;
@@ -139,6 +142,7 @@ export const createTeamPlanSlice: StateCreator<
     targetPhase: null,
     targetPhaseChosen: false,
     gatePhase: null,
+    farmSet: null,
     runStatus: 'idle',
     runId: null,
     plan: null,
@@ -178,7 +182,8 @@ export const createTeamPlanSlice: StateCreator<
         envelope.objective === state.objective &&
         envelope.allowedChanges === state.allowedChanges &&
         envelope.ignoreFieldCrowding === state.ignoreFieldCrowding &&
-        envelope.targetPhase === selectTeamPlanScoredPhase(state);
+        envelope.targetPhase === selectTeamPlanScoredPhase(state) &&
+        envelope.farmSet === (state.objective === 'setFarm' ? state.farmSet : null);
       if (!solvedUnderLiveControls) {
         removeTeamPlanEnvelope();
         return;
@@ -210,6 +215,7 @@ export const createTeamPlanSlice: StateCreator<
     setIgnoreFieldCrowding: (value) => applyChange({ kind: 'ignoreFieldCrowding', value }),
     setTargetPhase: (value) => applyChange({ kind: 'targetPhase', value }),
     setGatePhase: (value) => applyChange({ kind: 'gatePhase', value }),
+    setFarmSet: (value) => applyChange({ kind: 'farmSet', value }),
 
     startRun: (runId) => {
       if (get().runId === runId && get().runStatus === 'running') return;
