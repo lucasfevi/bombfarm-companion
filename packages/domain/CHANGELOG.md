@@ -1,5 +1,53 @@
 # @bombfarm/domain
 
+## 1.8.0
+
+### Minor Changes
+
+- 804572b: The planner can score a squad on one equipment set's item chests per hour
+
+  A new farm objective counts only the chests of the set you are collecting, over the phases where
+  that set drops — a phase shared with a neighbouring set counts half its chests, since the game
+  splits them evenly. Luck becomes a place to put stat points, because it multiplies every chest
+  roll, and the point search weighs it against clear speed: every point in Luck is one out of
+  attack, and a slower clear drops fewer chests. No clear is too slow to count, so a squad that
+  struggles with a set's phases still gets a real figure, and the plan reports how long a clear of
+  its phase takes so a slow one can be flagged. Only a set that drops past your furthest phase, or
+  on phases the squad cannot clear at all, is reported as unfarmable.
+
+- 034b719: The app reads the Collections bonuses the game added on 2026-09-30
+
+  Burning a full equipment set now unlocks an account-wide bonus, and the game started folding those
+  bonuses into every hero's stats. The app did not know about them, so working a hero's spent points
+  back out of its stats came out too high for every hero on an account with any collection unlocked —
+  and every one of those heroes was left out. On the desktop the Optimizer showed no heroes at all and
+  the Farm board left the whole roster out; an imported save on the web planner did the same.
+
+  Each bonus is now read and applied where the game applies it:
+
+  - Energy, Critical chance and Cooldown multiply the hero's stat; Critical damage multiplies the part
+    of it the skill tree does not add. Hero stats, DPS and the stat breakdown (which gains a
+    "Collection" step) include them.
+  - Damage and Experience are already inside the skill-tree totals the game reports, so they are not
+    applied a second time. Pricing a skill-tree node no longer drops the Damage bonus from the total.
+  - Gold multiplies gold per prop on top of the skill tree's Team Coin bonus — measured: every prop
+    the game paid out reproduces to the coin that way. Luck adds to the squad's drop luck; how it
+    combines with the skill tree is not measured yet.
+  - Cage and boss and Forge are read but not applied until their effect is known.
+
+  The game's own skill-tree read is recognised again (it carries the new Collections field), so the
+  desktop no longer discards the stored skill tree each time it starts.
+
+### Patch Changes
+
+- b0719ac: The optimizer no longer buys crit chance past the cap, whatever it is optimizing for. The crit
+  aura is priced as the rotation average, which made points between 80% and about 84% on the sheet
+  look worth full value while the carrier is off the field and worth nothing while it is up, so a
+  hero near the cap was sent past it. Gold, gate-clear and duel plans, and the farm point searches,
+  now stop crit chance where the sheet plus the aura at full strength reaches 100%.
+- d05770f: Changing a Ponta de Diamante carrier's stars in the planner no longer scales the ability's flat penetration with the stars.
+- 41c8786: Four more abilities from the 2026-09-30 game patch are recognised: Short Fuse (Pavio Curto), Carnage (Carnificina), Boss Slayer (Matador de Chefes) and Apprentice (Aprendiz). Heroes carrying them used to import with an "Unknown ability" warning and lost them. They now import cleanly and show each ability with its icon, name and per-level value, and Carnage and Apprentice appear among the team auras a squad covers. Their effects are not priced yet, so the Farm board, active DPS and the Optimizer treat them as no bonus until they are modelled.
+
 ## 1.7.1
 
 ### Patch Changes
