@@ -12,11 +12,11 @@ const fasesNomes = JSON.parse(readFileSync(join(FIXTURES, 'fases-nomes.captured.
 const baseline = JSON.parse(readFileSync(join(root, 'wiki-drift/fingerprint.baseline.json'), 'utf8'));
 
 // Recomputed from the frozen capture with the same function, and reproduced here as literals so
-// a reviewer can compare by eye without running anything. The capture is the 2026-09-29 pull of
+// a reviewer can compare by eye without running anything. The capture is the 2026-09-30 pull of
 // the live endpoint, the same one the committed baseline was taken from — the test below that
 // compares the two is what keeps this capture from going stale again (it sat at 2026-08-14 for a
 // month while the catalog moved under it).
-const API_DATA_PAYLOAD_SHA256 = '1c2145bfabaed1dcdbd3e3b638f4cccb651a1db20c24af5fdcdfb41c1134ac09';
+const API_DATA_PAYLOAD_SHA256 = 'ed1994cfe45d5e90f6ced8f72596bd27b1c4adfcaae10e4c90575fccc689a3df';
 const API_DATA_SECTION_SHA256 = {
   bolsa: '32e0d7a1eeb1e027b19c8efe0c9731792167b68346fc626adf5e1cb4bda7c6fb',
   boost: '69a3669fbad66c90a7ea19a41b6e0d69605f66fcb4e1b7f2850435b2c1dd813b',
@@ -28,7 +28,7 @@ const API_DATA_SECTION_SHA256 = {
   entidades: '8abc9272d059d18c5a1af18f2542f98579f7d84130a87fc93ec41d46f9925c86',
   fases: '837853ea4e700d6973ca675a9efcea85036da849d7b6b564fe327193078d8c4a',
   gemas: '611140ce2878ce4290580a2efaea428a765313efcf58e08b5a1459985df0bc83',
-  habilidades: 'e5c161312052c07fc85d0946e75f67788fc876e160f6369b50a854b2339597a7',
+  habilidades: '229ca91579752fc96e9c4bc68070f183cf748edf27875bdedfbb6b1a499be480',
   herois: '580aa49dbf4cf58cd4532ba36972525d13263d1fa39deb1e9d3b622c672215e1',
   inventario: 'f53ee894e7ca1e5b9bb78c589912f33fa099c175f66030b439fbb0ccc2edf74a',
   item_stats: '94041e8cad48122447a273106df9ecccec1c44d569659737dfd73fa44bb7cd79',
@@ -58,16 +58,14 @@ const API_DATA_SECTION_NAMES = [
 // /wiki/api/fases-nomes has no counterpart published anywhere in the sync manifest — this is a
 // known asymmetry between the two endpoints. These values are recomputed from the same frozen
 // capture with the same function, not copied from an external source.
-const FASES_NOMES_PAYLOAD_SHA256 = '1e86671a6c65ab2fd58ff17a1d301eabac7683a275c179d3572588c9d844b116';
+const FASES_NOMES_PAYLOAD_SHA256 = 'bd18e2884696db862e5fdd402c838c5cdb4564645392f0f3a39b8b6d9b91a19a';
 const FASES_NOMES_SECTION_SHA256 = {
-  atos: '327db39dbafc7d09004aa9473b9b224951ca7876dbda804e68ccc0adbff9731c',
   disponivel: 'b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b',
   fases: 'c4071c42cc1125c4427abe56a1b2e9fbdc9031bab3f42b470eed7db1503fc684',
   mundos: '9b9020478fe5a38119b22ca9ff4b176d7833c0cfcb4bd6fc5911463d2cc2c568',
-  sufixos: '542027bfad2da67c4431695ac445bc1b369b8e247299ba149772769cd92aeb0f',
   zonas: 'f09ebb77590a1122a2658739cde5c0b65cb230f2a3348892e205015a5c9ceb14',
 };
-const FASES_NOMES_SECTION_NAMES = ['atos', 'disponivel', 'fases', 'mundos', 'sufixos', 'zonas'];
+const FASES_NOMES_SECTION_NAMES = ['disponivel', 'fases', 'mundos', 'zonas'];
 
 describe('sha256Json — the raw hash primitive', () => {
   it('is sha256(JSON.stringify(value)), utf8, no canonicalisation', () => {
@@ -110,6 +108,10 @@ describe('fingerprintPayload — /wiki/api/data frozen capture', () => {
     expect(byCode.olho_clinico.per_level).toBe(0.02);
     expect(byCode.brecha).toMatchObject({ kind: 'team_pen', per_level: 1, max: 20 });
     expect(byCode.matilha).toMatchObject({ kind: 'pack_dmg', per_level: 0.005, max: 20 });
+    expect(byCode.pavio_curto).toMatchObject({ kind: 'cdr_add', per_level: 0.005, max: 20 });
+    expect(byCode.carnificina).toMatchObject({ kind: 'team_crit_dmg', per_level: 0.05, max: 20 });
+    expect(byCode.matador_chefes).toMatchObject({ kind: 'boss_dmg', per_level: 0.05, max: 20 });
+    expect(byCode.aprendiz).toMatchObject({ kind: 'team_xp', per_level: 0.0075, max: 20 });
     expect(apiData.combate.pack_dmg_cap).toBe(0.9);
     expect(apiData.combate.swap_dmg_secs).toBe(120);
     expect(apiData.combate.swap_dmg_cooldown_secs).toBe(600);
@@ -127,11 +129,11 @@ describe('fingerprintPayload — /wiki/api/fases-nomes frozen capture (no itens,
     expect(fp.payloadSha256).toBe(FASES_NOMES_PAYLOAD_SHA256);
   });
 
-  it('sectionNames is the sorted 6-name list', () => {
+  it('sectionNames is the sorted 4-name list', () => {
     expect(fp.sectionNames).toEqual(FASES_NOMES_SECTION_NAMES);
   });
 
-  it('all 6 section hashes match', () => {
+  it('all 4 section hashes match', () => {
     expect(fp.sectionSha256).toEqual(FASES_NOMES_SECTION_SHA256);
   });
 

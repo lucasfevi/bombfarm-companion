@@ -84,6 +84,46 @@ describe('teamPlanObjectiveCopy', () => {
     });
   }
 
+  it('the set farm bundle names neither damage nor gold, weighs clear speed, and counts set chests', () => {
+    const CLEAR_SPEED: Record<Lang, RegExp> = { en: /clear speed/, pt: /velocidade de limpeza/ };
+    const CHEST_WORDS: Record<Lang, RegExp> = { en: /set chests/, pt: /baús do conjunto/ };
+    for (const lang of LANGS) {
+      const copy = teamPlanObjectiveCopy(SCREEN_COPY[lang], 'setFarm');
+      for (const [field, text] of Object.entries(copy)) {
+        expect(text, `${lang}.${field}`).toBeTruthy();
+        expect(text, `${lang}.${field}`).not.toContain('{secs}');
+        for (const pattern of [...DAMAGE_WORDS[lang], GOLD_WORDS[lang]]) {
+          expect(text, `${lang}.${field}: "${text}" matched ${pattern}`).not.toMatch(pattern);
+        }
+      }
+      expect(copy.objectiveHint).toMatch(CLEAR_SPEED[lang]);
+      expect(copy.phaseHintNone).toMatch(CLEAR_SPEED[lang]);
+      expect(copy.totalGainValue).toMatch(CHEST_WORDS[lang]);
+      expect(copy.gearDipNote).toMatch(CHEST_WORDS[lang]);
+      const farm = teamPlanObjectiveCopy(SCREEN_COPY[lang], 'farm');
+      for (const field of Object.keys(copy) as (keyof typeof copy)[]) {
+        expect(copy[field], `${lang}.${field}`).not.toBe(farm[field]);
+      }
+    }
+  });
+
+  it('no set farm string promises a clear-time ceiling, in either language', () => {
+    for (const copy of [teamPlanEn, teamPlanPtBR]) {
+      const setFarmStrings = Object.entries(copy).filter(([key]) => /SetFarm|FarmSet|PhaseSet/.test(key));
+      expect(setFarmStrings.length, 'non-vacuity').toBeGreaterThanOrEqual(10);
+      for (const [key, text] of setFarmStrings) {
+        expect(text, key).not.toMatch(/or less|ou menos/);
+      }
+    }
+  });
+
+  it('the set farm hint tells the player what Luck does and does not buy', () => {
+    const hint = teamPlanObjectiveCopy(SCREEN_COPY.en, 'setFarm').objectiveHint;
+    expect(hint).toMatch(/Luck/);
+    expect(hint).toMatch(/Rarity cannot be steered/);
+    expect(teamPlanObjectiveCopy(SCREEN_COPY.pt, 'setFarm').objectiveHint).toMatch(/raridade não pode ser escolhida/i);
+  });
+
   it('the two objectives disagree on every field, in both languages', () => {
     for (const lang of LANGS) {
       const dps = teamPlanObjectiveCopy(SCREEN_COPY[lang], 'dps');

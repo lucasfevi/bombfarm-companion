@@ -65,8 +65,9 @@ describe('heroTypesFor', () => {
     expect(heroTypesFor({ matilha: 20 })).toEqual(['heavy']);
   });
 
-  it('calls Fortune a looter, the one team aura that votes outside the squad buffers', () => {
+  it('calls Fortune and Apprentice looters, the team auras that vote outside the squad buffers', () => {
     expect(heroTypesFor({ fortuna: 20 })).toEqual(['loot']);
+    expect(heroTypesFor({ aprendiz: 20 })).toEqual(['loot']);
   });
 });
 
@@ -87,7 +88,7 @@ describe('ability classification', () => {
   });
 
   it('files every combat team aura under the squad buffers', () => {
-    const combatAuras = TEAM_ABILITY_IDS.filter((id) => id !== 'fortuna');
+    const combatAuras = TEAM_ABILITY_IDS.filter((id) => id !== 'fortuna' && id !== 'aprendiz');
     expect(combatAuras.map(heroTypeOfAbility)).toEqual(combatAuras.map(() => 'buff'));
   });
 });

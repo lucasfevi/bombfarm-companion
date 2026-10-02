@@ -2,6 +2,7 @@ import type { AbilityMods, Context, HeroSheet } from '../model';
 import type { SheetOtherPct, SheetStats } from '../gear';
 import type { SheetKey, SheetPanelKey } from '../planner-constants';
 import type { HeroRune } from '../runes';
+import type { CollectionSheetPct } from '../collection';
 
 export type BreakdownStatId =
   | SheetPanelKey
@@ -31,7 +32,8 @@ export type LedgerSource =
   | 'abilities'
   | 'team'
   | 'abilitiesTeam'
-  | 'rune';
+  | 'rune'
+  | 'collection';
 export type LedgerNote =
   | 'capped'
   | 'ownTeamSplit'
@@ -45,7 +47,7 @@ export type LedgerNote =
  * of the four sheet-building lines — and `rune`, the timed buff the game applies on top of the
  * sheet it built from those four (`runes.ts`).
  */
-export type LedgerGroup = 'hero' | 'gear' | 'ability' | 'skillTree' | 'combat' | 'rune';
+export type LedgerGroup = 'hero' | 'gear' | 'ability' | 'skillTree' | 'combat' | 'rune' | 'collection';
 
 /**
  * Exhaustive map from every `LedgerSource` to the game line it belongs to.
@@ -66,6 +68,7 @@ export const LEDGER_SOURCE_GROUP: Record<LedgerSource, LedgerGroup> = {
   team: 'combat',
   abilitiesTeam: 'combat',
   rune: 'rune',
+  collection: 'collection',
 };
 
 export interface LedgerStep {
@@ -182,4 +185,6 @@ export interface PipelineFacts {
   rest: number;
   /** The hero's timed runes, already inside `geared`/`adjusted`/`effective`; absent reads as none. */
   runes?: readonly HeroRune[] | undefined;
+  /** The account's Collections sheet bonuses, already inside `geared`/`adjusted`/`effective`; absent reads as none. */
+  collection?: CollectionSheetPct | undefined;
 }

@@ -122,7 +122,7 @@ describe('buildTeamPlanInput scope defaults', () => {
     expect(input.account.fieldSlots).toBe(3);
   });
 
-  it('composes treeSheet from the six tree fields', () => {
+  it('composes treeSheet from the six tree fields, and no Collections bonus when the account has none', () => {
     const input = buildTeamPlanInput(
       inputs({
         treeDanoTotal: 1,
@@ -141,6 +141,7 @@ describe('buildTeamPlanInput scope defaults', () => {
       critChancePct: 4,
       critDmgPct: 5,
       luckFlatPct: 6,
+      collection: { energyPct: 0, critChancePct: 0, critDmgPct: 0, cdrPct: 0 },
     });
   });
 
@@ -226,6 +227,7 @@ describe('buildTeamPlanInput scope defaults', () => {
           critChancePct: 40,
           critDmgPct: 50,
           luckFlatPct: 60,
+          collection: { energyPct: 0, critChancePct: 0, critDmgPct: 0, cdrPct: 0 },
         },
         houseIdx: 2,
         houseLevel: 5,

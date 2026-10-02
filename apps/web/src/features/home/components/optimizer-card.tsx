@@ -30,6 +30,8 @@ export function OptimizerCard() {
   const scopeCount = usePlannerStore(selectOptimizeScopeHeroCount);
   const objective = usePlannerStore(selectTeamPlanObjective);
   const farmUnavailable = usePlannerStore(selectTeamPlanFarmUnavailable);
+  const farmSet = usePlannerStore((state) => state.farmSet);
+  const maxPhase = usePlannerStore((state) => state.maxPhase);
   const inputsUsable = usePlannerStore(selectTeamPlanInputsUsable);
   const plan = usePlannerStore((state) => state.plan);
   const runStatus = usePlannerStore((state) => state.runStatus);
@@ -47,7 +49,11 @@ export function OptimizerCard() {
         ? t.teamPlanEmptyAllLeaveAloneTitle
         : objective === 'farm' && farmUnavailable
           ? t.teamPlanObjectiveFarmNeedsMaxPhase
-          : null;
+          : objective === 'setFarm' && farmSet === null
+            ? t.teamPlanFarmSetNeeded
+            : objective === 'setFarm' && maxPhase === null
+              ? t.teamPlanFarmSetNeedsMaxPhase
+              : null;
 
   const underFloor = plan !== null && belowFloor(plan);
   const state = optimizerCardState({ inputsUsable, runStatus, plan, stale, belowFloor: underFloor });

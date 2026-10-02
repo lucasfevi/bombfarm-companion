@@ -11,6 +11,7 @@ import { combineDrainRate } from '@bombfarm/domain/drain';
 import { emptySheetOther, starsMult, type SheetOtherPct, type SheetStats } from '@bombfarm/domain/gear';
 import { computeCombatMults, derive } from '@bombfarm/domain/derive';
 import type { TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
+import { applyCollection, type CollectionSheetPct } from '@bombfarm/domain/collection';
 import { ZERO_PTS, SHEET_DISPLAY_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import {
@@ -93,6 +94,7 @@ type FixtureOpts = {
   sheetOther?: SheetOtherPct;
   naked?: SheetStats;
   geared?: SheetStats;
+  collection?: CollectionSheetPct;
 };
 
 function buildFixture(opts: FixtureOpts = {}) {
@@ -130,7 +132,8 @@ function buildFixture(opts: FixtureOpts = {}) {
   function poolBump(value: number, otherPct: number, treePct: number): number {
     return value + (treePct / 100) * (value / (1 + otherPct));
   }
-  const geared =
+  const collection = opts.collection;
+  const gearedPlain =
     opts.geared ??
     ({
       ...naked,
@@ -141,6 +144,7 @@ function buildFixture(opts: FixtureOpts = {}) {
       // Crit damage takes no pool bump: the tree node is a flat percentage-point addend.
       critDmg: naked.critDmg + treeCritDmg,
     } satisfies SheetStats);
+  const geared = collection && !opts.geared ? applyCollection(gearedPlain, collection, treeCritDmg) : gearedPlain;
 
   const treeSheet: TreeSheetTotals = {
     danoStatic: treeDanoTotal,
@@ -149,6 +153,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     critChancePct: treeCritChance,
     critDmgPct: treeCritDmg,
     luckFlatPct: treeLuckFlatPct,
+    collection,
   };
 
   const mults = computeCombatMults({
@@ -217,6 +222,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     dps: deriveResult.dps,
     uptime,
     rest,
+    collection,
   };
 
   return { facts, deriveResult };
@@ -312,6 +318,24 @@ describe('stat-breakdown builder', () => {
       expect(atk.steps.some((s) => s.source === 'points')).toBe(true);
       expect(atk.steps.some((s) => s.source === 'abilitiesTeam')).toBe(true);
     }
+  });
+
+  it('Collections: one × step per sheet axis it touches, and every ledger still recomposes', () => {
+    const { facts } = buildFixture({
+      pts: { ...ZERO_PTS(), attack: 3, energy: 2, speed: 1, critChance: 1, critDmg: 1, penetration: 1, cdr: 1 },
+      abilities: { olho_clinico: 5 },
+      treeEnergy: 10,
+      treeCritChance: 5,
+      treeCritDmg: 10,
+      collection: { energyPct: 13.03, critChancePct: 4.8, critDmgPct: 0.22, cdrPct: 0.71 },
+    });
+    assertLedgersRecompose(facts);
+    for (const key of ['energy', 'critChance', 'critDmg', 'cdr'] as const) {
+      const bd = buildStatBreakdown(key, facts);
+      expect(bd.kind === 'ledger' && bd.steps.some((s) => s.source === 'collection'), key).toBe(true);
+    }
+    const attack = buildStatBreakdown('attack', facts);
+    expect(attack.kind === 'ledger' && attack.steps.some((s) => s.source === 'collection')).toBe(false);
   });
 
   it('F4b — shared-pool gear shows percent × base', () => {
@@ -539,6 +563,7 @@ describe('LEDGER_SOURCE_GROUP is exhaustive over LedgerSource', () => {
     'team',
     'abilitiesTeam',
     'rune',
+    'collection',
   ];
 
   it('every LedgerSource union member has a mapped LedgerGroup', () => {

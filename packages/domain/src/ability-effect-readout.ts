@@ -45,6 +45,14 @@ export type AbilityEffectReadout =
   | { kind: 'dropTierPct'; value: number }
   /** Veia de Ouro (own) and Fortuna (TEAM) — gold. */
   | { kind: 'goldPct'; value: number }
+  /** Pavio Curto — cooldown reduction, added after everything else. */
+  | { kind: 'cdrPct'; value: number }
+  /** Carnificina — TEAM crit damage. */
+  | { kind: 'teamCritDmgPct'; value: number }
+  /** Matador de Chefes — damage against the gate boss. */
+  | { kind: 'bossDmgPct'; value: number }
+  /** Aprendiz — TEAM XP. */
+  | { kind: 'xpPct'; value: number }
   | { kind: 'none' };
 
 /**
@@ -52,7 +60,15 @@ export type AbilityEffectReadout =
  * it — loot and cage effects the farm board prices elsewhere or not at all. A test holds each
  * figure against the ability's own effect text, so the two cannot drift apart.
  */
-type UnmodelledReadoutKind = 'cageDmgPct' | 'passageAttackPct' | 'dropTierPct' | 'goldPct';
+type UnmodelledReadoutKind =
+  | 'cageDmgPct'
+  | 'passageAttackPct'
+  | 'dropTierPct'
+  | 'goldPct'
+  | 'cdrPct'
+  | 'teamCritDmgPct'
+  | 'bossDmgPct'
+  | 'xpPct';
 
 const UNMODELLED_PER_LEVEL: Record<string, { kind: UnmodelledReadoutKind; perLevel: number }> = {
   caca_hero: { kind: 'cageDmgPct', perLevel: 5 },
@@ -60,11 +76,15 @@ const UNMODELLED_PER_LEVEL: Record<string, { kind: UnmodelledReadoutKind; perLev
   olho_lapidador: { kind: 'dropTierPct', perLevel: 2.5 },
   veia_ouro: { kind: 'goldPct', perLevel: 2 },
   fortuna: { kind: 'goldPct', perLevel: 0.5 },
+  pavio_curto: { kind: 'cdrPct', perLevel: 0.5 },
+  carnificina: { kind: 'teamCritDmgPct', perLevel: 5 },
+  matador_chefes: { kind: 'bossDmgPct', perLevel: 5 },
+  aprendiz: { kind: 'xpPct', perLevel: 0.75 },
 };
 
 export const UNMODELLED_READOUT_PER_LEVEL: Readonly<typeof UNMODELLED_PER_LEVEL> = UNMODELLED_PER_LEVEL;
 
-const UNMODELLED_KINDS = new Set<AbilityEffectReadout['kind']>(['none', 'cageDmgPct', 'passageAttackPct', 'dropTierPct', 'goldPct']);
+const UNMODELLED_KINDS = new Set<AbilityEffectReadout['kind']>(['none', 'cageDmgPct', 'passageAttackPct', 'dropTierPct', 'goldPct', 'cdrPct', 'teamCritDmgPct', 'bossDmgPct', 'xpPct']);
 
 /** Whether the combat model prices this readout, or merely repeats a figure the wiki publishes. */
 export function isPricedReadout(readout: AbilityEffectReadout): boolean {
@@ -76,10 +96,11 @@ const TEAM_BUFF_IDS = new Set<string>(TEAM_BUFF_ABILITY_IDS);
 const TEAM_AURA_IDS = new Set<string>(TEAM_AURA_SWITCH_IDS);
 
 /**
- * Every ability the game scopes to the TEAM: the switched auras plus Fortuna, a team gold aura the
- * combat model never prices (loot is the farm board's layer), so it belongs to no switch list.
+ * Every ability the game scopes to the TEAM: the switched auras plus the team auras the combat
+ * model never prices (Fortuna's gold is the farm board's layer; Carnificina and Aprendiz are not
+ * modelled yet), so they belong to no switch list.
  */
-export const TEAM_ABILITY_IDS = [...TEAM_AURA_SWITCH_IDS, 'fortuna'] as const;
+export const TEAM_ABILITY_IDS = [...TEAM_AURA_SWITCH_IDS, 'fortuna', 'carnificina', 'aprendiz'] as const;
 
 export type TeamAbilityId = (typeof TEAM_ABILITY_IDS)[number];
 
@@ -185,6 +206,10 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
     case 'passageAttackPct':
     case 'dropTierPct':
     case 'goldPct':
+    case 'cdrPct':
+    case 'teamCritDmgPct':
+    case 'bossDmgPct':
+    case 'xpPct':
       return { kind: 'none' };
   }
 }

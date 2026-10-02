@@ -15,6 +15,7 @@ import { AllowedChangesField } from './allowed-changes-field';
 import { ForgeFloorField } from './forge-floor-field';
 import { IgnoreCrowdingField } from './ignore-crowding-field';
 import { GatePhaseField } from './gate-phase-field';
+import { FarmSetField } from './farm-set-field';
 import { ObjectiveField } from './objective-field';
 import { PhaseField } from './phase-field';
 import { PvpSquadField } from './pvp-squad-field';
@@ -40,7 +41,7 @@ export function TeamPlanToolbar({
   objectives?: readonly TeamPlanObjective[];
 }) {
   const copy = teamPlanObjectiveCopy(t, data.controls.objective);
-  const { busy, farmBlocked } = optimize;
+  const { busy, farmBlocked, setFarmBlocked } = optimize;
   const resolvedTargetPhase = resolveTeamPlanTargetPhase(data.inputs, data.controls);
   const objective = data.controls.objective;
 
@@ -64,6 +65,11 @@ export function TeamPlanToolbar({
                 {t.teamPlanObjectiveFarmNeedsMaxPhase}
               </p>
             ) : null}
+            {setFarmBlocked ? (
+              <p className="m-0 mb-2 text-[13px] text-warn" role="status">
+                {data.controls.farmSet === null ? t.teamPlanFarmSetNeeded : t.teamPlanFarmSetNeedsMaxPhase}
+              </p>
+            ) : null}
             {/* Tops, not centres: a field may carry a one-line warning under its control (a phase
                 past the account's furthest), and centring would step the others down against it. */}
             <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:gap-5">
@@ -75,13 +81,22 @@ export function TeamPlanToolbar({
                 onChange={actions.setObjective}
               />
               {/* The phase control answers a different question per objective, so each gets its
-                  own: the gate to clear, the duel the game has set up, or a phase to farm. */}
+                  own: the gate to clear, the duel the game has set up, the set to collect, or a
+                  phase to farm. */}
               {objective === 'gateClear' ? (
                 <GatePhaseField
                   t={t}
                   lang={lang}
                   value={resolveTeamPlanGatePhase(data.inputs, data.controls)}
                   onChange={actions.setGatePhase}
+                />
+              ) : objective === 'setFarm' ? (
+                <FarmSetField
+                  t={t}
+                  lang={lang}
+                  value={data.controls.farmSet}
+                  maxPhase={data.inputs.maxPhase}
+                  onChange={actions.setFarmSet}
                 />
               ) : objective === 'pvp' ? (
                 <PvpSquadField

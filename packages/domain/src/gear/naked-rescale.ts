@@ -134,13 +134,13 @@ export function nakedAfterSheetAbilityChange(
  * Adding/removing a ★ (gems ritual) rescales every naked sheet stat except Speed
  * (Attack, Energy, Crit %, Crit Dmg, Penetration, CDR, Luck).
  *
- * `critChanceFlat` / `critDmgFlat` are the two sheet-ability addends already inside `naked`
- * (`SheetOtherPct`). Both are held OUT of the ★ ratio so this stays the algebraic inverse of
- * `nakedFromBirth` (`birth × star + flat`); leaving them in would silently star-scale Olho
- * Clínico's and Golpe Brutal's contributions. Both default to `0`, which is exactly the old
- * behaviour for every hero without the abilities. Whether the game itself star-scales those
- * terms is unobserved — no capture pairs ★>0 with either contribution — so this follows
- * `nakedFromBirth` rather than inventing a second answer.
+ * `critChanceFlat` / `critDmgFlat` / `penetrationFlat` are the sheet-ability addends already
+ * inside `naked` (`SheetOtherPct`). All three are held OUT of the ★ ratio, so this stays the
+ * algebraic inverse of `nakedFromBirth` (`birth × star + flat`), and all default to `0`, which
+ * leaves every hero without the abilities unchanged. Ponta de Diamante's is measured: save
+ * exports fit exported penetration exactly with the +rank flat unscaled at ★1 and ★2, the same
+ * hero across a ★1→★2 change included, while scaling it misses by rank × 0.25 per star. The two
+ * crit flats have no ★>0 witness yet and follow `nakedFromBirth` rather than a second answer.
  */
 export function rescaleNakedForStars(
   naked: SheetStats,
@@ -148,18 +148,20 @@ export function rescaleNakedForStars(
   toStars: number,
   critDmgFlat = 0,
   critChanceFlat = 0,
+  penetrationFlat = 0,
 ): SheetStats {
   const ratio = starsMult(toStars) / starsMult(fromStars);
   if (ratio === 1) return naked;
   const flat = Math.max(0, critDmgFlat);
   const critFlat = Math.max(0, critChanceFlat);
+  const penFlat = Math.max(0, penetrationFlat);
   return {
     ...naked,
     attack: naked.attack * ratio,
     energy: naked.energy * ratio,
     critChance: (naked.critChance - critFlat) * ratio + critFlat,
     critDmg: (naked.critDmg - flat) * ratio + flat,
-    penetration: naked.penetration * ratio,
+    penetration: (naked.penetration - penFlat) * ratio + penFlat,
     cdr: naked.cdr * ratio,
     luck: naked.luck * ratio,
   };
@@ -227,7 +229,7 @@ export function rescaleHeroForStars(
     geared,
     loadout,
     sheetOther,
-    rescaleNakedForStars(naked, fromStars, toStars, sheetOther.critDmgFlat, sheetOther.critChanceFlat),
+    rescaleNakedForStars(naked, fromStars, toStars, sheetOther.critDmgFlat, sheetOther.critChanceFlat, sheetOther.penetration),
   );
 }
 

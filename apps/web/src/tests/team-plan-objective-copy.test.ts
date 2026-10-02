@@ -8,7 +8,7 @@ import { teamPlanObjectiveCopy } from '@bombfarm/team-plan/model';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 const LANGS: Lang[] = ['en', 'pt'];
-const OBJECTIVES: TeamPlanObjective[] = ['dps', 'farm', 'gateClear', 'pvp'];
+const OBJECTIVES: TeamPlanObjective[] = ['dps', 'farm', 'setFarm', 'gateClear', 'pvp'];
 /** The objectives that score damage — every one but gold. */
 const DAMAGE_OBJECTIVES: TeamPlanObjective[] = ['dps', 'gateClear', 'pvp'];
 
@@ -62,6 +62,14 @@ describe('team plan objective copy', () => {
       const copy = teamPlanObjectiveCopy(STRINGS[lang], 'farm');
       expect(copy.totalGainValue).toMatch(GOLD_WORDS[lang]);
       expect(copy.gearDipNote).toMatch(GOLD_WORDS[lang]);
+    });
+
+    it(`${lang}: a set farm plan reports set chests, never gold or damage`, () => {
+      for (const [field, text] of bundleEntries(lang, 'setFarm')) {
+        for (const pattern of [...DAMAGE_WORDS[lang], GOLD_WORDS[lang]]) {
+          expect(text, `setFarm.${field}: "${text}" matched ${pattern}`).not.toMatch(pattern);
+        }
+      }
     });
 
     it(`${lang}: every objective resolves every field to a non-empty string`, () => {

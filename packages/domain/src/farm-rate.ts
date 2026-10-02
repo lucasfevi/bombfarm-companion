@@ -106,7 +106,7 @@ import {
   type AurasAtCap,
   type TeamBuffId,
 } from './team-buffs';
-import { teamAuraLayer, teamDrainMultFromTeamBuffs } from './team-aura-layer';
+import { critPointCeilingOf, teamAuraLayer, teamDrainMultFromTeamBuffs } from './team-aura-layer';
 import { combineDrainRate } from './drain';
 import { abilityMods } from './model/abilities';
 import type { SheetKey } from './planner-constants';
@@ -133,6 +133,7 @@ import {
 } from './phase-wiki';
 import { hitsToKill, propHp } from './phases';
 import type { HeroRecord, AccountShared } from './shims/storage';
+import { collectionGoldMult, collectionLuckPct } from './collection';
 
 /**
  * Seconds between consecutive hero activations at the head of a clear. Heroes do not all start
@@ -350,6 +351,11 @@ export type HeroFarmBasis = {
    * aura layer it was built with.
    */
   auraFree?: AuraFreeFarmTerms;
+  /** See `critPointCeilingOf`. */
+  critPointCeiling?: number;
+  /** The plan prices builds it has yet to choose, so its ceiling clamps the whole sheet; a board
+   *  pricing the build a player owns clamps only what points add on top. */
+  critCeilingBindsSheet?: boolean;
 };
 
 /**
@@ -387,6 +393,8 @@ export type HeroFarmBasisParts = {
   treeLuckFlatPct: number;
   abilities: Record<string, number>;
   auraFree?: AuraFreeFarmTerms;
+  critPointCeiling?: number;
+  critCeilingBindsSheet?: boolean;
 };
 
 /**
@@ -413,6 +421,8 @@ export function heroFarmBasisFromParts(parts: HeroFarmBasisParts): HeroFarmBasis
     estilhacosLevel: clampAbilityLevel(parts.abilities.estilhacos ?? 0),
     blocksPerBomb: 1 + 0.5 * parts.context.blastRange,
     ...(parts.auraFree ? { auraFree: parts.auraFree } : {}),
+    ...(parts.critPointCeiling !== undefined ? { critPointCeiling: parts.critPointCeiling } : {}),
+    ...(parts.critCeilingBindsSheet ? { critCeilingBindsSheet: true } : {}),
   };
 }
 
@@ -463,6 +473,7 @@ function auraFreeBasesForAccount(
  *  field for one candidate assignment. */
 type FieldLayer = {
   teamBuffs: Record<TeamBuffId, number>;
+  critFlatAtFullPresence: number;
   alliesByHeroId: ReadonlyMap<string, number>;
 };
 
@@ -485,6 +496,7 @@ function priceAuraLayer(basis: HeroFarmBasis, field: FieldLayer): HeroFarmBasis 
   return {
     ...basis,
     dmgMult: base.dmgMult * matilhaMult(packRatePerAlly, field.alliesByHeroId.get(basis.heroId) ?? 0),
+    critPointCeiling: critPointCeilingOf(field.critFlatAtFullPresence, mults.teamCritFlat),
     effective: {
       ...base.effective,
       attack: base.effective.attack * mults.attackMult,
@@ -559,6 +571,7 @@ function priceFieldForAssignment(
   });
   return {
     teamBuffs: holdAurasAtCap(computeTeamBuffsOverRotation(carriers, presence), account.aurasAtCap),
+    critFlatAtFullPresence: teamAuraLayer(atFullPresence).teamCritFlat,
     alliesByHeroId,
   };
 }
@@ -650,6 +663,13 @@ export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
   return auraFreeBases.map((basis) => priceAuraLayer(basis, field));
 }
 
+export function critCeilingOfBasis(basis: HeroFarmBasis): number | undefined {
+  if (basis.critPointCeiling === undefined) return undefined;
+  return basis.critCeilingBindsSheet
+    ? basis.critPointCeiling
+    : Math.max(basis.critPointCeiling, basis.effective.critChance);
+}
+
 /**
  * Facts for ANY candidate 8-key vector. Pure scalar math; zero pipeline calls.
  * `heroFactsFromBasis(b, b.pts)` is byte-identical to `computeHeroFarmFacts`'s entry for `b`.
@@ -667,6 +687,8 @@ export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
  */
 export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, number>): HeroFarmFacts {
   const sheet = buildCandidateSheet(basis.effective, basis.pts, basis.effectiveDelta, pts);
+  const critCeiling = critCeilingOfBasis(basis);
+  if (critCeiling !== undefined) sheet.critChance = Math.min(sheet.critChance, critCeiling);
 
   const hitNoCritBase = predictHitDamage(sheet.attack, 0, sheet.penetration, basis.dmgMult);
   const avgHitBase = hitNoCritBase * critFactor(sheet.critChance, sheet.critDmg);
@@ -790,7 +812,7 @@ export type SquadFarmFacts = {
    * binding constraint: 5.21 vs 3 on account 486.
    */
   houseSlotDemand: number;
-  /** Sorte as a FRACTION: `(uptime-weighted mean heroLuckPct + treeLuckFlatPct) / 100`. */
+  /** Sorte as a FRACTION: `(uptime-weighted mean heroLuckPct + treeLuckFlatPct + Collections luck) / 100`. */
   sorteFraction: number;
   /**
    * Uptime-weighted mean bomb fuse over the pool, seconds — the fuse the head of a clear burns
@@ -810,7 +832,7 @@ export type SquadFarmFacts = {
    * cap instead when the account's `aurasAtCap` names the ability.
    */
   entryPulse: PassagemBastaoFieldPulse;
-  /** `1 + max(0, tree.teamCoinPct) / 100`. */
+  /** `1 + max(0, tree.teamCoinPct) / 100`, times the Collections gold bonus. */
   teamCoinMult: number;
   /** `tree.luckFlatPct ?? 0`, percentage points — echoed for the board's breakdown tooltip. */
   treeLuckFlatPct: number;
@@ -855,7 +877,8 @@ export function computeSquadFarmFacts(
   const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
 
   const heroLuckWeightedSum = heroFacts.reduce((sum, hero) => sum + hero.uptime * hero.heroLuckPct, 0);
-  const sorteFraction = ((uptimeSum > 0 ? heroLuckWeightedSum / uptimeSum : 0) + treeLuckFlatPct) / 100;
+  const sorteFraction =
+    ((uptimeSum > 0 ? heroLuckWeightedSum / uptimeSum : 0) + treeLuckFlatPct + collectionLuckPct(account.tree.collection)) / 100;
 
   const fuseWeightedSum = heroFacts.reduce((sum, hero) => sum + hero.uptime * hero.fuseSecs, 0);
   const meanFuseSecs = uptimeSum > 0 ? fuseWeightedSum / uptimeSum : 0;
@@ -864,7 +887,7 @@ export function computeSquadFarmFacts(
     ? PASSAGEM_BASTAO_CAPPED_PULSE
     : passagemBastaoFieldPulse(heroFacts.flatMap((hero) => (hero.passagemBastao ? [hero.passagemBastao] : [])));
 
-  const teamCoinMult = 1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100;
+  const teamCoinMult = (1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100) * collectionGoldMult(account.tree.collection);
 
   const rawXpMult = account.tree.xpMult;
   const xpMult = typeof rawXpMult === 'number' && Number.isFinite(rawXpMult) ? rawXpMult : 1;

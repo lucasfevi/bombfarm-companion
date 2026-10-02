@@ -45,7 +45,7 @@ export function blastDamageSpread(blastRange: number): number {
 }
 
 function activeDpsWithFuse(hero: HeroSheet, context: Context, fuseSec: number): number {
-  const dano = hero.attack * mitigationFactor(context.mitigation, hero.penetration) * critFactor(hero.critChance, hero.critDmg);
+  const dano = hero.attack * mitigationFactor(context.mitigation, hero.penetration) * critFactor(readCritChance(hero), hero.critDmg);
   return dano * bombsPerSecondWithFuse(hero, context, fuseSec) * blastDamageSpread(context.blastRange) * EFF_IA;
 }
 
@@ -56,6 +56,10 @@ export function sustainedDpsWithFuse(hero: HeroSheet, context: Context, fuseSec:
 
 export function bombsPerSecond(hero: Pick<HeroSheet, 'speed' | 'cdr'>, context: Context): number {
   return bombsPerSecondWithFuse(hero, context, fuseSeconds(hero.cdr));
+}
+
+export function readCritChance(hero: Pick<HeroSheet, 'critChance' | 'critCeiling'>): number {
+  return hero.critCeiling === undefined ? hero.critChance : Math.min(hero.critChance, hero.critCeiling);
 }
 
 export function critFactor(critChancePct: number, critDmgPct: number): number {
@@ -130,7 +134,7 @@ export function sustainedDps(hero: HeroSheet, context: Context): number {
 
 /** Active-phase DPS while deployed (no downtime). */
 export function activeDps(hero: HeroSheet, context: Context): number {
-  const dano = hero.attack * mitigationFactor(context.mitigation, hero.penetration) * critFactor(hero.critChance, hero.critDmg);
+  const dano = hero.attack * mitigationFactor(context.mitigation, hero.penetration) * critFactor(readCritChance(hero), hero.critDmg);
   return dano * bombsPerSecond(hero, context) * blastDamageSpread(context.blastRange) * EFF_IA;
 }
 

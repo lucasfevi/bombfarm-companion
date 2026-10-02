@@ -278,6 +278,27 @@ describe('team-plan slice', () => {
     expect(selectLiveTeamPlanInputSignature(usePlannerStore.getState())).not.toBe(farmSignature);
   });
 
+  it('farmSet defaults to no set; a pick under Set farm drops the plan, and joins the signature', () => {
+    expect(usePlannerStore.getState().farmSet).toBeNull();
+    usePlannerStore.getState().setObjective('setFarm');
+    const noSet = selectLiveTeamPlanInputSignature(usePlannerStore.getState());
+    usePlannerStore.setState({ plan: { steps: [] } as never, planInputSignature: 'sig', runId: 'run-1', runStatus: 'done' });
+    usePlannerStore.getState().setFarmSet('clay');
+    expect(usePlannerStore.getState().farmSet).toBe('clay');
+    expect(usePlannerStore.getState().plan).toBeNull();
+    expect(usePlannerStore.getState().runId).toBeNull();
+    expect(selectLiveTeamPlanInputSignature(usePlannerStore.getState())).not.toBe(noSet);
+  });
+
+  it('a set picked under another objective is remembered without touching the plan', () => {
+    usePlannerStore.setState({ planInputSignature: 'sig', runId: 'run-1', runStatus: 'done' });
+    usePlannerStore.getState().setFarmSet('clay');
+    expect(usePlannerStore.getState().farmSet).toBe('clay');
+    expect(usePlannerStore.getState().runId).toBe('run-1');
+    usePlannerStore.getState().setFarmSet('not-a-set');
+    expect(usePlannerStore.getState().farmSet).toBeNull();
+  });
+
   it('allowedChanges defaults to both', () => {
     expect(usePlannerStore.getState().allowedChanges).toBe('both');
   });

@@ -17,6 +17,7 @@ import {
 } from './points-reopt-core';
 import { sustainedDps } from './model';
 import {
+  critCeilingOfBasis,
   squadFactsFromBases,
   type HeroFarmBasis,
   type SquadFarmAccount,
@@ -182,7 +183,9 @@ export function compareFarmCandidates(a: FarmCandidate, b: FarmCandidate, bases:
  * spent everything on crit damage, and attack when it had spent everything on attack. It is the
  * incumbent instead (see `runFarmSearch`): the bar a proposal has to clear, never its start.
  */
-const SEED_DEFS: readonly { name: string; energyShare: number | null }[] = [
+type SeedDef = { name: string; energyShare: number | null; luckShare?: number };
+
+const SEED_DEFS: readonly SeedDef[] = [
   { name: 'dpsGreedy', energyShare: null },
   { name: 'allAttack', energyShare: 0 },
   { name: 'e025', energyShare: FARM_OPT_SEED_ENERGY_SHARES[0] },
@@ -190,6 +193,24 @@ const SEED_DEFS: readonly { name: string; energyShare: number | null }[] = [
   { name: 'e075', energyShare: FARM_OPT_SEED_ENERGY_SHARES[2] },
   { name: 'allEnergy', energyShare: 1 },
 ];
+
+/**
+ * Luck-heavy seeds, appended under the set objective only. Every seed above places zero Luck, so
+ * without these a luck-heavy build is reachable only by transfers, each of which must win on its
+ * own — and a set's chests climb with Luck steadily while the clear only slows, which is the shape
+ * a first-improvement descent crosses slowest. Luck takes this share of the budget, attack the rest.
+ */
+export const FARM_OPT_SEED_LUCK_SHARES: readonly number[] = [0.25, 0.5, 0.75];
+
+const SET_CHEST_SEED_DEFS: readonly SeedDef[] = FARM_OPT_SEED_LUCK_SHARES.map((luckShare) => ({
+  name: `luck${String(Math.round(luckShare * 100)).padStart(3, '0')}`,
+  energyShare: 0,
+  luckShare,
+}));
+
+function seedDefsFor(objective: ResolvedFarmObjective): readonly SeedDef[] {
+  return objective.kind === 'setChests' ? [...SEED_DEFS, ...SET_CHEST_SEED_DEFS] : SEED_DEFS;
+}
 
 /**
  * The build the player has today, clamped TO the budget — the one assignment not built FROM it.
@@ -214,17 +235,20 @@ function buildIncumbentAssignment(
 /** One hero's sustained-DPS greedy walk from zero over its whole budget — the hero-shaped seed. */
 function dpsGreedyFromZero(basis: HeroFarmBasis, budget: number): Record<SheetKey, number> {
   const zero = zeroedRespecKeys(basis.pts);
-  const zeroSheet = buildCandidateSheet(basis.effective, basis.pts, basis.effectiveDelta, zero);
+  const critCeiling = critCeilingOfBasis(basis);
+  const effective = critCeiling === undefined ? basis.effective : { ...basis.effective, critCeiling };
+  const zeroSheet = buildCandidateSheet(effective, basis.pts, basis.effectiveDelta, zero);
   const zeroScore = sustainedDps(zeroSheet, basis.context);
-  return greedyWalk(zero, zeroScore, budget, basis.effective, basis.pts, basis.effectiveDelta, basis.context, Infinity).pts;
+  return greedyWalk(zero, zeroScore, budget, effective, basis.pts, basis.effectiveDelta, basis.context, Infinity).pts;
 }
 
 function buildSeedAssignment(
   bases: readonly HeroFarmBasis[],
   searchableSet: ReadonlySet<string>,
   budgetById: ReadonlyMap<string, number>,
-  energyShare: number | null,
+  seed: SeedDef,
 ): Map<string, Record<SheetKey, number>> {
+  const { energyShare, luckShare = 0 } = seed;
   const assignment = new Map<string, Record<SheetKey, number>>();
   if (energyShare === null) {
     for (const basis of bases) {
@@ -236,11 +260,13 @@ function buildSeedAssignment(
   for (const basis of bases) {
     if (!searchableSet.has(basis.heroId)) continue;
     const budget = budgetById.get(basis.heroId) ?? 0;
-    const energy = Math.round(budget * energyShare);
-    const attack = budget - energy;
+    const luck = Math.round(budget * luckShare);
+    const energy = Math.round((budget - luck) * energyShare);
+    const attack = budget - luck - energy;
     const vector = zeroedRespecKeys(basis.pts);
     vector.attack = attack;
     vector.energy = energy;
+    if (luck > 0) vector.luck = luck;
     assignment.set(basis.heroId, vector);
   }
   return assignment;
@@ -488,12 +514,12 @@ export function runFarmSearch(
   };
 
   let start: FarmCandidate | null = null;
-  for (const seedDef of SEED_DEFS) {
+  for (const seedDef of seedDefsFor(objective)) {
     if (!canAfford(1)) {
       budgetExhausted = true;
       break;
     }
-    const assignment = buildSeedAssignment(bases, searchableSet, budgetById, seedDef.energyShare);
+    const assignment = buildSeedAssignment(bases, searchableSet, budgetById, seedDef);
     const ev = evaluateAssignment(bases, assignment, account, objective, scales, phaseOptions);
     evaluations += 1;
     if (!start || ev.value > start.value * (1 + EPS_REL)) {

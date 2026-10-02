@@ -380,6 +380,27 @@ describe('rescaleNakedForStars', () => {
     const n = naked();
     expect(rescaleNakedForStars(n, 1, 1)).toBe(n);
   });
+
+  it("keeps a Ponta de Diamante carrier's flat penetration unscaled across a star change", () => {
+    const birthPen = 5.566;
+    const flat = 20;
+    const atOneStar: SheetStats = { ...naked(), penetration: birthPen * starsMult(1) + flat };
+    const next = rescaleNakedForStars(atOneStar, 1, 2, 0, 0, flat);
+    expect(next.penetration).toBeCloseTo(birthPen * starsMult(2) + flat, 9);
+  });
+
+  it("still scales a non-carrier's penetration by the star ratio", () => {
+    const custom: SheetStats = { ...naked(), penetration: 5.566 * starsMult(1) };
+    const next = rescaleNakedForStars(custom, 1, 2, 0, 0, 0);
+    expect(next.penetration).toBeCloseTo(5.566 * starsMult(2), 9);
+  });
+
+  it('round-trips a Ponta de Diamante carrier through a star change and back', () => {
+    const atOneStar: SheetStats = { ...naked(), penetration: 5.566 * starsMult(1) + 20 };
+    const up = rescaleNakedForStars(atOneStar, 1, 2, 0, 0, 20);
+    const back = rescaleNakedForStars(up, 2, 1, 0, 0, 20);
+    expect(back.penetration).toBeCloseTo(atOneStar.penetration, 9);
+  });
 });
 
 describe('rescaleNakedForLevel', () => {
@@ -664,11 +685,14 @@ describe('rescaleHeroForLevel / rescaleHeroForStars (residual + re-apply)', () =
     expect(result.naked.energy).toBeCloseTo(n0.energy * ratio, 8);
     expect(result.naked.critChance).toBeCloseTo(n0.critChance * ratio, 8);
     expect(result.naked.critDmg).toBeCloseTo(n0.critDmg * ratio, 8);
-    expect(result.naked.penetration).toBeCloseTo(n0.penetration * ratio, 8);
+    expect(result.naked.penetration).toBeCloseTo(
+      (n0.penetration - other.penetration) * ratio + other.penetration,
+      8,
+    );
     expect(result.naked.cdr).toBeCloseTo(n0.cdr * ratio, 8);
     expect(result.naked.speed).toBe(n0.speed);
     expect(result.geared).toEqual(
-      expectedGeared(n0, rescaleNakedForStars(n0, 0, 1), geared, loadout, other),
+      expectedGeared(n0, rescaleNakedForStars(n0, 0, 1, 0, 0, other.penetration), geared, loadout, other),
     );
   });
 

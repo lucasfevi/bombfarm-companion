@@ -18,6 +18,9 @@ export type TeamPlanEnvelope = {
   allowedChanges: TeamPlanAllowedChanges;
   ignoreFieldCrowding: boolean;
   targetPhase: number | null;
+  /** The set a Set farm plan was solved for; `null` under every other objective. Absent in an
+   *  envelope written before the objective existed, which reads as `null`. */
+  farmSet: string | null;
   plan: TeamPlan;
 };
 
@@ -44,6 +47,10 @@ function isTargetPhase(value: unknown): value is number | null {
   return value === null || (typeof value === 'number' && Number.isFinite(value));
 }
 
+function isFarmSet(value: unknown): value is string | null {
+  return value === null || typeof value === 'string';
+}
+
 function isTeamPlanEnvelope(value: unknown): value is TeamPlanEnvelope {
   return (
     isPlainObject(value) &&
@@ -53,13 +60,15 @@ function isTeamPlanEnvelope(value: unknown): value is TeamPlanEnvelope {
     isTeamPlanAllowedChanges(value.allowedChanges) &&
     typeof value.ignoreFieldCrowding === 'boolean' &&
     isTargetPhase(value.targetPhase) &&
+    isFarmSet(value.farmSet) &&
     isWholePlan(value.plan)
   );
 }
 
 export function loadTeamPlanEnvelope(): TeamPlanEnvelope | null {
   const raw = readJson<unknown>(TEAM_PLAN_KEY, null);
-  return isTeamPlanEnvelope(raw) ? raw : null;
+  const withFarmSet = isPlainObject(raw) && !('farmSet' in raw) ? { ...raw, farmSet: null } : raw;
+  return isTeamPlanEnvelope(withFarmSet) ? withFarmSet : null;
 }
 
 export function saveTeamPlanEnvelope(envelope: TeamPlanEnvelope): boolean {

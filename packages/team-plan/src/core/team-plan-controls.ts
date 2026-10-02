@@ -1,6 +1,7 @@
 import type { TeamPlanAllowedChanges, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
 import { FORJA_MAX } from '@bombfarm/domain/gear';
 import { wikiPhaseLine } from '@bombfarm/domain/phase-wiki';
+import { SET_FARM_SETS } from '@bombfarm/domain/team-plan/set-farm';
 import { NO_AURAS_AT_CAP, TEAM_AURA_SWITCH_IDS, type AurasAtCap, type TeamAuraId } from '@bombfarm/domain/team-buffs';
 import type { ScopeState } from './hero-scope';
 
@@ -23,6 +24,9 @@ export type TeamPlanControls = {
   /** The gate a Gate clear plan fights, its own control beside the farm phase: a player clears
    *  a gate to leave the phase they farm. `null` resolves to the account's next gate. */
   gatePhase: number | null;
+  /** The equipment set a Set farm plan collects, its own control in the phase control's place:
+   *  the set decides the phases. `null` until the player picks one, and no plan runs until then. */
+  farmSet: string | null;
 };
 
 /**
@@ -31,11 +35,11 @@ export type TeamPlanControls = {
  * when the job is passing a gate. Its two windowed forms answer that question instead — a gate
  * clear over the act's timer, and the one-minute duel.
  */
-export const TEAM_PLAN_OBJECTIVES = ['farm', 'gateClear', 'pvp'] as const satisfies readonly TeamPlanObjective[];
+export const TEAM_PLAN_OBJECTIVES = ['farm', 'setFarm', 'gateClear', 'pvp'] as const satisfies readonly TeamPlanObjective[];
 
 /** The objectives any host can score: a duel needs the phase its room is hardened to, which only
  *  a host that reads the PVP state can supply. */
-export const TEAM_PLAN_OBJECTIVES_WITHOUT_PVP = ['farm', 'gateClear'] as const satisfies readonly TeamPlanObjective[];
+export const TEAM_PLAN_OBJECTIVES_WITHOUT_PVP = ['farm', 'setFarm', 'gateClear'] as const satisfies readonly TeamPlanObjective[];
 
 /**
  * What the search is asked to score, which is NOT the domain's own default. `runTeamPlan` keeps
@@ -71,6 +75,7 @@ export const DEFAULT_TEAM_PLAN_CONTROLS: TeamPlanControls = {
   targetPhase: null,
   targetPhaseChosen: false,
   gatePhase: null,
+  farmSet: null,
 };
 
 export function isScopeState(value: string): value is ScopeState {
@@ -111,4 +116,9 @@ export function normalizeGatePhase(value: unknown): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null;
   const phase = Math.round(value);
   return wikiPhaseLine(phase)?.gate === true ? phase : null;
+}
+
+/** A set is kept only when it names one the game drops; anything else reads as "no set picked". */
+export function normalizeFarmSet(value: unknown): string | null {
+  return typeof value === 'string' && SET_FARM_SETS.includes(value) ? value : null;
 }

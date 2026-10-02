@@ -1,4 +1,4 @@
-import type { TeamPlan, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
+import { SET_FARM_SLOW_CLEAR_SECS, type TeamPlan, type TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
 import { formatNumber } from '@bombfarm/ui';
 import { formatPhaseLabel } from '@bombfarm/farm';
 import { sub, type Lang } from '@bombfarm/hero/copy';
@@ -29,6 +29,10 @@ export function seedStartLabel(t: TeamPlanCopy, seedUsed: string): string {
  * about their own account otherwise.
  */
 export function scoredPhaseHint(t: TeamPlanCopy, plan: TeamPlan, objective: TeamPlanObjective = 'dps'): string | null {
+  if (objective === 'setFarm') {
+    if (plan.scoredPhase == null || plan.scoredPhaseInfeasible) return t.teamPlanScoredPhaseSetUnfarmable;
+    return t.teamPlanScoredPhaseSetSearched;
+  }
   if (plan.scoredPhase == null) {
     return plan.scoredPhaseSource === 'searched' ? t.teamPlanScoredPhaseNoneFeasible : null;
   }
@@ -38,6 +42,43 @@ export function scoredPhaseHint(t: TeamPlanCopy, plan: TeamPlan, objective: Team
   if (objective === 'pvp') return t.teamPlanScoredPhasePvp;
   if (plan.scoredPhaseSource === 'account') return t.teamPlanScoredPhaseAccount;
   return objective === 'gateClear' ? t.teamPlanScoredPhaseGate : t.teamPlanScoredPhaseChosen;
+}
+
+function setFarmClearSecs(plan: TeamPlan, objective: TeamPlanObjective): number | null {
+  if (objective !== 'setFarm' || plan.scoredPhaseInfeasible) return null;
+  const secs = plan.scoredPhaseClearSecs;
+  return secs != null && Number.isFinite(secs) ? secs : null;
+}
+
+function formatClearSecs(secs: number, lang: Lang): string {
+  return formatNumber(secs, lang, secs < 10 ? 1 : 0);
+}
+
+/** How long a clear of a Set farm plan's phase takes, while that is not slow enough to warn about. */
+export function scoredPhaseClearTime(
+  t: TeamPlanCopy,
+  lang: Lang,
+  plan: TeamPlan,
+  objective: TeamPlanObjective,
+): string | null {
+  const secs = setFarmClearSecs(plan, objective);
+  if (secs === null || secs >= SET_FARM_SLOW_CLEAR_SECS) return null;
+  return sub(t.teamPlanScoredPhaseClearTime, { secs: formatClearSecs(secs, lang) });
+}
+
+/**
+ * A Set farm plan is never refused for a slow clear — Luck can be worth it — but a slow one is
+ * the squad fighting the set's phases, where the clear-time model is least certain, so it says so.
+ */
+export function slowClearWarning(
+  t: TeamPlanCopy,
+  lang: Lang,
+  plan: TeamPlan,
+  objective: TeamPlanObjective,
+): string | null {
+  const secs = setFarmClearSecs(plan, objective);
+  if (secs === null || secs < SET_FARM_SLOW_CLEAR_SECS) return null;
+  return sub(t.teamPlanScoredPhaseSlowClear, { secs: formatClearSecs(secs, lang) });
 }
 
 export function scoredPhaseValue(lang: Lang, plan: TeamPlan): string {

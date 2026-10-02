@@ -22,11 +22,11 @@ export type HeroTypeId = (typeof HERO_TYPE_IDS)[number];
 
 export const HERO_TYPE_VOTERS: Readonly<Record<HeroTypeId, readonly string[]>> = {
   crit: ['olho_clinico', 'golpe_brutal'],
-  heavy: ['detonacao_dupla', 'matilha', 'estilhacos'],
+  heavy: ['detonacao_dupla', 'matilha', 'estilhacos', 'pavio_curto'],
   pierce: ['ponta_diamante'],
   finish: ['misericordia'],
-  gate: ['contra_relogio', 'caca_hero'],
-  loot: ['veia_ouro', 'olho_lapidador', 'fortuna'],
+  gate: ['contra_relogio', 'caca_hero', 'matador_chefes'],
+  loot: ['veia_ouro', 'olho_lapidador', 'fortuna', 'aprendiz'],
   buff: [
     'grito_guerra',
     'marcha_acelerada',
@@ -34,6 +34,7 @@ export const HERO_TYPE_VOTERS: Readonly<Record<HeroTypeId, readonly string[]>> =
     'folego_mineiro',
     'pressagio_mortal',
     'brecha',
+    'carnificina',
   ],
   endure: ['bateria_extra', 'fantasma'],
 };

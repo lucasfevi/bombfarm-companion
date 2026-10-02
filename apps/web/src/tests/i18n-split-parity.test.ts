@@ -589,6 +589,11 @@ const KEYS_ADDED: readonly string[] = [
   // duel facts with their over-the-cap notice, and the front-page
   // card's two headline units. One line: this file sits at the max-lines cap.
   'teamPlanObjectiveOptionGate', 'teamPlanObjectiveOptionPvp', 'teamPlanObjectiveHintGate', 'teamPlanObjectiveHintPvp', 'teamPlanSetupSectionBodyGate', 'teamPlanSetupSectionBodyPvp', 'teamPlanTotalGainValueGate', 'teamPlanTotalGainValuePvp', 'teamPlanGearDipNoteGate', 'teamPlanGearDipNotePvp', 'teamPlanScoredPhaseGate', 'teamPlanScoredPhasePvp', 'teamPlanGatePhaseLabel', 'teamPlanGatePhaseAria', 'teamPlanGatePhaseHint', 'teamPlanGatePhaseSearchPlaceholder', 'teamPlanPvpSquadLabel', 'teamPlanPvpSquadValue', 'teamPlanPvpSquadHint', 'teamPlanPvpRoomUnknown', 'teamPlanPvpSquadTooMany', 'teamPlanChangesControlPvpSquadSlots', 'homeCardOptimizerHeadlineGate', 'homeCardOptimizerHeadlinePvp',
+  // The Optimizer's Set farm objective (2026-10-01): its option label and suffixed strings, the
+  // set picker that stands in for the phase control with its no-set notice, the phase card's two
+  // notes and its clear-time line and slow-clear warning, the ledger's row label, and the
+  // front-page card's headline unit. One line, as above.
+  'teamPlanObjectiveOptionSet', 'teamPlanObjectiveHintSetFarm', 'teamPlanSetupSectionBodySetFarm', 'teamPlanTotalGainValueSetFarm', 'teamPlanGearDipNoteSetFarm', 'teamPlanPhaseHintNoneSetFarm', 'teamPlanFarmSetLabel', 'teamPlanFarmSetAria', 'teamPlanFarmSetPlaceholder', 'teamPlanFarmSetOption', 'teamPlanFarmSetOptionLocked', 'teamPlanFarmSetHint', 'teamPlanFarmSetNeeded', 'teamPlanFarmSetNeedsMaxPhase', 'teamPlanScoredPhaseSetSearched', 'teamPlanScoredPhaseSetUnfarmable', 'teamPlanScoredPhaseClearTime', 'teamPlanScoredPhaseSlowClear', 'teamPlanChangesControlFarmSet', 'homeCardOptimizerHeadlineSetFarm',
   'teamPlanChangesScope',
   'teamPlanChangesGroupBreaks',
   'teamPlanChangesHeroRemovedUsed',
@@ -634,6 +639,8 @@ const KEYS_ADDED: readonly string[] = [
   // dictionary gains its label; the cadence model's and abilities pass's formula and glossary
   // strings that were declared here left with the accordion (see `KEYS_REMOVED`). One line.
   'heroesAbilityFilterAbsent', 'colSheetDeltaRune', 'bdSrcRune', 'bdNoteRune', 'teamPlanRunedHeroes', 'effectiveAvgHit',
+  // Collections (2026-10-01): the breakdown's Collection step.
+  'bdSrcCollection',
   // The Optimizer's field-crowding opt-out (2026-09-09) and the removals section that made it
   // necessary. The plan could always take gear off a hero and hand it back — on a field that
   // cannot seat everyone, a weak hero wearing less crowds the others out less — but the page

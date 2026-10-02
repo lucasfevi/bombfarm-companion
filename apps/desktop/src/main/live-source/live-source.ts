@@ -39,6 +39,7 @@ import {
   type FieldCountdownState,
   type RosterHeroAbilities,
 } from '@bombfarm/domain/live';
+import { collectionFromSave } from '@bombfarm/domain/model';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { xpPerProp } from '@bombfarm/domain/phase-wiki';
 import { gameProcessQuery, runPowerShellAsync, runPowerShellSync } from '../game-reader/process.js';
@@ -479,7 +480,11 @@ function fieldHeroesFromRotation(rotation: RotationSnapshot): readonly LiveTickH
  * siblings are the unboosted base and are deliberately not what a player-facing panel shows.
  */
 function wikiFactsFor(phase: number, boosts: MapAccountBoosts): MapWikiFacts | null {
-  const intel = computePhaseIntelGlobal(phase, { teamCoinPct: boosts.teamCoinPct, xpMult: boosts.xpMult });
+  const intel = computePhaseIntelGlobal(phase, {
+    teamCoinPct: boosts.teamCoinPct,
+    xpMult: boosts.xpMult,
+    collectionGoldPct: boosts.collectionGoldPct,
+  });
   if (!intel) return null;
   return {
     propsTotal: intel.propCount,
@@ -500,6 +505,14 @@ function readTeamCoinPct(skills: Record<string, unknown> | undefined): number | 
   if (!isPlainObject(totals)) return undefined;
   const value = totals.coin_add ?? totals.team_coin_add;
   return typeof value === 'number' && Number.isFinite(value) ? value * 100 : undefined;
+}
+
+/** `skills.totals.colecao.ouro` — `undefined` when the read carries no Collections block. */
+function readCollectionGoldPct(skills: Record<string, unknown> | undefined): number | undefined {
+  if (!isPlainObject(skills)) return undefined;
+  const totals = skills.totals;
+  if (!isPlainObject(totals) || !isPlainObject(totals.colecao)) return undefined;
+  return collectionFromSave(totals).goldPct;
 }
 
 /** `skills.totals.xp_mult` is present even on a read where `casa` did not resolve — the same
@@ -584,6 +597,7 @@ export class LiveSource {
   /** The last `skills.totals.coin_add` seen, sticky across a partial read for the same reason
    *  {@link #xpMult} is. */
   #teamCoinPct: number | undefined;
+  #collectionGoldPct: number | undefined;
   /** `undefined` means no binding has been observed yet, the state a `null` read from the store
    *  must never be mistaken for — see {@link #trackAccountBinding}. */
   #lastBinding: string | undefined;
@@ -714,7 +728,12 @@ export class LiveSource {
   ingestRotation(view: AccountView, atMs: number = this.#now()): void {
     this.#xpMult = readXpMult(view.payload.skills) ?? this.#xpMult;
     this.#teamCoinPct = readTeamCoinPct(view.payload.skills) ?? this.#teamCoinPct;
-    this.#mapFold.setAccountBoosts({ xpMult: this.#xpMult ?? 1, teamCoinPct: this.#teamCoinPct ?? 0 });
+    this.#collectionGoldPct = readCollectionGoldPct(view.payload.skills) ?? this.#collectionGoldPct;
+    this.#mapFold.setAccountBoosts({
+      xpMult: this.#xpMult ?? 1,
+      teamCoinPct: this.#teamCoinPct ?? 0,
+      collectionGoldPct: this.#collectionGoldPct ?? 0,
+    });
     this.#trackAccountBinding(view.store.binding);
     const accountGold = readAccountGold(view.payload.account);
     if (accountGold !== undefined) {

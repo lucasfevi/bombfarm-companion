@@ -84,6 +84,10 @@ describe('abilityName / abilityEffectText', () => {
       'fortuna',
       'brecha',
       'estilhacos',
+      'pavio_curto',
+      'carnificina',
+      'matador_chefes',
+      'aprendiz',
     ]);
   });
 });

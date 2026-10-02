@@ -163,7 +163,7 @@ test.describe('the Heroes screen\'s share card', () => {
     await expect(page.getByTestId('share-card-subtitle')).toContainText('Max phase 137');
     await expect(page.getByTestId('share-card-subtitle')).not.toContainText('Account #');
     await expect(page.locator('[data-testid^="share-card-featured-"]')).toHaveCount(3);
-    await expect(page.locator('[data-testid^="share-card-aura-"]')).toHaveCount(7);
+    await expect(page.locator('[data-testid^="share-card-aura-"]')).toHaveCount(9);
   });
 
   test('picking a phase through the search moves the DPS, and the reset goes back', async () => {

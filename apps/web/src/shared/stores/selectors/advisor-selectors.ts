@@ -55,6 +55,7 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
     state.treeSpeed,
     state.treeEnergy,
     state.treeLuckFlatPct,
+    state.treeCollection,
     // The active hero's own aura plus whatever the Combat tab's switches let in — a stable
     // reference that only changes when the roster, the active hero or a switch actually does
     // (`selectActiveHeroTeamBuffs`).
@@ -128,6 +129,7 @@ function advisorInput(state: PlannerStore): AdvisorPipelineInput {
     treeSpeed: state.treeSpeed,
     treeEnergy: state.treeEnergy,
     treeLuckFlatPct: state.treeLuckFlatPct,
+    treeCollection: state.treeCollection ?? undefined,
     teamBuffs: previewTeamBuffs(state),
     fieldAllies: selectActiveHeroFieldAllies(state),
     entryPulseRankFloor: entryPulseRankFloor(state.teamAuraSwitches),
