@@ -213,9 +213,9 @@ The Collections state the client requests for its panel carries the catalog of s
 
 | Wire token | Domain field | Description | Origin |
 | --- | --- | --- | --- |
-| `versao` | `version` | The body's version number (4 observed). Not read. | Portuguese |
+| `versao` | `version` | The body's version number (4 in the committed body). Not read. | Portuguese |
 | `ligada` | `enabled` | Whether Collections is open to the account. Not read. | Portuguese |
-| `parcial_pct` | `partialPct` | The share of a page's increment each piece pays before the page is complete, in percent (60 observed). | Portuguese |
+| `parcial_pct` | `partialPct` | The share of a page's increment each piece pays before the page is complete, in percent (60 in the committed body). | Portuguese |
 | `upgrades` | `upgrades` | Six numbers, one per rarity. Meaning not established. Not read. | English |
 | `tetos` | `caps` | The cap of each axis, one number per axis. | Portuguese |
 | `totais` | `totals` | What the account actually gets on each axis: the raw sum held to its cap. | Portuguese |

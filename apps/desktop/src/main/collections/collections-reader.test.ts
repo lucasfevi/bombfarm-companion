@@ -29,7 +29,7 @@ function harness(overrides: Partial<CollectionsReaderDeps> = {}, responseBody: s
     consentStore: { read: () => GRANTED },
     accountSource: () => 'server',
     isGameRunning: () => true,
-    readToken: () => ({ ok: true, accountId: '486', token: SessionToken.create('secret-token'), mtimeMs: 0 }),
+    readToken: () => ({ ok: true, accountId: '42', token: SessionToken.create('secret-token'), mtimeMs: 0 }),
     transport,
     gate: createPacingGate({
       now: () => clock,
@@ -62,8 +62,8 @@ describe('collections reader', () => {
     const { reader, requests, observed, now } = harness();
     expect(reader.refresh()).toEqual({ ok: true });
     await settle();
-    expect(requests).toEqual(['/colecao?account_id=486']);
-    expect(observed).toEqual([{ body: collectionsBody(), atMs: now(), accountId: '486' }]);
+    expect(requests).toEqual(['/colecao?account_id=42']);
+    expect(observed).toEqual([{ body: collectionsBody(), atMs: now(), accountId: '42' }]);
   });
 
   it('refuses for the same reasons a triggered account read does', () => {
@@ -123,15 +123,15 @@ describe('collections reader', () => {
 
   it('hands the recorder the account it asked as, so a read that lands after a re-login is not filed under the new one', async () => {
     let token = 'secret-token';
-    let accountId = '486';
+    let accountId = '42';
     const { reader, observed } = harness({
       readToken: () => ({ ok: true, accountId, token: SessionToken.create(token), mtimeMs: 0 }),
     });
     reader.refresh();
-    accountId = '11882';
+    accountId = '77';
     token = 'another-token';
     await settle();
-    expect(observed.map((entry) => entry.accountId)).toEqual(['486']);
+    expect(observed.map((entry) => entry.accountId)).toEqual(['42']);
   });
 
   it('survives being paced out, frees the read slot, and still holds the floor', async () => {
@@ -190,7 +190,7 @@ describe('collections reader', () => {
     expect(records.length).toBeGreaterThan(0);
     const written = JSON.stringify(records);
     expect(written).not.toContain('secret-token');
-    expect(written).not.toContain('486');
+    expect(written).not.toContain('"42"');
   });
 
   it('records nothing from a failed read, and does not throw', async () => {

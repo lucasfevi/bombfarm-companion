@@ -291,7 +291,7 @@ describe('parseCollectionsState', () => {
 
 describe('the Collections route', () => {
   it('is requested with the account id the way every other account read is', () => {
-    expect(withAccountId(COLLECTIONS_STATE_PATH, '486')).toBe('/colecao?account_id=486');
+    expect(withAccountId(COLLECTIONS_STATE_PATH, '42')).toBe('/colecao?account_id=42');
   });
 });
 

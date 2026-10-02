@@ -137,7 +137,8 @@ test.describe('Collections tab — the state the replayed tap served, drawn as b
 
   test('selecting a book opens its detail with the six rarity pages, and closing it puts the list back', async () => {
     await openCollections(page);
-    await expect(page.getByTestId('collections-book-row')).toHaveCount(30, { timeout: 30_000 });
+    const { sets } = fixtureBody();
+    await expect(page.getByTestId('collections-book-row')).toHaveCount(sets.length, { timeout: 30_000 });
     await expect(page.getByTestId('collections-book-detail')).toHaveCount(0);
 
     const row = page.getByTestId('collections-book-row').first();

@@ -5,11 +5,8 @@ last good one. Collections are the set books the 2026-09-30 patch added: sacrifi
 equipment set writes pages into that set's book, and each book grants a permanent, account-wide
 percentage bonus on one or more axes. The app never sacrifices anything.
 
-**The committed fixture is synthetic, not a capture.** Its set table — page values and caps — is the
-game's own; its progress is invented to cover the interesting states (a book finished, one with a
-later page ahead of an earlier one, a three-effect book, an axis over its cap). Nothing in it is a
-real account's progress, and a capture of a real read is still owed as a second witness to the
-shape.
+**The committed fixture is synthetic, not a capture.** Nothing in it is a real account's progress.
+A capture of a real read is still owed as a second witness to the shape.
 
 ## What the body is
 

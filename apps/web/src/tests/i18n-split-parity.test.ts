@@ -1043,8 +1043,8 @@ const KEYS_ADDED: readonly string[] = [
   // Nine cards fill three columns exactly; a spacer squares the two-column grid. One line: this
   // file sits at its cap.
   'downloadScreenPvpTitle', 'downloadScreenPvpItem1', 'downloadScreenPvpItem2', 'downloadScreenPvpItem3', 'downloadScreenPvpItem4',
-  // The download page's tenth screen card (2026-09-17): the desktop's Skill Tree tab. Ten cards
-  // fill two columns exactly; two spacers square the three-column grid. One line: at the cap.
+  // The download page's tenth screen card (2026-09-17): the desktop's Skill Tree tab. One
+  // line: at the cap.
   'downloadScreenSkillsTitle', 'downloadScreenSkillsItem1', 'downloadScreenSkillsItem2', 'downloadScreenSkillsItem3', 'downloadScreenSkillsItem4',
   // The download page's eleventh screen card (2026-10-02): the desktop's Collections tab, after
   // the Skill Tree in the app's own tab order. Eleven cards leave one cell short at two and at

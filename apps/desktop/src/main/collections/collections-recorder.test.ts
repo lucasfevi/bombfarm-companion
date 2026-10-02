@@ -6,7 +6,7 @@ import { createCollectionsRecorder } from './collections-recorder.js';
 import { createCollectionsStore } from './collections-store.js';
 import { collectionsBody, collectionsSnapshot, openDb } from './collections-test-support.js';
 
-function setup(account: { current: string | null } = { current: '486' }) {
+function setup(account: { current: string | null } = { current: '42' }) {
   const store = createCollectionsStore({ db: openDb(), accountId: () => account.current, accountSource: () => 'server' });
   const emitted: CollectionsView[] = [];
   const { log, records } = createLogSpy();
@@ -46,28 +46,28 @@ describe('collections recorder', () => {
   });
 
   it('stores a read under the account it was asked as, and announces nothing, when the bound account changed meanwhile', () => {
-    const { store, emitted, account, recorder } = setup({ current: '486' });
-    account.current = '11882';
+    const { store, emitted, account, recorder } = setup({ current: '42' });
+    account.current = '77';
 
-    recorder.observe({ body: collectionsBody(), atMs: 1_000, accountId: '486' });
+    recorder.observe({ body: collectionsBody(), atMs: 1_000, accountId: '42' });
 
     expect(emitted).toEqual([]);
     expect(store.view().snapshot).toBeNull();
-    account.current = '486';
+    account.current = '42';
     expect(store.view().snapshot).toEqual(collectionsSnapshot());
   });
 
   it('announces a read for the account that is still bound', () => {
-    const { emitted, recorder } = setup({ current: '486' });
-    recorder.observe({ body: collectionsBody(), atMs: 1_000, accountId: '486' });
+    const { emitted, recorder } = setup({ current: '42' });
+    recorder.observe({ body: collectionsBody(), atMs: 1_000, accountId: '42' });
     expect(emitted).toHaveLength(1);
   });
 
   it('stores a body the tap saw under whichever account is bound as it passes', () => {
-    const { store, account, recorder } = setup({ current: '11882' });
+    const { store, account, recorder } = setup({ current: '77' });
     recorder.observe({ body: collectionsBody(), atMs: 1_000 });
     expect(store.view().snapshot).toEqual(collectionsSnapshot());
-    account.current = '486';
+    account.current = '42';
     expect(store.view().snapshot).toBeNull();
   });
 
@@ -118,7 +118,7 @@ describe('collections recorder', () => {
 
   it('announces nothing when the store could not write', () => {
     const emit = vi.fn();
-    const store = createCollectionsStore({ db: null, accountId: () => '486', accountSource: () => 'server' });
+    const store = createCollectionsStore({ db: null, accountId: () => '42', accountSource: () => 'server' });
     createCollectionsRecorder({ store, emit }).observe({ body: collectionsBody(), atMs: 1_000 });
     expect(emit).not.toHaveBeenCalled();
   });
@@ -126,7 +126,7 @@ describe('collections recorder', () => {
   it('neither throws nor announces when the database has been closed', () => {
     const db = openDb();
     const emit = vi.fn();
-    const store = createCollectionsStore({ db, accountId: () => '486', accountSource: () => 'server' });
+    const store = createCollectionsStore({ db, accountId: () => '42', accountSource: () => 'server' });
     const recorder = createCollectionsRecorder({ store, emit });
     db.close();
     expect(() => {

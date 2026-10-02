@@ -49,9 +49,9 @@ export type CollectionsWireSymbol =
   | 'axisForge';
 
 const KEY_ENTRIES: ReadonlyArray<WireLexiconEntry & { readonly symbol: CollectionsWireSymbol }> = [
-  { symbol: 'version', wireToken: 'versao', kind: 'key', domainField: 'version', description: "The body's version number (4 observed). Not read.", origin: 'portuguese' },
+  { symbol: 'version', wireToken: 'versao', kind: 'key', domainField: 'version', description: "The body's version number (4 in the committed body). Not read.", origin: 'portuguese' },
   { symbol: 'enabled', wireToken: 'ligada', kind: 'key', domainField: 'enabled', description: 'Whether Collections is open to the account. Not read.', origin: 'portuguese' },
-  { symbol: 'partialPct', wireToken: 'parcial_pct', kind: 'key', domainField: 'partialPct', description: "The share of a page's increment each piece pays before the page is complete, in percent (60 observed).", origin: 'portuguese' },
+  { symbol: 'partialPct', wireToken: 'parcial_pct', kind: 'key', domainField: 'partialPct', description: "The share of a page's increment each piece pays before the page is complete, in percent (60 in the committed body).", origin: 'portuguese' },
   { symbol: 'upgrades', wireToken: 'upgrades', kind: 'key', domainField: 'upgrades', description: 'Six numbers, one per rarity. Meaning not established. Not read.', origin: 'english' },
   { symbol: 'caps', wireToken: 'tetos', kind: 'key', domainField: 'caps', description: 'The cap of each axis, one number per axis.', origin: 'portuguese' },
   { symbol: 'totals', wireToken: 'totais', kind: 'key', domainField: 'totals', description: 'What the account actually gets on each axis: the raw sum held to its cap.', origin: 'portuguese' },
