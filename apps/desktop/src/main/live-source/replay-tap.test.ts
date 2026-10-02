@@ -101,7 +101,7 @@ describe('resolveReplayPvpFixturePath', () => {
 
 describe('resolveReplayCollectionsFixturePath', () => {
   it('honours the override, including an empty string as opting out', () => {
-    expect(resolveReplayCollectionsFixturePath({ BFC_REPLAY_COLLECTIONS_FIXTURE: 'C:\tmp\book.json' }, HERE)).toBe('C:\tmp\book.json');
+    expect(resolveReplayCollectionsFixturePath({ BFC_REPLAY_COLLECTIONS_FIXTURE: 'C:\\tmp\\book.json' }, HERE)).toBe('C:\\tmp\\book.json');
     expect(resolveReplayCollectionsFixturePath({ BFC_REPLAY_COLLECTIONS_FIXTURE: '' }, HERE)).toBe('');
   });
 

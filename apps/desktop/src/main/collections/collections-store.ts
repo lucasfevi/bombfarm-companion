@@ -1,17 +1,20 @@
-import { EMPTY_COLLECTIONS_VIEW, type CollectionsSnapshot, type CollectionsView } from '@bombfarm/contracts';
+import { EMPTY_COLLECTIONS_VIEW, type AccountSource, type CollectionsSnapshot, type CollectionsView } from '@bombfarm/contracts';
+import { isCollectionsSnapshot } from '@bombfarm/game-api';
 import type { LogPort, SqliteDb } from '../storage/index.js';
-import { isCollectionsSnapshot } from './snapshot-shape.js';
 
 /**
  * The last good Collections read, over the same database the account store opens — the PVP history
  * borrows that handle the same way. The table is additive (`CREATE TABLE IF NOT EXISTS` beside the
  * account tables), so `SCHEMA_VERSION` does not move: an older build simply never reads it.
  *
- * One row per account, newest wins, with no history. The row is bound to the account the session
+ * One row per account, newest wins, with no history. The row is keyed by the account the session
  * token names: the PVP standing rows carry no account, but a book is permanent and account-wide,
  * so showing one account's book under another would be a wrong answer rather than a stale one.
- * With no account to name (consent off, token unreadable) the row is keyed by the empty string and
- * only ever answers that same state.
+ * A read the app asked for is stored under the account it asked as, not the one bound by the time
+ * the body lands; a body the tap saw carries no request, so it is stored under the account bound
+ * as it passes. With no account to name (consent off, token unreadable) the key is the empty
+ * string. When the account source is the fixture, every read and write uses one reserved key that
+ * no account id can equal, so pointing a fixture run at a real profile never touches a real row.
  */
 export const INIT_COLLECTIONS_SQL = `
 CREATE TABLE IF NOT EXISTS collections_state (
@@ -22,6 +25,7 @@ CREATE TABLE IF NOT EXISTS collections_state (
 `;
 
 const NO_ACCOUNT = '';
+const FIXTURE_KEY = '~fixture';
 
 const READ_SQL = 'SELECT captured_at, body FROM collections_state WHERE account_id = ?';
 
@@ -30,9 +34,17 @@ INSERT INTO collections_state (account_id, captured_at, body) VALUES (?, ?, ?)
 ON CONFLICT(account_id) DO UPDATE SET captured_at = excluded.captured_at, body = excluded.body
 `;
 
+/** `recorded` means the row is the one `view()` answers from now, so the renderer should hear of
+ *  it; `recorded_for_other_account` means the account that was asked is no longer the bound one,
+ *  so the row is kept for when it returns and nobody is told. */
+export type CollectionsRecordOutcome = 'recorded' | 'recorded_for_other_account' | 'failed';
+
 export interface CollectionsStore {
-  /** Replaces the held snapshot, dating it; `false` only with no store behind it or on a failed write. */
-  record(snapshot: CollectionsSnapshot, opts: { readonly capturedAt: string }): boolean;
+  /** Replaces the snapshot held for `accountId` (the bound account when omitted), dating it. */
+  record(
+    snapshot: CollectionsSnapshot,
+    opts: { readonly capturedAt: string; readonly accountId?: string },
+  ): CollectionsRecordOutcome;
   /** What is held for the account the app is bound to right now; empty when nothing is, or when the
    *  row no longer reads as the contract's shape. */
   view(): CollectionsView;
@@ -42,6 +54,7 @@ export interface CollectionsStoreDeps {
   readonly db: SqliteDb | null;
   /** Resolved on every call: the account is whoever the session token names at that moment. */
   readonly accountId: () => string | null;
+  readonly accountSource: () => AccountSource;
   readonly log?: LogPort;
 }
 
@@ -67,22 +80,28 @@ export function createCollectionsStore(deps: CollectionsStoreDeps): CollectionsS
     }
   }
 
+  function boundKey(): string {
+    return deps.accountSource() === 'fixture' ? FIXTURE_KEY : keyOf(deps.accountId());
+  }
+
   return {
-    record(snapshot, { capturedAt }) {
-      if (!db) return false;
+    record(snapshot, { capturedAt, accountId }) {
+      if (!db) return 'failed';
       try {
-        db.prepare(WRITE_SQL).run(keyOf(deps.accountId()), capturedAt, JSON.stringify(snapshot));
-        return true;
+        const bound = boundKey();
+        const key = bound === FIXTURE_KEY || accountId === undefined ? bound : accountId;
+        db.prepare(WRITE_SQL).run(key, capturedAt, JSON.stringify(snapshot));
+        return key === bound ? 'recorded' : 'recorded_for_other_account';
       } catch (err) {
         log.error({ scope: 'collections', event: 'store.record_failed', error: String(err) });
-        return false;
+        return 'failed';
       }
     },
 
     view() {
       if (!db) return EMPTY_COLLECTIONS_VIEW;
       try {
-        const row = db.prepare(READ_SQL).get(keyOf(deps.accountId())) as StoredRow | undefined;
+        const row = db.prepare(READ_SQL).get(boundKey()) as StoredRow | undefined;
         if (!row) return EMPTY_COLLECTIONS_VIEW;
         const snapshot: unknown = JSON.parse(row.body);
         if (!isCollectionsSnapshot(snapshot)) {

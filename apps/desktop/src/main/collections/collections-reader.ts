@@ -52,7 +52,7 @@ export function createCollectionsReader(deps: CollectionsReaderDeps): Collection
   let lastStartedAt: number | null = null;
   let inFlight = false;
 
-  async function read(session: ReturnType<typeof grantSession>): Promise<void> {
+  async function read(session: ReturnType<typeof grantSession>, accountId: string): Promise<void> {
     let outcome: RequestOutcome;
     try {
       outcome = await deps.gate.run(COLLECTIONS_STATE_PATH, () => requestGet(session, deps.transport, COLLECTIONS_STATE_PATH));
@@ -68,7 +68,7 @@ export function createCollectionsReader(deps: CollectionsReaderDeps): Collection
       log.warn({ scope: 'collections', event: 'read.failed', outcome: outcome.kind });
       return;
     }
-    deps.recorder.observe({ body: outcome.json, atMs: now() });
+    deps.recorder.observe({ body: outcome.json, atMs: now(), accountId });
   }
 
   return {
@@ -89,7 +89,7 @@ export function createCollectionsReader(deps: CollectionsReaderDeps): Collection
       const session = grantSession(consent, { accountId: token.accountId, token: token.token });
       void (async () => {
         try {
-          await read(session);
+          await read(session, token.accountId);
         } catch (error) {
           log.error({ scope: 'collections', event: 'read.threw', error: String(error) });
         } finally {

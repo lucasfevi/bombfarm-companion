@@ -37,9 +37,11 @@ returns it as its own `collections` verdict. A key the game adds anywhere makes 
 refuse the body — which is right for a body of unknown provenance, and wrong for the app's own
 request, where the route already says what it is. So `parseCollectionsState` is the looser of the
 two: it ignores keys it does not know (and an effect on an axis the contract does not name), and
-refuses only a missing required key or a wrong type. A body that parses but fails the identifier is
-kept and logged once as `read.drift`, so a key the game adds degrades loudly instead of blanking the
-screen.
+refuses only a missing required key, a wrong type or a figure out of range (a negative percentage, a
+partial-page share above 100, a page holding more than eight pieces). `readCollectionsState` also
+counts what it ignored. A body that parses but fails the identifier, or had anything ignored — an
+unknown-axis effect passes the identifier — is kept and logged once as `read.drift`, so a change
+the game makes degrades loudly instead of blanking the screen.
 
 ## Where it is read, and when
 
@@ -55,9 +57,13 @@ screen.
   "last changed". A body it cannot read stores nothing and keeps the last good snapshot;
 - the **store** (`collections-store.ts`) keeps the parsed snapshot as JSON beside the account tables
   (`CREATE TABLE IF NOT EXISTS`, so `SCHEMA_VERSION` does not move). It holds one row per account,
-  the account the session token names, and answers only for the account the app is bound to now —
-  one account's book never shows under another. A row that no longer reads as the contract's shape
-  is treated as absent.
+  the account the session token names. A read the app asked for is stored under the account it
+  asked as, even if the game has switched accounts before the body landed, and is announced only
+  when that account is still the bound one. A body the tap saw carries no request, so it is stored
+  under whichever account is bound as it passes. `collections:get` answers only from the bound
+  account's row; a fixture run uses one reserved key no account id can equal, so it neither shows
+  nor overwrites a real profile's row. A row that no longer reads as the contract's shape — or is
+  out of range, since the parser's range check is the same one — is treated as absent.
 
 The renderer reads `collections:get` once and follows `collections:changed`, both carrying a
 `CollectionsView` (`{ snapshot, capturedAt }`, both `null` before any read landed).

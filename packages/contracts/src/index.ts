@@ -582,8 +582,9 @@ export interface IpcChannels {
   'pvp:film': { args: [number]; result: PvpFilmView | null };
   /** The last good Collections read, with when it was read; empty before any read landed. */
   'collections:get': { args: []; result: CollectionsView };
-  /** Asks main to read the Collections state now. `ok` means the read was started; what it finds
-   *  arrives on `collections:changed`, and only if it changed something. */
+  /** Asks main to read the Collections state now. `ok` means the read was started; a read that
+   *  lands arrives on `collections:changed`, even when it repeats what is held, because the date
+   *  beside the book means "last confirmed". */
   'collections:refresh': { args: []; result: AccountReadResult };
   /** Puts a PNG the renderer drew on the system clipboard as an image. The renderer has no
    *  clipboard of its own that holds pictures reliably — the web one refuses an unfocused
@@ -703,7 +704,9 @@ export interface IpcEvents {
   /** Fired when a duel result or a film has just been kept — the same list `pvp:history` serves,
    *  so a screen already open sees the duel without polling. */
   'pvp:changed': PvpHistoryResult;
-  /** Fired when a Collections read changed what is held — the same view `collections:get` serves. */
+  /** Fired whenever a Collections read lands for the account the app is bound to — the same view
+   *  `collections:get` serves, re-dated even when the snapshot repeats the last one. A read that
+   *  lands for an account that is no longer the bound one is stored and not announced. */
   'collections:changed': CollectionsView;
   /** Fired on every maximize and unmaximize of the main window, so the header's own caption
    *  buttons follow a state change the OS made (a double-clicked title bar, a snap, Win+Up)

@@ -8,18 +8,32 @@ import {
   type CollectionsSnapshot,
 } from '@bombfarm/contracts';
 import { isPlainObject } from '../type-guards.js';
-import { COLLECTION_AXIS_SYMBOLS, wireKey } from './lexicon.js';
+import {
+  COLLECTION_AXIS_SYMBOLS,
+  COLLECTIONS_EFFECT_SYMBOLS,
+  COLLECTIONS_PIECE_SYMBOLS,
+  COLLECTIONS_SET_SYMBOLS,
+  COLLECTIONS_TOP_LEVEL_SYMBOLS,
+  wireKey,
+  type CollectionsWireSymbol,
+} from './lexicon.js';
+import { isCollectionsSnapshot } from './snapshot-shape.js';
 
 const PAGES = 6;
-const PIECES_PER_PAGE = 8;
+
+/** What a read had to leave out to produce a snapshot: a key the lexicon does not declare, at any
+ *  level, or an effect on an axis the contract does not name. Zero for a body of the exact shape. */
+export interface CollectionsRead {
+  readonly snapshot: CollectionsSnapshot;
+  readonly ignored: number;
+}
+
+interface Tally {
+  ignored: number;
+}
 
 function finiteNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
-}
-
-function wholeNumber(value: unknown): number | null {
-  const number = finiteNumber(value);
-  return number !== null && Number.isInteger(number) ? number : null;
 }
 
 function mapAll<T, R>(values: readonly T[], read: (value: T) => R | null): R[] | null {
@@ -41,8 +55,25 @@ const AXIS_BY_TOKEN: ReadonlyMap<string, CollectionAxis> = new Map(
   COLLECTION_AXES.map((axis) => [wireKey(COLLECTION_AXIS_SYMBOLS[axis]), axis]),
 );
 
-function parseAxisValues(value: unknown): CollectionAxisValues | null {
+function countUndeclaredKeys(record: Record<string, unknown>, declared: ReadonlySet<string>, tally: Tally): void {
+  for (const key of Object.keys(record)) {
+    if (!declared.has(key)) tally.ignored += 1;
+  }
+}
+
+function declaredKeys(symbols: readonly CollectionsWireSymbol[]): ReadonlySet<string> {
+  return new Set(symbols.map(wireKey));
+}
+
+const AXIS_KEYS: ReadonlySet<string> = new Set(AXIS_BY_TOKEN.keys());
+const TOP_LEVEL_KEYS = declaredKeys(COLLECTIONS_TOP_LEVEL_SYMBOLS);
+const SET_KEYS = declaredKeys(COLLECTIONS_SET_SYMBOLS);
+const EFFECT_KEYS = declaredKeys(COLLECTIONS_EFFECT_SYMBOLS);
+const PIECE_KEYS = declaredKeys(COLLECTIONS_PIECE_SYMBOLS);
+
+function parseAxisValues(value: unknown, tally: Tally): CollectionAxisValues | null {
   if (!isPlainObject(value)) return null;
+  countUndeclaredKeys(value, AXIS_KEYS, tally);
   const values: Partial<Record<CollectionAxis, number>> = {};
   for (const axis of COLLECTION_AXES) {
     const amount = finiteNumber(value[wireKey(COLLECTION_AXIS_SYMBOLS[axis])]);
@@ -52,54 +83,50 @@ function parseAxisValues(value: unknown): CollectionAxisValues | null {
   return values as CollectionAxisValues;
 }
 
-/** An effect on an axis the contract does not name is skipped rather than refused: the game adding
- *  an eleventh axis must not blank the ten the screen can draw. */
-function parseEffects(value: unknown): CollectionEffectState[] | null {
+/** The axis is looked up first: an effect on an axis the contract does not name is skipped whole,
+ *  whatever else is in it, so the game adding an eleventh axis cannot blank the ten the screen
+ *  can draw. */
+function parseEffects(value: unknown, tally: Tally): CollectionEffectState[] | null {
   if (!Array.isArray(value)) return null;
   const effects: CollectionEffectState[] = [];
   for (const entry of value) {
     if (!isPlainObject(entry)) return null;
     const axisToken = entry[wireKey('effectAxis')];
+    if (typeof axisToken !== 'string') return null;
+    const axis = AXIS_BY_TOKEN.get(axisToken);
+    if (axis === undefined) {
+      tally.ignored += 1;
+      continue;
+    }
+    countUndeclaredKeys(entry, EFFECT_KEYS, tally);
     const pageValues = numberRow(entry[wireKey('effectPages')], PAGES);
     const now = finiteNumber(entry[wireKey('effectNow')]);
-    if (typeof axisToken !== 'string' || pageValues === null || now === null) return null;
-    const axis = AXIS_BY_TOKEN.get(axisToken);
-    if (axis !== undefined) effects.push({ axis, pageValues, now });
+    if (pageValues === null || now === null) return null;
+    effects.push({ axis, pageValues, now });
   }
   return effects;
 }
 
-function parsePiecesByPage(value: unknown): number[] | null {
-  if (!Array.isArray(value) || value.length !== PAGES) return null;
-  return mapAll(value, (count) => {
-    const pieces = wholeNumber(count);
-    return pieces !== null && pieces >= 0 && pieces <= PIECES_PER_PAGE ? pieces : null;
-  });
-}
-
-function parseSet(value: unknown): CollectionSetState | null {
+function parseSet(value: unknown, tally: Tally): CollectionSetState | null {
   if (!isPlainObject(value)) return null;
+  countUndeclaredKeys(value, SET_KEYS, tally);
   const code = value[wireKey('setCode')];
   const level = finiteNumber(value[wireKey('setLevel')]);
-  const piecesByPage = parsePiecesByPage(value[wireKey('setPerPage')]);
-  const effects = parseEffects(value[wireKey('setEffects')]);
+  const piecesByPage = numberRow(value[wireKey('setPerPage')], PAGES);
+  const effects = parseEffects(value[wireKey('setEffects')], tally);
   if (typeof code !== 'string' || level === null || piecesByPage === null || effects === null) return null;
   return { code, level, piecesByPage, effects };
 }
 
-function mask(value: unknown): number | null {
-  const bits = wholeNumber(value);
-  return bits !== null && bits >= 0 ? bits : null;
-}
-
-function parsePiece(value: unknown): CollectionPieceState | null {
+function parsePiece(value: unknown, tally: Tally): CollectionPieceState | null {
   if (!isPlainObject(value)) return null;
+  countUndeclaredKeys(value, PIECE_KEYS, tally);
   const defId = value[wireKey('pieceDefId')];
   const set = value[wireKey('pieceSet')];
-  const slot = wholeNumber(value[wireKey('pieceSlot')]);
+  const slot = finiteNumber(value[wireKey('pieceSlot')]);
   const level = finiteNumber(value[wireKey('pieceLevel')]);
-  const sacrificedMask = mask(value[wireKey('pieceMask')]);
-  const pendingMask = mask(value[wireKey('piecePending')]);
+  const sacrificedMask = finiteNumber(value[wireKey('pieceMask')]);
+  const pendingMask = finiteNumber(value[wireKey('piecePending')]);
   if (
     typeof defId !== 'string' ||
     typeof set !== 'string' ||
@@ -115,24 +142,32 @@ function parsePiece(value: unknown): CollectionPieceState | null {
 
 /**
  * Reads the Collections state: the axis caps and totals, every set book with its progress, and
- * every piece. `null` on any missing required key or wrong type — a wrong-length page list, a number
- * that is not finite — because a half-read book would draw progress the account does not have.
- * Keys the game adds are ignored, so the parser stays usable when the strict identifier has begun
- * to refuse the body. The version, the enabled flag, the upgrade table and the two page counters
- * the server derives from the per-page counts are not read.
+ * every piece, and says how much it left out. `null` on any missing required key, wrong type or
+ * figure out of range ({@link isCollectionsSnapshot}) — because a half-read book would draw
+ * progress the account does not have. Keys the game adds are ignored and counted, so the reader
+ * stays usable when the strict identifier has begun to refuse the body and the caller can still
+ * flag it. The version, the enabled flag, the upgrade table and the two page counters the server
+ * derives from the per-page counts are not read.
  */
-export function parseCollectionsState(body: unknown): CollectionsSnapshot | null {
+export function readCollectionsState(body: unknown): CollectionsRead | null {
   if (!isPlainObject(body)) return null;
+  const tally: Tally = { ignored: 0 };
+  countUndeclaredKeys(body, TOP_LEVEL_KEYS, tally);
   const partialPct = finiteNumber(body[wireKey('partialPct')]);
-  const caps = parseAxisValues(body[wireKey('caps')]);
-  const totals = parseAxisValues(body[wireKey('totals')]);
-  const raw = parseAxisValues(body[wireKey('raw')]);
+  const caps = parseAxisValues(body[wireKey('caps')], tally);
+  const totals = parseAxisValues(body[wireKey('totals')], tally);
+  const raw = parseAxisValues(body[wireKey('raw')], tally);
   const rawSets = body[wireKey('sets')];
   const rawPieces = body[wireKey('pieces')];
   if (partialPct === null || caps === null || totals === null || raw === null) return null;
   if (!Array.isArray(rawSets) || !Array.isArray(rawPieces)) return null;
-  const sets = mapAll(rawSets, parseSet);
-  const pieces = mapAll(rawPieces, parsePiece);
+  const sets = mapAll(rawSets, (set) => parseSet(set, tally));
+  const pieces = mapAll(rawPieces, (piece) => parsePiece(piece, tally));
   if (sets === null || pieces === null) return null;
-  return { partialPct, caps, totals, raw, sets, pieces };
+  const snapshot = { partialPct, caps, totals, raw, sets, pieces };
+  return isCollectionsSnapshot(snapshot) ? { snapshot, ignored: tally.ignored } : null;
+}
+
+export function parseCollectionsState(body: unknown): CollectionsSnapshot | null {
+  return readCollectionsState(body)?.snapshot ?? null;
 }

@@ -12,7 +12,8 @@ import { checkShape } from '../shape.js';
 import { loadFixtureJson, required } from '../test-fixtures.js';
 import { isCollectionsStateBody } from './identify.js';
 import { COLLECTION_AXIS_SYMBOLS, COLLECTIONS_WIRE_LEXICON, wireKey } from './lexicon.js';
-import { parseCollectionsState } from './parse.js';
+import { parseCollectionsState, readCollectionsState } from './parse.js';
+import { isCollectionsSnapshot } from './snapshot-shape.js';
 import { COLLECTIONS_STATE_PATH } from './routes.js';
 
 type Wire = Record<string, unknown>;
@@ -204,6 +205,42 @@ describe('parseCollectionsState', () => {
     expect(parseCollectionsState(body)).toEqual(snapshot);
   });
 
+  it('skips an unknown-axis effect whatever shape it has, and keeps the rest of the book', () => {
+    const body = loadCollectionsBody();
+    const effects = firstSet(body)[wireKey('setEffects')] as unknown[];
+    effects.push({ [wireKey('effectAxis')]: 'sabor', something: 'else entirely' });
+    expect(parseCollectionsState(body)).toEqual(snapshot);
+  });
+
+  it('counts nothing as ignored for a body of the exact shape', () => {
+    expect(readCollectionsState(loadCollectionsBody())?.ignored).toBe(0);
+  });
+
+  for (const level of LEVELS) {
+    it(`counts a key added to ${level.name} as ignored`, () => {
+      const body = loadCollectionsBody();
+      level.target(body)['added_by_a_later_patch'] = 1;
+      expect(readCollectionsState(body)?.ignored).toBe(1);
+    });
+  }
+
+  it('counts an unknown axis key in an axis record as ignored', () => {
+    const body = loadCollectionsBody();
+    (body[wireKey('raw')] as Wire)['sabor'] = 1;
+    expect(readCollectionsState(body)?.ignored).toBe(1);
+  });
+
+  it('counts an unknown-axis effect as ignored even though the strict identifier still takes the body', () => {
+    const body = loadCollectionsBody();
+    (firstSet(body)[wireKey('setEffects')] as unknown[]).push({ ...firstEffect(body), [wireKey('effectAxis')]: 'sabor' });
+    expect(isCollectionsStateBody(body)).toBe(true);
+    expect(readCollectionsState(body)?.ignored).toBe(1);
+  });
+
+  it('produces a snapshot the stored-row check accepts', () => {
+    expect(isCollectionsSnapshot(snapshot)).toBe(true);
+  });
+
   const malformed: ReadonlyArray<readonly [string, (body: Wire) => void]> = [
     ['a non-finite axis total', (body) => ((body[wireKey('totals')] as Wire)[wireKey(COLLECTION_AXIS_SYMBOLS.gold)] = Number.NaN)],
     ['an infinite cap', (body) => ((body[wireKey('caps')] as Wire)[wireKey(COLLECTION_AXIS_SYMBOLS.xp)] = Infinity)],
@@ -222,6 +259,18 @@ describe('parseCollectionsState', () => {
     ['a piece with a negative mask', (body) => (firstPiece(body)[wireKey('pieceMask')] = -1)],
     ['a piece with a missing definition id', (body) => Reflect.deleteProperty(firstPiece(body), wireKey('pieceDefId'))],
     ['sets that are not a list', (body) => (body[wireKey('sets')] = {})],
+    ['a negative set level', (body) => (firstSet(body)[wireKey('setLevel')] = -1)],
+    ['a negative current bonus', (body) => (firstEffect(body)[wireKey('effectNow')] = -0.5)],
+    ['a negative page value', (body) => ((firstEffect(body)[wireKey('effectPages')] as number[])[0] = -3.3)],
+    ['a negative cap', (body) => ((body[wireKey('caps')] as Wire)[wireKey(COLLECTION_AXIS_SYMBOLS.gold)] = -1)],
+    ['a negative total', (body) => ((body[wireKey('totals')] as Wire)[wireKey(COLLECTION_AXIS_SYMBOLS.gold)] = -1)],
+    ['a negative uncapped sum', (body) => ((body[wireKey('raw')] as Wire)[wireKey(COLLECTION_AXIS_SYMBOLS.gold)] = -1)],
+    ['a negative partial-page share', (body) => (body[wireKey('partialPct')] = -1)],
+    ['a partial-page share above a hundred', (body) => (body[wireKey('partialPct')] = 101)],
+    ['a negative piece count on a page', (body) => ((firstSet(body)[wireKey('setPerPage')] as number[])[0] = -1)],
+    ['a negative pending mask', (body) => (firstPiece(body)[wireKey('piecePending')] = -1)],
+    ['a fractional mask', (body) => (firstPiece(body)[wireKey('pieceMask')] = 1.5)],
+    ['a negative piece level', (body) => (firstPiece(body)[wireKey('pieceLevel')] = -1)],
     ['pieces that are not a list', (body) => (body[wireKey('pieces')] = null)],
   ];
 

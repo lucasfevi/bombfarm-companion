@@ -795,7 +795,7 @@ async function bootstrap(): Promise<void> {
     log,
   });
 
-  collectionsStore = createCollectionsStore({ db: accountOpen.db, accountId: boundAccountId, log });
+  collectionsStore = createCollectionsStore({ db: accountOpen.db, accountId: boundAccountId, accountSource: currentAccountSource, log });
   collectionsRecorder = createCollectionsRecorder({
     store: collectionsStore,
     emit: (view) => {

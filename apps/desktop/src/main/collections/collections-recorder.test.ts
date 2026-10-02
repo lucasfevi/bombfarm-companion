@@ -6,12 +6,16 @@ import { createCollectionsRecorder } from './collections-recorder.js';
 import { createCollectionsStore } from './collections-store.js';
 import { collectionsBody, collectionsSnapshot, openDb } from './collections-test-support.js';
 
-function setup() {
-  const store = createCollectionsStore({ db: openDb(), accountId: () => '486' });
+function setup(account: { current: string | null } = { current: '486' }) {
+  const store = createCollectionsStore({ db: openDb(), accountId: () => account.current, accountSource: () => 'server' });
   const emitted: CollectionsView[] = [];
   const { log, records } = createLogSpy();
   const recorder = createCollectionsRecorder({ store, emit: (view) => emitted.push(view), log });
-  return { store, emitted, records, recorder };
+  return { store, emitted, records, recorder, account };
+}
+
+function warnEvents(records: ReturnType<typeof createLogSpy>['records']): unknown[] {
+  return records.filter((entry) => entry.level === 'warn').map((entry) => entry.record['event']);
 }
 
 describe('collections recorder', () => {
@@ -41,6 +45,32 @@ describe('collections recorder', () => {
     expect(store.view().snapshot?.partialPct).toBe(70);
   });
 
+  it('stores a read under the account it was asked as, and announces nothing, when the bound account changed meanwhile', () => {
+    const { store, emitted, account, recorder } = setup({ current: '486' });
+    account.current = '11882';
+
+    recorder.observe({ body: collectionsBody(), atMs: 1_000, accountId: '486' });
+
+    expect(emitted).toEqual([]);
+    expect(store.view().snapshot).toBeNull();
+    account.current = '486';
+    expect(store.view().snapshot).toEqual(collectionsSnapshot());
+  });
+
+  it('announces a read for the account that is still bound', () => {
+    const { emitted, recorder } = setup({ current: '486' });
+    recorder.observe({ body: collectionsBody(), atMs: 1_000, accountId: '486' });
+    expect(emitted).toHaveLength(1);
+  });
+
+  it('stores a body the tap saw under whichever account is bound as it passes', () => {
+    const { store, account, recorder } = setup({ current: '11882' });
+    recorder.observe({ body: collectionsBody(), atMs: 1_000 });
+    expect(store.view().snapshot).toEqual(collectionsSnapshot());
+    account.current = '486';
+    expect(store.view().snapshot).toBeNull();
+  });
+
   it('keeps a body that carries a key the game added, and logs the drift once', () => {
     const { store, emitted, records, recorder } = setup();
     const drifted = collectionsBody();
@@ -48,13 +78,24 @@ describe('collections recorder', () => {
     recorder.observe({ body: drifted, atMs: 1_000 });
     expect(store.view().snapshot).toEqual(collectionsSnapshot());
     expect(emitted).toHaveLength(1);
-    expect(records.filter((entry) => entry.level === 'warn').map((entry) => entry.record['event'])).toEqual(['read.drift']);
+    expect(warnEvents(records)).toEqual(['read.drift']);
+  });
+
+  it('logs the drift when the strict identifier passes but an effect on an unknown axis was dropped', () => {
+    const { store, records, recorder } = setup();
+    const body = collectionsBody();
+    const sets = body[collectionsWireKey('sets')] as Record<string, unknown>[];
+    const firstEffects = sets[0]?.[collectionsWireKey('setEffects')] as Record<string, unknown>[];
+    firstEffects.push({ ...firstEffects[0], [collectionsWireKey('effectAxis')]: 'sabor' });
+    recorder.observe({ body, atMs: 1_000 });
+    expect(store.view().snapshot).toEqual(collectionsSnapshot());
+    expect(warnEvents(records)).toEqual(['read.drift']);
   });
 
   it('logs nothing at warn level for a body of the exact shape', () => {
     const { records, recorder } = setup();
     recorder.observe({ body: collectionsBody(), atMs: 1_000 });
-    expect(records.filter((entry) => entry.level === 'warn')).toEqual([]);
+    expect(warnEvents(records)).toEqual([]);
   });
 
   it('stores nothing and warns for a body it cannot read', () => {
@@ -65,10 +106,7 @@ describe('collections recorder', () => {
     recorder.observe({ body: 'not a body', atMs: 2_000 });
     expect(store.view().snapshot).toBeNull();
     expect(emitted).toEqual([]);
-    expect(records.filter((entry) => entry.level === 'warn').map((entry) => entry.record['event'])).toEqual([
-      'read.unreadable',
-      'read.unreadable',
-    ]);
+    expect(warnEvents(records)).toEqual(['read.unreadable', 'read.unreadable']);
   });
 
   it('keeps the last good snapshot when a later body cannot be read', () => {
@@ -80,8 +118,20 @@ describe('collections recorder', () => {
 
   it('announces nothing when the store could not write', () => {
     const emit = vi.fn();
-    const store = createCollectionsStore({ db: null, accountId: () => '486' });
+    const store = createCollectionsStore({ db: null, accountId: () => '486', accountSource: () => 'server' });
     createCollectionsRecorder({ store, emit }).observe({ body: collectionsBody(), atMs: 1_000 });
+    expect(emit).not.toHaveBeenCalled();
+  });
+
+  it('neither throws nor announces when the database has been closed', () => {
+    const db = openDb();
+    const emit = vi.fn();
+    const store = createCollectionsStore({ db, accountId: () => '486', accountSource: () => 'server' });
+    const recorder = createCollectionsRecorder({ store, emit });
+    db.close();
+    expect(() => {
+      recorder.observe({ body: collectionsBody(), atMs: 1_000 });
+    }).not.toThrow();
     expect(emit).not.toHaveBeenCalled();
   });
 });
