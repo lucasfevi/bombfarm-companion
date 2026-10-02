@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { CollectionsSnapshot } from '@bombfarm/contracts';
@@ -223,5 +225,30 @@ describe('BookDetailPanel', () => {
     expect(pieceAt(html, 6, 2)).toContain('na mochila, pronta para queimar');
     expect(pieceAt(html, 2, 4)).toContain('a caminho');
     expect(cellOf(pageRows(html)[2] ?? '', 'collections-detail-page-now')).toBe('+1,24%');
+  });
+
+  it('lays the body out as two columns from lg, with the piece grid at its natural width, and one column at wide', () => {
+    const html = render(book('gold'));
+    expect(html).toMatch(/data-testid="collections-detail-body"/);
+    expect(html).toContain('lg:grid-cols-[minmax(0,1fr)_auto] wide:grid-cols-1');
+    expect(html.indexOf('data-testid="collections-detail-effect"')).toBeLessThan(html.indexOf('data-testid="collections-detail-page"'));
+    expect(html.indexOf('data-testid="collections-detail-page"')).toBeLessThan(html.indexOf('data-testid="collections-piece-grid"'));
+  });
+
+  it('draws each piece icon at the piece’s own level, not the set’s', () => {
+    const reLevelled: CollectionsSnapshot = {
+      ...withArrival,
+      pieces: withArrival.pieces.map((piece) => (piece.defId === 'gold_elmo' ? { ...piece, level: 25 } : piece)),
+    };
+    const html = render(book('gold', buildCollectionBoard(reLevelled, BAG)));
+    const glyphs = (cell: string) => /data-slot="item-level"[^>]*>(\d+)</.exec(html.slice(html.indexOf(cell)))?.[1];
+    expect(glyphs(pieceAt(html, 1, 0))).toBe('25');
+    expect(glyphs(pieceAt(html, 0, 0))).toBe('20');
+  });
+
+  it('brings itself into view when a book is chosen, through the shell’s own scroll helper', () => {
+    const source = readFileSync(join(__dirname, 'book-detail-panel.tsx'), 'utf8');
+    expect(source).toContain("import { bringBandIntoView } from '../../lib/forge/run-into-view';");
+    expect(source).toMatch(/useEffect\(\(\) => \{[\s\S]*?bringBandIntoView[\s\S]*?\}, \[code\]\);/);
   });
 });

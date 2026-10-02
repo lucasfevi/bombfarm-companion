@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { EMPTY_COLLECTIONS_VIEW, type AccountReadRefusal, type AccountView, type SectionFidelity } from '@bombfarm/contracts';
@@ -173,5 +175,11 @@ describe('CollectionsView', () => {
     expect(portuguese).toContain(ptBR.collectionsBooksTitle);
     expect(render(noRead, { locale: 'pt-BR' })).toContain(ptBR.collectionsReadNow);
     expect(render(noRead, { locale: 'pt-BR' })).toContain(ptBR.collectionsEmptyTitle);
+  });
+
+  it('puts the open book beside the table only from the wide breakpoint, and under it everywhere else', () => {
+    const source = readFileSync(join(__dirname, 'collections-view.tsx'), 'utf8');
+    expect(source).toContain("'wide:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]'");
+    expect(source).not.toMatch(/(?:xl|2xl|lg):grid-cols-\[/);
   });
 });

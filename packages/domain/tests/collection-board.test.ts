@@ -166,6 +166,14 @@ describe('buildCollectionBoard: a set with no bag', () => {
     expect(luva?.defId).toBe('gold_luva');
   });
 
+  it('carries each piece’s own level, even when it differs from its set’s', () => {
+    const snapshot = goldSnapshot();
+    const reLevelled = snapshot.pieces.map((piece) => (piece.slot === 1 ? { ...piece, level: 25 } : piece));
+    const row = buildCollectionBoard({ ...snapshot, pieces: reLevelled }).sets[0];
+    expect(row?.level).toBe(20);
+    expect(row?.pieces.map((piece) => piece.level)).toEqual([20, 25, 20, 20, 20, 20, 20, 20]);
+  });
+
   it('lists the pieces by slot', () => {
     expect(goldBoard([]).pieces.map((piece) => piece.slot)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
   });

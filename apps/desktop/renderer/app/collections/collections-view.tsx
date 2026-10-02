@@ -77,7 +77,7 @@ export function CollectionsView() {
                 'grid',
                 'gap-2.5',
                 'min-w-0',
-                detailOpen ? 'xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]' : 'grid-cols-1',
+                detailOpen ? 'wide:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]' : 'grid-cols-1',
               )}
             >
               <BooksPanel

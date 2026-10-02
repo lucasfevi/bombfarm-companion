@@ -67,6 +67,7 @@ export interface CollectionPageRow {
 export interface CollectionPieceRow {
   readonly slot: number;
   readonly defId: string;
+  readonly level: number;
   readonly sacrificed: readonly boolean[];
   readonly pending: readonly boolean[];
   readonly ready: readonly boolean[];
@@ -192,7 +193,7 @@ function pieceRow(
   const ready = pages.map(
     (rarity) => !fullPages[rarity] && !sacrificed[rarity] && !pending[rarity] && freeKeys.has(bagKey(piece.defId, rarity)),
   );
-  return { slot: piece.slot, defId: piece.defId, sacrificed, pending, ready };
+  return { slot: piece.slot, defId: piece.defId, level: piece.level, sacrificed, pending, ready };
 }
 
 function pageCounts(piecesByPage: readonly number[]): number[] {

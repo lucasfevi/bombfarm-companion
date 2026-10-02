@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { itemRarityLabel, levelLabel, setName } from '@bombfarm/domain/game-labels';
 import {
   COLLECTION_PAGES,
@@ -13,6 +14,7 @@ import { ItemIcon, rarityDotClass, rarityTextClass } from '@bombfarm/game-art';
 import { Button, cn, DataTable, FactTile, Icon, Panel, panelHClass, panelTitleClass, Tooltip } from '@bombfarm/ui';
 import { formatBonus } from '../../lib/collections/collections-format';
 import { weaponDefId } from '../../lib/collections/collections-rows';
+import { bringBandIntoView } from '../../lib/forge/run-into-view';
 import { useCopy, useLocale, type Copy } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import { axisLabel, countOf, pieceCellLabel, pieceSlotLabel, pieceState, type PieceState } from './collections-labels';
@@ -20,6 +22,10 @@ import { axisLabel, countOf, pieceCellLabel, pieceSlotLabel, pieceState, type Pi
 const EM_DASH = '—';
 
 const sectionHeadingClass = 'm-0 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted';
+
+/** One column in the narrow placement beside the table; from `lg` the effects and pages take the
+ *  room and the piece grid keeps its natural width, until `wide` puts the panel beside the table. */
+const bodyClass = 'grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] wide:grid-cols-1';
 
 const RARITIES = Array.from({ length: COLLECTION_PAGES }, (_, rarity) => rarity);
 
@@ -202,7 +208,7 @@ const cellStateClass = {
   missing: 'opacity-35 grayscale',
 } as const satisfies Record<PieceState, string>;
 
-function PieceCell({ piece, rarity, level }: { piece: CollectionPieceRow; rarity: number; level: number }) {
+function PieceCell({ piece, rarity }: { piece: CollectionPieceRow; rarity: number }) {
   const t = useCopy();
   const { lang } = useLocale();
   const state = pieceState(piece, rarity);
@@ -221,7 +227,7 @@ function PieceCell({ piece, rarity, level }: { piece: CollectionPieceRow; rarity
         data-state={state}
         className={cn('relative inline-block rounded-sm', cellStateClass[state])}
       >
-        <ItemIcon item={{ defId: piece.defId, rarityIdx: rarity, level, upgrade: 0 }} size="sm" />
+        <ItemIcon item={{ defId: piece.defId, rarityIdx: rarity, level: piece.level, upgrade: 0 }} size="sm" />
         {state === 'missing' ? null : <StateMarker state={state} />}
       </Tooltip.Trigger>
       <Tooltip.Portal>
@@ -281,7 +287,7 @@ function PieceGrid({ book }: { book: CollectionSetRow }) {
               <DataTable.RowHeader className="text-muted">{pieceSlotLabel(piece.slot, lang)}</DataTable.RowHeader>
               {RARITIES.map((rarity) => (
                 <DataTable.Cell key={rarity} align="center" className="px-1 py-1">
-                  <PieceCell piece={piece} rarity={rarity} level={book.level} />
+                  <PieceCell piece={piece} rarity={rarity} />
                 </DataTable.Cell>
               ))}
             </DataTable.Row>
@@ -319,39 +325,51 @@ function Legend({ t }: { t: Copy }) {
 export function BookDetailPanel({ book, onClose }: { book: CollectionSetRow | null; onClose: () => void }) {
   const t = useCopy();
   const { lang } = useLocale();
+  const band = useRef<HTMLDivElement>(null);
+  const code = book?.code ?? null;
+
+  useEffect(() => {
+    if (code === null || band.current === null) return;
+    bringBandIntoView(band.current, band.current.getBoundingClientRect().height);
+  }, [code]);
+
   if (book === null) return null;
 
   return (
     <Panel data-testid="collections-book-detail" data-set={book.code} className="relative min-w-0">
       <CloseCorner label={t.collectionsDetailClose} onClose={onClose} />
-      <div className={cn(panelHClass, 'items-center', 'justify-start', 'pr-8')}>
-        <ItemIcon item={{ defId: weaponDefId(book), rarityIdx: 0, level: book.level, upgrade: 0 }} size="xs" showLevel={false} />
-        <h2 className={panelTitleClass}>{setName(book.code, lang)}</h2>
-        <span className="text-xs text-muted tabular-nums">{levelLabel(book.level, lang)}</span>
-      </div>
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3">
-          {book.effects.map((effect) => (
-            <EffectFigures key={effect.axis} effect={effect} />
-          ))}
+      <div ref={band}>
+        <div className={cn(panelHClass, 'items-center', 'justify-start', 'pr-8')}>
+          <ItemIcon item={{ defId: weaponDefId(book), rarityIdx: 0, level: book.level, upgrade: 0 }} size="xs" showLevel={false} />
+          <h2 className={panelTitleClass}>{setName(book.code, lang)}</h2>
+          <span className="text-xs text-muted tabular-nums">{levelLabel(book.level, lang)}</span>
         </div>
-        <PagesTable book={book} />
-        <div className="flex flex-col gap-1.5">
-          <h3 className={sectionHeadingClass}>{t.collectionsColumnPieces}</h3>
-          {book.pieces.length === 0 ? (
-            <p className="m-0 text-xs text-muted" data-testid="collections-no-pieces">
-              {t.collectionsNoPieces}
-            </p>
-          ) : (
-            <>
-              <PieceGrid book={book} />
-              <Legend t={t} />
-            </>
-          )}
+        <div className={bodyClass} data-testid="collections-detail-body">
+          <div className="flex min-w-0 flex-col gap-4">
+            <div className="flex flex-col gap-3">
+              {book.effects.map((effect) => (
+                <EffectFigures key={effect.axis} effect={effect} />
+              ))}
+            </div>
+            <PagesTable book={book} />
+          </div>
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <h3 className={sectionHeadingClass}>{t.collectionsColumnPieces}</h3>
+            {book.pieces.length === 0 ? (
+              <p className="m-0 text-xs text-muted" data-testid="collections-no-pieces">
+                {t.collectionsNoPieces}
+              </p>
+            ) : (
+              <>
+                <PieceGrid book={book} />
+                <Legend t={t} />
+              </>
+            )}
+          </div>
+          <p className="m-0 text-xs text-muted lg:col-span-2 wide:col-span-1" data-testid="collections-guidance">
+            {t.collectionsGuidance}
+          </p>
         </div>
-        <p className="m-0 text-xs text-muted" data-testid="collections-guidance">
-          {t.collectionsGuidance}
-        </p>
       </div>
     </Panel>
   );

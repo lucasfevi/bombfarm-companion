@@ -60,10 +60,12 @@ function BookCell({ book }: { book: CollectionSetRow }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
       <ItemIcon item={{ defId: weaponDefId(book), rarityIdx: 0, level: book.level, upgrade: 0 }} size="xs" showLevel={false} />
-      <span className="truncate font-semibold text-ink" data-testid="collections-book-name">
-        {setName(book.code, lang)}
+      <span className="flex min-w-0 flex-col leading-tight">
+        <span className="truncate font-semibold text-ink" data-testid="collections-book-name">
+          {setName(book.code, lang)}
+        </span>
+        <span className="text-[11px] text-muted tabular-nums">{levelLabel(book.level, lang)}</span>
       </span>
-      <span className="shrink-0 text-[11px] text-muted tabular-nums">{levelLabel(book.level, lang)}</span>
     </span>
   );
 }
@@ -325,16 +327,16 @@ export function BooksPanel({
           />
         ) : (
           <DataTable.Root scrollable maxRows={LIST_ROWS} rowHeight={LIST_ROW_HEIGHT} data-testid="collections-books-scroll">
-            <DataTable.Table className="min-w-[58rem] table-fixed" aria-rowcount={shown.length}>
+            <DataTable.Table className="min-w-[53.5rem] table-fixed" aria-rowcount={shown.length}>
               <DataTable.Caption>{t.collectionsCaption}</DataTable.Caption>
               <colgroup>
                 <col />
-                <col className="w-28" />
+                <col className="w-24" />
                 <col className="w-[4.5rem]" />
                 <col className="w-[4.5rem]" />
                 <col className="w-[4.5rem]" />
                 <col className="w-56" />
-                <col className="w-24" />
+                <col className="w-[5.5rem]" />
                 <col className="w-28" />
               </colgroup>
               <DataTable.Head>
