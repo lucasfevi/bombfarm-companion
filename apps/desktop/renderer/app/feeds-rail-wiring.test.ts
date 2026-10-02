@@ -129,3 +129,30 @@ describe("the PVP screen hands the bar the standing's own read, dated by the sta
     expect(source).not.toContain('useAccountReadRequest');
   });
 });
+
+describe("the Collections screen hands the bar the collections' own read, dated by when it was read", () => {
+  const source = stripped('collections/collections-view.tsx');
+
+  it('the scan reads a real file', () => {
+    expect(source).toMatch(/export function CollectionsView/);
+  });
+
+  it("registers the collections read under its own tab id, with the read's line", () => {
+    expect(source).toContain("useScreenRefreshRegistration('collections', {");
+    expect(source).toContain('capturedAt: state.view.capturedAt');
+    expect(source).toContain('onRefresh: refresh.request');
+    expect(source).toContain('ageLine,');
+    expect(source).toContain('sub(t.collectionsAge, { age })');
+  });
+
+  it('asks main for the collections, never the account', () => {
+    expect(source).toContain('useCollectionsRefresh()');
+    expect(source).not.toContain('useAccountReadRequest');
+  });
+
+  it('asks for a read when the screen opens, and again only through the freshness decision', () => {
+    expect(source).toMatch(/useEffect\(\(\) => \{\s*refreshCollections\(\);\s*\}, \[\]\);/);
+    expect(source.match(/refreshCollections\(\)/g)).toHaveLength(2);
+    expect(source).toContain('collectionFreshnessDecision(');
+  });
+});
