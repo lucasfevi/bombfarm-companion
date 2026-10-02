@@ -75,3 +75,22 @@ serves the synthetic body once per tap, ahead of the first frame, through the sa
 capture's own bytes go through. The replay reads the one fixture the wire-reading package commits
 rather than a second copy. `BFC_REPLAY_COLLECTIONS_FIXTURE` points the replay at another body; an
 empty string serves none. See [`offline-dev-mode.md`](offline-dev-mode.md).
+
+## The tab
+
+Collections is the eleventh tab, between Skill Tree and Account — both are permanent, account-wide
+bonuses, so they sit together. It is read-only and has three panels:
+
+- **Bonuses** — the ten axes against their caps, in the game's own panel order. Pressing an axis
+  lists only the books that grant it.
+- **Books** — all of the sets, with what each grants now, at most and has left to earn, and its
+  progress by page. The list can be narrowed to the books with pieces ready in the bag.
+- **Book detail** — opened by selecting a book: its six rarity pages (pieces of eight, and what
+  finishing the page is worth) and the grid of eight slots by six rarities, marking pieces already
+  sacrificed and pieces the bag holds free that would fill an open slot.
+
+The status strip's rail carries a Collections ring of its own, beside the PVP one. Like the PVP
+standing it has no clock — it is read when the tab opens, when the account's totals move while the
+tab is open, and when pressed — and it is dated by the snapshot's own read time. The tab reads the
+account as well (the ready-in-bag column is worked out from the account's items), so the account
+ring stays lit on this tab and is the live account read, not a stand-in for the screen.

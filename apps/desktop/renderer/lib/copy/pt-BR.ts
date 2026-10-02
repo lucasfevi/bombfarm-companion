@@ -32,6 +32,7 @@ export const ptBR: Copy = {
   shellUpdateOpenSettings: 'Abrir as configurações de atualização',
   feedsAccount: 'Conta',
   feedsPvp: 'PVP',
+  feedsCollections: 'Coleções',
   feedsPrices: 'Preços',
   feedsUpdates: 'Atualizações',
   feedsRefreshAll: 'Atualizar todos os feeds, um de cada vez',
@@ -39,6 +40,7 @@ export const ptBR: Copy = {
   feedsRefreshOne: 'Atualizar {feed} agora',
   feedsWhatAccount: 'Seus heróis, bolsa, árvore e casa, lidos do jogo',
   feedsWhatPvp: 'Sua posição no PVP e o ranking de pontos',
+  feedsWhatCollections: 'Os bônus das suas coleções e o livro de cada set',
   feedsWhatPrices: 'A lista de preços do mercado',
   feedsWhatUpdates: 'Se há uma versão mais nova deste app',
   feedsLastRead: 'Última leitura {age}',
@@ -46,6 +48,7 @@ export const ptBR: Copy = {
   feedsReadingNow: 'Lendo agora…',
   feedsOutOfDate: 'Desatualizado — esta tela foi calculada com uma cópia mais antiga da conta',
   feedsNoClock: 'Lido quando a aba abre, e a cada duelo',
+  feedsNoClockCollections: 'Lido quando a aba abre, e quando os totais da sua conta mudam',
   feedsClickToUpdate: 'Clique para atualizar agora',
   feedsUpdatesOff: 'Esta versão não procura atualizações — as versões Beta e estável instaladas procuram',
   feedsUpdatesBusy: 'Uma atualização já está a caminho — veja em Configurações',
@@ -926,7 +929,7 @@ export const ptBR: Copy = {
   pvpFilmReplay: 'Ver replay',
   pvpFilmNote: 'Um filme é guardado no momento em que o jogo o busca. O servidor descarta o filme segundos depois, então um que foi pulado ou perdido não pode ser buscado agora.',
 
-  collectionsAge: 'Coleção lida {age}',
+  collectionsNavLabel: 'Coleções',
   collectionsBonusesTitle: 'Bônus das coleções',
   collectionsSummary: '{started} de {total} livros iniciados · {complete} completos · {sacrificed} de {pieces} peças queimadas',
   collectionsSummaryReady:

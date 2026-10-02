@@ -6,7 +6,7 @@
  * the game when the tab opens and again when the account read shows the totals moved — a piece
  * sacrificed in the game with this tab open. Nothing here sacrifices anything.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildCollectionBoard, collectionBagItemsFromInventory, type CollectionBagItem } from '@bombfarm/domain/model';
 import { Button, cn, colClass, EmptyState, Tooltip } from '@bombfarm/ui';
 import { accountReadRefusalText } from '../../lib/account-read-labels';
@@ -21,8 +21,7 @@ import {
 import { toggleSelection } from '../../lib/collections/collections-rows';
 import { refreshCollections, useCollections } from '../../lib/collections/use-collections';
 import { useCollectionsRefresh } from '../../lib/collections/use-collections-refresh';
-import { sub, useCopy } from '../../lib/copy';
-import { useScreenRefreshRegistration } from '../../lib/refresh/screen-refresh-store';
+import { useCopy } from '../../lib/copy';
 import { BonusesPanel } from './bonuses-panel';
 import { BookDetailPanel } from './book-detail-panel';
 import { BooksPanel } from './books-panel';
@@ -64,16 +63,6 @@ export function CollectionsView() {
     askedFor.current = decision.key;
     refreshCollections();
   }, [accountTotals, heldTotals]);
-
-  const ageLine = useCallback((age: string) => sub(t.collectionsAge, { age }), [t]);
-  useScreenRefreshRegistration('collections', {
-    capturedAt: state.view.capturedAt,
-    stale: false,
-    busy: false,
-    readState: refresh.state,
-    onRefresh: refresh.request,
-    ageLine,
-  });
 
   const detailOpen = selectedBook !== null;
 

@@ -31,10 +31,11 @@ export const en = {
   shellUpdateReady: 'Restart to update',
   shellUpdateOpenSettings: 'Open the Updates settings',
   shellCoffeeLabel: 'Buy me a coffee',
-  // feeds* — the status strip's rail of the four things the app keeps asking for, each with its
-  // own age and press, and the one press that runs all four in turn.
+  // feeds* — the status strip's rail of the five things the app keeps asking for, each with its
+  // own age and press, and the one press that runs all five in turn.
   feedsAccount: 'Account',
   feedsPvp: 'PVP',
+  feedsCollections: 'Collections',
   feedsPrices: 'Prices',
   feedsUpdates: 'Updates',
   feedsRefreshAll: 'Refresh every feed, one after another',
@@ -44,6 +45,7 @@ export const en = {
   // why a press was refused, and — muted, last — what a click does.
   feedsWhatAccount: 'Your heroes, bag, skill tree and house, read from the game',
   feedsWhatPvp: 'Your PVP standing and the points ranking',
+  feedsWhatCollections: 'Your collection bonuses and the book of every set',
   feedsWhatPrices: 'The market price list',
   feedsWhatUpdates: 'Whether a newer version of this app is out',
   feedsLastRead: 'Last read {age}',
@@ -51,6 +53,7 @@ export const en = {
   feedsReadingNow: 'Reading now…',
   feedsOutOfDate: 'Out of date — this screen was computed from an older copy of the account',
   feedsNoClock: 'Read when its tab opens, and by every duel',
+  feedsNoClockCollections: 'Read when its tab opens, and when the account totals move',
   feedsClickToUpdate: 'Click to update now',
   feedsUpdatesOff: 'This build does not check for updates — installed Beta and stable builds do',
   feedsUpdatesBusy: 'An update is already on its way — see Settings',
@@ -985,7 +988,7 @@ export const en = {
   // collections* — the Collections screen: the bonus each axis gets against its cap, every set's
   // book with its pages, and which pieces in the bag are ready to sacrifice. Sacrificing happens
   // in the game; the app only reads.
-  collectionsAge: 'Collection read {age}',
+  collectionsNavLabel: 'Collections',
   collectionsBonusesTitle: 'Collection bonuses',
   collectionsSummary: '{started} of {total} books started · {complete} complete · {sacrificed} of {pieces} pieces sacrificed',
   collectionsSummaryReady:

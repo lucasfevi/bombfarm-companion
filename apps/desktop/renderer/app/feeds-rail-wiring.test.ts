@@ -26,7 +26,7 @@ describe('the shell draws the press once, in its status strip', () => {
   });
 
   it('no screen draws a refresh control of its own any more', () => {
-    for (const screen of ['farm/farm-view.tsx', 'forge/forge-view.tsx', 'optimizer/optimizer-view.tsx', 'optimizer/optimizer-screen.tsx', 'pvp/pvp-view.tsx', 'pvp/standing-panel.tsx']) {
+    for (const screen of ['farm/farm-view.tsx', 'forge/forge-view.tsx', 'optimizer/optimizer-view.tsx', 'optimizer/optimizer-screen.tsx', 'pvp/pvp-view.tsx', 'pvp/standing-panel.tsx', 'collections/collections-view.tsx']) {
       expect(stripped(screen), screen).not.toContain('AccountRefreshControl');
       expect(stripped(screen), screen).not.toContain('account-refresh');
     }
@@ -130,19 +130,23 @@ describe("the PVP screen hands the bar the standing's own read, dated by the sta
   });
 });
 
-describe("the Collections screen hands the bar the collections' own read, dated by when it was read", () => {
+describe("the Collections tab has a feed of its own, dated by the collections' snapshot", () => {
   const source = stripped('collections/collections-view.tsx');
+  const feeds = stripped('../lib/feeds/use-feeds.ts');
 
-  it('the scan reads a real file', () => {
+  it('the scans read real files', () => {
     expect(source).toMatch(/export function CollectionsView/);
+    expect(feeds).toMatch(/export function useFeeds/);
   });
 
-  it("registers the collections read under its own tab id, with the read's line", () => {
-    expect(source).toContain("useScreenRefreshRegistration('collections', {");
-    expect(source).toContain('capturedAt: state.view.capturedAt');
-    expect(source).toContain('onRefresh: refresh.request');
-    expect(source).toContain('ageLine,');
-    expect(source).toContain('sub(t.collectionsAge, { age })');
+  it("the rail's collections feed is the collections' own read, dated by the snapshot", () => {
+    expect(feeds).toContain("id: 'collections'");
+    expect(feeds).toContain('capturedAt: collections.view.capturedAt');
+    expect(feeds).toContain('request: collectionsRefresh.request');
+  });
+
+  it("the screen registers nothing, so the account feed stays the live account's on this tab", () => {
+    expect(source).not.toContain('useScreenRefreshRegistration');
   });
 
   it('asks main for the collections, never the account', () => {

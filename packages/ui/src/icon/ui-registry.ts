@@ -1,6 +1,7 @@
 import {
   HiMiniArchiveBox,
   HiMiniArrowsRightLeft,
+  HiMiniBookOpen,
   HiMiniChevronDown,
   HiMiniChevronUp,
   HiMiniCog6Tooth,
@@ -67,6 +68,11 @@ export const uiIconRegistry = {
   // growth) and a leafed tree (reads as nature). At 16px the joined dots are the one mark that
   // means "connected nodes" and share no mass with the sparkles beside them.
   graph: PiGraph,
+  // The eleventh desktop tab, Collections. An open book over a bookmark (a saved place, not a
+  // book) and a stack of cards (reads as an inventory beside `archive-box`): two facing pages are
+  // the one mark that means "a book of pages", which is what each set's collection is. Drawn from
+  // the same solid set as the tabs around it.
+  'book-open': HiMiniBookOpen,
   // The top bar's overflow trigger — the secondary actions, once they no longer fit beside the tabs
   'ellipsis-horizontal': HiMiniEllipsisHorizontal,
   // Inventory layout toggle — cards
