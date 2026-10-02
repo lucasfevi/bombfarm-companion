@@ -145,11 +145,13 @@ describe('CollectionsView', () => {
     expect(html).not.toContain('data-testid="collections-read-now"');
   });
 
-  it('has no bag until the account read is usable: the ready switch is off and no row has a chip', () => {
+  it('has no bag until the account read is usable: the switch is off and every Ready cell says unknown, not none', () => {
     for (const waitingAccount of [{ status: 'loading' }, accountWith([], { status: 'missing' })]) {
       const html = render(ready, { account: waitingAccount });
       expect(html).toContain('data-available="false"');
       expect(html).not.toContain('data-testid="collections-ready"');
+      expect(html.match(/data-testid="collections-ready-unknown"/g)).toHaveLength(30);
+      expect(html).not.toContain('ready in bag');
     }
   });
 
@@ -157,9 +159,11 @@ describe('CollectionsView', () => {
     const items = [{ def_id: 'gold_elmo', rarity: 3, equipped_on: null, locked: false, market_state: 0, in_stash: false }];
     const html = render(ready, { account: accountWith(items) });
     expect(html).toContain('data-available="true"');
-    expect(html).toContain('1 ready in your bag');
+    expect(html).toContain('1 ready in bag');
     expect(html.match(/data-testid="collections-ready"/g)).toHaveLength(1);
     expect(html).toContain('1 in bag');
+    expect(html).toContain('1 book<');
+    expect(html).not.toContain('data-testid="collections-ready-unknown"');
   });
 
   it('leaves out a piece the bag holds but the player has equipped', () => {
@@ -179,7 +183,28 @@ describe('CollectionsView', () => {
 
   it('puts the open book beside the table only from the wide breakpoint, and under it everywhere else', () => {
     const source = readFileSync(join(__dirname, 'collections-view.tsx'), 'utf8');
-    expect(source).toContain("'wide:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]'");
+    expect(source).toContain("'wide:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]'");
     expect(source).not.toMatch(/(?:xl|2xl|lg):grid-cols-\[/);
+  });
+
+  it('passes the Read now button through the empty state’s action slot', () => {
+    const source = readFileSync(join(__dirname, 'collections-view.tsx'), 'utf8');
+    expect(source).toMatch(/<EmptyState[\s\S]*?action=\{\s*<Button[\s\S]*?collections-read-now/);
+  });
+
+  it('closes the open book when a filter hides it or the board drops it, and resets a latent bag switch when the bag goes', () => {
+    const source = readFileSync(join(__dirname, 'collections-view.tsx'), 'utf8');
+    expect(source).toContain('visibleSelection(selectedCode, books)');
+    expect(source).toMatch(/if \(selectedCode !== null && openCode === null\) setSelectedCode\(null\);/);
+    expect(source).toMatch(/if \(!bagAvailable\) setReadyOnly\(false\);/);
+    expect(source).toContain('effectiveFilters(filters, bagAvailable)');
+  });
+
+  it('hands focus back to the book’s button only when the player closed the detail', () => {
+    const source = readFileSync(join(__dirname, 'collections-view.tsx'), 'utf8');
+    expect(source).toContain('applySelection(pressBook(openCode, code))');
+    expect(source).toContain('applySelection(closeBook(openCode))');
+    expect(source).toMatch(/restoreFocusTo\.current = next\.restoreFocusTo;/);
+    expect(source).toMatch(/if \(openCode !== null \|\| code === null\) return;[\s\S]*?focusBookButton\(code\);/);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { acceptFilters, hasActiveFilters, initialCollectionFilters } from './collection-filters';
+import { acceptFilters, effectiveFilters, hasActiveFilters, initialCollectionFilters } from './collection-filters';
 
 describe('acceptFilters', () => {
   it('starts on every bonus, every progress state and the bag filter off', () => {
@@ -40,5 +40,24 @@ describe('acceptFilters', () => {
     const busy = { axis: 'gold', status: 'complete', readyOnly: true } as const;
     expect(hasActiveFilters(busy)).toBe(true);
     expect(acceptFilters(busy, { kind: 'clear' })).toEqual(initialCollectionFilters);
+  });
+});
+
+describe('effectiveFilters', () => {
+  const withBagSwitch = { axis: 'gold', status: 'all', readyOnly: true } as const;
+
+  it('leaves the filters alone while the bag is read', () => {
+    expect(effectiveFilters(withBagSwitch, true)).toBe(withBagSwitch);
+  });
+
+  it('ignores a latent bag switch while the bag has not been read, and does not count it as a filter', () => {
+    const effective = effectiveFilters(withBagSwitch, false);
+    expect(effective).toEqual({ axis: 'gold', status: 'all', readyOnly: false });
+    expect(hasActiveFilters(effectiveFilters({ ...initialCollectionFilters, readyOnly: true }, false))).toBe(false);
+  });
+
+  it('is cleared for good by turning the switch off, so the bag returning does not re-engage it', () => {
+    const cleared = acceptFilters(withBagSwitch, { kind: 'ready-only', readyOnly: false });
+    expect(effectiveFilters(cleared, true).readyOnly).toBe(false);
   });
 });

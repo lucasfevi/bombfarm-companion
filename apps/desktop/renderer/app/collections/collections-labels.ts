@@ -10,7 +10,7 @@ import { sub, type Copy, type CopyKey } from '../../lib/copy';
 import { formatBonus, formatLimit } from '../../lib/collections/collections-format';
 import { formatCount } from '../../lib/format';
 
-export const AXIS_LABEL_KEY = {
+const AXIS_LABEL_KEY = {
   damage: 'collectionsAxisDamage',
   critDamage: 'collectionsAxisCritDamage',
   critChance: 'collectionsAxisCritChance',
@@ -53,11 +53,12 @@ export function axisTipLines(row: CollectionAxisRow, t: Copy, locale: AppLocale)
   ];
 }
 
+/** The books partitioned by the progress filter's own words: in progress, complete and not started. */
 export function summaryLine(summary: CollectionBoardSummary, t: Copy, locale: AppLocale): string {
   const values = {
-    started: formatCount(summary.booksStarted, locale),
-    total: formatCount(summary.booksTotal, locale),
+    active: formatCount(summary.booksStarted - summary.booksComplete, locale),
     complete: formatCount(summary.booksComplete, locale),
+    untouched: formatCount(summary.booksTotal - summary.booksStarted, locale),
     sacrificed: formatCount(summary.piecesSacrificed, locale),
     pieces: formatCount(summary.piecesTotal, locale),
   };
@@ -66,13 +67,27 @@ export function summaryLine(summary: CollectionBoardSummary, t: Copy, locale: Ap
     : sub(t.collectionsSummary, values);
 }
 
-/** `k/8`, `21/48`: a count against what it can reach. */
 export function countOf(part: number, whole: number, t: Copy, locale: AppLocale): string {
   return sub(t.collectionsCountOf, { part: formatCount(part, locale), whole: formatCount(whole, locale) });
 }
 
+/** What the bonus tile is called for a screen reader: the axis, its figure and its cap. */
+export function axisTileLabel(row: CollectionAxisRow, t: Copy, locale: AppLocale): string {
+  return sub(t.collectionsAxisAria, {
+    axis: axisLabel(row.axis, t),
+    value: formatBonus(row.total, locale),
+    cap: sub(t.collectionsAxisCap, { cap: formatLimit(row.cap, locale) }),
+  });
+}
+
+export function readyBooksLabel(count: number, t: Copy, locale: AppLocale): string {
+  return sub(count === 1 ? t.collectionsFilterReadyCountOne : t.collectionsFilterReadyCountMany, {
+    n: formatCount(count, locale),
+  });
+}
+
 /** A set's eight slots in the order the read lists them, named by the planner's slot vocabulary. */
-export const PIECE_SLOTS: readonly Slot[] = ['arma', 'elmo', 'peito', 'calca', 'bota', 'luva', 'anel', 'amuleto'];
+const PIECE_SLOTS: readonly Slot[] = ['arma', 'elmo', 'peito', 'calca', 'bota', 'luva', 'anel', 'amuleto'];
 
 export function pieceSlotLabel(slot: number, lang: DomainLang): string {
   const key = PIECE_SLOTS[slot];

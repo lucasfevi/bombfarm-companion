@@ -12,13 +12,15 @@ import { Button, cn, colClass, EmptyState, Tooltip } from '@bombfarm/ui';
 import { accountReadRefusalText } from '../../lib/account-read-labels';
 import { isSectionUsable, sectionFidelityOf } from '../../lib/account/account-facts';
 import { useAccountView } from '../../lib/account/use-account-view';
+import { effectiveFilters } from '../../lib/collections/collection-filters';
+import { focusBookButton } from '../../lib/collections/collections-focus';
 import { useCollectionFilters } from '../../lib/collections/use-collection-filters';
 import {
   accountCollectionTotals,
   collectionFreshnessDecision,
   collectionTotalsCovered,
 } from '../../lib/collections/collections-fresh';
-import { toggleSelection } from '../../lib/collections/collections-rows';
+import { closeBook, filterBooks, pressBook, visibleSelection } from '../../lib/collections/collections-rows';
 import { refreshCollections, useCollections } from '../../lib/collections/use-collections';
 import { useCollectionsRefresh } from '../../lib/collections/use-collections-refresh';
 import { useCopy } from '../../lib/copy';
@@ -41,7 +43,36 @@ export function CollectionsView() {
     return isSectionUsable(sectionFidelityOf(payload, 'items')) ? collectionBagItemsFromInventory(payload.items) : null;
   }, [account]);
   const board = useMemo(() => (snapshot === null ? null : buildCollectionBoard(snapshot, bag ?? [])), [snapshot, bag]);
-  const selectedBook = board?.sets.find((book) => book.code === selectedCode) ?? null;
+  const bagAvailable = bag !== null;
+  const { axis, status, readyOnly } = effectiveFilters(filters, bagAvailable);
+  const books = useMemo(
+    () => (board === null ? [] : filterBooks(board.sets, { axis, status, readyOnly })),
+    [board, axis, status, readyOnly],
+  );
+  const openCode = visibleSelection(selectedCode, books);
+  const selectedBook = board?.sets.find((book) => book.code === openCode) ?? null;
+  const restoreFocusTo = useRef<string | null>(null);
+  const { setReadyOnly } = filters;
+
+  useEffect(() => {
+    if (!bagAvailable) setReadyOnly(false);
+  }, [bagAvailable, setReadyOnly]);
+
+  useEffect(() => {
+    if (selectedCode !== null && openCode === null) setSelectedCode(null);
+  }, [selectedCode, openCode]);
+
+  useEffect(() => {
+    const code = restoreFocusTo.current;
+    if (openCode !== null || code === null) return;
+    restoreFocusTo.current = null;
+    focusBookButton(code);
+  }, [openCode]);
+
+  const applySelection = (next: { open: string | null; restoreFocusTo: string | null }) => {
+    restoreFocusTo.current = next.restoreFocusTo;
+    setSelectedCode(next.open);
+  };
 
   useEffect(() => {
     refreshCollections();
@@ -77,22 +108,24 @@ export function CollectionsView() {
                 'grid',
                 'gap-2.5',
                 'min-w-0',
-                detailOpen ? 'wide:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]' : 'grid-cols-1',
+                detailOpen ? 'wide:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]' : 'grid-cols-1',
               )}
             >
               <BooksPanel
                 board={board}
+                books={books}
                 filters={filters}
-                bagAvailable={bag !== null}
-                selectedCode={selectedBook?.code ?? null}
+                bagAvailable={bagAvailable}
+                selectedCode={openCode}
                 onSelect={(code) => {
-                  setSelectedCode(toggleSelection(selectedBook?.code ?? null, code));
+                  applySelection(pressBook(openCode, code));
                 }}
               />
               <BookDetailPanel
                 book={selectedBook}
+                bagAvailable={bagAvailable}
                 onClose={() => {
-                  setSelectedCode(null);
+                  applySelection(closeBook(openCode));
                 }}
               />
             </div>
@@ -102,16 +135,21 @@ export function CollectionsView() {
         ) : state.status === 'bridge-unavailable' ? (
           <EmptyState title={t.emptyBridgeUnavailableTitle} />
         ) : (
-          <EmptyState title={t.collectionsEmptyTitle} description={t.collectionsEmptyDescription}>
-            <Button
-              type="button"
-              variant="primary"
-              data-testid="collections-read-now"
-              disabled={refresh.state.kind === 'working'}
-              onClick={refresh.request}
-            >
-              {refresh.state.kind === 'working' ? t.collectionsReading : t.collectionsReadNow}
-            </Button>
+          <EmptyState
+            title={t.collectionsEmptyTitle}
+            description={t.collectionsEmptyDescription}
+            action={
+              <Button
+                type="button"
+                variant="primary"
+                data-testid="collections-read-now"
+                disabled={refresh.state.kind === 'working'}
+                onClick={refresh.request}
+              >
+                {refresh.state.kind === 'working' ? t.collectionsReading : t.collectionsReadNow}
+              </Button>
+            }
+          >
             {refresh.state.kind === 'refused' ? (
               <p className="m-0 text-xs text-muted" data-testid="collections-refused">
                 {accountReadRefusalText(refresh.state.reason, t)}

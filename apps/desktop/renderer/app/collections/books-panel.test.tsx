@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { buildCollectionBoard, type CollectionBagItem, type CollectionBoard } from '@bombfarm/domain/model';
-import { initialCollectionFilters, type CollectionFilters } from '../../lib/collections/collection-filters';
+import { effectiveFilters, initialCollectionFilters, type CollectionFilters } from '../../lib/collections/collection-filters';
+import { filterBooks } from '../../lib/collections/collections-rows';
 import { collectionsSnapshotFixture } from '../../lib/collections/collections-test-fixture';
 import type { CollectionFiltersHandle } from '../../lib/collections/use-collection-filters';
 import { en } from '../../lib/copy/en';
@@ -55,11 +56,15 @@ function render(
   } = {},
 ): string {
   language.current = options.locale ?? 'en';
+  const board = options.board ?? bareBoard;
+  const filters = handle(options.filters);
+  const bagAvailable = options.bagAvailable ?? false;
   return renderToStaticMarkup(
     createElement(BooksPanel, {
-      board: options.board ?? bareBoard,
-      filters: handle(options.filters),
-      bagAvailable: options.bagAvailable ?? false,
+      board,
+      books: filterBooks(board.sets, effectiveFilters(filters, bagAvailable)),
+      filters,
+      bagAvailable,
       selectedCode: options.selectedCode ?? null,
       onSelect: () => undefined,
     }),
@@ -120,6 +125,22 @@ describe('BooksPanel', () => {
     expect(cellOf(voidRow, 'collections-book-max')).toBe('+9.4% +14.1% +7%');
   });
 
+  it('gives each effect exactly one line in Bonus, Now, Max and Left, in both languages', () => {
+    for (const locale of ['en', 'pt-BR'] as const) {
+      const voidRow = rowOf(render({ locale }), 'void');
+      const lines = (testId: string) => (new RegExp(String.raw`<td[^>]*data-testid="${testId}"[\s\S]*?</td>`).exec(voidRow)?.[0].match(/<span class="(?:block truncate|text-ink|text-muted)">/g) ?? []).length;
+      expect([lines('collections-book-bonus'), lines('collections-book-now'), lines('collections-book-max'), lines('collections-book-left')]).toEqual([3, 3, 3, 3]);
+    }
+  });
+
+  it('keeps the bonus labels on one line, truncated rather than wrapped, with the full name still in the cell', () => {
+    const cell = /<td[^>]*data-testid="collections-book-bonus"[\s\S]*?<\/td>/.exec(rowOf(render(), 'void'))?.[0] ?? '';
+    expect(cell).not.toContain('whitespace-normal');
+    expect(cell.match(/class="block truncate"/g)).toHaveLength(3);
+    expect(text(cell)).toBe('Damage Critical damage Cooldown');
+    expect(cell).toContain('leading-5');
+  });
+
   it('draws six page cells per book with each page’s pieces, full pages and empty pages told apart', () => {
     const gold = rowOf(render(), 'gold');
     const cells = gold.match(/<span[^>]*data-testid="collections-page-cell"[^>]*>/g) ?? [];
@@ -143,10 +164,19 @@ describe('BooksPanel', () => {
     expect(gold).toMatch(/style="width:\s*43\.75%"/);
   });
 
-  it('draws an em dash in Ready when no bag was read, and for books with nothing ready', () => {
+  it('draws a dash in Ready for a book with nothing ready once the bag was read', () => {
+    const html = render({ board: bagBoard, bagAvailable: true });
+    expect(text(rowOf(html, 'ember'))).toContain('—');
+    expect(html).not.toContain('data-testid="collections-ready-unknown"');
+  });
+
+  it('draws an unknown marker, not a dash, in every Ready cell while the bag has not been read', () => {
     const html = render();
+    expect(html.match(/data-testid="collections-ready-unknown"/g)).toHaveLength(30);
     expect(html).not.toContain('data-testid="collections-ready"');
-    expect(text(rowOf(html, 'gold'))).toContain('—');
+    expect(rowOf(html, 'gold')).not.toContain('—');
+    expect(rowOf(html, 'gold')).toContain('aria-label="Needs your bag, which has not been read yet."');
+    expect(text(rowOf(html, 'gold'))).toContain('?');
   });
 
   it('draws a chip with the ready count and the gain it would add when the bag holds pieces', () => {
@@ -155,12 +185,31 @@ describe('BooksPanel', () => {
     expect(ready).toMatch(/^2 in bag \+\d+(\.\d+)?%$/);
   });
 
-  it('marks the selected row and no other, and makes every row reachable by keyboard', () => {
+  it('makes each book’s button the one tab stop and the activation target, named for the set', () => {
     const html = render({ selectedCode: 'gold' });
-    expect(rowOf(html, 'gold')).toContain('aria-selected="true"');
-    expect(html.match(/aria-selected="true"/g)).toHaveLength(1);
-    expect(html.match(/aria-selected="false"/g)).toHaveLength(29);
-    expect(rows(html).every((row) => row.includes('tabindex="0"'))).toBe(true);
+    const buttons = html.match(/<button[^>]*data-testid="collections-book-button"[^>]*>/g) ?? [];
+    expect(buttons).toHaveLength(30);
+    const gold = buttons.find((button) => button.includes('data-set="gold"')) ?? '';
+    expect(gold).toContain('aria-label="Gold"');
+    expect(gold).toContain('aria-expanded="true"');
+    expect(gold).toContain('aria-controls="collections-book-detail"');
+    expect(buttons.filter((button) => button.includes('aria-expanded="true"'))).toHaveLength(1);
+    expect(buttons.filter((button) => button.includes('aria-expanded="false"'))).toHaveLength(29);
+  });
+
+  it('leaves the rows themselves out of the tab order and does not claim a selection on a plain table row', () => {
+    const html = render({ selectedCode: 'gold' });
+    expect(rows(html).some((row) => /^<tr [^>]*tabindex/.test(row))).toBe(false);
+    expect(html).not.toContain('aria-selected');
+    expect(html).not.toContain('aria-rowcount');
+    expect(rowOf(html, 'gold')).toContain('data-selected="true"');
+    expect(html.match(/data-selected="true"/g)).toHaveLength(1);
+  });
+
+  it('puts the set’s level under its name in the book cell', () => {
+    const button = /<button[^>]*data-set="gold"[\s\S]*?<\/button>/.exec(render())?.[0] ?? '';
+    expect(button.indexOf('collections-book-name')).toBeLessThan(button.indexOf('Lv 20'));
+    expect(button).toContain('flex-col');
   });
 
   it('offers the sort on book, now, left, pieces and ready, with the level column ascending to start', () => {
@@ -193,7 +242,7 @@ describe('BooksPanel', () => {
   it('draws the ready switch with its book count, and disabled when the bag is unavailable', () => {
     const available = render({ board: bagBoard, bagAvailable: true });
     expect(available).toContain('data-available="true"');
-    expect(available).toMatch(/data-testid="collections-ready-count">1</);
+    expect(available).toMatch(/data-testid="collections-ready-count">1 book</);
     const unavailable = render();
     expect(unavailable).toContain('data-available="false"');
     expect(unavailable).not.toContain('data-testid="collections-ready-count"');

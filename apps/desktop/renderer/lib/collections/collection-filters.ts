@@ -25,6 +25,12 @@ export type CollectionFiltersArrival =
 
 export const initialCollectionFilters: CollectionFilters = { axis: 'all', status: 'all', readyOnly: false };
 
+/** The filters as they apply: the bag switch means nothing while the bag has not been read, so it
+ *  neither narrows the list nor counts as an active filter. */
+export function effectiveFilters(filters: CollectionFilters, bagAvailable: boolean): CollectionFilters {
+  return filters.readyOnly && !bagAvailable ? { ...filters, readyOnly: false } : filters;
+}
+
 export function hasActiveFilters(filters: CollectionFilters): boolean {
   return filters.axis !== 'all' || filters.status !== 'all' || filters.readyOnly;
 }

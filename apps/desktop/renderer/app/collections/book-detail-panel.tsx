@@ -18,14 +18,20 @@ import { bringBandIntoView } from '../../lib/forge/run-into-view';
 import { useCopy, useLocale, type Copy } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import { axisLabel, countOf, pieceCellLabel, pieceSlotLabel, pieceState, type PieceState } from './collections-labels';
+import { ReadyUnknown } from './ready-unknown';
 
 const EM_DASH = '—';
 
+export const COLLECTION_DETAIL_ID = 'collections-book-detail';
+
 const sectionHeadingClass = 'm-0 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted';
 
-/** One column in the narrow placement beside the table; from `lg` the effects and pages take the
- *  room and the piece grid keeps its natural width, until `wide` puts the panel beside the table. */
-const bodyClass = 'grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] wide:grid-cols-1';
+/** Three placements, each stated by its own range so no rule depends on which of two overlapping
+ *  media queries the stylesheet happens to emit last: one stack under `lg`, two columns from `lg`
+ *  up to `wide` (effects and pages beside the piece grid, which keeps its natural width), and the
+ *  same single stack again from `wide`, where the panel sits beside the table in a narrow column. */
+const bodyClass = 'grid grid-cols-1 gap-4 lg:max-wide:grid-cols-[minmax(0,1fr)_auto]';
+const guidanceClass = 'm-0 text-xs text-muted lg:max-wide:col-span-2';
 
 const RARITIES = Array.from({ length: COLLECTION_PAGES }, (_, rarity) => rarity);
 
@@ -101,10 +107,10 @@ function PageEffectLines({
   const t = useCopy();
   const { locale } = useLocale();
   return (
-    <span className="flex flex-col gap-0.5">
+    <span className="flex flex-col items-end gap-0.5">
       {page.effects.map((effect) => (
-        <span key={effect.axis} className={cn('flex items-baseline justify-end gap-2', figureTone(read(effect)))}>
-          {multiEffect ? <span className="text-[11px] text-muted">{axisLabel(effect.axis, t)}</span> : null}
+        <span key={effect.axis} className={cn('flex flex-col items-end leading-tight', figureTone(read(effect)))}>
+          {multiEffect ? <span className="max-w-24 truncate text-[10px] text-muted">{axisLabel(effect.axis, t)}</span> : null}
           {formatBonus(read(effect), locale)}
         </span>
       ))}
@@ -112,7 +118,7 @@ function PageEffectLines({
   );
 }
 
-function PageRow({ page, multiEffect }: { page: CollectionPageRow; multiEffect: boolean }) {
+function PageRow({ page, multiEffect, bagAvailable }: { page: CollectionPageRow; multiEffect: boolean; bagAvailable: boolean }) {
   const t = useCopy();
   const { locale, lang } = useLocale();
   return (
@@ -134,13 +140,19 @@ function PageRow({ page, multiEffect }: { page: CollectionPageRow; multiEffect: 
         )}
       </DataTable.Cell>
       <DataTable.Cell align="right" numeric data-testid="collections-detail-page-ready">
-        {page.ready > 0 ? <span className="font-semibold text-accent">{formatCount(page.ready, locale)}</span> : EM_DASH}
+        {!bagAvailable ? (
+          <ReadyUnknown />
+        ) : page.ready > 0 ? (
+          <span className="font-semibold text-accent">{formatCount(page.ready, locale)}</span>
+        ) : (
+          EM_DASH
+        )}
       </DataTable.Cell>
     </DataTable.Row>
   );
 }
 
-function PagesTable({ book }: { book: CollectionSetRow }) {
+function PagesTable({ book, bagAvailable }: { book: CollectionSetRow; bagAvailable: boolean }) {
   const t = useCopy();
   return (
     <div className="flex flex-col gap-1.5">
@@ -167,7 +179,7 @@ function PagesTable({ book }: { book: CollectionSetRow }) {
           </DataTable.Head>
           <DataTable.Body>
             {book.pages.map((page) => (
-              <PageRow key={page.rarity} page={page} multiEffect={book.effects.length > 1} />
+              <PageRow key={page.rarity} page={page} multiEffect={book.effects.length > 1} bagAvailable={bagAvailable} />
             ))}
           </DataTable.Body>
         </DataTable.Table>
@@ -178,7 +190,6 @@ function PagesTable({ book }: { book: CollectionSetRow }) {
 
 const markerBase = 'absolute -right-1 -bottom-1 grid size-3.5 place-items-center rounded-full border border-bg';
 
-/** The corner glyph that says which state a cell is in; the legend draws the same ones. */
 function StateMarker({ state }: { state: Exclude<PieceState, 'missing'> }) {
   if (state === 'sacrificed') {
     return (
@@ -275,7 +286,7 @@ function PieceGrid({ book }: { book: CollectionSetRow }) {
         <DataTable.Caption>{t.collectionsDetailGridCaption}</DataTable.Caption>
         <DataTable.Head>
           <DataTable.Row>
-            <DataTable.Header scope="col">{t.collectionsColumnPieces}</DataTable.Header>
+            <DataTable.Header scope="col">{t.collectionsColumnSlot}</DataTable.Header>
             {RARITIES.map((rarity) => (
               <RarityHeader key={rarity} rarity={rarity} />
             ))}
@@ -298,12 +309,12 @@ function PieceGrid({ book }: { book: CollectionSetRow }) {
   );
 }
 
-function Legend({ t }: { t: Copy }) {
+function Legend({ t, bagAvailable }: { t: Copy; bagAvailable: boolean }) {
   const entries: { state: PieceState; label: string }[] = [
     { state: 'sacrificed', label: t.collectionsLegendSacrificed },
-    { state: 'ready', label: t.collectionsLegendReady },
+    ...(bagAvailable ? [{ state: 'ready' as const, label: t.collectionsLegendReady }] : []),
     { state: 'pending', label: t.collectionsLegendPending },
-    { state: 'missing', label: t.collectionsLegendMissing },
+    { state: 'missing', label: t.collectionsLegendNotSacrificed },
   ];
   return (
     <p data-testid="collections-piece-legend" className="m-0 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted">
@@ -322,26 +333,48 @@ function Legend({ t }: { t: Copy }) {
 /** One book in full: what each of its effects grants, the six pages with what completing each is
  *  worth, and which of the set's pieces are sacrificed at which rarity. Drawn only while a book is
  *  selected. */
-export function BookDetailPanel({ book, onClose }: { book: CollectionSetRow | null; onClose: () => void }) {
+export function BookDetailPanel({
+  book,
+  bagAvailable,
+  onClose,
+}: {
+  book: CollectionSetRow | null;
+  bagAvailable: boolean;
+  onClose: () => void;
+}) {
   const t = useCopy();
   const { lang } = useLocale();
   const band = useRef<HTMLDivElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
   const code = book?.code ?? null;
 
   useEffect(() => {
     if (code === null || band.current === null) return;
+    heading.current?.focus({ preventScroll: true });
     bringBandIntoView(band.current, band.current.getBoundingClientRect().height);
   }, [code]);
 
   if (book === null) return null;
 
   return (
-    <Panel data-testid="collections-book-detail" data-set={book.code} className="relative min-w-0">
+    <Panel
+      id={COLLECTION_DETAIL_ID}
+      data-testid="collections-book-detail"
+      data-set={book.code}
+      className="relative min-w-0"
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape') return;
+        event.stopPropagation();
+        onClose();
+      }}
+    >
       <CloseCorner label={t.collectionsDetailClose} onClose={onClose} />
       <div ref={band}>
         <div className={cn(panelHClass, 'items-center', 'justify-start', 'pr-8')}>
           <ItemIcon item={{ defId: weaponDefId(book), rarityIdx: 0, level: book.level, upgrade: 0 }} size="xs" showLevel={false} />
-          <h2 className={panelTitleClass}>{setName(book.code, lang)}</h2>
+          <h2 ref={heading} tabIndex={-1} className={cn(panelTitleClass, 'outline-none')} data-testid="collections-detail-heading">
+            {setName(book.code, lang)}
+          </h2>
           <span className="text-xs text-muted tabular-nums">{levelLabel(book.level, lang)}</span>
         </div>
         <div className={bodyClass} data-testid="collections-detail-body">
@@ -351,7 +384,7 @@ export function BookDetailPanel({ book, onClose }: { book: CollectionSetRow | nu
                 <EffectFigures key={effect.axis} effect={effect} />
               ))}
             </div>
-            <PagesTable book={book} />
+            <PagesTable book={book} bagAvailable={bagAvailable} />
           </div>
           <div className="flex min-w-0 flex-col gap-1.5">
             <h3 className={sectionHeadingClass}>{t.collectionsColumnPieces}</h3>
@@ -362,11 +395,11 @@ export function BookDetailPanel({ book, onClose }: { book: CollectionSetRow | nu
             ) : (
               <>
                 <PieceGrid book={book} />
-                <Legend t={t} />
+                <Legend t={t} bagAvailable={bagAvailable} />
               </>
             )}
           </div>
-          <p className="m-0 text-xs text-muted lg:col-span-2 wide:col-span-1" data-testid="collections-guidance">
+          <p className={guidanceClass} data-testid="collections-guidance">
             {t.collectionsGuidance}
           </p>
         </div>

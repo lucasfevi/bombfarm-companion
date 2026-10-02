@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type KeyboardEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { COLLECTION_AXES } from '@bombfarm/contracts';
 import { levelLabel, setName } from '@bombfarm/domain/game-labels';
 import type { CollectionBoard, CollectionSetRow } from '@bombfarm/domain/model';
@@ -19,13 +19,17 @@ import {
   Switch,
   Tooltip,
 } from '@bombfarm/ui';
-import type { CollectionBonusFilter, CollectionStatusFilter } from '../../lib/collections/collection-filters';
-import { hasActiveFilters } from '../../lib/collections/collection-filters';
+import {
+  effectiveFilters,
+  hasActiveFilters,
+  type CollectionBonusFilter,
+  type CollectionStatusFilter,
+} from '../../lib/collections/collection-filters';
+import { BOOK_BUTTON_TEST_ID } from '../../lib/collections/collections-focus';
 import { fillPercent, formatBonus } from '../../lib/collections/collections-format';
 import {
   booksReadyCount,
   DEFAULT_BOOK_SORT,
-  filterBooks,
   nextBookSort,
   sortBooks,
   weaponDefId,
@@ -35,8 +39,10 @@ import {
 import type { CollectionFiltersHandle } from '../../lib/collections/use-collection-filters';
 import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
-import { axisLabel, countOf } from './collections-labels';
+import { COLLECTION_DETAIL_ID } from './book-detail-panel';
+import { axisLabel, countOf, readyBooksLabel } from './collections-labels';
 import { PagesCell } from './pages-cell';
+import { ReadyUnknown } from './ready-unknown';
 
 const EM_DASH = '—';
 const LIST_ROWS = 13;
@@ -55,18 +61,42 @@ function figureTone(value: number): string {
   return value > 0 ? 'text-ink' : 'text-muted';
 }
 
-function BookCell({ book }: { book: CollectionSetRow }) {
+function BookButton({
+  book,
+  selected,
+  onSelect,
+}: {
+  book: CollectionSetRow;
+  selected: boolean;
+  onSelect: (code: string) => void;
+}) {
   const { lang } = useLocale();
+  const name = setName(book.code, lang);
   return (
-    <span className="flex min-w-0 items-center gap-2">
+    <button
+      type="button"
+      aria-expanded={selected}
+      aria-controls={COLLECTION_DETAIL_ID}
+      aria-label={name}
+      data-testid={BOOK_BUTTON_TEST_ID}
+      data-set={book.code}
+      className={cn(
+        'flex w-full min-w-0 cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-left text-inherit',
+        'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+      )}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect(book.code);
+      }}
+    >
       <ItemIcon item={{ defId: weaponDefId(book), rarityIdx: 0, level: book.level, upgrade: 0 }} size="xs" showLevel={false} />
       <span className="flex min-w-0 flex-col leading-tight">
         <span className="truncate font-semibold text-ink" data-testid="collections-book-name">
-          {setName(book.code, lang)}
+          {name}
         </span>
         <span className="text-[11px] text-muted tabular-nums">{levelLabel(book.level, lang)}</span>
       </span>
-    </span>
+    </button>
   );
 }
 
@@ -91,9 +121,10 @@ function EffectLines({
   );
 }
 
-function ReadyCell({ book }: { book: CollectionSetRow }) {
+function ReadyCell({ book, bagAvailable }: { book: CollectionSetRow; bagAvailable: boolean }) {
   const t = useCopy();
   const { locale } = useLocale();
+  if (!bagAvailable) return <ReadyUnknown />;
   if (book.readyInBag === 0) return <span aria-hidden>{EM_DASH}</span>;
   return (
     <span className="flex flex-col items-start gap-0.5" data-testid="collections-ready">
@@ -112,57 +143,49 @@ function ReadyCell({ book }: { book: CollectionSetRow }) {
 function BookRow({
   book,
   selected,
+  bagAvailable,
   onSelect,
 }: {
   book: CollectionSetRow;
   selected: boolean;
+  bagAvailable: boolean;
   onSelect: (code: string) => void;
 }) {
   const t = useCopy();
   const { locale } = useLocale();
-  const select = () => {
-    onSelect(book.code);
-  };
-  const onKeyDown = (event: KeyboardEvent<HTMLTableRowElement>) => {
-    if (event.target !== event.currentTarget) return;
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    event.preventDefault();
-    select();
-  };
 
   return (
     <DataTable.Row
       data-testid="collections-book-row"
       data-set={book.code}
       data-status={book.status}
-      aria-selected={selected}
-      tabIndex={0}
-      onClick={select}
-      onKeyDown={onKeyDown}
+      data-selected={selected ? 'true' : 'false'}
+      onClick={() => {
+        onSelect(book.code);
+      }}
       className={cn(
         'cursor-pointer hover:bg-[color-mix(in_oklch,var(--line)_28%,transparent)]',
-        'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent',
         selected && 'bg-[color-mix(in_oklch,var(--accent)_10%,transparent)]',
       )}
       style={{ height: LIST_ROW_HEIGHT }}
     >
       <DataTable.RowHeader>
-        <BookCell book={book} />
+        <BookButton book={book} selected={selected} onSelect={onSelect} />
       </DataTable.RowHeader>
-      <DataTable.Cell nowrap={false} data-testid="collections-book-bonus">
+      <DataTable.Cell className="leading-5" data-testid="collections-book-bonus">
         {book.effects.map((effect) => (
-          <span key={effect.axis} className="block">
+          <span key={effect.axis} className="block truncate">
             {axisLabel(effect.axis, t)}
           </span>
         ))}
       </DataTable.Cell>
-      <DataTable.Cell align="right" numeric data-testid="collections-book-now">
+      <DataTable.Cell align="right" numeric className="leading-5" data-testid="collections-book-now">
         <EffectLines book={book} read={(effect) => effect.now} />
       </DataTable.Cell>
-      <DataTable.Cell align="right" numeric data-testid="collections-book-max">
+      <DataTable.Cell align="right" numeric className="leading-5" data-testid="collections-book-max">
         <EffectLines book={book} read={(effect) => effect.max} muted />
       </DataTable.Cell>
-      <DataTable.Cell align="right" numeric data-testid="collections-book-left">
+      <DataTable.Cell align="right" numeric className="leading-5" data-testid="collections-book-left">
         <EffectLines book={book} read={(effect) => effect.remaining} />
       </DataTable.Cell>
       <DataTable.Cell>
@@ -177,7 +200,7 @@ function BookRow({
         </span>
       </DataTable.Cell>
       <DataTable.Cell>
-        <ReadyCell book={book} />
+        <ReadyCell book={book} bagAvailable={bagAvailable} />
       </DataTable.Cell>
     </DataTable.Row>
   );
@@ -218,7 +241,7 @@ function ReadySwitch({
         <span>{t.collectionsFilterReady}</span>
         {available ? (
           <span className="text-muted tabular-nums" data-testid="collections-ready-count">
-            {formatCount(count, locale)}
+            {readyBooksLabel(count, t, locale)}
           </span>
         ) : null}
       </Tooltip.Trigger>
@@ -235,16 +258,19 @@ function ReadySwitch({
   );
 }
 
-/** Every book of the collection, filtered and sorted in place. Pressing a row opens that book's
- *  detail; the row stays selected until it is pressed again or another is chosen. */
+/** Every book of the collection that the filters let through, sorted in place. `books` arrives
+ *  already filtered, because the screen needs the same list to know whether the open book is still
+ *  among those shown. */
 export function BooksPanel({
   board,
+  books,
   filters,
   bagAvailable,
   selectedCode,
   onSelect,
 }: {
   board: CollectionBoard;
+  books: readonly CollectionSetRow[];
   filters: CollectionFiltersHandle;
   bagAvailable: boolean;
   selectedCode: string | null;
@@ -254,12 +280,9 @@ export function BooksPanel({
   const { locale } = useLocale();
   const [sort, setSort] = useState<BookSort>(DEFAULT_BOOK_SORT);
 
-  const { axis, status, readyOnly } = filters;
-  const shown = useMemo(
-    () => sortBooks(filterBooks(board.sets, { axis, status, readyOnly: readyOnly && bagAvailable }), sort),
-    [board.sets, axis, status, readyOnly, bagAvailable, sort],
-  );
+  const shown = useMemo(() => sortBooks(books, sort, filters.axis), [books, sort, filters.axis]);
   const readyBooks = useMemo(() => booksReadyCount(board.sets), [board.sets]);
+  const filtered = hasActiveFilters(effectiveFilters(filters, bagAvailable));
   const sortProps = {
     sortKey: sort.key,
     sortDir: sort.direction,
@@ -318,7 +341,7 @@ export function BooksPanel({
             description={t.collectionsNoMatchDescription}
             headingLevel={3}
             action={
-              hasActiveFilters(filters) ? (
+              filtered ? (
                 <Button type="button" onClick={filters.clear} data-testid="collections-clear-filters">
                   {t.collectionsClearFilters}
                 </Button>
@@ -327,17 +350,17 @@ export function BooksPanel({
           />
         ) : (
           <DataTable.Root scrollable maxRows={LIST_ROWS} rowHeight={LIST_ROW_HEIGHT} data-testid="collections-books-scroll">
-            <DataTable.Table className="min-w-[53.5rem] table-fixed" aria-rowcount={shown.length}>
+            <DataTable.Table className="min-w-[54rem] table-fixed">
               <DataTable.Caption>{t.collectionsCaption}</DataTable.Caption>
               <colgroup>
                 <col />
-                <col className="w-24" />
-                <col className="w-[4.5rem]" />
-                <col className="w-[4.5rem]" />
-                <col className="w-[4.5rem]" />
-                <col className="w-56" />
-                <col className="w-[5.5rem]" />
-                <col className="w-28" />
+                <col className="w-32" />
+                <col className="w-[4.25rem]" />
+                <col className="w-[4.25rem]" />
+                <col className="w-[4.25rem]" />
+                <col className="w-[13.75rem]" />
+                <col className="w-20" />
+                <col className="w-[6.5rem]" />
               </colgroup>
               <DataTable.Head>
                 <DataTable.Row>
@@ -365,7 +388,13 @@ export function BooksPanel({
               </DataTable.Head>
               <DataTable.Body data-testid="collections-books-body">
                 {shown.map((book) => (
-                  <BookRow key={book.code} book={book} selected={book.code === selectedCode} onSelect={onSelect} />
+                  <BookRow
+                    key={book.code}
+                    book={book}
+                    selected={book.code === selectedCode}
+                    bagAvailable={bagAvailable}
+                    onSelect={onSelect}
+                  />
                 ))}
               </DataTable.Body>
             </DataTable.Table>

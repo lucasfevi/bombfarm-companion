@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { buildCollectionBoard, type CollectionBagItem } from '@bombfarm/domain/model';
+import { buildCollectionBoard, type CollectionBagItem, type CollectionSetRow } from '@bombfarm/domain/model';
 import { initialCollectionFilters } from './collection-filters';
 import {
   booksReadyCount,
   DEFAULT_BOOK_SORT,
   filterBooks,
+  closeBook,
   nextBookSort,
-  nowOf,
   pageFill,
-  readyGainOf,
-  remainingOf,
+  pressBook,
   sortBooks,
-  toggleSelection,
+  visibleSelection,
   weaponDefId,
 } from './collections-rows';
 import { collectionsSnapshotFixture, defined } from './collections-test-fixture';
@@ -80,21 +79,14 @@ describe('sortBooks', () => {
   it('puts the book granting the most now first when sorting on now, descending', () => {
     const sorted = sortBooks(books, { key: 'now', direction: 'desc' });
     expect(sorted[0]?.code).toBe('steel');
-    expect(nowOf(defined(sorted[0], 'a book'))).toBeCloseTo(15.1, 5);
-  });
-
-  it('sorts a multi-effect book by the sum of its effects', () => {
-    const voidBook = bookOf('void');
-    expect(nowOf(voidBook)).toBeCloseTo(1.53 + 2.31 + 1.17, 5);
-    const sorted = sortBooks(books, { key: 'now', direction: 'desc' });
-    const position = (code: string) => sorted.findIndex((book) => book.code === code);
-    expect(position('void')).toBeLessThan(position('autumn'));
-    expect(position('void')).toBeGreaterThan(position('ember'));
+    expect(sorted[0]?.effects[0]?.now).toBeCloseTo(15.1, 5);
   });
 
   it('puts the book with the most still to gain first when sorting on what is left, descending', () => {
     const sorted = sortBooks(books, { key: 'remaining', direction: 'desc' });
-    expect(remainingOf(defined(sorted[0], 'a book'))).toBeGreaterThanOrEqual(remainingOf(defined(sorted[1], 'a second book')));
+    const firstLeft = Math.max(...defined(sorted[0], 'a book').effects.map((effect) => effect.remaining));
+    const secondLeft = Math.max(...defined(sorted[1], 'a second book').effects.map((effect) => effect.remaining));
+    expect(firstLeft).toBeGreaterThanOrEqual(secondLeft);
     expect(sorted.at(-1)?.status).toBe('complete');
   });
 
@@ -112,13 +104,47 @@ describe('sortBooks', () => {
   it('sorts on pieces ready in the bag, then on the gain they would add', () => {
     const sorted = sortBooks(books, { key: 'ready', direction: 'desc' });
     expect(codes(sorted).slice(0, 2)).toEqual(['gold', 'clay']);
-    expect(readyGainOf(defined(sorted[0], 'a book'))).toBeGreaterThan(0);
+    expect(defined(sorted[0], 'a book').effects[0]?.readyGain).toBeGreaterThan(0);
   });
 
   it('does not touch the list it was given', () => {
     const before = codes(books);
     sortBooks(books, { key: 'now', direction: 'desc' });
     expect(codes(books)).toEqual(before);
+  });
+});
+
+function twoAxisBook(code: string, level: number, figures: Record<string, number>): CollectionSetRow {
+  const effects = Object.entries(figures).map(([axis, now]) => ({
+    axis: axis as CollectionSetRow['effects'][number]['axis'],
+    now,
+    max: 50,
+    remaining: 50 - now,
+    readyGain: now / 10,
+  }));
+  return { ...bookOf('gold'), code, level, effects, readyInBag: 1 };
+}
+
+describe('sortBooks across axes', () => {
+  const mixed = twoAxisBook('mixed', 10, { gold: 5, xp: 10 });
+  const plain = twoAxisBook('plain', 20, { gold: 8 });
+
+  it('never adds percentages of different axes: with no bonus filter a book ranks by its largest single effect', () => {
+    expect(codes(sortBooks([plain, mixed], { key: 'now', direction: 'desc' }))).toEqual(['mixed', 'plain']);
+    const sumWouldWin = twoAxisBook('sum', 30, { gold: 4, xp: 4, luck: 4 });
+    expect(codes(sortBooks([sumWouldWin, plain], { key: 'now', direction: 'desc' }))).toEqual(['plain', 'sum']);
+  });
+
+  it('ranks by the filtered bonus alone when a bonus filter is set', () => {
+    expect(codes(sortBooks([mixed, plain], { key: 'now', direction: 'desc' }, 'gold'))).toEqual(['plain', 'mixed']);
+    expect(codes(sortBooks([mixed, plain], { key: 'now', direction: 'desc' }, 'xp'))).toEqual(['mixed', 'plain']);
+  });
+
+  it('applies the same rule to what is left and to the gain from the bag', () => {
+    expect(codes(sortBooks([mixed, plain], { key: 'remaining', direction: 'desc' }, 'gold'))).toEqual(['mixed', 'plain']);
+    const gainOnly = (book: CollectionSetRow) => ({ ...book, readyInBag: 1 });
+    expect(codes(sortBooks([gainOnly(mixed), gainOnly(plain)], { key: 'ready', direction: 'desc' }, 'gold'))).toEqual(['plain', 'mixed']);
+    expect(codes(sortBooks([gainOnly(mixed), gainOnly(plain)], { key: 'ready', direction: 'desc' }))).toEqual(['mixed', 'plain']);
   });
 });
 
@@ -134,11 +160,36 @@ describe('nextBookSort', () => {
   });
 });
 
-describe('toggleSelection', () => {
-  it('opens a book, moves to another, and closes the open one when it is chosen again', () => {
-    expect(toggleSelection(null, 'gold')).toBe('gold');
-    expect(toggleSelection('gold', 'coal')).toBe('coal');
-    expect(toggleSelection('gold', 'gold')).toBeNull();
+describe('pressBook and closeBook', () => {
+  it('opens a book and moves to another without handing focus back', () => {
+    expect(pressBook(null, 'gold')).toEqual({ open: 'gold', restoreFocusTo: null });
+    expect(pressBook('gold', 'coal')).toEqual({ open: 'coal', restoreFocusTo: null });
+  });
+
+  it('closes the open book when its button is pressed again and returns focus to that button', () => {
+    expect(pressBook('gold', 'gold')).toEqual({ open: null, restoreFocusTo: 'gold' });
+  });
+
+  it('returns focus to the open book’s button when the detail is closed', () => {
+    expect(closeBook('gold')).toEqual({ open: null, restoreFocusTo: 'gold' });
+    expect(closeBook(null)).toEqual({ open: null, restoreFocusTo: null });
+  });
+});
+
+describe('visibleSelection', () => {
+  it('keeps the open book while it is among those shown', () => {
+    expect(visibleSelection('gold', books)).toBe('gold');
+  });
+
+  it('drops the open book when a filter hides it', () => {
+    const shown = filterBooks(books, { ...initialCollectionFilters, axis: 'luck' });
+    expect(visibleSelection('gold', shown)).toBeNull();
+    expect(visibleSelection('autumn', shown)).toBe('autumn');
+  });
+
+  it('drops a book the board no longer has, and has nothing to keep when nothing is open', () => {
+    expect(visibleSelection('retired', books)).toBeNull();
+    expect(visibleSelection(null, books)).toBeNull();
   });
 });
 

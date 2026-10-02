@@ -31,10 +31,12 @@ function render(activeAxis: Parameters<typeof BonusesPanel>[0]['activeAxis'] = '
   return renderToStaticMarkup(createElement(BonusesPanel, { board, activeAxis, onToggleAxis: () => undefined }));
 }
 
+function tiles(html: string): string[] {
+  return html.split('<div data-testid="collections-axis"').slice(1);
+}
+
 function tile(html: string, axis: string): string {
-  const found = (html.match(/<button[^>]*data-testid="collections-axis"[\s\S]*?<\/button>/g) ?? []).find((button) =>
-    button.includes(`data-axis="${axis}"`),
-  );
+  const found = tiles(html).find((candidate) => candidate.includes(`data-axis="${axis}"`));
   expect(found).toBeDefined();
   return found ?? '';
 }
@@ -82,21 +84,61 @@ describe('BonusesPanel', () => {
     expect(xp).toMatch(/text-muted[^"]*">\+0%/);
   });
 
-  it('renders each tile as a real button that reports whether it is the active filter', () => {
+  it('makes the tile a plain container and its label the one real button, so the bar is not inside a button', () => {
     const html = render('luck');
-    expect(html.match(/<button[^>]*data-testid="collections-axis"/g)).toHaveLength(10);
-    expect(tile(html, 'luck')).toContain('aria-pressed="true"');
+    expect(html.match(/<button[^>]*data-testid="collections-axis-button"/g)).toHaveLength(10);
+    expect(html.match(/<button[^>]*data-testid="collections-axis"/g)).toBeNull();
+    expect(tiles(html)).toHaveLength(10);
+    for (const button of html.match(/<button[\s\S]*?<\/button>/g) ?? []) expect(button).not.toContain('<div');
+  });
+
+  it('reports on the label button whether the tile is the active filter, and only for the pressed one', () => {
+    const html = render('luck');
+    expect(tile(html, 'luck')).toMatch(/aria-pressed="true"/);
     expect(html.match(/aria-pressed="true"/g)).toHaveLength(1);
     expect(html.match(/aria-pressed="false"/g)).toHaveLength(9);
   });
 
-  it('summarises the books, pieces and, only when there are any, pieces ready in the bag', () => {
+  it('names each tile button for a screen reader with the axis, its figure and its cap', () => {
+    const html = render();
+    expect(tile(html, 'gold')).toContain('aria-label="Gold, +7.74%, cap 60%"');
+    expect(tile(html, 'damage')).toContain('aria-label="Damage, +30%, cap 30%"');
+  });
+
+  it('stretches the label button over the whole tile and truncates the label to one line', () => {
+    const button = /<button[^>]*data-testid="collections-axis-button"[^>]*>/.exec(tile(render(), 'gold'))?.[0] ?? '';
+    expect(button).toContain('after:absolute after:inset-0');
+    expect(button).toContain('truncate');
+  });
+
+  it('shows the tile’s focus ring and pressed state on the tile, not on the button', () => {
+    const container = /^[^>]*class="([^"]*)"/.exec(tile(render(), 'gold'))?.[1] ?? '';
+    expect(container).toContain('relative');
+    expect(container).toContain('has-[:focus-visible]:outline-accent');
+    expect(container).toContain('has-[[aria-pressed=true]]:border-accent');
+  });
+
+  it('puts the at-cap chip on the value line, after the figure, and not in the label button', () => {
+    const damage = tile(render(), 'damage');
+    const label = /<button[\s\S]*?<\/button>/.exec(damage)?.[0] ?? '';
+    expect(label).not.toContain(en.collectionsAxisAtCap);
+    const total = damage.indexOf('data-testid="collections-axis-total"');
+    const chip = damage.indexOf('data-testid="collections-axis-at-cap"');
+    expect(total).toBeGreaterThan(-1);
+    expect(chip).toBeGreaterThan(total);
+    expect(damage.slice(total, chip)).not.toContain('</div>');
+  });
+
+  it('partitions the books by the progress filter’s words, and says nothing of the bag when nothing is ready', () => {
     const { summary } = board;
+    const inProgress = summary.booksStarted - summary.booksComplete;
+    const untouched = summary.booksTotal - summary.booksStarted;
     expect(render()).toContain(
-      `${String(summary.booksStarted)} of 30 books started · ${String(summary.booksComplete)} complete · ${String(summary.piecesSacrificed)} of 1,440 pieces sacrificed</p>`,
+      `${String(inProgress)} in progress · ${String(summary.booksComplete)} complete · ${String(untouched)} not started · ${String(summary.piecesSacrificed)} of 1,440 pieces sacrificed</p>`,
     );
+    expect(inProgress + summary.booksComplete + untouched).toBe(30);
     expect(summary.readyInBag).toBe(0);
-    expect(render()).not.toContain('ready in your bag');
+    expect(render()).not.toContain('ready in bag');
   });
 
   it('adds the ready count to the summary when the bag holds pieces', () => {
@@ -105,12 +147,7 @@ describe('BonusesPanel', () => {
     const html = renderToStaticMarkup(
       createElement(BonusesPanel, { board: withBag, activeAxis: 'all', onToggleAxis: () => undefined }),
     );
-    expect(html).toContain('· 1 ready in your bag</p>');
-  });
-
-  it('counts a started book among the started ones even when it is complete', () => {
-    expect(board.summary.booksComplete).toBe(2);
-    expect(board.summary.booksStarted).toBeGreaterThan(board.summary.booksComplete);
+    expect(html).toContain('· 1 ready in bag</p>');
   });
 
   it('renders in Portuguese with the game’s own words and decimal comma', () => {
@@ -121,10 +158,13 @@ describe('BonusesPanel', () => {
     expect(tile(html, 'gold')).toContain('+7,74%');
     expect(tile(html, 'cooldown')).toContain('teto 22,5%');
     expect(tile(html, 'damage')).toContain('No teto');
-    expect(html).toContain('livros iniciados');
+    expect(html).toContain('em andamento');
   });
 
-  it('keeps the tile grid at two columns until the window is wide, then five', () => {
-    expect(render()).toContain('grid grid-cols-2 gap-2 lg:grid-cols-5');
+  it('keeps the tiles at five columns at every width, two rows of five', () => {
+    const html = render();
+    expect(html).toContain('data-testid="collections-axes"');
+    expect(html).toContain('class="grid grid-cols-5 gap-2"');
+    expect(html).not.toMatch(/(?:sm|md|lg|xl|wide):grid-cols/);
   });
 });

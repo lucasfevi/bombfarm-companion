@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { COLLECTION_AXES } from '@bombfarm/contracts';
-import { SLOTS } from '@bombfarm/domain/gear';
-import { setName } from '@bombfarm/domain/game-labels';
+import { itemSlot, setName, slotLabel } from '@bombfarm/domain/game-labels';
 import { buildCollectionBoard } from '@bombfarm/domain/model';
 import { collectionsSnapshotFixture, defined } from '../../lib/collections/collections-test-fixture';
 import { en } from '../../lib/copy/en';
@@ -9,12 +8,12 @@ import { ptBR } from '../../lib/copy/pt-BR';
 import {
   axisLabel,
   axisTipLines,
-  AXIS_LABEL_KEY,
+  axisTileLabel,
   countOf,
-  PIECE_SLOTS,
   pieceCellLabel,
   pieceSlotLabel,
   pieceState,
+  readyBooksLabel,
   summaryLine,
 } from './collections-labels';
 
@@ -23,7 +22,7 @@ const board = buildCollectionBoard(snapshot, [{ defId: 'gold_elmo', rarity: 3, f
 const axisRow = (axis: string) => defined(board.axes.find((row) => row.axis === axis), axis);
 
 describe('axisLabel', () => {
-  it('names the ten axes in English as the plan gives them', () => {
+  it('names the ten axes in English in the game’s panel order', () => {
     expect(COLLECTION_AXES.map((axis) => axisLabel(axis, en))).toEqual([
       'Damage',
       'Critical damage',
@@ -51,7 +50,6 @@ describe('axisLabel', () => {
       'Sorte',
       'Forja',
     ]);
-    expect(Object.keys(AXIS_LABEL_KEY)).toHaveLength(10);
   });
 });
 
@@ -87,14 +85,38 @@ describe('axisTipLines', () => {
 });
 
 describe('summaryLine', () => {
-  it('leaves the bag out when nothing in it is ready', () => {
+  it('partitions the books by the progress filter’s own words and leaves the bag out when nothing is ready', () => {
     const line = summaryLine({ ...board.summary, readyInBag: 0 }, en, 'en');
-    expect(line).toMatch(/^\d+ of 30 books started · 2 complete · \d+ of 1,440 pieces sacrificed$/);
+    const [inProgress, complete, untouched] = [...line.matchAll(/(\d+) (?:in progress|complete|not started)/g)].map((match) => Number(match[1]));
+    expect(line).toMatch(/^\d+ in progress · 2 complete · \d+ not started · \d+ of 1,440 pieces sacrificed$/);
+    expect((inProgress ?? 0) + (complete ?? 0) + (untouched ?? 0)).toBe(30);
+  });
+
+  it('counts the books as the filter returns them: in progress leaves complete books out', () => {
+    const summary = { ...board.summary, booksStarted: 10, booksComplete: 2, booksTotal: 30, readyInBag: 0 };
+    expect(summaryLine(summary, en, 'en')).toContain('8 in progress · 2 complete · 20 not started');
+    expect(summaryLine(summary, ptBR, 'pt-BR')).toContain('8 em andamento · 2 completos · 20 não iniciados');
   });
 
   it('adds the bag when something in it is ready', () => {
-    expect(summaryLine(board.summary, en, 'en')).toMatch(/ · 1 ready in your bag$/);
+    expect(summaryLine(board.summary, en, 'en')).toMatch(/ · 1 ready in bag$/);
     expect(summaryLine(board.summary, ptBR, 'pt-BR')).toMatch(/ · 1 prontas na mochila$/);
+  });
+});
+
+describe('axisTileLabel', () => {
+  it('names the axis, its figure and its cap for a screen reader', () => {
+    expect(axisTileLabel(axisRow('gold'), en, 'en')).toBe('Gold, +7.74%, cap 60%');
+    expect(axisTileLabel(axisRow('gold'), ptBR, 'pt-BR')).toBe('Ouro, +7,74%, teto 60%');
+  });
+});
+
+describe('readyBooksLabel', () => {
+  it('says the number counts books, in the singular and the plural, in both languages', () => {
+    expect(readyBooksLabel(1, en, 'en')).toBe('1 book');
+    expect(readyBooksLabel(3, en, 'en')).toBe('3 books');
+    expect(readyBooksLabel(1, ptBR, 'pt-BR')).toBe('1 livro');
+    expect(readyBooksLabel(3, ptBR, 'pt-BR')).toBe('3 livros');
   });
 });
 
@@ -106,12 +128,12 @@ describe('countOf', () => {
 });
 
 describe('piece slots', () => {
-  it('names the eight slots by the catalog’s own slot keys, in the order the read lists them', () => {
-    expect([...PIECE_SLOTS].sort()).toEqual([...SLOTS].sort());
-  });
-
-  it('matches every piece of the fixture, whose ids end in the slot key of the position they hold', () => {
-    for (const piece of snapshot.pieces) expect(piece.defId.endsWith(`_${PIECE_SLOTS[piece.slot] ?? '?'}`)).toBe(true);
+  it('puts every piece of the fixture under the slot name the catalog gives its definition', () => {
+    for (const piece of snapshot.pieces) {
+      const slot = itemSlot({ defId: piece.defId });
+      expect(slot, piece.defId).not.toBeNull();
+      expect(pieceSlotLabel(piece.slot, 'en'), piece.defId).toBe(slotLabel(slot ?? 'arma', 'en'));
+    }
   });
 
   it('labels a slot in either language and falls back to the number for an unknown one', () => {
@@ -141,6 +163,6 @@ describe('pieceState and pieceCellLabel', () => {
 
   it('writes the piece, its rarity and its state into one name', () => {
     expect(pieceCellLabel(helmet, 0, en, 'en')).toBe('Gold Helm, Common — sacrificed');
-    expect(pieceCellLabel(helmet, 3, ptBR, 'pt')).toBe('Ouro Elmo, Épico — na mochila, pronta para queimar');
+    expect(pieceCellLabel(helmet, 3, ptBR, 'pt')).toBe('Ouro Elmo, Épico — pronta na mochila');
   });
 });

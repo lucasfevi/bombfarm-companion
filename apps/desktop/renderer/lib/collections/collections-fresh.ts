@@ -7,22 +7,9 @@
  * ask for one more Collections read — once per distinct totals value, so a read the game refuses
  * cannot be asked for again on every account push.
  */
-import type { AccountPayload, CollectionAxis, CollectionAxisValues } from '@bombfarm/contracts';
+import { COLLECTION_AXES, type AccountPayload, type CollectionAxis, type CollectionAxisValues } from '@bombfarm/contracts';
 import { collectionFromSave, collectionCents, type Collection } from '@bombfarm/domain/model';
 import { isSectionUsable, sectionFidelityOf } from '../account/account-facts';
-
-const AXIS_ORDER: readonly CollectionAxis[] = [
-  'damage',
-  'critDamage',
-  'critChance',
-  'cooldown',
-  'cage',
-  'energy',
-  'gold',
-  'xp',
-  'luck',
-  'forge',
-];
 
 const FIELD_OF_AXIS: Readonly<Record<CollectionAxis, keyof Collection>> = {
   damage: 'damagePct',
@@ -48,12 +35,12 @@ export function accountCollectionTotals(payload: AccountPayload): CollectionAxis
   const totals = payload.skills?.totals;
   if (!isPlainObject(totals) || !isPlainObject(totals.colecao)) return null;
   const collection = collectionFromSave(totals);
-  return Object.fromEntries(AXIS_ORDER.map((axis) => [axis, collection[FIELD_OF_AXIS[axis]]])) as CollectionAxisValues;
+  return Object.fromEntries(COLLECTION_AXES.map((axis) => [axis, collection[FIELD_OF_AXIS[axis]]])) as CollectionAxisValues;
 }
 
 /** The totals reduced to the hundredths the server states them in, so equal totals make equal keys. */
-export function collectionTotalsKey(totals: CollectionAxisValues): string {
-  return AXIS_ORDER.map((axis) => collectionCents(totals[axis])).join(',');
+function collectionTotalsKey(totals: CollectionAxisValues): string {
+  return COLLECTION_AXES.map((axis) => collectionCents(totals[axis])).join(',');
 }
 
 /** The key of the totals the read made on opening the tab answers for: asking again for the very

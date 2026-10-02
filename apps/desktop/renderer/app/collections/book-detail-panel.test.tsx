@@ -46,9 +46,54 @@ function book(code: string, from = board): CollectionSetRow {
   return found as CollectionSetRow;
 }
 
-function render(row: CollectionSetRow | null, locale: 'en' | 'pt-BR' = 'en'): string {
+function render(row: CollectionSetRow | null, locale: 'en' | 'pt-BR' = 'en', bagAvailable = true): string {
   language.current = locale;
-  return renderToStaticMarkup(createElement(BookDetailPanel, { book: row, onClose: () => undefined }));
+  return renderToStaticMarkup(createElement(BookDetailPanel, { book: row, bagAvailable, onClose: () => undefined }));
+}
+
+/** What the stylesheet does with a class list at a window width: each variant is a plain width
+ *  range, so a rule's reach never depends on which of two overlapping queries is emitted last. */
+const WIDTH_OF_VARIANT: Record<string, { min: number; max: number }> = {
+  lg: { min: 1024, max: Infinity },
+  wide: { min: 1500, max: Infinity },
+  'max-wide': { min: 0, max: 1499.99 },
+};
+
+interface Placement {
+  readonly group: string;
+  readonly value: string;
+  readonly variants: readonly string[];
+}
+
+function placementsOf(classList: string): Placement[] {
+  return classList.split(/\s+/).flatMap((token) => {
+    const parts = token.split(/:(?![^[]*\])/);
+    const utility = parts.at(-1) ?? '';
+    const group = /^(grid-cols|col-span|col-start|col-end|row-span|row-start|row-end)-/.exec(utility)?.[1];
+    return group === undefined ? [] : [{ group, value: utility, variants: parts.slice(0, -1) }];
+  });
+}
+
+function appliesAt(placement: Placement, width: number): boolean {
+  return placement.variants.every((variant) => {
+    const range = WIDTH_OF_VARIANT[variant];
+    return range !== undefined && width >= range.min && width <= range.max;
+  });
+}
+
+/** The value a group ends on at a width: the unprefixed base, replaced by the one prefixed rule
+ *  that applies. Two prefixed rules applying together is an ambiguity, reported as such. */
+function effectiveAt(classList: string, group: string, width: number): string | null {
+  const placements = placementsOf(classList).filter((placement) => placement.group === group);
+  const prefixed = placements.filter((placement) => placement.variants.length > 0 && appliesAt(placement, width));
+  if (prefixed.length > 1) return 'ambiguous';
+  if (prefixed.length === 1) return prefixed[0]?.value ?? null;
+  return placements.find((placement) => placement.variants.length === 0)?.value ?? null;
+}
+
+function classOf(html: string, testId: string): string {
+  const tag = new RegExp(String.raw`<[^>]*data-testid="${testId}"[^>]*>`).exec(html)?.[0] ?? '';
+  return /class="([^"]*)"/.exec(tag)?.[1] ?? '';
 }
 
 function text(fragment: string): string {
@@ -167,7 +212,7 @@ describe('BookDetailPanel', () => {
   it('names every piece cell for a screen reader with the piece, its rarity and its state', () => {
     const html = render(book('gold'));
     expect(pieceAt(html, 1, 0)).toContain('aria-label="Gold Helm, Common — sacrificed"');
-    expect(pieceAt(html, 6, 2)).toContain('aria-label="Gold Ring, Rare — in your bag, ready to sacrifice"');
+    expect(pieceAt(html, 6, 2)).toContain('aria-label="Gold Ring, Rare — ready in bag"');
     expect(pieceAt(html, 2, 4)).toContain('aria-label="Gold Chest, Legendary — arriving"');
     expect(pieceAt(html, 5, 2)).toContain('aria-label="Gold Gloves, Rare — not sacrificed"');
   });
@@ -190,7 +235,7 @@ describe('BookDetailPanel', () => {
   it('draws a one-line legend for the four states', () => {
     const legend = text(/<p [^>]*data-testid="collections-piece-legend"[\s\S]*?<\/p>/.exec(render(book('gold')))?.[0] ?? '');
     expect(legend).toBe(
-      [en.collectionsLegendSacrificed, en.collectionsLegendReady, en.collectionsLegendPending, en.collectionsLegendMissing].join(' '),
+      [en.collectionsLegendSacrificed, en.collectionsLegendReady, en.collectionsLegendPending, en.collectionsLegendNotSacrificed].join(' '),
     );
   });
 
@@ -222,17 +267,98 @@ describe('BookDetailPanel', () => {
     expect(html).toContain(ptBR.collectionsPageComplete);
     expect(html).toContain('>Elmo<');
     expect(html).toContain('>Calça<');
-    expect(pieceAt(html, 6, 2)).toContain('na mochila, pronta para queimar');
+    expect(pieceAt(html, 6, 2)).toContain('pronta na mochila');
     expect(pieceAt(html, 2, 4)).toContain('a caminho');
     expect(cellOf(pageRows(html)[2] ?? '', 'collections-detail-page-now')).toBe('+1,24%');
   });
 
-  it('lays the body out as two columns from lg, with the piece grid at its natural width, and one column at wide', () => {
+  it('puts the body in one column under lg, two from lg, and one again from wide where it sits beside the table', () => {
+    const body = classOf(render(book('gold')), 'collections-detail-body');
+    const columns = (width: number) => effectiveAt(body, 'grid-cols', width);
+    expect([960, 1023].map(columns)).toEqual(['grid-cols-1', 'grid-cols-1']);
+    expect([1024, 1280, 1499].map(columns)).toEqual(Array(3).fill('grid-cols-[minmax(0,1fr)_auto]'));
+    expect([1500, 1680].map(columns)).toEqual(['grid-cols-1', 'grid-cols-1']);
+  });
+
+  it('lets the guidance line span both columns exactly where there are two, and nowhere else', () => {
+    const guidance = classOf(render(book('gold')), 'collections-guidance');
+    const span = (width: number) => effectiveAt(guidance, 'col-span', width);
+    expect([960, 1023, 1500, 1680].map(span)).toEqual([null, null, null, null]);
+    expect([1024, 1280, 1499].map(span)).toEqual(['col-span-2', 'col-span-2', 'col-span-2']);
+  });
+
+  it('never leaves two placement rules of one kind applying at the same width, anywhere in the panel', () => {
     const html = render(book('gold'));
-    expect(html).toMatch(/data-testid="collections-detail-body"/);
-    expect(html).toContain('lg:grid-cols-[minmax(0,1fr)_auto] wide:grid-cols-1');
-    expect(html.indexOf('data-testid="collections-detail-effect"')).toBeLessThan(html.indexOf('data-testid="collections-detail-page"'));
-    expect(html.indexOf('data-testid="collections-detail-page"')).toBeLessThan(html.indexOf('data-testid="collections-piece-grid"'));
+    const classLists = [...html.matchAll(/class="([^"]*)"/g)].map((match) => match[1] ?? '');
+    const widths = [960, 1023, 1024, 1280, 1499, 1500, 1680, 1920];
+    for (const classList of classLists) {
+      for (const group of new Set(placementsOf(classList).map((placement) => placement.group))) {
+        for (const width of widths) expect(effectiveAt(classList, group, width), `${classList} at ${String(width)}`).not.toBe('ambiguous');
+      }
+    }
+  });
+
+  it('places no element by column span or row except the guidance line, so each child stacks in document order', () => {
+    const html = render(book('gold'));
+    const placed = [...html.matchAll(/class="([^"]*)"/g)]
+      .map((match) => match[1] ?? '')
+      .filter((classList) => placementsOf(classList).some((placement) => placement.group !== 'grid-cols'));
+    expect(placed).toHaveLength(1);
+    expect(placed[0]).toContain('lg:max-wide:col-span-2');
+  });
+
+  it('keeps the document order the single-column stack reads in: heading, effects, pages, piece grid, legend, guidance', () => {
+    const html = render(book('gold'));
+    const order = [
+      'collections-detail-heading',
+      'collections-detail-effect',
+      'collections-detail-page',
+      'collections-piece-grid',
+      'collections-piece-legend',
+      'collections-guidance',
+    ].map((id) => html.indexOf(`data-testid="${id}"`));
+    expect(order.every((position) => position > -1)).toBe(true);
+    expect(order).toEqual([...order].sort((left, right) => left - right));
+  });
+
+  it('names the grid’s first column Slot, since it holds slot names', () => {
+    const grid = /data-testid="collections-piece-grid"[\s\S]*?<\/thead>/.exec(render(book('gold')))?.[0] ?? '';
+    expect(text(grid)).toContain('Slot');
+    expect(text(grid)).not.toContain('Pieces');
+    expect(render(book('gold'), 'pt-BR')).toContain('>Espaço<');
+  });
+
+  it('drops the ready entry from the legend and every ready state from the grid while the bag has not been read', () => {
+    const html = render(book('gold', buildCollectionBoard(withArrival)), 'en', false);
+    expect(text(/<p [^>]*data-testid="collections-piece-legend"[\s\S]*?<\/p>/.exec(html)?.[0] ?? '')).toBe(
+      [en.collectionsLegendSacrificed, en.collectionsLegendPending, en.collectionsLegendNotSacrificed].join(' '),
+    );
+    expect(html).not.toContain('data-state="ready"');
+    expect(html).not.toContain('data-marker="ready"');
+  });
+
+  it('draws the unknown marker, not a dash, in the pages table’s Ready column while the bag has not been read', () => {
+    const html = render(book('gold', buildCollectionBoard(withArrival)), 'en', false);
+    expect(html.match(/data-testid="collections-ready-unknown"/g)).toHaveLength(6);
+    expect(pageRows(html).every((row) => cellOf(row, 'collections-detail-page-ready') === '?')).toBe(true);
+  });
+
+  it('is the panel the book buttons point at, with a heading that focus can land on', () => {
+    const html = render(book('gold'));
+    expect(html).toMatch(/<section[^>]*id="collections-book-detail"/);
+    expect(html).toMatch(/<h2[^>]*tabindex="-1"[^>]*data-testid="collections-detail-heading"|<h2[^>]*data-testid="collections-detail-heading"[^>]*tabindex="-1"/);
+  });
+
+  it('wires Escape to close and the heading to take focus when a book opens', () => {
+    const source = readFileSync(join(__dirname, 'book-detail-panel.tsx'), 'utf8');
+    expect(source).toMatch(/onKeyDown=\{\(event\) => \{\s*if \(event\.key !== 'Escape'\) return;[\s\S]*?onClose\(\);/);
+    expect(source).toMatch(/heading\.current\?\.focus\(\{ preventScroll: true \}\);/);
+  });
+
+  it('stacks a multi-effect book’s axis name over each figure so its pages table fits the narrow column', () => {
+    const row = pageRows(render(book('void')))[0] ?? '';
+    expect(row).toContain('flex flex-col items-end');
+    expect(row).toContain('truncate');
   });
 
   it('draws each piece icon at the piece’s own level, not the set’s', () => {

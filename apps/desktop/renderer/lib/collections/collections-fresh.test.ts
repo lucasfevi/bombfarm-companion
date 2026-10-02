@@ -4,7 +4,6 @@ import {
   accountCollectionTotals,
   collectionFreshnessDecision,
   collectionTotalsCovered,
-  collectionTotalsKey,
 } from './collections-fresh';
 import { collectionsSnapshotFixture } from './collections-test-fixture';
 
@@ -60,14 +59,14 @@ describe('accountCollectionTotals', () => {
   });
 });
 
-describe('collectionTotalsKey', () => {
+describe('the key totals are compared by', () => {
   it('is the same for totals that agree to the hundredth', () => {
     const nudged: CollectionAxisValues = { ...held, gold: 7.7400000001 };
-    expect(collectionTotalsKey(nudged)).toBe(collectionTotalsKey(held));
+    expect(collectionTotalsCovered(nudged)).toBe(collectionTotalsCovered(held));
   });
 
   it('differs when any one axis moves by a hundredth', () => {
-    expect(collectionTotalsKey({ ...held, luck: held.luck + 0.01 })).not.toBe(collectionTotalsKey(held));
+    expect(collectionTotalsCovered({ ...held, luck: held.luck + 0.01 })).not.toBe(collectionTotalsCovered(held));
   });
 });
 
@@ -77,7 +76,7 @@ describe('collectionFreshnessDecision', () => {
   it('asks for a read when the account’s totals differ from the held snapshot’s', () => {
     expect(collectionFreshnessDecision({ account: moved, held, askedFor: null })).toEqual({
       ask: true,
-      key: collectionTotalsKey(moved),
+      key: collectionTotalsCovered(moved),
     });
   });
 
@@ -86,7 +85,7 @@ describe('collectionFreshnessDecision', () => {
   });
 
   it('asks again once the totals move to a different value', () => {
-    const asked = collectionTotalsKey(moved);
+    const asked = collectionTotalsCovered(moved);
     const movedAgain: CollectionAxisValues = { ...held, gold: held.gold + 0.5 };
     expect(collectionFreshnessDecision({ account: moved, held, askedFor: asked })).toEqual({ ask: false });
     expect(collectionFreshnessDecision({ account: movedAgain, held, askedFor: asked }).ask).toBe(true);
@@ -111,7 +110,7 @@ describe('collectionTotalsCovered', () => {
   it('is the key of the account totals present when the tab opened, so the opening read is not asked for twice', () => {
     const moved: CollectionAxisValues = { ...held, gold: held.gold + 0.25 };
     const covered = collectionTotalsCovered(moved);
-    expect(covered).toBe(collectionTotalsKey(moved));
+    expect(covered).toBe(collectionTotalsCovered(moved));
     expect(collectionFreshnessDecision({ account: moved, held, askedFor: covered })).toEqual({ ask: false });
   });
 
