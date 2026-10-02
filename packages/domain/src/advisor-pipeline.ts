@@ -407,7 +407,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const htkHit = equippedResult.hit * mods.dmgMult * critFactor(effective.critChance, effective.critDmg);
   const propRows: PropHtkRow[] = propHtkRows(stoneHp, htkHit, targetProp);
   const bossHp = propHp(stoneHp, BOSS_HP_MULT);
-  const bossHits = hitsToKill(htkHit, bossHp);
+  const bossHits = hitsToKill(htkHit * mods.bossDmgMult, bossHp);
   const avgPropHp = weightedAvgPropHp(stoneHp);
 
   const gateRows: GateRow[] = buildGateRows(effective, context, field, dmgMult, gateAttackMult);

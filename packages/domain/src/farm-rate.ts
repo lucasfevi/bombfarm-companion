@@ -263,6 +263,9 @@ export type HeroFarmFacts = {
   /** Estilhaços: the chance, as a FRACTION, that a rock this hero destroys shatters. OPTIONAL, and
    *  absent means none, so a hand-built `HeroFarmFacts` prices as it always has. */
   shatterChance?: number;
+  /** Matador de Chefes: the multiplier on this hero's hit against the gate boss alone — never the
+   *  rocks, the shards or the cage. OPTIONAL, and absent means 1. */
+  bossDmgMult?: number;
   /** True when this hero contributes no throughput: `avgHitBase <= 0` or `plantsPerSec <= 0`. */
   degenerate: boolean;
 };
@@ -340,6 +343,7 @@ export type HeroFarmBasis = {
   fortunaLevel: number;
   passagemBastaoLevel: number;
   estilhacosLevel: number;
+  matadorChefesLevel: number;
   /** `1 + 0.5 × context.blastRange`, blocks struck per bomb — ability-driven, build-independent,
    *  precomputed. Geometry, not damage: see {@link HeroFarmFacts.blocksPerBomb}. */
   blocksPerBomb: number;
@@ -418,6 +422,7 @@ export function heroFarmBasisFromParts(parts: HeroFarmBasisParts): HeroFarmBasis
     fortunaLevel: clampAbilityLevel(parts.abilities.fortuna ?? 0),
     passagemBastaoLevel: clampAbilityLevel(parts.abilities.passagem_bastao ?? 0),
     estilhacosLevel: clampAbilityLevel(parts.abilities.estilhacos ?? 0),
+    matadorChefesLevel: clampAbilityLevel(parts.abilities.matador_chefes ?? 0),
     blocksPerBomb: 1 + 0.5 * parts.context.blastRange,
     ...(parts.auraFree ? { auraFree: parts.auraFree } : {}),
     ...(parts.critPointCeiling !== undefined ? { critPointCeiling: parts.critPointCeiling } : {}),
@@ -734,6 +739,9 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
     fortunaLevel: basis.fortunaLevel,
     ...(basis.estilhacosLevel > 0
       ? { shatterChance: abilityMods({ estilhacos: basis.estilhacosLevel }).shatterChancePct / 100 }
+      : {}),
+    ...(basis.matadorChefesLevel > 0
+      ? { bossDmgMult: abilityMods({ matador_chefes: basis.matadorChefesLevel }).bossDmgMult }
       : {}),
     degenerate,
     ...(passagemBastao ? { passagemBastao } : {}),
@@ -1318,7 +1326,8 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
         (sum, prop) => sum + prop.share * hitsToKill(hit, propHp(line.hp, prop.hpMult)),
         0,
       );
-    const bossHtkFor = (hit: number) => hitsToKill(hit, propHp(line.hp, BOSS_HP_MULT_WIKI));
+    const bossDmgMult = hero.bossDmgMult ?? 1;
+    const bossHtkFor = (hit: number) => hitsToKill(hit * bossDmgMult, propHp(line.hp, BOSS_HP_MULT_WIKI));
     const eHtk = pulseBlendedHtk(pulse, avgHit, propHtkFor);
     const bossHtk = pulseBlendedHtk(pulse, avgHit, bossHtkFor);
     const hps = hitsPerSec(hero, line.ato);

@@ -313,8 +313,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: "+5% TEAM crit damage/level, added to the crit bonus; two carriers never exceed one's maximum",
   },
   matador_chefes: {
-    pt: '+5% dano (próprio) no chefe do portão 2×2/nível, não vale para a Jaula (não modelado)',
-    en: '+5% damage (self) against the 2×2 gate boss/level, not the Cage (not modeled)',
+    pt: '+5% dano (próprio) no chefe do portão 2×2/nível, não vale para a Jaula',
+    en: '+5% damage (self) against the 2×2 gate boss/level, not the Cage',
   },
   aprendiz: {
     pt: '+0.75% XP do TIME/nível por rocha quebrada com ele em campo, dividido como o XP normal; dois portadores não passam do máximo de um (não modelado)',
