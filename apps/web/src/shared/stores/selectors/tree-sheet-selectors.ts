@@ -16,5 +16,7 @@ export function selectTreeSheetTotals(state: PlannerStore): TreeSheetTotals {
     critChancePct: state.treeCritChance,
     critDmgPct: state.treeCritDmg,
     luckFlatPct: state.treeLuckFlatPct,
+    // The stored reference, never a fresh object: callers subscribe to this with a shallow compare.
+    collection: state.treeCollection ?? undefined,
   };
 }

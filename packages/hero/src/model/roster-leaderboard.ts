@@ -1,7 +1,7 @@
 import { composeSheetFromBirth, type TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
 import { SLOTS, emptySheetOther, type SheetStats } from '@bombfarm/domain/gear';
 import { heroAbilityIconEntries } from '@bombfarm/domain/hero-abilities';
-import { abilityMods } from '@bombfarm/domain/model';
+import { abilityMods, collectionSheetPct, type Collection } from '@bombfarm/domain/model';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord, TreeState } from '@bombfarm/domain/shims/storage';
 import { formatNumber, type Lang } from '@bombfarm/ui';
@@ -43,6 +43,7 @@ export function heroStatSheet(hero: StatSheetHero, tree: TreeSheetTotals): Sheet
 /** The account's skill-tree totals as either host holds them. */
 export type AccountTreeTotals = Pick<TreeState, 'danoTotal' | 'critChance' | 'critDmg' | 'speed' | 'energy'> & {
   readonly luckFlatPct?: number | undefined;
+  readonly collection?: Collection | undefined;
 };
 
 /** The same mapping the advisor pipeline makes from an account's tree to its `treeSheet`. */
@@ -54,6 +55,7 @@ export function treeSheetFromAccountTree(tree: AccountTreeTotals): TreeSheetTota
     critChancePct: tree.critChance,
     critDmgPct: tree.critDmg,
     luckFlatPct: tree.luckFlatPct ?? 0,
+    collection: collectionSheetPct(tree.collection),
   };
 }
 

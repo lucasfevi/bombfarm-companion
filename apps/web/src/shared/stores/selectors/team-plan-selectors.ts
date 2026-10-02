@@ -21,6 +21,7 @@ export function selectTeamPlanInputs(state: PlannerStore): TeamPlanInputs {
     treeCritChance: state.treeCritChance,
     treeCritDmg: state.treeCritDmg,
     treeLuckFlatPct: state.treeLuckFlatPct,
+    treeCollection: state.treeCollection ?? undefined,
     treeTeamCoinPct: state.treeTeamCoinPct,
     treeXpMult: state.treeXpMult,
     houseIdx: state.houseIdx,

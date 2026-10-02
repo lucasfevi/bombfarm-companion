@@ -12,6 +12,7 @@
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { AurasAtCap } from '@bombfarm/domain/team-buffs';
+import type { Collection } from '@bombfarm/domain/model';
 
 export type FarmInputs = {
   heroes: readonly HeroRecord[];
@@ -22,6 +23,8 @@ export type FarmInputs = {
   treeEnergy: number;
   treeTeamCoinPct: number;
   treeLuckFlatPct: number;
+  /** `skills.totals.colecao`; absent reads as no Collections bonus. */
+  treeCollection?: Collection | null | undefined;
   houseIdx: number;
   houseLevel: number;
   /**

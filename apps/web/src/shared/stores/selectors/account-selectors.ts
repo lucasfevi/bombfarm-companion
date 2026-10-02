@@ -128,6 +128,7 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
       geoMult: state.treeGeoMult,
       fieldSlotsBonus: state.treeFieldSlotsBonus,
       bagTabsBonus: state.treeBagTabsBonus,
+      ...(state.treeCollection != null ? { collection: state.treeCollection } : {}),
     },
     context: {
       houseIdx: state.houseIdx,
@@ -172,6 +173,7 @@ export function selectAccountTuple(state: PlannerStore) {
     state.treeGeoMult,
     state.treeFieldSlotsBonus,
     state.treeBagTabsBonus,
+    state.treeCollection,
     state.houseIdx,
     state.houseLevel,
     state.phase,

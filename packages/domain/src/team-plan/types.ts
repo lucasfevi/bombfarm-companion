@@ -1,4 +1,5 @@
 import type { BirthStats, TreeSheetTotals } from '../birth-sheet';
+import type { Collection } from '../collection';
 import type { HeroRune } from '../runes';
 import type { BestFarmPhaseOptions } from '../farm-optimize-objective';
 import type { HeroFarmFacts, SquadFarmAccount } from '../farm-rate';
@@ -250,6 +251,8 @@ export type TeamPlanAccountInput = {
    */
   teamCoinPct?: number;
   xpMult?: number;
+  /** `skills.totals.colecao` — the farm objective reads its gold and luck. Absent reads as none. */
+  collection?: Collection | undefined;
   maxPhase?: number | null;
 };
 

@@ -1,5 +1,6 @@
 import { mitigationFactor, critFactor } from './model';
 import { propHp, weightedAvgPropHp, hitsToKill, PROPS } from './phases';
+import { collectionGoldMult } from './collection';
 import {
   wikiPhaseLine,
   WIKI_PROPS,
@@ -43,6 +44,8 @@ export type PhaseIntelGlobalOptions = {
   teamCoinPct?: number;
   /** `skills.totals.xp_mult`, e.g. `1.56`. Default 1 (no XP boost). */
   xpMult?: number;
+  /** The Collections gold bonus, percent — on top of {@link teamCoinPct}. Default 0. */
+  collectionGoldPct?: number;
   /** Average of on-field heroes' final `luck` stat, e.g. `0.1723005`. Default 0 (no luck boost).
    *  Stays the SOLE input to `dropChances[].actual` — {@link treeLuckFlatPct} and
    *  {@link squadLuckPct} below are display-only echoes and never feed this math, so a caller
@@ -164,6 +167,7 @@ export function computePhaseIntelGlobal(
   const {
     teamCoinPct = 0,
     xpMult = 1,
+    collectionGoldPct = 0,
     luckFraction = 0,
     treeLuckFlatPct = 0,
     squadLuckPct = 0,
@@ -173,7 +177,7 @@ export function computePhaseIntelGlobal(
 
   const stoneHp = line.hp;
   const mitigationPct = line.mitig * 100;
-  const teamCoinMult = 1 + Math.max(0, teamCoinPct) / 100;
+  const teamCoinMult = (1 + Math.max(0, teamCoinPct) / 100) * collectionGoldMult({ goldPct: collectionGoldPct });
   const goldComumWiki = line.goldComum;
   const goldComumActual = goldComumWiki * teamCoinMult;
   const propCount = propCountForAto(line.ato);

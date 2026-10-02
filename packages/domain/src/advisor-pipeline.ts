@@ -41,6 +41,7 @@ import {
 } from './advisor-tables';
 import { findGateCandidate } from './points-reopt';
 import type { TeamBuffId } from './team-buffs';
+import type { Collection } from './collection';
 
 /** Increments each time the pipeline invokes `energySwitchPoint` (tests / DEBUG). */
 // mutable by design — Vitest imports and reassigns/reads this counter directly
@@ -68,6 +69,8 @@ export type AdvisorPipelineInput = {
   treeEnergy: number;
   /** `skills.totals.luck_add × 100` — flat Luck percentage points. */
   treeLuckFlatPct: number;
+  /** `skills.totals.colecao`; absent reads as no Collections bonus. */
+  treeCollection?: Collection | undefined;
   teamBuffs: Record<TeamBuffId, number>;
   /**
    * Other heroes on the field beside this one — Matilha's allies. Per-call like `teamBuffs`: a
@@ -269,6 +272,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeSpeed,
     treeEnergy,
     treeLuckFlatPct,
+    treeCollection: input.treeCollection,
     birth,
     runes,
   });

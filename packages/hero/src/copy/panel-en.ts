@@ -106,6 +106,7 @@ export const statPanelEn = {
   bdSrcTeam: 'Team auras',
   bdSrcAbilitiesTeam: 'Abilities + Team',
   bdSrcRune: 'Rune',
+  bdSrcCollection: 'Collection',
   bdSrcHero: 'Hero',
   bdSrcAbility: 'Ability',
   bdNoteCapped: 'Own + team bonus capped at +100%',

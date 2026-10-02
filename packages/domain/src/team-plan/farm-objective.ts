@@ -135,6 +135,7 @@ function squadAccountFor(account: TeamPlanAccountInput, aurasAtCap: AurasAtCap |
       teamCoinPct: account.teamCoinPct ?? 0,
       luckFlatPct: account.treeSheet.luckFlatPct,
       xpMult: account.xpMult,
+      ...(account.collection !== undefined ? { collection: account.collection } : {}),
     },
   };
 }

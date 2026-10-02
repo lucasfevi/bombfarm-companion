@@ -10,6 +10,7 @@ import { composeAttack, starsMult, sumGearBonuses } from './gear/catalog';
 import type { Loadout, SheetOtherPct, SheetStats } from './gear/types';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
 import { runeSheetMultipliers, stripRuneMultipliers, type HeroRune } from './runes';
+import { collectionSheetPct, stripCollection } from './collection';
 
 /**
  * Six orders of magnitude above the measured worst residual (8.9e-13) and six
@@ -88,10 +89,11 @@ export function pointsExceedLevel(pts: Record<SheetKey, number>, level: number):
 
 export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceResult {
   const { birth, level, stars, sheetOther, loadout, tree, statPointsAvailable } = input;
-  const sheet =
+  const runeFree =
     input.runes && input.runes.length > 0
       ? stripRuneMultipliers(input.sheet, tree, runeSheetMultipliers(input.runes))
       : input.sheet;
+  const sheet = stripCollection(runeFree, collectionSheetPct(tree.collection), tree.critDmgPct);
 
   const naked = nakedFromBirth(birth, level, stars, sheetOther);
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);

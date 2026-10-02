@@ -2,6 +2,7 @@ import { levelPowerMult } from '../model';
 import { starsMult, type SheetOtherPct } from '../gear';
 import type { SheetDisplayKey } from '../planner-constants';
 import { RUNE_AXIS_SHEET_KEY, runeSheetMultipliers, type HeroRune } from '../runes';
+import { collectionSheetPct } from '../collection';
 import type {
   LedgerNote,
   LedgerSource,
@@ -28,7 +29,7 @@ export function gearedFor(statKey: SheetDisplayKey, facts: PipelineFacts): numbe
  */
 export function gearedBeforeRunesFor(statKey: SheetDisplayKey, facts: PipelineFacts, treePct: number): number {
   const geared = gearedFor(statKey, facts);
-  const factor = runeFactorFor(statKey, facts);
+  const factor = sheetBuffFactorFor(statKey, facts);
   if (factor === 1) return geared;
   if (statKey === 'critDmg') return (geared - treePct) / factor + treePct;
   return geared / factor;
@@ -36,6 +37,34 @@ export function gearedBeforeRunesFor(statKey: SheetDisplayKey, facts: PipelineFa
 
 export function runeFactorFor(statKey: SheetDisplayKey, facts: PipelineFacts): number {
   return runeSheetMultipliers(facts.runes ?? [])[statKey];
+}
+
+/** The Collections factor on this key — it scales exactly what a rune scales (`collection.ts`). */
+export function collectionFactorFor(statKey: SheetDisplayKey, facts: PipelineFacts): number {
+  const collection = collectionSheetPct(facts.collection);
+  const pct =
+    statKey === 'energy'
+      ? collection.energyPct
+      : statKey === 'critChance'
+        ? collection.critChancePct
+        : statKey === 'critDmg'
+          ? collection.critDmgPct
+          : statKey === 'cdr'
+            ? collection.cdrPct
+            : 0;
+  return 1 + pct / 100;
+}
+
+/** Everything the game multiplies onto the built sheet: the runes, then Collections. */
+export function sheetBuffFactorFor(statKey: SheetDisplayKey, facts: PipelineFacts): number {
+  return runeFactorFor(statKey, facts) * collectionFactorFor(statKey, facts);
+}
+
+/** The `× (1 + p)` step for the account's Collections; nothing is pushed when it is 1. */
+export function pushCollection(steps: LedgerStep[], statKey: SheetDisplayKey, facts: PipelineFacts): void {
+  const factor = collectionFactorFor(statKey, facts);
+  if (Math.abs(factor - 1) < EPS) return;
+  pushMul(steps, 'collection', factor);
 }
 
 /** The rune on this key with the least play time left — the one whose expiry ends the buff first. */

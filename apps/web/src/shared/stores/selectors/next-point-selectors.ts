@@ -106,6 +106,7 @@ function readDraftBasisDepTuple(state: PlannerStore) {
     state.treeEnergy,
     state.treeTeamCoinPct,
     state.treeLuckFlatPct,
+    state.treeCollection,
     state.houseIdx,
     state.houseLevel,
     state.slots,
