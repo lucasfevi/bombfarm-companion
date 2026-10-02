@@ -16,32 +16,32 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
 const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-full.json');
 
-/** Wide enough to spell every word in the bar. 1700, not the 1600 ten tabs were happy at: the
- *  eleventh took the whole-bar sum to 1480, and 1600 leaves only 20px over it — inside the range a
- *  font-rendering pass moves. */
-const FULL_WINDOW = 1700;
+/** Wide enough to spell every word in the bar. 1500px of bar sits 64px over the whole-bar sum
+ *  (1436) — outside the range a font-rendering pass moves. */
+const FULL_WINDOW = 1600;
 /** Inside the band where the tabs are glyphs and everything else is untouched. 1180px of bar sits
- *  80px above `SHELL_BRAND_MARK_WIDTH` (1100) and 300px below `SHELL_ICON_TABS_WIDTH` (1480) —
+ *  84px above `SHELL_BRAND_MARK_WIDTH` (1096) and 256px below `SHELL_ICON_TABS_WIDTH` (1436) —
  *  comfortably inside the icon-tabs band on both sides. */
 const ICON_TABS_WINDOW = 1280;
 /** Inside the band where the brand has shrunk to its mark but the actions are still spelled out.
- *  1040px of bar sits 60px above `SHELL_ACTIONS_COLLAPSE_WIDTH` (980) and 60px below
- *  `SHELL_BRAND_MARK_WIDTH` (1100) — the band the eighth tab brought within reach of "keeps every
+ *  1040px of bar sits 64px above `SHELL_ACTIONS_COLLAPSE_WIDTH` (976) and 56px below
+ *  `SHELL_BRAND_MARK_WIDTH` (1096) — the band the eighth tab brought within reach of "keeps every
  *  action its own control", which used to probe the minimum window itself. */
 const BRAND_MARK_WINDOW = 1140;
 /** `createMainWindow`'s own `minWidth` — the narrowest window a player can drag to. The eighth tab
  *  moved this stage from "brand mark, actions spelled out" to "actions collapsed behind the
  *  overflow": 860px of bar (960 minus the caption strip) sits under
- *  `SHELL_ACTIONS_COLLAPSE_WIDTH` (980), where it used to sit above it — 120px under it now. */
+ *  `SHELL_ACTIONS_COLLAPSE_WIDTH` (976), where it used to sit above it — 116px under it now. */
 const MIN_WINDOW = 960;
 /** At the real minimum itself now (see `MIN_WINDOW`'s comment) — kept as its own named constant
  *  because the two assertions that use it probe a stage description, not a coincidence of value. */
 const ACTIONS_COLLAPSED_WINDOW = 860;
 /** Narrower still, reachable only by lifting the minimum as `resize` does. The eleventh glyph
- *  widened the tab strip by another 36px, taking the width at which the tabs and the overflow
- *  menu stop fitting from ~684px to ~720px — so this probe keeps the seven-tab clearance of 64px:
- *  720 + 64 = 784, rounded onto the 20px grid the loop below steps on. */
-const NARROWEST_MEASURED = 800;
+ *  widened the tab strip by another 36px, and trimming the active tab's padding to 10px took 4px
+ *  back, taking the width at which the tabs and the overflow menu stop fitting from ~684px to
+ *  ~716px — so this probe keeps the seven-tab clearance of 64px: 716 + 64 = 780, which already
+ *  sits on the 20px grid the loop below steps on. */
+const NARROWEST_MEASURED = 780;
 
 async function launchApp() {
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-top-bar-'));

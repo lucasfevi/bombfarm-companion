@@ -89,8 +89,9 @@ bonuses, so they sit together. It is read-only and has three panels:
   finishing the page is worth) and the grid of eight slots by six rarities, marking pieces already
   sacrificed and pieces the bag holds free that would fill an open slot.
 
-The status strip's rail carries a Collections ring of its own, beside the PVP one. Like the PVP
-standing it has no clock — it is read when the tab opens, when the account's totals move while the
-tab is open, and when pressed — and it is dated by the snapshot's own read time. The tab reads the
+The status strip's rail carries a Collections ring of its own, beside the PVP one, and that is how
+the tab is refreshed: the screen asks main for the state when it opens, and pressing the ring asks
+again. Like the PVP standing the ring has no clock — it is also read when the account's totals
+move while the tab is open — and it is dated by the snapshot's own read time. The tab reads the
 account as well (the ready-in-bag column is worked out from the account's items), so the account
 ring stays lit on this tab and is the live account read, not a stand-in for the screen.

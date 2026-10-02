@@ -24,40 +24,45 @@ export type ShellDensity = 'full' | 'icon-tabs' | 'brand-mark' | 'actions-collap
  * they start overlapping on. Portuguese is the binding language; its tab words and its action
  * labels are the longest either language puts in the bar.
  *
- * Brand 159 + worded tabs 912 + actions 340 + the two gaps = 1440px of content, and the bar's
+ * Brand 159 + worded tabs 868 + actions 340 + the two gaps = 1396px of content, and the bar's
  * content is 24px narrower than the room measured here (the shell gutter, less the caption strip
- * the bar already holds clear) — so 1464px, with eleven tabs. The eleventh added 90px to the ten
- * measured at 817.7: the strip was re-rendered at its real geometry in the binding language and
- * came back 817.7px worded with ten tabs and 907.7px with "Coleções" in (86px of tab and a 4px
- * gap), rather than being estimated from a word length — a middling word again, so this tab costs
- * more than "Árvore" did. The margin above that absorbs a font-rendering pass that measures a few
- * pixels wider.
+ * the bar already holds clear) — so 1420px, with eleven tabs. The strip was re-rendered at its
+ * real geometry in the binding language rather than estimated from a word length: 777.7px worded
+ * with ten tabs and 863.7px with "Coleções" in (82px of tab and a 4px gap).
  *
- * The bar's content is capped at the shell's 1440px measure, and the worded strip now fills it
- * with about 4px to spare: a twelfth worded tab could not fit however wide the window, so the next
- * tab is a conversation about this stage rather than a quiet addition.
+ * A worded tab pads 10px a side, trimmed from 12px when the eleventh tab arrived. At 12px the
+ * same strip rendered 817.7px with ten tabs and 907.7px with eleven, which fills the bar's
+ * 1440px content cap (the shell's measure) with about 4px to spare — so any font pass measuring a
+ * few pixels wider would have overlapped the tabs and the actions at every wide window. At 10px
+ * the strip leaves 44px of that cap to spare, and 1436px adds a 16px margin above the sum for a
+ * font-rendering pass that measures a few pixels wider. The padding is the nav recipe's, so the
+ * web header's tabs sit 2px closer to their edges too. A twelfth worded tab
+ * (some 86px) would not fit the cap at all, so the next tab is a conversation about this stage
+ * rather than a quiet addition.
  */
-export const SHELL_ICON_TABS_WIDTH = 1480;
+export const SHELL_ICON_TABS_WIDTH = 1436;
 
 /**
- * The same sum with the tabs already down to glyphs: 159 + 531 + 340 + gaps = 1058, so 1082px.
+ * The same sum with the tabs already down to glyphs: 159 + 527 + 340 + gaps = 1054, so 1078px.
  *
- * A glyph tab costs the same whatever its word, so the eleventh adds 36px here against 90px above —
- * a 16px glyph between two 8px paddings and the 4px gap, read off how the compact tab is drawn,
- * where the active tab keeps its word.
+ * A glyph tab costs the same whatever its word, so the eleventh adds 36px here against 86px
+ * above — a 16px glyph between two 8px paddings and the 4px gap, read off how the compact tab is
+ * drawn. The active tab keeps its word there and shares the worded tab's padding, so the trim
+ * took 4px off this sum (a ten-glyph strip with one worded tab rendered 463.6px at 12px and
+ * 459.6px at 10px, eleven tabs).
  */
-export const SHELL_BRAND_MARK_WIDTH = 1100;
+export const SHELL_BRAND_MARK_WIDTH = 1096;
 
 /**
- * And with the brand down to its mark as well: 34 + 531 + 340 + gaps = 933, so 957px.
+ * And with the brand down to its mark as well: 34 + 527 + 340 + gaps = 929, so 953px.
  *
  * The smallest window a player can drag to reaches this stage: the desktop's minimum is 960px,
- * which leaves 860px of bar after the caption inset, and that is 120px inside this one — the
+ * which leaves 860px of bar after the caption inset, and that is 116px inside this one — the
  * eighth tab brought it inside the range a window can be dragged to, and the ninth, tenth and
  * eleventh moved it further in. At the minimum window every secondary action sits behind the
  * overflow button; the tabs and the brand mark still fit.
  */
-export const SHELL_ACTIONS_COLLAPSE_WIDTH = 980;
+export const SHELL_ACTIONS_COLLAPSE_WIDTH = 976;
 
 export function shellDensityFor(availableWidth: number): ShellDensity {
   if (availableWidth < SHELL_ACTIONS_COLLAPSE_WIDTH) return 'actions-collapsed';
