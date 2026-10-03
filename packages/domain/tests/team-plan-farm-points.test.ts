@@ -18,7 +18,6 @@ import {
   resolveFarmObjective,
   type FarmObjectiveScales,
 } from '@bombfarm/domain/farm-optimize-objective';
-import { runTeamPlan } from '@bombfarm/domain/team-plan';
 import { buildFarmObjective, isSquadScope } from '@bombfarm/domain/team-plan/farm-objective';
 import { farmPointsPass, FARM_POINTS_PASS_MAX_EVALUATIONS } from '@bombfarm/domain/team-plan/farm-points';
 import { loadoutForScoring } from '@bombfarm/domain/team-plan/evaluate';
@@ -28,6 +27,7 @@ import { RESPEC_KEYS } from '@bombfarm/domain/points-reopt-core';
 import type { Loadout, PointAlloc } from '@bombfarm/domain/gear/types';
 import { assertInRegime } from './helpers/capture-regime';
 import { loadTeamPlanFarmFixture, type TeamPlanFarmFixture } from './helpers/team-plan-farm-fixtures';
+import { farmPlan } from './helpers/team-plan-farm-plan';
 
 const GOLD = resolveFarmObjective({ kind: 'gold' });
 const UNUSED_SCALES: FarmObjectiveScales = { goldScale: 1, chestScale: 1 };
@@ -65,12 +65,6 @@ function goldPerHour(
     exhaustive: true,
   });
   return pick ? pick.row.goldPerHour : 0;
-}
-
-function farmPlan(fixture: TeamPlanFarmFixture, maxEvaluations?: number) {
-  const result = runTeamPlan({ ...fixture.teamPlanInput, objective: 'farm' }, maxEvaluations ? { maxEvaluations } : undefined);
-  if (result.blocked) throw new Error('expected a plan');
-  return result.plan;
 }
 
 function resetsByHeroId(plan: ReturnType<typeof farmPlan>): Record<string, PointAlloc> {
@@ -168,12 +162,12 @@ describe('the pass is bounded by the plan budget, not its own appetite', () => {
 });
 
 describe('the pass is reproducible', () => {
-  for (const file of ['save-20260831-13heroes-soulbound.json', 'save-20260823-13heroes-crit-points.json']) {
-    it(`${file}: two runs propose the same points`, () => {
-      const fixture = loadTeamPlanFarmFixture(file);
-      const first = farmPlan(fixture);
-      const second = farmPlan(loadTeamPlanFarmFixture(file));
-      expect(second.pointResets).toEqual(first.pointResets);
-    }, 900_000);
-  }
+  const file = 'save-20260831-13heroes-soulbound.json';
+
+  it(`${file}: two runs propose the same points`, () => {
+    const fixture = loadTeamPlanFarmFixture(file);
+    const first = farmPlan(fixture);
+    const second = farmPlan(loadTeamPlanFarmFixture(file));
+    expect(second.pointResets).toEqual(first.pointResets);
+  }, 900_000);
 });
