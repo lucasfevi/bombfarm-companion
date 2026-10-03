@@ -108,24 +108,37 @@ export function collectionSheetPct(collection: CollectionSheetPct | undefined): 
   return { energyPct: c.energyPct, critChancePct: c.critChancePct, critDmgPct: c.critDmgPct, cdrPct: c.cdrPct };
 }
 
-/** Applies the sheet axes to a tree-inclusive sheet. `treeCritDmgPct` is the tree's flat crit-damage add. */
-export function applyCollection(sheet: SheetStats, collection: CollectionSheetPct, treeCritDmgPct: number): SheetStats {
+/**
+ * Applies the sheet axes to a tree-inclusive sheet. `treeCritDmgPct` is the tree's flat crit-damage add;
+ * `cdrFlat` is Short Fuse's, which the wiki adds after everything else, so `recarga` does not scale it.
+ */
+export function applyCollection(
+  sheet: SheetStats,
+  collection: CollectionSheetPct,
+  treeCritDmgPct: number,
+  cdrFlat = 0,
+): SheetStats {
   return {
     ...sheet,
     energy: sheet.energy * (1 + collection.energyPct / 100),
     critChance: sheet.critChance * (1 + collection.critChancePct / 100),
     critDmg: (sheet.critDmg - treeCritDmgPct) * (1 + collection.critDmgPct / 100) + treeCritDmgPct,
-    cdr: sheet.cdr * (1 + collection.cdrPct / 100),
+    cdr: (sheet.cdr - cdrFlat) * (1 + collection.cdrPct / 100) + cdrFlat,
   };
 }
 
 /** Exact inverse of {@link applyCollection}. */
-export function stripCollection(sheet: SheetStats, collection: CollectionSheetPct, treeCritDmgPct: number): SheetStats {
+export function stripCollection(
+  sheet: SheetStats,
+  collection: CollectionSheetPct,
+  treeCritDmgPct: number,
+  cdrFlat = 0,
+): SheetStats {
   return {
     ...sheet,
     energy: sheet.energy / (1 + collection.energyPct / 100),
     critChance: sheet.critChance / (1 + collection.critChancePct / 100),
     critDmg: (sheet.critDmg - treeCritDmgPct) / (1 + collection.critDmgPct / 100) + treeCritDmgPct,
-    cdr: sheet.cdr / (1 + collection.cdrPct / 100),
+    cdr: (sheet.cdr - cdrFlat) / (1 + collection.cdrPct / 100) + cdrFlat,
   };
 }

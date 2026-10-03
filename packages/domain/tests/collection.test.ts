@@ -106,6 +106,15 @@ describe('where the game applies each axis — measured on one account, two read
     const back = stripCollection(applyCollection(sheet, SHEET_COLLECTION, 107.88), SHEET_COLLECTION, 107.88);
     for (const key of SHEET_KEYS) expect(back[key]).toBeCloseTo(sheet[key], 10);
   });
+
+  it("leaves Short Fuse's flat cooldown reduction outside recarga, and still inverts exactly", () => {
+    const sheet = { attack: 100, energy: 400, speed: 90, critChance: 31, critDmg: 228, penetration: 70, cdr: 21, luck: 139 };
+    const collection = { ...SHEET_COLLECTION, cdrPct: 10 };
+    const applied = applyCollection(sheet, collection, 107.88, 10);
+    expect(applied.cdr).toBeCloseTo(11 * 1.1 + 10, 10);
+    const back = stripCollection(applied, collection, 107.88, 10);
+    for (const key of SHEET_KEYS) expect(back[key]).toBeCloseTo(sheet[key], 10);
+  });
 });
 
 describe('a roster with Collections inverts to the same points it was built from', () => {

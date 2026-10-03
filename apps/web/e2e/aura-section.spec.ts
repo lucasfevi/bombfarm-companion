@@ -6,7 +6,7 @@ import { importedRoster, seedLocalStorage, selectSavedHero } from './fixtures/se
  * has, each behind a switch unless it is the hero's own; a switch prices the aura at its cap and reaches every
  * planner figure that reads the pipeline, and nothing on the Farm page.
  */
-const TEAM_AURA_IDS = ['grito_guerra', 'pressagio_mortal', 'marcha_acelerada', 'folego_mineiro', 'brecha', 'passagem_bastao'] as const;
+const TEAM_AURA_IDS = ['grito_guerra', 'pressagio_mortal', 'marcha_acelerada', 'folego_mineiro', 'brecha', 'carnificina', 'passagem_bastao'] as const;
 
 /** An off aura's card reads what its switch would price the hero with — the cap — dimmed. */
 const AURA_CAP_TEXT: Record<(typeof TEAM_AURA_IDS)[number], string> = {
@@ -15,6 +15,7 @@ const AURA_CAP_TEXT: Record<(typeof TEAM_AURA_IDS)[number], string> = {
   marcha_acelerada: '+3.70% speed',
   folego_mineiro: '−20% drain',
   brecha: '+20% penetration',
+  carnificina: '+100% team crit damage',
   passagem_bastao: '+80% dmg (pulse)',
 };
 
@@ -110,7 +111,7 @@ test.describe('team auras section', () => {
     // Her own Double Blast is priced in: the breakdown badges it, lit, on the card it reaches.
     const breakdown = activePanel(page).getByTestId('combat-breakdown');
     await expect(breakdown.locator('[data-badge="detonacao_dupla"][data-on="true"]')).toHaveCount(1);
-    // Baton Pass is the sixth aura row. Cora carries it at rank 10, so it is her own — no switch —
+    // Baton Pass is the last aura row. Cora carries it at rank 10, so it is her own — no switch —
     // priced at the team damage her own entry pulse carries, rank 10 × 4%.
     const batonPass = section.getByTestId('team-aura-passagem_bastao');
     await expect(batonPass.getByRole('switch')).toHaveCount(0);

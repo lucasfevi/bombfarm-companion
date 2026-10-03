@@ -126,6 +126,7 @@ export function factsForHero(
     speedMult: combat.speedMult,
     teamCritFlat: combat.teamCritFlat,
     teamPenFlat: combat.teamPenFlat,
+    teamCritDmgFlat: combat.teamCritDmgFlat,
     packMult: combat.packMult,
     entryPulseMult: combat.entryPulse.expectedMult,
     treeSpeed: fixture.account.tree.speed,

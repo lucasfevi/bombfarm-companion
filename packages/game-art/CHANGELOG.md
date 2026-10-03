@@ -1,5 +1,13 @@
 # @bombfarm/game-art
 
+## 0.7.7
+
+### Patch Changes
+
+- Updated dependencies [b7e061c]
+- Updated dependencies [b7e061c]
+  - @bombfarm/domain@1.8.1
+
 ## 0.7.6
 
 ### Patch Changes
