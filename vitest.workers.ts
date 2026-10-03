@@ -28,7 +28,7 @@ import { cappedWorkers } from './tools/cpu-budget.mjs';
  *
  * `pnpm test` is now two passes that run one after the other, each capped by this constant:
  * the workspace projects, then the solver pass (`vitest.solver.config.ts`). The solver pass's
- * critical path is `team-plan-farm-points.test.ts`; the root pass's is
+ * critical path is `team-plan-farm-points-reproducible.test.ts`; the root pass's is
  * `team-plan-step-monotonicity.test.ts`.
  *
  * `cappedWorkers` is what makes "to itself" true rather than assumed. The 3 above bounds ONE

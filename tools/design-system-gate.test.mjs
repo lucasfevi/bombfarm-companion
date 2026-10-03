@@ -105,6 +105,34 @@ describe('design-system-required aggregator', () => {
   );
 });
 
+describe.each(['quality', 'domain'])('ci-web-required aggregator gates on the %s job', (gatedJob) => {
+  const workflowText = readFileSync(CI_WEB_PATH, 'utf8');
+  const jobBlock = extractJobBlock(workflowText, 'ci-web-required') ?? '';
+
+  it('lists the job in its needs', () => {
+    const needs = jobBlock.match(/^\s*needs:\s*\[([^\]]*)\]\s*$/m);
+    expect(needs, 'ci-web-required has no inline `needs: [...]` list').not.toBeNull();
+    expect(needs[1].split(',').map((name) => name.trim())).toContain(gatedJob);
+  });
+
+  it('runs unconditionally (if: always()) so a skipped or cancelled job still reaches the gate', () => {
+    expect(jobBlock).toMatch(/^\s*if:\s*always\(\)\s*$/m);
+  });
+
+  it('has a step that fails the job when the web filter matched but the job did not succeed', () => {
+    const enforcing = extractSteps(jobBlock).find((step) => {
+      const cond = stepIf(step);
+      return (
+        cond != null &&
+        /needs\.changes\.outputs\.web\s*==\s*'true'/.test(cond) &&
+        new RegExp(`needs\\.${gatedJob}\\.result\\s*!=\\s*'success'`).test(cond) &&
+        stepFails(step)
+      );
+    });
+    expect(enforcing, `no ci-web-required step fails when ${gatedJob} did not succeed`).toBeDefined();
+  });
+});
+
 /**
  * Hazard 4 — the reuse boundary, checked from the source side
  * as a companion to `pnpm lint`'s `boundaries/element-types` rule (which is lint-enforced, not
