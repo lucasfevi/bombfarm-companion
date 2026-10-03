@@ -22,7 +22,7 @@
  * timer instead — so {@link runeSheetMultipliers} simply multiplies whatever it is handed.
  */
 import type { TreeSheetTotals } from './birth-sheet';
-import type { SheetStats } from './gear/types';
+import type { SheetOtherPct, SheetStats } from './gear/types';
 import { WIKI_RUNES } from './phase-wiki';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
 
@@ -139,10 +139,20 @@ export function hasRuneOnSheet(runes: readonly HeroRune[]): boolean {
   return runes.some((rune) => RUNE_AXIS_SHEET_KEY[rune.axis] !== null);
 }
 
-/** Composition order: the tree's flat crit-damage add sits OUTSIDE the rune, every other key inside. */
+/** The flat adds the game applies after a rune: the tree's crit-damage points and Short Fuse's cooldown-reduction points. */
+export type FlatAddsOutsideRune = { critDmgPct: number; cdrFlat: number };
+
+export function flatAddsOutsideRune(
+  tree: Pick<TreeSheetTotals, 'critDmgPct'>,
+  sheetOther: Pick<SheetOtherPct, 'cdr'>,
+): FlatAddsOutsideRune {
+  return { critDmgPct: tree.critDmgPct, cdrFlat: Math.max(0, sheetOther.cdr) };
+}
+
+/** Composition order: the flat adds sit OUTSIDE the rune, every other key inside. */
 export function applyRuneMultipliers(
   sheet: SheetStats,
-  tree: Pick<TreeSheetTotals, 'critDmgPct'>,
+  flat: FlatAddsOutsideRune,
   mult: RuneSheetMultipliers,
 ): SheetStats {
   return {
@@ -150,9 +160,9 @@ export function applyRuneMultipliers(
     energy: sheet.energy * mult.energy,
     speed: sheet.speed * mult.speed,
     critChance: sheet.critChance * mult.critChance,
-    critDmg: (sheet.critDmg - tree.critDmgPct) * mult.critDmg + tree.critDmgPct,
+    critDmg: (sheet.critDmg - flat.critDmgPct) * mult.critDmg + flat.critDmgPct,
     penetration: sheet.penetration,
-    cdr: sheet.cdr * mult.cdr,
+    cdr: (sheet.cdr - flat.cdrFlat) * mult.cdr + flat.cdrFlat,
     luck: sheet.luck,
   };
 }
@@ -160,7 +170,7 @@ export function applyRuneMultipliers(
 /** Exact inverse of {@link applyRuneMultipliers} — the observed sheet with the runes taken back off. */
 export function stripRuneMultipliers(
   sheet: SheetStats,
-  tree: Pick<TreeSheetTotals, 'critDmgPct'>,
+  flat: FlatAddsOutsideRune,
   mult: RuneSheetMultipliers,
 ): SheetStats {
   return {
@@ -168,9 +178,9 @@ export function stripRuneMultipliers(
     energy: sheet.energy / mult.energy,
     speed: sheet.speed / mult.speed,
     critChance: sheet.critChance / mult.critChance,
-    critDmg: (sheet.critDmg - tree.critDmgPct) / mult.critDmg + tree.critDmgPct,
+    critDmg: (sheet.critDmg - flat.critDmgPct) / mult.critDmg + flat.critDmgPct,
     penetration: sheet.penetration,
-    cdr: sheet.cdr / mult.cdr,
+    cdr: (sheet.cdr - flat.cdrFlat) / mult.cdr + flat.cdrFlat,
     luck: sheet.luck,
   };
 }

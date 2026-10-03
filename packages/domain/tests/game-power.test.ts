@@ -354,12 +354,12 @@ describe('runes', () => {
   const lv160 = lv160Input();
 
   it('the rune model reproduces the pre-nerf in-game 32.41M for the rune witness, crit damage before the tree', () => {
-    const withRunes = gamePowerBeforeWideBlastNerf(gamePowerInputWithRunes(lv160, WITNESS_RUNES, TREE_CRIT_DMG_PCT));
+    const withRunes = gamePowerBeforeWideBlastNerf(gamePowerInputWithRunes(lv160, WITNESS_RUNES, { critDmgPct: TREE_CRIT_DMG_PCT, cdrFlat: 0 }));
     expect(relativeError(withRunes, WITNESS_POWER_WITH_RUNES)).toBeLessThan(1e-6);
   });
 
   it('×1.09 on the displayed crit damage instead lands on 32.88M, not the game figure', () => {
-    const otherRunes = gamePowerInputWithRunes(lv160, [rune('crit', 9), rune('energy', 5)], TREE_CRIT_DMG_PCT);
+    const otherRunes = gamePowerInputWithRunes(lv160, [rune('crit', 9), rune('energy', 5)], { critDmgPct: TREE_CRIT_DMG_PCT, cdrFlat: 0 });
     const displayedCritDmg = 1 + lv160.sheet.critDmg / 100;
     const naive = withGamePowerAxis(otherRunes, 'critDmg', (displayedCritDmg * 1.09 - 1) * 100);
     const naivePower = gamePowerBeforeWideBlastNerf(naive);
@@ -368,12 +368,12 @@ describe('runes', () => {
   });
 
   it('an xp rune moves nothing', () => {
-    expect(gamePower(gamePowerInputWithRunes(lv160, [rune('xp', 9)], TREE_CRIT_DMG_PCT))).toBe(gamePower(lv160));
+    expect(gamePower(gamePowerInputWithRunes(lv160, [rune('xp', 9)], { critDmgPct: TREE_CRIT_DMG_PCT, cdrFlat: 0 }))).toBe(gamePower(lv160));
   });
 
   it('taking the runes back off an observed sheet returns the rune-free figure', () => {
-    const observed = gamePowerInputWithRunes(lv160, WITNESS_RUNES, TREE_CRIT_DMG_PCT);
-    const stripped = gamePowerInputWithoutRunes(observed, WITNESS_RUNES, TREE_CRIT_DMG_PCT);
+    const observed = gamePowerInputWithRunes(lv160, WITNESS_RUNES, { critDmgPct: TREE_CRIT_DMG_PCT, cdrFlat: 0 });
+    const stripped = gamePowerInputWithoutRunes(observed, WITNESS_RUNES, { critDmgPct: TREE_CRIT_DMG_PCT, cdrFlat: 0 });
     expect(relativeError(gamePowerBeforeWideBlastNerf(stripped), anchor('legendary-lv160-ampla20').power)).toBeLessThan(1e-12);
   });
 });
@@ -407,7 +407,7 @@ describe('gamePowerShares', () => {
   });
 
   it('with runes on, the witness reads crit ×8.80 at a 49.1% share', () => {
-    const withRunes = gamePowerInputWithRunes(lv160Input(), WITNESS_RUNES, TREE_CRIT_DMG_PCT);
+    const withRunes = gamePowerInputWithRunes(lv160Input(), WITNESS_RUNES, { critDmgPct: TREE_CRIT_DMG_PCT, cdrFlat: 0 });
     expect(gamePowerMultipliers(withRunes).crit).toBeCloseTo(8.8, 2);
     expect(gamePowerShares(withRunes).crit).toBeCloseTo(0.491, 3);
   });

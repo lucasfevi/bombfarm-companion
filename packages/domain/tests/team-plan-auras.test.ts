@@ -34,9 +34,11 @@ function ctx(
       dmgMult: 1,
       shatterChancePct: 0,
       gateAttackMult: 1,
+      bossDmgMult: 1,
       sheetCritChanceFlat: 0,
       sheetPenetrationFlat: 0,
       sheetCritDmgFlat: 0,
+      sheetCdrFlat: 0,
     },
     treeSheet: {
       danoStatic: 1,

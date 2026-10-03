@@ -38,6 +38,7 @@ function sheetOtherFor(abilities: Record<string, number>) {
     critChanceFlat: mods.sheetCritChanceFlat,
     penetration: mods.sheetPenetrationFlat,
     critDmgFlat: mods.sheetCritDmgFlat,
+    cdr: mods.sheetCdrFlat,
   };
 }
 
@@ -296,6 +297,7 @@ describe('mergeImportedHero', () => {
       critChanceFlat: mods.sheetCritChanceFlat,
       penetration: mods.sheetPenetrationFlat,
       critDmgFlat: mods.sheetCritDmgFlat,
+      cdr: mods.sheetCdrFlat,
     };
     const totals = (raw as { skills: { totals: Record<string, unknown> } }).skills.totals;
     const tree = treeTotalsFromSave(totals);

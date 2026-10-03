@@ -90,8 +90,8 @@ describe('catalog completeness', () => {
     expect(abilityMods({ brecha: 20 }).sheetPenetrationFlat).toBe(0);
   });
 
-  it("SHEET_ABILITIES is unchanged — a team aura's points are not a sheet ability's (re-asserted)", () => {
-    expect(SHEET_ABILITIES.map((a) => a.id)).toEqual(['ponta_diamante', 'olho_clinico', 'golpe_brutal']);
+  it("SHEET_ABILITIES holds the carrier's own flat addends — a team aura's points are not a sheet ability's", () => {
+    expect(SHEET_ABILITIES.map((a) => a.id)).toEqual(['ponta_diamante', 'olho_clinico', 'golpe_brutal', 'pavio_curto']);
   });
 });
 
@@ -248,8 +248,8 @@ describe('golpe_brutal — critDmgFlat (flat crit damage, POINT_GAIN.critDmgFlat
     expect(abilityMods({ golpe_brutal: 20 }).sheetCritDmgFlat).toBe(80);
   });
 
-  it('SHEET_ABILITIES is exactly ponta_diamante, olho_clinico, golpe_brutal', () => {
-    expect(SHEET_ABILITIES.map((a) => a.id)).toEqual(['ponta_diamante', 'olho_clinico', 'golpe_brutal']);
+  it('SHEET_ABILITIES is exactly ponta_diamante, olho_clinico, golpe_brutal, pavio_curto', () => {
+    expect(SHEET_ABILITIES.map((a) => a.id)).toEqual(['ponta_diamante', 'olho_clinico', 'golpe_brutal', 'pavio_curto']);
   });
 
   it('COMBAT_ABILITIES does not contain golpe_brutal, asserted by name', () => {

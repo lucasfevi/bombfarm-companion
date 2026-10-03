@@ -12,6 +12,7 @@ export function recomputeGearedSheet(
     critChanceFlat: mods.sheetCritChanceFlat,
     penetration: mods.sheetPenetrationFlat,
     critDmgFlat: mods.sheetCritDmgFlat,
+    cdr: mods.sheetCdrFlat,
   };
   return applyGear(hero.naked, hero.loadout, sheetOther);
 }

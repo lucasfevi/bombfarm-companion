@@ -63,6 +63,16 @@ describe('ownAbilityReadout — the model’s own arithmetic read back', () => {
     expect(ownAbilityReadout('olho_clinico', 10)).toEqual({ kind: 'critPoints', value: 20 });
     expect(ownAbilityReadout('ponta_diamante', 10)).toEqual({ kind: 'penetrationPoints', value: 10 });
     expect(ownAbilityReadout('golpe_brutal', 5)).toEqual({ kind: 'critDmgPct', value: 20 });
+    expect(ownAbilityReadout('pavio_curto', 10)).toEqual({ kind: 'cdrPct', value: 5 });
+  });
+
+  it('Carnage as a team aura reads in crit-damage points at the amount asked for', () => {
+    expect(teamAuraReadout('carnificina', 100)).toEqual({ kind: 'teamCritDmgPct', value: 100 });
+    expect(ownAbilityReadout('carnificina', 20)).toEqual({ kind: 'teamCritDmgPct', value: 100 });
+  });
+
+  it('Carnage appears once among the team abilities', () => {
+    expect(TEAM_ABILITY_IDS.filter((id) => id === 'carnificina')).toHaveLength(1);
   });
 
   it('an unknown id reads as none', () => {

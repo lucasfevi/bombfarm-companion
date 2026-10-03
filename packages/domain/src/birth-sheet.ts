@@ -12,7 +12,7 @@ import { applyPoints } from './gear/apply';
 import { starsMult } from './gear/catalog';
 import type { Loadout, PointAlloc, SheetOtherPct, SheetStats } from './gear/types';
 import { ZERO_PTS, type SheetKey } from './planner-constants';
-import { applyRuneMultipliers, runeSheetMultipliers, type HeroRune } from './runes';
+import { applyRuneMultipliers, flatAddsOutsideRune, runeSheetMultipliers, type HeroRune } from './runes';
 import { applyCollection, collectionSheetPct, type CollectionSheetPct } from './collection';
 
 /**
@@ -69,9 +69,9 @@ function poolFactor(percent: number): number {
  * {@link SheetOtherPct}) fold in the on-sheet ability contribution multiplicatively;
  * luck takes no `sheetOther` term.
  *
- * Crit damage, crit chance and penetration are the exceptions: their on-sheet ability
- * contributions (`sheetOther.critDmgFlat` / `critChanceFlat` / `penetration` — Golpe Brutal,
- * Olho Clínico and Ponta de Diamante) are FLAT addends in the sheet's units, added AFTER the star
+ * Crit damage, crit chance, penetration and cooldown reduction are the exceptions: their on-sheet
+ * ability contributions (`sheetOther.critDmgFlat` / `critChanceFlat` / `penetration` / `cdr` —
+ * Golpe Brutal, Olho Clínico, Ponta de Diamante and Pavio Curto) are FLAT addends in the sheet's units, added AFTER the star
  * factor. See
  * `POINT_GAIN.critDmgFlat` and the `critDmgFlat` / `critChanceFlat` ability kinds for the two
  * measurements. No capture carries a ★>0 hero with either contribution, so whether the flat
@@ -96,7 +96,7 @@ export function nakedFromBirth(
     critChance: birth.critChance * star + Math.max(0, sheetOther.critChanceFlat),
     critDmg: birth.critDmg * star + Math.max(0, sheetOther.critDmgFlat),
     penetration: birth.penetration * star + Math.max(0, sheetOther.penetration),
-    cdr: birth.cdr * poolFactor(sheetOther.cdr) * star,
+    cdr: birth.cdr * star + Math.max(0, sheetOther.cdr),
     luck: birth.luck * star,
   };
 }
@@ -138,7 +138,7 @@ export function applySkillTree(
     cdr: sheet.cdr,
     luck: sheet.luck + tree.luckFlatPct,
   };
-  return applyCollection(withTree, collectionSheetPct(tree.collection), tree.critDmgPct);
+  return applyCollection(withTree, collectionSheetPct(tree.collection), tree.critDmgPct, Math.max(0, sheetOther.cdr));
 }
 
 export type ComposeSheetFromBirthInput = {
@@ -183,7 +183,7 @@ export function composeSheetFromBirth(input: ComposeSheetFromBirthInput): SheetS
   );
   const withTree = applySkillTree(pooled, naked, input.sheetOther, input.tree);
   if (!input.runes || input.runes.length === 0) return withTree;
-  return applyRuneMultipliers(withTree, input.tree, runeSheetMultipliers(input.runes));
+  return applyRuneMultipliers(withTree, flatAddsOutsideRune(input.tree, input.sheetOther), runeSheetMultipliers(input.runes));
 }
 
 /**

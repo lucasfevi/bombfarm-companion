@@ -36,6 +36,7 @@ function rawSheetOther(abilities: Record<string, number>): SheetOtherPct {
     critChanceFlat: mods.sheetCritChanceFlat,
     penetration: mods.sheetPenetrationFlat,
     critDmgFlat: mods.sheetCritDmgFlat,
+    cdr: mods.sheetCdrFlat,
   };
 }
 

@@ -32,6 +32,7 @@ export function heroStatSheet(hero: StatSheetHero, tree: TreeSheetTotals): Sheet
       critChanceFlat: mods.sheetCritChanceFlat,
       penetration: mods.sheetPenetrationFlat,
       critDmgFlat: mods.sheetCritDmgFlat,
+      cdr: mods.sheetCdrFlat,
     },
     loadout: hero.loadout,
     pts: hero.pts,
