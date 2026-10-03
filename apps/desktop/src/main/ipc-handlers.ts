@@ -6,6 +6,7 @@ import {
 import { writeClipboardImage, type ImageClipboard } from './shell/clipboard-image.js';
 import type { AppEnv } from './env.js';
 import {
+  EMPTY_COLLECTIONS_VIEW,
   EMPTY_FORGE_HISTORY,
   EMPTY_PVP_HISTORY,
   emptyMarketSnapshotView,
@@ -21,6 +22,7 @@ import {
   type AppSettings,
   type ApplyStartRequest,
   type ApplyStartResult,
+  type CollectionsView,
   type ConsentRecord,
   type ForgeHistoryResult,
   type ForgeStartRequest,
@@ -116,6 +118,14 @@ export interface PvpReaderPort {
   refresh(): AccountReadResult;
 }
 
+export interface CollectionsStorePort {
+  view(): CollectionsView;
+}
+
+export interface CollectionsReaderPort {
+  refresh(): AccountReadResult;
+}
+
 /** The caption buttons' view of the main window: `BrowserWindow` satisfies it structurally, and
  *  nothing here needs the rest of it. */
 export interface MainWindowPort {
@@ -167,6 +177,8 @@ export interface IpcHandlerDeps<Image extends ClipboardImageLike = ClipboardImag
   getApplyInjector: () => ApplyInjectorPort | null;
   getPvpHistory: () => PvpHistoryPort | null;
   getPvpReader: () => PvpReaderPort | null;
+  getCollectionsStore: () => CollectionsStorePort | null;
+  getCollectionsReader: () => CollectionsReaderPort | null;
   getMainWindow: () => MainWindowPort | null;
   getMiniLiveController: () => MiniLiveControllerPort | null;
   getWindowLayoutStore: () => WindowLayoutStorePort | null;
@@ -352,6 +364,9 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
     'pvp:history': (): PvpHistoryResult => deps.getPvpHistory()?.list() ?? EMPTY_PVP_HISTORY,
     'pvp:refresh': (): AccountReadResult => deps.getPvpReader()?.refresh() ?? { ok: false, reason: 'unavailable' },
     'pvp:film': readPvpFilm,
+    'collections:get': (): CollectionsView => deps.getCollectionsStore()?.view() ?? EMPTY_COLLECTIONS_VIEW,
+    'collections:refresh': (): AccountReadResult =>
+      deps.getCollectionsReader()?.refresh() ?? { ok: false, reason: 'unavailable' },
     'window:minimize': () => {
       deps.getMainWindow()?.minimize();
       return null;

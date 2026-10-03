@@ -7,9 +7,9 @@ import { sequenceDecision } from './use-feeds';
 const NOW = Date.parse('2026-09-20T12:00:00.000Z');
 const ago = (ms: number) => new Date(NOW - ms).toISOString();
 
-describe('the four feeds and the clock each runs on', () => {
+describe('the five feeds and the clock each runs on', () => {
   it('lists them in the order the sequence presses them: the game reads first, the outside checks after', () => {
-    expect(FEED_IDS).toEqual(['account', 'pvp', 'market', 'updates']);
+    expect(FEED_IDS).toEqual(['account', 'pvp', 'collections', 'market', 'updates']);
   });
 
   it("each feed's cycle is the clock main actually runs, not a figure of the strip's own", () => {
@@ -17,14 +17,16 @@ describe('the four feeds and the clock each runs on', () => {
     expect(FEED_CYCLE_MS.market).toBe(MARKET_SNAPSHOT_CHECK_MS);
     expect(FEED_CYCLE_MS.updates).toBe(UPDATE_CHECK_INTERVAL_MS);
     expect(FEED_CYCLE_MS.pvp).toBeNull();
+    expect(FEED_CYCLE_MS.collections).toBeNull();
   });
 });
 
 describe('which feeds a tab reads — the rest are muted while it shows', () => {
-  it('every tab but PVP and Settings reads the account; Inventory adds prices, Skill Tree adds the PVP ranking', () => {
+  it('every tab but PVP and Settings reads the account; Inventory adds prices, Skill Tree adds the PVP ranking, Collections adds its own state', () => {
     for (const tab of ['live', 'farm', 'heroes', 'forge', 'optimizer', 'account']) expect(feedsReadBy(tab)).toEqual(['account']);
     expect(feedsReadBy('inventory')).toEqual(['account', 'market']);
     expect(feedsReadBy('skills')).toEqual(['account', 'pvp']);
+    expect(feedsReadBy('collections')).toEqual(['collections', 'account']);
     expect(feedsReadBy('pvp')).toEqual(['pvp']);
     expect(feedsReadBy('settings')).toEqual(['updates']);
   });
@@ -44,6 +46,7 @@ describe('the meter — how far a feed is towards refreshing itself', () => {
 
   it('is nothing for a feed with no clock, and for one never read', () => {
     expect(feedMeter('pvp', 30_000)).toBeNull();
+    expect(feedMeter('collections', 30_000)).toBeNull();
     expect(feedMeter('market', null)).toBeNull();
   });
 

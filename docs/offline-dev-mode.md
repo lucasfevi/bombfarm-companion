@@ -19,6 +19,7 @@ it applied, and every one of them is overridable.
 | Account, Inventory | `apps/desktop/tests/fixtures/account-offline.json` — 13 heroes, 221 items, all five sections `resolved` | Real captured bodies |
 | Live | `live-capture.bfcc` — 60 records decoding to 58 ticks, replayed at ~10 Hz | Real captured bytes, looped |
 | PVP | `pvp-duels-offline.json` — two duel results (one with its film, one without) served once ahead of the first frame | Hand-written bodies in the wire's shape; see [pvp-duel-history.md](pvp-duel-history.md) |
+| Collections | `packages/game-api/src/__fixtures__/collections-state.json` — the synthetic Collections body (the set table is the game's, the progress is invented), served once ahead of the first frame | Synthetic, not a capture; see [collections.md](collections.md) |
 | Skill Tree | the same `account-offline.json` — its `skills` block: 72 owned levels, the server's totals, gold and furthest phase | Real captured body; priced from the fixture's 13 heroes, see [skill-tree.md](skill-tree.md) |
 | Consent flow | Unchanged | Real |
 
@@ -235,6 +236,7 @@ Set any of these before the command; the script only fills in what you left blan
 | `BFC_LIVE_SOURCE` | `replay` | `replay` reads a capture; anything else uses the real tap |
 | `BFC_REPLAY_CAPTURE` | the committed `live-capture.bfcc` | Any `.bfcc` capture. A scenario with its own capture sets this for you |
 | `BFC_REPLAY_PVP_FIXTURE` | the committed `pvp-duels-offline.json` | Any `{ "bodies": [...] }` JSON of duel results and films, served once per tap; an empty string serves none |
+| `BFC_REPLAY_COLLECTIONS_FIXTURE` | the synthetic `collections-state.json` the wire-reading package commits | Any single Collections body as a JSON object, served once per tap; an empty string serves none |
 | `BFC_RENDERER_PORT` | `3100` | Renderer dev-server port |
 | `BFC_USER_DATA_DIR` | `.offline-user-data/` at the repo root, or `.offline-user-data-<name>/` for a named scenario | Where this mode's database lives |
 

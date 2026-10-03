@@ -20,6 +20,9 @@ import { patchAccountAfterForge } from './forge/forge-account-patch.js';
 import { createForgeHistory, type ForgeHistory } from './forge/forge-history.js';
 import { createForgeInjector, shouldHonourForgeInject, type ForgeInjector } from './forge/forge-inject.js';
 import { createForgeService, type ForgeService } from './forge/forge-service.js';
+import { createCollectionsReader, type CollectionsReader } from './collections/collections-reader.js';
+import { createCollectionsRecorder, type CollectionsRecorder } from './collections/collections-recorder.js';
+import { createCollectionsStore, type CollectionsStore } from './collections/collections-store.js';
 import { createPvpHistory, type PvpHistory } from './pvp/pvp-history.js';
 import { createPvpReader, type PvpReader } from './pvp/pvp-reader.js';
 import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
@@ -64,6 +67,7 @@ import {
   createReplayTapFactory,
   isReplayLiveSourceEnabled,
   resolveReplayCapturePath,
+  resolveReplayCollectionsFixturePath,
   resolveReplayPvpFixturePath,
 } from './live-source/replay-tap.js';
 import { configureLogging, log } from './logging.js';
@@ -144,6 +148,9 @@ let applyInjector: ApplyInjector | null = null;
 let pvpHistory: PvpHistory | null = null;
 let pvpRecorder: PvpRecorder | null = null;
 let pvpReader: PvpReader | null = null;
+let collectionsStore: CollectionsStore | null = null;
+let collectionsRecorder: CollectionsRecorder | null = null;
+let collectionsReader: CollectionsReader | null = null;
 let forgeInjector: ForgeInjector | null = null;
 /** Fixture mode only — see `gameReader.onAccountCommitted` for why a re-ingest of an unchanged
  *  rotation is not free. */
@@ -334,6 +341,8 @@ function registerIpcHandlers(): void {
       getApplyInjector: () => applyInjector,
       getPvpHistory: () => pvpHistory,
       getPvpReader: () => pvpReader,
+      getCollectionsStore: () => collectionsStore,
+      getCollectionsReader: () => collectionsReader,
       getMainWindow: () => mainWindow,
       getMiniLiveController: () => miniLiveController,
       getWindowLayoutStore: () => windowLayoutStore,
@@ -786,6 +795,15 @@ async function bootstrap(): Promise<void> {
     log,
   });
 
+  collectionsStore = createCollectionsStore({ db: accountOpen.db, accountId: boundAccountId, accountSource: currentAccountSource, log });
+  collectionsRecorder = createCollectionsRecorder({
+    store: collectionsStore,
+    emit: (view) => {
+      emitEvent('collections:changed', view);
+    },
+    log,
+  });
+
   liveSource = new LiveSource({
     consent: liveConsent,
     userDataDir,
@@ -795,12 +813,16 @@ async function bootstrap(): Promise<void> {
     onObservedPvpBody: (observation) => {
       pvpRecorder?.observe(observation);
     },
+    onObservedCollectionsBody: (observation) => {
+      collectionsRecorder?.observe(observation);
+    },
     log,
     ...(replayLive
       ? {
           createTap: createReplayTapFactory({
             capturePath: resolveReplayCapturePath(process.env, __dirname),
             pvpFixturePath: resolveReplayPvpFixturePath(process.env, __dirname),
+            collectionsFixturePath: resolveReplayCollectionsFixturePath(process.env, __dirname),
             consent: liveConsent,
             log,
             onObservedFrame: (wire, atMs) => {
@@ -952,6 +974,16 @@ async function bootstrap(): Promise<void> {
     transport: gameApiTransport,
     gate,
     recorder: pvpRecorder,
+    log,
+  });
+  collectionsReader = createCollectionsReader({
+    consentStore: { read: () => consentStore?.read() ?? initialConsent() },
+    accountSource: currentAccountSource,
+    isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
+    readToken,
+    transport: gameApiTransport,
+    gate,
+    recorder: collectionsRecorder,
     log,
   });
 
@@ -1236,6 +1268,15 @@ if (!gotLock) {
         },
         releasePvpHistory: () => {
           pvpHistory = null;
+        },
+        releaseCollectionsReader: () => {
+          collectionsReader = null;
+        },
+        releaseCollectionsRecorder: () => {
+          collectionsRecorder = null;
+        },
+        releaseCollectionsStore: () => {
+          collectionsStore = null;
         },
         releaseTriggeredRefresh: () => {
           triggeredRefresh = null;

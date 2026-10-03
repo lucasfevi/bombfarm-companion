@@ -1,0 +1,2837 @@
+{
+  "versao": 4,
+  "ligada": true,
+  "parcial_pct": 60,
+  "upgrades": [
+    2,
+    2,
+    2,
+    3,
+    3,
+    4
+  ],
+  "tetos": {
+    "dano": 30,
+    "critd": 45,
+    "critc": 45,
+    "recarga": 22.5,
+    "energia": 75,
+    "ouro": 60,
+    "xp": 75,
+    "sorte": 30,
+    "jaula": 60,
+    "forja": 45
+  },
+  "totais": {
+    "dano": 30,
+    "critd": 2.31,
+    "critc": 11.4,
+    "recarga": 1.17,
+    "energia": 11.25,
+    "ouro": 7.74,
+    "xp": 0,
+    "sorte": 0.64,
+    "jaula": 10.9,
+    "forja": 0.38
+  },
+  "brutos": {
+    "dano": 42.13,
+    "critd": 2.31,
+    "critc": 11.4,
+    "recarga": 1.17,
+    "energia": 11.25,
+    "ouro": 7.74,
+    "xp": 0,
+    "sorte": 0.64,
+    "jaula": 10.9,
+    "forja": 0.38
+  },
+  "sets": [
+    {
+      "set": "ember",
+      "nivel": 10,
+      "paginas": 6,
+      "na_pagina": 0,
+      "por_pagina": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        8
+      ],
+      "efeitos": [
+        {
+          "alavanca": "dano",
+          "paginas": [
+            1.6,
+            3.2,
+            4.8,
+            7.2,
+            9.6,
+            12.8
+          ],
+          "agora": 12.8
+        }
+      ]
+    },
+    {
+      "set": "gold",
+      "nivel": 20,
+      "paginas": 2,
+      "na_pagina": 5,
+      "por_pagina": [
+        8,
+        8,
+        5,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "ouro",
+          "paginas": [
+            3.3,
+            6.5,
+            9.8,
+            14.6,
+            19.5,
+            26
+          ],
+          "agora": 7.74
+        }
+      ]
+    },
+    {
+      "set": "coal",
+      "nivel": 30,
+      "paginas": 1,
+      "na_pagina": 3,
+      "por_pagina": [
+        8,
+        3,
+        0,
+        8,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "energia",
+          "paginas": [
+            4.1,
+            8.3,
+            12.4,
+            18.6,
+            24.8,
+            33
+          ],
+          "agora": 11.25
+        }
+      ]
+    },
+    {
+      "set": "clay",
+      "nivel": 40,
+      "paginas": 0,
+      "na_pagina": 2,
+      "por_pagina": [
+        2,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "forja",
+          "paginas": [
+            2.5,
+            5,
+            7.5,
+            11.3,
+            15.1,
+            20.1
+          ],
+          "agora": 0.38
+        }
+      ]
+    },
+    {
+      "set": "autumn",
+      "nivel": 50,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        1,
+        4,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "sorte",
+          "paginas": [
+            1.7,
+            3.4,
+            5.1,
+            7.7,
+            10.2,
+            13.6
+          ],
+          "agora": 0.64
+        }
+      ]
+    },
+    {
+      "set": "glacier",
+      "nivel": 60,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "recarga",
+          "paginas": [
+            1.3,
+            2.6,
+            3.9,
+            5.8,
+            7.8,
+            10.4
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "iron",
+      "nivel": 70,
+      "paginas": 3,
+      "na_pagina": 1,
+      "por_pagina": [
+        8,
+        8,
+        8,
+        1,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "jaula",
+          "paginas": [
+            3.5,
+            7,
+            10.5,
+            15.8,
+            21.1,
+            28.1
+          ],
+          "agora": 10.9
+        }
+      ]
+    },
+    {
+      "set": "ash",
+      "nivel": 80,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "xp",
+          "paginas": [
+            4.5,
+            8.9,
+            13.4,
+            20,
+            26.7,
+            35.6
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "brass",
+      "nivel": 90,
+      "paginas": 0,
+      "na_pagina": 7,
+      "por_pagina": [
+        7,
+        7,
+        7,
+        7,
+        7,
+        7
+      ],
+      "efeitos": [
+        {
+          "alavanca": "critc",
+          "paginas": [
+            2.7,
+            5.4,
+            8.1,
+            12.2,
+            16.3,
+            21.7
+          ],
+          "agora": 11.4
+        }
+      ]
+    },
+    {
+      "set": "forest",
+      "nivel": 100,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "energia",
+          "paginas": [
+            4.6,
+            9.2,
+            13.7,
+            20.6,
+            27.5,
+            36.6
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "wooden",
+      "nivel": 110,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "xp",
+          "paginas": [
+            4.6,
+            9.3,
+            13.9,
+            20.9,
+            27.9,
+            37.1
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "steel",
+      "nivel": 120,
+      "paginas": 6,
+      "na_pagina": 0,
+      "por_pagina": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        8
+      ],
+      "efeitos": [
+        {
+          "alavanca": "dano",
+          "paginas": [
+            1.9,
+            3.8,
+            5.6,
+            8.5,
+            11.3,
+            15.1
+          ],
+          "agora": 15.1
+        }
+      ]
+    },
+    {
+      "set": "venom",
+      "nivel": 130,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "critd",
+          "paginas": [
+            2.9,
+            5.7,
+            8.6,
+            12.9,
+            17.2,
+            22.9
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "earth",
+      "nivel": 140,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "sorte",
+          "paginas": [
+            1.9,
+            3.9,
+            5.8,
+            8.7,
+            11.6,
+            15.5
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "sandstorm",
+      "nivel": 150,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "recarga",
+          "paginas": [
+            1.5,
+            2.9,
+            4.4,
+            6.6,
+            8.8,
+            11.8
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "desert",
+      "nivel": 160,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "ouro",
+          "paginas": [
+            4,
+            7.9,
+            11.9,
+            17.9,
+            23.8,
+            31.8
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "topaz",
+      "nivel": 170,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "critc",
+          "paginas": [
+            3,
+            6,
+            9.1,
+            13.6,
+            18.1,
+            24.1
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "crimson",
+      "nivel": 180,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "critd",
+          "paginas": [
+            3.1,
+            6.1,
+            9.2,
+            13.8,
+            18.3,
+            24.5
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "jade",
+      "nivel": 190,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "xp",
+          "paginas": [
+            5.2,
+            10.3,
+            15.5,
+            23.2,
+            30.9,
+            41.3
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "shadow",
+      "nivel": 200,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "jaula",
+          "paginas": [
+            4.2,
+            8.4,
+            12.5,
+            18.8,
+            25.1,
+            33.4
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "toxic",
+      "nivel": 210,
+      "paginas": 5,
+      "na_pagina": 0,
+      "por_pagina": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "dano",
+          "paginas": [
+            2.1,
+            4.2,
+            6.3,
+            9.5,
+            12.7,
+            16.9
+          ],
+          "agora": 12.7
+        }
+      ]
+    },
+    {
+      "set": "silver",
+      "nivel": 220,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "ouro",
+          "paginas": [
+            4.3,
+            8.6,
+            12.8,
+            19.3,
+            25.7,
+            34.2
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "sunfire",
+      "nivel": 230,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "dano",
+          "paginas": [
+            2.2,
+            4.3,
+            6.5,
+            9.7,
+            13,
+            17.3
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "midnight",
+      "nivel": 240,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "critd",
+          "paginas": [
+            3.3,
+            6.6,
+            9.9,
+            14.8,
+            19.7,
+            26.3
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "sunset",
+      "nivel": 250,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "energia",
+          "paginas": [
+            5.5,
+            11.1,
+            16.6,
+            24.9,
+            33.3,
+            44.4
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "dune",
+      "nivel": 260,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "sorte",
+          "paginas": [
+            2.2,
+            4.5,
+            6.7,
+            10.1,
+            13.5,
+            17.9
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "platinum",
+      "nivel": 270,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "forja",
+          "paginas": [
+            3.4,
+            6.8,
+            10.2,
+            15.3,
+            20.4,
+            27.2
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "obsidian",
+      "nivel": 280,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "critd",
+          "paginas": [
+            3.4,
+            6.9,
+            10.3,
+            15.5,
+            20.7,
+            27.5
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "magma",
+      "nivel": 290,
+      "paginas": 0,
+      "na_pagina": 0,
+      "por_pagina": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "jaula",
+          "paginas": [
+            4.6,
+            9.3,
+            13.9,
+            20.9,
+            27.8,
+            37.1
+          ],
+          "agora": 0
+        }
+      ]
+    },
+    {
+      "set": "void",
+      "nivel": 300,
+      "paginas": 1,
+      "na_pagina": 4,
+      "por_pagina": [
+        8,
+        4,
+        0,
+        0,
+        0,
+        0
+      ],
+      "efeitos": [
+        {
+          "alavanca": "dano",
+          "paginas": [
+            1.2,
+            2.3,
+            3.5,
+            5.3,
+            7,
+            9.4
+          ],
+          "agora": 1.53
+        },
+        {
+          "alavanca": "critd",
+          "paginas": [
+            1.8,
+            3.5,
+            5.3,
+            7.9,
+            10.6,
+            14.1
+          ],
+          "agora": 2.31
+        },
+        {
+          "alavanca": "recarga",
+          "paginas": [
+            0.9,
+            1.8,
+            2.6,
+            4,
+            5.3,
+            7
+          ],
+          "agora": 1.17
+        }
+      ]
+    }
+  ],
+  "pecas": [
+    {
+      "def_id": "ember_arma",
+      "set": "ember",
+      "slot": 0,
+      "level": 10,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "ember_elmo",
+      "set": "ember",
+      "slot": 1,
+      "level": 10,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "ember_peito",
+      "set": "ember",
+      "slot": 2,
+      "level": 10,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "ember_calca",
+      "set": "ember",
+      "slot": 3,
+      "level": 10,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "ember_bota",
+      "set": "ember",
+      "slot": 4,
+      "level": 10,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "ember_luva",
+      "set": "ember",
+      "slot": 5,
+      "level": 10,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "ember_anel",
+      "set": "ember",
+      "slot": 6,
+      "level": 10,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "ember_amuleto",
+      "set": "ember",
+      "slot": 7,
+      "level": 10,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "gold_arma",
+      "set": "gold",
+      "slot": 0,
+      "level": 20,
+      "mask": 7,
+      "pendente": 0
+    },
+    {
+      "def_id": "gold_elmo",
+      "set": "gold",
+      "slot": 1,
+      "level": 20,
+      "mask": 7,
+      "pendente": 0
+    },
+    {
+      "def_id": "gold_peito",
+      "set": "gold",
+      "slot": 2,
+      "level": 20,
+      "mask": 7,
+      "pendente": 0
+    },
+    {
+      "def_id": "gold_calca",
+      "set": "gold",
+      "slot": 3,
+      "level": 20,
+      "mask": 7,
+      "pendente": 0
+    },
+    {
+      "def_id": "gold_bota",
+      "set": "gold",
+      "slot": 4,
+      "level": 20,
+      "mask": 7,
+      "pendente": 0
+    },
+    {
+      "def_id": "gold_luva",
+      "set": "gold",
+      "slot": 5,
+      "level": 20,
+      "mask": 3,
+      "pendente": 0
+    },
+    {
+      "def_id": "gold_anel",
+      "set": "gold",
+      "slot": 6,
+      "level": 20,
+      "mask": 3,
+      "pendente": 0
+    },
+    {
+      "def_id": "gold_amuleto",
+      "set": "gold",
+      "slot": 7,
+      "level": 20,
+      "mask": 3,
+      "pendente": 0
+    },
+    {
+      "def_id": "coal_arma",
+      "set": "coal",
+      "slot": 0,
+      "level": 30,
+      "mask": 11,
+      "pendente": 0
+    },
+    {
+      "def_id": "coal_elmo",
+      "set": "coal",
+      "slot": 1,
+      "level": 30,
+      "mask": 11,
+      "pendente": 0
+    },
+    {
+      "def_id": "coal_peito",
+      "set": "coal",
+      "slot": 2,
+      "level": 30,
+      "mask": 11,
+      "pendente": 0
+    },
+    {
+      "def_id": "coal_calca",
+      "set": "coal",
+      "slot": 3,
+      "level": 30,
+      "mask": 9,
+      "pendente": 0
+    },
+    {
+      "def_id": "coal_bota",
+      "set": "coal",
+      "slot": 4,
+      "level": 30,
+      "mask": 9,
+      "pendente": 0
+    },
+    {
+      "def_id": "coal_luva",
+      "set": "coal",
+      "slot": 5,
+      "level": 30,
+      "mask": 9,
+      "pendente": 0
+    },
+    {
+      "def_id": "coal_anel",
+      "set": "coal",
+      "slot": 6,
+      "level": 30,
+      "mask": 9,
+      "pendente": 0
+    },
+    {
+      "def_id": "coal_amuleto",
+      "set": "coal",
+      "slot": 7,
+      "level": 30,
+      "mask": 9,
+      "pendente": 0
+    },
+    {
+      "def_id": "clay_arma",
+      "set": "clay",
+      "slot": 0,
+      "level": 40,
+      "mask": 1,
+      "pendente": 0
+    },
+    {
+      "def_id": "clay_elmo",
+      "set": "clay",
+      "slot": 1,
+      "level": 40,
+      "mask": 1,
+      "pendente": 0
+    },
+    {
+      "def_id": "clay_peito",
+      "set": "clay",
+      "slot": 2,
+      "level": 40,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "clay_calca",
+      "set": "clay",
+      "slot": 3,
+      "level": 40,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "clay_bota",
+      "set": "clay",
+      "slot": 4,
+      "level": 40,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "clay_luva",
+      "set": "clay",
+      "slot": 5,
+      "level": 40,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "clay_anel",
+      "set": "clay",
+      "slot": 6,
+      "level": 40,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "clay_amuleto",
+      "set": "clay",
+      "slot": 7,
+      "level": 40,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "autumn_arma",
+      "set": "autumn",
+      "slot": 0,
+      "level": 50,
+      "mask": 6,
+      "pendente": 0
+    },
+    {
+      "def_id": "autumn_elmo",
+      "set": "autumn",
+      "slot": 1,
+      "level": 50,
+      "mask": 4,
+      "pendente": 0
+    },
+    {
+      "def_id": "autumn_peito",
+      "set": "autumn",
+      "slot": 2,
+      "level": 50,
+      "mask": 4,
+      "pendente": 0
+    },
+    {
+      "def_id": "autumn_calca",
+      "set": "autumn",
+      "slot": 3,
+      "level": 50,
+      "mask": 4,
+      "pendente": 0
+    },
+    {
+      "def_id": "autumn_bota",
+      "set": "autumn",
+      "slot": 4,
+      "level": 50,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "autumn_luva",
+      "set": "autumn",
+      "slot": 5,
+      "level": 50,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "autumn_anel",
+      "set": "autumn",
+      "slot": 6,
+      "level": 50,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "autumn_amuleto",
+      "set": "autumn",
+      "slot": 7,
+      "level": 50,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "glacier_arma",
+      "set": "glacier",
+      "slot": 0,
+      "level": 60,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "glacier_elmo",
+      "set": "glacier",
+      "slot": 1,
+      "level": 60,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "glacier_peito",
+      "set": "glacier",
+      "slot": 2,
+      "level": 60,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "glacier_calca",
+      "set": "glacier",
+      "slot": 3,
+      "level": 60,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "glacier_bota",
+      "set": "glacier",
+      "slot": 4,
+      "level": 60,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "glacier_luva",
+      "set": "glacier",
+      "slot": 5,
+      "level": 60,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "glacier_anel",
+      "set": "glacier",
+      "slot": 6,
+      "level": 60,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "glacier_amuleto",
+      "set": "glacier",
+      "slot": 7,
+      "level": 60,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "iron_arma",
+      "set": "iron",
+      "slot": 0,
+      "level": 70,
+      "mask": 15,
+      "pendente": 0
+    },
+    {
+      "def_id": "iron_elmo",
+      "set": "iron",
+      "slot": 1,
+      "level": 70,
+      "mask": 7,
+      "pendente": 0
+    },
+    {
+      "def_id": "iron_peito",
+      "set": "iron",
+      "slot": 2,
+      "level": 70,
+      "mask": 7,
+      "pendente": 0
+    },
+    {
+      "def_id": "iron_calca",
+      "set": "iron",
+      "slot": 3,
+      "level": 70,
+      "mask": 7,
+      "pendente": 0
+    },
+    {
+      "def_id": "iron_bota",
+      "set": "iron",
+      "slot": 4,
+      "level": 70,
+      "mask": 7,
+      "pendente": 0
+    },
+    {
+      "def_id": "iron_luva",
+      "set": "iron",
+      "slot": 5,
+      "level": 70,
+      "mask": 7,
+      "pendente": 0
+    },
+    {
+      "def_id": "iron_anel",
+      "set": "iron",
+      "slot": 6,
+      "level": 70,
+      "mask": 7,
+      "pendente": 0
+    },
+    {
+      "def_id": "iron_amuleto",
+      "set": "iron",
+      "slot": 7,
+      "level": 70,
+      "mask": 7,
+      "pendente": 0
+    },
+    {
+      "def_id": "ash_arma",
+      "set": "ash",
+      "slot": 0,
+      "level": 80,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "ash_elmo",
+      "set": "ash",
+      "slot": 1,
+      "level": 80,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "ash_peito",
+      "set": "ash",
+      "slot": 2,
+      "level": 80,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "ash_calca",
+      "set": "ash",
+      "slot": 3,
+      "level": 80,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "ash_bota",
+      "set": "ash",
+      "slot": 4,
+      "level": 80,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "ash_luva",
+      "set": "ash",
+      "slot": 5,
+      "level": 80,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "ash_anel",
+      "set": "ash",
+      "slot": 6,
+      "level": 80,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "ash_amuleto",
+      "set": "ash",
+      "slot": 7,
+      "level": 80,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "brass_arma",
+      "set": "brass",
+      "slot": 0,
+      "level": 90,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "brass_elmo",
+      "set": "brass",
+      "slot": 1,
+      "level": 90,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "brass_peito",
+      "set": "brass",
+      "slot": 2,
+      "level": 90,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "brass_calca",
+      "set": "brass",
+      "slot": 3,
+      "level": 90,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "brass_bota",
+      "set": "brass",
+      "slot": 4,
+      "level": 90,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "brass_luva",
+      "set": "brass",
+      "slot": 5,
+      "level": 90,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "brass_anel",
+      "set": "brass",
+      "slot": 6,
+      "level": 90,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "brass_amuleto",
+      "set": "brass",
+      "slot": 7,
+      "level": 90,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "forest_arma",
+      "set": "forest",
+      "slot": 0,
+      "level": 100,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "forest_elmo",
+      "set": "forest",
+      "slot": 1,
+      "level": 100,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "forest_peito",
+      "set": "forest",
+      "slot": 2,
+      "level": 100,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "forest_calca",
+      "set": "forest",
+      "slot": 3,
+      "level": 100,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "forest_bota",
+      "set": "forest",
+      "slot": 4,
+      "level": 100,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "forest_luva",
+      "set": "forest",
+      "slot": 5,
+      "level": 100,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "forest_anel",
+      "set": "forest",
+      "slot": 6,
+      "level": 100,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "forest_amuleto",
+      "set": "forest",
+      "slot": 7,
+      "level": 100,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "wooden_arma",
+      "set": "wooden",
+      "slot": 0,
+      "level": 110,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "wooden_elmo",
+      "set": "wooden",
+      "slot": 1,
+      "level": 110,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "wooden_peito",
+      "set": "wooden",
+      "slot": 2,
+      "level": 110,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "wooden_calca",
+      "set": "wooden",
+      "slot": 3,
+      "level": 110,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "wooden_bota",
+      "set": "wooden",
+      "slot": 4,
+      "level": 110,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "wooden_luva",
+      "set": "wooden",
+      "slot": 5,
+      "level": 110,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "wooden_anel",
+      "set": "wooden",
+      "slot": 6,
+      "level": 110,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "wooden_amuleto",
+      "set": "wooden",
+      "slot": 7,
+      "level": 110,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "steel_arma",
+      "set": "steel",
+      "slot": 0,
+      "level": 120,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "steel_elmo",
+      "set": "steel",
+      "slot": 1,
+      "level": 120,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "steel_peito",
+      "set": "steel",
+      "slot": 2,
+      "level": 120,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "steel_calca",
+      "set": "steel",
+      "slot": 3,
+      "level": 120,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "steel_bota",
+      "set": "steel",
+      "slot": 4,
+      "level": 120,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "steel_luva",
+      "set": "steel",
+      "slot": 5,
+      "level": 120,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "steel_anel",
+      "set": "steel",
+      "slot": 6,
+      "level": 120,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "steel_amuleto",
+      "set": "steel",
+      "slot": 7,
+      "level": 120,
+      "mask": 63,
+      "pendente": 0
+    },
+    {
+      "def_id": "venom_arma",
+      "set": "venom",
+      "slot": 0,
+      "level": 130,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "venom_elmo",
+      "set": "venom",
+      "slot": 1,
+      "level": 130,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "venom_peito",
+      "set": "venom",
+      "slot": 2,
+      "level": 130,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "venom_calca",
+      "set": "venom",
+      "slot": 3,
+      "level": 130,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "venom_bota",
+      "set": "venom",
+      "slot": 4,
+      "level": 130,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "venom_luva",
+      "set": "venom",
+      "slot": 5,
+      "level": 130,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "venom_anel",
+      "set": "venom",
+      "slot": 6,
+      "level": 130,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "venom_amuleto",
+      "set": "venom",
+      "slot": 7,
+      "level": 130,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "earth_arma",
+      "set": "earth",
+      "slot": 0,
+      "level": 140,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "earth_elmo",
+      "set": "earth",
+      "slot": 1,
+      "level": 140,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "earth_peito",
+      "set": "earth",
+      "slot": 2,
+      "level": 140,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "earth_calca",
+      "set": "earth",
+      "slot": 3,
+      "level": 140,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "earth_bota",
+      "set": "earth",
+      "slot": 4,
+      "level": 140,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "earth_luva",
+      "set": "earth",
+      "slot": 5,
+      "level": 140,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "earth_anel",
+      "set": "earth",
+      "slot": 6,
+      "level": 140,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "earth_amuleto",
+      "set": "earth",
+      "slot": 7,
+      "level": 140,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sandstorm_arma",
+      "set": "sandstorm",
+      "slot": 0,
+      "level": 150,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sandstorm_elmo",
+      "set": "sandstorm",
+      "slot": 1,
+      "level": 150,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sandstorm_peito",
+      "set": "sandstorm",
+      "slot": 2,
+      "level": 150,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sandstorm_calca",
+      "set": "sandstorm",
+      "slot": 3,
+      "level": 150,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sandstorm_bota",
+      "set": "sandstorm",
+      "slot": 4,
+      "level": 150,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sandstorm_luva",
+      "set": "sandstorm",
+      "slot": 5,
+      "level": 150,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sandstorm_anel",
+      "set": "sandstorm",
+      "slot": 6,
+      "level": 150,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sandstorm_amuleto",
+      "set": "sandstorm",
+      "slot": 7,
+      "level": 150,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "desert_arma",
+      "set": "desert",
+      "slot": 0,
+      "level": 160,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "desert_elmo",
+      "set": "desert",
+      "slot": 1,
+      "level": 160,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "desert_peito",
+      "set": "desert",
+      "slot": 2,
+      "level": 160,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "desert_calca",
+      "set": "desert",
+      "slot": 3,
+      "level": 160,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "desert_bota",
+      "set": "desert",
+      "slot": 4,
+      "level": 160,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "desert_luva",
+      "set": "desert",
+      "slot": 5,
+      "level": 160,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "desert_anel",
+      "set": "desert",
+      "slot": 6,
+      "level": 160,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "desert_amuleto",
+      "set": "desert",
+      "slot": 7,
+      "level": 160,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "topaz_arma",
+      "set": "topaz",
+      "slot": 0,
+      "level": 170,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "topaz_elmo",
+      "set": "topaz",
+      "slot": 1,
+      "level": 170,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "topaz_peito",
+      "set": "topaz",
+      "slot": 2,
+      "level": 170,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "topaz_calca",
+      "set": "topaz",
+      "slot": 3,
+      "level": 170,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "topaz_bota",
+      "set": "topaz",
+      "slot": 4,
+      "level": 170,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "topaz_luva",
+      "set": "topaz",
+      "slot": 5,
+      "level": 170,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "topaz_anel",
+      "set": "topaz",
+      "slot": 6,
+      "level": 170,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "topaz_amuleto",
+      "set": "topaz",
+      "slot": 7,
+      "level": 170,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "crimson_arma",
+      "set": "crimson",
+      "slot": 0,
+      "level": 180,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "crimson_elmo",
+      "set": "crimson",
+      "slot": 1,
+      "level": 180,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "crimson_peito",
+      "set": "crimson",
+      "slot": 2,
+      "level": 180,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "crimson_calca",
+      "set": "crimson",
+      "slot": 3,
+      "level": 180,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "crimson_bota",
+      "set": "crimson",
+      "slot": 4,
+      "level": 180,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "crimson_luva",
+      "set": "crimson",
+      "slot": 5,
+      "level": 180,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "crimson_anel",
+      "set": "crimson",
+      "slot": 6,
+      "level": 180,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "crimson_amuleto",
+      "set": "crimson",
+      "slot": 7,
+      "level": 180,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "jade_arma",
+      "set": "jade",
+      "slot": 0,
+      "level": 190,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "jade_elmo",
+      "set": "jade",
+      "slot": 1,
+      "level": 190,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "jade_peito",
+      "set": "jade",
+      "slot": 2,
+      "level": 190,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "jade_calca",
+      "set": "jade",
+      "slot": 3,
+      "level": 190,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "jade_bota",
+      "set": "jade",
+      "slot": 4,
+      "level": 190,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "jade_luva",
+      "set": "jade",
+      "slot": 5,
+      "level": 190,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "jade_anel",
+      "set": "jade",
+      "slot": 6,
+      "level": 190,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "jade_amuleto",
+      "set": "jade",
+      "slot": 7,
+      "level": 190,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "shadow_arma",
+      "set": "shadow",
+      "slot": 0,
+      "level": 200,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "shadow_elmo",
+      "set": "shadow",
+      "slot": 1,
+      "level": 200,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "shadow_peito",
+      "set": "shadow",
+      "slot": 2,
+      "level": 200,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "shadow_calca",
+      "set": "shadow",
+      "slot": 3,
+      "level": 200,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "shadow_bota",
+      "set": "shadow",
+      "slot": 4,
+      "level": 200,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "shadow_luva",
+      "set": "shadow",
+      "slot": 5,
+      "level": 200,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "shadow_anel",
+      "set": "shadow",
+      "slot": 6,
+      "level": 200,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "shadow_amuleto",
+      "set": "shadow",
+      "slot": 7,
+      "level": 200,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "toxic_arma",
+      "set": "toxic",
+      "slot": 0,
+      "level": 210,
+      "mask": 31,
+      "pendente": 0
+    },
+    {
+      "def_id": "toxic_elmo",
+      "set": "toxic",
+      "slot": 1,
+      "level": 210,
+      "mask": 31,
+      "pendente": 0
+    },
+    {
+      "def_id": "toxic_peito",
+      "set": "toxic",
+      "slot": 2,
+      "level": 210,
+      "mask": 31,
+      "pendente": 0
+    },
+    {
+      "def_id": "toxic_calca",
+      "set": "toxic",
+      "slot": 3,
+      "level": 210,
+      "mask": 31,
+      "pendente": 0
+    },
+    {
+      "def_id": "toxic_bota",
+      "set": "toxic",
+      "slot": 4,
+      "level": 210,
+      "mask": 31,
+      "pendente": 0
+    },
+    {
+      "def_id": "toxic_luva",
+      "set": "toxic",
+      "slot": 5,
+      "level": 210,
+      "mask": 31,
+      "pendente": 0
+    },
+    {
+      "def_id": "toxic_anel",
+      "set": "toxic",
+      "slot": 6,
+      "level": 210,
+      "mask": 31,
+      "pendente": 0
+    },
+    {
+      "def_id": "toxic_amuleto",
+      "set": "toxic",
+      "slot": 7,
+      "level": 210,
+      "mask": 31,
+      "pendente": 0
+    },
+    {
+      "def_id": "silver_arma",
+      "set": "silver",
+      "slot": 0,
+      "level": 220,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "silver_elmo",
+      "set": "silver",
+      "slot": 1,
+      "level": 220,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "silver_peito",
+      "set": "silver",
+      "slot": 2,
+      "level": 220,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "silver_calca",
+      "set": "silver",
+      "slot": 3,
+      "level": 220,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "silver_bota",
+      "set": "silver",
+      "slot": 4,
+      "level": 220,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "silver_luva",
+      "set": "silver",
+      "slot": 5,
+      "level": 220,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "silver_anel",
+      "set": "silver",
+      "slot": 6,
+      "level": 220,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "silver_amuleto",
+      "set": "silver",
+      "slot": 7,
+      "level": 220,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunfire_arma",
+      "set": "sunfire",
+      "slot": 0,
+      "level": 230,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunfire_elmo",
+      "set": "sunfire",
+      "slot": 1,
+      "level": 230,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunfire_peito",
+      "set": "sunfire",
+      "slot": 2,
+      "level": 230,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunfire_calca",
+      "set": "sunfire",
+      "slot": 3,
+      "level": 230,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunfire_bota",
+      "set": "sunfire",
+      "slot": 4,
+      "level": 230,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunfire_luva",
+      "set": "sunfire",
+      "slot": 5,
+      "level": 230,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunfire_anel",
+      "set": "sunfire",
+      "slot": 6,
+      "level": 230,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunfire_amuleto",
+      "set": "sunfire",
+      "slot": 7,
+      "level": 230,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "midnight_arma",
+      "set": "midnight",
+      "slot": 0,
+      "level": 240,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "midnight_elmo",
+      "set": "midnight",
+      "slot": 1,
+      "level": 240,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "midnight_peito",
+      "set": "midnight",
+      "slot": 2,
+      "level": 240,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "midnight_calca",
+      "set": "midnight",
+      "slot": 3,
+      "level": 240,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "midnight_bota",
+      "set": "midnight",
+      "slot": 4,
+      "level": 240,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "midnight_luva",
+      "set": "midnight",
+      "slot": 5,
+      "level": 240,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "midnight_anel",
+      "set": "midnight",
+      "slot": 6,
+      "level": 240,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "midnight_amuleto",
+      "set": "midnight",
+      "slot": 7,
+      "level": 240,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunset_arma",
+      "set": "sunset",
+      "slot": 0,
+      "level": 250,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunset_elmo",
+      "set": "sunset",
+      "slot": 1,
+      "level": 250,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunset_peito",
+      "set": "sunset",
+      "slot": 2,
+      "level": 250,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunset_calca",
+      "set": "sunset",
+      "slot": 3,
+      "level": 250,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunset_bota",
+      "set": "sunset",
+      "slot": 4,
+      "level": 250,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunset_luva",
+      "set": "sunset",
+      "slot": 5,
+      "level": 250,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunset_anel",
+      "set": "sunset",
+      "slot": 6,
+      "level": 250,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "sunset_amuleto",
+      "set": "sunset",
+      "slot": 7,
+      "level": 250,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "dune_arma",
+      "set": "dune",
+      "slot": 0,
+      "level": 260,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "dune_elmo",
+      "set": "dune",
+      "slot": 1,
+      "level": 260,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "dune_peito",
+      "set": "dune",
+      "slot": 2,
+      "level": 260,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "dune_calca",
+      "set": "dune",
+      "slot": 3,
+      "level": 260,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "dune_bota",
+      "set": "dune",
+      "slot": 4,
+      "level": 260,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "dune_luva",
+      "set": "dune",
+      "slot": 5,
+      "level": 260,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "dune_anel",
+      "set": "dune",
+      "slot": 6,
+      "level": 260,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "dune_amuleto",
+      "set": "dune",
+      "slot": 7,
+      "level": 260,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "platinum_arma",
+      "set": "platinum",
+      "slot": 0,
+      "level": 270,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "platinum_elmo",
+      "set": "platinum",
+      "slot": 1,
+      "level": 270,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "platinum_peito",
+      "set": "platinum",
+      "slot": 2,
+      "level": 270,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "platinum_calca",
+      "set": "platinum",
+      "slot": 3,
+      "level": 270,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "platinum_bota",
+      "set": "platinum",
+      "slot": 4,
+      "level": 270,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "platinum_luva",
+      "set": "platinum",
+      "slot": 5,
+      "level": 270,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "platinum_anel",
+      "set": "platinum",
+      "slot": 6,
+      "level": 270,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "platinum_amuleto",
+      "set": "platinum",
+      "slot": 7,
+      "level": 270,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "obsidian_arma",
+      "set": "obsidian",
+      "slot": 0,
+      "level": 280,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "obsidian_elmo",
+      "set": "obsidian",
+      "slot": 1,
+      "level": 280,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "obsidian_peito",
+      "set": "obsidian",
+      "slot": 2,
+      "level": 280,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "obsidian_calca",
+      "set": "obsidian",
+      "slot": 3,
+      "level": 280,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "obsidian_bota",
+      "set": "obsidian",
+      "slot": 4,
+      "level": 280,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "obsidian_luva",
+      "set": "obsidian",
+      "slot": 5,
+      "level": 280,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "obsidian_anel",
+      "set": "obsidian",
+      "slot": 6,
+      "level": 280,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "obsidian_amuleto",
+      "set": "obsidian",
+      "slot": 7,
+      "level": 280,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "magma_arma",
+      "set": "magma",
+      "slot": 0,
+      "level": 290,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "magma_elmo",
+      "set": "magma",
+      "slot": 1,
+      "level": 290,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "magma_peito",
+      "set": "magma",
+      "slot": 2,
+      "level": 290,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "magma_calca",
+      "set": "magma",
+      "slot": 3,
+      "level": 290,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "magma_bota",
+      "set": "magma",
+      "slot": 4,
+      "level": 290,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "magma_luva",
+      "set": "magma",
+      "slot": 5,
+      "level": 290,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "magma_anel",
+      "set": "magma",
+      "slot": 6,
+      "level": 290,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "magma_amuleto",
+      "set": "magma",
+      "slot": 7,
+      "level": 290,
+      "mask": 0,
+      "pendente": 0
+    },
+    {
+      "def_id": "void_arma",
+      "set": "void",
+      "slot": 0,
+      "level": 300,
+      "mask": 3,
+      "pendente": 0
+    },
+    {
+      "def_id": "void_elmo",
+      "set": "void",
+      "slot": 1,
+      "level": 300,
+      "mask": 3,
+      "pendente": 0
+    },
+    {
+      "def_id": "void_peito",
+      "set": "void",
+      "slot": 2,
+      "level": 300,
+      "mask": 3,
+      "pendente": 0
+    },
+    {
+      "def_id": "void_calca",
+      "set": "void",
+      "slot": 3,
+      "level": 300,
+      "mask": 3,
+      "pendente": 0
+    },
+    {
+      "def_id": "void_bota",
+      "set": "void",
+      "slot": 4,
+      "level": 300,
+      "mask": 1,
+      "pendente": 0
+    },
+    {
+      "def_id": "void_luva",
+      "set": "void",
+      "slot": 5,
+      "level": 300,
+      "mask": 1,
+      "pendente": 0
+    },
+    {
+      "def_id": "void_anel",
+      "set": "void",
+      "slot": 6,
+      "level": 300,
+      "mask": 1,
+      "pendente": 0
+    },
+    {
+      "def_id": "void_amuleto",
+      "set": "void",
+      "slot": 7,
+      "level": 300,
+      "mask": 1,
+      "pendente": 0
+    }
+  ]
+}

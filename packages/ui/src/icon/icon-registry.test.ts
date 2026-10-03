@@ -41,6 +41,10 @@ import { uiIconRegistry } from './ui-registry';
 // a friend, the three joined nodes every OS draws for sharing, chosen over `copy` (which already
 // means "copy this code" in the same chrome) and an upward arrow out of a box (an export); the
 // budget moved to 35 with it.
+// Desktop Collections tab (2026-10-02): book-open — the eleventh nav tab's glyph, two facing pages
+// like each set's book of pages, chosen over a bookmark (a saved place) and a stack of cards
+// (read as an inventory beside the archive box) so it reads as a book at the glyph-only widths;
+// the budget moved to 36 with it.
 const MIGRATED_UI_NAMES = [
   'window',
   'signal',
@@ -53,6 +57,7 @@ const MIGRATED_UI_NAMES = [
   'sparkles',
   'sword',
   'graph',
+  'book-open',
   'ellipsis-horizontal',
   'layout-grid',
   'layout-list',
@@ -80,8 +85,8 @@ const MIGRATED_UI_NAMES = [
 ] as const;
 
 describe('icon registries — budget and membership', () => {
-  it('keeps uiIconRegistry within the 35-entry budget', () => {
-    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(35);
+  it('keeps uiIconRegistry within the 36-entry budget', () => {
+    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(36);
   });
 
   it('maps exactly the declared ui-chrome glyphs', () => {

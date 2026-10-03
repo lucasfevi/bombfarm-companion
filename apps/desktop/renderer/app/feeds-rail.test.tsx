@@ -22,6 +22,7 @@ function feed(overrides: Partial<FeedView> & { id: FeedView['id'] }): FeedView {
 const FRESH: FeedView[] = [
   feed({ id: 'account' }),
   feed({ id: 'pvp', capturedAt: ago(3 * 60_000) }),
+  feed({ id: 'collections', capturedAt: ago(2 * 60_000) }),
   feed({ id: 'market', capturedAt: ago(4 * 60_000) }),
   feed({ id: 'updates', capturedAt: ago(12 * 60_000) }),
 ];
@@ -62,16 +63,17 @@ describe('ringGeometry — the ring is the time left on the feed\'s clock, and i
   });
 });
 
-describe('FeedsRail — four rings beside four names, and one ring for all of them', () => {
+describe('FeedsRail — five rings beside five names, and one ring for all of them', () => {
   it('draws the feeds in press order, each as its own button with a ring and no figure', () => {
     const html = render();
-    const order = ['account-refresh', 'feed-pvp-refresh', 'feed-market-refresh', 'feed-updates-refresh'].map((id) => html.indexOf(`data-testid="${id}"`));
+    const order = ['account-refresh', 'feed-pvp-refresh', 'feed-collections-refresh', 'feed-market-refresh', 'feed-updates-refresh'].map((id) => html.indexOf(`data-testid="${id}"`));
     expect(order.every((index) => index >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(html).not.toContain(en.ageJustNow);
     expect(html).not.toContain(en.ageMinutes.replace('{n}', '3'));
     expect(ringOf(html, 'account-refresh')).toContain('data-ring="fresh"');
     expect(ringOf(html, 'feed-pvp-refresh')).toContain('data-ring="noclock"');
+    expect(ringOf(html, 'feed-collections-refresh')).toContain('data-ring="noclock"');
   });
 
   it('the account item speaks for a screen computed from an older copy: the warn ring with a filled centre', () => {
@@ -108,17 +110,21 @@ describe('FeedsRail — four rings beside four names, and one ring for all of th
     const pvp = render(FRESH, { running: false }, 'pvp');
     expect(tagOf(pvp, 'feed-pvp-refresh')).toContain('data-muted="false"');
     expect(tagOf(pvp, 'account-refresh')).toContain('data-muted="true"');
+    const collections = render(FRESH, { running: false }, 'collections');
+    expect(tagOf(collections, 'feed-collections-refresh')).toContain('data-muted="false"');
+    expect(tagOf(collections, 'account-refresh')).toContain('data-muted="false"');
+    expect(tagOf(collections, 'feed-pvp-refresh')).toContain('data-muted="true"');
     const settings = render(FRESH, { running: false }, 'settings');
     expect(tagOf(settings, 'feed-updates-refresh')).toContain('data-muted="false"');
   });
 
-  it('while refresh-all runs, the steps still to come are muted, the button counts the steps, and its ring fills a quarter per step', () => {
-    const html = render(FRESH, { running: true, step: 1, total: 4 }, 'skills');
+  it('while refresh-all runs, the steps still to come are muted, the button counts the steps, and its ring fills one share per step', () => {
+    const html = render(FRESH, { running: true, step: 1, total: 5 }, 'skills');
     expect(tagOf(html, 'feed-market-refresh')).toContain('data-muted="true"');
     expect(tagOf(html, 'feed-updates-refresh')).toContain('data-muted="true"');
-    expect(html).toContain(sub(en.feedsRefreshAllStep, { step: 2, total: 4 }));
+    expect(html).toContain(sub(en.feedsRefreshAllStep, { step: 2, total: 5 }));
     expect(tagOf(html, 'feeds-refresh-all')).toContain('disabled=""');
-    expect(refreshAllFill({ running: true, step: 1, total: 4 })).toBe(0.375);
+    expect(refreshAllFill({ running: true, step: 1, total: 5 })).toBe(0.3);
     expect(refreshAllFill({ running: false })).toBe(0);
   });
 
@@ -165,6 +171,13 @@ describe('feedWords — the tooltip: the name with the last read beside it, the 
     const words = feedWords(feed({ id: 'account', capturedAt: ago(90_000) }), en, NOW);
     expect(words.next).toBe(en.feedsNextDue);
     expect(words.what).toContain(sub(en.feedsEvery, { cycle: sub(en.feedsCycleMinutes, { n: 1 }) }));
+  });
+
+  it('the collections have no clock either, and say what reads them instead', () => {
+    const words = feedWords(feed({ id: 'collections' }), en, NOW);
+    expect(words.next).toBeNull();
+    expect(words.title).toBe(en.feedsCollections);
+    expect(words.what).toBe(`${en.feedsWhatCollections} · ${en.feedsNoClockCollections}`);
   });
 
   it('the PVP standing has no clock, so no countdown beside the click line', () => {

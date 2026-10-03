@@ -7,6 +7,7 @@ import { DEFAULT_MARKET_QUOTE_CURRENCY } from './market.js';
 import type { OnlinePlayersView } from './online-players.js';
 import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
 import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
+import type { CollectionsView } from './collections.js';
 import type { ApplyEvent, ApplyStartRequest, ApplyStartResult } from './apply.js';
 
 export { accountChangeKey, canonicalStringify } from './account-change-key.js';
@@ -61,6 +62,16 @@ export type {
   ForgeStepEvent,
   ForgeStopReason,
 } from './forge.js';
+export { COLLECTION_AXES, EMPTY_COLLECTIONS_VIEW } from './collections.js';
+export type {
+  CollectionAxis,
+  CollectionAxisValues,
+  CollectionEffectState,
+  CollectionPieceState,
+  CollectionSetState,
+  CollectionsSnapshot,
+  CollectionsView,
+} from './collections.js';
 export { EMPTY_PVP_HISTORY } from './pvp.js';
 export type {
   PvpDuelPrize,
@@ -569,6 +580,12 @@ export interface IpcChannels {
   /** A kept film, read down to one point per second and the facts the frames settle. `null` when
    *  no film with that id is held. The 2 MB body never crosses the bridge. */
   'pvp:film': { args: [number]; result: PvpFilmView | null };
+  /** The last good Collections read, with when it was read; empty before any read landed. */
+  'collections:get': { args: []; result: CollectionsView };
+  /** Asks main to read the Collections state now. `ok` means the read was started; a read that
+   *  lands arrives on `collections:changed`, even when it repeats what is held, because the date
+   *  beside the book means "last confirmed". */
+  'collections:refresh': { args: []; result: AccountReadResult };
   /** Puts a PNG the renderer drew on the system clipboard as an image. The renderer has no
    *  clipboard of its own that holds pictures reliably — the web one refuses an unfocused
    *  window — so main writes it. Main re-checks the bytes are a PNG before writing anything. */
@@ -632,6 +649,8 @@ export const IPC_CHANNELS = [
   'pvp:history',
   'pvp:refresh',
   'pvp:film',
+  'collections:get',
+  'collections:refresh',
   'clipboard:writeImage',
 ] as const satisfies readonly IpcInvokeChannel[];
 
@@ -647,6 +666,7 @@ export type IpcEventChannel =
   | 'forge:event'
   | 'apply:event'
   | 'pvp:changed'
+  | 'collections:changed'
   | 'window:changed';
 
 export interface IpcEvents {
@@ -684,6 +704,10 @@ export interface IpcEvents {
   /** Fired when a duel result or a film has just been kept — the same list `pvp:history` serves,
    *  so a screen already open sees the duel without polling. */
   'pvp:changed': PvpHistoryResult;
+  /** Fired whenever a Collections read lands for the account the app is bound to — the same view
+   *  `collections:get` serves, re-dated even when the snapshot repeats the last one. A read that
+   *  lands for an account that is no longer the bound one is stored and not announced. */
+  'collections:changed': CollectionsView;
   /** Fired on every maximize and unmaximize of the main window, so the header's own caption
    *  buttons follow a state change the OS made (a double-clicked title bar, a snap, Win+Up)
    *  and not only the ones they asked for. */
@@ -702,6 +726,7 @@ export const IPC_EVENT_CHANNELS = [
   'forge:event',
   'apply:event',
   'pvp:changed',
+  'collections:changed',
   'window:changed',
 ] as const satisfies readonly IpcEventChannel[];
 
