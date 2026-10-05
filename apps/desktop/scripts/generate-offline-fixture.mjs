@@ -95,6 +95,18 @@ function readCapture(bytes = readFileSync(CAPTURE)) {
 }
 
 /**
+ * The save export predates the 2026-10-05 forge table, so the stats it records for a hero wearing
+ * forged gear were built with the old linear ladder and no longer invert to a whole-number point
+ * vector. These are the stat values those two heroes' own points, birth rolls and gear compose to
+ * under the new table, keyed by the id they carry in the fixture; each re-infers to the points it
+ * inferred before. Every other stat, and every other hero, is the capture's own.
+ */
+const RESTATED_STATS = {
+  '26863': { dmg: 12087.417150606998, energia: 1310.392226030008, speed: 55.355519613771904, crit_chance: 0.4617696043574664, penetration: 12.58574338495992, cooldown_reduction: 0.02087305185063443, luck: 0.34680713072345265 },
+  '59925': { dmg: 6935.176261420099, energia: 990.987134735684, speed: 51.77772659840667, crit_chance: 0.03278641578476556, penetration: 3.481700093186854, cooldown_reduction: 0.01854527302844404, luck: 0.2143162932432892 },
+};
+
+/**
  * The whole fixture, as a pure value. Exported so `offline-fixture-drift.test.ts` can rebuild it
  * and compare against the committed file — the same shape `replay-stream-drift.test.ts` uses for
  * `replay-stream.bin`. Without that, a hand-edit of the JSON or a generator change without a
@@ -124,7 +136,9 @@ export function buildOfflineFixture(captureBytes = readFileSync(CAPTURE), { fiel
     const replacement = replayIds[index];
     const original = String(hero.id);
     const id = replacement ?? (replayIdSet.has(original) ? `${original}-roster` : original);
-    return { ...hero, id, in_field: index < replayIds.length };
+    const restated = RESTATED_STATS[id];
+    const stats = restated === undefined ? hero.stats : { ...hero.stats, ...restated };
+    return { ...hero, id, stats, in_field: index < replayIds.length };
   });
 
   /**

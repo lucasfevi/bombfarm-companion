@@ -215,22 +215,23 @@ test.describe('the Apply panel, solved, switched, confirmed and run through the 
     expect(perHeroY).toBeGreaterThan(panelY);
   });
 
-  // Values, not provenance: a hand run of this exact fixture at the eval cap above settled with
-  // a 3-hero/3-respec reset step (225,000 gold) and a forge line that absorbs the rest of the
-  // total (the wallet figures are the fixture account's own starting gold, minus the total this
-  // plan spends). Re-read 2026-09-27 for the plant-cycle refit: total 1,198,709 and forge 973,709
-  // before, the reset step unchanged.
+  // Values, not provenance: a hand run of this exact fixture at the eval cap above settles with
+  // a 3-hero reset step of two respecs (Minato L95 and Perrin L53 at 1,000 gold per level, 148,000
+  // gold; the third hero only adds points, which is free) and ten forge pieces to +10 whose
+  // expected gold, summed over each piece's own climb on the published chance, fail-landing and
+  // cost tables, is 1,123,644 (the wallet figures are the fixture account's own starting gold,
+  // minus the total this plan spends).
   test('the ledger prints five figures matching a hand computation for this fixture plan', async () => {
     const ledger = page.getByTestId('apply-ledger');
     await expect(ledger).toBeVisible();
     for (const testId of ['apply-ledger-total', 'apply-ledger-reset', 'apply-ledger-forge', 'apply-ledger-wallet']) {
       await expect(ledger.getByTestId(testId)).toBeVisible();
     }
-    await expect(ledger.getByTestId('apply-ledger-total')).toContainText('1,093,863');
-    await expect(ledger.getByTestId('apply-ledger-reset')).toContainText('225,000');
-    await expect(ledger.getByTestId('apply-ledger-forge')).toContainText('868,863');
+    await expect(ledger.getByTestId('apply-ledger-total')).toContainText('1,271,644');
+    await expect(ledger.getByTestId('apply-ledger-reset')).toContainText('148,000');
+    await expect(ledger.getByTestId('apply-ledger-forge')).toContainText('1,123,644');
     await expect(ledger.getByTestId('apply-ledger-wallet')).toContainText('222,054,630');
-    await expect(ledger.getByTestId('apply-ledger-wallet')).toContainText('220,960,767');
+    await expect(ledger.getByTestId('apply-ledger-wallet')).toContainText('220,782,986');
   });
 
   test('the switch off disables both writing rows and names the switch', async () => {

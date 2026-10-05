@@ -27,13 +27,8 @@ function heroAt(roster: AccountRoster, index: number) {
   return hero;
 }
 
-/** The offline account's first hero whose points read — they read fine, so it stands in wherever the hero is not the question. */
-const FIRST_HERO = (() => {
-  const roster = offlineRoster();
-  const readable = roster.heroes.find((hero) => !roster.pointsUnrecovered.some((blocked) => blocked.id === hero.id));
-  if (readable === undefined) throw new Error('expected the committed offline account to hold a hero whose points read');
-  return readable.id;
-})();
+/** The offline account's first hero — its points read fine, so it stands in wherever the hero is not the question. */
+const FIRST_HERO = heroAt(offlineRoster(), 0).id;
 
 describe('heroFigures', () => {
   it('computes at the phase the Farm screen has selected, and carries which phase that was', () => {

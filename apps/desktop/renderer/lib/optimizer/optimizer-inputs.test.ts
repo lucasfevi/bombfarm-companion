@@ -96,10 +96,10 @@ describe('no value is ever defaulted — a missing required input withholds', ()
   });
 });
 
-// The checked-in fixture already carries nine heroes a sheet-inversion mismatch blocks (pinned
-// in `account-roster.test.ts`) — four of its thirteen parse cleanly.
-const FIXTURE_BLOCKED_IDS = ['26863', '41990', '52562', '45497', '72601', '73099', '74555', '76184', '59925-roster'];
-const FIXTURE_SURVIVING_IDS = ['59925', '71038', '71128', '71129'];
+// The checked-in fixture already carries eight heroes a sheet-inversion mismatch blocks (pinned
+// in `account-roster.test.ts`) — five of its thirteen parse cleanly.
+const FIXTURE_BLOCKED_IDS = ['41990', '52562', '45497', '72601', '73099', '74555', '76184', '59925-roster'];
+const FIXTURE_SURVIVING_IDS = ['26863', '59925', '71038', '71128', '71129'];
 
 describe('the offline fixture maps to the package input record', () => {
   it('carries the fixture roster, gear pool and account facts', () => {
@@ -125,7 +125,7 @@ describe('the offline fixture maps to the package input record', () => {
     expect(inputs.heroes.map((h) => h.id)).toEqual(FIXTURE_SURVIVING_IDS);
   });
 
-  it('the fixture\'s own nine already-blocked heroes are named in leftOut', () => {
+  it('the fixture\'s own eight already-blocked heroes are named in leftOut', () => {
     const result = required(buildOptimizerInputs(offlineFixtureView(), null), 'expected a result');
     expect(result.leftOut.map((hero) => hero.id)).toEqual(FIXTURE_BLOCKED_IDS);
   });

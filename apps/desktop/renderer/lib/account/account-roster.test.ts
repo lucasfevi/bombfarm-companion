@@ -197,10 +197,9 @@ describe('pointsUnrecovered — candidates the parser blocked', () => {
   // later game update introduced, over-spending the budget rather than leaving `stats` absent.
   // Pinned here so a fixture refresh that quietly fixes it is a visible test change, not a silent
   // loss of coverage.
-  it('the checked-in offline fixture already carries nine, from a sheet-inversion mismatch', () => {
+  it('the checked-in offline fixture already carries eight, from a sheet-inversion mismatch', () => {
     const roster = required(buildAccountRoster(viewOf(offlinePayload())), 'expected a roster');
     expect(roster.pointsUnrecovered).toEqual([
-      { id: '26863', name: 'Minato' },
       { id: '41990', name: 'Jon' },
       { id: '52562', name: 'Bellatrix' },
       { id: '45497', name: 'Buff S #1' },
