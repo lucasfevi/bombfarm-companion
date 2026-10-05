@@ -95,8 +95,8 @@ jobs:
 
       # The tools project's derived-fixture-drift.test.mjs reaches @bombfarm/domain through
       # node_modules -> dist, not a tsconfig/vitest alias to source (unlike packages/domain's
-      # own fidelity suite above, and ci-web.yml's "Domain tests need no build output" unit
-      # tests) — so it needs a real build. Same rationale as ci-desktop.yml's and ci-web.yml's
+      # own fidelity suite above, and the domain unit tests, which alias to source) — so it
+      # needs a real build. Same rationale as ci-desktop.yml's and ci-web.yml's
       # existing domain-build steps.
       - name: Build domain (tools project needs dist)
         run: pnpm --filter @bombfarm/domain build
