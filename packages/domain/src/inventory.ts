@@ -20,6 +20,8 @@ export type InventoryItem = {
   rarityIdx: number;
   level: number;
   upgrade: number;
+  /** Rolls missed in a row; absent on snapshots saved before the field existed. */
+  forgeFails?: number;
   /** Catalog-resolved slot; `null` when `defId` does not resolve. */
   slot: string | null;
   equipped: boolean;
@@ -55,6 +57,7 @@ export function mapInventoryItem(raw: Record<string, unknown>): InventoryItem | 
     rarityIdx: Math.round(asNumber(raw.rarity, 0)),
     level: asNumber(raw.level, 10),
     upgrade: Math.round(asNumber(raw.upgrade, 0)),
+    forgeFails: Math.max(0, Math.round(asNumber(raw.forge_fails, 0))),
     slot: definition?.slot ?? null,
     equipped,
     equippedBy: equipped ? equippedOn : null,

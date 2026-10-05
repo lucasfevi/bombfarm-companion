@@ -99,6 +99,8 @@ function chestName(defId: string, strings: Strings): string {
   if (itemChest) return sub(strings.inventoryChestItem, { level: itemChest[1] });
   const heroCage = /^chest_hero_(\d+)$/.exec(defId);
   if (heroCage) return sub(strings.inventoryChestHero, { act: heroCage[1] });
+  const chanceChest = /^chest_forja_(\d+)$/.exec(defId);
+  if (chanceChest) return sub(strings.inventoryChestForge, { act: chanceChest[1] });
   if (defId.startsWith('chest_gem')) return strings.inventoryChestGem;
   if (defId.startsWith('chest_key')) return strings.inventoryChestKey;
   if (defId.startsWith('chest_skill')) return strings.inventoryChestSkill;

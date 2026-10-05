@@ -13,8 +13,8 @@ describe('classifyForgeRoll', () => {
     expect(classifyForgeRoll({ after: 8, target: 9 })).toBe('fail');
   });
 
-  it('calls a fail at +15 that lands on +0 a fail', () => {
-    expect(classifyForgeRoll({ after: 0, target: 15 })).toBe('fail');
+  it('calls a fail at +13 that drops to the +10 floor a fail', () => {
+    expect(classifyForgeRoll({ after: 10, target: 13 })).toBe('fail');
   });
 
   it('calls landing on the target a success', () => {

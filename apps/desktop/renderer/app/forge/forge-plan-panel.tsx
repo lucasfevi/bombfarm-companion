@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { ForgeStartReason } from '@bombfarm/contracts';
-import { FORGE_MAX, FORGE_SAFE, forgeChance, forgeFailFloor } from '@bombfarm/domain/forge';
+import { FORGE_FAIL_FLOOR, FORGE_GUARANTEED, FORGE_MAX, forgeChance, forgeFailLevel } from '@bombfarm/domain/forge';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { inventoryFieldClass } from '@bombfarm/game-art';
 import { Bar, Button, cn, Panel, PanelHeader, StatList, Stepper, type StatListItem } from '@bombfarm/ui';
@@ -31,9 +31,9 @@ function oddsClass(chance: number): string {
   return 'text-down';
 }
 
-/** The rungs a roll can miss on, from the first past the safe floor up to the target. */
+/** The rungs a roll can miss on, from the first past the guaranteed ones up to the target. */
 function riskyRungs(upgrade: number, target: number): number[] {
-  const first = Math.max(upgrade + 1, FORGE_SAFE + 1);
+  const first = Math.max(upgrade + 1, FORGE_GUARANTEED + 1);
   return Array.from({ length: Math.max(0, target - first + 1) }, (_, index) => first + index);
 }
 
@@ -165,6 +165,29 @@ export function ForgePlanPanel({
       value: <span data-testid="forge-fact-gold">{forecast ? <ForgeGold>{labels.gold(forecast.gold)}</ForgeGold> : BLANK}</span>,
     },
     {
+      id: 'essence',
+      label: t.forgeFactEssence,
+      value: <span data-testid="forge-fact-essence">{forecast ? labels.count(Math.round(forecast.essence)) : BLANK}</span>,
+    },
+    ...(forecast?.protected
+      ? [
+          {
+            id: 'protected-gold',
+            label: t.forgeFactProtectedGold,
+            value: (
+              <span data-testid="forge-fact-protected-gold">
+                <ForgeGold>{labels.gold(forecast.protected.gold)}</ForgeGold>
+              </span>
+            ),
+          },
+          {
+            id: 'protected-essence',
+            label: t.forgeFactProtectedEssence,
+            value: <span data-testid="forge-fact-protected-essence">{labels.count(Math.round(forecast.protected.essence))}</span>,
+          },
+        ]
+      : []),
+    {
       id: 'bad-run',
       label: t.forgeFactBadRun,
       value: <span data-testid="forge-fact-bad-run">{forecast ? <ForgeGold>{labels.gold(forecast.badRunGold)}</ForgeGold> : BLANK}</span>,
@@ -222,13 +245,13 @@ export function ForgePlanPanel({
         <ol data-testid="forge-ladder" aria-label={t.forgeLadderCaption} className="m-0 flex list-none flex-col gap-1 p-0">
           {rungs.map((rung) => {
             const chance = forgeChance(rung);
-            const floor = forgeFailFloor(rung);
+            const floor = forgeFailLevel(rung);
             return (
               <li key={rung} data-testid="forge-ladder-rung" className="grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_auto] items-center gap-2 text-xs">
                 <span className="font-mono font-semibold tabular-nums text-ink">{forgeLevel(rung)}</span>
                 <Bar percent={chance * 100} variant={chance >= GOOD_ODDS ? 'best' : 'fill'} />
                 <span className={cn('text-right', 'font-mono', 'tabular-nums', oddsClass(chance))}>{labels.chance(chance)}</span>
-                <span className={cn('font-mono', 'text-[11px]', 'tabular-nums', floor === 0 ? 'text-down' : 'text-muted')}>
+                <span className={cn('font-mono', 'text-[11px]', 'tabular-nums', floor === FORGE_FAIL_FLOOR && rung > FORGE_FAIL_FLOOR + 1 ? 'text-down' : 'text-muted')}>
                   {sub(t.forgeLadderFailTo, { floor: forgeLevel(floor) })}
                 </span>
               </li>
@@ -241,9 +264,13 @@ export function ForgePlanPanel({
 
       {maxed ? null : (
         <p data-testid="forge-warning" className="m-0 text-xs text-muted">
-          {labels.warning(target, forecast?.safeJumps ?? null)}
+          {labels.warning()}
         </p>
       )}
+      <p data-testid="forge-stone-note" className="m-0 text-xs text-muted">
+        {forecast?.protected ? `${t.forgeProtectNote} ` : ''}
+        {t.forgeStoneNote}
+      </p>
 
       <div className="flex flex-col gap-1">
         <Button

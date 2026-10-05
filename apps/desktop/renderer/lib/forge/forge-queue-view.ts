@@ -19,7 +19,7 @@ export type ForgeQueueRow = {
 
 function forecastFor(item: InventoryViewItem, target: number): ForgeForecast | null {
   if (item.upgrade >= target || !FORGE_ITEM_LEVELS.includes(item.level)) return null;
-  return forgeForecast(item.upgrade, target, item.level, item.rarityIdx);
+  return forgeForecast(item.upgrade, target, item.level, item.rarityIdx, item.forgeFails ?? 0);
 }
 
 export function resolveForgeQueue(pieces: readonly ForgeQueuePiece[], gear: readonly InventoryViewItem[]): ForgeQueueRow[] {

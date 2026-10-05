@@ -12,6 +12,8 @@ export type GearFlowRow = {
   level: number;
   /** The item's current stored forge level (pre-plan). */
   upgrade: number;
+  /** Misses in a row on the piece today. */
+  forgeFails: number;
   forge: { from: number; to: number } | null;
   /** `null` means the item starts in the shared inventory pool. */
   originHeroId: string | null;
@@ -95,6 +97,7 @@ export function buildGearFlowRows(plan: TeamPlan, inventory: InventoryItem[]): G
       rarityIdx: item?.rarityIdx ?? 0,
       level: item?.level ?? 10,
       upgrade: item?.upgrade ?? 0,
+      forgeFails: item?.forgeFails ?? 0,
       forge: forgeAction ? { from: forgeAction.from, to: forgeAction.to } : null,
       originHeroId,
       destHeroId,

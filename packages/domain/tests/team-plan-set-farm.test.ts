@@ -20,6 +20,7 @@ import {
 import { reoptBudget } from '@bombfarm/domain/points-reopt-core';
 import { runTeamPlan, SET_FARM_SETS, setFarmBand, type TeamPlan } from '@bombfarm/domain/team-plan';
 import type { Loadout, PointAlloc } from '@bombfarm/domain/gear/types';
+import { skipUnlessInRegime } from './helpers/capture-regime';
 import { loadTeamPlanFarmFixture, type TeamPlanFarmFixture } from './helpers/team-plan-farm-fixtures';
 
 const UNIT_SCALES: FarmObjectiveScales = { goldScale: 1, chestScale: 1 };
@@ -220,7 +221,8 @@ describe('Luck is a destination, balanced against clear speed', () => {
     return bestFarmPhase(squad, setObjective(farmSet), UNIT_SCALES, bandOptions(fixture, farmSet))?.value ?? 0;
   }
 
-  it('the plan buys Luck the build does not hold today, and it pays in set chests', () => {
+  it('the plan buys Luck the build does not hold today, and it pays in set chests', (context) => {
+    skipUnlessInRegime(context, `sheet-math/${FAST}`, 'itemForge');
     const fixture = loadTeamPlanFarmFixture(FAST);
     const plan = fastPointsPlan('ember');
     const planned = resetsByHeroId(plan);

@@ -70,6 +70,8 @@ function chestName(defId: string, t: Copy): string {
   if (itemChest?.[1] !== undefined) return fill(t.inventoryChestItem, { level: itemChest[1] });
   const heroCage = /^chest_hero_(\d+)$/.exec(defId);
   if (heroCage?.[1] !== undefined) return fill(t.inventoryChestHero, { act: heroCage[1] });
+  const chanceChest = /^chest_forja_(\d+)$/.exec(defId);
+  if (chanceChest?.[1] !== undefined) return fill(t.inventoryChestForge, { act: chanceChest[1] });
   if (defId.startsWith('chest_gem')) return t.inventoryChestGem;
   if (defId.startsWith('chest_key')) return t.inventoryChestKey;
   if (defId.startsWith('chest_skill')) return t.inventoryChestSkill;

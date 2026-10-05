@@ -14,6 +14,7 @@ describe('the act chest families', () => {
     ['Time Chest (Act 3)', 'chest_time'],
     ['Gem Chest (Act 2)', 'chest_gem'],
     ['Skill Stone Chest (Act 3)', 'chest_skill'],
+    ['Chance Stone Chest (Act 3)', 'chest_forja'],
   ])('reads the family off %s without reading the act out of the name', (hashName, family) => {
     expect(actChestFamilyFor(hashName)).toBe(family);
   });

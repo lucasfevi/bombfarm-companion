@@ -133,7 +133,7 @@ describe('bundled wiki assets', () => {
 
   /**
    * Same failure mode as the prop sweep above, with a much wider blast radius: `dropIconSrc`
-   * builds 21 paths across three directories (`chests/`, `houses/`, `key/`), none of which any
+   * builds 26 paths across three directories (`chests/`, `houses/`, `key/`), none of which any
    * other helper reaches. A missing drop sprite draws a broken image in the Drops panel and no
    * math or type check notices.
    *
@@ -152,7 +152,7 @@ describe('bundled wiki assets', () => {
     const ids = Object.keys(DROP_RATES) as DropRateId[];
     const bands = [1, 2, 3, 4, 5];
     // Non-vacuity: a shrunken DROP_RATES would make the loop below prove nothing.
-    expect(ids.length, 'modeled drop rows').toBe(5);
+    expect(ids.length, 'modeled drop rows').toBe(6);
 
     const missing: string[] = [];
     const seen = new Set<string>();
@@ -166,9 +166,9 @@ describe('bundled wiki assets', () => {
     }
 
     expect(missing, 'drop rows whose art is not bundled').toEqual([]);
-    // Four per-band families of 5, plus the one fixed item chest. Pins the count so a family
+    // Five per-band families of 5, plus the one fixed item chest. Pins the count so a family
     // silently collapsing to a single sprite fails here rather than looking fine.
-    expect(seen.size, 'distinct sprites the panel can reach').toBe(21);
+    expect(seen.size, 'distinct sprites the panel can reach').toBe(26);
   });
 
   /**

@@ -20,6 +20,7 @@ import { saveSheetUnits } from '@bombfarm/domain/save-units';
 import { totalsWithNode } from '@bombfarm/domain/skill-tree/totals';
 import { SKILL_TREE } from '@bombfarm/domain/skill-tree/catalog';
 import type { SkillTotals } from '@bombfarm/domain/skill-tree/state';
+import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
 const SHEET_COLLECTION: CollectionSheetPct = { energyPct: 13.03, critChancePct: 4.8, critDmgPct: 0.22, cdrPct: 0.71 };
@@ -117,8 +118,10 @@ describe('where the game applies each axis — measured on one account, two read
   });
 });
 
+const EXPORT_FILE = 'save-20260914-20heroes-phase101.json';
+
 describe('a roster with Collections inverts to the same points it was built from', () => {
-  const EXPORT_FILE = 'save-20260914-20heroes-phase101.json';
+  holdSuiteUntilInRegime(`sheet-math/${EXPORT_FILE}`, 'itemForge');
   const raw = loadFixtureJson(EXPORT_FILE);
   const totalsRaw = (raw.skills as Record<string, unknown>).totals as Record<string, unknown>;
   const tree: TreeSheetTotals = { ...treeTotalsFromSave(totalsRaw), collection: SHEET_COLLECTION };

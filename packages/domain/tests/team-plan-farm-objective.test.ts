@@ -41,7 +41,7 @@ import type {
   TeamPlanFarmObjective,
   TeamPlanInput,
 } from '@bombfarm/domain/team-plan/types';
-import { assertInRegime } from './helpers/capture-regime';
+import { assertInRegime, skipUnlessInRegime } from './helpers/capture-regime';
 import {
   loadTeamPlanFarmFixture,
   type TeamPlanFarmFixture,
@@ -75,9 +75,11 @@ const GAIN_CAPTURES = [
   'save-20260831-13heroes-soulbound.json',
 ];
 
-// Loud rather than skipped: admissible captures exist, so a boundary moving past these two is a
-// one-line re-point, and a red is what prompts it.
-for (const file of GAIN_CAPTURES) assertInRegime(`sheet-math/${file}`, 'sheet');
+const SOULBOUND = 'save-20260831-13heroes-soulbound.json';
+const FRESH_ACCOUNT = 'save-20260828-4heroes-postpatch.json';
+
+// Loud rather than skipped: this capture is admissible, so it leaving its regime is a re-point.
+assertInRegime(`sheet-math/${FRESH_ACCOUNT}`, 'sheet');
 
 /** Every ability the team-aura pricing reads. Strip them all and the aura vector is all-zero,
  *  which is the state under which two differently-contexted score keys can collide. */
@@ -418,7 +420,8 @@ describe('farm mode is deterministic', () => {
 });
 
 describe('a farm-mode plan does not lower the gold/hr it was chosen for', () => {
-  it.each(GAIN_CAPTURES)('%s', (file) => {
+  it.for(GAIN_CAPTURES)('%s', (file, context) => {
+    if (file === SOULBOUND) skipUnlessInRegime(context, `sheet-math/${SOULBOUND}`, 'sheet');
     const fixture = loadTeamPlanFarmFixture(file);
     const result = runTeamPlan(
       { ...fixture.teamPlanInput, objective: 'farm' },

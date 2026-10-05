@@ -54,6 +54,8 @@ export interface ForgeItemFacts {
   readonly slot: number | null;
   readonly level: number;
   readonly upgrade: number;
+  /** Rolls missed in a row, as the item carries them; each adds to the next roll’s chance. */
+  readonly fails: number;
 }
 
 export interface ForgeServiceDeps {
@@ -99,6 +101,11 @@ function finiteNumber(value: unknown): number | null {
   return null;
 }
 
+function nonNegativeInteger(value: unknown): number | null {
+  const parsed = finiteNumber(value);
+  return parsed !== null && Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
 export function resolveForgeItem(rows: readonly unknown[] | null, itemId: string): ForgeItemFacts | null {
   if (rows === null) return null;
   const row = rows.find((candidate) => isRecord(candidate) && candidate.id === itemId);
@@ -109,7 +116,7 @@ export function resolveForgeItem(rows: readonly unknown[] | null, itemId: string
   const slot = finiteNumber(row.slot);
   const upgrade = finiteNumber(row.upgrade) ?? 0;
   if (!Number.isInteger(upgrade) || upgrade < 0 || upgrade > FORGE_MAX) return null;
-  return { id: itemId, defId: row.def_id, rarity, slot, level, upgrade };
+  return { id: itemId, defId: row.def_id, rarity, slot, level, upgrade, fails: nonNegativeInteger(row.forge_fails) ?? 0 };
 }
 
 export function isForgeTarget(target: unknown, upgrade: number): target is number {
@@ -122,6 +129,7 @@ interface ForgeReply {
   readonly cost: number | null;
   readonly gold: number | null;
   readonly critical: boolean;
+  readonly fails: number | null;
 }
 
 export function parseForgeReply(json: unknown): ForgeReply | null {
@@ -134,6 +142,7 @@ export function parseForgeReply(json: unknown): ForgeReply | null {
     cost: finiteNumber(json.cost),
     gold: finiteNumber(json.gold),
     critical: json.critical === true,
+    fails: nonNegativeInteger(json.item.forge_fails),
   };
 }
 
@@ -178,6 +187,7 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
     const limits = { target: request.target, maxAttempts: limitOrNull(request.maxAttempts), maxGold: limitOrNull(request.maxGold) };
     let tally = emptyForgeTally();
     let upgrade = item.upgrade;
+    let fails = item.fails;
     let wallet = deps.currentGold();
     let lastItem: Record<string, unknown> | null = null;
     let calls = 0;
@@ -185,7 +195,7 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
 
     try {
       for (;;) {
-        const step = nextForgeStep(upgrade, request.target, item.level, item.rarity);
+        const step = nextForgeStep(upgrade, request.target, item.level, item.rarity, fails);
         if (step.kind === 'done') {
           stop = 'target';
           break;
@@ -203,7 +213,7 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
         deps.emit({ type: 'pause', runId, ms: gapMs });
         if (gapMs > 0) await deps.sleep(gapMs);
 
-        const route = step.kind === 'safe' ? FORGE_ROUTES.forgeToSafe : FORGE_ROUTES.forge;
+        const route = FORGE_ROUTES.forge;
         let outcome: RequestOutcome;
         try {
           outcome = await deps.gate.runWrite(`forge:${item.id}`, () => requestPost(session, deps.transport, { route, item: item.id }, requestIds.next()));
@@ -233,21 +243,22 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
         const rollOutcome = classifyForgeRoll({
           after: reply.upgrade,
           target: step.target,
-          kind: step.kind,
+          kind: 'roll',
           serverCritical: reply.critical,
         });
-        tally = foldForgeStep(tally, { outcome: rollOutcome, kind: step.kind, cost });
+        tally = foldForgeStep(tally, { outcome: rollOutcome, kind: 'roll', cost });
         wallet = reply.gold ?? (wallet === null ? null : wallet - cost);
         lastItem = reply.item;
         const from = upgrade;
         upgrade = reply.upgrade;
+        fails = reply.fails ?? (rollOutcome === 'fail' ? fails + 1 : 0);
 
         deps.emit({
           type: 'step',
           runId,
           itemId: item.id,
           attempt: calls,
-          kind: step.kind,
+          kind: 'roll',
           target: step.target,
           from,
           to: upgrade,

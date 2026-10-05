@@ -1,22 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { FORGE_MAX, FORGE_SAFE, forgeForecast } from '@bombfarm/domain/forge';
+import { FORGE_GUARANTEED, FORGE_MAX, forgeForecast, nextForgeStep } from '@bombfarm/domain/forge';
 import {
   INITIAL_FORGE_PLAN,
   clampForgeTarget,
   defaultForgeTarget,
   forgePlanFor,
   forgePlanForecast,
+  forgeCollectionBonus,
   forgePlanReducer,
   parseForgeLimit,
 } from './use-forge-plan';
 
 describe('defaultForgeTarget', () => {
-  it('aims at the safe jump while the piece is below it', () => {
-    expect(defaultForgeTarget(0)).toBe(FORGE_SAFE);
-    expect(defaultForgeTarget(7)).toBe(FORGE_SAFE);
+  it('aims at the last rung that always lands while the piece is below it', () => {
+    expect(defaultForgeTarget(0)).toBe(FORGE_GUARANTEED);
+    expect(defaultForgeTarget(3)).toBe(FORGE_GUARANTEED);
   });
 
-  it('aims one rung up from the safe floor onward, and never past the top', () => {
+  it('aims one rung up from the guaranteed rungs onward, and never past the top', () => {
     expect(defaultForgeTarget(8)).toBe(9);
     expect(defaultForgeTarget(12)).toBe(13);
     expect(defaultForgeTarget(FORGE_MAX)).toBe(FORGE_MAX);
@@ -49,7 +50,7 @@ describe('forgePlanFor', () => {
     const plan = { ...INITIAL_FORGE_PLAN, itemId: 'a', target: 14, maxGold: 5000, attempts: 3 };
     expect(forgePlanFor(plan, { id: 'b', upgrade: 2 })).toEqual({
       itemId: 'b',
-      target: FORGE_SAFE,
+      target: FORGE_GUARANTEED,
       maxGold: 5000,
       attempts: 3,
     });
@@ -79,7 +80,7 @@ describe('forgePlanReducer', () => {
 
   it('steps from the default when the piece changed under the plan', () => {
     const plan = { ...INITIAL_FORGE_PLAN, itemId: 'a', target: 14 };
-    expect(forgePlanReducer(plan, { kind: 'step', itemId: 'b', upgrade: 0, delta: 1 }).target).toBe(FORGE_SAFE + 1);
+    expect(forgePlanReducer(plan, { kind: 'step', itemId: 'b', upgrade: 0, delta: 1 }).target).toBe(FORGE_GUARANTEED + 1);
   });
 
   it('parses the two limits as it stores them', () => {
@@ -90,13 +91,52 @@ describe('forgePlanReducer', () => {
   });
 });
 
+describe('forgePlanForecast from the misses a piece carries', () => {
+  it('a piece at +13 with 3 misses forecasts from a 30% roll, not 15%', () => {
+    const withMisses = forgePlanForecast(13, 14, 20, 2, 0, 3);
+    expect(withMisses?.rolls).toBeCloseTo(forgeForecast(13, 14, 20, 2, 3).rolls, 12);
+    expect(withMisses?.rolls).toBeLessThan(forgePlanForecast(13, 14, 20, 2)?.rolls ?? 0);
+    expect(nextForgeStep(13, 14, 20, 2, 3)).toMatchObject({ target: 14 });
+    const step = nextForgeStep(13, 14, 20, 2, 3);
+    expect(step.kind === 'roll' && step.chance).toBeCloseTo(0.3, 12);
+  });
+});
+
+describe('forgeCollectionBonus', () => {
+  it('reads the Collection forge axis as a chance addend, and nothing when it is absent', () => {
+    expect(forgeCollectionBonus({ totals: { colecao: { forja: 10 } } })).toBeCloseTo(0.1, 12);
+    expect(forgeCollectionBonus({ totals: { colecao: {} } })).toBe(0);
+    expect(forgeCollectionBonus({ totals: {} })).toBe(0);
+    expect(forgeCollectionBonus(undefined)).toBe(0);
+  });
+
+  it('reaches the forecast: a bonus makes the plan cheaper', () => {
+    const plain = forgePlanForecast(11, 12, 20, 2);
+    expect(forgePlanForecast(11, 12, 20, 2, 0.1)?.rolls).toBeLessThan(plain?.rolls ?? 0);
+  });
+});
+
 describe('forgePlanForecast', () => {
   it('carries the expected figures and a bad run that costs at least the expectation', () => {
     const forecast = forgePlanForecast(12, 13, 20, 2);
     expect(forecast).not.toBeNull();
     expect(forecast?.rolls).toBeCloseTo(forgeForecast(12, 13, 20, 2).rolls, 12);
     expect(forecast?.gold).toBeCloseTo(forgeForecast(12, 13, 20, 2).gold, 6);
+    expect(forecast?.essence).toBeCloseTo(forgeForecast(12, 13, 20, 2).essence, 6);
     expect(forecast?.badRunGold).toBeGreaterThanOrEqual(forecast?.gold ?? Number.POSITIVE_INFINITY);
+  });
+
+  it('prices the protected climb from +12 up, and not below it', () => {
+    const withScroll = forgePlanForecast(11, 13, 20, 2);
+    expect(withScroll?.protected?.gold).toBeCloseTo(forgeForecast(11, 13, 20, 2, 0, { protect: true }).gold, 6);
+    expect(withScroll?.protected?.gold).toBeLessThan(withScroll?.gold ?? 0);
+    expect(forgePlanForecast(5, 11, 20, 2)?.protected).toBeNull();
+  });
+
+  it('counts a chance bonus and a starting miss count in every figure', () => {
+    const plain = forgePlanForecast(11, 12, 20, 2);
+    expect(forgePlanForecast(11, 12, 20, 2, 0.2)?.rolls).toBeLessThan(plain?.rolls ?? 0);
+    expect(forgePlanForecast(11, 12, 20, 2, 0, 3)?.rolls).toBeLessThan(plain?.rolls ?? 0);
   });
 
   it('prints the same bad-run figure on every call, because the seed is fixed', () => {

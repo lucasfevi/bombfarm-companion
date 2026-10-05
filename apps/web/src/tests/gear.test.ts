@@ -8,6 +8,7 @@ import {
   emptyLoadout,
   emptySheetOther,
   upgradeMult,
+  scaledValores,
   sumGearBonuses,
   gearBonusDeltas,
   defaultNaked,
@@ -72,10 +73,22 @@ const zeroBonuses = (): GearBonuses => ({
 });
 
 describe('upgradeMult', () => {
-  it('uses +8% per forja level', () => {
+  it('follows the cumulative forge table, not a straight line', () => {
     expect(upgradeMult(0)).toBe(1);
-    expect(upgradeMult(5)).toBeCloseTo(1.4, 6);
-    expect(upgradeMult(15)).toBeCloseTo(2.2, 6);
+    expect(upgradeMult(5)).toBeCloseTo(1.25, 6);
+    expect(upgradeMult(10)).toBeCloseTo(1.5, 6);
+    expect(upgradeMult(13)).toBeCloseTo(1.95, 6);
+    expect(upgradeMult(14)).toBeCloseTo(2.2, 6);
+    expect(upgradeMult(15)).toBeCloseTo(2.5, 6);
+  });
+
+  it('prices an item the way the game reads it at +13', () => {
+    const [plain] = scaledValores('earth_arma', 1, 140, 0);
+    const [forged] = scaledValores('earth_arma', 1, 140, 13);
+    expect(plain.valor).toBeCloseTo(4042.5, 3);
+    expect(forged.valor).toBeCloseTo(7882.875, 3);
+    const plainCrit = scaledValores('ash_calca', 3, 80, 0)[1].valor;
+    expect(scaledValores('ash_calca', 3, 80, 13)[1].valor).toBeCloseTo(plainCrit * 1.95, 9);
   });
 });
 

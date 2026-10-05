@@ -6,12 +6,15 @@
  * target costs one value iteration and one seeded run of simulated climbs and nothing else.
  */
 import { useCallback, useMemo } from 'react';
+import { collectionFromSave } from '@bombfarm/domain/model';
 import {
   FORGE_ITEM_LEVELS,
   FORGE_MAX,
-  FORGE_SAFE,
+  FORGE_GUARANTEED,
   forgeForecast,
   forgeGoldPercentile,
+  forgeProtectable,
+  type ForgeForecast,
 } from '@bombfarm/domain/forge';
 
 export type ForgePlan = {
@@ -27,11 +30,11 @@ export type ForgePlanAction =
   | { kind: 'maxGold'; text: string }
   | { kind: 'attempts'; text: string };
 
-export const INITIAL_FORGE_PLAN: ForgePlan = { itemId: null, target: FORGE_SAFE, maxGold: null, attempts: null };
+export const INITIAL_FORGE_PLAN: ForgePlan = { itemId: null, target: FORGE_GUARANTEED, maxGold: null, attempts: null };
 
-/** The safe jump while the piece is below it; otherwise the very next rung. */
+/** The last rung that always lands while the piece is below it; otherwise the very next rung. */
 export function defaultForgeTarget(upgrade: number): number {
-  return upgrade < FORGE_SAFE ? FORGE_SAFE : Math.min(upgrade + 1, FORGE_MAX);
+  return upgrade < FORGE_GUARANTEED ? FORGE_GUARANTEED : Math.min(upgrade + 1, FORGE_MAX);
 }
 
 export function clampForgeTarget(target: number, upgrade: number): number {
@@ -50,7 +53,7 @@ export function parseForgeLimit(text: string): number | null {
 /** The plan as it applies to `item`: its own target while it is the piece the plan was made for,
  *  the default target otherwise. The limits carry across pieces — a budget is the player's. */
 export function forgePlanFor(plan: ForgePlan, item: { id: string; upgrade: number } | null): ForgePlan {
-  if (item === null) return { ...plan, itemId: null, target: FORGE_SAFE };
+  if (item === null) return { ...plan, itemId: null, target: FORGE_GUARANTEED };
   if (plan.itemId === item.id) return { ...plan, target: clampForgeTarget(plan.target, item.upgrade) };
   return { ...plan, itemId: item.id, target: defaultForgeTarget(item.upgrade) };
 }
@@ -70,8 +73,10 @@ export function forgePlanReducer(plan: ForgePlan, action: ForgePlanAction): Forg
 
 export type ForgePlanForecast = {
   rolls: number;
-  safeJumps: number;
   gold: number;
+  essence: number;
+  /** The same climb with the Protection Scroll ticked on every rung that offers it; null when none does. */
+  protected: ForgeForecast | null;
   /** What a run of bad luck costs — the 90th percentile of a seeded simulation. */
   badRunGold: number;
 };
@@ -85,20 +90,47 @@ export function forgePlanForecast(
   target: number,
   level: number,
   rarityIdx: number,
+  chanceBonus = 0,
+  fails = 0,
 ): ForgePlanForecast | null {
   if (!FORGE_ITEM_LEVELS.includes(level)) return null;
   if (!Number.isInteger(rarityIdx) || rarityIdx < 0) return null;
   if (!Number.isInteger(upgrade) || upgrade < 0 || upgrade >= target || target > FORGE_MAX) return null;
   try {
-    const expected = forgeForecast(upgrade, target, level, rarityIdx);
-    const badRunGold = forgeGoldPercentile(upgrade, target, level, rarityIdx, BAD_RUN_PERCENTILE, FORECAST_SEED);
-    return { ...expected, badRunGold };
+    const bonus = { bonus: chanceBonus };
+    const expected = forgeForecast(upgrade, target, level, rarityIdx, fails, bonus);
+    const protectedClimb = forgeProtectable(target)
+      ? forgeForecast(upgrade, target, level, rarityIdx, fails, { ...bonus, protect: true })
+      : null;
+    const badRunGold = forgeGoldPercentile(
+      upgrade,
+      target,
+      level,
+      rarityIdx,
+      BAD_RUN_PERCENTILE,
+      FORECAST_SEED,
+      undefined,
+      fails,
+      bonus,
+    );
+    return { ...expected, protected: protectedClimb, badRunGold };
   } catch {
     return null;
   }
 }
 
-export type ForgePlanItem = { id: string; upgrade: number; level: number; rarityIdx: number };
+export type ForgePlanItem = { id: string; upgrade: number; level: number; rarityIdx: number; forgeFails?: number };
+
+/**
+ * The Collection's forge axis as a chance addend. Its unit on the wire is unmeasured; it is read
+ * as percentage points, like the other Collection axes, and an absent block is no bonus.
+ */
+export function forgeCollectionBonus(skills: unknown): number {
+  if (typeof skills !== 'object' || skills === null) return 0;
+  const totals = (skills as { totals?: unknown }).totals;
+  if (typeof totals !== 'object' || totals === null) return 0;
+  return Math.max(0, collectionFromSave(totals as Record<string, unknown>).forgePct) / 100;
+}
 
 /** `plan` is the stored plan already resolved against `item`; `onPlanChange` puts the next one
  *  back where it came from. */
@@ -106,11 +138,14 @@ export function useForgePlan(
   item: ForgePlanItem | null,
   plan: ForgePlan,
   onPlanChange: (next: ForgePlan) => void,
+  chanceBonus = 0,
 ) {
   const forecast = useMemo(
     () =>
-      item === null ? null : forgePlanForecast(item.upgrade, plan.target, item.level, item.rarityIdx),
-    [item, plan.target],
+      item === null
+        ? null
+        : forgePlanForecast(item.upgrade, plan.target, item.level, item.rarityIdx, chanceBonus, item.forgeFails ?? 0),
+    [item, plan.target, chanceBonus],
   );
 
   const dispatch = useCallback(

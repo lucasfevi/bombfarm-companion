@@ -31,6 +31,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(here, 'fixtures');
 
 const NOT_ACCOUNT_RECORDS = ['rejection'];
+const FORGE_TABLE_BOUNDARY = '2026-10-05';
 
 function listCapturePaths(): string[] {
   const found: string[] = [];
@@ -110,9 +111,8 @@ describe('capture registry — the declared regime agrees with the dates', () =>
     }
   });
 
-  it('`blastDamage` is the one mechanic past `sheet`: it moves no sheet stat, only what a Wide Blast cross does', () => {
-    const past = ALL_MECHANICS.filter((mechanic) => MECHANICS[mechanic].since > MECHANICS.sheet.since);
-    expect(past).toEqual(['blastDamage']);
+  it('`blastDamage` sits behind `sheet`: it moves no sheet stat, only what a Wide Blast cross does', () => {
+    expect(MECHANICS.blastDamage.since < MECHANICS.sheet.since).toBe(true);
   });
 
   it('retention is derived, not asserted: `value` iff the capture is in regime for at least one mechanic', () => {
@@ -168,16 +168,38 @@ describe('capture registry — every waiver is verified against the capture, not
 
   it.each(waived.map(([path]) => path))('%s owns none of the abilities the boundaries it waives restated', (path) => {
     const row = CAPTURE_REGISTRY[path];
-    const boundariesWaived = new Set(Object.keys(row.waivers ?? {}).map((m) => MECHANICS[m as keyof typeof MECHANICS].since));
+    const boundariesWaived = new Set(
+      Object.keys(row.waivers ?? {}).flatMap((mechanic) =>
+        mechanic === 'sheet' ? ['2026-09-02', FORGE_TABLE_BOUNDARY] : [MECHANICS[mechanic as keyof typeof MECHANICS].since],
+      ),
+    );
     const parsed: unknown = JSON.parse(readFileSync(join(FIXTURES_DIR, path), 'utf8'));
     const heroes = (parsed as { heroes: { name?: unknown; abilities?: { code?: unknown }[] }[] }).heroes;
 
     for (const boundary of boundariesWaived) {
+      if (boundary === FORGE_TABLE_BOUNDARY) {
+        const forged: string[] = [];
+        const visit = (node: unknown): void => {
+          if (Array.isArray(node)) node.forEach(visit);
+          else if (node && typeof node === 'object') {
+            const record = node as Record<string, unknown>;
+            if (typeof record.upgrade === 'number' && record.upgrade > 0) forged.push(String(record.id ?? record.def_id));
+            Object.values(record).forEach(visit);
+          }
+        };
+        visit(parsed);
+        expect(
+          forged,
+          `${path} waives the ${boundary} boundary on the grounds that no item is forged above +0, ` +
+            `and these are:\n${forged.join('\n')}`,
+        ).toEqual([]);
+        continue;
+      }
       const restated: readonly string[] | undefined =
         ABILITIES_RESTATED_BY_BOUNDARY[boundary as keyof typeof ABILITIES_RESTATED_BY_BOUNDARY];
       expect(
         restated,
-        `this block only knows how to verify an ability restatement; a waiver against the ${boundary} ` +
+        `this block only knows how to verify an ability restatement or the forge table; a waiver against the ${boundary} ` +
           'boundary needs its own precondition check here before it may be trusted',
       ).toBeDefined();
 
@@ -203,10 +225,10 @@ describe('capture registry — the derived exclusion lists', () => {
    * The 2026-08-28 damage boundary took the corpus down to the two captures past it: every other
    * committed capture has at least one equipped weapon, and the weapon 5x reaches all of them, so
    * none can be waived past it the way three were waived past 2026-08-23. The 2026-09-02 Ponta de
-   * Diamante boundary then moved `sheet` again, and those two ARE waived past it — no hero on
-   * either owns the ability — so the list did not grow.
+   * Diamante boundary moved `sheet` again without shrinking that pair. The 2026-10-05 forge table
+   * then reached every item above +0, and only the capture whose items are all +0 is still waived.
    */
-  it('capturesOutOfRegimeFor("sheet") is every capture but the two past 2026-08-28 that no ponta_diamante hero reaches', () => {
+  it('capturesOutOfRegimeFor("sheet") is every capture but the one past 2026-08-28 that no ponta_diamante hero and no forged item reaches', () => {
     expect(capturesOutOfRegimeFor('sheet')).toEqual([
       'api/assembled-payload-after.json',
       'api/assembled-payload-before.json',
@@ -216,6 +238,7 @@ describe('capture registry — the derived exclusion lists', () => {
       'fidelity-gate/export-capture.json',
       'fidelity-gate/live-capture.json',
       'sheet-math/payload-20260812-8heroes.json',
+      'sheet-math/payload-20260913-20heroes-runes.json',
       'sheet-math/save-20260813-5heroes.json',
       'sheet-math/save-20260818-12heroes.json',
       'sheet-math/save-20260819-11882-7heroes.json',
@@ -223,6 +246,9 @@ describe('capture registry — the derived exclusion lists', () => {
       'sheet-math/save-20260822-15heroes-tree-crit-dmg.json',
       'sheet-math/save-20260823-13heroes-crit-points.json',
       'sheet-math/save-20260825-11heroes-one-shot-spread.json',
+      'sheet-math/save-20260831-13heroes-soulbound.json',
+      'sheet-math/save-20260914-20heroes-phase101.json',
+      'sheet-math/save-20260914-9heroes-second-account.json',
     ]);
   });
 

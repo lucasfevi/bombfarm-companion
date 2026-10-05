@@ -56,6 +56,7 @@ export const farmPtBR: FarmCopy = {
   phasesDropTime: "Baú de tempo",
   phasesDropGem: "Baú de gema",
   phasesDropStone: "Baú de pedra",
+  phasesDropChance: "Baú de Pedra de Chance",
   phasesDropActualHint: "valor base + a Sorte da sua árvore de habilidades + a sorte média do seu esquadrão.",
   phasesDropsSectionDesc: "Quais drops podem cair depende de a fase ser um portão.",
   phasesDropGateOnly: "Apenas portões",

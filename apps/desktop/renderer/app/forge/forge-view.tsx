@@ -60,7 +60,7 @@ import {
   useForgeScreen,
 } from '../../lib/forge/forge-store';
 import { useContentHeight } from '../../lib/forge/use-content-height';
-import { useForgePlan } from '../../lib/forge/use-forge-plan';
+import { forgeCollectionBonus, useForgePlan } from '../../lib/forge/use-forge-plan';
 import { useScreenRefreshRegistration } from '../../lib/refresh/screen-refresh-store';
 import { ForgeItemPanel } from './forge-item-panel';
 import { forgeButtonReason, forgeLabels } from './forge-labels';
@@ -188,7 +188,8 @@ export function ForgeView({
     setForgeFilter(EMPTY_FORGE_FILTER);
   }, []);
 
-  const planControls = useForgePlan(selected, plan, setForgePlan);
+  const chanceBonus = useMemo(() => forgeCollectionBonus(view?.payload.skills), [view]);
+  const planControls = useForgePlan(selected, plan, setForgePlan, chanceBonus);
 
   const run = useForgeRun();
   const runRef = useRef<ForgeRunState>(run);

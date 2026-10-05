@@ -128,6 +128,13 @@ describe('mapInventoryViewItem', () => {
     expect(item!.categoryCode).toBe(9);
   });
 
+  it('reads the misses in a row from forge_fails, and none when it is absent or negative', () => {
+    expect(mapInventoryViewItem({ id: '1', def_id: 'x', forge_fails: 3 })!.forgeFails).toBe(3);
+    expect(mapInventoryViewItem({ id: '1', def_id: 'x' })!.forgeFails).toBe(0);
+    expect(mapInventoryViewItem({ id: '1', def_id: 'x', forge_fails: -2 })!.forgeFails).toBe(0);
+    expect(mapInventoryItem({ id: '1', def_id: 'x', category: 0, forge_fails: 2 })?.forgeFails).toBe(2);
+  });
+
   it('keeps the raw category code so an other-bucket row can be identified after a patch', () => {
     expect(mapInventoryViewItem({ id: '1', def_id: 'x', category: 12 })!.categoryCode).toBe(12);
     expect(mapInventoryViewItem({ id: '1', def_id: 'x' })!.categoryCode).toBeNull();
@@ -445,7 +452,7 @@ describe('item stats', () => {
       level: 20,
       upgrade: 10,
     })!;
-    expect(forged.stats[0].effective).toBeCloseTo(plain.stats[0].effective * 1.8, 6);
+    expect(forged.stats[0].effective).toBeCloseTo(plain.stats[0].effective * 1.5, 6);
   });
 });
 
@@ -740,6 +747,7 @@ describe('chest tiers from the def_id tail', () => {
     ['chest_key_3', 3],
     ['chest_key_5', 5],
     ['chest_hero_3', 3],
+    ['chest_forja_3', 3],
   ])('reads %s as rarity %i, not the 0 the wire sends', (defId, expected) => {
     expect(rarityOf(defId)).toBe(expected);
   });

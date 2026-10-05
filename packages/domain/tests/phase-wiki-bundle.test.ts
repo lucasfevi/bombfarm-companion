@@ -186,13 +186,14 @@ describe('phase-wiki-bundle', () => {
   });
 
   describe('new export shapes and values (literals, not read back from the bundle)', () => {
-    it('DROP_RATES: five finite fractions matching their literal values', () => {
+    it('DROP_RATES: six finite fractions matching their literal values', () => {
       expect(DROP_RATES).toEqual({
         chest: 0.001,
         key: 0.001,
         gem: 0.00005,
         time: 0.001,
         stone: 0.0005,
+        chance: 0.0001,
       });
       for (const value of Object.values(DROP_RATES)) {
         expect(Number.isFinite(value)).toBe(true);

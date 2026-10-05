@@ -12,17 +12,16 @@ import {
 } from '../../lib/forge/forge-chart-geometry';
 import { forgeLevel } from './forge-labels';
 
-type Mark = Pick<ForgeStepEvent, 'kind' | 'outcome'>;
+type Mark = Pick<ForgeStepEvent, 'outcome'>;
 
 const OUTCOME_CLASS = { success: 'text-up', critical: 'text-accent', fail: 'text-down' } as const;
 
-/** One colour per outcome, and a safe jump in the muted tone — it is a purchase, not a roll. */
+/** One colour per outcome. */
 export function forgeMarkClass(mark: Mark): string {
-  return mark.kind === 'safe' ? 'text-muted' : OUTCOME_CLASS[mark.outcome];
+  return OUTCOME_CLASS[mark.outcome];
 }
 
 export function forgeMarkLabel(mark: Mark, t: Copy): string {
-  if (mark.kind === 'safe') return t.forgeMarkSafe;
   if (mark.outcome === 'critical') return t.forgeMarkCritical;
   return mark.outcome === 'success' ? t.forgeMarkSuccess : t.forgeMarkFail;
 }
@@ -119,7 +118,7 @@ export function ForgeChart({
             r={geometry.markRadius}
             fill="currentColor"
             className={cn(forgeMarkClass(point))}
-            data-outcome={point.kind === 'safe' ? 'safe' : point.outcome}
+            data-outcome={point.outcome}
             role="img"
             aria-label={forgeMarkLabel(point, t)}
           />

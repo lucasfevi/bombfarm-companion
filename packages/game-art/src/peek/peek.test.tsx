@@ -56,13 +56,13 @@ describe('ItemPeekCard', () => {
     expect(html).toContain('+8');
     expect(html).toContain('text-rar-4">Legendary<');
     expect(html).toContain('Lv 100');
-    // Five rolls for a Legendary, each scaled to level 100 and forged ×1.64.
+    // Five rolls for a Legendary, each scaled to level 100 and forged ×1.4.
     expect(statLabels(html)).toHaveLength(5);
     expect(html).toContain('Energy');
-    expect(html).toContain('+57.40%');
+    expect(html).toContain('+49.00%');
     expect(html).toContain('Damage');
-    expect(html).toContain('+947.1');
-    expect(html).toContain('Forge ×1.64');
+    expect(html).toContain('+808.5');
+    expect(html).toContain('Forge ×1.40');
   });
 
   it('prints every one of a Mythic’s six rolls', () => {
@@ -81,7 +81,7 @@ describe('ItemPeekCard', () => {
   it('the forge multiplier rides the tier line, in place of the slot and set the name already says', () => {
     const html = visible(render(createElement(ItemPeekCard, { item: helmet, lang: 'en' })));
     const sub = /leading-snug">(.*?)<\/div><\/div><\/div>/.exec(html)?.[1] ?? '';
-    expect(sub.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()).toBe('Legendary · Lv 100 · Forge ×1.64');
+    expect(sub.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()).toBe('Legendary · Lv 100 · Forge ×1.40');
     expect(html).not.toContain('Helm · Forest');
 
     const unforged = visible(render(createElement(ItemPeekCard, { item: { ...helmet, upgrade: 0 }, lang: 'en' })));
@@ -111,7 +111,7 @@ describe('ItemPeekCard', () => {
       }),
     );
     expect(html).toContain('+19.3');
-    expect(html).not.toContain('+947.1');
+    expect(html).not.toContain('+808.5');
   });
 
   it('a stack says its name and count, and neither a level nor a slot', () => {
@@ -132,8 +132,8 @@ describe('ItemPeekCard', () => {
     const html = render(createElement(ItemPeekCard, { item: helmet, lang: 'pt' }));
     expect(html).toContain('Elmo');
     expect(html).toContain('Lendária');
-    expect(html).toContain('+947,1');
-    expect(html).toContain('Forja ×1,64');
+    expect(html).toContain('+808,5');
+    expect(html).toContain('Forja ×1,40');
   });
 
   /** An inventory rune carries no stats on the wire, so its hover card used to show the name alone. */

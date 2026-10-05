@@ -236,11 +236,11 @@ describe('forgeStatRows', () => {
   it('scales every roll by the ratio of the two multipliers and prints the change signed', () => {
     const rows = forgeStatRows(item('g1').stats, 12, 13, 'en', 'en');
     expect(rows.map((row) => row.now)).toEqual(['107.8', '78.40%']);
-    // 107.8 × 2.04 / 1.96 = 112.2
-    expect(rows[0]?.target).toBe('112.2');
-    expect(rows[0]?.change).toBe('+4.4');
+    // 107.8 × 1.95 / 1.75 = 120.1
+    expect(rows[0]?.target).toBe('120.1');
+    expect(rows[0]?.change).toBe('+12.3');
     expect(rows[0]?.direction).toBe('up');
-    expect(rows[1]?.change).toBe('+3.20%');
+    expect(rows[1]?.change).toBe('+8.96%');
   });
 
   it('prints no change as a dash', () => {
@@ -251,7 +251,7 @@ describe('forgeStatRows', () => {
 
   it('follows the locale for separators', () => {
     const rows = forgeStatRows(item('g1').stats, 12, 13, 'pt', 'pt-BR');
-    expect(rows[0]?.target).toBe('112,2');
+    expect(rows[0]?.target).toBe('120,1');
     expect(rows[1]?.now).toBe('78,40%');
   });
 });
@@ -268,19 +268,16 @@ describe('forgeLabels', () => {
   });
 
   it('describes the span and the warning by the target', () => {
-    expect(labels.span(8)).toBe('safe span — every step lands');
-    expect(labels.span(13)).toBe('risky span — 40% at the top');
-    expect(labels.warning(13, 1.2)).toBe(
-      'A failed roll at +9…+14 drops the piece back to +8 and the gold is charged either way.',
-    );
-    expect(labels.warning(15, 2.34)).toBe(
-      '+15 is the only rung that wipes the piece to +0. Expect to rebuild from the safe floor about 2.3 times on the way.',
+    expect(labels.span(4)).toBe('sure span — every step lands');
+    expect(labels.span(13)).toBe('risky span — 20% at the top');
+    expect(labels.warning()).toBe(
+      'A missed roll at +5…+15 drops the piece one level, or to +10 from +12 up, adds 5 points to the next roll’s chance, and the gold is charged either way.',
     );
   });
 
   it('prints the factor line with both multipliers', () => {
     expect(labels.statsNote(11, 13)).toBe(
-      'Every roll scales by the same factor — ×2.04 at +13 against ×1.88 now — so this is what the piece becomes if the climb lands, not an average of where it might stop.',
+      'Every roll scales by the same factor — ×1.95 at +13 against ×1.60 now — so this is what the piece becomes if the climb lands, not an average of where it might stop.',
     );
   });
 
@@ -288,7 +285,7 @@ describe('forgeLabels', () => {
     expect(labels.gold(127595)).toBe('127,595');
     expect(labels.rolls(2.5)).toBe('2.5');
     expect(labels.chance(0.5)).toBe('50%');
-    expect(labels.multiplier(13)).toBe('2.04');
+    expect(labels.multiplier(13)).toBe('1.95');
     expect(forgeLevel(0)).toBe('+0');
   });
 });

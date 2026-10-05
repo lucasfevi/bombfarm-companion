@@ -34,6 +34,11 @@ this table is for.
 | `chests/skill_stone_chest_hard.png` | `steam/chest_skill_3.png` | |
 | `chests/skill_stone_chest_very_hard.png` | `steam/chest_skill_4.png` | |
 | `chests/skill_stone_chest_inferno.png` | `steam/chest_skill_5.png` | |
+| `chests/chance_stone_chest_easy.png` | `icons/chest_forja_1.png` | Chance Stone chest of that band |
+| `chests/chance_stone_chest_normal.png` | `icons/chest_forja_2.png` | Chance Stone chest of that band |
+| `chests/chance_stone_chest_hard.png` | `icons/chest_forja_3.png` | Chance Stone chest of that band |
+| `chests/chance_stone_chest_very_hard.png` | `icons/chest_forja_4.png` | Chance Stone chest of that band |
+| `chests/chance_stone_chest_inferno.png` | `icons/chest_forja_5.png` | Chance Stone chest of that band |
 | `houses/house_easy.png` | `steam/house_house_1.png` | The time chest's icon is the House of that band |
 | `houses/house_normal.png` | `steam/house_house_2.png` | |
 | `houses/house_hard.png` | `steam/house_house_3.png` | |

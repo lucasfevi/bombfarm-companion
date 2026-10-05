@@ -32,15 +32,40 @@ export function requireFixture(path, assertion, ciFlag) {
 }
 
 // Literals, never derived from the artifact under test.
-const TOP_LEVEL_KEYS = ['bonus', 'chance', 'critical', 'custo_por_nivel', 'max', 'niveis', 'safe', 'upgrade_mult'];
+const TOP_LEVEL_KEYS = [
+  'ajudas',
+  'bonus_acum',
+  'chance',
+  'critical',
+  'custo_por_nivel',
+  'essencia_div',
+  'essencia_k',
+  'fail_level',
+  'garantido',
+  'max',
+  'niveis',
+  'piso',
+  'pity_exemplo',
+  'pity_step',
+  'reembolso',
+  'safe',
+  'upgrade_mult',
+];
+const AIDS_KEYS = ['bau_dist_por_ato', 'drop_rate', 'pedra_pp', 'pergaminho'];
+const SCROLL_KEYS = ['alvos', 'exemplos'];
+const SCROLL_EXAMPLE_KEYS = ['custos', 'nivel', 'raridade'];
+const PITY_EXAMPLE_KEYS = ['alvo', 'chances'];
 const COST_ROW_KEYS = ['nivel', 'por_raridade'];
-const RARITY_ROW_KEYS = ['custos', 'raridade'];
+const RARITY_ROW_KEYS = ['custos', 'essencia', 'essencia_media', 'raridade'];
 const TARGETS = 15;
 const UPGRADE_LEVELS = 16;
 const ITEM_LEVEL_ROWS = 30;
 const RARITIES = 6;
 const SAFE = 8;
 const MAX = 15;
+const GUARANTEED = 4;
+const FLOOR = 10;
+const PITY_STEP = 0.05;
 
 function keySetErrors(obj, expectedKeys, pathLabel) {
   const added = [];
@@ -94,6 +119,9 @@ function validateBundle(bundle) {
   for (const [key, expectedLength] of [
     ['chance', TARGETS],
     ['critical', TARGETS],
+    ['fail_level', TARGETS],
+    ['essencia_k', TARGETS],
+    ['bonus_acum', UPGRADE_LEVELS],
     ['upgrade_mult', UPGRADE_LEVELS],
     ['niveis', ITEM_LEVEL_ROWS],
     ['custo_por_nivel', ITEM_LEVEL_ROWS],
@@ -120,6 +148,10 @@ function validateBundle(bundle) {
         removedKeys.push(...rarityKeys.removed);
         const costError = lengthError(byRarity?.custos, TARGETS, `${rarityLabel}.custos`);
         if (costError) dimensionErrors.push(costError);
+        for (const key of ['essencia', 'essencia_media']) {
+          const error = lengthError(byRarity?.[key], TARGETS, `${rarityLabel}.${key}`);
+          if (error) dimensionErrors.push(error);
+        }
         if (byRarity?.raridade !== rarityIndex) {
           valueErrors.push(`${rarityLabel}.raridade: expected ${rarityIndex}, got ${byRarity?.raridade}`);
         }
@@ -135,6 +167,35 @@ function validateBundle(bundle) {
     }
   }
 
+  const aids = keySetErrors(bundle?.ajudas, AIDS_KEYS, 'ajudas');
+  addedKeys.push(...aids.added);
+  removedKeys.push(...aids.removed);
+  const scroll = keySetErrors(bundle?.ajudas?.pergaminho, SCROLL_KEYS, 'ajudas.pergaminho');
+  addedKeys.push(...scroll.added);
+  removedKeys.push(...scroll.removed);
+  (bundle?.ajudas?.pergaminho?.exemplos ?? []).forEach((example, index) => {
+    const label = `ajudas.pergaminho.exemplos[${index}]`;
+    const keys = keySetErrors(example, SCROLL_EXAMPLE_KEYS, label);
+    addedKeys.push(...keys.added);
+    removedKeys.push(...keys.removed);
+    const error = lengthError(example?.custos, bundle?.ajudas?.pergaminho?.alvos?.length ?? 0, `${label}.custos`);
+    if (error) dimensionErrors.push(error);
+  });
+  const pity = keySetErrors(bundle?.pity_exemplo, PITY_EXAMPLE_KEYS, 'pity_exemplo');
+  addedKeys.push(...pity.added);
+  removedKeys.push(...pity.removed);
+  if (JSON.stringify(bundle?.ajudas?.pergaminho?.alvos) !== JSON.stringify([12, 13, 14, 15])) {
+    valueErrors.push(`ajudas.pergaminho.alvos: expected [12,13,14,15], got ${JSON.stringify(bundle?.ajudas?.pergaminho?.alvos)}`);
+  }
+  if (bundle?.garantido !== GUARANTEED) valueErrors.push(`garantido: expected ${GUARANTEED}, got ${bundle?.garantido}`);
+  if (bundle?.piso !== FLOOR) valueErrors.push(`piso: expected ${FLOOR}, got ${bundle?.piso}`);
+  if (bundle?.pity_step !== PITY_STEP) valueErrors.push(`pity_step: expected ${PITY_STEP}, got ${bundle?.pity_step}`);
+  if (Array.isArray(bundle?.fail_level)) {
+    bundle.fail_level.forEach((landing, index) => {
+      const expected = Math.min(index, FLOOR);
+      if (landing !== expected) valueErrors.push(`fail_level[${index}]: expected ${expected}, got ${landing}`);
+    });
+  }
   if (bundle?.safe !== SAFE) valueErrors.push(`safe: expected ${SAFE}, got ${bundle?.safe}`);
   if (bundle?.max !== MAX) valueErrors.push(`max: expected ${MAX}, got ${bundle?.max}`);
 
@@ -142,7 +203,7 @@ function validateBundle(bundle) {
 }
 
 describe('committed forge-wiki.json guard', () => {
-  it('the committed artifact passes every check: exact key sets, no null leaves, pinned dimensions, safe 8 and max 15', () => {
+  it('the committed artifact passes every check: exact key sets, no null leaves, pinned dimensions, the ladder constants and the fail landing levels', () => {
     const bundle = requireFixture(BUNDLE_PATH, 'forge-wiki.json structural guard', isTruthyCi(process.env.CI));
     if (!bundle) return;
 
@@ -200,6 +261,20 @@ describe('committed forge-wiki.json guard', () => {
       const mutant = loadRealBundle();
       mutant.niveis[0] = 15;
       expect(validateBundle(mutant).valueErrors.some((error) => error.startsWith('niveis:'))).toBe(true);
+    });
+
+    it('a fail level that no longer lands on the floor is reported', () => {
+      const mutant = loadRealBundle();
+      mutant.fail_level[14] = 8;
+      expect(validateBundle(mutant).valueErrors).toContain('fail_level[14]: expected 10, got 8');
+    });
+
+    it('an essence row that lost a target is reported naming the row', () => {
+      const mutant = loadRealBundle();
+      mutant.custo_por_nivel[0].por_raridade[0].essencia_media.pop();
+      expect(validateBundle(mutant).dimensionErrors).toContain(
+        'custo_por_nivel[0].por_raridade[0].essencia_media.length: expected 15, got 14',
+      );
     });
 
     it('a moved safe level is reported', () => {

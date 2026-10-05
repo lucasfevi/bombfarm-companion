@@ -7,7 +7,7 @@ import {
   type ForgeStartReason,
   type ForgeStopReason,
 } from '@bombfarm/contracts';
-import { FORGE_MAX, FORGE_SAFE, forgeChance } from '@bombfarm/domain/forge';
+import { FORGE_FAIL_FLOOR, FORGE_GUARANTEED, FORGE_MAX, forgeChance } from '@bombfarm/domain/forge';
 import { upgradeMult } from '@bombfarm/domain/gear';
 import { itemRarityLabel, itemStatLabel, slotLabel } from '@bombfarm/domain/game-labels';
 import type { ItemIdentityLabels } from '@bombfarm/game-art';
@@ -259,7 +259,7 @@ export interface ForgeLabels extends ItemIdentityLabels<InventoryViewItem> {
   signedPercent: (fraction: number) => string;
   band: (band: ForgeBand | null) => string;
   span: (target: number) => string;
-  warning: (target: number, safeJumps: number | null) => string;
+  warning: () => string;
   statsNote: (nowUpgrade: number, targetUpgrade: number) => string;
 }
 
@@ -294,19 +294,14 @@ export function forgeLabels(t: Copy, lang: DomainLang, locale: AppLocale): Forge
     signedPercent,
     band: (band) => forgeBandText(band, t),
     span: (target) =>
-      target <= FORGE_SAFE ? t.forgeSpanSafe : sub(t.forgeSpanRisky, { chance: chance(forgeChance(target)) }),
-    warning: (target, safeJumps) =>
-      target >= FORGE_MAX
-        ? sub(t.forgeWarnMax, {
-            max: forgeLevel(FORGE_MAX),
-            floor: forgeLevel(0),
-            times: safeJumps === null ? BLANK : decimals(safeJumps, 1, locale),
-          })
-        : sub(t.forgeWarnRisky, {
-            from: forgeLevel(FORGE_SAFE + 1),
-            to: forgeLevel(FORGE_MAX - 1),
-            floor: forgeLevel(FORGE_SAFE),
-          }),
+      target <= FORGE_GUARANTEED ? t.forgeSpanSure : sub(t.forgeSpanRisky, { chance: chance(forgeChance(target)) }),
+    warning: () =>
+      sub(t.forgeWarnRisky, {
+        from: forgeLevel(FORGE_GUARANTEED + 1),
+        to: forgeLevel(FORGE_MAX),
+        high: forgeLevel(FORGE_FAIL_FLOOR + 2),
+        floor: forgeLevel(FORGE_FAIL_FLOOR),
+      }),
     statsNote: (nowUpgrade, targetUpgrade) =>
       sub(t.forgeStatsNote, {
         factor: multiplier(targetUpgrade),

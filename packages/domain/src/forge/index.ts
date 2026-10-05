@@ -1,16 +1,23 @@
-export type { ForgeStep } from './rules';
+export type { ForgeStep, ForgeRoll, ForgeOptions } from './rules';
 export {
-  FORGE_SAFE,
+  FORGE_GUARANTEED,
+  FORGE_FAIL_FLOOR,
   FORGE_MAX,
+  FORGE_PITY_STEP,
+  FORGE_PITY_CAP,
   FORGE_CHANCE,
   FORGE_CRITICAL,
+  FORGE_FAIL_LEVEL,
+  FORGE_STONE_PP,
   FORGE_ITEM_LEVELS,
   assertForgeUpgrade,
   forgeChance,
   forgeCritChance,
-  forgeFailFloor,
+  forgeFailLevel,
+  forgeProtectable,
   forgeRollCost,
-  forgeSafeJumpCost,
+  forgeRollEssence,
+  forgeScrollCost,
   nextForgeStep,
 } from './rules';
 

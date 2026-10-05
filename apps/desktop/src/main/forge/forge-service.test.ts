@@ -130,34 +130,34 @@ function steps(events: ForgeEvent[]) {
 const REQUEST: ForgeStartRequest = { itemId: 'g1', target: 10, maxGold: null, maxAttempts: null };
 
 describe('a full climb', () => {
-  it('safe-jumps below the floor, rolls each rung, lands where the server says, and finishes on target', async () => {
+  it('rolls every rung from the bottom — never a safe jump — lands where the server says, and finishes on target', async () => {
     const h = harness({
-      script: [{ upgrade: 8 }, { upgrade: 9 }, { upgrade: 10 }],
+      script: [{ upgrade: 4 }, { upgrade: 5 }, { upgrade: 6 }],
       currentItems: () => [{ ...ITEM_ROW, upgrade: 3 }],
     });
-    const started = h.service.start(REQUEST);
+    const started = h.service.start({ ...REQUEST, target: 6 });
     expect(started.ok).toBe(true);
     expect(h.service.isRunning()).toBe(true);
 
     const done = await untilDone(h.events);
-    expect(h.wire.calls.map((call) => call.route)).toEqual([FORGE_ROUTES.forgeToSafe, FORGE_ROUTES.forge, FORGE_ROUTES.forge]);
+    expect(h.wire.calls.map((call) => call.route)).toEqual([FORGE_ROUTES.forge, FORGE_ROUTES.forge, FORGE_ROUTES.forge]);
     expect(h.wire.calls.every((call) => call.itemId === 'g1')).toBe(true);
     expect(steps(h.events).map((step) => [step.kind, step.from, step.to, step.outcome])).toEqual([
-      ['safe', 3, 8, 'success'],
-      ['roll', 8, 9, 'success'],
-      ['roll', 9, 10, 'success'],
+      ['roll', 3, 4, 'success'],
+      ['roll', 4, 5, 'success'],
+      ['roll', 5, 6, 'success'],
     ]);
     expect(done.result).toMatchObject({
       itemId: 'g1',
       from: 3,
-      to: 10,
-      target: 10,
+      to: 6,
+      target: 6,
       stop: 'target',
       reached: true,
-      rolls: 2,
+      rolls: 3,
       fails: 0,
       crits: 0,
-      safeJumps: 1,
+      safeJumps: 0,
       spent: 300,
       walletAfter: 1_000_000 - 300,
     });
@@ -266,15 +266,15 @@ describe('stopping', () => {
     expect(h.appended).toHaveLength(0);
   });
 
-  it('the attempt limit counts rolls, not safe jumps', async () => {
+  it('the attempt limit counts rolls', async () => {
     const h = harness({
-      script: [{ upgrade: 8 }, { upgrade: 9 }, { upgrade: 10 }],
+      script: [{ upgrade: 4 }, { upgrade: 5 }],
       currentItems: () => [{ ...ITEM_ROW, upgrade: 3 }],
     });
     h.service.start({ ...REQUEST, target: 12, maxAttempts: 2 });
     const done = await untilDone(h.events);
-    expect(h.wire.calls).toHaveLength(3);
-    expect(done.result).toMatchObject({ stop: 'attempts', rolls: 2, safeJumps: 1, to: 10 });
+    expect(h.wire.calls).toHaveLength(2);
+    expect(done.result).toMatchObject({ stop: 'attempts', rolls: 2, safeJumps: 0, to: 5 });
   });
 
   it('an HTTP error for the item stops with missing; an unauthorized answer halts the gate and stops with error', async () => {
@@ -343,10 +343,16 @@ describe('refusals', () => {
 
 describe('resolveForgeItem / parseForgeReply', () => {
   it('reads the piece from the items section and refuses a level the cost table does not carry', () => {
-    expect(resolveForgeItem([ITEM_ROW], 'g1')).toEqual({ id: 'g1', defId: 'steel_luva', rarity: 1, slot: 2, level: 20, upgrade: 8 });
+    expect(resolveForgeItem([ITEM_ROW], 'g1')).toEqual({ id: 'g1', defId: 'steel_luva', rarity: 1, slot: 2, level: 20, upgrade: 8, fails: 0 });
     expect(resolveForgeItem([{ ...ITEM_ROW, level: 21 }], 'g1')).toBeNull();
     expect(resolveForgeItem([ITEM_ROW], 'g2')).toBeNull();
     expect(resolveForgeItem(null, 'g1')).toBeNull();
+  });
+
+  it('carries the misses in a row the item reports, and none when it reports none', () => {
+    expect(resolveForgeItem([{ ...ITEM_ROW, forge_fails: 3 }], 'g1')?.fails).toBe(3);
+    expect(resolveForgeItem([{ ...ITEM_ROW, forge_fails: -1 }], 'g1')?.fails).toBe(0);
+    expect(resolveForgeItem([ITEM_ROW], 'g1')?.fails).toBe(0);
   });
 
   it('needs the returned item\'s upgrade and reads the wallet as a number even when the wire quotes it', () => {
@@ -356,7 +362,9 @@ describe('resolveForgeItem / parseForgeReply', () => {
       cost: 5,
       gold: 99,
       critical: false,
+      fails: null,
     });
+    expect(parseForgeReply({ item: { id: 'g1', upgrade: 8, forge_fails: 2 } })?.fails).toBe(2);
     expect(parseForgeReply({ item: {} })).toBeNull();
     expect(parseForgeReply('nope')).toBeNull();
   });

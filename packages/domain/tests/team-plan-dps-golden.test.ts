@@ -76,6 +76,7 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { runTeamPlan } from '@bombfarm/domain/team-plan';
 import type { Loadout } from '@bombfarm/domain/gear/types';
+import { skipUnlessInRegime } from './helpers/capture-regime';
 import { loadTeamPlanFarmFixture } from './helpers/team-plan-farm-fixtures';
 
 /** Order-independent: hero ids and slot names sorted, so the digest pins the CONTENT of the
@@ -100,9 +101,13 @@ function loadoutDigest(loadouts: Record<string, Loadout>): string {
   return createHash('sha256').update(body).digest('hex').slice(0, 16);
 }
 
+const SEVEN_HEROES = 'save-20260819-11882-7heroes.json';
+const CRIT_POINTS = 'save-20260823-13heroes-crit-points.json';
+const SOULBOUND = 'save-20260831-13heroes-soulbound.json';
+
 const GOLDENS = [
   {
-    file: 'save-20260819-11882-7heroes.json',
+    file: SEVEN_HEROES,
     forgeFloor: 10,
     currentDps: 2383.138656271333,
     planDps: 2831.880178380798,
@@ -113,7 +118,7 @@ const GOLDENS = [
     loadoutDigest: 'c1cf3e98af22de34',
   },
   {
-    file: 'save-20260823-13heroes-crit-points.json',
+    file: CRIT_POINTS,
     forgeFloor: 10,
     currentDps: 35410.76182208422,
     planDps: 55603.895542942206,
@@ -124,7 +129,7 @@ const GOLDENS = [
     loadoutDigest: '7e202368bf453048',
   },
   {
-    file: 'save-20260831-13heroes-soulbound.json',
+    file: SOULBOUND,
     forgeFloor: 10,
     currentDps: 4279.5946997318515,
     planDps: 4654.977828113092,
@@ -137,7 +142,10 @@ const GOLDENS = [
 ];
 
 describe('the damage objective still plans what it planned before the farm objective landed', () => {
-  it.each(GOLDENS)('$file', (golden) => {
+  it.for(GOLDENS)('$file', (golden, context) => {
+    if (golden.file === SEVEN_HEROES) skipUnlessInRegime(context, `sheet-math/${SEVEN_HEROES}`, 'itemForge');
+    if (golden.file === CRIT_POINTS) skipUnlessInRegime(context, `sheet-math/${CRIT_POINTS}`, 'itemForge');
+    if (golden.file === SOULBOUND) skipUnlessInRegime(context, `sheet-math/${SOULBOUND}`, 'itemForge');
     const fixture = loadTeamPlanFarmFixture(golden.file, { forgeFloor: golden.forgeFloor });
     const result = runTeamPlan(fixture.teamPlanInput);
     if (result.blocked) throw new Error(`fixture blocked: ${result.heroNames.join(', ')}`);

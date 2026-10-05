@@ -1,4 +1,5 @@
 import catalog from '../data/catalog.json' with { type: 'json' };
+import forgeWiki from '../data/forge-wiki.json' with { type: 'json' };
 import type { Lang } from '../shims/i18n';
 import { formatItemDisplay } from '../game-labels';
 import type {
@@ -10,8 +11,7 @@ import type {
   Slot,
 } from './types';
 
-/** Forja upgrade: +0…+15. `upgrade_mult = 1 + 0.08 × N` (wiki itens.forja.bonus). */
-export const FORJA_BONUS = 0.08;
+/** Forja upgrade: +0…+15, a cumulative non-linear table (wiki itens.forja.upgrade_mult). */
 export const FORJA_MAX = 15;
 export const FORJA_LEVELS = Array.from({ length: FORJA_MAX + 1 }, (_, index) => index);
 
@@ -36,7 +36,7 @@ export function setsForLevel(level: number): string[] {
 
 export function upgradeMult(upgrade: number): number {
   const clampedUpgrade = Math.max(0, Math.min(FORJA_MAX, Math.round(upgrade)));
-  return 1 + FORJA_BONUS * clampedUpgrade;
+  return forgeWiki.upgrade_mult[clampedUpgrade] ?? 1;
 }
 
 export function itemLabel(item: EquippedItem, lang: Lang = 'pt'): string {

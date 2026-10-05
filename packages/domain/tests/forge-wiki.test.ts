@@ -3,18 +3,22 @@ import forgeWiki from '@bombfarm/domain/data/forge-wiki.json' with { type: 'json
 import {
   FORGE_CHANCE,
   FORGE_CRITICAL,
+  FORGE_FAIL_FLOOR,
+  FORGE_FAIL_LEVEL,
+  FORGE_GUARANTEED,
   FORGE_ITEM_LEVELS,
   FORGE_MAX,
-  FORGE_SAFE,
+  FORGE_PITY_STEP,
+  forgeChance,
   forgeRollCost,
-  forgeSafeJumpCost,
+  forgeRollEssence,
+  forgeScrollCost,
 } from '@bombfarm/domain/forge';
-import { FORJA_BONUS, upgradeMult } from '@bombfarm/domain/gear';
+import { upgradeMult } from '@bombfarm/domain/gear';
 
 const ITEM_LEVEL_ROWS = 30;
-const RARITIES = 6;
 const TARGETS = 15;
-const COST_CELLS = ITEM_LEVEL_ROWS * RARITIES * TARGETS;
+const COST_CELLS = ITEM_LEVEL_ROWS * 6 * TARGETS;
 
 function baseCost(level: number, rarity: number): number {
   return 120 + 8 * level + 100 * rarity;
@@ -25,7 +29,7 @@ function closedFormCost(level: number, rarity: number, target: number): number {
 }
 
 describe('the committed forge cost table', () => {
-  it('holds every one of the 2,700 cells to (120 + 8·level + 100·rarity) × (target + 1)² / 4', () => {
+  it('holds every one of the 2,700 gold cells to (120 + 8·level + 100·rarity) × (target + 1)² / 4', () => {
     const mismatches: string[] = [];
     let visited = 0;
     for (const row of forgeWiki.custo_por_nivel) {
@@ -54,21 +58,39 @@ describe('the committed forge cost table', () => {
     expect(forgeRollCost(300, 5, 15)).toBe(193_280);
   });
 
-  it('one safe jump costs the sum of the rolls for +1…+8, which is 71 × the base cost', () => {
-    for (const level of FORGE_ITEM_LEVELS) {
-      for (let rarity = 0; rarity < RARITIES; rarity++) {
-        let summed = 0;
-        for (let target = 1; target <= FORGE_SAFE; target++) summed += forgeRollCost(level, rarity, target);
-        expect(forgeSafeJumpCost(level, rarity)).toBe(summed);
-        expect(forgeSafeJumpCost(level, rarity)).toBe(71 * baseCost(level, rarity));
+  it('holds every one of the 2,700 essence cells to essencia_k × (rarity + 1) × level / essencia_div, rounded up', () => {
+    const mismatches: string[] = [];
+    for (const row of forgeWiki.custo_por_nivel) {
+      for (const byRarity of row.por_raridade) {
+        expect(byRarity.essencia).toHaveLength(TARGETS);
+        byRarity.essencia.forEach((essence, index) => {
+          const expected = Math.ceil((forgeWiki.essencia_k[index] * (byRarity.raridade + 1) * row.nivel) / forgeWiki.essencia_div);
+          if (essence !== expected) mismatches.push(`level ${row.nivel} rarity ${byRarity.raridade} +${index + 1}`);
+        });
       }
+    }
+    expect(mismatches).toEqual([]);
+    expect(forgeRollEssence(300, 5, 15)).toBe(720);
+    expect(forgeRollEssence(10, 0, 1)).toBe(1);
+  });
+
+  it('holds the scroll price to base[target] × (rarity + 1) × level / 10 in every published example', () => {
+    const { alvos, exemplos } = forgeWiki.ajudas.pergaminho;
+    const [base] = exemplos;
+    for (const example of exemplos) {
+      alvos.forEach((target, index) => {
+        expect(example.custos[index]).toBe((base.custos[index] * (example.raridade + 1) * example.nivel) / 10);
+        expect(forgeScrollCost(example.nivel, example.raridade, target)).toBe(example.custos[index]);
+      });
     }
   });
 });
 
 describe('the forge bonus has one value across the domain', () => {
-  it('the data file bonus equals FORJA_BONUS', () => {
-    expect(forgeWiki.bonus).toBe(FORJA_BONUS);
+  it('bonus_acum is upgrade_mult less the base item', () => {
+    forgeWiki.bonus_acum.forEach((bonus, upgrade) => {
+      expect(bonus, `+${upgrade}`).toBeCloseTo(forgeWiki.upgrade_mult[upgrade] - 1, 9);
+    });
   });
 
   it('upgrade_mult[n] equals upgradeMult(n) for every n in +0…+15', () => {
@@ -80,26 +102,42 @@ describe('the forge bonus has one value across the domain', () => {
 });
 
 describe('the forge chance ladder', () => {
-  it('carries one chance and one crit chance per target +1…+15', () => {
+  it('carries one chance, one crit chance and one landing level per target +1…+15', () => {
     expect(FORGE_CHANCE).toHaveLength(FORGE_MAX);
     expect(FORGE_CRITICAL).toHaveLength(FORGE_MAX);
+    expect(FORGE_FAIL_LEVEL).toHaveLength(FORGE_MAX);
   });
 
-  it('is certain through +8 and never rises further up the ladder', () => {
-    for (let target = 1; target <= FORGE_SAFE; target++) expect(FORGE_CHANCE[target - 1]).toBe(1);
+  it('is certain through +4 and never rises further up the ladder', () => {
+    for (let target = 1; target <= FORGE_GUARANTEED; target++) expect(FORGE_CHANCE[target - 1]).toBe(1);
     for (let index = 1; index < FORGE_CHANCE.length; index++) {
       expect(FORGE_CHANCE[index]).toBeLessThanOrEqual(FORGE_CHANCE[index - 1]);
     }
-    expect(FORGE_CHANCE[FORGE_MAX - 1]).toBeLessThan(1);
+    expect(FORGE_CHANCE[FORGE_GUARANTEED]).toBeLessThan(1);
   });
 
   it('cannot crit on the roll for +15', () => {
     expect(FORGE_CRITICAL[FORGE_MAX - 1]).toBe(0);
   });
 
-  it('keeps +8 as the safe level and +15 as the top', () => {
-    expect(FORGE_SAFE).toBe(8);
+  it('keeps +15 as the top, +4 as the last certain rung, +10 as the floor and five points of pity', () => {
     expect(FORGE_MAX).toBe(15);
+    expect(FORGE_GUARANTEED).toBe(4);
+    expect(FORGE_FAIL_FLOOR).toBe(10);
+    expect(FORGE_PITY_STEP).toBe(0.05);
+  });
+
+  it('lands a miss one level down through +11 and on the floor from +12', () => {
+    FORGE_FAIL_LEVEL.forEach((landing, index) => {
+      expect(landing).toBe(Math.min(index, FORGE_FAIL_FLOOR));
+    });
+  });
+
+  it('prints the published pity example for a +15 roll', () => {
+    const { alvo, chances } = forgeWiki.pity_exemplo;
+    chances.forEach((chance, misses) => {
+      expect(forgeChance(alvo, misses)).toBeCloseTo(chance, 12);
+    });
   });
 
   it('lists the item levels as the cost rows carry them, in order', () => {

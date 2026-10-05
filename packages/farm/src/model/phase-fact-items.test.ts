@@ -165,12 +165,13 @@ describe('dropItems', () => {
   const t = farmPtBR;
   const fmt = (n: number, d = 0) => n.toFixed(d);
 
-  it('phase 51 (non-gate): all five rows, chest and key live, the gate-only three dashed and dimmed', () => {
+  it('phase 51 (non-gate): all six rows, chest, key and Chance Stone chest live, the gate-only three dashed and dimmed', () => {
     const intel = computePhaseIntelGlobal(PHASE_NON_GATE, { luckFraction: LUCK_FRACTION })!;
     const items = dropItems(intel, t, fmt);
     // Was two rows: the panel used to skip whichever drops do not apply on this phase.
-    expect(items.map((row) => row.id)).toEqual(['chest', 'key', 'time', 'gem', 'stone']);
+    expect(items.map((row) => row.id)).toEqual(['chest', 'key', 'time', 'gem', 'stone', 'chance']);
     expect(total(items[0].value)).toBe('0.117%');
+    expect(total(items.find((row) => row.id === 'chance')!.value)).toBe('0.012%');
     // `intel` here only carries the COMBINED `luckFraction` (no `treeLuckFlatPct`/`squadLuckPct`
     // split — the live-tooltip witness measured the two on-field heroes' average, not a
     // tree/squad breakdown), so `dropBoostTerms` falls back to one combined term. See the
@@ -188,10 +189,10 @@ describe('dropItems', () => {
     }
   });
 
-  it('phase 60 (gate): all five rows, chest/time/gem/stone live, key dashed and dimmed', () => {
+  it('phase 60 (gate): all six rows, chest/time/gem/stone/chance live, key dashed and dimmed', () => {
     const intel = computePhaseIntelGlobal(PHASE_GATE, { luckFraction: LUCK_FRACTION })!;
     const items = dropItems(intel, t, fmt);
-    expect(items.map((row) => row.id)).toEqual(['chest', 'key', 'time', 'gem', 'stone']);
+    expect(items.map((row) => row.id)).toEqual(['chest', 'key', 'time', 'gem', 'stone', 'chance']);
     const byId = (id: string) => items.find((row) => row.id === id)!;
     expect(total(byId('chest').value)).toBe('0.117%');
     expect(total(byId('time').value)).toBe('0.117%');
@@ -203,7 +204,7 @@ describe('dropItems', () => {
     // still readable without re-deriving it from the luck multiplier.
     expect(subtext(byId('time').value)).toBe('0.100% + 17%');
     expect(subtext(byId('stone').value)).toBe('0.050% + 17%');
-    for (const id of ['chest', 'time', 'gem', 'stone'] as const) {
+    for (const id of ['chest', 'time', 'gem', 'stone', 'chance'] as const) {
       expect(byId(id).muted, `${id} applies on a gate phase`).toBeFalsy();
     }
 
@@ -234,8 +235,8 @@ describe('dropItems', () => {
     // Non-vacuity: this assertion used to select rows by an `id.endsWith('Actual')` filter, which
     // the merge left matching nothing — the loop kept passing while checking zero rows. The panel
     // now always emits five rows, one of which (`key`) is gate-phase-inapplicable, so the count
-    // pinned here is four, not `items.length`.
-    expect(applicable.length, 'applicable gate-phase drop rows').toBe(4);
+    // pinned here is five, not `items.length`.
+    expect(applicable.length, 'applicable gate-phase drop rows').toBe(5);
     for (const row of applicable) {
       expect(row.tip, `label tip on ${row.id}`).toBeUndefined();
       expect(subtextTip(row.value), `subtext tip on ${row.id}`).toBe(t.phasesDropActualHint);

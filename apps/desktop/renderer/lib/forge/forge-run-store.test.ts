@@ -59,7 +59,7 @@ const DONE: ForgeEvent = {
   },
 };
 
-const PLAN = { forecast: { rolls: 2, safeJumps: 0, gold: 200, badRunGold: 400 } };
+const PLAN = { forecast: { rolls: 2, gold: 200, essence: 0, protected: null, badRunGold: 400 } };
 
 describe('the forge run store', () => {
   it('keeps folding steps while no screen is subscribed, which is what surviving a tab change means', () => {

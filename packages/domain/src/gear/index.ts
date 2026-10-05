@@ -18,7 +18,6 @@ export type {
 } from './types';
 
 export {
-  FORJA_BONUS,
   FORJA_MAX,
   FORJA_LEVELS,
   SLOTS,

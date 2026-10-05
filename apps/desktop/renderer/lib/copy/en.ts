@@ -375,6 +375,7 @@ export const en = {
   inventoryChestKey: 'Key chest',
   inventoryChestSkill: 'Skill stone chest',
   inventoryChestTime: 'House part chest',
+  inventoryChestForge: 'Chance Stone chest · Act {act}',
   inventoryChestHero: 'Hero cage · Act {act}',
   inventorySearchPlaceholder: 'Search items…',
   inventorySearchLabel: 'Search your inventory',
@@ -455,7 +456,7 @@ export const en = {
   forgeTargetLabel: 'Target',
   forgeTargetLower: 'Lower the target',
   forgeTargetRaise: 'Raise the target',
-  forgeSpanSafe: 'safe span — every step lands',
+  forgeSpanSure: 'sure span — every step lands',
   forgeSpanRisky: 'risky span — {chance} at the top',
   forgeMaxGoldLabel: 'Max gold',
   forgeMaxGoldPlaceholder: 'no budget',
@@ -465,12 +466,17 @@ export const en = {
   forgeLadderFailTo: 'fail → {floor}',
   forgeFactRolls: 'Expected rolls',
   forgeFactGold: 'Expected gold',
+  forgeFactEssence: 'Expected essence',
+  forgeFactProtectedGold: 'Expected gold, protected',
+  forgeFactProtectedEssence: 'Expected essence, protected',
+  forgeProtectNote:
+    'The Protection Scroll (from level 12 up) keeps a missed piece where it stood, for essence on every roll it is ticked; the essence comes out about even, the gold falls.',
+  forgeStoneNote:
+    'Chance Stones add to one roll only and work on a single forge, never on the queue or automated runs; the figures here assume none.',
   forgeFactBadRun: 'A bad run (p90)',
   forgeFactWallet: 'Wallet',
-  forgeWarnMax:
-    '{max} is the only rung that wipes the piece to {floor}. Expect to rebuild from the safe floor about {times} times on the way.',
   forgeWarnRisky:
-    'A failed roll at {from}…{to} drops the piece back to {floor} and the gold is charged either way.',
+    'A missed roll at {from}…{to} drops the piece one level, or to {floor} from {high} up, adds 5 points to the next roll’s chance, and the gold is charged either way.',
   forgeButton: 'Forge to {target}',
   forgeReasonMaxed: 'Already at {max} — nothing left to forge',
   forgeReasonFixture: 'No server to forge on',
@@ -549,7 +555,6 @@ export const en = {
   forgeMarkSuccess: 'landed',
   forgeMarkCritical: 'critical',
   forgeMarkFail: 'missed',
-  forgeMarkSafe: 'safe jump',
   // A run leaves a gap between its rolls on purpose, and the chart holds the next roll's place
   // while it is in flight — never that anything is holding the run back, because nothing is.
   forgeMarkPending: 'rolling',

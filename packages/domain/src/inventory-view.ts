@@ -1,13 +1,13 @@
 import catalog from './data/catalog.json' with { type: 'json' };
+import forgeWiki from './data/forge-wiki.json' with { type: 'json' };
 
 const defById = new Map(catalog.defs.map((definition) => [definition.id, definition]));
 
-/** Forge upgrade `+0…+15`: `mult = 1 + 0.08 × N` (wiki `itens.forja.bonus`). Duplicated from
- *  `gear/catalog.ts` rather than imported — that module pulls in the whole loadout model, and
+/** Forge upgrade `+0…+15`: the wiki's cumulative `upgrade_mult` table. Read from the data file
+ *  rather than imported from `gear/catalog.ts` — that module pulls in the whole loadout model, and
  *  this one is loaded by the desktop's renderer for a display list. The Dano ladder
  *  (`dmgNivelMult`) is duplicated for the same reason; `inventory-view.test.ts` fails if the two
  *  copies ever disagree. */
-const FORGE_BONUS = 0.08;
 const FORGE_MAX = 15;
 const rarityByIdx = new Map(catalog.rarities.map((rarity) => [rarity.idx, rarity]));
 const statNames: readonly string[] = catalog.itemStats;
@@ -80,6 +80,8 @@ export type InventoryViewItem = {
   slot: string | null;
   level: number;
   upgrade: number;
+  /** Rolls missed in a row on this piece; each adds to the next roll's chance. */
+  forgeFails?: number;
   power: number;
   sellValueGold: number;
   sellable: boolean;
@@ -185,7 +187,7 @@ export function resolveItemKind(categoryCode: number | null, defId: string): Ite
  * the other three — same id shape, and the only values the corpus holds (`_3`, `_5`) are valid
  * rarity indices.
  */
-const TIERED_CHEST = /^chest_(?:time|gem|skill|key|hero)_(\d)$/;
+const TIERED_CHEST = /^chest_(?:time|gem|skill|key|hero|forja)_(\d)$/;
 
 export function chestRarityIdx(defId: string, wireRarity: number): number {
   const tail = TIERED_CHEST.exec(defId);
@@ -245,7 +247,7 @@ function catalogStats(defId: string, rarityIdx: number, level: number, upgrade: 
   const itemMult = (catalog.nivelMult as Record<string, number>)[String(level)] ?? nativeMult;
   const nativeDmgMult = (catalog.dmgNivelMult as Record<string, number>)[String(definition.nativeLevel)] ?? 1;
   const itemDmgMult = (catalog.dmgNivelMult as Record<string, number>)[String(level)] ?? nativeDmgMult;
-  const forge = 1 + FORGE_BONUS * Math.max(0, Math.min(FORGE_MAX, Math.round(upgrade)));
+  const forge = forgeWiki.upgrade_mult[Math.max(0, Math.min(FORGE_MAX, Math.round(upgrade)))] ?? 1;
   const scale = itemMult / nativeMult;
   const dmgScale = itemDmgMult / nativeDmgMult;
   const statCount = rarityByIdx.get(rarityIdx)?.statCount ?? 1;
@@ -289,6 +291,7 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
   const rarityIdx = runeRarityIdx(defId, chestRarityIdx(defId, Math.round(asNumber(raw.rarity ?? raw.rarityIdx, 0))));
   const level = asNumber(raw.level, definition?.nativeLevel ?? 0);
   const upgrade = Math.round(asNumber(raw.upgrade, 0));
+  const forgeFails = Math.max(0, Math.round(asNumber(raw.forge_fails, 0)));
   const stats = mapStats(raw.stats);
 
   return {
@@ -302,6 +305,7 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
     slot: definition?.slot ?? null,
     level,
     upgrade,
+    forgeFails,
     power: asNumber(raw.power, 0),
     sellValueGold: asNumber(raw.sell_value ?? raw.sellValueGold, 0),
     sellable: raw.sellable !== false,

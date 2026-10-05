@@ -8,6 +8,13 @@ function item(id: string, upgrade: number, level = 30): InventoryViewItem {
 }
 
 describe('resolveForgeQueue', () => {
+  it('prices a piece from the misses in a row it carries', () => {
+    const carrying = { ...item('a', 13), forgeFails: 3 } as InventoryViewItem;
+    const [row] = resolveForgeQueue([{ itemId: 'a', target: 14 }], [carrying]);
+    expect(row?.forecast).toEqual(forgeForecast(13, 14, 30, 1, 3));
+    expect(row?.forecast?.rolls).toBeLessThan(forgeForecast(13, 14, 30, 1).rolls);
+  });
+
   it('pairs each piece with its bag row and prices the climb from where the row stands now', () => {
     const rows = resolveForgeQueue(
       [

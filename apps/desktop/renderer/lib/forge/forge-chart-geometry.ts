@@ -5,7 +5,7 @@
  * returns. Coordinates are the measured CSS pixels, so a 9px label is 9px on screen.
  */
 import type { ForgeCallKind, ForgeRollOutcome } from '@bombfarm/contracts';
-import { FORGE_SAFE } from '@bombfarm/domain/forge';
+import { FORGE_FAIL_FLOOR } from '@bombfarm/domain/forge';
 
 export const FORGE_CHART_HEIGHT = 120;
 /** What the first paint draws at, before the wrapper has measured itself. */
@@ -133,7 +133,10 @@ export function forgeChartGeometry({ width, window: held, start, target, steps, 
     path,
     points,
     ghost,
-    floor: FORGE_SAFE >= lowest && FORGE_SAFE <= highest ? { y: y(FORGE_SAFE), level: FORGE_SAFE } : null,
+    floor:
+      FORGE_FAIL_FLOOR >= lowest && FORGE_FAIL_FLOOR <= highest
+        ? { y: y(FORGE_FAIL_FLOOR), level: FORGE_FAIL_FLOOR }
+        : null,
     target: { y: y(target), level: target },
     ticks,
     axisY,

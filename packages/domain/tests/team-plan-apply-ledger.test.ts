@@ -151,3 +151,13 @@ describe('computeApplyLedger — wallet and empty inputs', () => {
     expect(ledger.walletAfter).toBe(0);
   });
 });
+
+describe('computeApplyLedger — forge.goldExpected starts from the misses a piece carries', () => {
+  it('prices +13 to +14 with 3 misses below the same climb with none', () => {
+    const base = { equipUnits: [], pointsUnits: [], walletBefore: null, forgeList: [{ itemId: 'a', defId: 'd', from: 13, to: 14 }] };
+    const fresh = computeApplyLedger({ ...base, items: [{ id: 'a', upgrade: 13, level: 60, rarityIdx: 2 }] });
+    const primed = computeApplyLedger({ ...base, items: [{ id: 'a', upgrade: 13, level: 60, rarityIdx: 2, forgeFails: 3 }] });
+    expect(primed.forge.goldExpected).toBe(forgeForecast(13, 14, 60, 2, 3).gold);
+    expect(primed.forge.goldExpected ?? 0).toBeLessThan(fresh.forge.goldExpected ?? 0);
+  });
+});

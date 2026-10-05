@@ -25,7 +25,7 @@ export function computeApplyLedger(input: {
   equipUnits: readonly ApplyEquipUnit[];
   pointsUnits: readonly ApplyPointsUnit[];
   forgeList: readonly ForgeAction[];
-  items: ReadonlyArray<{ id: string; upgrade: number; level: number; rarityIdx: number }>;
+  items: ReadonlyArray<{ id: string; upgrade: number; level: number; rarityIdx: number; forgeFails?: number }>;
   walletBefore: number | null;
 }): ApplyLedger {
   const equipCalls = input.equipUnits.length;
@@ -43,7 +43,7 @@ export function computeApplyLedger(input: {
     if (!item) continue;
     if (!FORGE_ITEM_LEVELS.includes(item.level)) continue;
     if (item.upgrade >= action.to) continue;
-    forgeGoldSum += forgeForecast(item.upgrade, action.to, item.level, item.rarityIdx).gold;
+    forgeGoldSum += forgeForecast(item.upgrade, action.to, item.level, item.rarityIdx, item.forgeFails ?? 0).gold;
     anyPriced = true;
   }
   const goldExpected = anyPriced ? forgeGoldSum : null;

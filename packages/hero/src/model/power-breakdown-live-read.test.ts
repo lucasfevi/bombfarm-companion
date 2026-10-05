@@ -17,9 +17,14 @@ import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { hasRuneOnSheet, runesOf } from '@bombfarm/domain/runes';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { TEAM_AURA_SWITCH_IDS, type TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
+import { holdSuiteUntilInRegime } from '../../../domain/tests/helpers/capture-regime';
 import { factsForHero, loadBreakdownFixture, storedPowerAfterWideBlastNerf } from './combat-breakdown.test-fixture';
 
-const fixture = loadBreakdownFixture('payload-20260913-20heroes-runes.json');
+const RUNES_PAYLOAD = 'payload-20260913-20heroes-runes.json';
+
+holdSuiteUntilInRegime(`sheet-math/${RUNES_PAYLOAD}`, 'itemForge');
+
+const fixture = loadBreakdownFixture(RUNES_PAYLOAD);
 const treeCritDmgPct = fixture.account.tree.critDmg;
 const everyAuraOn = Object.fromEntries(TEAM_AURA_SWITCH_IDS.map((id) => [id, true])) as TeamAuraSwitches;
 

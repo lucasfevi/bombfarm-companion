@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { formatItemRosterTooltip } from '@bombfarm/domain/game-labels';
-import type { ForgeForecast } from '@bombfarm/domain/forge';
+import { FORGE_GUARANTEED, type ForgeForecast } from '@bombfarm/domain/forge';
 import { cn, formatCompactNumber, formatNumber, InfoTip, mutedClass } from '@bombfarm/ui';
 import { ItemIcon } from '@bombfarm/game-art';
 import { sub, type Lang } from '@bombfarm/hero/copy';
@@ -19,7 +19,7 @@ export type ForgeQueueAction = (entry: ForgeQueueEntryRef) => ReactNode;
 
 const rungClass: Record<ForgeLadderRung['kind'], string> = {
   held: 'bg-line',
-  safe: 'bg-accent',
+  sure: 'bg-accent',
   roll: 'bg-[color-mix(in_oklch,var(--accent)_var(--chance),var(--line))]',
   beyond: 'border border-line/60 bg-transparent',
 };
@@ -33,8 +33,7 @@ function Ladder({ rungs, label }: { rungs: ForgeLadderRung[]; label: string }) {
           className={cn(
             'min-w-0 flex-1 rounded-[1px]',
             rungClass[rung.kind],
-            // The safe line: the last rung a jump can reach sits a hair apart from the first roll.
-            rung.target === 8 && 'mr-1',
+            rung.target === FORGE_GUARANTEED && 'mr-1',
           )}
           style={rung.kind === 'roll' ? ({ '--chance': `${Math.round(rung.chance * 100)}%` } as CSSProperties) : undefined}
         />
@@ -48,18 +47,16 @@ function formatCount(value: number, lang: Lang): string {
 }
 
 function forecastLine(t: TeamPlanScreenCopy, lang: Lang, forecast: ForgeForecast): string {
-  const jumps = Math.round(forecast.safeJumps * 10) / 10;
   const parts = [sub(t.teamPlanForgeQueueRolls, { rolls: formatCount(forecast.rolls, lang) })];
-  if (jumps === 1) parts.push(t.teamPlanForgeQueueSafeJumpOne);
-  else if (jumps > 0) parts.push(sub(t.teamPlanForgeQueueSafeJumpMany, { count: formatCount(jumps, lang) }));
   parts.push(sub(t.teamPlanForgeQueueGold, { gold: formatCompactNumber(forecast.gold, lang, 1) }));
+  parts.push(sub(t.teamPlanForgeQueueEssence, { essence: formatCompactNumber(forecast.essence, lang, 1) }));
   return parts.join(' · ');
 }
 
 /**
  * Every forge chore among the hero's proposed items, each drawn as its ladder: the rungs it already
- * holds, the safe jump to +8, and each roll past it faded by its own chance. The figures are the
- * expected cost of climbing — rolls, safe jumps and gold — and the footer sums them.
+ * holds, the rungs that always land, and each roll past them faded by its own chance. The figures
+ * are the expected cost of climbing — rolls, gold and essence — and the footer sums them.
  */
 export function HeroForgeQueue({
   t,
