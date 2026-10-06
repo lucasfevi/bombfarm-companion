@@ -90,7 +90,8 @@ describe('ItemPeekCard', () => {
 
   it('says which rolls forge on the gentler ladder once the two ladders part', () => {
     const forged = visible(render(createElement(ItemPeekCard, { item: { ...helmet, rarityIdx: 5, upgrade: 13 }, lang: 'en' })));
-    expect(forged).toContain('Forge ×2.10 (Crit, Cooldown ×1.95)');
+    expect(forged).toContain('Forge ×2.10');
+    expect(forged).toContain('Crit, Cooldown ×1.95');
   });
 
   it('says what the item is worth — gold, and the market’s quote when the host has one', () => {
