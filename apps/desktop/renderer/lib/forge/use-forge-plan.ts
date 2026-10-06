@@ -2,8 +2,8 @@
  * The plan panel's state — the target rung and the two optional limits — as a pure reducer, and
  * the hook a screen reads it through. The state itself is held by the screen's store so it
  * outlives a tab change; this hook only derives from it and hands changes back. The forecast
- * behind the panel's facts is derived here too, memoised per piece and target, so stepping the
- * target costs one value iteration and one seeded run of simulated climbs and nothing else.
+ * behind the panel's facts is derived here too, memoised per piece standing and target, so
+ * stepping the target costs a few exact solves and nothing else.
  */
 import { useCallback, useMemo } from 'react';
 import { collectionFromSave } from '@bombfarm/domain/model';
@@ -12,7 +12,7 @@ import {
   FORGE_MAX,
   FORGE_GUARANTEED,
   forgeForecast,
-  forgeGoldPercentile,
+  forgeGoldQuantile,
   forgeProtectable,
   type ForgeForecast,
 } from '@bombfarm/domain/forge';
@@ -77,15 +77,13 @@ export type ForgePlanForecast = {
   essence: number;
   /** The same climb with the Protection Scroll ticked on every rung that offers it; null when none does. */
   protected: ForgeForecast | null;
-  /** What a run of bad luck costs — the 90th percentile of a seeded simulation. */
+  /** What a run of bad luck costs — the 90th percentile of the climb's gold. */
   badRunGold: number;
 };
 
-/** One seed for every forecast, so the same plan prints the same bad-run figure every time. */
-const FORECAST_SEED = 0x5eed;
 const BAD_RUN_PERCENTILE = 0.9;
 
-export function forgePlanForecast(
+function computeForgePlanForecast(
   upgrade: number,
   target: number,
   level: number,
@@ -102,21 +100,30 @@ export function forgePlanForecast(
     const protectedClimb = forgeProtectable(target)
       ? forgeForecast(upgrade, target, level, rarityIdx, fails, { ...bonus, protect: true })
       : null;
-    const badRunGold = forgeGoldPercentile(
-      upgrade,
-      target,
-      level,
-      rarityIdx,
-      BAD_RUN_PERCENTILE,
-      FORECAST_SEED,
-      undefined,
-      fails,
-      bonus,
-    );
+    const badRunGold = forgeGoldQuantile(upgrade, target, level, rarityIdx, BAD_RUN_PERCENTILE, fails, bonus);
     return { ...expected, protected: protectedClimb, badRunGold };
   } catch {
     return null;
   }
+}
+
+const FORECAST_CACHE_LIMIT = 64;
+const forecastCache = new Map<string, ForgePlanForecast | null>();
+
+export function forgePlanForecast(
+  upgrade: number,
+  target: number,
+  level: number,
+  rarityIdx: number,
+  chanceBonus = 0,
+  fails = 0,
+): ForgePlanForecast | null {
+  const key = `${String(upgrade)}|${String(target)}|${String(level)}|${String(rarityIdx)}|${String(chanceBonus)}|${String(fails)}`;
+  if (forecastCache.has(key)) return forecastCache.get(key) ?? null;
+  const forecast = computeForgePlanForecast(upgrade, target, level, rarityIdx, chanceBonus, fails);
+  if (forecastCache.size >= FORECAST_CACHE_LIMIT) forecastCache.delete(forecastCache.keys().next().value as string);
+  forecastCache.set(key, forecast);
+  return forecast;
 }
 
 export type ForgePlanItem = { id: string; upgrade: number; level: number; rarityIdx: number; forgeFails?: number };
@@ -140,12 +147,16 @@ export function useForgePlan(
   onPlanChange: (next: ForgePlan) => void,
   chanceBonus = 0,
 ) {
+  const upgrade = item?.upgrade;
+  const level = item?.level;
+  const rarityIdx = item?.rarityIdx;
+  const fails = item?.forgeFails ?? 0;
   const forecast = useMemo(
     () =>
-      item === null
+      upgrade === undefined || level === undefined || rarityIdx === undefined
         ? null
-        : forgePlanForecast(item.upgrade, plan.target, item.level, item.rarityIdx, chanceBonus, item.forgeFails ?? 0),
-    [item, plan.target, chanceBonus],
+        : forgePlanForecast(upgrade, plan.target, level, rarityIdx, chanceBonus, fails),
+    [upgrade, level, rarityIdx, fails, plan.target, chanceBonus],
   );
 
   const dispatch = useCallback(

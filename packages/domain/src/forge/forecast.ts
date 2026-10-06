@@ -115,72 +115,120 @@ export function forgeForecast(
   };
 }
 
-/** mulberry32 — a 32-bit seeded generator, kept in-module so a forecast needs no dependency. */
-function seededRandom(seed: number): () => number {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let mixed = state;
-    mixed = Math.imul(mixed ^ (mixed >>> 15), mixed | 1);
-    mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61);
-    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
-  };
-}
+const GOLD_BUCKETS = 8_000;
+const MAX_DOUBLINGS = 8;
 
-function rollTable(target: number, level: number, rarity: number, options: ForgeOptions): ForgeRoll[][] {
-  return Array.from({ length: target }, (_, upgrade) =>
-    Array.from({ length: FORGE_PITY_CAP + 1 }, (_, missed) => rollAt(upgrade, missed, target, level, rarity, options)),
-  );
-}
+type Transition = { cost: number; chance: number; hit: number; miss: number };
 
-function simulateClimbGold(
-  fails: number,
-  target: number,
-  table: ForgeRoll[][],
-  firstRoll: ForgeRoll,
-  random: () => number,
-): number {
-  let roll = firstRoll;
-  let missed = fails;
-  let gold = 0;
-  for (;;) {
-    gold += roll.cost;
-    let upgrade: number;
-    if (random() < roll.chance) {
-      upgrade = roll.target;
-      missed = 0;
-    } else {
-      upgrade = roll.failTo;
-      missed += 1;
-    }
-    if (upgrade >= target) return gold;
-    roll = table[upgrade][Math.min(missed, FORGE_PITY_CAP)];
-  }
-}
-
-export function forgeGoldPercentile(
+/**
+ * The `p` quantile (nearest rank) of the gold a climb costs, read off the exact distribution: the
+ * probability mass of every (level, misses) state is pushed forward roll by roll, binned by gold
+ * spent. A roll's price is fixed per rung, so gold only ever grows and one sweep through the bins
+ * in order visits each state once. A price that falls between two bins splits its mass across them
+ * and carries the exact gold alongside, so a bin reports the mean of what landed in it rather than
+ * its edge.
+ */
+export function forgeGoldQuantile(
   from: number,
   target: number,
   level: number,
   rarity: number,
   p: number,
-  seed: number,
-  runs = 10_000,
   fails = 0,
   options: ForgeOptions = {},
 ): number {
   assertForgeUpgrade(from);
   assertForgeFails(fails);
   if (!(p >= 0 && p <= 1)) throw new RangeError(`percentile must be a fraction in 0…1, got ${p}`);
-  if (!Number.isInteger(runs) || runs < 1) throw new RangeError(`runs must be a positive integer, got ${runs}`);
   if (from >= target) return 0;
-  const random = seededRandom(seed);
-  const totals = new Float64Array(runs);
+  if (target > FORGE_MAX) throw new RangeError(`forge target must be +1…+${FORGE_MAX}, got ${target}`);
   const { stonePp, ...standing } = options;
-  const table = rollTable(target, level, rarity, standing);
-  const firstRoll = rollAt(from, fails, target, level, rarity, { ...standing, stonePp });
-  for (let run = 0; run < runs; run++) totals[run] = simulateClimbGold(fails, target, table, firstRoll, random);
-  totals.sort();
-  const rank = Math.max(1, Math.ceil(p * runs));
-  return totals[rank - 1];
+  const width = FORGE_PITY_CAP + 1;
+  const indexOf = (upgrade: number, missed: number) => upgrade * width + Math.min(missed, FORGE_PITY_CAP);
+  const transitionOf = (roll: ForgeRoll, missed: number): Transition => ({
+    cost: roll.cost,
+    chance: roll.chance,
+    hit: roll.target < target ? indexOf(roll.target, 0) : -1,
+    miss: indexOf(roll.failTo, missed + 1),
+  });
+  const states: Transition[] = [];
+  let cheapestRisky = Number.POSITIVE_INFINITY;
+  let dearest = 0;
+  for (let upgrade = 0; upgrade < target; upgrade++) {
+    for (let missed = 0; missed <= FORGE_PITY_CAP; missed++) {
+      const transition = transitionOf(rollAt(upgrade, missed, target, level, rarity, standing), missed);
+      states.push(transition);
+      if (transition.chance < 1) cheapestRisky = Math.min(cheapestRisky, transition.cost);
+      dearest = Math.max(dearest, transition.cost);
+    }
+  }
+  const first = transitionOf(rollAt(from, fails, target, level, rarity, { ...standing, stonePp }), fails);
+  dearest = Math.max(dearest, first.cost);
+  if (first.chance < 1) cheapestRisky = Math.min(cheapestRisky, first.cost);
+
+  let ceiling = 4 * forgeForecast(from, target, level, rarity, fails, options).gold;
+  for (let attempt = 0; ; attempt++, ceiling *= 2) {
+    const binGold = Math.min(ceiling / GOLD_BUCKETS, cheapestRisky);
+    const bins = Math.ceil(ceiling / binGold);
+    const reach = Math.ceil(dearest / binGold) + 2;
+    const mass = new Float64Array(reach * states.length);
+    const gold = new Float64Array(reach * states.length);
+    const doneMass = new Float64Array(bins + 1);
+    const doneGold = new Float64Array(bins + 1);
+
+    const deposit = (
+      landing: number,
+      destination: number,
+      amount: number,
+      spent: number,
+      weight: number,
+    ) => {
+      if (weight === 0) return;
+      if (destination < 0) {
+        if (landing > bins) return;
+        doneMass[landing] += amount * weight;
+        doneGold[landing] += spent * weight;
+        return;
+      }
+      const slot = (landing % reach) * states.length + destination;
+      mass[slot] += amount * weight;
+      gold[slot] += spent * weight;
+    };
+    const send = (
+      bin: number,
+      transition: Transition,
+      amount: number,
+      spent: number,
+      probability: number,
+      destination: number,
+    ) => {
+      if (probability === 0) return;
+      const price = transition.cost / binGold;
+      const lower = Math.floor(price);
+      const upper = price - lower;
+      const moved = spent + amount * transition.cost;
+      deposit(bin + lower, destination, amount, moved, probability * (1 - upper));
+      deposit(bin + lower + 1, destination, amount, moved, probability * upper);
+    };
+
+    send(0, first, 1, 0, first.chance, first.hit);
+    send(0, first, 1, 0, 1 - first.chance, first.miss);
+    let absorbed = 0;
+    for (let bin = 0; bin <= bins; bin++) {
+      const base = (bin % reach) * states.length;
+      for (let state = 0; state < states.length; state++) {
+        const amount = mass[base + state];
+        if (amount === 0) continue;
+        const spent = gold[base + state];
+        mass[base + state] = 0;
+        gold[base + state] = 0;
+        const transition = states[state];
+        send(bin, transition, amount, spent, transition.chance, transition.hit);
+        send(bin, transition, amount, spent, 1 - transition.chance, transition.miss);
+      }
+      absorbed += doneMass[bin];
+      if (absorbed > 0 && absorbed >= p - 1e-12) return doneGold[bin] / doneMass[bin];
+    }
+    if (attempt === MAX_DOUBLINGS) return ceiling;
+  }
 }

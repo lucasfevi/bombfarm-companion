@@ -139,8 +139,12 @@ describe('forgePlanForecast', () => {
     expect(forgePlanForecast(11, 12, 20, 2, 0, 3)?.rolls).toBeLessThan(plain?.rolls ?? 0);
   });
 
-  it('prints the same bad-run figure on every call, because the seed is fixed', () => {
+  it('prints the same bad-run figure on every call, because it is read off the exact distribution', () => {
     expect(forgePlanForecast(8, 15, 50, 3)?.badRunGold).toBe(forgePlanForecast(8, 15, 50, 3)?.badRunGold);
+  });
+
+  it('hands back the same forecast for the same plan without solving it again', () => {
+    expect(forgePlanForecast(8, 15, 50, 3)).toBe(forgePlanForecast(8, 15, 50, 3));
   });
 
   it('withholds itself for a level the cost table does not carry, and for a target not above the piece', () => {

@@ -22,7 +22,7 @@ export {
 } from './rules';
 
 export type { ForgeForecast } from './forecast';
-export { forgeForecast, forgeGoldPercentile } from './forecast';
+export { forgeForecast, forgeGoldQuantile } from './forecast';
 
 export type {
   ForgeOutcome,

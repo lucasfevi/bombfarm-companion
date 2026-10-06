@@ -5,7 +5,9 @@ import {
   forgeChance,
   forgeFailLevel,
   forgeForecast,
-  forgeGoldPercentile,
+  forgeGoldQuantile,
+  nextForgeStep,
+  type ForgeOptions,
   forgeRollCost,
   forgeRollEssence,
 } from '@bombfarm/domain/forge';
@@ -114,16 +116,6 @@ describe('forge options', () => {
     expect(bonus.rolls).toBeLessThan(stoned.rolls);
   });
 
-  it('a stone agrees with simulating it', () => {
-    const exact = forgeForecast(11, 12, 100, 2, 0, { stonePp: 0.3 });
-    const mean = (runs: number) => {
-      let total = 0;
-      for (let seed = 1; seed <= runs; seed++) total += forgeGoldPercentile(11, 12, 100, 2, 0.5, seed, 1, 0, { stonePp: 0.3 });
-      return total / runs;
-    };
-    expect(Math.abs(mean(4_000) / exact.gold - 1)).toBeLessThan(0.15);
-  });
-
   it('protecting prices the scroll in essence and costs about the same essence as recovering the drops', () => {
     for (const [from, target] of [[11, 12], [11, 13], [10, 15], [13, 14]] as const) {
       const plain = forgeForecast(from, target, 100, 2);
@@ -140,40 +132,152 @@ describe('forge options', () => {
   });
 });
 
-describe('forgeGoldPercentile', () => {
-  it('is deterministic for a seed and moves with it', () => {
-    const first = forgeGoldPercentile(10, 15, 300, 5, 0.9, 42, 2_000);
-    const again = forgeGoldPercentile(10, 15, 300, 5, 0.9, 42, 2_000);
-    const otherSeed = forgeGoldPercentile(10, 15, 300, 5, 0.9, 43, 2_000);
-    expect(again).toBe(first);
-    expect(otherSeed).not.toBe(first);
+function seededRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let mixed = state;
+    mixed = Math.imul(mixed ^ (mixed >>> 15), mixed | 1);
+    mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61);
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** The simulation the exact quantile replaced, kept as the reference it must agree with. */
+function simulatedQuantile(
+  from: number,
+  target: number,
+  level: number,
+  rarity: number,
+  p: number,
+  fails: number,
+  options: ForgeOptions,
+  runs = 8_000,
+): number {
+  const random = seededRandom(12345);
+  const totals = new Float64Array(runs);
+  for (let run = 0; run < runs; run++) {
+    let upgrade = from;
+    let missed = fails;
+    let gold = 0;
+    let first = true;
+    while (upgrade < target) {
+      const step = nextForgeStep(upgrade, target, level, rarity, missed, first ? options : { ...options, stonePp: 0 });
+      if (step.kind !== 'roll') break;
+      first = false;
+      gold += step.cost;
+      if (random() < step.chance) {
+        upgrade = step.target;
+        missed = 0;
+      } else {
+        upgrade = step.failTo;
+        missed += 1;
+      }
+    }
+    totals[run] = gold;
+  }
+  totals.sort();
+  return totals[Math.max(1, Math.ceil(p * runs)) - 1];
+}
+
+/** Every outcome of a short climb, enumerated roll by roll with its exact gold, until the mass left is negligible. */
+function enumeratedQuantile(from: number, target: number, level: number, rarity: number, p: number, fails: number) {
+  const outcomes = new Map<number, number>();
+  let live = new Map<string, number>([[`${from}|${fails}|0`, 1]]);
+  while (live.size > 0) {
+    const next = new Map<string, number>();
+    for (const [key, mass] of live) {
+      if (mass < 1e-10) continue;
+      const [upgrade, missed, gold] = key.split('|').map(Number);
+      const step = nextForgeStep(upgrade, target, level, rarity, missed);
+      if (step.kind !== 'roll') continue;
+      const spent = gold + step.cost;
+      const keys: [string, number][] = [
+        [step.target >= target ? '' : `${step.target}|0|${spent}`, mass * step.chance],
+        [`${step.failTo}|${missed + 1}|${spent}`, mass * (1 - step.chance)],
+      ];
+      for (const [nextKey, share] of keys) {
+        if (share === 0) continue;
+        if (nextKey === '') outcomes.set(spent, (outcomes.get(spent) ?? 0) + share);
+        else next.set(nextKey, (next.get(nextKey) ?? 0) + share);
+      }
+    }
+    live = next;
+  }
+  let cumulative = 0;
+  for (const gold of [...outcomes.keys()].sort((x, y) => x - y)) {
+    cumulative += outcomes.get(gold) ?? 0;
+    if (cumulative >= p - 1e-7) return gold;
+  }
+  return Number.NaN;
+}
+
+describe('forgeGoldQuantile', () => {
+  it('equals the enumerated distribution on short climbs', () => {
+    for (const [from, target, fails] of [[11, 12, 0], [11, 12, 3], [10, 12, 0]] as const) {
+      for (const p of [0.5, 0.9]) {
+        const exact = forgeGoldQuantile(from, target, 20, 2, p, fails);
+        const truth = enumeratedQuantile(from, target, 20, 2, p, fails);
+        expect(Math.abs(exact / truth - 1), `+${from} to +${target}, ${fails} misses, p${p}`).toBeLessThan(0.003);
+      }
+    }
+  });
+
+  it('agrees with the simulation within its sampling error across a grid', () => {
+    for (const [level, rarity] of [[20, 0], [300, 5]] as const) {
+      for (const [from, target] of [[0, 4], [8, 12], [11, 13], [11, 14]] as const) {
+        for (const options of [{}, { protect: true }, { stonePp: 0.3 }, { bonus: 0.1 }] as ForgeOptions[]) {
+          const exact = forgeGoldQuantile(from, target, level, rarity, 0.9, 0, options);
+          const simulated = simulatedQuantile(from, target, level, rarity, 0.9, 0, options);
+          expect(
+            Math.abs(exact / simulated - 1),
+            `L${level} r${rarity} +${from} to +${target} ${JSON.stringify(options)}`,
+          ).toBeLessThan(0.06);
+        }
+      }
+    }
+  });
+
+  it('is monotone in p and starts from the miss count it is given', () => {
+    const quartile = forgeGoldQuantile(11, 14, 100, 2, 0.25);
+    const median = forgeGoldQuantile(11, 14, 100, 2, 0.5);
+    const bad = forgeGoldQuantile(11, 14, 100, 2, 0.9);
+    expect(quartile).toBeLessThan(median);
+    expect(median).toBeLessThan(bad);
+    expect(forgeGoldQuantile(11, 14, 100, 2, 0.9, 6)).toBeLessThan(bad);
   });
 
   it('puts the 90th percentile of a risky climb at or above its expected gold', () => {
-    const p90 = forgeGoldPercentile(10, 15, 300, 5, 0.9, 7);
-    expect(p90).toBeGreaterThanOrEqual(forgeForecast(10, 15, 300, 5).gold);
+    expect(forgeGoldQuantile(10, 15, 300, 5, 0.9)).toBeGreaterThanOrEqual(forgeForecast(10, 15, 300, 5).gold);
   });
 
   it('puts the median of a guaranteed-only climb at exactly its sum', () => {
-    expect(forgeGoldPercentile(0, 4, 10, 0, 0.5, 1)).toBe(200 + 450 + 800 + 1_250);
+    expect(forgeGoldQuantile(0, 4, 10, 0, 0.5)).toBeCloseTo(200 + 450 + 800 + 1_250, 6);
   });
 
-  it('is nearest-rank: p = 0 returns the cheapest run and p = 1 the dearest', () => {
-    const cheapest = forgeGoldPercentile(8, 9, 10, 0, 0, 3, 500);
-    const dearest = forgeGoldPercentile(8, 9, 10, 0, 1, 3, 500);
-    expect(cheapest).toBe(forgeRollCost(10, 0, 9));
-    expect(dearest).toBeGreaterThan(cheapest);
-    expect(dearest % forgeRollCost(10, 0, 9)).toBe(0);
+  it('p = 0 is the cheapest run and p = 1 the dearest it can reach', () => {
+    const cost = forgeRollCost(10, 0, 9);
+    expect(forgeGoldQuantile(8, 9, 10, 0, 0)).toBeCloseTo(cost, 6);
+    expect(forgeGoldQuantile(8, 9, 10, 0, 0.999999)).toBeGreaterThan(cost);
   });
 
   it('starts from the miss count it is given', () => {
-    expect(forgeGoldPercentile(14, 15, 10, 0, 1, 3, 200, 18)).toBe(forgeRollCost(10, 0, 15));
+    expect(forgeGoldQuantile(14, 15, 10, 0, 1, 18)).toBeCloseTo(forgeRollCost(10, 0, 15), 6);
   });
 
-  it('throws for a percentile outside 0…1 or a run count below one', () => {
-    expect(() => forgeGoldPercentile(8, 9, 10, 0, 1.5, 1)).toThrow(RangeError);
-    expect(() => forgeGoldPercentile(8, 9, 10, 0, -0.1, 1)).toThrow(RangeError);
-    expect(() => forgeGoldPercentile(8, 9, 10, 0, 0.5, 1, 0)).toThrow(RangeError);
+  it('prices nothing when there is nothing to climb', () => {
+    expect(forgeGoldQuantile(12, 12, 10, 0, 0.9)).toBe(0);
+  });
+
+  it('throws for a percentile outside 0…1', () => {
+    expect(() => forgeGoldQuantile(8, 9, 10, 0, 1.5)).toThrow(RangeError);
+    expect(() => forgeGoldQuantile(8, 9, 10, 0, -0.1)).toThrow(RangeError);
+  });
+
+  it('stays cheap at the top of the ladder: a +15 climb is read in well under a quarter second', () => {
+    const started = performance.now();
+    forgeGoldQuantile(8, 15, 300, 5, 0.9);
+    expect(performance.now() - started).toBeLessThan(250);
   });
 });
 
