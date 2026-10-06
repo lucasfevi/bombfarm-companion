@@ -335,7 +335,7 @@ describe('forgeEssenceQuantile', () => {
     );
   });
 
-  it('prices nothing when there is nothing to climb, and throws outside 0…1', () => {
+  it('prices nothing when there is nothing to climb, and throws outside 0â€¦1', () => {
     expect(forgeEssenceQuantile(12, 12, 10, 0, 0.9)).toBe(0);
     expect(() => forgeEssenceQuantile(8, 9, 10, 0, 1.5)).toThrow(RangeError);
   });

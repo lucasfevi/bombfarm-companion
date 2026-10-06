@@ -272,9 +272,9 @@ function checkedChain(
 ): Chain | null {
   assertForgeUpgrade(from);
   assertForgeFails(fails);
-  if (!(p >= 0 && p <= 1)) throw new RangeError(`percentile must be a fraction in 0…1, got ${p}`);
+  if (!(p >= 0 && p <= 1)) throw new RangeError(`percentile must be a fraction in 0â€¦1, got ${p}`);
   if (from >= target) return null;
-  if (target > FORGE_MAX) throw new RangeError(`forge target must be +1…+${FORGE_MAX}, got ${target}`);
+  if (target > FORGE_MAX) throw new RangeError(`forge target must be +1â€¦+${FORGE_MAX}, got ${target}`);
   return buildChain(from, target, level, rarity, fails, options);
 }
 
@@ -291,7 +291,7 @@ export function forgeGoldQuantile(
   return chain === null ? 0 : spendQuantile(chain, 'gold', p);
 }
 
-/** The same quantile of the essence a climb spends — each roll's essence plus the scroll's when it is on. */
+/** The same quantile of the essence a climb spends â€” each roll's essence plus the scroll's when it is on. */
 export function forgeEssenceQuantile(
   from: number,
   target: number,
