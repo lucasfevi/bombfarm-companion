@@ -50,9 +50,11 @@ follow — see the rule above and [`apps/web/AGENTS.md`](../web/AGENTS.md).
 
 ```bash
 pnpm --filter @bombfarm/desktop typecheck
-pnpm test:smoke
+pnpm test:smoke:hidden
 ```
 
+**Agents always use `test:smoke:hidden` — never the visible `test:smoke`, and never a visible
+Electron window for screenshots** (hard rule, see the root [`AGENTS.md`](../../AGENTS.md)).
 `pnpm test:smoke:hidden` runs the same specs without any window reaching the screen, so a run does
 not paint over what you were doing or take focus a dozen times. Electron has no headless mode and
 Playwright's `_electron.launch` has no `headless` option; this instead sets `BFC_HIDE_WINDOWS=1`,
