@@ -1,5 +1,41 @@
 # @bombfarm/web
 
+## 0.26.2
+
+### Patch Changes
+
+- 7ab7d0e: Chance Stones show up in the Inventory
+
+  The game's new Chance Stones used to land in "Other". They are now their own kind, Chance Stones, in
+  the Inventory on the desktop app and on the web.
+
+- 7ab7d0e: The download page and the privacy policy mention Deconstruct
+
+  The download page's Forge card now lists the Deconstruct page, where you filter every burnable item,
+  tick up to 100 and burn them for Forge Essence. The privacy policy's list of what the desktop app can
+  ask the game's server to do now includes burning items, still only when you switch writes on.
+
+- 5de6480: The download page lists the Collections screen.
+
+  The "What you get" section gains an eleventh card, in the app's own tab order: your bonus on each of the ten stats against its cap, what every book grants now and at most, progress page by page, and which pieces in your inventory are ready to sacrifice. The site header's tab words also sit 2px closer to their edges.
+
+- 169ab81: The item hover card no longer runs its forge line off the edge: the Crit and Cooldown forge multiplier now sits on its own line under the tier and level.
+- Updated dependencies [93a69c6]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [5de6480]
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/team-plan@0.6.2
+  - @bombfarm/domain@1.9.0
+  - @bombfarm/ui@0.18.0
+  - @bombfarm/game-art@0.8.0
+  - @bombfarm/account@0.3.11
+  - @bombfarm/farm@1.2.13
+  - @bombfarm/hero@0.5.5
+  - @bombfarm/pricing@0.4.3
+
 ## 0.26.1
 
 ### Patch Changes
