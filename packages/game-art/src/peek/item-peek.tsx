@@ -109,7 +109,7 @@ function cappedStatsNote(stats: readonly ItemPeekStat[], upgrade: number, lang: 
   const mult = itemStatUpgradeMult(first.stat, upgrade);
   if (mult === upgradeMult(upgrade)) return '';
   const names = capped.map((roll) => itemStatLabel(roll.stat, lang)).join(', ');
-  return ` (${names} ×${formatNumber(mult, lang, 2)})`;
+  return `${names} ×${formatNumber(mult, lang, 2)}`;
 }
 
 /** The line a rune prints: the statistic it raises and by how much, the way a gear roll reads. */
@@ -130,6 +130,7 @@ export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'i
   const count = item.count ?? 1;
   const gold = item.sellValueGold ?? 0;
   const rune = runeEffect(item, lang);
+  const cappedNote = cappedStatsNote(stats, upgrade, lang);
 
   return (
     <div data-slot="item-peek">
@@ -151,7 +152,6 @@ export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'i
                     <Dot />
                     <span className="text-muted">
                       {peekLabel('forge', lang)} ×{formatNumber(upgradeMult(upgrade), lang, 2)}
-                      {cappedStatsNote(stats, upgrade, lang)}
                     </span>
                   </>
                 ) : null}
@@ -162,6 +162,7 @@ export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'i
               <span className="text-muted">×{formatNumber(count, lang, 0)}</span>
             ) : null}
           </div>
+          {gear && upgrade > 0 && cappedNote ? <div className="mt-0.5 text-[11px] text-muted">{cappedNote}</div> : null}
         </div>
       </div>
       {stats.length > 0 ? (
