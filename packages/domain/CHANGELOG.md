@@ -1,5 +1,56 @@
 # @bombfarm/domain
 
+## 1.8.1
+
+### Patch Changes
+
+- b7e061c: Boss Slayer now multiplies its carrier's damage against the gate boss (up to +100% at rank 20) in the
+  Farm board's gate phases and the advisor's boss figures. It never applies to rocks, the cage or PVP.
+- c13d140: Chance Stone chests now show up properly. In the inventory they are named "Chance Stone chest" with
+  their act and tier colour, and they are priced from the Steam Market. The Drops panel gains a
+  Chance Stone chest row: 0.01% per block broken on any phase, boosted by your Luck.
+- c13d140: The Forge tab, the forge queue and the expected-cost figures follow the game's reworked Forge. Only
+  +1 to +4 always land now; from the roll for +12 up a miss drops the piece one level, never under +10,
+  and each miss in a row adds 5 points to the next roll. The old safe jump to +8 is gone, so every rung
+  is rolled one at a time, and the expected gold now comes with the expected essence, which follows
+  the game's lower essence and Protection Scroll prices. The desktop Forge tab lets you pick a Chance Stone for the whole climb or for up to four stretches of
+  targets, each shown with its art, its chance bonus and how many you own. Every rung of the odds ladder
+  shows the stone it uses and how the chance adds up, and the stones you will use are listed against the
+  ones you own. The app now uses your Chance Stones when it forges: it says before the start which kinds
+  it may spend and how many you hold, uses one on each roll that can miss, shows the stones used as the run
+  goes and on its result and ledger row, and stops when a kind runs out or the game does not take a stone
+  as asked. Stones that are locked, on the market or worn are not counted as yours to spend. Chance Stones
+  now show in the inventory under their own heading.
+  The bad-run gold figure is now read off the exact distribution instead of a sampled one, so it no longer
+  shifts by a percent or so between runs and stepping the target to +13 through +15 is instant.
+  The desktop Forge tab has a Protection Scroll switch for any climb that reaches +12 or higher: with it on, the
+  plan shows what the climb costs with the scroll, the price of the scroll on each level it covers, which rungs it
+  protects ("miss keeps the level"), and a one-line comparison with going without. When you forge, the app asks for
+  the scroll only on the rolls where the game offers it, stops if you do not have the essence or the game does not
+  charge it as asked, and counts the essence it cost on the result and in the run ledger. The queue and the Optimizer
+  never use the scroll. The Forge tab is also laid out in three columns on a wide window, with the bag narrowed to its
+  contents, so the item, the plan and the forecast fit on one screen; on a narrower window they stack beside the bag
+  as before. A run that stops for lack of essence now says "Out of gold or essence".
+  The Forge tab's forecast now shows a bad run (p90) for essence next to gold, the "Without the scroll" comparison carries the gold coin, and every forge confirmation says it spends gold and essence, with the queue's expected essence beside its expected gold.
+  Everywhere the desktop Forge tab shows the gold a run spent, it now shows the essence beside it: the live run line, the result's Spent figure, a new Essence column in the rung table and the run ledger (a dash for runs recorded before this version), the ledger totals, the queue's progress line and the Optimizer's expected forge cost.
+- c13d140: Forged gear now follows the game's rebalanced upgrade values. An item's stats grow by a fixed step
+  per level up to +10 (×1.50), then faster: Damage, Energy, Speed, Luck and Penetration reach ×2.10
+  at +13, ×2.60 at +14 and ×3.50 at +15, while Crit chance and Cooldown reduction scale more gently
+  (×1.95 at +13, ×2.20 at +14). The slot editor and the item card show both factors once they
+  differ. Heroes wearing forged gear import with the right stat points again instead of reading as
+  overspent, so they are no longer left out of the optimizer.
+
+  A Collection's cooldown bonus now also scales the flat cooldown reduction from Short Fuse, as the
+  game does.
+
+  The app no longer treats the item list as changed shape after the forge patch, so every refresh stops
+  logging the new per-item forge fields as drift.
+
+- b7e061c: Short Fuse now adds its cooldown reduction to the carrier's sheet (half a point per level, up to the
+  80% cap), and Carnage is priced as a team crit-damage aura, capped at one carrier's +100%. DPS, the
+  Farm board and the Optimizer value both, and Carnage joins the team-aura switches. Boss Slayer and
+  Apprentice remain unpriced.
+
 ## 1.8.0
 
 ### Minor Changes
