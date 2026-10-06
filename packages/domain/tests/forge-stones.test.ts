@@ -11,7 +11,7 @@ import {
   type ForgeOptions,
 } from '@bombfarm/domain/forge';
 
-type Totals = { rolls: number; gold: number; essence: number; stones: number[] };
+type Totals = { rolls: number; gold: number; essence: number; stones: readonly number[] };
 
 /**
  * Value iteration over (level, misses) written from the published tables alone — chance, pity,
