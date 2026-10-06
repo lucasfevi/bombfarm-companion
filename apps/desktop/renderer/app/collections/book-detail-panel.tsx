@@ -237,7 +237,7 @@ function PieceCell({ piece, rarity }: { piece: CollectionPieceRow; rarity: numbe
         data-slot={piece.slot}
         data-rarity={rarity}
         data-state={state}
-        className={cn('relative', 'inline-block', 'rounded-sm', cellStateClass[state])}
+        className={cn('relative', 'inline-block', 'align-top', 'rounded-sm', cellStateClass[state])}
       >
         <ItemIcon item={{ defId: piece.defId, rarityIdx: rarity, level: piece.level, upgrade: 0 }} size="sm" showLevel={false} />
         {state === 'missing' ? null : <StateMarker state={state} />}
