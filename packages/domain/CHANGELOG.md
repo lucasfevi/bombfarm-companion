@@ -1,5 +1,40 @@
 # @bombfarm/domain
 
+## 1.9.0
+
+### Minor Changes
+
+- 5de6480: The app can now read the Collections state and work out each book's bonus
+
+  The app now reads the game's Collections: the cap, the total and the uncapped sum for each of the ten bonuses, every set with the pieces sacrificed on each rarity page and what it grants, and every piece with the pages it is sacrificed on. On top of that it works out each book's numbers: what each page contributes, what one more piece or a completed page would add, how much of each bonus is still to earn, and which open slots the free items in your inventory would fill. If the game changes what it sends, the app keeps the last good reading instead of showing a half-read one.
+
+- 7ab7d0e: The pieces behind the Deconstruct page
+
+  The rules for which items the game lets you burn, the batch totals the confirm shows and the game's
+  autofill pick now live in one place, so the filter, the tick boxes, the Fill button and the confirm
+  warnings agree. The game's burn route joins the writes the app can make, built only after consent
+  and the writes switch, and a batch is refused whole when it is empty, over 100, repeats an item or
+  carries anything but numeric item ids. The messages between the app's window and the part that talks
+  to the game gain the burn request and its outcome.
+
+### Patch Changes
+
+- 7ab7d0e: Chance Stones show up in the Inventory
+
+  The game's new Chance Stones used to land in "Other". They are now their own kind, Chance Stones, in
+  the Inventory on the desktop app and on the web.
+
+- 7ab7d0e: The app reads your account cleanly again after the game added Forge Essence
+
+  The game added a Forge Essence balance, fusion pity counters and per-item essence values to its
+  account and inventory replies, and the app flagged both reads as having drifted. They are now recognised: the
+  account and inventory read as complete again, and the essence balance and each item's essence value
+  are kept for the Deconstruct page instead of being discarded.
+
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/contracts@0.13.0
+
 ## 1.8.1
 
 ### Patch Changes

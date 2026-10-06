@@ -1,5 +1,13 @@
 # @bombfarm/pricing
 
+## 0.4.3
+
+### Patch Changes
+
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/contracts@0.13.0
+
 ## 0.4.2
 
 ### Patch Changes

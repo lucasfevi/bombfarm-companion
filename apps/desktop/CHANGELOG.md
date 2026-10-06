@@ -1,5 +1,80 @@
 # @bombfarm/desktop
 
+## 0.26.0
+
+### Minor Changes
+
+- 5de6480: A new Collections tab shows what the game's collections give your account
+
+  Each of the ten collection bonuses is drawn against its cap, with how many books grant it and what all of them complete would add up to. Every book lists what it grants now, what it grants at most and what is left to earn, with its six pages shown piece by piece. Open a book to see each page's worth and which pieces of the set are sacrificed at which rarity, and which pieces in your inventory are ready to sacrifice. Sacrificing stays in the game; the app only reads.
+
+  The tab sits between Skill Tree and Account, and the status strip gains a Collections ring beside the PVP one that reads it again on a press. An open-book glyph stands in for the tab's word when the window is narrow, and the top bar's tab words sit 2px closer to their edges so all eleven tabs fit.
+
+- 7ab7d0e: The Forge tab can burn items for Forge Essence
+
+  The Forge tab has a second page, Deconstruct, that mirrors the game's new Deconstruct screen and adds
+  what the game's own screen lacks: filters. Search by name and narrow every burnable item in your bag
+  and stash by kind, rarity, set, slot, level range, whether it has been forged, and where it is kept.
+  Tick up to 100 items, press Burn, and confirm to receive Forge Essence, the currency the forge
+  spends. The confirm always appears. It puts the item count and the Essence you receive in large
+  figures, with your balance before and after, says in a red callout that a burn cannot be undone,
+  lists what burns by kind and rarity, and warns when the batch holds forged items or anything Epic
+  or rarer.
+
+  The page keeps the game's rules. Equipped, locked, on-the-market, gem-socketed and recently imported
+  items cannot be burned, and each says why. A Fill button tops the batch up with Common and Uncommon
+  items, the way the game's own does, from the rows your filter shows, and never with a chest or a
+  cage: those burn only when you tick them yourself, and they are listed whenever the game gives
+  them a value. The page never works out how much essence you will get: it adds up what the game says
+  each item is worth, and your balance after a burn is the one the game reports.
+
+  Burning is a write, so it follows the same rules as forging: it works only when the Settings switch
+  "Let the app forge, equip and reset points" is on, only after you confirm, and it is sent once and
+  never resent. Because the app can now burn items when told to, it asks for your consent again once
+  the first time you open it after updating, with the new wording. Nothing burns until you agree and
+  confirm. Burn waits while the forge is working, and the forge queue's Start waits while a burn is in
+  flight.
+
+  Items you ticked but your filters now hide are counted under the batch and named in the confirm.
+  Pressing Burn first checks the batch against your latest account read and drops anything that can no
+  longer be burned, such as an item you have since equipped in the game, saying how many left.
+  Switching to another game account empties the batch.
+
+### Patch Changes
+
+- 93a69c6: The Optimizer's aura chips wrap onto their own line when the setup bar is too narrow for them, instead of running underneath the Build team plan button.
+- 7ab7d0e: Chance Stones show up in the Inventory
+
+  The game's new Chance Stones used to land in "Other". They are now their own kind, Chance Stones, in
+  the Inventory on the desktop app and on the web.
+
+- 7ab7d0e: The app reads your account cleanly again after the game added Forge Essence
+
+  The game added a Forge Essence balance, fusion pity counters and per-item essence values to its
+  account and inventory replies, and the app flagged both reads as having drifted. They are now recognised: the
+  account and inventory read as complete again, and the essence balance and each item's essence value
+  are kept for the Deconstruct page instead of being discarded.
+
+- 169ab81: The item hover card no longer runs its forge line off the edge: the Crit and Cooldown forge multiplier now sits on its own line under the tier and level.
+- Updated dependencies [93a69c6]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [5de6480]
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/team-plan@0.6.2
+  - @bombfarm/domain@1.9.0
+  - @bombfarm/ui@0.18.0
+  - @bombfarm/game-art@0.8.0
+  - @bombfarm/contracts@0.13.0
+  - @bombfarm/game-api@0.7.0
+  - @bombfarm/account@0.3.11
+  - @bombfarm/farm@1.2.13
+  - @bombfarm/hero@0.5.5
+  - @bombfarm/game-data@0.0.21
+  - @bombfarm/pricing@0.4.3
+
 ## 0.25.1
 
 ### Patch Changes
