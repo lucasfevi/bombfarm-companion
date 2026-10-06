@@ -30,14 +30,22 @@ export function resolveForgeQueue(pieces: readonly ForgeQueuePiece[], gear: read
   });
 }
 
-/** Summed over the rows that could be priced; null when none could. */
-export function forgeQueueExpectedGold(rows: readonly ForgeQueueRow[]): number | null {
+function expectedSum(rows: readonly ForgeQueueRow[], figure: 'gold' | 'essence'): number | null {
   let total: number | null = null;
   for (const row of rows) {
     if (row.forecast === null) continue;
-    total = (total ?? 0) + row.forecast.gold;
+    total = (total ?? 0) + row.forecast[figure];
   }
   return total;
+}
+
+/** Summed over the rows that could be priced; null when none could. */
+export function forgeQueueExpectedGold(rows: readonly ForgeQueueRow[]): number | null {
+  return expectedSum(rows, 'gold');
+}
+
+export function forgeQueueExpectedEssence(rows: readonly ForgeQueueRow[]): number | null {
+  return expectedSum(rows, 'essence');
 }
 
 /** Where every piece in the bag stands, for the queue's sync. */

@@ -141,66 +141,68 @@ export function forgeForecast(
   return { rolls: totals[0], gold: totals[1], essence: totals[2], stones: totals.slice(PRICED) };
 }
 
-const GOLD_BUCKETS = 8_000;
+const BUCKETS = 8_000;
 const MAX_DOUBLINGS = 8;
 
-type Transition = { cost: number; chance: number; hit: number; miss: number };
+type Spend = 'gold' | 'essence';
+type Transition = { gold: number; essence: number; chance: number; hit: number; miss: number };
+type Chain = { states: Transition[]; first: Transition; expected: ForgeForecast };
 
-/**
- * The `p` quantile (nearest rank) of the gold a climb costs, read off the exact distribution: the
- * probability mass of every (level, misses) state is pushed forward roll by roll, binned by gold
- * spent. A roll's price is fixed per rung, so gold only ever grows and one sweep through the bins
- * in order visits each state once. A price that falls between two bins splits its mass across them
- * and carries the exact gold alongside, so a bin reports the mean of what landed in it rather than
- * its edge.
- */
-export function forgeGoldQuantile(
+function buildChain(
   from: number,
   target: number,
   level: number,
   rarity: number,
-  p: number,
-  fails = 0,
-  options: ForgeOptions = {},
-): number {
-  assertForgeUpgrade(from);
-  assertForgeFails(fails);
-  if (!(p >= 0 && p <= 1)) throw new RangeError(`percentile must be a fraction in 0â€¦1, got ${p}`);
-  if (from >= target) return 0;
-  if (target > FORGE_MAX) throw new RangeError(`forge target must be +1â€¦+${FORGE_MAX}, got ${target}`);
+  fails: number,
+  options: ForgeOptions,
+): Chain {
   const { stonePp, ...standing } = options;
   const width = FORGE_PITY_CAP + 1;
   const indexOf = (upgrade: number, missed: number) => upgrade * width + Math.min(missed, FORGE_PITY_CAP);
   const transitionOf = (roll: ForgeRoll, missed: number): Transition => ({
-    cost: roll.cost,
+    gold: roll.cost,
+    essence: roll.essence + roll.protection,
     chance: roll.chance,
     hit: roll.target < target ? indexOf(roll.target, 0) : -1,
     miss: indexOf(roll.failTo, missed + 1),
   });
   const states: Transition[] = [];
-  let cheapestRisky = Number.POSITIVE_INFINITY;
-  let dearest = 0;
   for (let upgrade = 0; upgrade < target; upgrade++) {
     for (let missed = 0; missed <= FORGE_PITY_CAP; missed++) {
-      const transition = transitionOf(rollAt(upgrade, missed, target, level, rarity, standing), missed);
-      states.push(transition);
-      if (transition.chance < 1) cheapestRisky = Math.min(cheapestRisky, transition.cost);
-      dearest = Math.max(dearest, transition.cost);
+      states.push(transitionOf(rollAt(upgrade, missed, target, level, rarity, standing), missed));
     }
   }
   const first = transitionOf(rollAt(from, fails, target, level, rarity, { ...standing, stonePp }), fails);
-  dearest = Math.max(dearest, first.cost);
-  if (first.chance < 1) cheapestRisky = Math.min(cheapestRisky, first.cost);
+  return { states, first, expected: forgeForecast(from, target, level, rarity, fails, options) };
+}
 
-  let ceiling = 4 * forgeForecast(from, target, level, rarity, fails, options).gold;
+/**
+ * The `p` quantile (nearest rank) of what a climb spends, read off the exact distribution: the
+ * probability mass of every (level, misses) state is pushed forward roll by roll, binned by the
+ * amount spent. A roll's price is fixed per rung, so the total only ever grows and one sweep
+ * through the bins in order visits each state once. A price that falls between two bins splits its
+ * mass across them and carries the exact total alongside, so a bin reports the mean of what landed
+ * in it rather than its edge.
+ */
+function spendQuantile(chain: Chain, spend: Spend, p: number): number {
+  const { states, first } = chain;
+  let cheapestRisky = Number.POSITIVE_INFINITY;
+  let dearest = 0;
+  for (const transition of [...states, first]) {
+    if (transition.chance < 1 && transition[spend] > 0) cheapestRisky = Math.min(cheapestRisky, transition[spend]);
+    dearest = Math.max(dearest, transition[spend]);
+  }
+
+  let ceiling = 4 * chain.expected[spend];
+  if (!(ceiling > 0)) return 0;
   for (let attempt = 0; ; attempt++, ceiling *= 2) {
-    const binGold = Math.min(ceiling / GOLD_BUCKETS, cheapestRisky);
-    const bins = Math.ceil(ceiling / binGold);
-    const reach = Math.ceil(dearest / binGold) + 2;
+    const binSize = Math.min(ceiling / BUCKETS, cheapestRisky);
+    const bins = Math.ceil(ceiling / binSize);
+    const reach = Math.ceil(dearest / binSize) + 2;
     const mass = new Float64Array(reach * states.length);
-    const gold = new Float64Array(reach * states.length);
+    const spentTotal = new Float64Array(reach * states.length);
     const doneMass = new Float64Array(bins + 1);
-    const doneGold = new Float64Array(bins + 1);
+    const doneSpent = new Float64Array(bins + 1);
 
     const deposit = (
       landing: number,
@@ -213,12 +215,12 @@ export function forgeGoldQuantile(
       if (destination < 0) {
         if (landing > bins) return;
         doneMass[landing] += amount * weight;
-        doneGold[landing] += spent * weight;
+        doneSpent[landing] += spent * weight;
         return;
       }
       const slot = (landing % reach) * states.length + destination;
       mass[slot] += amount * weight;
-      gold[slot] += spent * weight;
+      spentTotal[slot] += spent * weight;
     };
     const send = (
       bin: number,
@@ -229,10 +231,10 @@ export function forgeGoldQuantile(
       destination: number,
     ) => {
       if (probability === 0) return;
-      const price = transition.cost / binGold;
+      const price = transition[spend] / binSize;
       const lower = Math.floor(price);
       const upper = price - lower;
-      const moved = spent + amount * transition.cost;
+      const moved = spent + amount * transition[spend];
       deposit(bin + lower, destination, amount, moved, probability * (1 - upper));
       deposit(bin + lower + 1, destination, amount, moved, probability * upper);
     };
@@ -245,16 +247,75 @@ export function forgeGoldQuantile(
       for (let state = 0; state < states.length; state++) {
         const amount = mass[base + state];
         if (amount === 0) continue;
-        const spent = gold[base + state];
+        const spent = spentTotal[base + state];
         mass[base + state] = 0;
-        gold[base + state] = 0;
+        spentTotal[base + state] = 0;
         const transition = states[state];
         send(bin, transition, amount, spent, transition.chance, transition.hit);
         send(bin, transition, amount, spent, 1 - transition.chance, transition.miss);
       }
       absorbed += doneMass[bin];
-      if (absorbed > 0 && absorbed >= p - 1e-12) return doneGold[bin] / doneMass[bin];
+      if (absorbed > 0 && absorbed >= p - 1e-12) return doneSpent[bin] / doneMass[bin];
     }
     if (attempt === MAX_DOUBLINGS) return ceiling;
   }
+}
+
+function checkedChain(
+  from: number,
+  target: number,
+  level: number,
+  rarity: number,
+  p: number,
+  fails: number,
+  options: ForgeOptions,
+): Chain | null {
+  assertForgeUpgrade(from);
+  assertForgeFails(fails);
+  if (!(p >= 0 && p <= 1)) throw new RangeError(`percentile must be a fraction in 0…1, got ${p}`);
+  if (from >= target) return null;
+  if (target > FORGE_MAX) throw new RangeError(`forge target must be +1…+${FORGE_MAX}, got ${target}`);
+  return buildChain(from, target, level, rarity, fails, options);
+}
+
+export function forgeGoldQuantile(
+  from: number,
+  target: number,
+  level: number,
+  rarity: number,
+  p: number,
+  fails = 0,
+  options: ForgeOptions = {},
+): number {
+  const chain = checkedChain(from, target, level, rarity, p, fails, options);
+  return chain === null ? 0 : spendQuantile(chain, 'gold', p);
+}
+
+/** The same quantile of the essence a climb spends — each roll's essence plus the scroll's when it is on. */
+export function forgeEssenceQuantile(
+  from: number,
+  target: number,
+  level: number,
+  rarity: number,
+  p: number,
+  fails = 0,
+  options: ForgeOptions = {},
+): number {
+  const chain = checkedChain(from, target, level, rarity, p, fails, options);
+  return chain === null ? 0 : spendQuantile(chain, 'essence', p);
+}
+
+/** Both quantiles of one climb, sharing the transition table and the expected totals that size the bins. */
+export function forgeSpendQuantiles(
+  from: number,
+  target: number,
+  level: number,
+  rarity: number,
+  p: number,
+  fails = 0,
+  options: ForgeOptions = {},
+): { gold: number; essence: number } {
+  const chain = checkedChain(from, target, level, rarity, p, fails, options);
+  if (chain === null) return { gold: 0, essence: 0 };
+  return { gold: spendQuantile(chain, 'gold', p), essence: spendQuantile(chain, 'essence', p) };
 }

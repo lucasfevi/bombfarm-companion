@@ -98,7 +98,14 @@ describe('the Protection Scroll section', () => {
 
   it('when off, compares with the scroll as one row; when on, marks the rungs it protects with an icon', () => {
     const off = render(8, 15, false);
-    expect(off).toMatch(/<dt>With the scroll<\/dt><dd><span data-testid="forge-scroll-other">[^<]* gold · [^<]* essence</);
+    expect(off).toMatch(/<dt>With the scroll<\/dt><dd><span data-testid="forge-scroll-other">/);
+    const valueOf = (html: string, testId: string) => html.match(new RegExp(`data-testid="${testId}">(.*?)</span></dd>`))?.[1] ?? '';
+    const coin = /<(?:svg|img)[^>]*>/.exec(valueOf(off, 'forge-fact-gold'))?.[0];
+    expect(coin).toBeDefined();
+    expect(valueOf(off, 'forge-scroll-other')).toContain(coin);
+    expect(valueOf(off, 'forge-scroll-other')).toMatch(/ · [\d,]+ essence$/);
+    expect(valueOf(off, 'forge-fact-bad-run')).toContain(coin);
+    expect(valueOf(off, 'forge-fact-bad-run')).toMatch(/ · [\d,]+ essence$/);
     expect(off).not.toContain('data-testid="forge-ladder-scroll"');
     const on = render(8, 15, true);
     expect(on).toMatch(/data-testid="forge-scroll"[^>]*data-state="on"/);

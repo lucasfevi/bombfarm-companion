@@ -198,6 +198,7 @@ describe('forgePlanForecast', () => {
     expect(forecast?.gold).toBeCloseTo(forgeForecast(12, 13, 20, 2).gold, 6);
     expect(forecast?.essence).toBeCloseTo(forgeForecast(12, 13, 20, 2).essence, 6);
     expect(forecast?.badRunGold).toBeGreaterThanOrEqual(forecast?.gold ?? Number.POSITIVE_INFINITY);
+    expect(forecast?.badRunEssence).toBeGreaterThanOrEqual(forecast?.essence ?? Number.POSITIVE_INFINITY);
   });
 
   it('headlines the plain climb with the scroll off, and keeps the protected one as the other option', () => {

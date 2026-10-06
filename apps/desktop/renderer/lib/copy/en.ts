@@ -118,7 +118,7 @@ export const en = {
   settingsForgeSectionTitle: 'Changes to your account',
   settingsForgeWritesLabel: 'Let the app forge, equip and reset points',
   settingsForgeWritesHelp:
-    "Off: the app plans and never changes your account. On: the Forge button, the forge queue and the Optimizer's Apply steps can spend gold and move gear — one confirmed run at a time, and you can stop between calls.",
+    "Off: the app plans and never changes your account. On: the Forge button, the forge queue and the Optimizer's Apply steps can spend gold and essence and move gear — one confirmed run at a time, and you can stop between calls.",
   settingsForgeWritesNotSavedTitle: 'Forge setting changed, but not saved',
 
   // settingsGame*/settingsRestartGameOnExit* — the one switch that lets Steam bring the game
@@ -475,7 +475,7 @@ export const en = {
   forgeScrollPrices: 'Essence per roll: {prices}.',
   forgeScrollPrice: '{essence} at level {level}',
   forgeScrollOtherOff: 'With the scroll',
-  forgeScrollOtherValue: '{gold} gold · {essence} essence',
+  forgeEssenceAmount: '{essence} essence',
   forgeScrollOtherOn: 'Without the scroll',
   forgeLadderScrollTip: 'Protection Scroll: a miss keeps the level and costs {essence} essence',
   forgeScrollTip:
@@ -517,10 +517,10 @@ export const en = {
   forgeReasonMaxed: 'Already at {max} — nothing left to forge',
   forgeReasonFixture: 'No server to forge on',
   forgeReasonSwitchOff: 'Turn on "{switch}" in Settings to forge from here',
-  forgeReasonReady: 'Spends gold on your account — the button asks twice',
+  forgeReasonReady: 'Spends gold and essence on your account — the button asks twice',
   forgeReasonRunning: 'Rolling — the run stops after the roll in flight',
   forgeReasonCancelling: 'Cancelling — waiting for the roll in flight to settle',
-  forgeButtonConfirm: 'Confirm — spends gold',
+  forgeButtonConfirm: 'Confirm — spends gold and essence',
   forgeButtonCancel: 'Cancel after this roll',
   forgeButtonCancelPending: 'Cancelling after this roll…',
   // forgeStart* — why main refused to start a run the panel asked for. The fixture and the
@@ -565,7 +565,7 @@ export const en = {
   forgeLedgerTotals: '{runs} runs · {rolls} rolls · {fails} fails',
   forgeLedgerClear: 'Clear the ledger',
   forgeLedgerClearTitle: 'Clear the forge ledger?',
-  forgeLedgerClearDescription: 'Every past run and the totals go with it. The gold was spent either way.',
+  forgeLedgerClearDescription: 'Every past run and the totals go with it. The gold and essence were spent either way.',
   forgeLedgerClearConfirm: 'Clear',
   forgeLedgerClearCancel: 'Keep',
   // forgeStop* — why a run ended, short enough for a table cell. The result heading says the same
@@ -649,11 +649,11 @@ export const en = {
   forgeQueueClear: 'Clear',
   forgeQueueClearAria: 'Clear the forge queue',
   forgeQueueConfirmTitle: 'Start the forge queue?',
-  forgeQueueConfirmOne: 'Forges {item} to {target} and spends gold on your account — about {gold} expected.',
+  forgeQueueConfirmOne: 'Forges {item} to {target} and spends gold and essence on your account — about {gold} and {essence} essence expected.',
   forgeQueueConfirmMany:
-    'Forges {count} pieces in turn and spends gold on your account — about {gold} expected. The queue stops if a piece stops short of its target.',
-  forgeQueueConfirmNoEstimate: 'Spends gold on your account; no estimate for these pieces. The queue stops if a piece stops short of its target.',
-  forgeQueueConfirm: 'Start — spends gold',
+    'Forges {count} pieces in turn and spends gold and essence on your account — about {gold} and {essence} essence expected. The queue stops if a piece stops short of its target.',
+  forgeQueueConfirmNoEstimate: 'Spends gold and essence on your account; no estimate for these pieces. The queue stops if a piece stops short of its target.',
+  forgeQueueConfirm: 'Start — spends gold and essence',
   forgeQueueConfirmCancel: 'Not now',
   forgeQueuePanelCaption: 'Forged in turn from the top; a piece already at its target leaves on its own.',
   // Printed in place of the rolling/progress span while the Optimizer has paused the queue for
@@ -817,7 +817,7 @@ export const en = {
   applyStepEquipFacts:
     '{calls} across {heroes} heroes — {puton} put on (a worn piece is swapped out in the same call), {tobag} sent back to the Inventory · about {time}',
   applyStepForgeTitle: 'Add items to the forge queue',
-  applyStepForgeFacts: '{pieces} pieces · {queued} already queued · {gold} expected · you start the queue from its own Start',
+  applyStepForgeFacts: '{pieces} pieces · {queued} already queued · {gold} and {essence} essence expected · you start the queue from its own Start',
   applyStepForgeFactsNoEstimate:
     '{pieces} pieces · {queued} already queued · no estimate · you start the queue from its own Start',
   applyStepForgeTargets: 'Targets {count} pieces',

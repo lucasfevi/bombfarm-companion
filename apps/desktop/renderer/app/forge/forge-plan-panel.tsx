@@ -303,7 +303,19 @@ export function ForgeForecastPanel({
     {
       id: 'bad-run',
       label: t.forgeFactBadRun,
-      value: <span data-testid="forge-fact-bad-run">{forecast ? <ForgeGold>{labels.gold(forecast.badRunGold)}</ForgeGold> : BLANK}</span>,
+      value: (
+        <span data-testid="forge-fact-bad-run">
+          {forecast ? (
+            <>
+              <ForgeGold>{labels.gold(forecast.badRunGold)}</ForgeGold>
+              {' · '}
+              {sub(t.forgeEssenceAmount, { essence: labels.count(Math.round(forecast.badRunEssence)) })}
+            </>
+          ) : (
+            BLANK
+          )}
+        </span>
+      ),
     },
     {
       id: 'wallet',
@@ -317,10 +329,9 @@ export function ForgeForecastPanel({
       label: scrolled ? t.forgeScrollOtherOn : t.forgeScrollOtherOff,
       value: (
         <span data-testid="forge-scroll-other">
-          {sub(t.forgeScrollOtherValue, {
-            gold: labels.gold(forecast.other.gold),
-            essence: labels.count(Math.round(forecast.other.essence)),
-          })}
+          <ForgeGold>{labels.gold(forecast.other.gold)}</ForgeGold>
+          {' · '}
+          {sub(t.forgeEssenceAmount, { essence: labels.count(Math.round(forecast.other.essence)) })}
         </span>
       ),
     });

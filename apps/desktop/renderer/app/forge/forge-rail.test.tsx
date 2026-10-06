@@ -25,7 +25,7 @@ function running(): ForgeRunState {
     itemId: 'g1',
     target: 12,
     from: 8,
-    plan: { forecast: { rolls: 6.5, gold: 650, essence: 0, stones: [0, 0, 0, 0, 0, 0], scroll: false, other: null, badRunGold: 1_200 } },
+    plan: { forecast: { rolls: 6.5, gold: 650, essence: 0, stones: [0, 0, 0, 0, 0, 0], scroll: false, other: null, badRunGold: 1_200, badRunEssence: 0 } },
   });
   const path: [number, number, ForgeStepEvent['outcome']][] = [
     [8, 9, 'success'],

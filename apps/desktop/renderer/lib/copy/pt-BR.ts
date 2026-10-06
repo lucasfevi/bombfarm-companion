@@ -114,7 +114,7 @@ export const ptBR: Copy = {
   settingsForgeSectionTitle: 'Alterações na sua conta',
   settingsForgeWritesLabel: 'Deixar o app forjar, equipar e redistribuir pontos',
   settingsForgeWritesHelp:
-    'Desligado: o app planeja e nunca altera sua conta. Ligado: o botão Forjar, a fila de forja e as etapas de Aplicar do Otimizador podem gastar ouro e mover itens — uma execução confirmada por vez, e você pode parar entre chamadas.',
+    'Desligado: o app planeja e nunca altera sua conta. Ligado: o botão Forjar, a fila de forja e as etapas de Aplicar do Otimizador podem gastar ouro e essência e mover itens — uma execução confirmada por vez, e você pode parar entre chamadas.',
   settingsForgeWritesNotSavedTitle: 'Configuração da Forja alterada, mas não salva',
 
   // settingsGame*/settingsRestartGameOnExit* — o único interruptor que deixa a Steam trazer o
@@ -466,7 +466,7 @@ export const ptBR: Copy = {
   forgeScrollPrices: 'Essência por rolagem: {prices}.',
   forgeScrollPrice: '{essence} no nível {level}',
   forgeScrollOtherOff: 'Com o pergaminho',
-  forgeScrollOtherValue: '{gold} de ouro · {essence} de essência',
+  forgeEssenceAmount: '{essence} de essência',
   forgeScrollOtherOn: 'Sem o pergaminho',
   forgeLadderScrollTip: 'Pergaminho de Proteção: uma falha mantém o nível e custa {essence} de essência',
   forgeScrollTip:
@@ -509,10 +509,10 @@ export const ptBR: Copy = {
   forgeReasonMaxed: 'Já está em {max} — não há mais o que forjar',
   forgeReasonFixture: 'Sem servidor para forjar',
   forgeReasonSwitchOff: 'Ligue "{switch}" em Configurações para forjar daqui',
-  forgeReasonReady: 'Gasta ouro da sua conta — o botão pergunta duas vezes',
+  forgeReasonReady: 'Gasta ouro e essência da sua conta — o botão pergunta duas vezes',
   forgeReasonRunning: 'Rolando — a execução para depois da rolagem em andamento',
   forgeReasonCancelling: 'Cancelando — esperando a rolagem em andamento terminar',
-  forgeButtonConfirm: 'Confirmar — gasta ouro',
+  forgeButtonConfirm: 'Confirmar — gasta ouro e essência',
   forgeButtonCancel: 'Cancelar após esta rolagem',
   forgeButtonCancelPending: 'Cancelando após esta rolagem…',
   forgeStartBusy: 'Já há uma execução em andamento',
@@ -547,7 +547,7 @@ export const ptBR: Copy = {
   forgeLedgerTotals: '{runs} execuções · {rolls} rolagens · {fails} falhas',
   forgeLedgerClear: 'Limpar o registro',
   forgeLedgerClearTitle: 'Limpar o registro da forja?',
-  forgeLedgerClearDescription: 'Todas as execuções passadas e os totais vão junto. O ouro foi gasto de qualquer forma.',
+  forgeLedgerClearDescription: 'Todas as execuções passadas e os totais vão junto. O ouro e a essência foram gastos de qualquer forma.',
   forgeLedgerClearConfirm: 'Limpar',
   forgeLedgerClearCancel: 'Manter',
   forgeStopTarget: 'Chegou',
@@ -620,11 +620,11 @@ export const ptBR: Copy = {
   forgeQueueClear: 'Limpar',
   forgeQueueClearAria: 'Limpar a fila de forja',
   forgeQueueConfirmTitle: 'Iniciar a fila de forja?',
-  forgeQueueConfirmOne: 'Forja {item} até {target} e gasta ouro da sua conta — cerca de {gold} esperado.',
+  forgeQueueConfirmOne: 'Forja {item} até {target} e gasta ouro e essência da sua conta — cerca de {gold} e {essence} de essência esperados.',
   forgeQueueConfirmMany:
-    'Forja {count} peças em sequência e gasta ouro da sua conta — cerca de {gold} esperado. A fila para se uma peça parar antes do alvo.',
-  forgeQueueConfirmNoEstimate: 'Gasta ouro da sua conta; sem estimativa para estas peças. A fila para se uma peça parar antes do alvo.',
-  forgeQueueConfirm: 'Iniciar — gasta ouro',
+    'Forja {count} peças em sequência e gasta ouro e essência da sua conta — cerca de {gold} e {essence} de essência esperados. A fila para se uma peça parar antes do alvo.',
+  forgeQueueConfirmNoEstimate: 'Gasta ouro e essência da sua conta; sem estimativa para estas peças. A fila para se uma peça parar antes do alvo.',
+  forgeQueueConfirm: 'Iniciar — gasta ouro e essência',
   forgeQueueConfirmCancel: 'Agora não',
   forgeQueuePanelCaption: 'Forjadas em sequência, de cima para baixo; uma peça que já chegou ao alvo sai sozinha.',
   forgeQueuePausedForApply: 'Pausada para o Otimizador',
@@ -773,7 +773,7 @@ export const ptBR: Copy = {
   applyStepEquipFacts:
     '{calls} em {heroes} heróis — {puton} colocados (uma peça já vestida sai na mesma chamada), {tobag} de volta ao Inventário · cerca de {time}',
   applyStepForgeTitle: 'Mandar itens para a fila da forja',
-  applyStepForgeFacts: '{pieces} peças · {queued} já na fila · {gold} esperado · você inicia a fila pelo próprio Iniciar',
+  applyStepForgeFacts: '{pieces} peças · {queued} já na fila · {gold} e {essence} de essência esperados · você inicia a fila pelo próprio Iniciar',
   applyStepForgeFactsNoEstimate:
     '{pieces} peças · {queued} já na fila · sem estimativa · você inicia a fila pelo próprio Iniciar',
   applyStepForgeTargets: 'Mira {count} peças',

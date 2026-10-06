@@ -12,7 +12,7 @@ import {
   FORGE_MAX,
   FORGE_GUARANTEED,
   forgeForecast,
-  forgeGoldQuantile,
+  forgeSpendQuantiles,
   forgeProtectable,
   type ForgeOptions,
   type ForgeStones,
@@ -141,6 +141,8 @@ export type ForgePlanFigures = {
   stones: readonly number[];
   /** What a run of bad luck costs — the 90th percentile of the climb's gold. */
   badRunGold: number;
+  /** The 90th percentile of the climb's essence, the scroll's included when it is on. */
+  badRunEssence: number;
 };
 
 export type ForgePlanForecast = ForgePlanFigures & {
@@ -163,8 +165,8 @@ function figuresOf(
   options: ForgeOptions,
 ): ForgePlanFigures {
   const expected = forgeForecast(upgrade, target, level, rarityIdx, fails, options);
-  const badRunGold = forgeGoldQuantile(upgrade, target, level, rarityIdx, BAD_RUN_PERCENTILE, fails, options);
-  return { ...expected, badRunGold };
+  const badRun = forgeSpendQuantiles(upgrade, target, level, rarityIdx, BAD_RUN_PERCENTILE, fails, options);
+  return { ...expected, badRunGold: badRun.gold, badRunEssence: badRun.essence };
 }
 
 function computeForgePlanPair(

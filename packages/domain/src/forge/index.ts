@@ -24,7 +24,7 @@ export {
 } from './rules';
 
 export type { ForgeForecast } from './forecast';
-export { forgeForecast, forgeGoldQuantile } from './forecast';
+export { forgeEssenceQuantile, forgeForecast, forgeGoldQuantile, forgeSpendQuantiles } from './forecast';
 
 export type {
   ForgeOutcome,

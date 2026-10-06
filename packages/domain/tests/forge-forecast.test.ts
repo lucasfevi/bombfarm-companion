@@ -5,7 +5,9 @@ import {
   forgeChance,
   forgeFailLevel,
   forgeForecast,
+  forgeEssenceQuantile,
   forgeGoldQuantile,
+  forgeSpendQuantiles,
   nextForgeStep,
   type ForgeOptions,
   forgeRollCost,
@@ -180,18 +182,28 @@ function simulatedQuantile(
   return totals[Math.max(1, Math.ceil(p * runs)) - 1];
 }
 
-/** Every outcome of a short climb, enumerated roll by roll with its exact gold, until the mass left is negligible. */
-function enumeratedQuantile(from: number, target: number, level: number, rarity: number, p: number, fails: number) {
+/** Every outcome of a short climb, enumerated roll by roll with its exact spend, until the mass left is negligible. */
+function enumeratedQuantile(
+  from: number,
+  target: number,
+  level: number,
+  rarity: number,
+  p: number,
+  fails: number,
+  spend: 'gold' | 'essence' = 'gold',
+  options: ForgeOptions = {},
+) {
   const outcomes = new Map<number, number>();
   let live = new Map<string, number>([[`${from}|${fails}|0`, 1]]);
+  let first = true;
   while (live.size > 0) {
     const next = new Map<string, number>();
     for (const [key, mass] of live) {
       if (mass < 1e-10) continue;
-      const [upgrade, missed, gold] = key.split('|').map(Number);
-      const step = nextForgeStep(upgrade, target, level, rarity, missed);
+      const [upgrade, missed, total] = key.split('|').map(Number);
+      const step = nextForgeStep(upgrade, target, level, rarity, missed, first ? options : { ...options, stonePp: 0 });
       if (step.kind !== 'roll') continue;
-      const spent = gold + step.cost;
+      const spent = total + (spend === 'gold' ? step.cost : step.essence + step.protection);
       const keys: [string, number][] = [
         [step.target >= target ? '' : `${step.target}|0|${spent}`, mass * step.chance],
         [`${step.failTo}|${missed + 1}|${spent}`, mass * (1 - step.chance)],
@@ -202,12 +214,13 @@ function enumeratedQuantile(from: number, target: number, level: number, rarity:
         else next.set(nextKey, (next.get(nextKey) ?? 0) + share);
       }
     }
+    first = false;
     live = next;
   }
   let cumulative = 0;
-  for (const gold of [...outcomes.keys()].sort((x, y) => x - y)) {
-    cumulative += outcomes.get(gold) ?? 0;
-    if (cumulative >= p - 1e-7) return gold;
+  for (const amount of [...outcomes.keys()].sort((x, y) => x - y)) {
+    cumulative += outcomes.get(amount) ?? 0;
+    if (cumulative >= p - 1e-7) return amount;
   }
   return Number.NaN;
 }
@@ -278,6 +291,67 @@ describe('forgeGoldQuantile', () => {
     const started = performance.now();
     forgeGoldQuantile(8, 15, 300, 5, 0.9);
     expect(performance.now() - started).toBeLessThan(250);
+  });
+});
+
+describe('forgeEssenceQuantile', () => {
+  const protectedClimbs = [[11, 13, 0], [12, 13, 4]] as const;
+
+  it('equals the enumerated distribution on short climbs, with and without the scroll and a stone', () => {
+    const variants: ForgeOptions[] = [{}, { protect: true }, { bonus: 0.1 }, { stones: [null, null, null, null, null, null, null, null, null, null, null, 1, 2] }];
+    for (const [from, target, fails] of [[11, 12, 0], [11, 12, 3], [10, 12, 0], ...protectedClimbs] as const) {
+      for (const options of variants) {
+        for (const p of [0.5, 0.9]) {
+          const exact = forgeEssenceQuantile(from, target, 20, 2, p, fails, options);
+          const truth = enumeratedQuantile(from, target, 20, 2, p, fails, 'essence', options);
+          expect(
+            Math.abs(exact / truth - 1),
+            `+${from} to +${target}, ${fails} misses, ${JSON.stringify(options)}, p${p}`,
+          ).toBeLessThan(0.003);
+        }
+      }
+    }
+  });
+
+  it('respects a first-roll stone chance', () => {
+    const options: ForgeOptions = { stonePp: 0.3 };
+    const exact = forgeEssenceQuantile(11, 13, 20, 2, 0.9, 0, options);
+    expect(Math.abs(exact / enumeratedQuantile(11, 13, 20, 2, 0.9, 0, 'essence', options) - 1)).toBeLessThan(0.003);
+    expect(exact).toBeLessThan(forgeEssenceQuantile(11, 13, 20, 2, 0.9));
+  });
+
+  it('is monotone in p', () => {
+    const quartile = forgeEssenceQuantile(11, 14, 100, 2, 0.25);
+    const median = forgeEssenceQuantile(11, 14, 100, 2, 0.5);
+    const bad = forgeEssenceQuantile(11, 14, 100, 2, 0.9);
+    expect(quartile).toBeLessThan(median);
+    expect(median).toBeLessThan(bad);
+  });
+
+  it('puts the 90th percentile at or above the expected essence', () => {
+    expect(forgeEssenceQuantile(10, 15, 300, 5, 0.9)).toBeGreaterThanOrEqual(forgeForecast(10, 15, 300, 5).essence);
+    expect(forgeEssenceQuantile(10, 15, 300, 5, 0.9, 0, { protect: true })).toBeGreaterThanOrEqual(
+      forgeForecast(10, 15, 300, 5, 0, { protect: true }).essence,
+    );
+  });
+
+  it('prices nothing when there is nothing to climb, and throws outside 0…1', () => {
+    expect(forgeEssenceQuantile(12, 12, 10, 0, 0.9)).toBe(0);
+    expect(() => forgeEssenceQuantile(8, 9, 10, 0, 1.5)).toThrow(RangeError);
+  });
+
+  it('shares one table with the gold quantile and returns the same figures', () => {
+    for (const options of [{}, { protect: true }] as ForgeOptions[]) {
+      const both = forgeSpendQuantiles(8, 15, 300, 5, 0.9, 0, options);
+      expect(both.gold).toBe(forgeGoldQuantile(8, 15, 300, 5, 0.9, 0, options));
+      expect(both.essence).toBe(forgeEssenceQuantile(8, 15, 300, 5, 0.9, 0, options));
+    }
+  });
+
+  it('stays cheap at the top of the ladder: both quantiles of a +15 climb in well under half a second', () => {
+    const started = performance.now();
+    forgeSpendQuantiles(8, 15, 300, 5, 0.9, 0, { protect: true });
+    expect(performance.now() - started).toBeLessThan(500);
   });
 });
 

@@ -425,7 +425,8 @@ test.describe('forge plan smoke', () => {
       await expect(scroll).toHaveAttribute('data-state', 'off');
       const switchControl = scroll.getByRole('switch');
       await expect(switchControl).toHaveAttribute('aria-checked', 'false');
-      await expect(forecast.getByTestId('forge-scroll-other')).toContainText('gold');
+      await expect(forecast.getByTestId('forge-scroll-other')).toContainText(/\d · [\d,]+ essence/);
+      await expect(forecast.getByTestId('forge-scroll-other').locator('svg, img').first()).toBeAttached();
       await expect(forecast.getByTestId('forge-ladder-scroll')).toHaveCount(0);
       const goldPlain = figureOf((await forecast.getByTestId('forge-fact-gold').textContent()) ?? '');
 
