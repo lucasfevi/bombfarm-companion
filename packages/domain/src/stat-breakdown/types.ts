@@ -158,6 +158,8 @@ export interface PipelineFacts {
   teamCritFlat: number;
   /** The roster's capped Brecha total in flat penetration points (`CombatMults.teamPenFlat`). */
   teamPenFlat: number;
+  /** The roster's capped Carnificina total in flat crit-damage points (`CombatMults.teamCritDmgFlat`). */
+  teamCritDmgFlat: number;
   /** Matilha's pack factor inside `dmgMult` (`CombatMults.packMult`). */
   packMult: number;
   /** The hero's own Baton Pass pulse averaged over wall clock, inside `dmgMult`; absent reads as 1. */

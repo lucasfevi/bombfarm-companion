@@ -9,6 +9,7 @@ import {
   type GamePowerInput,
 } from '@bombfarm/domain/game-power';
 import type { SheetStats } from '@bombfarm/domain/gear';
+import { abilityMods } from '@bombfarm/domain/model';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
 import { hasRuneOnSheet, runesOf } from '@bombfarm/domain/runes';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
@@ -206,7 +207,10 @@ function PowerBreakdown({
   const rows = useMemo(() => powerFactorRows(input), [input]);
   const total = useMemo(() => gamePower(input), [input]);
   const computedRuneFree = useMemo(
-    () => gamePower(gamePowerInputWithoutRunes(input, runesOf(hero), treeCritDmgPct)),
+    () => gamePower(gamePowerInputWithoutRunes(input, runesOf(hero), {
+        critDmgPct: treeCritDmgPct,
+        cdrFlat: abilityMods(hero.abilities).sheetCdrFlat,
+      })),
     [hero, input, treeCritDmgPct],
   );
   const runeFree = hasRuneOnSheet(runesOf(hero)) ? (hero.power ?? computedRuneFree) : null;

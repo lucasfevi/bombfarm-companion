@@ -11,7 +11,7 @@ import type { ApplyLedger } from '@bombfarm/domain/team-plan';
 import { cn } from '@bombfarm/ui';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
-import { ForgeGold } from '../forge/forge-gold';
+import { ForgeGold, ForgeSpend } from '../forge/forge-gold';
 
 const WALLET_UNAVAILABLE = '—';
 
@@ -62,7 +62,16 @@ export function ApplyLedgerStrip({ ledger }: { ledger: ApplyLedger }) {
       <Figure
         testId="apply-ledger-forge"
         label={t.applyLedgerForge}
-        value={ledger.forge.goldExpected === null ? WALLET_UNAVAILABLE : <ForgeGold>{gold(ledger.forge.goldExpected)}</ForgeGold>}
+        value={
+          ledger.forge.goldExpected === null ? (
+            WALLET_UNAVAILABLE
+          ) : (
+            <ForgeSpend
+              gold={gold(ledger.forge.goldExpected)}
+              essence={ledger.forge.essenceExpected === null ? null : gold(Math.round(ledger.forge.essenceExpected))}
+            />
+          )
+        }
         qualifier={ledger.forge.goldExpected === null ? t.applyLedgerForgeNone : t.applyLedgerForgeExpected}
       />
       <Figure

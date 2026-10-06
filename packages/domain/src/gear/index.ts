@@ -18,7 +18,6 @@ export type {
 } from './types';
 
 export {
-  FORJA_BONUS,
   FORJA_MAX,
   FORJA_LEVELS,
   SLOTS,
@@ -31,6 +30,9 @@ export {
   defsForSlot,
   setsForLevel,
   upgradeMult,
+  itemStatUpgradeMult,
+  statUsesCappedLadder,
+  CAPPED_STAT_UPGRADE_MULT,
   itemLabel,
   scaledValores,
   sumGearBonuses,

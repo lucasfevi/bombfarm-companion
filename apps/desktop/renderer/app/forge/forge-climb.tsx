@@ -32,12 +32,14 @@ export function ForgeClimb({
   steps,
   pending,
   gold,
+  count,
 }: {
   from: number;
   target: number;
   steps: readonly ForgeStepEvent[];
   pending: boolean;
   gold: (amount: number) => string;
+  count: (value: number) => string;
 }) {
   const t = useCopy();
   const rows = useMemo(() => rungTally(steps), [steps]);
@@ -63,6 +65,9 @@ export function ForgeClimb({
               <DataTable.Header scope="col" align="right">
                 {t.forgeRailTallyGold}
               </DataTable.Header>
+              <DataTable.Header scope="col" align="right">
+                {t.forgeRailTallyEssence}
+              </DataTable.Header>
             </DataTable.Row>
           </DataTable.Head>
           <DataTable.Body>
@@ -81,6 +86,9 @@ export function ForgeClimb({
                 </DataTable.Cell>
                 <DataTable.Cell align="right" numeric data-testid="forge-tally-gold">
                   <ForgeGold>{gold(row.gold)}</ForgeGold>
+                </DataTable.Cell>
+                <DataTable.Cell align="right" numeric data-testid="forge-tally-essence">
+                  {count(row.essence)}
                 </DataTable.Cell>
               </DataTable.Row>
             ))}

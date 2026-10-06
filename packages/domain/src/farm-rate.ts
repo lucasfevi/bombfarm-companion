@@ -264,6 +264,9 @@ export type HeroFarmFacts = {
   /** Estilhaços: the chance, as a FRACTION, that a rock this hero destroys shatters. OPTIONAL, and
    *  absent means none, so a hand-built `HeroFarmFacts` prices as it always has. */
   shatterChance?: number;
+  /** Matador de Chefes: the multiplier on this hero's hit against the gate boss alone — never the
+   *  rocks, the shards or the cage. OPTIONAL, and absent means 1. */
+  bossDmgMult?: number;
   /** True when this hero contributes no throughput: `avgHitBase <= 0` or `plantsPerSec <= 0`. */
   degenerate: boolean;
 };
@@ -341,6 +344,7 @@ export type HeroFarmBasis = {
   fortunaLevel: number;
   passagemBastaoLevel: number;
   estilhacosLevel: number;
+  matadorChefesLevel: number;
   /** `1 + 0.5 × context.blastRange`, blocks struck per bomb — ability-driven, build-independent,
    *  precomputed. Geometry, not damage: see {@link HeroFarmFacts.blocksPerBomb}. */
   blocksPerBomb: number;
@@ -419,6 +423,7 @@ export function heroFarmBasisFromParts(parts: HeroFarmBasisParts): HeroFarmBasis
     fortunaLevel: clampAbilityLevel(parts.abilities.fortuna ?? 0),
     passagemBastaoLevel: clampAbilityLevel(parts.abilities.passagem_bastao ?? 0),
     estilhacosLevel: clampAbilityLevel(parts.abilities.estilhacos ?? 0),
+    matadorChefesLevel: clampAbilityLevel(parts.abilities.matador_chefes ?? 0),
     blocksPerBomb: 1 + 0.5 * parts.context.blastRange,
     ...(parts.auraFree ? { auraFree: parts.auraFree } : {}),
     ...(parts.critPointCeiling !== undefined ? { critPointCeiling: parts.critPointCeiling } : {}),
@@ -481,7 +486,7 @@ type FieldLayer = {
  * What the team auras and the field size do to one hero's pipeline terms, in closed form. The
  * pipeline applies the auras as the LAST step of `derive`: Grito multiplies attack (and so the
  * attack per point), Marcha multiplies speed (and its delta), Presságio adds flat crit points,
- * Brecha adds flat penetration points, and Fôlego combines with the hero's own drain reduction
+ * Carnificina adds flat crit-damage points, Brecha adds flat penetration points, and Fôlego combines with the hero's own drain reduction
  * ({@link combineDrainRate}) — nothing else in the sheet or the farm `Context` reads them.
  * Matilha's pack factor multiplies `dmgMult` at the allies the rotation keeps beside the
  * carrier. Applying the same operations to the aura-free terms reproduces the pipeline's output
@@ -502,6 +507,7 @@ function priceAuraLayer(basis: HeroFarmBasis, field: FieldLayer): HeroFarmBasis 
       attack: base.effective.attack * mults.attackMult,
       speed: base.effective.speed * mults.speedMult,
       critChance: base.effective.critChance + mults.teamCritFlat,
+      critDmg: base.effective.critDmg + mults.teamCritDmgFlat,
       penetration: base.effective.penetration + mults.teamPenFlat,
       attackPerPoint: base.effective.attackPerPoint * mults.attackMult,
     },
@@ -734,6 +740,9 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
     fortunaLevel: basis.fortunaLevel,
     ...(basis.estilhacosLevel > 0
       ? { shatterChance: abilityMods({ estilhacos: basis.estilhacosLevel }).shatterChancePct / 100 }
+      : {}),
+    ...(basis.matadorChefesLevel > 0
+      ? { bossDmgMult: abilityMods({ matador_chefes: basis.matadorChefesLevel }).bossDmgMult }
       : {}),
     degenerate,
     ...(passagemBastao ? { passagemBastao } : {}),
@@ -1319,7 +1328,8 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
         (sum, prop) => sum + prop.share * hitsToKill(hit, propHp(line.hp, prop.hpMult)),
         0,
       );
-    const bossHtkFor = (hit: number) => hitsToKill(hit, propHp(line.hp, BOSS_HP_MULT_WIKI));
+    const bossDmgMult = hero.bossDmgMult ?? 1;
+    const bossHtkFor = (hit: number) => hitsToKill(hit * bossDmgMult, propHp(line.hp, BOSS_HP_MULT_WIKI));
     const eHtk = pulseBlendedHtk(pulse, avgHit, propHtkFor);
     const bossHtk = pulseBlendedHtk(pulse, avgHit, bossHtkFor);
     const hps = hitsPerSec(hero, line.ato);

@@ -75,7 +75,7 @@ describe('ForgeQueueAdd reads the piece off the live bag before it reads the que
     expect(html).toContain(`>${en.forgeQueueGone}<`);
     expect(html).toContain('data-gone="true"');
     expect(html).toContain('disabled=""');
-    expect(html).toContain('Ash Ring is not in the bag any more');
+    expect(html).toContain('Ash Ring is not in the inventory any more');
     expect(html).not.toContain('data-queued');
     expect(html).not.toContain('data-forged');
   });

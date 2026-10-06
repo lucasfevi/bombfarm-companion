@@ -68,7 +68,8 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `Tabs` | Motion (Animate UI animate/tabs) | compound `Root`/`List`/`Tab`/`Panels`/`Panel`; horizontal slide + auto-height; tab `status` tip via Tooltip; `MotionConfig reducedMotion="user"` — see [`animation.md`](animation.md) | inline Tailwind |
 | `FieldRequired` | `<span>` | always-mounted “required” badge; `show` toggles `invisible` (no CLS) | `panel-field.recipe.ts` (`reqClass`) |
 | `HelpTip` | Base UI `Popover` | always-mounted `?` help; `show` / `active` for status-linked tips | `help-popover.recipe.ts` |
-| `InfoTip` | DS `Tooltip` | bare info glyph beside a panel title or field label carrying its explanation on hover/focus, in place of an intro paragraph — promoted from the optimizer setup bar (2026-09-14) | inline Tailwind |
+| `InfoTip` | DS `Tooltip` | bare info glyph beside a panel title or field label carrying its explanation on hover/focus, in place of an intro paragraph — promoted from the optimizer setup bar (2026-09-14). `label` and `tip` come from the caller; it carries its own `Tooltip.Provider`. `PanelHeader`'s `info` slot draws one right after the title (DS-11) | inline Tailwind |
+| `CornerDismiss` | `@base-ui/react/button` via `Button` `icon` | the remove / close ✕ of a card, tile or row: no background, anchored `absolute -top-1 -right-1` on a `relative` container; `label` (the accessible name) comes from the caller (DS-10) | `button.recipe.ts` |
 | `Tooltip` | `@base-ui/react/tooltip` + Motion | compound `Provider`/`Root`/`Trigger`/`Portal`/`Positioner`/`Popup`/`Arrow`/`StatusBody`; Animate UI spring scale enter/exit — see [`animation.md`](animation.md) | `tooltip.recipe.ts` |
 | `DataTable` | `<table>` compound | `Root` (`scrollable` + optional `maxRows`/`minRows`), `Table`/`Head`/`Body`/`Row`/`Header`/`Cell`/`RowHeader`/`Caption`; sticky heads `z-20` + `border-separate`; `Header sortable` shows stacked ▲▼ when idle, single chevron when active | `data-table.recipe.ts` |
 | `GlossaryTerm` | DS `Tooltip` | inline dotted-underline formula token + tip | `glossary-term.recipe.ts` + `tooltip.recipe.ts` |
@@ -307,6 +308,37 @@ to elements of type "feature" and captured values: feature="planner"  boundaries
 `design-system/` may depend only on React, `@base-ui/react`, `cva`/`clsx`/`tailwind-merge`,
 `react-icons` **via `src/icon/` only** (lint-enforced — see [Icons](#icons)), `@theme` tokens (via utility class names), `shared/lib/**`, plus pure
 presentational helpers it fully owns.
+
+## Rules for new work (DS-10 to DS-12)
+
+Three rules the desktop and the web planner both follow from here on. Existing screens are brought
+over as they are touched, not in a sweep.
+
+### DS-10 — Remove and close controls are a corner ✕
+
+A control that removes or closes the thing it sits on — a range card, a tile, a chip row, a banner —
+is an icon-only ✕ with **no background**, anchored at the container's **top-right corner** with
+bleeding-edge placement: `absolute`, a small negative offset, the container `relative`. Use
+`CornerDismiss`; its accessible name is the caller's `label`, never copy baked into the package.
+It never sits inline in the card's header row beside other controls, so the card's own content
+keeps its width. A destructive hover tint belongs to `Button variant="icon"` in a toolbar, not to
+this control.
+
+### DS-11 — Explain with an info icon, not prose
+
+A mechanic is explained in an `InfoTip` (the ⓘ glyph and a `Tooltip`) placed beside the title or
+label it explains — `PanelHeader`'s `info` slot for a panel, a label's own row for a field or a
+group. On-screen prose is for what the player must act on: a warning (not enough stones, no
+server) or a short status line. A paragraph that says how something works is a finding: move it
+into a tip. The tip is the same sentence in both languages' copy, and `label` names what it
+explains so the trigger has an accessible name.
+
+### DS-12 — Say "inventory", never "bag"
+
+The player's item storage is **inventory** (pt-BR: **inventário**) in every player-facing string.
+`bag` and `bolsa` are banned in copy values — the guards in `apps/desktop/renderer/lib/copy/en.test.ts`
+and `apps/web/src/tests/i18n-terminology.test.ts` fail on them. Identifiers, wire field names
+(`bag_tabs`) and the game's own data names are not copy and stay as they are.
 
 ## Icons
 

@@ -751,6 +751,8 @@ const KEYS_ADDED: readonly string[] = [
   'inventoryGroupKey',
   'inventoryGroupTime',
   'inventoryGroupStone',
+  'inventoryGroupChanceStone',
+  'inventoryChanceStone',
   'inventoryGroupChest',
   'inventoryGroupRune',
   'inventoryGroupSkin',
@@ -777,6 +779,7 @@ const KEYS_ADDED: readonly string[] = [
   'inventoryChestKey',
   'inventoryChestSkill',
   'inventoryChestTime',
+  'inventoryChestForge',
   'inventorySearchPlaceholder',
   'inventorySearchLabel',
   'inventoryFilterAll',
@@ -852,6 +855,7 @@ const KEYS_ADDED: readonly string[] = [
   'phasesDropTime',
   'phasesDropGem',
   'phasesDropStone',
+  'phasesDropChance',
   'phasesDropActualHint',
   'phasesDropsSectionDesc',
   'phasesGoldComum',
@@ -1052,7 +1056,7 @@ const KEYS_ADDED: readonly string[] = [
   'downloadScreenCollectionsTitle', 'downloadScreenCollectionsItem1', 'downloadScreenCollectionsItem2', 'downloadScreenCollectionsItem3', 'downloadScreenCollectionsItem4',
   // The Optimizer's forge queue (2026-09-13): every forge chore among a hero's proposed items,
   // drawn as its ladder and priced from the forge table. One line: this file sits at its cap.
-  'teamPlanForgeQueueHeading', 'teamPlanForgeQueueLadderAria', 'teamPlanForgeQueueRolls', 'teamPlanForgeQueueSafeJumpOne', 'teamPlanForgeQueueSafeJumpMany', 'teamPlanForgeQueueGold', 'teamPlanForgeQueueTotal', 'teamPlanForgeQueueNoForecast', 'teamPlanForgeQueueLegend',
+  'teamPlanForgeQueueHeading', 'teamPlanForgeQueueLadderAria', 'teamPlanForgeQueueRolls', 'teamPlanForgeQueueEssence', 'teamPlanForgeQueueGold', 'teamPlanForgeQueueTotal', 'teamPlanForgeQueueNoForecast', 'teamPlanForgeQueueLegend',
   /**
    * The front page (2026-09-13): the `home` namespace and its nav label. Every key on one line
    * because this file sits at the `src/tests/**` max-lines cap (see the line above `resetAdviceRosterHero`).

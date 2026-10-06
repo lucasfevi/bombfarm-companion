@@ -1,4 +1,6 @@
 import catalog from '../data/catalog.json' with { type: 'json' };
+import forgeWiki from '../data/forge-wiki.json' with { type: 'json' };
+import { ITEM_FORGE_MAX, itemStatUpgradeMult } from '../item-forge-ladder';
 import type { Lang } from '../shims/i18n';
 import { formatItemDisplay } from '../game-labels';
 import type {
@@ -10,9 +12,8 @@ import type {
   Slot,
 } from './types';
 
-/** Forja upgrade: +0…+15. `upgrade_mult = 1 + 0.08 × N` (wiki itens.forja.bonus). */
-export const FORJA_BONUS = 0.08;
-export const FORJA_MAX = 15;
+/** Forja upgrade: +0…+15, a cumulative non-linear table (wiki itens.forja.upgrade_mult). */
+export const FORJA_MAX = ITEM_FORGE_MAX;
 export const FORJA_LEVELS = Array.from({ length: FORJA_MAX + 1 }, (_, index) => index);
 
 export const SLOTS: Slot[] = [...catalog.slots];
@@ -36,8 +37,10 @@ export function setsForLevel(level: number): string[] {
 
 export function upgradeMult(upgrade: number): number {
   const clampedUpgrade = Math.max(0, Math.min(FORJA_MAX, Math.round(upgrade)));
-  return 1 + FORJA_BONUS * clampedUpgrade;
+  return forgeWiki.upgrade_mult[clampedUpgrade] ?? 1;
 }
+
+export { CAPPED_STAT_UPGRADE_MULT, itemStatUpgradeMult, statUsesCappedLadder } from '../item-forge-ladder';
 
 export function itemLabel(item: EquippedItem, lang: Lang = 'pt'): string {
   return formatItemDisplay(item, lang);
@@ -62,13 +65,11 @@ export function scaledValores(defId: string, rarityIdx: number, level: number, u
   const itemMult = (catalog.nivelMult as Record<string, number>)[String(level)] ?? nativeMult;
   const nativeDmgMult = (catalog.dmgNivelMult as Record<string, number>)[String(definition.nativeLevel)] ?? 1;
   const itemDmgMult = (catalog.dmgNivelMult as Record<string, number>)[String(level)] ?? nativeDmgMult;
-  const forja = upgradeMult(upgrade);
-  const scale = (itemMult / nativeMult) * forja;
-  const dmgScale = (itemDmgMult / nativeDmgMult) * forja;
   const count = ITEM_RARITIES[rarityIdx]?.statCount ?? 1;
   return definition.valores.slice(0, count).map((roll): ScaledValor => {
-    if (roll.stat !== 'dmg') return { stat: roll.stat, valor: roll.valor * scale, unit: 'pct' };
-    return { stat: roll.stat, valor: roll.valor * dmgScale, unit: 'flat' };
+    const forja = itemStatUpgradeMult(roll.stat, upgrade);
+    if (roll.stat !== 'dmg') return { stat: roll.stat, valor: roll.valor * ((itemMult / nativeMult) * forja), unit: 'pct' };
+    return { stat: roll.stat, valor: roll.valor * ((itemDmgMult / nativeDmgMult) * forja), unit: 'flat' };
   });
 }
 

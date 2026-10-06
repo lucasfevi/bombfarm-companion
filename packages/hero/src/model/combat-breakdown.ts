@@ -96,10 +96,14 @@ export function connectedCards(card: BreakdownStatId): ReadonlySet<BreakdownStat
 const CARD_FOR_EFFECT: Record<AbilityEffect['kind'], BreakdownStatId | null> = {
   attackPct: 'attack',
   gateAttackPct: 'attack',
+  // Reaches the gate boss alone, which no per-bomb card prices.
+  bossDmgPct: null,
   speedPct: 'speed',
   critChanceFlat: 'critChance',
   critDmgFlat: 'critDmg',
   penetrationPp: 'penetration',
+  cdrFlat: 'cdr',
+  teamCritDmgFlat: 'critDmg',
   drainPct: 'fieldSeconds',
   rangeCells: 'activeDps',
   // Expectations, not blasts: the second blast is its own popup and the execute destroys the

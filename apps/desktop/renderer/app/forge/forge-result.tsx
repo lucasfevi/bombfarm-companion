@@ -7,7 +7,8 @@ import { useCopy } from '../../lib/copy';
 import { formatAge } from '../../lib/format';
 import type { ForgeRunPlan } from '../../lib/forge/forge-run-reducer';
 import { ForgeRailRow } from './forge-climb';
-import { ForgeGold } from './forge-gold';
+import { ForgeGold, ForgeSpend } from './forge-gold';
+import { ForgeStonesUsed } from './forge-stones-panel';
 import {
   forgeLevel,
   forgeResultHeading,
@@ -88,12 +89,14 @@ function AgainstPlan({ spent, plan, labels }: { spent: number; plan: ForgeRunPla
 
 export function ForgeResult({
   result,
+  stonesUsed,
   plan,
   labels,
   climb,
   onDone,
 }: {
   result: ForgeRunResult;
+  stonesUsed: readonly number[];
   plan: ForgeRunPlan | null;
   labels: ForgeLabels;
   /** The climb that produced this result, kept on screen under the totals it explains. */
@@ -101,7 +104,7 @@ export function ForgeResult({
   onDone: () => void;
 }) {
   const t = useCopy();
-  const heading = forgeResultHeading(result, t);
+  const heading = forgeResultHeading(result, t, labels.rarityName);
 
   const facts: StatListItem[] = [
     {
@@ -121,10 +124,22 @@ export function ForgeResult({
       label: t.forgeResultSpent,
       value: (
         <span data-testid="forge-result-spent">
-          <ForgeGold>{labels.gold(result.spent)}</ForgeGold>
+          <ForgeSpend gold={labels.gold(result.spent)} essence={result.essence === undefined ? null : labels.count(result.essence)} />
         </span>
       ),
     },
+    ...(stonesUsed.some((count) => count > 0)
+      ? [{ id: 'stones', label: t.forgeResultStonesUsed, value: <ForgeStonesUsed used={stonesUsed} labels={labels} /> }]
+      : []),
+    ...(result.scrollEssence !== undefined && result.scrollEssence > 0
+      ? [
+          {
+            id: 'scroll',
+            label: t.forgeResultScrollEssence,
+            value: <span data-testid="forge-result-scroll">{labels.count(result.scrollEssence)}</span>,
+          },
+        ]
+      : []),
     { id: 'duration', label: t.forgeResultDuration, value: <span data-testid="forge-result-duration">{formatAge(result.durationMs, t)}</span> },
   ];
 

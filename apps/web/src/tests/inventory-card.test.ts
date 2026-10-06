@@ -116,8 +116,8 @@ const slots = (html: string, testId: string) =>
   [...html.matchAll(new RegExp(`data-testid="${testId}"[^>]*>([^<]*)<`, 'g'))].map((match) => match[1]);
 
 const SIX_KINDS = ITEM_KINDS.filter(
-  (kind): kind is Exclude<typeof kind, 'other' | 'rune' | 'skin'> =>
-    kind !== 'other' && kind !== 'rune' && kind !== 'skin',
+  (kind): kind is Exclude<typeof kind, 'other' | 'rune' | 'skin' | 'chanceStone'> =>
+    kind !== 'other' && kind !== 'rune' && kind !== 'skin' && kind !== 'chanceStone',
 );
 const GROUP_LABEL = {
   equipment: 'inventoryGroupEquipment',

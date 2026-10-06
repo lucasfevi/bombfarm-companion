@@ -12,7 +12,13 @@ import type { SheetStats } from './gear/types';
 import { ABILITIES, wholeRangeCells } from './model/abilities';
 import { damageWeightedBlastRange } from './model/combat';
 import { STAT_CAPS } from './model/rarity-constants';
-import { applyRuneMultipliers, runeSheetMultipliers, stripRuneMultipliers, type HeroRune } from './runes';
+import {
+  applyRuneMultipliers,
+  runeSheetMultipliers,
+  stripRuneMultipliers,
+  type FlatAddsOutsideRune,
+  type HeroRune,
+} from './runes';
 
 export const GAME_POWER_SCALE = 10;
 const SPEED_BASE = 0.3;
@@ -230,14 +236,14 @@ export function gamePowerInputOf(
 
 /**
  * The sheet with the hero's runes on, through the rune model — crit damage's rune multiplies the
- * excess before the skill tree's flat add (`treeCritDmgPct`, planner percentage points).
+ * excess before the skill tree's flat add, and cooldown reduction's before Short Fuse's flat points.
  */
 export function gamePowerInputWithRunes(
   input: GamePowerInput,
   runes: readonly HeroRune[],
-  treeCritDmgPct: number,
+  flat: FlatAddsOutsideRune,
 ): GamePowerInput {
-  const sheet = applyRuneMultipliers(input.sheet, { critDmgPct: treeCritDmgPct }, runeSheetMultipliers(runes));
+  const sheet = applyRuneMultipliers(input.sheet, flat, runeSheetMultipliers(runes));
   return { ...input, sheet };
 }
 
@@ -245,8 +251,8 @@ export function gamePowerInputWithRunes(
 export function gamePowerInputWithoutRunes(
   input: GamePowerInput,
   runes: readonly HeroRune[],
-  treeCritDmgPct: number,
+  flat: FlatAddsOutsideRune,
 ): GamePowerInput {
-  const sheet = stripRuneMultipliers(input.sheet, { critDmgPct: treeCritDmgPct }, runeSheetMultipliers(runes));
+  const sheet = stripRuneMultipliers(input.sheet, flat, runeSheetMultipliers(runes));
   return { ...input, sheet };
 }

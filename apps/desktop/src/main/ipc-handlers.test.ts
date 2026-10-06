@@ -91,7 +91,7 @@ const LIVE_VIEW: LiveView = defaultLiveView('2026-09-01T00:00:00.000Z');
 
 const POPULATED_FORGE_HISTORY: ForgeHistoryResult = {
   rows: [],
-  totals: { runs: 3, spent: 900, rolls: 12, fails: 4 },
+  totals: { runs: 3, spent: 900, essence: 200, rolls: 12, fails: 4 },
 };
 
 const ADOPTED_SNAPSHOT: MarketSnapshotView = {

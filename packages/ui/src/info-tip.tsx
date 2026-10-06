@@ -9,22 +9,24 @@ const infoTriggerClass =
 
 /**
  * A bare info glyph that carries a sentence on hover or focus — drawn beside a panel title or a
- * field label in place of an intro paragraph, so the panel stays as tall as its content. Needs a
- * `Tooltip.Provider` above it.
+ * field label in place of an intro paragraph, so the panel stays as tall as its content. Carries its
+ * own `Tooltip.Provider`, so it works anywhere.
  */
 export function InfoTip({ label, tip, className }: { label: string; tip: string; className?: string }) {
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger type="button" aria-label={`${label}: ${tip}`} className={cn(infoTriggerClass, className)}>
-        <Icon name="information-circle" size="xs" />
-      </Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Positioner sideOffset={6}>
-          <Tooltip.Popup>
-            <p className="m-0 max-w-72 text-[11px] leading-snug">{tip}</p>
-          </Tooltip.Popup>
-        </Tooltip.Positioner>
-      </Tooltip.Portal>
-    </Tooltip.Root>
+    <Tooltip.Provider delay={180} closeDelay={80}>
+      <Tooltip.Root>
+        <Tooltip.Trigger type="button" aria-label={`${label}: ${tip}`} className={cn(infoTriggerClass, className)}>
+          <Icon name="information-circle" size="xs" />
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Positioner sideOffset={6}>
+            <Tooltip.Popup>
+              <p className="m-0 max-w-72 text-[11px] leading-snug">{tip}</p>
+            </Tooltip.Popup>
+          </Tooltip.Positioner>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
   );
 }

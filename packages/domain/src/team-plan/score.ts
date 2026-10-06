@@ -173,6 +173,7 @@ export function scoreHeroLoadout(
       : {}),
     treeSheet: ctx.treeSheet,
     penetrationPp: mults.teamPenFlat,
+    critDmgPp: mults.teamCritDmgFlat,
     context,
     hitMult: mults.hitMult,
     dmgMult: mults.dmgMult,

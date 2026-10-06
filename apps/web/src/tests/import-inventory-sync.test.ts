@@ -4,7 +4,10 @@ import { readFileSync } from 'node:fs';
 import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { importHeroes } from '@/shared/lib/storage';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
+import { skipUnlessInRegime } from '../../../../packages/domain/tests/helpers/capture-regime';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
+
+const SEVEN_HEROES = 'save-20260819-11882-7heroes.json';
 
 // Re-pointed onto save-20260819-11882-7heroes.json (issue #206). The previous subject,
 // payload-20260812-8heroes.json, is behind the stat-point budget refusal: 4 of its 8 heroes come
@@ -13,11 +16,20 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 // heroes accepted.
 const fixturePath = join(
   WEB_PACKAGE_ROOT,
-  '../../packages/domain/tests/fixtures/sheet-math/save-20260819-11882-7heroes.json',
+  `../../packages/domain/tests/fixtures/sheet-math/${SEVEN_HEROES}`,
 );
 
 function loadFixture(): Record<string, unknown> {
   return JSON.parse(readFileSync(fixturePath, 'utf8')) as Record<string, unknown>;
+}
+
+const freshAccountFixturePath = join(
+  WEB_PACKAGE_ROOT,
+  '../../packages/domain/tests/fixtures/sheet-math/save-20260828-4heroes-postpatch.json',
+);
+
+function loadFreshAccountFixture(): Record<string, unknown> {
+  return JSON.parse(readFileSync(freshAccountFixturePath, 'utf8')) as Record<string, unknown>;
 }
 
 // The export-shaped subject — needed only for the real account.phase test below (the export
@@ -105,10 +117,18 @@ describe('import inventory sync', () => {
     expect(usePlannerStore.getState().phase).toBe(24);
   });
 
-  it('no hero is blocked, and an empty inventory list still syncs the roster', () => {
+  it('no hero is blocked, and an empty inventory list still syncs the roster', (context) => {
+    skipUnlessInRegime(context, `sheet-math/${SEVEN_HEROES}`, 'itemForge');
     const { candidates } = parseSaveFile(loadFixture(), []);
     const blocked = candidates.find((candidate) => candidate.blocked);
     expect(blocked).toBeUndefined();
+    usePlannerStore.getState().replaceInventoryFromImport([]);
+    expect(usePlannerStore.getState().inventory.items).toEqual([]);
+  });
+
+  it('no hero of a fresh account is blocked, and an empty inventory list still syncs the roster', () => {
+    const { candidates } = parseSaveFile(loadFreshAccountFixture(), []);
+    expect(candidates.find((candidate) => candidate.blocked)).toBeUndefined();
     usePlannerStore.getState().replaceInventoryFromImport([]);
     expect(usePlannerStore.getState().inventory.items).toEqual([]);
   });

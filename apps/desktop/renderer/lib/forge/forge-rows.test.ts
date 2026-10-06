@@ -78,7 +78,7 @@ describe('filterForgeItems', () => {
     }
   });
 
-  it('leaves the rungs between +0 and the safe floor out of every band', () => {
+  it('leaves the rungs between +0 and +8 out of every band', () => {
     for (const upgrade of [1, 4, 7]) {
       expect(FORGE_BANDS.filter((band) => forgeBandHolds(band, upgrade))).toEqual([]);
     }

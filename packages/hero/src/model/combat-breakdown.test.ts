@@ -82,7 +82,8 @@ describe('which card an ability lands on', () => {
   it('is decided by the catalog\'s effect kind, so every per-bomb ability has a card and the loot and per-kill ones have none', () => {
     for (const ability of ABILITIES) {
       const card = cardForAbility(ability.id);
-      if (ability.effect.kind === 'none' || ability.effect.kind === 'shatterPct') expect(card, ability.id).toBeNull();
+      const cardless = ['none', 'shatterPct', 'bossDmgPct'];
+      if (cardless.includes(ability.effect.kind)) expect(card, ability.id).toBeNull();
       else expect(card, ability.id).not.toBeNull();
     }
     expect(cardForAbility('grito_guerra')).toBe('attack');
@@ -92,6 +93,7 @@ describe('which card an ability lands on', () => {
     expect(cardForAbility('detonacao_dupla')).toBe('activeDps');
     expect(cardForAbility('misericordia')).toBe('activeDps');
     expect(cardForAbility('estilhacos')).toBeNull();
+    expect(cardForAbility('matador_chefes')).toBeNull();
     expect(cardForAbility('matilha')).toBe('dmg');
     expect(cardForAbility('passagem_bastao')).toBe('dmg');
     expect(cardForAbility('folego_mineiro')).toBe('fieldSeconds');

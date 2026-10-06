@@ -186,7 +186,7 @@ test.describe('the forge queue, fed from the Optimizer', () => {
     await expect(itemPanel).toHaveAttribute('data-state', 'item');
     const itemId = await itemPanel.getAttribute('data-item-id');
 
-    const add = page.getByTestId('forge-plan-panel').getByTestId('forge-queue-add');
+    const add = page.getByTestId('forge-forecast-panel').getByTestId('forge-queue-add');
     await expect(add).toHaveText(readCopyValue('forgeQueueAdd'));
     await add.click();
     await expect(add).toHaveAttribute('data-queued', 'true');

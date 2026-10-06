@@ -34,7 +34,7 @@ export function defaultNaked(
     critChance: base.critChance * mult + otherClamped(other.critChanceFlat),
     critDmg: base.critDmg * mult + otherClamped(other.critDmgFlat),
     penetration: base.penetration * mult + otherClamped(other.penetration),
-    cdr: base.cdr * (1 + otherClamped(other.cdr)) * mult,
+    cdr: base.cdr * mult + otherClamped(other.cdr),
     // Star-scaled, no `other` term and level-independent.
     luck: base.luck * mult,
   };
@@ -89,6 +89,21 @@ export function rescaleNakedCritDmg(
 }
 
 /**
+ * Spending/removing Pavio Curto swaps its FLAT cooldown-reduction addend on the naked sheet —
+ * the hero's own roll is preserved, exactly like `rescaleNakedCritChance`.
+ */
+export function rescaleNakedCdr(
+  naked: SheetStats,
+  oldFlat: number,
+  newFlat: number,
+): SheetStats {
+  const oldF = Math.max(0, oldFlat);
+  const newF = Math.max(0, newFlat);
+  if (oldF === newF) return naked;
+  return { ...naked, cdr: naked.cdr - oldF + newF };
+}
+
+/**
  * Spending/removing a sheet crit-chance ability (Olho Clínico) swaps its FLAT addend on the
  * naked sheet — the hero's own roll is preserved, exactly like `rescaleNakedCritDmg`. It was a
  * ratio rescale while the ability was a percentage of the roll; the 2026-08-23 patch made it
@@ -125,6 +140,8 @@ export function nakedAfterSheetAbilityChange(
       return rescaleNakedPen(naked, prevMods.sheetPenetrationFlat, nextMods.sheetPenetrationFlat);
     case 'critDmgFlat':
       return rescaleNakedCritDmg(naked, prevMods.sheetCritDmgFlat, nextMods.sheetCritDmgFlat);
+    case 'cdrFlat':
+      return rescaleNakedCdr(naked, prevMods.sheetCdrFlat, nextMods.sheetCdrFlat);
     default:
       return naked;
   }
@@ -134,13 +151,14 @@ export function nakedAfterSheetAbilityChange(
  * Adding/removing a ★ (gems ritual) rescales every naked sheet stat except Speed
  * (Attack, Energy, Crit %, Crit Dmg, Penetration, CDR, Luck).
  *
- * `critChanceFlat` / `critDmgFlat` / `penetrationFlat` are the sheet-ability addends already
- * inside `naked` (`SheetOtherPct`). All three are held OUT of the ★ ratio, so this stays the
+ * `critChanceFlat` / `critDmgFlat` / `penetrationFlat` / `cdrFlat` are the sheet-ability addends
+ * already inside `naked` (`SheetOtherPct`). All four are held OUT of the ★ ratio, so this stays the
  * algebraic inverse of `nakedFromBirth` (`birth × star + flat`), and all default to `0`, which
  * leaves every hero without the abilities unchanged. Ponta de Diamante's is measured: save
  * exports fit exported penetration exactly with the +rank flat unscaled at ★1 and ★2, the same
  * hero across a ★1→★2 change included, while scaling it misses by rank × 0.25 per star. The two
- * crit flats have no ★>0 witness yet and follow `nakedFromBirth` rather than a second answer.
+ * crit flats and Short Fuse's have no ★>0 witness yet and follow `nakedFromBirth` rather than a
+ * second answer.
  */
 export function rescaleNakedForStars(
   naked: SheetStats,
@@ -149,12 +167,14 @@ export function rescaleNakedForStars(
   critDmgFlat = 0,
   critChanceFlat = 0,
   penetrationFlat = 0,
+  cdrFlat = 0,
 ): SheetStats {
   const ratio = starsMult(toStars) / starsMult(fromStars);
   if (ratio === 1) return naked;
   const flat = Math.max(0, critDmgFlat);
   const critFlat = Math.max(0, critChanceFlat);
   const penFlat = Math.max(0, penetrationFlat);
+  const cdrFlatClamped = Math.max(0, cdrFlat);
   return {
     ...naked,
     attack: naked.attack * ratio,
@@ -162,7 +182,7 @@ export function rescaleNakedForStars(
     critChance: (naked.critChance - critFlat) * ratio + critFlat,
     critDmg: (naked.critDmg - flat) * ratio + flat,
     penetration: (naked.penetration - penFlat) * ratio + penFlat,
-    cdr: naked.cdr * ratio,
+    cdr: (naked.cdr - cdrFlatClamped) * ratio + cdrFlatClamped,
     luck: naked.luck * ratio,
   };
 }
@@ -229,7 +249,15 @@ export function rescaleHeroForStars(
     geared,
     loadout,
     sheetOther,
-    rescaleNakedForStars(naked, fromStars, toStars, sheetOther.critDmgFlat, sheetOther.critChanceFlat, sheetOther.penetration),
+    rescaleNakedForStars(
+      naked,
+      fromStars,
+      toStars,
+      sheetOther.critDmgFlat,
+      sheetOther.critChanceFlat,
+      sheetOther.penetration,
+      sheetOther.cdr,
+    ),
   );
 }
 

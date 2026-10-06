@@ -50,9 +50,10 @@ describe('forgeChartGeometry', () => {
     expect(third.x).toBeGreaterThan(second.x);
   });
 
-  it('marks the safe floor and the target as horizontal guides inside the level range', () => {
+  it('marks the fail floor and the target as horizontal guides inside the level range', () => {
     const chart = geometry(STEPS, 30);
-    expect(chart.floor).toEqual({ y: chart.axisY, level: 8 });
+    expect(chart.floor?.level).toBe(10);
+    expect(chart.floor?.y).toBeLessThan(chart.axisY);
     expect(chart.target.level).toBe(12);
     expect(chart.target.y).toBeLessThan(chart.floor?.y ?? 0);
     expect(geometry([], 30, 13, 15).floor).toBeNull();

@@ -1,9 +1,9 @@
 import {
   FORGE_ITEM_LEVELS,
   FORGE_MAX,
-  FORGE_SAFE,
+  FORGE_GUARANTEED,
   forgeChance,
-  forgeFailFloor,
+  forgeFailLevel,
   forgeForecast,
   type ForgeForecast,
 } from '@bombfarm/domain/forge';
@@ -12,7 +12,7 @@ import type { GearFlowRow } from './gear-flow-rows';
 /** One rung of an item's ladder, +1 through +15. */
 export type ForgeLadderRung =
   | { target: number; kind: 'held' }
-  | { target: number; kind: 'safe' }
+  | { target: number; kind: 'sure' }
   | { target: number; kind: 'roll'; chance: number; failTo: number }
   | { target: number; kind: 'beyond' };
 
@@ -28,7 +28,7 @@ export type ForgeQueueEntry = {
 export type ForgeQueue = {
   entries: ForgeQueueEntry[];
   /** Summed over the entries that could be priced; null when none could. */
-  total: ForgeForecast | null;
+  total: Omit<ForgeForecast, 'stones'> | null;
 };
 
 export function forgeLadderRungs(from: number, to: number): ForgeLadderRung[] {
@@ -36,14 +36,14 @@ export function forgeLadderRungs(from: number, to: number): ForgeLadderRung[] {
     const target = index + 1;
     if (target <= from) return { target, kind: 'held' };
     if (target > to) return { target, kind: 'beyond' };
-    if (target <= FORGE_SAFE) return { target, kind: 'safe' };
-    return { target, kind: 'roll', chance: forgeChance(target), failTo: forgeFailFloor(target) };
+    if (target <= FORGE_GUARANTEED) return { target, kind: 'sure' };
+    return { target, kind: 'roll', chance: forgeChance(target), failTo: forgeFailLevel(target) };
   });
 }
 
 function forecastFor(row: GearFlowRow, from: number, to: number): ForgeForecast | null {
   if (!FORGE_ITEM_LEVELS.includes(row.level)) return null;
-  return forgeForecast(from, to, row.level, row.rarityIdx);
+  return forgeForecast(from, to, row.level, row.rarityIdx, from === row.upgrade ? row.forgeFails : 0);
 }
 
 /** The forge chores among a hero's proposed items, in the order the items are shown. */
@@ -61,10 +61,10 @@ export function buildForgeQueue(rows: readonly GearFlowRow[]): ForgeQueue {
       : priced.reduce(
           (sum, forecast) => ({
             rolls: sum.rolls + forecast.rolls,
-            safeJumps: sum.safeJumps + forecast.safeJumps,
             gold: sum.gold + forecast.gold,
+            essence: sum.essence + forecast.essence,
           }),
-          { rolls: 0, safeJumps: 0, gold: 0 },
+          { rolls: 0, gold: 0, essence: 0 },
         );
   return { entries, total };
 }
