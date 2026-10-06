@@ -480,6 +480,15 @@ describe('the batch', () => {
     expect(deconstructSelection()).toEqual(['1']);
   });
 
+  it('floors the batch body at the tile region plus the group table at its cap, ticked or not, so no tick moves the column', async () => {
+    await mount();
+    const body = byId('deconstruct-batch-body').className;
+    expect(body).toContain('min-h-[calc(5.8rem_+_1.0875rem_+_1rem_+_7.125rem)]');
+    expect(body).toContain('[@media(max-height:820px)]:min-h-[calc(5.8rem_+_1.0875rem_+_1rem_+_4.75rem)]');
+    await pick('1', '2');
+    expect(byId('deconstruct-batch-body').className).toBe(body);
+  });
+
   it('counts the ticks the current filters hide, and keeps that line in the tree while there are none', async () => {
     await mount();
     const note = byId('deconstruct-hidden-note');

@@ -113,7 +113,7 @@ async function openDeconstruct(page) {
   await expect(page.getByTestId('inventory-table-row').first()).toBeVisible({ timeout: 20_000 });
 }
 
-async function withApp(run, { args = [], open = true } = {}) {
+async function withApp(run, { args = [], open = true, size = CI_WINDOW } = {}) {
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-deconstruct-'));
   try {
     const { app, page } = await launchApp(
@@ -126,6 +126,7 @@ async function withApp(run, { args = [], open = true } = {}) {
     );
     try {
       await acceptConsent(page);
+      await resizeWindow(app, page, size.width, size.height);
       if (open) await openDeconstruct(page);
       await run(page, app);
       await app.close();
@@ -142,13 +143,72 @@ const openRows = (page) => page.locator('[data-testid="inventory-table-row"]:not
 const countText = (page) => page.getByTestId('deconstruct-result-count');
 const selectedText = (page) => page.getByTestId('deconstruct-selected');
 
+/** The window a 1024x768 CI screen leaves the app: the work area less the taskbar. */
+const CI_WINDOW = { width: 1024, height: 728 };
+/** The smallest window the shell allows. */
+const MIN_WINDOW = { width: 960, height: 640 };
+const ROOMY_WINDOW = { width: 1440, height: 900 };
+
+/**
+ * The main process answers `evaluate` from a context that a renderer reload destroys, and the app
+ * can still be settling its first window when a spec reaches for it, so the call is retried on
+ * exactly that error and no other.
+ */
+async function evaluateInMain(app, page, pageFunction, arg) {
+  await page.waitForLoadState('domcontentloaded');
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await app.evaluate(pageFunction, arg);
+    } catch (error) {
+      const destroyed = /Execution context was destroyed/.test(String(error?.message ?? error));
+      if (!destroyed || attempt >= 5) throw error;
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(200);
+    }
+  }
+}
+
+/**
+ * Resizes the real window, then waits until it has settled: the renderer's viewport equals the
+ * window's content bounds and neither has moved across several frames. Measuring before that reads
+ * a layout that is still on its way to the new size.
+ */
 async function resizeWindow(app, page, width, height) {
-  await app.evaluate(({ BrowserWindow }, size) => {
-    const win = BrowserWindow.getAllWindows()[0];
-    win?.setMinimumSize(200, 200);
-    win?.setSize(size.width, size.height);
-  }, { width, height });
-  await page.waitForTimeout(600);
+  await evaluateInMain(
+    app,
+    page,
+    ({ BrowserWindow }, size) => {
+      const win = BrowserWindow.getAllWindows()[0];
+      win?.setMinimumSize(200, 200);
+      win?.setSize(size.width, size.height);
+    },
+    { width, height },
+  );
+  let previous = '';
+  let steady = 0;
+  await expect
+    .poll(
+      async () => {
+        const content = await evaluateInMain(app, page, ({ BrowserWindow }) => {
+          const bounds = BrowserWindow.getAllWindows()[0]?.getContentBounds();
+          return bounds === undefined ? '' : `${String(bounds.width)}x${String(bounds.height)}`;
+        });
+        const viewport = await page.evaluate(
+          () =>
+            new Promise((resolve) =>
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => resolve(`${String(innerWidth)}x${String(innerHeight)}`)),
+              ),
+            ),
+        );
+        const seen = content === viewport ? content : '';
+        steady = seen !== '' && seen === previous ? steady + 1 : 0;
+        previous = seen;
+        return steady >= 3;
+      },
+      { message: `the window settles at ${String(width)}x${String(height)}`, timeout: 15_000, intervals: [100] },
+    )
+    .toBe(true);
 }
 
 /** The batch's group rows as [group id, label, count], in the order the table draws them. */
@@ -237,23 +297,9 @@ function boxesOf(page, testIds) {
  *  it, the batch panel, and the Burn button the group table sits above. */
 const STEADY = ['deconstruct-toolbar', 'deconstruct-list-panel', 'deconstruct-batch-panel', 'deconstruct-burn'];
 
-/**
- * `listMayGrow` is for the result band, the one thing that adds height to the column beside the
- * list: on a window with no spare height the row they share grows to hold it, so the list may end
- * lower — but it never starts elsewhere, is never narrower, and never loses a row.
- */
-async function expectNothingMoved(page, before, what, { listMayGrow = false } = {}) {
+async function expectNothingMoved(page, before, what) {
   const after = await boxesOf(page, STEADY);
   for (const id of STEADY) {
-    if (listMayGrow && id === 'deconstruct-list-panel') {
-      expect(after[id], `${id} moved or narrowed when ${what}`).toMatchObject({
-        x: before[id].x,
-        y: before[id].y,
-        width: before[id].width,
-      });
-      expect(after[id].height, `${id} shrank when ${what}`).toBeGreaterThanOrEqual(before[id].height);
-      continue;
-    }
     expect(after[id], `${id} moved or resized when ${what}`).toEqual(before[id]);
   }
 }
@@ -345,8 +391,7 @@ test.describe('deconstruct smoke', () => {
   });
 
   test('totals the batch as rows are ticked, warns about forged and Epic pieces, and has Add all, Fill and Clear obey the cap and the filters', async () => {
-    await withApp(async (page, app) => {
-      await resizeWindow(app, page, 1440, 900);
+    await withApp(async (page) => {
       const selected = selectedText(page);
       const essence = page.getByTestId('deconstruct-essence');
       const balance = figure(await page.getByTestId('deconstruct-balance').innerText());
@@ -412,12 +457,11 @@ test.describe('deconstruct smoke', () => {
 
       await page.getByTestId('deconstruct-clear').click();
       await expect(selected).toHaveText(`0 of ${String(CENSUS.batchCap)}`);
-    });
+    }, { size: ROOMY_WINDOW });
   });
 
   test('draws the ticked items as tiles in the batch, opens an item card on hover and takes one out with its corner mark', async () => {
-    await withApp(async (page, app) => {
-      await resizeWindow(app, page, 1440, 900);
+    await withApp(async (page) => {
       const tiles = page.getByTestId('deconstruct-batch-tile');
       await expect(tiles).toHaveCount(0);
       await expect(page.getByTestId('deconstruct-batch-empty')).toBeVisible();
@@ -499,12 +543,11 @@ test.describe('deconstruct smoke', () => {
       await expect(tiles).toHaveCount(0);
       await expect(page.getByTestId('deconstruct-batch-empty')).toBeVisible();
       await expectNothingMoved(page, quiet, 'the last tile was removed');
-    });
+    }, { size: ROOMY_WINDOW });
   });
 
   test('groups the batch by kind and rarity, caps the table at six rows with its own scroll, and keeps Burn and the tiles in place as rows arrive', async () => {
-    await withApp(async (page, app) => {
-      await resizeWindow(app, page, 1440, 900);
+    await withApp(async (page) => {
       const table = page.getByTestId('deconstruct-batch-groups');
       const rowCount = () => page.getByTestId('deconstruct-group-row').count();
       const quiet = await boxesOf(page, STEADY);
@@ -554,6 +597,29 @@ test.describe('deconstruct smoke', () => {
       await page.getByTestId('deconstruct-clear').click();
       await expect(page.getByTestId('deconstruct-group-row')).toHaveCount(0);
       await expectNothingMoved(page, quiet, 'the batch was cleared');
+    }, { size: ROOMY_WINDOW });
+  });
+
+  test('keeps the toolbar, both panels and Burn where they are as the batch fills and empties, on every window the app allows', async () => {
+    await withApp(async (page, app) => {
+      for (const size of [ROOMY_WINDOW, CI_WINDOW, MIN_WINDOW]) {
+        const at = `${String(size.width)}x${String(size.height)}`;
+        await resizeWindow(app, page, size.width, size.height);
+        const quiet = await boxesOf(page, STEADY);
+
+        await rowsOf(page).filter({ hasText: /\+\d+/ }).first().click();
+        await expect(page.getByTestId('deconstruct-group-row')).toHaveCount(1);
+        await expectNothingMoved(page, quiet, `a forged piece was ticked at ${at}`);
+
+        await page.getByTestId('deconstruct-select-shown').click();
+        await expect(selectedText(page)).toHaveText(`${String(CENSUS.batchCap)} of ${String(CENSUS.batchCap)}`);
+        expect(await page.getByTestId('deconstruct-group-row').count()).toBeGreaterThan(1);
+        await expectNothingMoved(page, quiet, `a hundred rows were added at ${at}`);
+
+        await page.getByTestId('deconstruct-clear').click();
+        await expect(selectedText(page)).toHaveText(`0 of ${String(CENSUS.batchCap)}`);
+        await expectNothingMoved(page, quiet, `the batch was cleared at ${at}`);
+      }
     });
   });
 
@@ -589,35 +655,45 @@ test.describe('deconstruct smoke', () => {
   });
 
   test('draws a burned, a refused and an unconfirmed result from the injected seam without moving anything, and keeps it across another tab', async () => {
-    await withApp(async (page) => {
+    await withApp(async (page, app) => {
       const slot = page.getByTestId('deconstruct-result-slot');
       const result = page.getByTestId('deconstruct-result');
       await expect(result).toHaveCount(0);
 
+      for (const size of [ROOMY_WINDOW, CI_WINDOW, MIN_WINDOW]) {
+        const at = `${String(size.width)}x${String(size.height)}`;
+        await resizeWindow(app, page, size.width, size.height);
+        const { ids } = await pickRows(page, 2);
+        await expect(selectedText(page)).toHaveText(`2 of ${String(CENSUS.batchCap)}`);
+        const balance = figure(await page.getByTestId('deconstruct-balance').innerText());
+        const before = await boxesOf(page, STEADY);
+
+        expect(await inject(page, [burned(`smoke-burned-${at}`, ids, 3_400, balance + 3_400)])).toEqual({ ok: true });
+        await expect(result).toHaveAttribute('data-outcome', 'burned');
+        await expect(result).toContainText('Burned 2 items: +3,400 Forge Essence');
+        await expect(result).toContainText(`Forge Essence now: ${(balance + 3_400).toLocaleString('en-US')}`);
+        await expect(selectedText(page)).toHaveText(`0 of ${String(CENSUS.batchCap)}`);
+        await page.waitForTimeout(400);
+        await expect(slot.getByTestId('deconstruct-done')).toBeVisible();
+        await expectNothingMoved(page, before, `a burned result opened at ${at}`);
+
+        await page.getByTestId('deconstruct-done').click();
+        await expect(result).toHaveCount(0);
+        await expectNothingMoved(page, before, `the result was dismissed at ${at}`);
+
+        expect(await inject(page, [refused(`smoke-refused-${at}`, ids, 'ITEM_EQUIPPED')])).toEqual({ ok: true });
+        await expect(result).toHaveAttribute('data-outcome', 'refused');
+        await expect(result).toContainText(en('deconstructResultRefused'));
+        await expect(result).toContainText(en('deconstructBlockEquipped'));
+        await page.waitForTimeout(400);
+        await expectNothingMoved(page, before, `a refused result opened at ${at}`);
+        await page.getByTestId('deconstruct-done').click();
+        await expect(result).toHaveCount(0);
+      }
+
       const { ids } = await pickRows(page, 2);
-      await expect(selectedText(page)).toHaveText(`2 of ${String(CENSUS.batchCap)}`);
-      const balance = figure(await page.getByTestId('deconstruct-balance').innerText());
-      const before = await boxesOf(page, STEADY);
-
-      expect(await inject(page, [burned('smoke-burned', ids, 3_400, balance + 3_400)])).toEqual({ ok: true });
-      await expect(result).toHaveAttribute('data-outcome', 'burned');
-      await expect(result).toContainText('Burned 2 items: +3,400 Forge Essence');
-      await expect(result).toContainText(`Forge Essence now: ${(balance + 3_400).toLocaleString('en-US')}`);
-      await expect(selectedText(page)).toHaveText(`0 of ${String(CENSUS.batchCap)}`);
-      await page.waitForTimeout(400);
-      await expect(slot.getByTestId('deconstruct-done')).toBeVisible();
-      await expectNothingMoved(page, before, 'a burned result opened', { listMayGrow: true });
-
-      await page.getByTestId('deconstruct-done').click();
-      await expect(result).toHaveCount(0);
-      await expectNothingMoved(page, before, 'the result was dismissed');
-
       expect(await inject(page, [refused('smoke-refused', ids, 'ITEM_EQUIPPED')])).toEqual({ ok: true });
       await expect(result).toHaveAttribute('data-outcome', 'refused');
-      await expect(result).toContainText(en('deconstructResultRefused'));
-      await expect(result).toContainText(en('deconstructBlockEquipped'));
-      await page.waitForTimeout(400);
-      await expectNothingMoved(page, before, 'a refused result opened', { listMayGrow: true });
 
       // The result outlives a look at another screen, and the page it was on is the one returned to.
       await page.getByRole('button', { name: 'Inventory', exact: true }).click();
@@ -656,12 +732,7 @@ test.describe('deconstruct smoke', () => {
         );
 
       for (const width of [1500, 1250, 1100]) {
-        await app.evaluate(({ BrowserWindow }, size) => {
-          const win = BrowserWindow.getAllWindows()[0];
-          win?.setMinimumSize(200, 200);
-          win?.setSize(size, 900);
-        }, width);
-        await page.waitForTimeout(600);
+        await resizeWindow(app, page, width, 900);
         const split = await page.getByTestId('deconstruct-split').boundingBox();
         const aside = await page.getByTestId('deconstruct-aside').boundingBox();
         const list = await page.getByTestId('deconstruct-list-panel').boundingBox();

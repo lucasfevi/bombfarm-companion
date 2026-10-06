@@ -24,6 +24,22 @@ const STATS_WIDE_CLASS = cn(
   '@min-[27.5rem]:[&_>div:nth-child(3)]:pb-0',
 );
 
+/**
+ * Floored at the tile region's minimum plus the note plus the group table at its cap, whether or
+ * not the table has rows: on a window with no spare height the column is the same height at zero
+ * ticks and at a full batch. With spare height the floor is not reached and the tile region takes
+ * what the table leaves. In rem: 5.8 tiles + 1.0875 note + 1 for two gaps + 7.125 table cap
+ * (4.75 under 820px tall, matching the table's own cap).
+ */
+const BODY_CLASS = cn(
+  'flex',
+  'flex-[1_1_0px]',
+  'flex-col',
+  'gap-2',
+  'min-h-[calc(5.8rem_+_1.0875rem_+_1rem_+_7.125rem)]',
+  '[@media(max-height:820px)]:min-h-[calc(5.8rem_+_1.0875rem_+_1rem_+_4.75rem)]',
+);
+
 export function DeconstructAside({
   items,
   summary,
@@ -99,21 +115,23 @@ export function DeconstructAside({
       </p>
       <StatList items={facts} aria-label={t.deconstructBatchTitle} className={STATS_WIDE_CLASS} />
 
-      <div className="relative flex min-h-[5.8rem] flex-[1_1_0px] flex-col">
-        <DeconstructBatchTiles items={items} labels={labels} disabled={burning} onRemove={onRemove} />
-        {result}
+      <div data-testid="deconstruct-batch-body" className={BODY_CLASS}>
+        <div className="relative flex min-h-[5.8rem] flex-[1_1_0px] flex-col">
+          <DeconstructBatchTiles items={items} labels={labels} disabled={burning} onRemove={onRemove} />
+          {result}
+        </div>
+
+        <p
+          data-testid="deconstruct-hidden-note"
+          data-active={hidden > 0 ? 'true' : 'false'}
+          aria-hidden={hidden > 0 ? undefined : true}
+          className={cn('m-0', 'text-xs', 'leading-[1.45]', 'text-muted', hidden === 0 && 'invisible')}
+        >
+          {sub(t.deconstructHiddenNote, { count: labels.count(hidden) })}
+        </p>
+
+        <DeconstructBatchGroups items={items} labels={labels} />
       </div>
-
-      <p
-        data-testid="deconstruct-hidden-note"
-        data-active={hidden > 0 ? 'true' : 'false'}
-        aria-hidden={hidden > 0 ? undefined : true}
-        className={cn('m-0', 'text-xs', 'leading-[1.45]', 'text-muted', hidden === 0 && 'invisible')}
-      >
-        {sub(t.deconstructHiddenNote, { count: labels.count(hidden) })}
-      </p>
-
-      <DeconstructBatchGroups items={items} labels={labels} />
 
       <p
         data-testid="deconstruct-hint"
