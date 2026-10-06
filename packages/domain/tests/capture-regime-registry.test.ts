@@ -31,7 +31,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(here, 'fixtures');
 
 const NOT_ACCOUNT_RECORDS = ['rejection'];
-const FORGE_TABLE_BOUNDARY = '2026-10-05';
+const FORGE_TABLE_BOUNDARY = '2026-10-06';
 
 function listCapturePaths(): string[] {
   const found: string[] = [];
@@ -225,7 +225,7 @@ describe('capture registry — the derived exclusion lists', () => {
    * The 2026-08-28 damage boundary took the corpus down to the two captures past it: every other
    * committed capture has at least one equipped weapon, and the weapon 5x reaches all of them, so
    * none can be waived past it the way three were waived past 2026-08-23. The 2026-09-02 Ponta de
-   * Diamante boundary moved `sheet` again without shrinking that pair. The 2026-10-05 forge table
+   * Diamante boundary moved `sheet` again without shrinking that pair. The 2026-10-06 forge table
    * then reached every item above +0, and only the capture whose items are all +0 is still waived.
    */
   it('capturesOutOfRegimeFor("sheet") is every capture but the one past 2026-08-28 that no ponta_diamante hero and no forged item reaches', () => {

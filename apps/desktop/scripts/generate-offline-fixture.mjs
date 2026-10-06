@@ -95,15 +95,16 @@ function readCapture(bytes = readFileSync(CAPTURE)) {
 }
 
 /**
- * The save export predates the 2026-10-05 forge table, so the stats it records for a hero wearing
- * forged gear were built with the old linear ladder and no longer invert to a whole-number point
- * vector. These are the stat values those two heroes' own points, birth rolls and gear compose to
- * under the new table, keyed by the id they carry in the fixture; each re-infers to the points it
- * inferred before. Every other stat, and every other hero, is the capture's own.
+ * The save export predates the forge table, so the stats it records for a hero wearing forged gear
+ * were built with the old linear ladder and no longer invert to a whole-number point vector. These
+ * are the stat values those two heroes' own points, birth rolls and gear compose to under today's
+ * table (crit chance and cooldown on their own, gentler ladder), keyed by the id they carry in the
+ * fixture; each re-infers to the points it inferred before. Every other stat, and every other
+ * hero, is the capture's own.
  */
 const RESTATED_STATS = {
-  '26863': { dmg: 12087.417150606998, energia: 1310.392226030008, speed: 55.355519613771904, crit_chance: 0.4617696043574664, penetration: 12.58574338495992, cooldown_reduction: 0.02087305185063443, luck: 0.34680713072345265 },
-  '59925': { dmg: 6935.176261420099, energia: 990.987134735684, speed: 51.77772659840667, crit_chance: 0.03278641578476556, penetration: 3.481700093186854, cooldown_reduction: 0.01854527302844404, luck: 0.2143162932432892 },
+  '26863': { dmg: 12178.415617392944, energia: 1351.6180488714017, speed: 55.409056942192805, crit_chance: 0.4617696043574664, penetration: 13.122394371932833, cooldown_reduction: 0.02087305185063443, luck: 0.34936483678978747 },
+  '59925': { dmg: 7060.840810791169, energia: 1011.1103223225809, speed: 51.79939778531295, crit_chance: 0.03278641578476556, penetration: 3.6380973166241244, cooldown_reduction: 0.01854527302844404, luck: 0.2147110076437363 },
 };
 
 /**

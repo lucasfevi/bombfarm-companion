@@ -22,7 +22,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-20heroes-phase101.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -32,7 +32,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-20heroes-phase101.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -42,7 +42,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -52,7 +52,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -62,7 +62,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -72,7 +72,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -82,7 +82,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -92,7 +92,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-20heroes-phase101.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -102,7 +102,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -112,7 +112,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -122,7 +122,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -132,7 +132,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -142,7 +142,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -152,7 +152,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260831-13heroes-soulbound.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -162,7 +162,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-20heroes-phase101.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -172,7 +172,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -182,7 +182,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-20heroes-phase101.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -192,7 +192,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -205,7 +205,7 @@ export const HELD_SUITES = [
     ],
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -218,7 +218,7 @@ export const HELD_SUITES = [
     ],
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -231,7 +231,7 @@ export const HELD_SUITES = [
     ],
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -244,7 +244,7 @@ export const HELD_SUITES = [
     ],
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -257,7 +257,7 @@ export const HELD_SUITES = [
     ],
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -270,7 +270,7 @@ export const HELD_SUITES = [
     ],
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -283,7 +283,7 @@ export const HELD_SUITES = [
     ],
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -296,7 +296,7 @@ export const HELD_SUITES = [
     ],
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -306,7 +306,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -316,7 +316,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-20heroes-phase101.json",
     mechanic: "itemForge",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -326,7 +326,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260823-13heroes-crit-points.json",
     mechanic: "itemForge",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -336,7 +336,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260818-12heroes.json",
     mechanic: "itemForge",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -346,7 +346,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/payload-20260913-20heroes-runes.json",
     mechanic: "itemForge",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -356,7 +356,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260819-11882-7heroes.json",
     mechanic: "itemForge",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -366,7 +366,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "itemForge",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -379,7 +379,7 @@ export const HELD_SUITES = [
     ],
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -389,7 +389,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/payload-20260913-20heroes-runes.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -399,7 +399,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260914-9heroes-second-account.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -409,7 +409,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260818-12heroes.json",
     mechanic: "itemForge",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -419,7 +419,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/payload-20260913-20heroes-runes.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -429,7 +429,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/payload-20260913-20heroes-runes.json",
     mechanic: "itemForge",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -439,7 +439,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/payload-20260913-20heroes-runes.json",
     mechanic: "itemForge",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -449,7 +449,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260831-13heroes-soulbound.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -459,7 +459,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260831-13heroes-soulbound.json",
     mechanic: "sheet",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -473,7 +473,7 @@ export const HELD_SUITES = [
     ],
     mechanic: "itemForge",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -483,7 +483,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260819-11882-7heroes.json",
     mechanic: "itemForge",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -493,7 +493,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260819-11882-7heroes.json",
     mechanic: "itemForge",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },
@@ -503,7 +503,7 @@ export const HELD_SUITES = [
     capture: "sheet-math/save-20260823-13heroes-crit-points.json",
     mechanic: "itemForge",
     rearmedBy:
-      "a capture taken on or after 2026-10-05, once the forge table is in the sheet it was taken under, registered in the capture registry",
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
     rejected: {
       "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
     },

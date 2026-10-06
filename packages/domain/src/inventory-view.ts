@@ -1,14 +1,12 @@
 import catalog from './data/catalog.json' with { type: 'json' };
-import forgeWiki from './data/forge-wiki.json' with { type: 'json' };
+import { itemStatUpgradeMult } from './item-forge-ladder';
 
 const defById = new Map(catalog.defs.map((definition) => [definition.id, definition]));
 
-/** Forge upgrade `+0…+15`: the wiki's cumulative `upgrade_mult` table. Read from the data file
- *  rather than imported from `gear/catalog.ts` — that module pulls in the whole loadout model, and
- *  this one is loaded by the desktop's renderer for a display list. The Dano ladder
- *  (`dmgNivelMult`) is duplicated for the same reason; `inventory-view.test.ts` fails if the two
- *  copies ever disagree. */
-const FORGE_MAX = 15;
+/** The forge ladders come from `item-forge-ladder.ts` rather than `gear/catalog.ts` — that module
+ *  pulls in the whole loadout model, and this one is loaded by the desktop's renderer for a
+ *  display list. The Dano ladder (`dmgNivelMult`) is duplicated for the same reason;
+ *  `inventory-view.test.ts` fails if the two copies ever disagree. */
 const rarityByIdx = new Map(catalog.rarities.map((rarity) => [rarity.idx, rarity]));
 const statNames: readonly string[] = catalog.itemStats;
 
@@ -289,7 +287,6 @@ function catalogStats(defId: string, rarityIdx: number, level: number, upgrade: 
   const itemMult = (catalog.nivelMult as Record<string, number>)[String(level)] ?? nativeMult;
   const nativeDmgMult = (catalog.dmgNivelMult as Record<string, number>)[String(definition.nativeLevel)] ?? 1;
   const itemDmgMult = (catalog.dmgNivelMult as Record<string, number>)[String(level)] ?? nativeDmgMult;
-  const forge = forgeWiki.upgrade_mult[Math.max(0, Math.min(FORGE_MAX, Math.round(upgrade)))] ?? 1;
   const scale = itemMult / nativeMult;
   const dmgScale = itemDmgMult / nativeDmgMult;
   const statCount = rarityByIdx.get(rarityIdx)?.statCount ?? 1;
@@ -302,7 +299,7 @@ function catalogStats(defId: string, rarityIdx: number, level: number, upgrade: 
       code: code >= 0 ? code : -1,
       unit: statUnit(roll.stat),
       value,
-      effective: value * forge,
+      effective: value * itemStatUpgradeMult(roll.stat, upgrade),
     };
   });
 }

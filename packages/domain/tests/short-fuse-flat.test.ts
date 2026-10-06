@@ -96,6 +96,21 @@ describe('Short Fuse adds flat cooldown reduction to the carrier sheet', () => {
   });
 });
 
+describe('the Collection cooldown bonus scales Short Fuse too', () => {
+  it('reproduces a level-1 bare carrier read live: (birth + 0.5) x 1.0115', () => {
+    const sheet = composeSheetFromBirth({
+      birth: { ...BIRTH, cdr: 1.3815059204142699 },
+      level: 1,
+      stars: 0,
+      sheetOther: sheetOtherAt(1),
+      loadout: {},
+      pts: ZERO_PTS(),
+      tree: { ...NO_TREE, collection: { energyPct: 0, critChancePct: 0, critDmgPct: 0, cdrPct: 1.15 } },
+    });
+    expect(sheet.cdr).toBeCloseTo(1.903143238499034, 12);
+  });
+});
+
 describe('importing a Short Fuse carrier', () => {
   function inferFor(rank: number, spentCdr: number) {
     const sheetOther = sheetOtherAt(rank);

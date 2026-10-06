@@ -138,7 +138,7 @@ export function applySkillTree(
     cdr: sheet.cdr,
     luck: sheet.luck + tree.luckFlatPct,
   };
-  return applyCollection(withTree, collectionSheetPct(tree.collection), tree.critDmgPct, Math.max(0, sheetOther.cdr));
+  return applyCollection(withTree, collectionSheetPct(tree.collection), tree.critDmgPct);
 }
 
 export type ComposeSheetFromBirthInput = {

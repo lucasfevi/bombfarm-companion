@@ -142,7 +142,7 @@ describe('spent stat points never exceed the hero level (corpus sweep)', () => {
    * Non-vacuity. The 2026-08-28 damage boundary had taken the swept set from three captures and
    * 31 heroes down to ONE and four — every earlier capture has an equipped weapon, and the weapon
    * 5x reaches all of them, so none could back a `sheet` number any more. The sweep recovered on
-   * the captures taken after it, and the 2026-10-05 forge table then withdrew every one of them
+   * the captures taken after it, and the 2026-10-06 forge table then withdrew every one of them
    * that holds an item forged above +0, taking it back to that one capture of four heroes with
    * every item at +0. It recovers again on the first geared capture taken under the new table.
    *

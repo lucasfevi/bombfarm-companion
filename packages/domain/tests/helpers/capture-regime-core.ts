@@ -80,6 +80,10 @@ export const REGIME_BOUNDARIES = {
     'the forge upgrade multiplier on item stats went from linear (1 + 0.08 x upgrade) to a ' +
     'cumulative table (`itens.forja.upgrade_mult`: x1.95 at +13, x2.20 at +14, x2.50 at +15) - ' +
     'every item above +0 reads a different value',
+  '2026-10-06':
+    'the forge table moved again for every item stat except crit chance and cooldown, which kept the ' +
+    '2026-10-05 table (x1.95 at +13, x2.20 at +14), and the Collection cooldown bonus began ' +
+    "scaling Short Fuse's flat cooldown reduction too",
 } as const;
 
 export type RegimeBoundary = keyof typeof REGIME_BOUNDARIES;
@@ -151,11 +155,11 @@ export const MECHANICS = {
     what: 'the damage a Wide Blast cross deals past the base reach - clear time, farm rates and active DPS',
   },
   itemForge: {
-    since: '2026-10-05',
+    since: '2026-10-06',
     what: 'the stat value of any item forged above +0',
   },
   sheet: {
-    since: '2026-10-05',
+    since: '2026-10-06',
     what: 'a whole composed hero sheet, or anything derived from one (throughput, ranking, team plans)',
   },
 } as const satisfies Record<string, { since: RegimeBoundary; what: string }>;
@@ -277,10 +281,10 @@ export const CAPTURE_REGISTRY: Record<string, CaptureRow> = {
     retention: 'value',
     waivers: {
       penetration: 'no hero owns ponta_diamante, so the 2026-09-02 restatement cannot reach this roster',
-      itemForge: 'no equipped item is forged above +0, so the 2026-10-05 forge table cannot reach this roster',
+      itemForge: 'no equipped item is forged above +0, so the 2026-10-06 forge table cannot reach this roster',
       sheet:
-        'no hero owns ponta_diamante and no equipped item is forged above +0, so neither the 2026-09-02 ' +
-        'nor the 2026-10-05 restatement can reach this roster',
+        'no hero owns ponta_diamante, no equipped item is forged above +0 and the account predates ' +
+        'Collections, so neither the 2026-09-02 nor the 2026-10-06 restatement can reach this roster',
     },
     note:
       'The only capture past the 2026-08-28 damage boundary, and the witness that the weapon 5x ' +

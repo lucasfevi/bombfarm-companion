@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { itemValores, upgradeMult } from '@bombfarm/domain/gear';
+import { itemStatUpgradeMult, itemValores, statUsesCappedLadder, upgradeMult } from '@bombfarm/domain/gear';
 import { itemName, itemRarityLabel, itemStatLabel, levelLabel, peekLabel, runeAxisLabel } from '@bombfarm/domain/game-labels';
 import { runeFromDefId } from '@bombfarm/domain/runes';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
@@ -101,6 +101,17 @@ function Dot() {
   );
 }
 
+/** Crit chance and cooldown reduction forge on a gentler ladder; says so when the item rolls one. */
+function cappedStatsNote(stats: readonly ItemPeekStat[], upgrade: number, lang: Lang): string {
+  const capped = stats.filter((roll) => statUsesCappedLadder(roll.stat));
+  const [first] = capped;
+  if (!first) return '';
+  const mult = itemStatUpgradeMult(first.stat, upgrade);
+  if (mult === upgradeMult(upgrade)) return '';
+  const names = capped.map((roll) => itemStatLabel(roll.stat, lang)).join(', ');
+  return ` (${names} ×${formatNumber(mult, lang, 2)})`;
+}
+
 /** The line a rune prints: the statistic it raises and by how much, the way a gear roll reads. */
 function runeEffect(item: ItemPeekItem, lang: Lang): { label: string; value: string } | null {
   if (item.kind !== 'rune') return null;
@@ -140,6 +151,7 @@ export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'i
                     <Dot />
                     <span className="text-muted">
                       {peekLabel('forge', lang)} ×{formatNumber(upgradeMult(upgrade), lang, 2)}
+                      {cappedStatsNote(stats, upgrade, lang)}
                     </span>
                   </>
                 ) : null}
