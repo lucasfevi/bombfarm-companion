@@ -140,9 +140,8 @@ export function itemKindIconSrc(defId: string, rarityIdx: number): string | null
   }
 
   if (defId.startsWith('forja_pedra_')) {
-    // The stones' own art is not bundled yet, so a stone wears its tier's Chance Stone chest.
-    const band = DIFFICULTY_SLUG[Math.round(rarityIdx) - 1];
-    return `${WIKI_ASSETS_BASE}/chests/chance_stone_chest_${band ?? 'normal'}.png`;
+    const slug = RARITY_SLUG[Math.round(rarityIdx)];
+    return slug ? `${WIKI_ASSETS_BASE}/stones/chance_stone_${slug}.png` : null;
   }
 
   if (defId.startsWith('chest_')) {
