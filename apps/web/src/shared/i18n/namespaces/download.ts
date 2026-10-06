@@ -100,7 +100,7 @@ export const en = {
   downloadScreenCollectionsItem1: "Your bonus on each of the ten stats, against its cap",
   downloadScreenCollectionsItem2: "What every book grants now, and the most it can ever grant",
   downloadScreenCollectionsItem3: "Progress page by page, for every set",
-  downloadScreenCollectionsItem4: "Which pieces in your bag are ready to sacrifice",
+  downloadScreenCollectionsItem4: "Which pieces in your inventory are ready to sacrifice",
   downloadScreenAccountTitle: "Account",
   downloadScreenAccountItem1: "Player name, account id, current phase and furthest reached",
   downloadScreenAccountItem2: "Your House: its level, its recovery cycle and its field slots",

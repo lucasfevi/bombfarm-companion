@@ -10,13 +10,14 @@ import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import { axisLabel, countOf } from './collections-labels';
 
-const cellBase =
-  'inline-flex w-8 justify-center rounded-sm border px-0.5 py-0.5 font-mono text-[11px] leading-none tabular-nums';
+const cellBase = cn(
+  'inline-flex', 'w-8', 'justify-center', 'rounded-sm', 'border', 'px-0.5', 'py-0.5', 'font-mono', 'text-[11px]', 'leading-none', 'tabular-nums',
+);
 
 function cellClass(fill: PageFill, rarity: number): string {
-  if (fill === 'empty') return cn(cellBase, 'border-line text-muted opacity-60');
+  if (fill === 'empty') return cn(cellBase, 'border-line', 'text-muted', 'opacity-60');
   if (fill === 'partial') return cn(cellBase, 'border-line', rarityTextClass(rarity));
-  return cn(cellBase, 'border-current font-bold bg-[color-mix(in_oklch,currentColor_18%,transparent)]', rarityTextClass(rarity));
+  return cn(cellBase, 'border-current', 'font-bold', 'bg-[color-mix(in_oklch,currentColor_18%,transparent)]', rarityTextClass(rarity));
 }
 
 function PageCell({ page }: { page: CollectionPageRow }) {

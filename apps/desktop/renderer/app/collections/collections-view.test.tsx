@@ -151,7 +151,7 @@ describe('CollectionsView', () => {
       expect(html).toContain('data-available="false"');
       expect(html).not.toContain('data-testid="collections-ready"');
       expect(html.match(/data-testid="collections-ready-unknown"/g)).toHaveLength(30);
-      expect(html).not.toContain('ready in bag');
+      expect(html).not.toContain('ready in inventory');
     }
   });
 
@@ -159,9 +159,9 @@ describe('CollectionsView', () => {
     const items = [{ def_id: 'gold_elmo', rarity: 3, equipped_on: null, locked: false, market_state: 0, in_stash: false }];
     const html = render(ready, { account: accountWith(items) });
     expect(html).toContain('data-available="true"');
-    expect(html).toContain('1 ready in bag');
+    expect(html).toContain('1 ready in inventory');
     expect(html.match(/data-testid="collections-ready"/g)).toHaveLength(1);
-    expect(html).toContain('1 in bag');
+    expect(html).toContain('1 in inventory');
     expect(html).toContain('1 book<');
     expect(html).not.toContain('data-testid="collections-ready-unknown"');
   });

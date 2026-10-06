@@ -219,7 +219,7 @@ describe('BookDetailPanel', () => {
   it('names every piece cell for a screen reader with the piece, its rarity and its state', () => {
     const html = render(book('gold'));
     expect(pieceAt(html, 1, 0)).toContain('aria-label="Gold Helm, Common — sacrificed"');
-    expect(pieceAt(html, 6, 2)).toContain('aria-label="Gold Ring, Rare — ready in bag"');
+    expect(pieceAt(html, 6, 2)).toContain('aria-label="Gold Ring, Rare — ready in inventory"');
     expect(pieceAt(html, 2, 4)).toContain('aria-label="Gold Chest, Legendary — arriving"');
     expect(pieceAt(html, 5, 2)).toContain('aria-label="Gold Gloves, Rare — not sacrificed"');
   });

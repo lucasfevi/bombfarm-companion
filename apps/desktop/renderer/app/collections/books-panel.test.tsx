@@ -186,14 +186,14 @@ describe('BooksPanel', () => {
     expect(html.match(/data-testid="collections-ready-unknown"/g)).toHaveLength(30);
     expect(html).not.toContain('data-testid="collections-ready"');
     expect(rowOf(html, 'gold')).not.toContain('—');
-    expect(rowOf(html, 'gold')).toContain('aria-label="Needs your bag, which has not been read yet."');
+    expect(rowOf(html, 'gold')).toContain('aria-label="Needs your inventory, which has not been read yet."');
     expect(text(rowOf(html, 'gold'))).toContain('?');
   });
 
   it('draws a chip with the ready count and the gain it would add when the bag holds pieces', () => {
     const gold = rowOf(render({ board: bagBoard, bagAvailable: true }), 'gold');
     const ready = text(/<span [^>]*data-testid="collections-ready"[\s\S]*?<\/span><\/span>/.exec(gold)?.[0] ?? '');
-    expect(ready).toMatch(/^2 in bag \+\d+(\.\d+)?%$/);
+    expect(ready).toMatch(/^2 in inventory \+\d+(\.\d+)?%$/);
   });
 
   it('makes each book’s button the one tab stop and the activation target, named for the set', () => {

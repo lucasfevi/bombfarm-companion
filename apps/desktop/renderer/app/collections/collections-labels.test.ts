@@ -99,7 +99,7 @@ describe('summaryLine', () => {
   });
 
   it('adds the bag when something in it is ready', () => {
-    expect(summaryLine(board.summary, en, 'en')).toMatch(/ · 1 ready in bag$/);
+    expect(summaryLine(board.summary, en, 'en')).toMatch(/ · 1 ready in inventory$/);
     expect(summaryLine(board.summary, ptBR, 'pt-BR')).toMatch(/ · 1 prontas na mochila$/);
   });
 });

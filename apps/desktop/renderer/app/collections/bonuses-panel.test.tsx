@@ -172,7 +172,7 @@ describe('BonusesPanel', () => {
     );
     expect(inProgress + summary.booksComplete + untouched).toBe(30);
     expect(summary.readyInBag).toBe(0);
-    expect(render()).not.toContain('ready in bag');
+    expect(render()).not.toContain('ready in inventory');
   });
 
   it('adds the ready count to the summary when the bag holds pieces', () => {
@@ -181,7 +181,7 @@ describe('BonusesPanel', () => {
     const html = renderToStaticMarkup(
       createElement(BonusesPanel, { board: withBag, activeAxis: 'all', onToggleAxis: () => undefined }),
     );
-    expect(html).toContain('· 1 ready in bag</p>');
+    expect(html).toContain('· 1 ready in inventory</p>');
   });
 
   it('renders in Portuguese with the game’s own words and decimal comma', () => {

@@ -16,18 +16,22 @@ import { sub, useCopy, useLocale } from '../../lib/copy';
 import { axisLabel, axisProgress, axisTileLabel, axisTipLines, summaryLine } from './collections-labels';
 
 const tileClass = cn(
-  'relative flex min-w-0 flex-col gap-1.5 border border-t-2 border-line border-t-[var(--axis-colour)] px-2.5 py-2',
+  'relative', 'flex', 'min-w-0', 'flex-col', 'gap-1.5', 'border', 'border-t-2', 'border-line', 'border-t-[var(--axis-colour)]', 'px-2.5', 'py-2',
   'hover:bg-[color-mix(in_oklch,var(--axis-colour)_6%,transparent)]',
-  'has-[[aria-pressed=true]]:border-x-[var(--axis-colour)] has-[[aria-pressed=true]]:border-b-[var(--axis-colour)]',
+  'has-[[aria-pressed=true]]:border-x-[var(--axis-colour)]',
+  'has-[[aria-pressed=true]]:border-b-[var(--axis-colour)]',
   'has-[[aria-pressed=true]]:bg-[color-mix(in_oklch,var(--axis-colour)_12%,var(--surface))]',
-  'has-[:focus-visible]:[outline-style:solid] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent',
+  'has-[:focus-visible]:[outline-style:solid]',
+  'has-[:focus-visible]:outline-2',
+  'has-[:focus-visible]:outline-offset-2',
+  'has-[:focus-visible]:outline-accent',
 );
 
 /** The label is the tile's one button, stretched over the whole tile by its pseudo-element, so the
  *  bar and figures under it stay ordinary content rather than children of a button. */
 const labelButtonClass = cn(
-  'block w-full cursor-pointer truncate border-0 bg-transparent p-0 text-left text-[10.5px] uppercase tracking-[0.06em] text-muted',
-  "after:absolute after:inset-0 after:content-[''] focus-visible:outline-none",
+  'block', 'w-full', 'cursor-pointer', 'truncate', 'border-0', 'bg-transparent', 'p-0', 'text-left', 'text-[10.5px]', 'uppercase', 'tracking-[0.06em]', 'text-muted',
+  'after:absolute', 'after:inset-0', "after:content-['']", 'focus-visible:outline-none',
 );
 
 function SetLine({ entries }: { entries: readonly AxisSetEntry[] }) {
@@ -111,7 +115,7 @@ function AxisTile({
       <div className="flex items-center justify-between gap-2">
         <span
           data-testid="collections-axis-total"
-          className={cn('text-xl font-bold leading-none tabular-nums', empty ? 'text-muted' : 'text-[var(--axis-colour)]')}
+          className={cn('text-xl', 'font-bold', 'leading-none', 'tabular-nums', empty ? 'text-muted' : 'text-[var(--axis-colour)]')}
         >
           {formatBonus(row.total, locale)}
         </span>

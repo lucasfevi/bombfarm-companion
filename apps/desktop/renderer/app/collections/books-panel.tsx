@@ -82,8 +82,8 @@ function BookButton({
       data-testid={BOOK_BUTTON_TEST_ID}
       data-set={book.code}
       className={cn(
-        'flex w-full min-w-0 cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-left text-inherit',
-        'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+        'flex', 'w-full', 'min-w-0', 'cursor-pointer', 'items-center', 'gap-2', 'border-0', 'bg-transparent', 'p-0', 'text-left', 'text-inherit',
+        'focus-visible:[outline-style:solid]', 'focus-visible:outline-2', 'focus-visible:outline-offset-2', 'focus-visible:outline-accent',
       )}
       onClick={(event) => {
         event.stopPropagation();
@@ -165,7 +165,7 @@ function BookRow({
         onSelect(book.code);
       }}
       className={cn(
-        'cursor-pointer hover:bg-[color-mix(in_oklch,var(--line)_28%,transparent)]',
+        'cursor-pointer', 'hover:bg-[color-mix(in_oklch,var(--line)_28%,transparent)]',
         selected && 'bg-[color-mix(in_oklch,var(--accent)_10%,transparent)]',
       )}
       style={{ height: LIST_ROW_HEIGHT }}
@@ -233,8 +233,8 @@ function ReadySwitch({
         data-testid="collections-ready-filter"
         data-available={available ? 'true' : 'false'}
         className={cn(
-          'inline-flex items-center gap-2 text-xs',
-          available ? 'cursor-pointer text-ink' : 'cursor-not-allowed text-muted',
+          'inline-flex', 'items-center', 'gap-2', 'text-xs',
+          available ? cn('cursor-pointer', 'text-ink') : cn('cursor-not-allowed', 'text-muted'),
         )}
       >
         <Switch

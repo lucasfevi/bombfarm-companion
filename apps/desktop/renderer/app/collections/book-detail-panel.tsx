@@ -25,13 +25,13 @@ const EM_DASH = '—';
 
 export const COLLECTION_DETAIL_ID = 'collections-book-detail';
 
-const sectionHeadingClass = 'm-0 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted';
+const sectionHeadingClass = cn('m-0', 'text-[10.5px]', 'font-semibold', 'uppercase', 'tracking-[0.06em]', 'text-muted');
 
 /** Three placements, each stated by its own range so no rule depends on which of two overlapping
  *  media queries the stylesheet happens to emit last: one stack under `lg`, two columns from `lg`
  *  up to `wide` (effects and pages beside the piece grid, which keeps its natural width), and the
  *  same single stack again from `wide`, where the panel sits beside the table in a narrow column. */
-const bodyClass = 'grid grid-cols-1 gap-4 lg:max-wide:grid-cols-[minmax(0,1fr)_auto]';
+const bodyClass = cn('grid', 'grid-cols-1', 'gap-4', 'lg:max-wide:grid-cols-[minmax(0,1fr)_auto]');
 
 const RARITIES = Array.from({ length: COLLECTION_PAGES }, (_, rarity) => rarity);
 
@@ -115,7 +115,7 @@ function PageEffectLines({
   return (
     <span className="flex flex-col items-end gap-0.5">
       {page.effects.map((effect) => (
-        <span key={effect.axis} className={cn('flex flex-col items-end leading-tight', figureTone(read(effect)))}>
+        <span key={effect.axis} className={cn('flex', 'flex-col', 'items-end', 'leading-tight', figureTone(read(effect)))}>
           {multiEffect ? <span className="max-w-24 truncate text-[10px] text-muted">{axisLabel(effect.axis, t)}</span> : null}
           {formatBonus(read(effect), locale)}
         </span>
@@ -194,14 +194,14 @@ function PagesTable({ book, bagAvailable }: { book: CollectionSetRow; bagAvailab
   );
 }
 
-const markerBase = 'grid size-3.5 place-items-center rounded-full border border-bg';
+const markerBase = cn('grid', 'size-3.5', 'place-items-center', 'rounded-full', 'border', 'border-bg');
 /** On a piece the marker hangs off the tile's corner; in the legend it sits in the text line. */
-const markerPlacement = { corner: 'absolute -right-1 -bottom-1', inline: 'inline-grid shrink-0' } as const;
+const markerPlacement = { corner: cn('absolute', '-right-1', '-bottom-1'), inline: cn('inline-grid', 'shrink-0') } as const;
 
 const markerLook = {
-  sacrificed: { icon: 'check', className: 'bg-up text-bg' },
-  ready: { icon: 'archive-box', className: 'bg-accent text-accent-ink' },
-  pending: { icon: 'arrow-path', className: 'bg-surface text-ink' },
+  sacrificed: { icon: 'check', className: cn('bg-up', 'text-bg') },
+  ready: { icon: 'archive-box', className: cn('bg-accent', 'text-accent-ink') },
+  pending: { icon: 'arrow-path', className: cn('bg-surface', 'text-ink') },
 } as const satisfies Record<Exclude<PieceState, 'missing'>, { icon: IconName; className: string }>;
 
 function StateMarker({ state, placement = 'corner' }: { state: Exclude<PieceState, 'missing'>; placement?: keyof typeof markerPlacement }) {
@@ -215,9 +215,9 @@ function StateMarker({ state, placement = 'corner' }: { state: Exclude<PieceStat
 
 const cellStateClass = {
   sacrificed: '',
-  ready: 'outline outline-2 outline-offset-1 outline-accent',
-  pending: 'outline outline-1 outline-offset-1 outline-dashed outline-ink',
-  missing: 'opacity-35 grayscale',
+  ready: cn('outline', 'outline-2', 'outline-offset-1', 'outline-accent'),
+  pending: cn('outline', 'outline-1', 'outline-offset-1', 'outline-dashed', 'outline-ink'),
+  missing: cn('opacity-35', 'grayscale'),
 } as const satisfies Record<PieceState, string>;
 
 function PieceCell({ piece, rarity }: { piece: CollectionPieceRow; rarity: number }) {
@@ -237,7 +237,7 @@ function PieceCell({ piece, rarity }: { piece: CollectionPieceRow; rarity: numbe
         data-slot={piece.slot}
         data-rarity={rarity}
         data-state={state}
-        className={cn('relative inline-block rounded-sm', cellStateClass[state])}
+        className={cn('relative', 'inline-block', 'rounded-sm', cellStateClass[state])}
       >
         <ItemIcon item={{ defId: piece.defId, rarityIdx: rarity, level: piece.level, upgrade: 0 }} size="sm" showLevel={false} />
         {state === 'missing' ? null : <StateMarker state={state} />}
@@ -264,12 +264,12 @@ function RarityHeader({ rarity }: { rarity: number }) {
           role="img"
           aria-label={name}
           tabIndex={-1}
-          className={cn('block size-2.5 rounded-full', rarityDotClass(rarity))}
+          className={cn('block', 'size-2.5', 'rounded-full', rarityDotClass(rarity))}
         />
         <Tooltip.Portal>
           <Tooltip.Positioner sideOffset={6}>
             <Tooltip.Popup>
-              <p className={cn('m-0 font-semibold', rarityTextClass(rarity))}>{name}</p>
+              <p className={cn('m-0', 'font-semibold', rarityTextClass(rarity))}>{name}</p>
             </Tooltip.Popup>
           </Tooltip.Positioner>
         </Tooltip.Portal>
