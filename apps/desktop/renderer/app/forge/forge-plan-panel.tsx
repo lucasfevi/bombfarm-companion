@@ -11,6 +11,7 @@ import { stoneForTarget, stonePpForTarget, type ResolvedStoneRange } from '../..
 import type { ForgePlan, ForgePlanForecast, ForgeStoneEdit } from '../../lib/forge/use-forge-plan';
 import { ForgeGold } from './forge-gold';
 import { ForgeQueueAdd } from './forge-queue-add';
+import { StoneIcon, StoneTooltip } from './forge-stone-art';
 import { ForgeStonesControl, ForgeStonesShortage, forgeStoneFacts } from './forge-stones-panel';
 import {
   BLANK,
@@ -33,9 +34,10 @@ function oddsClass(chance: number): string {
   return 'text-down';
 }
 
-/** The rungs a roll can miss on, from the first past the guaranteed ones up to the target. */
-function riskyRungs(upgrade: number, target: number): number[] {
-  const first = Math.max(upgrade + 1, FORGE_GUARANTEED + 1);
+/** The rungs a roll can miss on, from the first past the guaranteed ones up to the target; with a
+ *  stone chosen on the certain ones too, so the ladder can show them refused. */
+function ladderRungs(upgrade: number, target: number, withCertain: boolean): number[] {
+  const first = withCertain ? upgrade + 1 : Math.max(upgrade + 1, FORGE_GUARANTEED + 1);
   return Array.from({ length: Math.max(0, target - first + 1) }, (_, index) => first + index);
 }
 
@@ -140,10 +142,10 @@ export function ForgePlanPanel({
   const t = useCopy();
   const maxed = item.upgrade >= FORGE_MAX;
   const target = plan.target;
-  const rungs = riskyRungs(item.upgrade, target);
-  const anyStone = stoneRanges.some((range) => range.rarity !== null && range.to > FORGE_GUARANTEED);
+  const anyStone = stoneRanges.some((range) => range.rarity !== null);
+  const rungs = ladderRungs(item.upgrade, target, anyStone);
   const ladderColumns = anyStone
-    ? 'grid-cols-[2.5rem_minmax(0,1fr)_3rem_4.5rem_auto]'
+    ? 'grid-cols-[2.5rem_minmax(0,1fr)_3rem_7rem_auto]'
     : 'grid-cols-[2.5rem_minmax(0,1fr)_3rem_auto]';
   const cancelling = reason === 'cancelling';
   const running = reason === 'running' || cancelling;
@@ -254,14 +256,16 @@ export function ForgePlanPanel({
           />
         </div>
 
-        <ForgeStonesControl ranges={stoneRanges} labels={labels} onEdit={onStoneEdit} />
+        <ForgeStonesControl ranges={stoneRanges} owned={ownedStones} labels={labels} onEdit={onStoneEdit} />
       </fieldset>
 
       {rungs.length > 0 ? (
         <ol data-testid="forge-ladder" aria-label={t.forgeLadderCaption} className="m-0 flex list-none flex-col gap-1 p-0">
           {rungs.map((rung) => {
-            const chance = forgeChance(rung, 0, stonePpForTarget(stoneRanges, rung));
+            const base = forgeChance(rung, 0, 0);
             const stone = stoneForTarget(stoneRanges, rung);
+            const refused = stone !== null && base >= 1;
+            const chance = forgeChance(rung, 0, refused ? 0 : stonePpForTarget(stoneRanges, rung));
             const floor = forgeFailLevel(rung);
             return (
               <li key={rung} data-testid="forge-ladder-rung" className={cn('grid', 'items-center', 'gap-2', 'text-xs', ladderColumns)}>
@@ -269,9 +273,41 @@ export function ForgePlanPanel({
                 <Bar percent={chance * 100} variant={chance >= GOOD_ODDS ? 'best' : 'fill'} />
                 <span className={cn('text-right', 'font-mono', 'tabular-nums', oddsClass(chance))}>{labels.chance(chance)}</span>
                 {anyStone ? (
-                  <span data-testid="forge-ladder-stone" className="truncate text-[11px] text-muted">
-                    {stone === null ? '' : labels.rarityName(stone)}
-                  </span>
+                  stone === null ? (
+                    <span />
+                  ) : (
+                    <StoneTooltip
+                      text={
+                        refused
+                          ? t.forgeLadderStoneRefused
+                          : sub(t.forgeLadderStoneTip, {
+                              base: labels.chance(base),
+                              bonus: labels.signedPercent(chance - base),
+                              final: labels.chance(chance),
+                            })
+                      }
+                      trigger={
+                        <span
+                          data-testid="forge-ladder-stone"
+                          data-state={refused ? 'refused' : 'used'}
+                          data-rarity={stone}
+                          tabIndex={0}
+                          className={cn('flex', 'min-w-0', 'items-center', 'gap-1', 'text-[11px]', 'text-muted')}
+                        >
+                          <StoneIcon rarity={stone} dim={refused} small />
+                          <span className="truncate">
+                            {refused ? (
+                              t.forgeLadderStoneUnused
+                            ) : (
+                              <>
+                                {labels.chance(base)} <span className="font-semibold text-ink">{labels.signedPercent(chance - base)}</span>
+                              </>
+                            )}
+                          </span>
+                        </span>
+                      }
+                    />
+                  )
                 ) : null}
                 <span className={cn('font-mono', 'text-[11px]', 'tabular-nums', floor === FORGE_FAIL_FLOOR && rung > FORGE_FAIL_FLOOR + 1 ? 'text-down' : 'text-muted')}>
                   {sub(t.forgeLadderFailTo, { floor: forgeLevel(floor) })}

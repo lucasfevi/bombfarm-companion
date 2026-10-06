@@ -361,22 +361,33 @@ test.describe('forge plan smoke', () => {
       await expect(plan.getByTestId('forge-fact-stones-2')).toHaveCount(0);
       const goldWithout = (await plan.getByTestId('forge-fact-gold').textContent()) ?? '';
 
-      await stones.getByRole('combobox', { name: /^Chance Stone for/ }).click();
-      await page.getByRole('option', { name: 'Rare', exact: true }).click();
+      await stones.getByTestId('forge-stone-pick').click();
+      const options = page.getByTestId('forge-stone-option');
+      await expect(options).toHaveCount(7);
+      await expect(options.first()).toHaveAccessibleName('None');
+      await expect(options.nth(3)).toContainText('+30%');
+      await expect(options.nth(3)).toContainText('Rare');
+      await expect(options.nth(3)).toContainText('0 owned');
+      await expect(options.nth(3).locator('img[src$="chance_stone_rare.png"]')).toHaveCount(1);
+      await options.nth(3).click();
+      await expect(stones.getByTestId('forge-stone-pick')).toContainText('+30%');
       await expect(plan.getByTestId('forge-fact-stones-2')).toBeVisible();
       await expect(plan.getByTestId('forge-fact-gold')).not.toHaveText(goldWithout);
       expect(figureOf((await plan.getByTestId('forge-fact-gold').textContent()) ?? '')).toBeLessThan(figureOf(goldWithout));
-      await expect(plan.getByTestId('forge-ladder-stone').first()).toHaveText('Rare');
+      await expect(plan.getByTestId('forge-ladder-stone').first()).toHaveAttribute('data-rarity', '2');
+      await expect(plan.getByTestId('forge-ladder-stone').first().locator('img[src$="chance_stone_rare.png"]')).toHaveCount(1);
+      await expect(plan.getByTestId('forge-stones-short')).toContainText('You do not own enough Rare Chance Stones');
 
       await expect(plan.getByTestId('forge-button')).toBeDisabled();
-      await expect(plan.getByTestId('forge-button-reason')).toContainText('cannot use Chance Stones yet');
+      await expect(plan.getByTestId('forge-button-reason')).toContainText('cannot forge with Chance Stones yet');
 
       await stones.getByTestId('forge-stones-add').click();
       await expect(stones.getByTestId('forge-stone-range')).toHaveCount(2);
 
-      await stones.getByTestId('forge-stone-remove').first().click();
-      await stones.getByRole('combobox', { name: /^Chance Stone for/ }).click();
-      await page.getByRole('option', { name: 'None', exact: true }).click();
+      await stones.getByTestId('forge-stones-join').click();
+      await expect(stones.getByTestId('forge-stone-range')).toHaveCount(1);
+      await stones.getByTestId('forge-stone-pick').click();
+      await page.getByTestId('forge-stone-option').first().click();
       await expect(plan.getByTestId('forge-fact-stones-2')).toHaveCount(0);
       await expect(plan.getByTestId('forge-fact-gold')).toHaveText(goldWithout);
       await expect(plan.getByTestId('forge-button-reason')).toHaveText('No server to forge on');

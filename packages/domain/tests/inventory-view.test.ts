@@ -338,15 +338,19 @@ describe('Chance Stones', () => {
     ['forja_pedra_comum', 0],
     ['forja_pedra_incomum', 1],
     ['forja_pedra_raro', 2],
-    ['forja_pedra_superraro', 3],
-    ['forja_pedra_lendaria', 4],
+    ['forja_pedra_epico', 3],
+    ['forja_pedra_lendario', 4],
     ['forja_pedra_mitico', 5],
-    ['forja_pedra_common', 0],
-    ['forja_pedra_epic', 3],
-    ['forja_pedra_mythic', 5],
-    ['forja_pedra_4', 4],
   ])('reads the tier of %s as %i, not the 0 the wire may send', (defId, expected) => {
     expect(stone(defId).rarityIdx).toBe(expected);
+  });
+
+  it.each([
+    ['forja_pedra_epic', 3],
+    ['forja_pedra_superraro', 3],
+    ['forja_pedra_4', 4],
+  ])('does not guess at %s: the wire rarity stays', (defId, wire) => {
+    expect(stone(defId, wire).rarityIdx).toBe(wire);
   });
 
   it('keeps the wire rarity when the tail names no tier', () => {

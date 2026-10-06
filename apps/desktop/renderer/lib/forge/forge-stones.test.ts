@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   MAX_STONE_RANGES,
   addStoneRange,
+  joinStoneRanges,
   removeStoneRange,
   resolveStoneRanges,
   setStoneRangeEnd,
@@ -148,5 +149,19 @@ describe('what the forecast reads', () => {
     expect(stonesCanBeUsed(resolved)).toBe(true);
     expect(stonesCanBeUsed(resolveStoneRanges([{ upTo: 4, rarity: 5 }], 0, 4))).toBe(false);
     expect(stonesCanBeUsed(resolveStoneRanges([], FROM, TO))).toBe(false);
+  });
+});
+
+describe('joinStoneRanges', () => {
+  it('folds every range into one that runs to the target and keeps the first stone', () => {
+    const ranges = [
+      { upTo: 11, rarity: 1 },
+      { upTo: 15, rarity: 4 },
+    ];
+    expect(joinStoneRanges(ranges, FROM, TO)).toEqual([{ upTo: TO, rarity: 1 }]);
+  });
+
+  it('leaves a plan with no ranges as it was', () => {
+    expect(joinStoneRanges([], FROM, TO)).toEqual([{ upTo: TO, rarity: null }]);
   });
 });

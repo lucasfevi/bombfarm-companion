@@ -95,6 +95,16 @@ export function removeStoneRange(
   return stored(resolved.filter((_, at) => at !== index));
 }
 
+/** Folds every range into one that runs to the plan's target, with the first range's stone. */
+export function joinStoneRanges(
+  ranges: readonly ForgeStoneRange[],
+  upgrade: number,
+  target: number,
+): ForgeStoneRange[] {
+  const first = resolveStoneRanges(ranges, upgrade, target)[0];
+  return first === undefined ? [...ranges] : [{ upTo: target, rarity: first.rarity }];
+}
+
 /** What the forecast reads: the stone for each target, indexed by target - 1; undefined when none is chosen. */
 export function stonesByTarget(resolved: readonly ResolvedStoneRange[]): ForgeStones | undefined {
   if (resolved.every((range) => range.rarity === null)) return undefined;

@@ -120,6 +120,12 @@ describe('forgePlanReducer stones', () => {
     ]);
   });
 
+  it('joins the ranges back into one that keeps the first stone', () => {
+    const split = forgePlanReducer(start, { kind: 'stoneAdd', ...piece });
+    const stoned = forgePlanReducer(split, { kind: 'stoneRarity', ...piece, index: 0, rarity: 2 });
+    expect(forgePlanReducer(stoned, { kind: 'stoneJoin', ...piece }).stones).toEqual([{ upTo: 13, rarity: 2 }]);
+  });
+
   it('lets the last range follow the target when the target moves', () => {
     const stoned = forgePlanReducer(start, { kind: 'stoneRarity', ...piece, index: 0, rarity: 1 });
     const raised = forgePlanReducer(stoned, { kind: 'step', itemId: 'a', upgrade: 8, delta: 1 });

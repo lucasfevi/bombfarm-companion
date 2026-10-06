@@ -57,6 +57,9 @@ describe('the Chance Stones control', () => {
     expect(html.match(/data-testid="forge-stone-range"/g)).toHaveLength(1);
     expect(html).not.toContain('data-testid="forge-stones-short"');
     expect(html).not.toContain('data-testid="forge-ladder-stone"');
+    expect(html).not.toContain('data-testid="forge-stones-join"');
+    expect(html).toContain(en.forgeStonesHelp);
+    expect(/data-testid="forge-stone-face">([^<]*)</.exec(html)?.[1]).toBe('None');
     expect(html).not.toMatch(/data-testid="forge-fact-stones-/);
   });
 
@@ -69,8 +72,9 @@ describe('the Chance Stones control', () => {
       [4, 0, 9, 0, 0, 0],
     );
     expect(html.match(/data-testid="forge-stone-range"/g)).toHaveLength(2);
-    expect(html).toMatch(/data-testid="forge-fact-stones-0"[^>]*>[\d.,]+ · 4 held</);
-    expect(html).toMatch(/data-testid="forge-fact-stones-2"[^>]*>[\d.,]+ · 9 held</);
+    expect(html).toMatch(/data-testid="forge-fact-stones-0"[^>]*>[\d.,]+ of 4 owned</);
+    expect(html).toMatch(/data-testid="forge-fact-stones-2"[^>]*>[\d.,]+ of 9 owned</);
+    expect(html).toContain('data-testid="forge-stones-join"');
     expect(html).toMatch(/data-testid="forge-fact-stones-protected-2"/);
     expect(html).not.toMatch(/data-testid="forge-fact-stones-1"/);
   });
@@ -84,13 +88,46 @@ describe('the Chance Stones control', () => {
     stoned.forEach((chance, index) => {
       expect(percent(chance)).toBeGreaterThan(percent(plain[index]));
     });
-    expect(renderPanel([{ upTo: 13, rarity: 5 }], [0, 0, 0, 0, 0, 0])).toContain('Mythic');
+  });
+
+  it('shows each rung the stone it uses, with the base chance and what the stone adds', () => {
+    const html = renderPanel([{ upTo: 13, rarity: 3 }], [0, 0, 0, 4, 0, 0]);
+    const rungs = html.split('data-testid="forge-ladder-rung"').slice(1);
+    expect(rungs).toHaveLength(5);
+    rungs.forEach((rung) => {
+      expect(rung).toContain('data-testid="forge-ladder-stone"');
+      expect(rung).toContain('data-rarity="3"');
+      expect(rung).toContain('data-state="used"');
+      expect(rung).toContain('+40%');
+    });
+    expect(rungs[0]).toContain('50% <span');
+  });
+
+  it('draws each chosen stone with its own art, its bonus, its name and how many are owned', () => {
+    const html = renderPanel(
+      [
+        { upTo: 10, rarity: 2 },
+        { upTo: 13, rarity: 3 },
+      ],
+      [0, 0, 7, 0, 0, 0],
+    );
+    expect(html).toMatch(/<img[^>]*src="\/wiki-assets\/stones\/chance_stone_rare\.png"/);
+    expect(html).toMatch(/<img[^>]*src="\/wiki-assets\/stones\/chance_stone_epic\.png"/);
+    const faces = html.split('data-testid="forge-stone-face"').slice(1).map((part) => part.split('</button>')[0] ?? '');
+    expect(faces[0]).toContain('+30%');
+    expect(faces[0]).toContain('Rare');
+    expect(faces[0]).toContain('7 owned');
+    expect(faces[1]).toContain('+40%');
+    expect(faces[1]).toContain('Epic');
+    expect(faces[1]).toContain('0 owned');
+    expect(faces[1]).toContain('text-down');
   });
 
   it('warns, without blocking, when the climb expects more stones than are held', () => {
     const short = renderPanel([{ upTo: 13, rarity: 1 }], [0, 1, 0, 0, 0, 0]);
     expect(short).toContain('data-testid="forge-stones-short"');
-    expect(short).toContain('Uncommon Chance Stones and you hold 1');
+    expect(short).toContain('You do not own enough Uncommon Chance Stones');
+    expect(short).toContain('you own 1.');
     expect(short).toMatch(/data-testid="forge-fact-stones-1"[^>]*class="text-warn"/);
     const enough = renderPanel([{ upTo: 13, rarity: 1 }], [0, 99, 0, 0, 0, 0]);
     expect(enough).not.toContain('data-testid="forge-stones-short"');
@@ -119,7 +156,9 @@ describe('the Chance Stones control', () => {
         }),
       }),
     );
-    expect(from0).toMatch(/data-testid="forge-stone-refused"[^>]*>not used up to \+4</);
+    expect(from0).toMatch(/data-testid="forge-stone-refused"[^>]*>Levels up to \+4 always land/);
+    expect(from0.match(/data-state="refused"/g)).toHaveLength(4);
+    expect(from0.match(/data-state="used"/g)).toHaveLength(9);
   });
 });
 

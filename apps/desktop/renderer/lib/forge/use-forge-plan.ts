@@ -19,6 +19,7 @@ import {
 } from '@bombfarm/domain/forge';
 import {
   addStoneRange,
+  joinStoneRanges,
   removeStoneRange,
   resolveStoneRanges,
   setStoneRangeEnd,
@@ -42,6 +43,7 @@ export type ForgeStoneEdit =
   | { kind: 'stoneRarity'; index: number; rarity: number | null }
   | { kind: 'stoneEnd'; index: number; upTo: number }
   | { kind: 'stoneAdd' }
+  | { kind: 'stoneJoin' }
   | { kind: 'stoneRemove'; index: number };
 
 export type ForgePlanAction =
@@ -51,6 +53,7 @@ export type ForgePlanAction =
   | { kind: 'stoneRarity'; itemId: string; upgrade: number; index: number; rarity: number | null }
   | { kind: 'stoneEnd'; itemId: string; upgrade: number; index: number; upTo: number }
   | { kind: 'stoneAdd'; itemId: string; upgrade: number }
+  | { kind: 'stoneJoin'; itemId: string; upgrade: number }
   | { kind: 'stoneRemove'; itemId: string; upgrade: number; index: number };
 
 export const INITIAL_FORGE_PLAN: ForgePlan = {
@@ -117,6 +120,8 @@ export function forgePlanReducer(plan: ForgePlan, action: ForgePlanAction): Forg
       );
     case 'stoneAdd':
       return editStones(plan, action, addStoneRange);
+    case 'stoneJoin':
+      return editStones(plan, action, joinStoneRanges);
     case 'stoneRemove':
       return editStones(plan, action, (stones, upgrade, target) => removeStoneRange(stones, upgrade, target, action.index));
   }

@@ -223,22 +223,23 @@ export function runeRarityIdx(defId: string, wireRarity: number): number {
   return rarityIdxByCode.get(tail) ?? wireRarity;
 }
 
-const RARITY_IDX_BY_ENGLISH_WORD = new Map(
-  ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'].map((word, idx) => [word, idx]),
-);
+const CHANCE_STONE_WORDS = ['comum', 'incomum', 'raro', 'epico', 'lendario', 'mitico'] as const;
+const CHANCE_STONE_TAIL_IDX = new Map<string, number>(CHANCE_STONE_WORDS.map((word, idx) => [word, idx]));
+
+/** The id a Chance Stone of this rarity carries, for drawing one the player may not hold. */
+export function chanceStoneDefId(rarityIdx: number): string {
+  return `forja_pedra_${CHANCE_STONE_WORDS[rarityIdx] ?? CHANCE_STONE_WORDS[0]}`;
+}
 
 /**
- * A Chance Stone's tier rides in its id's tail (`forja_pedra_<tier>`). The tail has not been seen
- * on the wire, so it is read in the catalog's Portuguese rarity words (the way a rune's is), in
- * the English words the wiki files its art under, or as a bare tier index (the way a chest's is);
- * a tail none of those explain keeps the wire's `rarity`.
+ * A Chance Stone's tier rides in its id's tail as an unaccented masculine Portuguese word
+ * (`forja_pedra_comum`, `_incomum`, `_raro`, `_epico` — witnessed on a live account, where the
+ * wire's `rarity` agrees). The top two words follow the same pattern but have not been seen; a
+ * tail outside the pattern keeps the wire's `rarity`.
  */
 export function chanceStoneRarityIdx(defId: string, wireRarity: number): number {
   if (!defId.startsWith('forja_pedra_')) return wireRarity;
-  const tail = defId.slice('forja_pedra_'.length);
-  const named = rarityIdxByCode.get(tail) ?? RARITY_IDX_BY_ENGLISH_WORD.get(tail);
-  if (named !== undefined) return named;
-  return /^[0-5]$/.test(tail) ? Number(tail) : wireRarity;
+  return CHANCE_STONE_TAIL_IDX.get(defId.slice('forja_pedra_'.length)) ?? wireRarity;
 }
 
 /** Chance Stones held per rarity, indexed 0…5. Every row is one stone, as for every other stack. */
