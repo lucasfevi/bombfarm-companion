@@ -951,6 +951,11 @@ async function bootstrap(): Promise<void> {
     const parsed = typeof gold === 'string' ? Number(gold) : gold;
     return typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : null;
   };
+  const currentEssence = (): number | null => {
+    const account = cachedAccount()?.payload.account;
+    const raw = account?.essence;
+    return typeof raw === 'number' && Number.isFinite(raw) ? raw : null;
+  };
   pvpReader = createPvpReader({
     consentStore: { read: () => consentStore?.read() ?? initialConsent() },
     accountSource: currentAccountSource,
@@ -973,6 +978,7 @@ async function bootstrap(): Promise<void> {
     isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
     currentItems,
     currentGold,
+    currentEssence,
     applyResult: (patch) => {
       accountRefresh?.applyPatch((payload) => patchAccountAfterForge(payload, patch, new Date().toISOString()));
     },

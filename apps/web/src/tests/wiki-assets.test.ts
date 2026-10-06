@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { normalizeHero } from '@/shared/lib/storage';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
-import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIconSrc, goldIconSrc, chestIconSrc, clockIconSrc, propIconSrc, dropIconSrc } from '@bombfarm/domain/wiki-assets';
+import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIconSrc, goldIconSrc, chestIconSrc, clockIconSrc, propIconSrc, dropIconSrc, itemKindIconSrc } from '@bombfarm/domain/wiki-assets';
 import { DROP_RATES, type DropRateId } from '@bombfarm/domain/phase-wiki';
 
 describe('wiki-assets', () => {
@@ -119,6 +119,9 @@ describe('wiki-assets', () => {
     expect(dropIconSrc('stone', 1)).toBe('/wiki-assets/chests/skill_stone_chest_easy.png');
     expect(dropIconSrc('stone', 5)).toBe('/wiki-assets/chests/skill_stone_chest_inferno.png');
     expect(dropIconSrc('gem', 1)).toBe('/wiki-assets/chests/gem_chest_easy.png');
+    expect(dropIconSrc('chance', 3)).toBe('/wiki-assets/chests/chance_stone_chest_hard.png');
+    expect(itemKindIconSrc('chest_forja_3', 3)).toBe('/wiki-assets/chests/chance_stone_chest_hard.png');
+    expect(itemKindIconSrc('forja_pedra_epico', 3)).toBe('/wiki-assets/stones/chance_stone_epic.png');
     expect(dropIconSrc('gem', 5)).toBe('/wiki-assets/chests/gem_chest_inferno.png');
   });
 

@@ -16,7 +16,7 @@ import { isBurning } from '../../lib/deconstruct/deconstruct-run-reducer';
 import { useDeconstructRun } from '../../lib/deconstruct/deconstruct-run-store';
 import type { ForgeQueueState } from '../../lib/forge/forge-queue-reducer';
 import { cancelForgeQueue, clearForgeQueue, startForgeQueue } from '../../lib/forge/forge-queue-store';
-import { forgeQueueExpectedGold, type ForgeQueueRow } from '../../lib/forge/forge-queue-view';
+import { forgeQueueExpectedEssence, forgeQueueExpectedGold, type ForgeQueueRow } from '../../lib/forge/forge-queue-view';
 import { dispatchForgeRun, useForgeRun } from '../../lib/forge/forge-run-store';
 import { ForgeGold } from './forge-gold';
 import {
@@ -76,7 +76,10 @@ export function ForgeQueueActions({
         : forgeStartRefusalText(queue.halt.reason, t);
 
   const expectedGold = forgeQueueExpectedGold(rows);
+  const expectedEssence = forgeQueueExpectedEssence(rows);
   const head = rows[0] ?? null;
+  const essence =
+    expectedEssence === null ? null : <strong className="font-semibold text-ink">{labels.count(Math.round(expectedEssence))}</strong>;
   const gold =
     expectedGold === null ? null : (
       <strong className="font-semibold text-ink">
@@ -84,15 +87,16 @@ export function ForgeQueueActions({
       </strong>
     );
   const confirmBody =
-    gold === null || head === null
+    gold === null || essence === null || head === null
       ? t.forgeQueueConfirmNoEstimate
       : rows.length === 1
         ? subNodes(t.forgeQueueConfirmOne, {
             item: head.item === null ? head.piece.itemId : labels.itemName(head.item),
             target: forgeLevel(head.piece.target),
             gold,
+            essence,
           })
-        : subNodes(t.forgeQueueConfirmMany, { count: rows.length, gold });
+        : subNodes(t.forgeQueueConfirmMany, { count: rows.length, gold, essence });
 
   const stacked = layout === 'stacked';
   const buttonClass = cn(stacked && 'w-full');

@@ -122,7 +122,11 @@ export function ForgeQueueBar({
             <span className="text-muted">
               {inFlight === null
                 ? t.forgeQueueRolling
-                : sub(t.forgeQueueProgress, { rolls: labels.count(inFlight.tally.rolls), spent: labels.gold(inFlight.tally.spent) })}
+                : sub(t.forgeQueueProgress, {
+                    rolls: labels.count(inFlight.tally.rolls),
+                    spent: labels.gold(inFlight.tally.spent),
+                    essence: labels.count(inFlight.tally.essence),
+                  })}
             </span>
           ) : null}
         </span>

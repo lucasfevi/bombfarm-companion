@@ -24,6 +24,8 @@ const ROWS = [
     ],
   },
   { id: 'c1', def_id: 'chest_item_90', category: 1, rarity: 0, level: 0, sell_value: '100' },
+  { id: 'c3', def_id: 'chest_forja_3', category: 1, rarity: 0, level: 0, sell_value: '180' },
+  { id: 'cs1', def_id: 'forja_pedra_raro', category: 8, rarity: 0, level: 0, sell_value: '0' },
   { id: 'c2', def_id: 'chest_hero_3', category: 1, rarity: 0, level: 0, sell_value: '0' },
   { id: 'm1', def_id: 'gem_amethyst', category: 2, rarity: 4, level: 0, sell_value: '260' },
   { id: 't1', def_id: 'time_part_raro', category: 3, rarity: 2, level: 0, sell_value: '180' },
@@ -106,6 +108,22 @@ describe('desktop inventory labels', () => {
     expect(inventoryLabels(en, 'en').itemName(item('c2'))).toBe('Hero cage · Act 3');
     expect(inventoryLabels(ptBR, 'pt').itemName(item('c2'))).toBe('Jaula de herói · Ato 3');
     expect(inventoryLabels(en, 'en').itemRarity(item('c2'))).toBe('Epic');
+  });
+
+  it('names a Chance Stone chest by its act, with the act as its tier', () => {
+    expect(inventoryLabels(en, 'en').itemName(item('c3'))).toBe('Chance Stone chest · Act 3');
+    expect(inventoryLabels(ptBR, 'pt').itemName(item('c3'))).toBe('Baú de Pedra de Chance · Ato 3');
+    expect(inventoryLabels(en, 'en').itemRarity(item('c3'))).toBe('Epic');
+  });
+
+  it('names a Chance Stone by its tier and files it under its own heading, apart from skill stones', () => {
+    const labels = inventoryLabels(en, 'en');
+    expect(labels.itemName(item('cs1'))).toBe('Rare Chance Stone');
+    expect(inventoryLabels(ptBR, 'pt').itemName(item('cs1'))).toBe('Pedra de Chance Raro');
+    expect(labels.itemRarity(item('cs1'))).toBe('');
+    expect(labels.groupTitle('chanceStone')).toBe('Chance Stones');
+    expect(inventoryLabels(ptBR, 'pt').groupTitle('chanceStone')).toBe('Pedras de Chance');
+    expect(labels.groupTitle('stone')).toBe('Skill stones');
   });
 
   it('leaves the forge empty on an unforged item, so the card draws no separator for it', () => {
@@ -225,14 +243,14 @@ describe('chance stones', () => {
     { id: 'f1', def_id: 'forja_pedra_incomum', category: 8, rarity: 1, level: 0, sell_value: '140', essence_value: 30 },
   ]).items;
 
-  it('names a chance stone and its group in both languages, leaving the tier on its own line', () => {
+  it('names a chance stone by its tier, leaving no second tier line, and its group in both languages', () => {
     if (!stone) throw new Error('no chance stone row');
     const english = inventoryLabels(en, 'en');
     const portuguese = inventoryLabels(ptBR, 'pt');
-    expect(english.itemName(stone)).toBe('Chance Stone');
-    expect(portuguese.itemName(stone)).toBe('Pedra de Chance');
+    expect(english.itemName(stone)).toBe('Uncommon Chance Stone');
+    expect(portuguese.itemName(stone)).toBe('Pedra de Chance Incomum');
     expect(english.groupTitle('chanceStone')).toBe('Chance Stones');
     expect(portuguese.groupTitle('chanceStone')).toBe('Pedras de Chance');
-    expect(english.itemRarity(stone)).toBe('Uncommon');
+    expect(english.itemRarity(stone)).toBe('');
   });
 });

@@ -14,7 +14,7 @@ export function estimateApplyDurationMs(calls: number): number {
 
 export type ApplyLedger = {
   equip: { calls: number; estimatedMs: number };
-  forge: { pieces: number; goldExpected: number | null };
+  forge: { pieces: number; goldExpected: number | null; essenceExpected: number | null };
   points: { heroes: number; respecs: number; calls: number; estimatedMs: number; goldExact: number };
   totalGold: number;
   walletBefore: number | null;
@@ -25,7 +25,7 @@ export function computeApplyLedger(input: {
   equipUnits: readonly ApplyEquipUnit[];
   pointsUnits: readonly ApplyPointsUnit[];
   forgeList: readonly ForgeAction[];
-  items: ReadonlyArray<{ id: string; upgrade: number; level: number; rarityIdx: number }>;
+  items: ReadonlyArray<{ id: string; upgrade: number; level: number; rarityIdx: number; forgeFails?: number }>;
   walletBefore: number | null;
 }): ApplyLedger {
   const equipCalls = input.equipUnits.length;
@@ -37,22 +37,26 @@ export function computeApplyLedger(input: {
 
   const itemById = new Map(input.items.map((item) => [item.id, item]));
   let forgeGoldSum = 0;
+  let forgeEssenceSum = 0;
   let anyPriced = false;
   for (const action of input.forgeList) {
     const item = itemById.get(action.itemId);
     if (!item) continue;
     if (!FORGE_ITEM_LEVELS.includes(item.level)) continue;
     if (item.upgrade >= action.to) continue;
-    forgeGoldSum += forgeForecast(item.upgrade, action.to, item.level, item.rarityIdx).gold;
+    const forecast = forgeForecast(item.upgrade, action.to, item.level, item.rarityIdx, item.forgeFails ?? 0);
+    forgeGoldSum += forecast.gold;
+    forgeEssenceSum += forecast.essence;
     anyPriced = true;
   }
   const goldExpected = anyPriced ? forgeGoldSum : null;
+  const essenceExpected = anyPriced ? forgeEssenceSum : null;
 
   const totalGold = goldExact + (goldExpected ?? 0);
 
   return {
     equip: { calls: equipCalls, estimatedMs: estimateApplyDurationMs(equipCalls) },
-    forge: { pieces: input.forgeList.length, goldExpected },
+    forge: { pieces: input.forgeList.length, goldExpected, essenceExpected },
     points: {
       heroes,
       respecs,

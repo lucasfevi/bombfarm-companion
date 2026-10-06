@@ -68,6 +68,10 @@ describe('computeApplyLedger — the hand-computed fixture', () => {
     expect(ledger.forge.goldExpected).toBe(expectedForgeGold);
   });
 
+  it('forge.essenceExpected sums the same forecasts', () => {
+    expect(ledger.forge.essenceExpected).toBe(forgeForecast(5, 10, 60, 3).essence + forgeForecast(8, 12, 100, 2).essence);
+  });
+
   it('totalGold and walletAfter', () => {
     const totalGold = 135_000 + expectedForgeGold;
     expect(ledger.totalGold).toBe(totalGold);
@@ -146,8 +150,18 @@ describe('computeApplyLedger — wallet and empty inputs', () => {
     const ledger = computeApplyLedger({ equipUnits: [], pointsUnits: [], forgeList: [], items: [], walletBefore: 0 });
     expect(ledger.equip).toEqual({ calls: 0, estimatedMs: 0 });
     expect(ledger.points).toEqual({ heroes: 0, respecs: 0, calls: 0, estimatedMs: 0, goldExact: 0 });
-    expect(ledger.forge).toEqual({ pieces: 0, goldExpected: null });
+    expect(ledger.forge).toEqual({ pieces: 0, goldExpected: null, essenceExpected: null });
     expect(ledger.totalGold).toBe(0);
     expect(ledger.walletAfter).toBe(0);
+  });
+});
+
+describe('computeApplyLedger — forge.goldExpected starts from the misses a piece carries', () => {
+  it('prices +13 to +14 with 3 misses below the same climb with none', () => {
+    const base = { equipUnits: [], pointsUnits: [], walletBefore: null, forgeList: [{ itemId: 'a', defId: 'd', from: 13, to: 14 }] };
+    const fresh = computeApplyLedger({ ...base, items: [{ id: 'a', upgrade: 13, level: 60, rarityIdx: 2 }] });
+    const primed = computeApplyLedger({ ...base, items: [{ id: 'a', upgrade: 13, level: 60, rarityIdx: 2, forgeFails: 3 }] });
+    expect(primed.forge.goldExpected).toBe(forgeForecast(13, 14, 60, 2, 3).gold);
+    expect(primed.forge.goldExpected ?? 0).toBeLessThan(fresh.forge.goldExpected ?? 0);
   });
 });

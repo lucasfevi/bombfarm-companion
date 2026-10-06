@@ -71,11 +71,12 @@ const OFFLINE_ESSENCE = 102480;
  * chest without any account setup.
  */
 const LOCK_EVERY_NTH_UNEQUIPPED = 7;
+// None is Rare: the forge plan smoke needs an account that holds no Rare Chance Stone.
 const CHANCE_STONES = [
   { id: '900001', def_id: 'forja_pedra_incomum', rarity: 1 },
   { id: '900002', def_id: 'forja_pedra_incomum', rarity: 1 },
-  { id: '900003', def_id: 'forja_pedra_raro', rarity: 2 },
-  { id: '900004', def_id: 'forja_pedra_raro', rarity: 2 },
+  { id: '900003', def_id: 'forja_pedra_lendario', rarity: 4 },
+  { id: '900004', def_id: 'forja_pedra_lendario', rarity: 4 },
 ];
 
 const CAGES = [
@@ -228,6 +229,19 @@ function readCapture(bytes = readFileSync(CAPTURE)) {
 }
 
 /**
+ * The save export predates the forge table, so the stats it records for a hero wearing forged gear
+ * were built with the old linear ladder and no longer invert to a whole-number point vector. These
+ * are the stat values those two heroes' own points, birth rolls and gear compose to under today's
+ * table (crit chance and cooldown on their own, gentler ladder), keyed by the id they carry in the
+ * fixture; each re-infers to the points it inferred before. Every other stat, and every other
+ * hero, is the capture's own.
+ */
+const RESTATED_STATS = {
+  '26863': { dmg: 12178.415617392944, energia: 1351.6180488714017, speed: 55.409056942192805, crit_chance: 0.4617696043574664, penetration: 13.122394371932833, cooldown_reduction: 0.02087305185063443, luck: 0.34936483678978747 },
+  '59925': { dmg: 7060.840810791169, energia: 1011.1103223225809, speed: 51.79939778531295, crit_chance: 0.03278641578476556, penetration: 3.6380973166241244, cooldown_reduction: 0.01854527302844404, luck: 0.2147110076437363 },
+};
+
+/**
  * The whole fixture, as a pure value. Exported so `offline-fixture-drift.test.ts` can rebuild it
  * and compare against the committed file — the same shape `replay-stream-drift.test.ts` uses for
  * `replay-stream.bin`. Without that, a hand-edit of the JSON or a generator change without a
@@ -257,7 +271,9 @@ export function buildOfflineFixture(captureBytes = readFileSync(CAPTURE), { fiel
     const replacement = replayIds[index];
     const original = String(hero.id);
     const id = replacement ?? (replayIdSet.has(original) ? `${original}-roster` : original);
-    return { ...hero, id, in_field: index < replayIds.length };
+    const restated = RESTATED_STATS[id];
+    const stats = restated === undefined ? hero.stats : { ...hero.stats, ...restated };
+    return { ...hero, id, stats, in_field: index < replayIds.length };
   });
 
   /**

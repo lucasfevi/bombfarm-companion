@@ -9,7 +9,7 @@ export const en = {
   inventoryGroupTime: "House parts",
   inventoryGroupStone: "Skill stones",
   inventoryGroupChanceStone: "Chance Stones",
-  inventoryChanceStoneName: "Chance Stone",
+  inventoryChanceStone: "{rarity} Chance Stone",
   inventoryGroupChest: "Chests",
   inventoryGroupRune: "Runes",
   inventoryGroupSkin: "Skins",
@@ -41,6 +41,7 @@ export const en = {
   inventoryChestKey: "Key chest",
   inventoryChestSkill: "Skill stone chest",
   inventoryChestTime: "House part chest",
+  inventoryChestForge: "Chance Stone chest · Act {act}",
   inventoryChestHero: "Hero cage · Act {act}",
 
   inventorySearchPlaceholder: "Search items…",
@@ -101,7 +102,7 @@ export const pt: typeof en = {
   inventoryGroupTime: "Peças de Casa",
   inventoryGroupStone: "Pedras de habilidade",
   inventoryGroupChanceStone: "Pedras de Chance",
-  inventoryChanceStoneName: "Pedra de Chance",
+  inventoryChanceStone: "Pedra de Chance {rarity}",
   inventoryGroupChest: "Baús",
   inventoryGroupRune: "Runas",
   inventoryGroupSkin: "Skins",
@@ -133,6 +134,7 @@ export const pt: typeof en = {
   inventoryChestKey: "Baú de chaves",
   inventoryChestSkill: "Baú de pedras",
   inventoryChestTime: "Baú de peças de Casa",
+  inventoryChestForge: "Baú de Pedra de Chance · Ato {act}",
   inventoryChestHero: "Jaula de herói · Ato {act}",
 
   inventorySearchPlaceholder: "Buscar itens…",

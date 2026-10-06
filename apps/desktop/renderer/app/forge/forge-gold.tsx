@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { GoldValue } from '@bombfarm/game-art';
+import { sub, useCopy } from '../../lib/copy';
 
 /**
  * A gold figure on the Forge screen. The whole screen is arithmetic about one currency, and a
@@ -21,5 +22,25 @@ export function ForgeGold({ children }: { children: ReactNode }) {
     <GoldValue baseline iconClassName="size-[1.15em]">
       {children}
     </GoldValue>
+  );
+}
+
+/**
+ * What a roll, a run or a plan spends: the gold with its coin, then the essence beside it —
+ * `7,540 · 40 essence`, the form the forecast rows print. An essence of `null` is a spend nothing
+ * recorded (a run from before essence was tracked), and is left off rather than printed as zero.
+ */
+export function ForgeSpend({ gold, essence }: { gold: ReactNode; essence: string | null }) {
+  const t = useCopy();
+  return (
+    <>
+      <ForgeGold>{gold}</ForgeGold>
+      {essence === null ? null : (
+        <>
+          {' · '}
+          {sub(t.forgeEssenceAmount, { essence })}
+        </>
+      )}
+    </>
   );
 }

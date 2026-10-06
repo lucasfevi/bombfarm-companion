@@ -139,6 +139,11 @@ export function itemKindIconSrc(defId: string, rarityIdx: number): string | null
     return slug ? `${WIKI_ASSETS_BASE}/stones/skill_stone_${slug}.png` : null;
   }
 
+  if (defId.startsWith('forja_pedra_')) {
+    const slug = RARITY_SLUG[Math.round(rarityIdx)];
+    return slug ? `${WIKI_ASSETS_BASE}/stones/chance_stone_${slug}.png` : null;
+  }
+
   if (defId.startsWith('chest_')) {
     // Every family but the item chest is drawn per tier, and `rarityIdx` already carries the tier
     // the id's tail encodes (see `chestRarityIdx`). Band and rarity index are the same number —
@@ -149,6 +154,9 @@ export function itemKindIconSrc(defId: string, rarityIdx: number): string | null
     }
     if (defId.startsWith('chest_skill')) {
       return `${WIKI_ASSETS_BASE}/chests/skill_stone_chest_${band ?? 'normal'}.png`;
+    }
+    if (defId.startsWith('chest_forja')) {
+      return `${WIKI_ASSETS_BASE}/chests/chance_stone_chest_${band ?? 'normal'}.png`;
     }
     if (defId.startsWith('chest_key')) {
       const slug = CRYSTAL_SLUG[Math.round(rarityIdx)];
@@ -279,6 +287,7 @@ function clampAto(ato: number): number {
  *              stash icon as the house itself rather than as a chest.
  *  - `stone` → the skill-stone chest of that band.
  *  - `gem`   → the gem chest of that band.
+ *  - `chance` → the Chance Stone chest of that band.
  *
  * `chest` alone is fixed, and deliberately so: an item chest's grade follows the MAP LEVEL it
  * drops at, not the difficulty, so tinting it by band would assert a relationship the game does
@@ -305,6 +314,8 @@ export function dropIconSrc(dropId: DropRateId, ato: number): string | null {
       return `${WIKI_ASSETS_BASE}/chests/skill_stone_chest_${difficulty}.png`;
     case 'gem':
       return `${WIKI_ASSETS_BASE}/chests/gem_chest_${difficulty}.png`;
+    case 'chance':
+      return `${WIKI_ASSETS_BASE}/chests/chance_stone_chest_${difficulty}.png`;
     default:
       return null;
   }

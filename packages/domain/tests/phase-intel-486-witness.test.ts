@@ -72,6 +72,11 @@ describe('phase-intel — account-486 drop-chance witness (phase 51 / 60, luck 0
       const row = findRow(intel.dropChances, id);
       expect(row.applies).toBe(false);
     }
+
+    const chance = findRow(intel.dropChances, 'chance');
+    expect(chance.applies).toBe(true);
+    expect(chance.wiki).toBe(0.0001);
+    expect(pct3(chance.actual)).toBe('0.012');
   });
 
   it('phase 60 (gate): time and chest round to 0.117%, stone to 0.059%, gem to 0.006%; key does not apply', () => {
@@ -102,9 +107,9 @@ describe('phase-intel — account-486 drop-chance witness (phase 51 / 60, luck 0
     expect(key.applies).toBe(false);
   });
 
-  it('dropChances is always emitted in the stable order chest, key, time, gem, stone', () => {
+  it('dropChances is always emitted in the stable order chest, key, time, gem, stone, chance', () => {
     const intel = computePhaseIntelGlobal(PHASE_NON_GATE, { luckFraction: LUCK_FRACTION })!;
-    expect(intel.dropChances.map((row) => row.id)).toEqual(['chest', 'key', 'time', 'gem', 'stone']);
+    expect(intel.dropChances.map((row) => row.id)).toEqual(['chest', 'key', 'time', 'gem', 'stone', 'chance']);
   });
 
   it('luckFraction defaults to 0 (no boost) when omitted — actual === wiki', () => {

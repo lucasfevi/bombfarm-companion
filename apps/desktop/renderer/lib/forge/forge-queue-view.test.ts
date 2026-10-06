@@ -1,13 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { forgeForecast } from '@bombfarm/domain/forge';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import { bagStandingOf, bagUpgrades, forgeQueueExpectedGold, resolveForgeQueue } from './forge-queue-view';
+import { bagStandingOf, bagUpgrades, forgeQueueExpectedEssence, forgeQueueExpectedGold, resolveForgeQueue } from './forge-queue-view';
 
 function item(id: string, upgrade: number, level = 30): InventoryViewItem {
   return { id, upgrade, level, rarityIdx: 1, defId: `def-${id}` } as unknown as InventoryViewItem;
 }
 
 describe('resolveForgeQueue', () => {
+  it('prices a piece from the misses in a row it carries', () => {
+    const carrying = { ...item('a', 13), forgeFails: 3 } as InventoryViewItem;
+    const [row] = resolveForgeQueue([{ itemId: 'a', target: 14 }], [carrying]);
+    expect(row?.forecast).toEqual(forgeForecast(13, 14, 30, 1, 3));
+    expect(row?.forecast?.rolls).toBeLessThan(forgeForecast(13, 14, 30, 1).rolls);
+  });
+
   it('pairs each piece with its bag row and prices the climb from where the row stands now', () => {
     const rows = resolveForgeQueue(
       [
@@ -34,6 +41,8 @@ describe('resolveForgeQueue', () => {
     );
     expect(forgeQueueExpectedGold(priced)).toBeCloseTo(forgeForecast(9, 12, 30, 1).gold + forgeForecast(0, 8, 30, 1).gold);
     expect(forgeQueueExpectedGold(resolveForgeQueue([{ itemId: 'gone', target: 10 }], []))).toBeNull();
+    expect(forgeQueueExpectedEssence(priced)).toBeCloseTo(forgeForecast(9, 12, 30, 1).essence + forgeForecast(0, 8, 30, 1).essence);
+    expect(forgeQueueExpectedEssence(resolveForgeQueue([{ itemId: 'gone', target: 10 }], []))).toBeNull();
   });
 
   it('bagUpgrades maps every bag row to where it stands', () => {

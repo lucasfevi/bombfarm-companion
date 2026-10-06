@@ -71,6 +71,8 @@ function chestName(defId: string, t: Copy): string {
   if (itemChest?.[1] !== undefined) return fill(t.inventoryChestItem, { level: itemChest[1] });
   const heroCage = /^chest_hero_(\d+)$/.exec(defId);
   if (heroCage?.[1] !== undefined) return fill(t.inventoryChestHero, { act: heroCage[1] });
+  const chanceChest = /^chest_forja_(\d+)$/.exec(defId);
+  if (chanceChest?.[1] !== undefined) return fill(t.inventoryChestForge, { act: chanceChest[1] });
   if (defId.startsWith('chest_gem')) return t.inventoryChestGem;
   if (defId.startsWith('chest_key')) return t.inventoryChestKey;
   if (defId.startsWith('chest_skill')) return t.inventoryChestSkill;
@@ -97,12 +99,12 @@ function itemName(item: InventoryViewItem, t: Copy, lang: 'pt' | 'en'): string {
   if (item.kind === 'chest') return chestName(item.defId, t);
   if (item.kind === 'skin') return skinName(item.defId);
   if (item.kind === 'rune') return runeName(item, lang);
-  if (item.kind === 'chanceStone') return t.inventoryChanceStoneName;
+  if (item.kind === 'chanceStone') return fill(t.inventoryChanceStone, { rarity: itemRarityLabel(item.rarityIdx, lang) });
   return itemRarityLabel(item.rarityIdx, lang);
 }
 
 /** Kinds whose only distinguishing feature is their tier, so the tier IS the name. */
-const NAMED_BY_RARITY = new Set<ItemKind>(['key', 'time', 'stone']);
+const NAMED_BY_RARITY = new Set<ItemKind>(['key', 'time', 'stone', 'chanceStone']);
 
 /**
  * The tier, on its own so the card can colour it. Empty for the kinds whose NAME is already

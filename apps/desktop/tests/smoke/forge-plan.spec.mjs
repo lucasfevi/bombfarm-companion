@@ -194,7 +194,7 @@ test.describe('forge plan smoke', () => {
       await expect(refreshButton).toHaveAttribute('data-state', 'fresh');
       await expect(page.getByTestId('feed-account-tip')).toHaveCount(0);
       await refreshButton.hover();
-      await expect(page.getByTestId('feed-account-tip')).toContainText('Your heroes, bag, skill tree and house');
+      await expect(page.getByTestId('feed-account-tip')).toContainText('Your heroes, inventory, skill tree and house');
       await expect(page.getByTestId('feed-account-tip-status')).toContainText('Last read');
       await expect(page.getByTestId('feed-account-tip')).toContainText('Click to update now');
 
@@ -318,29 +318,130 @@ test.describe('forge plan smoke', () => {
       // The plan panel prints an expected-rolls figure that is a number, and raising the target
       // by one rung changes it — a second value iteration over a longer ladder.
       const planPanel = page.getByTestId('forge-plan-panel');
+      const forecastPanel = page.getByTestId('forge-forecast-panel');
       await expect(planPanel).toBeVisible();
-      const rollsBefore = (await planPanel.getByTestId('forge-fact-rolls').textContent()) ?? '';
+      await expect(forecastPanel).toBeVisible();
+      const rollsBefore = (await forecastPanel.getByTestId('forge-fact-rolls').textContent()) ?? '';
       expect(Number.isFinite(figureOf(rollsBefore)), `expected rolls "${rollsBefore}" is not a number`).toBe(true);
       expect(figureOf(rollsBefore)).toBeGreaterThan(0);
 
       const targetBefore = await planPanel.getByTestId('forge-target').textContent();
       await planPanel.getByRole('button', { name: 'Raise the target' }).click();
       await expect(planPanel.getByTestId('forge-target')).not.toHaveText(targetBefore ?? '');
-      await expect(planPanel.getByTestId('forge-fact-rolls')).not.toHaveText(rollsBefore);
-      const rollsAfter = (await planPanel.getByTestId('forge-fact-rolls').textContent()) ?? '';
+      await expect(forecastPanel.getByTestId('forge-fact-rolls')).not.toHaveText(rollsBefore);
+      const rollsAfter = (await forecastPanel.getByTestId('forge-fact-rolls').textContent()) ?? '';
       expect(figureOf(rollsAfter)).toBeGreaterThan(figureOf(rollsBefore));
 
       // The facts end at the wallet — nothing on this panel prints a DPS delta.
-      await expect(planPanel.getByTestId('forge-fact-buys')).toHaveCount(0);
+      await expect(forecastPanel.getByTestId('forge-fact-buys')).toHaveCount(0);
 
       // An account with no server behind it cannot forge, whatever the switch says — the fixture
       // rule outranks the switch rule, and the button stays disabled with that reason under it.
-      await expect(planPanel.getByTestId('forge-button')).toBeDisabled();
-      await expect(planPanel.getByTestId('forge-button-reason')).toHaveText('No server to forge on');
+      await expect(forecastPanel.getByTestId('forge-button')).toBeDisabled();
+      await expect(forecastPanel.getByTestId('forge-button-reason')).toHaveText('No server to forge on');
 
       // Nothing rolling, so the rail takes no room; the ledger below says it has no runs.
       await expect(page.getByTestId('forge-rail')).toHaveAttribute('data-state', 'collapsed');
       await expect(page.getByTestId('forge-ledger')).toHaveAttribute('data-state', 'empty');
+    });
+  });
+
+  test('chooses a Chance Stone per range, moves the odds and the expected stones, and says up front what a run would spend', async ({}, testInfo) => {
+    testInfo.setTimeout(180_000);
+    await withForge(async (page) => {
+      const forgeBand = page.getByRole('combobox', { name: 'Filter by forge level' });
+      await forgeBand.click();
+      await page.getByRole('option', { name: '+10 to +12', exact: true }).click();
+      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBeGreaterThan(0);
+      await rows(page).first().click();
+
+      const plan = page.getByTestId('forge-plan-panel');
+      const forecast = page.getByTestId('forge-forecast-panel');
+      await plan.getByRole('button', { name: 'Raise the target' }).click();
+      await plan.getByRole('button', { name: 'Raise the target' }).click();
+      const stones = plan.getByTestId('forge-stones');
+      await expect(stones.getByTestId('forge-stone-range')).toHaveCount(1);
+      await expect(forecast.getByTestId('forge-fact-stones-2')).toHaveCount(0);
+      const goldWithout = (await forecast.getByTestId('forge-fact-gold').textContent()) ?? '';
+      const pickHeight = () => stones.getByTestId('forge-stone-pick').evaluate((element) => element.getBoundingClientRect().height);
+      const heightWithNone = await pickHeight();
+
+      await stones.getByTestId('forge-stone-pick').click();
+      const options = page.getByTestId('forge-stone-option');
+      await expect(options).toHaveCount(7);
+      await expect(options.first()).toHaveAccessibleName('None');
+      await expect(options.nth(3)).toContainText('+30%');
+      await expect(options.nth(3)).toContainText('Rare');
+      await expect(options.nth(3)).toContainText('0 owned');
+      await expect(options.nth(3).locator('img[src$="chance_stone_rare.png"]')).toHaveCount(1);
+      await options.nth(3).click();
+      await expect(stones.getByTestId('forge-stone-pick')).toContainText('+30% chance');
+      await expect(forecast.getByTestId('forge-fact-stones-2')).toBeVisible();
+      expect(await pickHeight(), 'the stone picker changed height when a stone was chosen').toBe(heightWithNone);
+      const rungLefts = await forecast.getByTestId('forge-ladder-rung').evaluateAll((rungs) =>
+        rungs.map((rung) => [...rung.children].map((cell) => Math.round(cell.getBoundingClientRect().left)).join(',')),
+      );
+      expect(new Set(rungLefts).size, 'ladder rows do not share one column grid').toBe(1);
+      await expect(forecast.getByTestId('forge-fact-gold')).not.toHaveText(goldWithout);
+      expect(figureOf((await forecast.getByTestId('forge-fact-gold').textContent()) ?? '')).toBeLessThan(figureOf(goldWithout));
+      await expect(forecast.getByTestId('forge-ladder-stone').first()).toHaveAttribute('data-rarity', '2');
+      await expect(forecast.getByTestId('forge-ladder-stone').first().locator('img[src$="chance_stone_rare.png"]')).toHaveCount(1);
+
+      const notice = forecast.getByTestId('forge-stones-notice');
+      await expect(notice).toHaveAttribute('data-rarity', '2');
+      await expect(notice).toContainText('No Rare Chance Stones owned: the run stops at the first roll that needs one');
+      await expect(forecast.getByTestId('forge-button-reason')).not.toContainText('Chance Stones');
+
+      await stones.getByTestId('forge-stones-add').click();
+      await expect(stones.getByTestId('forge-stone-range')).toHaveCount(2);
+
+      await stones.getByTestId('forge-stones-join').click();
+      await expect(stones.getByTestId('forge-stone-range')).toHaveCount(1);
+      await stones.getByTestId('forge-stone-pick').click();
+      await page.getByTestId('forge-stone-option').first().click();
+      await expect(forecast.getByTestId('forge-fact-stones-2')).toHaveCount(0);
+      await expect(forecast.getByTestId('forge-stones-notice')).toHaveCount(0);
+      await expect(forecast.getByTestId('forge-fact-gold')).toHaveText(goldWithout);
+      await expect(forecast.getByTestId('forge-button-reason')).toHaveText('No server to forge on');
+    });
+  });
+
+  test('offers the Protection Scroll only on a climb that reaches a rung it covers, and prices the climb either way', async ({}, testInfo) => {
+    testInfo.setTimeout(180_000);
+    await withForge(async (page) => {
+      const forgeBand = page.getByRole('combobox', { name: 'Filter by forge level' });
+      await forgeBand.click();
+      await page.getByRole('option', { name: '+8 only', exact: true }).click();
+      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBeGreaterThan(0);
+      await rows(page).first().click();
+
+      const plan = page.getByTestId('forge-plan-panel');
+      const forecast = page.getByTestId('forge-forecast-panel');
+      const scroll = plan.getByTestId('forge-scroll');
+      await expect(scroll).toHaveCount(0);
+
+      for (let step = 0; step < 3; step += 1) await plan.getByRole('button', { name: 'Raise the target' }).click();
+      await expect(plan.getByTestId('forge-target')).toHaveText('+12');
+      await expect(scroll).toHaveAttribute('data-state', 'off');
+      const switchControl = scroll.getByRole('switch');
+      await expect(switchControl).toHaveAttribute('aria-checked', 'false');
+      await expect(forecast.getByTestId('forge-scroll-other')).toContainText(/\d · [\d,]+ essence/);
+      await expect(forecast.getByTestId('forge-scroll-other').locator('svg, img').first()).toBeAttached();
+      await expect(forecast.getByTestId('forge-ladder-scroll')).toHaveCount(0);
+      const goldPlain = figureOf((await forecast.getByTestId('forge-fact-gold').textContent()) ?? '');
+
+      await switchControl.click();
+      await expect(switchControl).toHaveAttribute('aria-checked', 'true');
+      await expect(scroll.getByRole('button', { name: /at level 12/ })).toHaveCount(1);
+      await expect(forecast.getByTestId('forge-scroll-other').locator('xpath=ancestor::div[1]/dt')).toHaveText('Without the scroll');
+      await expect(forecast.getByTestId('forge-ladder-scroll')).toHaveCount(1);
+      await expect(forecast.getByTestId('forge-ladder-rung').last().getByTestId('forge-ladder-scroll')).toHaveCount(1);
+      expect(figureOf((await forecast.getByTestId('forge-fact-gold').textContent()) ?? '')).toBeLessThan(goldPlain);
+
+      await plan.getByRole('button', { name: 'Lower the target' }).click();
+      await expect(plan.getByTestId('forge-target')).toHaveText('+11');
+      await expect(scroll).toHaveCount(0);
+      await expect(forecast.getByTestId('forge-scroll-other')).toHaveCount(0);
     });
   });
 

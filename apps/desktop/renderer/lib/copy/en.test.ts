@@ -102,3 +102,34 @@ describe('the scanner catches each rule on a fixture object, naming the offendin
     expect(byKey.goodKey).toBeUndefined();
   });
 });
+
+const BANNED_STORAGE_WORD = { en: /\bbags?\b/i, ptBR: /\bbolsas?\b/i } as const;
+
+/** The player's item storage is the inventory; the game's own wire field and tab names are not copy. */
+export function findStorageTerminologyViolations(entries: Record<string, string>, banned: RegExp): string[] {
+  return Object.entries(entries)
+    .filter(([, value]) => banned.test(value))
+    .map(([key]) => key);
+}
+
+describe('player-facing copy calls the item storage the inventory', () => {
+  it('no English value says bag', () => {
+    expect(findStorageTerminologyViolations(en, BANNED_STORAGE_WORD.en)).toEqual([]);
+  });
+
+  it('no Portuguese value says bolsa', () => {
+    expect(findStorageTerminologyViolations(ptBR, BANNED_STORAGE_WORD.ptBR)).toEqual([]);
+  });
+
+  it('red state: the scanner names a value that says bag or bolsa, and passes the real words', () => {
+    const fixture = {
+      goodKey: 'Not in inventory',
+      badBagKey: 'Not in bag',
+      badBagsKey: 'Two Bags are full',
+      goodSubstringKey: 'Baggage handler',
+    };
+    expect(findStorageTerminologyViolations(fixture, BANNED_STORAGE_WORD.en)).toEqual(['badBagKey', 'badBagsKey']);
+    const portuguese = { goodKey: 'Fora do inventário', badKey: 'Fora da bolsa', goodSubstringKey: 'reembolsa o ouro' };
+    expect(findStorageTerminologyViolations(portuguese, BANNED_STORAGE_WORD.ptBR)).toEqual(['badKey']);
+  });
+});

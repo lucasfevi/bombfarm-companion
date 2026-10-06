@@ -137,7 +137,7 @@ import { describe, expect, it } from 'vitest';
 import { computeFarmRates } from '@bombfarm/domain/farm-rate';
 import { wikiPhaseLine, goldRarityMult } from '@bombfarm/domain/phase-wiki';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
-import { isInRegimeFor } from './helpers/capture-regime';
+import { holdSuiteUntilInRegime, isInRegimeFor } from './helpers/capture-regime';
 
 const FIXTURE = 'save-20260823-13heroes-crit-points.json';
 /** The retired pair's save, kept for the two per-prop gold checks alone: their client readings
@@ -196,6 +196,7 @@ const BLAST_PATCH_CLEAR_SECS_PCT = 0.0345;
 const BLAST_PATCH_GOLD_PER_HOUR_PCT = 0.0333;
 
 const CAPTURE = `sheet-math/${FIXTURE}`;
+holdSuiteUntilInRegime(`sheet-math/${FIXTURE}`, 'itemForge');
 const MEASURED_SIDE_PREDATES_THE_BLAST_PATCH = !isInRegimeFor(CAPTURE, 'blastDamage');
 
 const CLEAR_SECS_BOUND =

@@ -1,14 +1,12 @@
 import catalog from './data/catalog.json' with { type: 'json' };
+import { itemStatUpgradeMult } from './item-forge-ladder';
 
 const defById = new Map(catalog.defs.map((definition) => [definition.id, definition]));
 
-/** Forge upgrade `+0…+15`: `mult = 1 + 0.08 × N` (wiki `itens.forja.bonus`). Duplicated from
- *  `gear/catalog.ts` rather than imported — that module pulls in the whole loadout model, and
- *  this one is loaded by the desktop's renderer for a display list. The Dano ladder
- *  (`dmgNivelMult`) is duplicated for the same reason; `inventory-view.test.ts` fails if the two
- *  copies ever disagree. */
-const FORGE_BONUS = 0.08;
-const FORGE_MAX = 15;
+/** The forge ladders come from `item-forge-ladder.ts` rather than `gear/catalog.ts` — that module
+ *  pulls in the whole loadout model, and this one is loaded by the desktop's renderer for a
+ *  display list. The Dano ladder (`dmgNivelMult`) is duplicated for the same reason;
+ *  `inventory-view.test.ts` fails if the two copies ever disagree. */
 const rarityByIdx = new Map(catalog.rarities.map((rarity) => [rarity.idx, rarity]));
 const statNames: readonly string[] = catalog.itemStats;
 
@@ -41,8 +39,9 @@ export const ITEM_KINDS: readonly ItemKind[] = [
  * The wire's `category` code → kind. Read off a 63-save corpus where the six codes partition
  * every one of 11,785 item rows with no overlap and no gaps: 0 gear, 1 chest, 2 gem, 3 time
  * part, 4 map key, 5 skill stone. Two more arrived later on a live account read: 6 an unpacked
- * skin (`skin_6`) and 7 a rune (`rune_critdmg_comum`), and 8 a Chance Stone, the item that raises
- * a forge roll's chance (`forja_pedra_incomum`), with the deconstruct screen. This is the game's own classification, so
+ * skin (`skin_6`) and 7 a rune (`rune_critdmg_comum`); 8 is the forge's Chance Stone
+ * (`forja_pedra_incomum`), the item that raises a forge roll's chance. It is its own kind because
+ * a skill stone is a different item that shares the word. This is the game's own classification, so
  * it outranks both the `def_id` prefix and the catalog lookup below.
  */
 const KIND_BY_CATEGORY: Record<number, ItemKind> = {
@@ -93,6 +92,8 @@ export type InventoryViewItem = {
   slot: string | null;
   level: number;
   upgrade: number;
+  /** Rolls missed in a row on this piece; each adds to the next roll's chance. */
+  forgeFails?: number;
   power: number;
   sellValueGold: number;
   sellable: boolean;
@@ -185,7 +186,7 @@ const KIND_BY_DEF_PREFIX: readonly (readonly [string, ItemKind])[] = [
   ['chest_', 'chest'],
   ['rune_', 'rune'],
   ['skin_', 'skin'],
-  ['forja_', 'chanceStone'],
+  ['forja_pedra_', 'chanceStone'],
 ];
 
 /**
@@ -223,7 +224,7 @@ export function resolveItemKind(categoryCode: number | null, defId: string): Ite
  * the other three — same id shape, and the only values the corpus holds (`_3`, `_5`) are valid
  * rarity indices.
  */
-const TIERED_CHEST = /^chest_(?:time|gem|skill|key|hero)_(\d)$/;
+const TIERED_CHEST = /^chest_(?:time|gem|skill|key|hero|forja)_(\d)$/;
 
 export function chestRarityIdx(defId: string, wireRarity: number): number {
   const tail = TIERED_CHEST.exec(defId);
@@ -243,6 +244,36 @@ export function runeRarityIdx(defId: string, wireRarity: number): number {
   if (!defId.startsWith('rune_')) return wireRarity;
   const tail = defId.slice(defId.lastIndexOf('_') + 1);
   return rarityIdxByCode.get(tail) ?? wireRarity;
+}
+
+const CHANCE_STONE_WORDS = ['comum', 'incomum', 'raro', 'epico', 'lendario', 'mitico'] as const;
+const CHANCE_STONE_TAIL_IDX = new Map<string, number>(CHANCE_STONE_WORDS.map((word, idx) => [word, idx]));
+
+/** The id a Chance Stone of this rarity carries, for drawing one the player may not hold. */
+export function chanceStoneDefId(rarityIdx: number): string {
+  return `forja_pedra_${CHANCE_STONE_WORDS[rarityIdx] ?? CHANCE_STONE_WORDS[0]}`;
+}
+
+/**
+ * A Chance Stone's tier rides in its id's tail as an unaccented masculine Portuguese word
+ * (`forja_pedra_comum`, `_incomum`, `_raro`, `_epico` — witnessed on a live account, where the
+ * wire's `rarity` agrees). The top two words follow the same pattern but have not been seen; a
+ * tail outside the pattern keeps the wire's `rarity`.
+ */
+export function chanceStoneRarityIdx(defId: string, wireRarity: number): number {
+  if (!defId.startsWith('forja_pedra_')) return wireRarity;
+  return CHANCE_STONE_TAIL_IDX.get(defId.slice('forja_pedra_'.length)) ?? wireRarity;
+}
+
+/** Chance Stones the game would let a forge roll use, per rarity, indexed 0…5: not locked, not on the
+ *  market, not worn. Every row is one stone, as for every other stack. */
+export function ownedChanceStones(items: readonly InventoryViewItem[]): number[] {
+  const owned = new Array<number>(rarityByIdx.size).fill(0);
+  for (const item of items) {
+    if (item.kind !== 'chanceStone' || item.locked || item.marketBlocked || item.equipped) continue;
+    if (item.rarityIdx >= 0 && item.rarityIdx < owned.length) owned[item.rarityIdx] += 1;
+  }
+  return owned;
 }
 
 function statUnit(name: string | null): ItemStatUnit {
@@ -283,7 +314,6 @@ function catalogStats(defId: string, rarityIdx: number, level: number, upgrade: 
   const itemMult = (catalog.nivelMult as Record<string, number>)[String(level)] ?? nativeMult;
   const nativeDmgMult = (catalog.dmgNivelMult as Record<string, number>)[String(definition.nativeLevel)] ?? 1;
   const itemDmgMult = (catalog.dmgNivelMult as Record<string, number>)[String(level)] ?? nativeDmgMult;
-  const forge = 1 + FORGE_BONUS * Math.max(0, Math.min(FORGE_MAX, Math.round(upgrade)));
   const scale = itemMult / nativeMult;
   const dmgScale = itemDmgMult / nativeDmgMult;
   const statCount = rarityByIdx.get(rarityIdx)?.statCount ?? 1;
@@ -296,7 +326,7 @@ function catalogStats(defId: string, rarityIdx: number, level: number, upgrade: 
       code: code >= 0 ? code : -1,
       unit: statUnit(roll.stat),
       value,
-      effective: value * forge,
+      effective: value * itemStatUpgradeMult(roll.stat, upgrade),
     };
   });
 }
@@ -324,9 +354,13 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
 
   const definition = defById.get(defId);
   const equippedBy = asString(raw.equipped_on ?? raw.equippedBy);
-  const rarityIdx = runeRarityIdx(defId, chestRarityIdx(defId, Math.round(asNumber(raw.rarity ?? raw.rarityIdx, 0))));
+  const rarityIdx = chanceStoneRarityIdx(
+    defId,
+    runeRarityIdx(defId, chestRarityIdx(defId, Math.round(asNumber(raw.rarity ?? raw.rarityIdx, 0)))),
+  );
   const level = asNumber(raw.level, definition?.nativeLevel ?? 0);
   const upgrade = Math.round(asNumber(raw.upgrade, 0));
+  const forgeFails = Math.max(0, Math.round(asNumber(raw.forge_fails, 0)));
   const stats = mapStats(raw.stats);
 
   return {
@@ -340,6 +374,7 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
     slot: definition?.slot ?? null,
     level,
     upgrade,
+    forgeFails,
     power: asNumber(raw.power, 0),
     sellValueGold: asNumber(raw.sell_value ?? raw.sellValueGold, 0),
     sellable: raw.sellable !== false,

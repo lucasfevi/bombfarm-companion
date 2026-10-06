@@ -62,7 +62,7 @@ function itemName(item: InventoryViewItem, strings: Strings, lang: Lang): string
   if (item.kind === 'chest') return chestName(item.defId, strings);
   if (item.kind === 'skin') return skinName(item.defId);
   if (item.kind === 'rune') return runeName(item, lang);
-  if (item.kind === 'chanceStone') return strings.inventoryChanceStoneName;
+  if (item.kind === 'chanceStone') return sub(strings.inventoryChanceStone, { rarity: itemRarityLabel(item.rarityIdx, lang) });
   return itemRarityLabel(item.rarityIdx, lang);
 }
 
@@ -101,6 +101,8 @@ function chestName(defId: string, strings: Strings): string {
   if (itemChest) return sub(strings.inventoryChestItem, { level: itemChest[1] });
   const heroCage = /^chest_hero_(\d+)$/.exec(defId);
   if (heroCage) return sub(strings.inventoryChestHero, { act: heroCage[1] });
+  const chanceChest = /^chest_forja_(\d+)$/.exec(defId);
+  if (chanceChest) return sub(strings.inventoryChestForge, { act: chanceChest[1] });
   if (defId.startsWith('chest_gem')) return strings.inventoryChestGem;
   if (defId.startsWith('chest_key')) return strings.inventoryChestKey;
   if (defId.startsWith('chest_skill')) return strings.inventoryChestSkill;
@@ -131,7 +133,7 @@ function itemForge(item: InventoryViewItem): string {
 }
 
 /** Kinds whose only distinguishing feature is their tier, so the tier IS the name. */
-const NAMED_BY_RARITY = new Set<ItemKind>(['key', 'time', 'stone']);
+const NAMED_BY_RARITY = new Set<ItemKind>(['key', 'time', 'stone', 'chanceStone']);
 
 /**
  * Split rather than joined: the card sets the label and the number at opposite edges of the stat

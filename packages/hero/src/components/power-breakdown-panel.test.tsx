@@ -9,6 +9,7 @@ import type { SheetKey } from '@bombfarm/domain/planner-constants';
 import { hasRuneOnSheet, runesOf, type HeroRune } from '@bombfarm/domain/runes';
 import { saveSheetUnits } from '@bombfarm/domain/save-units';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { holdSuiteUntilInRegime } from '../../../domain/tests/helpers/capture-regime';
 import { heroCopyFor, type Lang } from '../copy';
 import {
   factsForHero,
@@ -331,8 +332,11 @@ describe('PowerBreakdownPanel', () => {
   });
 });
 
+const RUNES_PAYLOAD = 'payload-20260913-20heroes-runes.json';
+
 describe('PowerBreakdownPanel on a live account read', () => {
-  const fixture = loadBreakdownFixture('payload-20260913-20heroes-runes.json');
+  holdSuiteUntilInRegime(`sheet-math/${RUNES_PAYLOAD}`, 'itemForge');
+  const fixture = loadBreakdownFixture(RUNES_PAYLOAD);
   const shownFor = (hero: HeroRecord): Shown => ({
     hero: { ...hero, power: storedPowerAfterWideBlastNerf(hero) },
     sheet: factsForHero(fixture, hero).adjusted,
@@ -358,7 +362,8 @@ describe('PowerBreakdownPanel on a live account read', () => {
 });
 
 describe('PowerBreakdownPanel: where +10 and +50 stat points would put the hero', () => {
-  const fixture = loadBreakdownFixture('payload-20260913-20heroes-runes.json');
+  holdSuiteUntilInRegime(`sheet-math/${RUNES_PAYLOAD}`, 'itemForge');
+  const fixture = loadBreakdownFixture(RUNES_PAYLOAD);
   const hero = fixtureHero(fixture, 'Bellatrix');
   const facts = factsForHero(fixture, hero);
   const live: Shown = { hero, sheet: facts.adjusted, pointDelta: facts.delta };

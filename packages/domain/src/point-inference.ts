@@ -93,7 +93,7 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
     input.runes && input.runes.length > 0
       ? stripRuneMultipliers(input.sheet, flatAddsOutsideRune(tree, sheetOther), runeSheetMultipliers(input.runes))
       : input.sheet;
-  const sheet = stripCollection(runeFree, collectionSheetPct(tree.collection), tree.critDmgPct, Math.max(0, sheetOther.cdr));
+  const sheet = stripCollection(runeFree, collectionSheetPct(tree.collection), tree.critDmgPct);
 
   const naked = nakedFromBirth(birth, level, stars, sheetOther);
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);

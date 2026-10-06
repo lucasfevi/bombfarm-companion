@@ -7,8 +7,8 @@ import {
   type ForgeStartReason,
   type ForgeStopReason,
 } from '@bombfarm/contracts';
-import { FORGE_MAX, FORGE_SAFE, forgeChance } from '@bombfarm/domain/forge';
-import { upgradeMult } from '@bombfarm/domain/gear';
+import { FORGE_FAIL_FLOOR, FORGE_GUARANTEED, FORGE_MAX } from '@bombfarm/domain/forge';
+import { CAPPED_STAT_UPGRADE_MULT, itemStatUpgradeMult, statUsesCappedLadder, upgradeMult } from '@bombfarm/domain/gear';
 import { itemRarityLabel, itemStatLabel, slotLabel } from '@bombfarm/domain/game-labels';
 import type { ItemIdentityLabels } from '@bombfarm/game-art';
 import type { InventorySetGroup, InventoryViewItem, InventoryViewStat } from '@bombfarm/domain/inventory-view';
@@ -93,8 +93,13 @@ export type ForgeResultTone = 'up' | 'warn' | 'down';
 
 /** The result heading in the player's terms, and the tone it is tinted with: reaching the target
  *  is a gain, the player's own limits are a warning, and the server's refusals are a loss. */
-export function forgeResultHeading(result: ForgeRunResult, t: Copy): { text: string; tone: ForgeResultTone } {
+export function forgeResultHeading(
+  result: ForgeRunResult,
+  t: Copy,
+  rarityName: (rarityIdx: number) => string = String,
+): { text: string; tone: ForgeResultTone } {
   const level = forgeLevel(result.to);
+  const rarity = rarityName(result.stoneRarity ?? 0);
   switch (result.stop) {
     case 'target':
       return { text: sub(t.forgeResultReached, { level }), tone: 'up' };
@@ -106,6 +111,12 @@ export function forgeResultHeading(result: ForgeRunResult, t: Copy): { text: str
       return { text: sub(t.forgeResultBudget, { level }), tone: 'warn' };
     case 'attempts':
       return { text: sub(t.forgeResultAttempts, { level }), tone: 'warn' };
+    case 'stones':
+      return { text: sub(t.forgeResultStones, { level, rarity }), tone: 'warn' };
+    case 'stone_mismatch':
+      return { text: sub(t.forgeResultStoneMismatch, { level }), tone: 'down' };
+    case 'scroll_mismatch':
+      return { text: sub(t.forgeResultScrollMismatch, { level }), tone: 'down' };
     case 'cooldown':
       return { text: sub(t.forgeResultCooldown, { level }), tone: 'down' };
     case 'missing':
@@ -168,6 +179,12 @@ export function forgeStopText(stop: ForgeStopReason, t: Copy): string {
       return t.forgeStopBudget;
     case 'attempts':
       return t.forgeStopAttempts;
+    case 'stones':
+      return t.forgeStopStones;
+    case 'stone_mismatch':
+      return t.forgeStopStoneMismatch;
+    case 'scroll_mismatch':
+      return t.forgeStopScrollMismatch;
     case 'cooldown':
       return t.forgeStopCooldown;
     case 'missing':
@@ -225,8 +242,9 @@ export function forgeStatRows(
   lang: DomainLang,
   locale: AppLocale,
 ): ForgeStatRow[] {
-  const ratio = upgradeMult(targetUpgrade) / upgradeMult(nowUpgrade);
   return stats.map((stat) => {
+    const statName = stat.name ?? '';
+    const ratio = itemStatUpgradeMult(statName, targetUpgrade) / itemStatUpgradeMult(statName, nowUpgrade);
     const target = stat.effective * ratio;
     const change = target - stat.effective;
     const printed = statText(stat, change, locale, true);
@@ -258,9 +276,8 @@ export interface ForgeLabels extends ItemIdentityLabels<InventoryViewItem> {
   /** A difference as a signed whole percent: `+23%`, `−12%`. */
   signedPercent: (fraction: number) => string;
   band: (band: ForgeBand | null) => string;
-  span: (target: number) => string;
-  warning: (target: number, safeJumps: number | null) => string;
-  statsNote: (nowUpgrade: number, targetUpgrade: number) => string;
+  warning: () => string;
+  statsNote: (nowUpgrade: number, targetUpgrade: number, stats?: readonly InventoryViewStat[]) => string;
 }
 
 export function forgeLabels(t: Copy, lang: DomainLang, locale: AppLocale): ForgeLabels {
@@ -293,25 +310,26 @@ export function forgeLabels(t: Copy, lang: DomainLang, locale: AppLocale): Forge
     chance,
     signedPercent,
     band: (band) => forgeBandText(band, t),
-    span: (target) =>
-      target <= FORGE_SAFE ? t.forgeSpanSafe : sub(t.forgeSpanRisky, { chance: chance(forgeChance(target)) }),
-    warning: (target, safeJumps) =>
-      target >= FORGE_MAX
-        ? sub(t.forgeWarnMax, {
-            max: forgeLevel(FORGE_MAX),
-            floor: forgeLevel(0),
-            times: safeJumps === null ? BLANK : decimals(safeJumps, 1, locale),
-          })
-        : sub(t.forgeWarnRisky, {
-            from: forgeLevel(FORGE_SAFE + 1),
-            to: forgeLevel(FORGE_MAX - 1),
-            floor: forgeLevel(FORGE_SAFE),
-          }),
-    statsNote: (nowUpgrade, targetUpgrade) =>
-      sub(t.forgeStatsNote, {
+    warning: () =>
+      sub(t.forgeWarnRisky, {
+        from: forgeLevel(FORGE_GUARANTEED + 1),
+        to: forgeLevel(FORGE_MAX),
+        high: forgeLevel(FORGE_FAIL_FLOOR + 2),
+      }),
+    statsNote: (nowUpgrade, targetUpgrade, stats = []) => {
+      const note = sub(t.forgeStatsNote, {
         factor: multiplier(targetUpgrade),
         target: forgeLevel(targetUpgrade),
         now: multiplier(nowUpgrade),
-      }),
+      });
+      const cappedShown = stats.some((stat) => statUsesCappedLadder(stat.name ?? ''));
+      if (!cappedShown) return note;
+      const capped = (upgrade: number) => decimals(CAPPED_STAT_UPGRADE_MULT[upgrade] ?? 1, 2, locale);
+      return `${note} ${sub(t.forgeStatsNoteCapped, {
+        factor: capped(targetUpgrade),
+        target: forgeLevel(targetUpgrade),
+        now: capped(nowUpgrade),
+      })}`;
+    },
   };
 }

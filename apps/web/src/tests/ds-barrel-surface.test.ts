@@ -96,6 +96,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'Checkbox',
   'Chip',
   'Collapsible',
+  'CornerDismiss',
   'ConfirmDialog',
   'DEFAULT_HUE',
   'DataTable',

@@ -26,6 +26,7 @@ import {
   buildInventoryView,
   groupInventoryByKind,
   mapInventoryHeroes,
+  ownedChanceStones,
   type InventoryView,
   type InventoryViewItem,
 } from '@bombfarm/domain/inventory-view';
@@ -59,13 +60,14 @@ import {
   setForgeSort,
   useForgeScreen,
 } from '../../lib/forge/forge-store';
+import { stonesByTarget } from '../../lib/forge/forge-stones';
 import { useContentHeight } from '../../lib/forge/use-content-height';
-import { useForgePlan } from '../../lib/forge/use-forge-plan';
+import { forgeCollectionBonus, useForgePlan } from '../../lib/forge/use-forge-plan';
 import { useScreenRefreshRegistration } from '../../lib/refresh/screen-refresh-store';
 import { ForgeItemPanel } from './forge-item-panel';
 import { forgeButtonReason, forgeLabels } from './forge-labels';
 import { ForgeLedger } from './forge-ledger';
-import { ForgePlanPanel } from './forge-plan-panel';
+import { ForgeForecastPanel, ForgePlanPanel, climbOffersScroll } from './forge-plan-panel';
 import { ForgeQueuePanel } from './forge-queue-panel';
 import { ForgeRail } from './forge-rail';
 import { FORGE_TABLE_COLUMNS, forgeTableLabels } from './forge-table-labels';
@@ -143,6 +145,7 @@ export function ForgeView({
   const heroes = useMemo(() => mapInventoryHeroes(rawHeroes), [rawHeroes]);
   const inField = useMemo(() => fieldHeroIds(rawHeroes), [rawHeroes]);
   const gear = useMemo(() => gearOf(inventory.items), [inventory]);
+  const ownedStones = useMemo(() => ownedChanceStones(inventory.items), [inventory]);
   const labels = useMemo(() => forgeLabels(t, lang, locale), [t, lang, locale]);
   const tableLabels = useMemo(() => forgeTableLabels(t, lang, heroes), [t, lang, heroes]);
 
@@ -188,7 +191,8 @@ export function ForgeView({
     setForgeFilter(EMPTY_FORGE_FILTER);
   }, []);
 
-  const planControls = useForgePlan(selected, plan, setForgePlan);
+  const chanceBonus = useMemo(() => forgeCollectionBonus(view?.payload.skills), [view]);
+  const planControls = useForgePlan(selected, plan, setForgePlan, chanceBonus);
 
   const run = useForgeRun();
   const runRef = useRef<ForgeRunState>(run);
@@ -249,7 +253,16 @@ export function ForgeView({
   const onForge = useCallback(() => {
     const bridge = bridgeOf();
     if (!bridge || selected === null) return;
-    const request = { itemId: selected.id, target: plan.target, maxGold: plan.maxGold, maxAttempts: plan.attempts };
+    const stones = stonesByTarget(planControls.stoneRanges);
+    const scroll = plan.scroll && climbOffersScroll(selected.upgrade, plan.target);
+    const request = {
+      itemId: selected.id,
+      target: plan.target,
+      maxGold: plan.maxGold,
+      maxAttempts: plan.attempts,
+      ...(stones === undefined ? {} : { stones }),
+      ...(scroll ? { scroll } : {}),
+    };
     const planNow: ForgeRunPlan = { forecast: planControls.forecast };
     void bridge.invoke('forge:start', request).then((result) => {
       if (result.ok) {
@@ -259,7 +272,7 @@ export function ForgeView({
         setStartRefusal(result.reason);
       }
     });
-  }, [selected, plan, planControls.forecast]);
+  }, [selected, plan, planControls.forecast, planControls.stoneRanges]);
 
   // Main honours a cancel between rolls, so the roll in flight has to settle first — the flag
   // goes down here, on the press, or the screen would look inert for a second or two and invite
@@ -376,7 +389,7 @@ export function ForgeView({
           what the column beside it draws. */}
       <div
         data-testid="forge-split"
-        className="grid shrink-0 grow grid-cols-[minmax(0,1fr)_372px] gap-3"
+        className="grid shrink-0 grow grid-cols-[31rem_minmax(0,1fr)] gap-3"
         style={{ gridTemplateRows: `minmax(${String(SPLIT_MIN_HEIGHT)}px, auto)` }}
       >
         <div className="relative">
@@ -402,32 +415,50 @@ export function ForgeView({
           className="relative overflow-hidden motion-safe:transition-[height] motion-safe:ease-out motion-reduce:transition-none"
           style={{ height: asideHeight, transitionDuration: `${String(motionTokens.panelMs)}ms` }}
         >
-          <div ref={asideRef} className="flex flex-col gap-3">
-            <ForgeItemPanel item={selected} target={plan.target} labels={labels} />
-            {selected === null ? null : (
-              <ForgePlanPanel
-                item={selected}
-                plan={plan}
-                forecast={planControls.forecast}
-                walletGold={walletGold}
-                reason={reason}
-                startRefusal={startRefusal}
+          <div ref={asideRef} className="grid grid-cols-1 items-start gap-3 min-[1400px]:grid-cols-2">
+            <div className="flex min-w-0 flex-col gap-2">
+              <ForgeItemPanel item={selected} target={plan.target} labels={labels} />
+              {selected === null ? null : (
+                <ForgePlanPanel
+                  item={selected}
+                  plan={plan}
+                  stoneRanges={planControls.stoneRanges}
+                  ownedStones={ownedStones}
+                  running={running}
+                  labels={labels}
+                  onStepTarget={planControls.stepTarget}
+                  onStoneEdit={planControls.editStoneRanges}
+                  onMaxGoldChange={planControls.setMaxGold}
+                  onAttemptsChange={planControls.setAttempts}
+                  onScrollChange={planControls.setScroll}
+                />
+              )}
+            </div>
+            <div className="flex min-w-0 flex-col gap-2">
+              {selected === null ? null : (
+                <ForgeForecastPanel
+                  item={selected}
+                  plan={plan}
+                  forecast={planControls.forecast}
+                  stoneRanges={planControls.stoneRanges}
+                  ownedStones={ownedStones}
+                  walletGold={walletGold}
+                  reason={reason}
+                  startRefusal={startRefusal}
+                  labels={labels}
+                  onForge={onForge}
+                  onCancel={onCancel}
+                />
+              )}
+              <ForgeQueuePanel
+                queue={queue}
+                rows={queueRows}
                 labels={labels}
-                onStepTarget={planControls.stepTarget}
-                onMaxGoldChange={planControls.setMaxGold}
-                onAttemptsChange={planControls.setAttempts}
-                onForge={onForge}
-                onCancel={onCancel}
+                onRemove={removeFromForgeQueue}
+                forgeWritesEnabled={forgeWritesEnabled}
+                accountSource={accountSource}
               />
-            )}
-            <ForgeQueuePanel
-              queue={queue}
-              rows={queueRows}
-              labels={labels}
-              onRemove={removeFromForgeQueue}
-              forgeWritesEnabled={forgeWritesEnabled}
-              accountSource={accountSource}
-            />
+            </div>
           </div>
         </div>
       </div>

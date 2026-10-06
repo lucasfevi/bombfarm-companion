@@ -1,7 +1,7 @@
 # Deconstruct — burning items for Forge Essence
 
-The desktop Forge tab has a second page, **Deconstruct**. It lists every item in the bag and stash
-that could be burned, lets the player filter and tick up to 100 of them, and burns the batch for
+The desktop Forge tab has a second page, **Deconstruct**. It lists every item in the inventory and
+stash that could be burned, lets the player filter and tick up to 100 of them, and burns the batch for
 **Forge Essence**, the currency the forge spends. The game has the same screen with no filters; this
 page keeps the game's rules and adds the filters. This doc is how the shipped code does it.
 
