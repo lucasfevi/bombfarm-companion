@@ -29,11 +29,11 @@ describe('forgeLadderRungs', () => {
     expect(rungs.slice(11).map((r) => r.kind)).toEqual(['beyond', 'beyond', 'beyond', 'beyond']);
   });
 
-  it('carries each roll’s own chance and where a miss lands, on the +10 floor from +12', () => {
+  it('carries each roll’s own chance and where a miss lands, one level down from +12 and never under +10', () => {
     const rungs = forgeLadderRungs(10, 15);
     const rolls = rungs.filter((r) => r.kind === 'roll');
     expect(rolls.map((r) => (r.kind === 'roll' ? r.chance : NaN))).toEqual([0.3, 0.25, 0.2, 0.15, 0.1]);
-    expect(rolls.map((r) => (r.kind === 'roll' ? r.failTo : NaN))).toEqual([10, 10, 10, 10, 10]);
+    expect(rolls.map((r) => (r.kind === 'roll' ? r.failTo : NaN))).toEqual([10, 10, 11, 12, 13]);
   });
 });
 

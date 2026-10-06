@@ -116,12 +116,12 @@ describe('forge options', () => {
     expect(bonus.rolls).toBeLessThan(stoned.rolls);
   });
 
-  it('protecting prices the scroll in essence and costs about the same essence as recovering the drops', () => {
+  it('protecting prices the scroll in essence and costs within eight percent of the essence of recovering the one-level drops', () => {
     for (const [from, target] of [[11, 12], [11, 13], [10, 15], [13, 14]] as const) {
       const plain = forgeForecast(from, target, 100, 2);
       const protectedClimb = forgeForecast(from, target, 100, 2, 0, { protect: true });
       expect(protectedClimb.essence / plain.essence, `+${from} to +${target}`).toBeGreaterThan(0.99);
-      expect(protectedClimb.essence / plain.essence, `+${from} to +${target}`).toBeLessThan(1.03);
+      expect(protectedClimb.essence / plain.essence, `+${from} to +${target}`).toBeLessThan(1.08);
       expect(protectedClimb.gold).toBeLessThan(plain.gold);
       expect(protectedClimb.rolls).toBeLessThan(plain.rolls);
     }
@@ -281,23 +281,80 @@ describe('forgeGoldQuantile', () => {
   });
 });
 
+/** Expected rolls spent on each rung of a climb from +0 to `target`, by value iteration to the fixed point. */
+function visitsPerRung(target: number): number[] {
+  const cap = 20;
+  const rungs = new Array<number>(target).fill(0);
+  const value = Array.from({ length: target + 1 }, () => Array.from({ length: cap + 1 }, () => rungs.slice()));
+  for (let sweep = 0; sweep < 200_000; sweep++) {
+    let moved = 0;
+    for (let upgrade = target - 1; upgrade >= 0; upgrade--) {
+      for (let missed = 0; missed <= cap; missed++) {
+        const next = upgrade + 1;
+        const chance = forgeChance(next, missed);
+        const onHit = value[next][0];
+        const onMiss = value[forgeFailLevel(next)][Math.min(cap, missed + 1)];
+        const here = value[upgrade][missed];
+        for (let rung = 0; rung < target; rung++) {
+          const updated = (rung === upgrade ? 1 : 0) + chance * onHit[rung] + (1 - chance) * onMiss[rung];
+          moved = Math.max(moved, Math.abs(updated - here[rung]));
+          here[rung] = updated;
+        }
+      }
+    }
+    if (moved < 1e-11) break;
+  }
+  return value[0][0];
+}
+
 describe('expected essence matches the published average', () => {
-  it('rounds to essencia_media for every item level, rarity and target from +0', () => {
+  const visits = Array.from({ length: FORGE_MAX }, (_, index) => visitsPerRung(index + 1));
+  const fractionalEssence = (level: number, rarity: number, rung: number) =>
+    (forgeWiki.essencia_k[rung] * (rarity + 1) * level) / forgeWiki.essencia_div;
+
+  it('rounds to essencia_media for every item level, rarity and target from +0, charging the unrounded price per roll', () => {
     const mismatches: string[] = [];
     let visited = 0;
     for (const row of forgeWiki.custo_por_nivel) {
       for (const byRarity of row.por_raridade) {
         byRarity.essencia_media.forEach((published, index) => {
           visited += 1;
-          const target = index + 1;
-          const modelled = forgeForecast(0, target, row.nivel, byRarity.raridade).essence;
+          const modelled = visits[index].reduce(
+            (sum, count, rung) => sum + count * fractionalEssence(row.nivel, byRarity.raridade, rung),
+            0,
+          );
           if (Math.round(modelled) !== published) {
-            mismatches.push(`level ${row.nivel} rarity ${byRarity.raridade} +${target}: ${modelled} vs ${published}`);
+            mismatches.push(`level ${row.nivel} rarity ${byRarity.raridade} +${index + 1}: ${modelled} vs ${published}`);
           }
         });
       }
     }
     expect(visited).toBe(2_700);
     expect(mismatches).toEqual([]);
+  });
+
+  it('forgeForecast charges each roll its published whole price, so it never reads under the average', () => {
+    for (const row of forgeWiki.custo_por_nivel) {
+      for (const byRarity of row.por_raridade) {
+        byRarity.essencia_media.forEach((published, index) => {
+          const modelled = forgeForecast(0, index + 1, row.nivel, byRarity.raridade).essence;
+          expect(modelled, `level ${row.nivel} rarity ${byRarity.raridade} +${index + 1}`).toBeGreaterThanOrEqual(
+            published - 0.5,
+          );
+        });
+      }
+    }
+  });
+
+  it('forgeForecast equals the average to the unit wherever every roll price is already whole', () => {
+    for (const row of forgeWiki.custo_por_nivel) {
+      for (const byRarity of row.por_raridade) {
+        if ((row.nivel * (byRarity.raridade + 1)) % forgeWiki.essencia_div !== 0) continue;
+        byRarity.essencia_media.forEach((published, index) => {
+          const modelled = forgeForecast(0, index + 1, row.nivel, byRarity.raridade).essence;
+          expect(Math.round(modelled), `level ${row.nivel} rarity ${byRarity.raridade} +${index + 1}`).toBe(published);
+        });
+      }
+    }
   });
 });

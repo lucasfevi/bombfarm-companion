@@ -79,7 +79,7 @@ export function ForgeItemPanel({
         </DataTable.Table>
       </DataTable.Root>
 
-      <p className="m-0 text-xs text-muted">{labels.statsNote(item.upgrade, target)}</p>
+      <p className="m-0 text-xs text-muted">{labels.statsNote(item.upgrade, target, item.stats)}</p>
     </Panel>
   );
 }

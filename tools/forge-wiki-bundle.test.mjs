@@ -192,7 +192,7 @@ function validateBundle(bundle) {
   if (bundle?.pity_step !== PITY_STEP) valueErrors.push(`pity_step: expected ${PITY_STEP}, got ${bundle?.pity_step}`);
   if (Array.isArray(bundle?.fail_level)) {
     bundle.fail_level.forEach((landing, index) => {
-      const expected = Math.min(index, FLOOR);
+      const expected = index <= FLOOR ? index : index - 1;
       if (landing !== expected) valueErrors.push(`fail_level[${index}]: expected ${expected}, got ${landing}`);
     });
   }
@@ -263,10 +263,10 @@ describe('committed forge-wiki.json guard', () => {
       expect(validateBundle(mutant).valueErrors.some((error) => error.startsWith('niveis:'))).toBe(true);
     });
 
-    it('a fail level that no longer lands on the floor is reported', () => {
+    it('a fail level that no longer drops one level from +11 up is reported', () => {
       const mutant = loadRealBundle();
       mutant.fail_level[14] = 8;
-      expect(validateBundle(mutant).valueErrors).toContain('fail_level[14]: expected 10, got 8');
+      expect(validateBundle(mutant).valueErrors).toContain('fail_level[14]: expected 13, got 8');
     });
 
     it('an essence row that lost a target is reported naming the row', () => {

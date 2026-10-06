@@ -454,6 +454,8 @@ export const en = {
   forgeColumnChange: 'Change',
   forgeStatsNote:
     'Every roll scales by the same factor — ×{factor} at {target} against ×{now} now — so this is what the piece becomes if the climb lands, not an average of where it might stop.',
+  forgeStatsNoteCapped:
+    'The exception is crit chance and cooldown reduction, which keep the previous, slower ladder: ×{factor} at {target} against ×{now} now.',
   forgePlanTitle: 'Plan',
   forgeTargetLabel: 'Target',
   forgeTargetLower: 'Lower the target',
@@ -502,7 +504,7 @@ export const en = {
   forgeFactBadRun: 'A bad run (p90)',
   forgeFactWallet: 'Wallet',
   forgeWarnRisky:
-    'A missed roll at {from}…{to} drops the piece one level, or to {floor} from {high} up, adds 5 points to the next roll’s chance, and the gold is charged either way.',
+    'A missed roll at {from}…{to} adds 5 points to the next roll’s chance and the gold is charged either way. From {high} up it also drops the piece one level.',
   forgeButton: 'Forge to {target}',
   forgeReasonMaxed: 'Already at {max} — nothing left to forge',
   forgeReasonFixture: 'No server to forge on',

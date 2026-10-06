@@ -8,7 +8,7 @@ import {
   type ForgeStopReason,
 } from '@bombfarm/contracts';
 import { FORGE_FAIL_FLOOR, FORGE_GUARANTEED, FORGE_MAX, forgeChance } from '@bombfarm/domain/forge';
-import { upgradeMult } from '@bombfarm/domain/gear';
+import { CAPPED_STAT_UPGRADE_MULT, itemStatUpgradeMult, statUsesCappedLadder, upgradeMult } from '@bombfarm/domain/gear';
 import { itemRarityLabel, itemStatLabel, slotLabel } from '@bombfarm/domain/game-labels';
 import type { ItemIdentityLabels } from '@bombfarm/game-art';
 import type { InventorySetGroup, InventoryViewItem, InventoryViewStat } from '@bombfarm/domain/inventory-view';
@@ -230,8 +230,9 @@ export function forgeStatRows(
   lang: DomainLang,
   locale: AppLocale,
 ): ForgeStatRow[] {
-  const ratio = upgradeMult(targetUpgrade) / upgradeMult(nowUpgrade);
   return stats.map((stat) => {
+    const statName = stat.name ?? '';
+    const ratio = itemStatUpgradeMult(statName, targetUpgrade) / itemStatUpgradeMult(statName, nowUpgrade);
     const target = stat.effective * ratio;
     const change = target - stat.effective;
     const printed = statText(stat, change, locale, true);
@@ -265,7 +266,7 @@ export interface ForgeLabels extends ItemIdentityLabels<InventoryViewItem> {
   band: (band: ForgeBand | null) => string;
   span: (target: number) => string;
   warning: () => string;
-  statsNote: (nowUpgrade: number, targetUpgrade: number) => string;
+  statsNote: (nowUpgrade: number, targetUpgrade: number, stats?: readonly InventoryViewStat[]) => string;
 }
 
 export function forgeLabels(t: Copy, lang: DomainLang, locale: AppLocale): ForgeLabels {
@@ -305,13 +306,21 @@ export function forgeLabels(t: Copy, lang: DomainLang, locale: AppLocale): Forge
         from: forgeLevel(FORGE_GUARANTEED + 1),
         to: forgeLevel(FORGE_MAX),
         high: forgeLevel(FORGE_FAIL_FLOOR + 2),
-        floor: forgeLevel(FORGE_FAIL_FLOOR),
       }),
-    statsNote: (nowUpgrade, targetUpgrade) =>
-      sub(t.forgeStatsNote, {
+    statsNote: (nowUpgrade, targetUpgrade, stats = []) => {
+      const note = sub(t.forgeStatsNote, {
         factor: multiplier(targetUpgrade),
         target: forgeLevel(targetUpgrade),
         now: multiplier(nowUpgrade),
-      }),
+      });
+      const cappedShown = stats.some((stat) => statUsesCappedLadder(stat.name ?? ''));
+      if (!cappedShown) return note;
+      const capped = (upgrade: number) => decimals(CAPPED_STAT_UPGRADE_MULT[upgrade] ?? 1, 2, locale);
+      return `${note} ${sub(t.forgeStatsNoteCapped, {
+        factor: capped(targetUpgrade),
+        target: forgeLevel(targetUpgrade),
+        now: capped(nowUpgrade),
+      })}`;
+    },
   };
 }

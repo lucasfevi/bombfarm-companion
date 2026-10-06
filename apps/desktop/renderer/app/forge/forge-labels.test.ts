@@ -243,14 +243,23 @@ describe('the difference against the plan', () => {
 });
 
 describe('forgeStatRows', () => {
-  it('scales every roll by the ratio of the two multipliers and prints the change signed', () => {
+  it('scales every roll by the ratio of the two multipliers on each stat’s own ladder and prints the change signed', () => {
     const rows = forgeStatRows(item('g1').stats, 12, 13, 'en', 'en');
     expect(rows.map((row) => row.now)).toEqual(['107.8', '78.40%']);
-    // 107.8 × 1.95 / 1.75 = 120.1
-    expect(rows[0]?.target).toBe('120.1');
-    expect(rows[0]?.change).toBe('+12.3');
+    // 107.8 × 2.10 / 1.85 = 122.4
+    expect(rows[0]?.target).toBe('122.4');
+    expect(rows[0]?.change).toBe('+14.6');
     expect(rows[0]?.direction).toBe('up');
-    expect(rows[1]?.change).toBe('+8.96%');
+    // 78.40% × 2.10 / 1.85 = 88.99%
+    expect(rows[1]?.change).toBe('+10.59%');
+  });
+
+  it('scales crit chance and cooldown reduction on the previous ladder, not the new one', () => {
+    const crit = { name: 'crit', code: 4, unit: 'pct', value: 0.05, effective: 0.1 } as const;
+    const [row] = forgeStatRows([crit], 12, 13, 'en', 'en');
+    // 10% × 1.95 / 1.75 = 11.14%
+    expect(row?.target).toBe('11.14%');
+    expect(row?.change).toBe('+1.14%');
   });
 
   it('prints no change as a dash', () => {
@@ -261,7 +270,7 @@ describe('forgeStatRows', () => {
 
   it('follows the locale for separators', () => {
     const rows = forgeStatRows(item('g1').stats, 12, 13, 'pt', 'pt-BR');
-    expect(rows[0]?.target).toBe('120,1');
+    expect(rows[0]?.target).toBe('122,4');
     expect(rows[1]?.now).toBe('78,40%');
   });
 });
@@ -281,13 +290,21 @@ describe('forgeLabels', () => {
     expect(labels.span(4)).toBe('sure span — every step lands');
     expect(labels.span(13)).toBe('risky span — 20% at the top');
     expect(labels.warning()).toBe(
-      'A missed roll at +5…+15 drops the piece one level, or to +10 from +12 up, adds 5 points to the next roll’s chance, and the gold is charged either way.',
+      'A missed roll at +5…+15 adds 5 points to the next roll’s chance and the gold is charged either way. From +12 up it also drops the piece one level.',
     );
   });
 
   it('prints the factor line with both multipliers', () => {
     expect(labels.statsNote(11, 13)).toBe(
-      'Every roll scales by the same factor — ×1.95 at +13 against ×1.60 now — so this is what the piece becomes if the climb lands, not an average of where it might stop.',
+      'Every roll scales by the same factor — ×2.10 at +13 against ×1.65 now — so this is what the piece becomes if the climb lands, not an average of where it might stop.',
+    );
+  });
+
+  it('adds the slower ladder of crit chance and cooldown reduction only when the piece rolls one', () => {
+    const crit = { name: 'crit', code: 4, unit: 'pct', value: 0.05, effective: 0.1 } as const;
+    expect(labels.statsNote(11, 13, item('g1').stats)).toBe(labels.statsNote(11, 13));
+    expect(labels.statsNote(11, 13, [crit])).toBe(
+      `${labels.statsNote(11, 13)} The exception is crit chance and cooldown reduction, which keep the previous, slower ladder: ×1.95 at +13 against ×1.60 now.`,
     );
   });
 
@@ -295,7 +312,7 @@ describe('forgeLabels', () => {
     expect(labels.gold(127595)).toBe('127,595');
     expect(labels.rolls(2.5)).toBe('2.5');
     expect(labels.chance(0.5)).toBe('50%');
-    expect(labels.multiplier(13)).toBe('1.95');
+    expect(labels.multiplier(13)).toBe('2.10');
     expect(forgeLevel(0)).toBe('+0');
   });
 });

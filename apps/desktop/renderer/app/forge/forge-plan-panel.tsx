@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { ForgeStartReason } from '@bombfarm/contracts';
-import { FORGE_FAIL_FLOOR, FORGE_GUARANTEED, FORGE_MAX, forgeChance, forgeFailLevel } from '@bombfarm/domain/forge';
+import { FORGE_GUARANTEED, FORGE_MAX, forgeChance, forgeFailLevel, forgeProtectable } from '@bombfarm/domain/forge';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { inventoryFieldClass } from '@bombfarm/game-art';
 import { Bar, Button, cn, Panel, PanelHeader, StatList, Stepper, type StatListItem } from '@bombfarm/ui';
@@ -309,7 +309,7 @@ export function ForgePlanPanel({
                     />
                   )
                 ) : null}
-                <span className={cn('font-mono', 'text-[11px]', 'tabular-nums', floor === FORGE_FAIL_FLOOR && rung > FORGE_FAIL_FLOOR + 1 ? 'text-down' : 'text-muted')}>
+                <span className={cn('font-mono', 'text-[11px]', 'tabular-nums', forgeProtectable(rung) ? 'text-down' : 'text-muted')}>
                   {sub(t.forgeLadderFailTo, { floor: forgeLevel(floor) })}
                 </span>
               </li>

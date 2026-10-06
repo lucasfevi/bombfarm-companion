@@ -70,7 +70,8 @@ describe('the committed forge cost table', () => {
       }
     }
     expect(mismatches).toEqual([]);
-    expect(forgeRollEssence(300, 5, 15)).toBe(720);
+    expect(forgeRollEssence(300, 5, 15)).toBe(360);
+    expect(forgeRollEssence(10, 5, 3)).toBe(2);
     expect(forgeRollEssence(10, 0, 1)).toBe(1);
   });
 
@@ -127,9 +128,10 @@ describe('the forge chance ladder', () => {
     expect(FORGE_PITY_STEP).toBe(0.05);
   });
 
-  it('lands a miss one level down through +11 and on the floor from +12', () => {
+  it('keeps the level through +11 and lands a miss one level down from +12, never under the floor', () => {
     FORGE_FAIL_LEVEL.forEach((landing, index) => {
-      expect(landing).toBe(Math.min(index, FORGE_FAIL_FLOOR));
+      expect(landing).toBe(index <= FORGE_FAIL_FLOOR ? index : index - 1);
+      expect(landing).toBeGreaterThanOrEqual(Math.min(index, FORGE_FAIL_FLOOR));
     });
   });
 

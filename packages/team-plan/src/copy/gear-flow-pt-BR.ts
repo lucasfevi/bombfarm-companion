@@ -20,5 +20,5 @@ export const teamPlanGearFlowPtBR: TeamPlanGearFlowCopy = {
   teamPlanForgeQueueTotal: 'Esperado para todos os {count}',
   teamPlanForgeQueueNoForecast: 'Sem estimativa — o nível deste item não está na tabela de forja.',
   teamPlanForgeQueueLegend:
-    'Sólido: de +1 a +4 sempre acerta. Degradê: cada rolagem acima de +4 — quanto mais claro o segmento, menor a chance, e cada falha seguida soma 5 pontos à próxima rolagem. Uma falha derruba a peça um nível, e uma falha a partir do +12 derruba para +10. Os números são valores esperados ao longo de muitas tentativas.',
+    'Sólido: de +1 a +4 sempre acerta. Degradê: cada rolagem acima de +4 — quanto mais claro o segmento, menor a chance, e cada falha seguida soma 5 pontos à próxima rolagem. A partir da rolagem do +12, uma falha derruba a peça um nível, nunca abaixo de +10. Os números são valores esperados ao longo de muitas tentativas.',
 };

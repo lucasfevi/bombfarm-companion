@@ -52,12 +52,14 @@ describe('forgeCritChance', () => {
 });
 
 describe('forgeFailLevel', () => {
-  it('drops a miss by one level up to +11, and to the +10 floor from +12 up', () => {
+  it('keeps the level through +11 and drops a miss by exactly one level from +12 up', () => {
     expect(forgeFailLevel(1)).toBe(0);
     expect(forgeFailLevel(5)).toBe(4);
     expect(forgeFailLevel(11)).toBe(10);
     expect(forgeFailLevel(12)).toBe(FORGE_FAIL_FLOOR);
-    expect(forgeFailLevel(15)).toBe(FORGE_FAIL_FLOOR);
+    expect(forgeFailLevel(13)).toBe(11);
+    expect(forgeFailLevel(14)).toBe(12);
+    expect(forgeFailLevel(15)).toBe(13);
   });
 
   it('never lands above the level the roll was made from', () => {
@@ -88,13 +90,13 @@ describe('forgeRollCost and forgeRollEssence', () => {
 });
 
 describe('forgeScrollCost', () => {
-  it('prices a level-140 uncommon +14 roll at 12,320, the figure the game shows on such a piece', () => {
-    expect(forgeScrollCost(140, 1, 14)).toBe(12_320);
+  it('prices a level-140 uncommon +14 roll at 135 x 2 x 140 / 10', () => {
+    expect(forgeScrollCost(140, 1, 14)).toBe(3_780);
   });
 
   it('only exists for +12…+15', () => {
     expect(() => forgeScrollCost(100, 2, 11)).toThrow(/scroll/);
-    expect(forgeScrollCost(100, 2, 15)).toBe(120_000);
+    expect(forgeScrollCost(100, 2, 15)).toBe(28_200);
   });
 });
 
@@ -132,7 +134,8 @@ describe('nextForgeStep', () => {
       stoneUsed: false,
       stone: null,
     });
-    expect(nextForgeStep(14, 15, 300, 5)).toMatchObject({ target: 15, chance: 0.1, failTo: 10 });
+    expect(nextForgeStep(14, 15, 300, 5)).toMatchObject({ target: 15, chance: 0.1, failTo: 13 });
+    expect(nextForgeStep(12, 15, 300, 5)).toMatchObject({ target: 13, failTo: 11 });
   });
 
   it('throws for a target above the ladder rather than inventing a level', () => {
@@ -166,13 +169,13 @@ describe('the Protection Scroll', () => {
     expect(nextForgeStep(13, 15, 140, 1, 0, { protect: true })).toMatchObject({
       target: 14,
       failTo: 13,
-      protection: 12_320,
+      protection: 3_780,
     });
     expect(nextForgeStep(10, 15, 140, 1, 0, { protect: true })).toMatchObject({ target: 11, failTo: 10, protection: 0 });
   });
 
   it('changes nothing when it is not ticked', () => {
-    expect(nextForgeStep(13, 15, 140, 1, 0, { protect: false })).toMatchObject({ failTo: 10, protection: 0 });
+    expect(nextForgeStep(13, 15, 140, 1, 0, { protect: false })).toMatchObject({ failTo: 12, protection: 0 });
   });
 });
 

@@ -445,6 +445,8 @@ export const ptBR: Copy = {
   forgeColumnChange: 'Mudança',
   forgeStatsNote:
     'Todo atributo escala pelo mesmo fator — ×{factor} em {target} contra ×{now} agora — então isto é o que a peça vira se a subida der certo, não uma média de onde ela pode parar.',
+  forgeStatsNoteCapped:
+    'A exceção são a chance de crítico e a redução de recarga, que mantêm a escada anterior, mais lenta: ×{factor} em {target} contra ×{now} agora.',
   forgePlanTitle: 'Plano',
   forgeTargetLabel: 'Alvo',
   forgeTargetLower: 'Baixar o alvo',
@@ -493,7 +495,7 @@ export const ptBR: Copy = {
   forgeFactBadRun: 'Uma maré ruim (p90)',
   forgeFactWallet: 'Carteira',
   forgeWarnRisky:
-    'Uma rolagem falha em {from}…{to} derruba a peça um nível, ou para {floor} a partir de {high}, soma 5 pontos à chance da próxima rolagem, e o ouro é cobrado de qualquer jeito.',
+    'Uma rolagem falha em {from}…{to} soma 5 pontos à chance da próxima rolagem e o ouro é cobrado de qualquer jeito. A partir de {high}, ela também derruba a peça um nível.',
   forgeButton: 'Forjar até {target}',
   forgeReasonMaxed: 'Já está em {max} — não há mais o que forjar',
   forgeReasonFixture: 'Sem servidor para forjar',
