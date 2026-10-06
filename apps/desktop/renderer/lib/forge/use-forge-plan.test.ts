@@ -53,7 +53,15 @@ describe('forgePlanFor', () => {
       target: FORGE_GUARANTEED,
       maxGold: 5000,
       attempts: 3,
+      stones: [],
     });
+  });
+
+  it('forgets the stones with the piece they were chosen for, and keeps them for the same piece', () => {
+    const plan = { ...INITIAL_FORGE_PLAN, itemId: 'a', target: 13, stones: [{ upTo: 13, rarity: 2 }] };
+    expect(forgePlanFor(plan, { id: 'b', upgrade: 2 }).stones).toEqual([]);
+    expect(forgePlanFor(plan, null).stones).toEqual([]);
+    expect(forgePlanFor(plan, { id: 'a', upgrade: 8 }).stones).toEqual([{ upTo: 13, rarity: 2 }]);
   });
 
   it('keeps the chosen target for the same piece, clamped to where the piece now stands', () => {
@@ -88,6 +96,54 @@ describe('forgePlanReducer', () => {
     expect(withGold.maxGold).toBe(12000);
     const withAttempts = forgePlanReducer(withGold, { kind: 'attempts', text: '' });
     expect(withAttempts).toEqual({ ...INITIAL_FORGE_PLAN, maxGold: 12000, attempts: null });
+  });
+});
+
+describe('forgePlanReducer stones', () => {
+  const piece = { itemId: 'a', upgrade: 8 };
+  const start = { ...INITIAL_FORGE_PLAN, itemId: 'a', target: 13 };
+
+  it('adds a range by splitting the last one, then edits its stone and its end', () => {
+    const split = forgePlanReducer(start, { kind: 'stoneAdd', ...piece });
+    expect(split.stones).toEqual([
+      { upTo: 11, rarity: null },
+      { upTo: 13, rarity: null },
+    ]);
+    const stoned = forgePlanReducer(split, { kind: 'stoneRarity', ...piece, index: 1, rarity: 3 });
+    const moved = forgePlanReducer(stoned, { kind: 'stoneEnd', ...piece, index: 0, upTo: 10 });
+    expect(moved.stones).toEqual([
+      { upTo: 10, rarity: null },
+      { upTo: 13, rarity: 3 },
+    ]);
+    expect(forgePlanReducer(moved, { kind: 'stoneRemove', ...piece, index: 0 }).stones).toEqual([
+      { upTo: 13, rarity: 3 },
+    ]);
+  });
+
+  it('lets the last range follow the target when the target moves', () => {
+    const stoned = forgePlanReducer(start, { kind: 'stoneRarity', ...piece, index: 0, rarity: 1 });
+    const raised = forgePlanReducer(stoned, { kind: 'step', itemId: 'a', upgrade: 8, delta: 1 });
+    expect(raised.target).toBe(14);
+    expect(forgePlanReducer(raised, { kind: 'stoneAdd', ...piece }).stones.at(-1)).toEqual({ upTo: 14, rarity: 1 });
+  });
+});
+
+describe('forgePlanForecast with stones', () => {
+  it('prices the chosen stones and counts what they use, plain and protected', () => {
+    const stones = [null, null, null, null, null, null, null, null, null, 1, 1, 1];
+    const plain = forgePlanForecast(11, 12, 20, 2);
+    const stoned = forgePlanForecast(11, 12, 20, 2, 0, 0, stones);
+    expect(stoned?.rolls).toBeLessThan(plain?.rolls ?? 0);
+    expect(stoned?.gold).toBeCloseTo(forgeForecast(11, 12, 20, 2, 0, { stones }).gold, 6);
+    expect(stoned?.stones[1]).toBeGreaterThan(0);
+    expect(stoned?.protected?.stones[1]).toBeGreaterThan(0);
+    expect(stoned?.badRunGold).toBeLessThan(plain?.badRunGold ?? 0);
+    expect(plain?.stones).toEqual([0, 0, 0, 0, 0, 0]);
+  });
+
+  it('does not hand back the stone-free forecast for a stoned plan', () => {
+    const stones = [null, null, null, null, null, null, null, null, null, null, null, 0];
+    expect(forgePlanForecast(11, 12, 20, 2, 0, 0, stones)).not.toBe(forgePlanForecast(11, 12, 20, 2));
   });
 });
 

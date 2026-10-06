@@ -28,7 +28,7 @@ export type ForgeQueueEntry = {
 export type ForgeQueue = {
   entries: ForgeQueueEntry[];
   /** Summed over the entries that could be priced; null when none could. */
-  total: ForgeForecast | null;
+  total: Omit<ForgeForecast, 'stones'> | null;
 };
 
 export function forgeLadderRungs(from: number, to: number): ForgeLadderRung[] {

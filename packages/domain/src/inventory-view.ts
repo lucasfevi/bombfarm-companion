@@ -12,7 +12,17 @@ const FORGE_MAX = 15;
 const rarityByIdx = new Map(catalog.rarities.map((rarity) => [rarity.idx, rarity]));
 const statNames: readonly string[] = catalog.itemStats;
 
-export type ItemKind = 'equipment' | 'chest' | 'gem' | 'time' | 'key' | 'stone' | 'rune' | 'skin' | 'other';
+export type ItemKind =
+  | 'equipment'
+  | 'chest'
+  | 'gem'
+  | 'time'
+  | 'key'
+  | 'stone'
+  | 'chanceStone'
+  | 'rune'
+  | 'skin'
+  | 'other';
 
 export const ITEM_KINDS: readonly ItemKind[] = [
   'equipment',
@@ -20,6 +30,7 @@ export const ITEM_KINDS: readonly ItemKind[] = [
   'key',
   'time',
   'stone',
+  'chanceStone',
   'chest',
   'rune',
   'skin',
@@ -30,7 +41,8 @@ export const ITEM_KINDS: readonly ItemKind[] = [
  * The wire's `category` code → kind. Read off a 63-save corpus where the six codes partition
  * every one of 11,785 item rows with no overlap and no gaps: 0 gear, 1 chest, 2 gem, 3 time
  * part, 4 map key, 5 skill stone. Two more arrived later on a live account read: 6 an unpacked
- * skin (`skin_6`) and 7 a rune (`rune_critdmg_comum`). This is the game's own classification, so
+ * skin (`skin_6`) and 7 a rune (`rune_critdmg_comum`); 8 is the forge's Chance Stone, which is
+ * its own kind because a skill stone is a different item that shares the word. This is the game's own classification, so
  * it outranks both the `def_id` prefix and the catalog lookup below.
  */
 const KIND_BY_CATEGORY: Record<number, ItemKind> = {
@@ -42,6 +54,7 @@ const KIND_BY_CATEGORY: Record<number, ItemKind> = {
   5: 'stone',
   6: 'skin',
   7: 'rune',
+  8: 'chanceStone',
 };
 
 /** Only gear varies per instance (level, forge, rolled stats). Everything else is fungible, so a
@@ -150,6 +163,7 @@ const KIND_BY_DEF_PREFIX: readonly (readonly [string, ItemKind])[] = [
   ['chest_', 'chest'],
   ['rune_', 'rune'],
   ['skin_', 'skin'],
+  ['forja_pedra_', 'chanceStone'],
 ];
 
 /**
@@ -207,6 +221,33 @@ export function runeRarityIdx(defId: string, wireRarity: number): number {
   if (!defId.startsWith('rune_')) return wireRarity;
   const tail = defId.slice(defId.lastIndexOf('_') + 1);
   return rarityIdxByCode.get(tail) ?? wireRarity;
+}
+
+const RARITY_IDX_BY_ENGLISH_WORD = new Map(
+  ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'].map((word, idx) => [word, idx]),
+);
+
+/**
+ * A Chance Stone's tier rides in its id's tail (`forja_pedra_<tier>`). The tail has not been seen
+ * on the wire, so it is read in the catalog's Portuguese rarity words (the way a rune's is), in
+ * the English words the wiki files its art under, or as a bare tier index (the way a chest's is);
+ * a tail none of those explain keeps the wire's `rarity`.
+ */
+export function chanceStoneRarityIdx(defId: string, wireRarity: number): number {
+  if (!defId.startsWith('forja_pedra_')) return wireRarity;
+  const tail = defId.slice('forja_pedra_'.length);
+  const named = rarityIdxByCode.get(tail) ?? RARITY_IDX_BY_ENGLISH_WORD.get(tail);
+  if (named !== undefined) return named;
+  return /^[0-5]$/.test(tail) ? Number(tail) : wireRarity;
+}
+
+/** Chance Stones held per rarity, indexed 0…5. Every row is one stone, as for every other stack. */
+export function ownedChanceStones(items: readonly InventoryViewItem[]): number[] {
+  const owned = new Array<number>(rarityByIdx.size).fill(0);
+  for (const item of items) {
+    if (item.kind === 'chanceStone' && item.rarityIdx >= 0 && item.rarityIdx < owned.length) owned[item.rarityIdx] += 1;
+  }
+  return owned;
 }
 
 function statUnit(name: string | null): ItemStatUnit {
@@ -288,7 +329,10 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
 
   const definition = defById.get(defId);
   const equippedBy = asString(raw.equipped_on ?? raw.equippedBy);
-  const rarityIdx = runeRarityIdx(defId, chestRarityIdx(defId, Math.round(asNumber(raw.rarity ?? raw.rarityIdx, 0))));
+  const rarityIdx = chanceStoneRarityIdx(
+    defId,
+    runeRarityIdx(defId, chestRarityIdx(defId, Math.round(asNumber(raw.rarity ?? raw.rarityIdx, 0)))),
+  );
   const level = asNumber(raw.level, definition?.nativeLevel ?? 0);
   const upgrade = Math.round(asNumber(raw.upgrade, 0));
   const forgeFails = Math.max(0, Math.round(asNumber(raw.forge_fails, 0)));

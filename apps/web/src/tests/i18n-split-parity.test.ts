@@ -751,6 +751,8 @@ const KEYS_ADDED: readonly string[] = [
   'inventoryGroupKey',
   'inventoryGroupTime',
   'inventoryGroupStone',
+  'inventoryGroupChanceStone',
+  'inventoryChanceStone',
   'inventoryGroupChest',
   'inventoryGroupRune',
   'inventoryGroupSkin',

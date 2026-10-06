@@ -62,7 +62,7 @@ export function ForgeQueueActions({
   // the Optimizer's apply step, not stopped, and Start would contend with that step over the one
   // write gate.
   const holds = running || queue.status === 'paused';
-  const reason = forgeButtonReason({ upgrade: 0, accountSource, forgeWritesEnabled, running: false, cancelRequested: false });
+  const reason = forgeButtonReason({ upgrade: 0, accountSource, forgeWritesEnabled, running: false, cancelRequested: false, stonesChosen: false });
   const canStart = reason === 'ready' && !holds && queue.pieces.length > 0;
 
   const haltText =

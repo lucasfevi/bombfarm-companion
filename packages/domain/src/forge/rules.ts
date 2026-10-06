@@ -27,13 +27,19 @@ const scrollBaseCosts = new Map(
 );
 
 export const FORGE_STONE_PP: readonly number[] = forgeWiki.ajudas.pedra_pp;
+export const FORGE_STONE_RARITIES: number = FORGE_STONE_PP.length;
+
+/** The Chance Stone rarity (0…5) applied to every attempt at a target, read at `stones[target - 1]`. */
+export type ForgeStones = readonly (number | null | undefined)[];
 
 /**
  * Per-attempt extras. `bonus` is a flat addend to every chance (the Collection's forge axis, as a
- * fraction; its unit on the wire is unmeasured). `stonePp` is one Chance Stone's points for the
- * first attempt only. `protect` ticks the Protection Scroll wherever it is offered.
+ * fraction; its unit on the wire is unmeasured). `stones` names the Chance Stone spent on every
+ * attempt at a target; `stonePp` is one stone's points for the first attempt only, and gives way
+ * to `stones` at a target that names one. `protect` ticks the Protection Scroll wherever it is
+ * offered.
  */
-export type ForgeOptions = { bonus?: number; stonePp?: number; protect?: boolean };
+export type ForgeOptions = { bonus?: number; stonePp?: number; stones?: ForgeStones; protect?: boolean };
 
 export type ForgeRoll = {
   kind: 'roll';
@@ -46,6 +52,8 @@ export type ForgeRoll = {
   protection: number;
   /** Whether a stone was spent: it is refused, and kept, when the chance is already certain. */
   stoneUsed: boolean;
+  /** The rarity of the stone spent when `stones` named it; null when none was spent or only `stonePp` was. */
+  stone: number | null;
 };
 
 export type ForgeStep = { kind: 'done' } | ForgeRoll;
@@ -118,6 +126,13 @@ export function forgeScrollCost(level: number, rarity: number, target: number): 
   return Math.round((base * (rarity + 1) * level) / 10);
 }
 
+export function forgeStonePp(rarity: number): number {
+  if (!Number.isInteger(rarity) || rarity < 0 || rarity >= FORGE_STONE_RARITIES) {
+    throw new RangeError(`chance stone rarity must be 0…${FORGE_STONE_RARITIES - 1}, got ${rarity}`);
+  }
+  return FORGE_STONE_PP[rarity];
+}
+
 export function nextForgeStep(
   upgrade: number,
   target: number,
@@ -129,7 +144,8 @@ export function nextForgeStep(
   if (upgrade >= target) return { kind: 'done' };
   const next = upgrade + 1;
   const bonus = Math.max(0, options.bonus ?? 0);
-  const stonePp = Math.max(0, options.stonePp ?? 0);
+  const named = options.stones?.[next - 1] ?? null;
+  const stonePp = named === null ? Math.max(0, options.stonePp ?? 0) : forgeStonePp(named);
   const stoneUsed = stonePp > 0 && forgeChance(next, fails, bonus) < 1;
   const protectedRoll = options.protect === true && forgeProtectable(next);
   return {
@@ -141,5 +157,6 @@ export function nextForgeStep(
     essence: forgeRollEssence(level, rarity, next),
     protection: protectedRoll ? forgeScrollCost(level, rarity, next) : 0,
     stoneUsed,
+    stone: stoneUsed ? named : null,
   };
 }

@@ -32,6 +32,7 @@ const GROUP_KEY: Record<ItemKind, keyof Strings> = {
   key: 'inventoryGroupKey',
   time: 'inventoryGroupTime',
   stone: 'inventoryGroupStone',
+  chanceStone: 'inventoryGroupChanceStone',
   chest: 'inventoryGroupChest',
   rune: 'inventoryGroupRune',
   skin: 'inventoryGroupSkin',
@@ -61,6 +62,7 @@ function itemName(item: InventoryViewItem, strings: Strings, lang: Lang): string
   if (item.kind === 'chest') return chestName(item.defId, strings);
   if (item.kind === 'skin') return skinName(item.defId);
   if (item.kind === 'rune') return runeName(item, lang);
+  if (item.kind === 'chanceStone') return sub(strings.inventoryChanceStone, { rarity: itemRarityLabel(item.rarityIdx, lang) });
   return itemRarityLabel(item.rarityIdx, lang);
 }
 
@@ -131,7 +133,7 @@ function itemForge(item: InventoryViewItem): string {
 }
 
 /** Kinds whose only distinguishing feature is their tier, so the tier IS the name. */
-const NAMED_BY_RARITY = new Set<ItemKind>(['key', 'time', 'stone']);
+const NAMED_BY_RARITY = new Set<ItemKind>(['key', 'time', 'stone', 'chanceStone']);
 
 /**
  * Split rather than joined: the card sets the label and the number at opposite edges of the stat

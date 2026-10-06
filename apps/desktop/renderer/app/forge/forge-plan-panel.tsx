@@ -7,9 +7,11 @@ import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { inventoryFieldClass } from '@bombfarm/game-art';
 import { Bar, Button, cn, Panel, PanelHeader, StatList, Stepper, type StatListItem } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
-import type { ForgePlan, ForgePlanForecast } from '../../lib/forge/use-forge-plan';
+import { stoneForTarget, stonePpForTarget, type ResolvedStoneRange } from '../../lib/forge/forge-stones';
+import type { ForgePlan, ForgePlanForecast, ForgeStoneEdit } from '../../lib/forge/use-forge-plan';
 import { ForgeGold } from './forge-gold';
 import { ForgeQueueAdd } from './forge-queue-add';
+import { ForgeStonesControl, ForgeStonesShortage, forgeStoneFacts } from './forge-stones-panel';
 import {
   BLANK,
   forgeLevel,
@@ -104,11 +106,14 @@ export function ForgePlanPanel({
   item,
   plan,
   forecast,
+  stoneRanges,
+  ownedStones,
   walletGold,
   reason,
   startRefusal,
   labels,
   onStepTarget,
+  onStoneEdit,
   onMaxGoldChange,
   onAttemptsChange,
   onForge,
@@ -117,12 +122,16 @@ export function ForgePlanPanel({
   item: InventoryViewItem;
   plan: ForgePlan;
   forecast: ForgePlanForecast | null;
+  stoneRanges: readonly ResolvedStoneRange[];
+  /** Chance Stones held per rarity, 0…5. */
+  ownedStones: readonly number[];
   walletGold: number | null;
   reason: ForgeButtonReason;
   /** Why main refused the last start, until the next press or a change of piece. */
   startRefusal: ForgeStartReason | null;
   labels: ForgeLabels;
   onStepTarget: (delta: 1 | -1) => void;
+  onStoneEdit: (edit: ForgeStoneEdit) => void;
   onMaxGoldChange: (text: string) => void;
   onAttemptsChange: (text: string) => void;
   onForge: () => void;
@@ -132,6 +141,10 @@ export function ForgePlanPanel({
   const maxed = item.upgrade >= FORGE_MAX;
   const target = plan.target;
   const rungs = riskyRungs(item.upgrade, target);
+  const anyStone = stoneRanges.some((range) => range.rarity !== null && range.to > FORGE_GUARANTEED);
+  const ladderColumns = anyStone
+    ? 'grid-cols-[2.5rem_minmax(0,1fr)_3rem_4.5rem_auto]'
+    : 'grid-cols-[2.5rem_minmax(0,1fr)_3rem_auto]';
   const cancelling = reason === 'cancelling';
   const running = reason === 'running' || cancelling;
   const { armed, arm, disarm } = useArmedButton(item.id, target);
@@ -187,6 +200,7 @@ export function ForgePlanPanel({
           },
         ]
       : []),
+    ...forgeStoneFacts(forecast, ownedStones, labels, t),
     {
       id: 'bad-run',
       label: t.forgeFactBadRun,
@@ -239,18 +253,26 @@ export function ForgePlanPanel({
             disabled={running}
           />
         </div>
+
+        <ForgeStonesControl ranges={stoneRanges} labels={labels} onEdit={onStoneEdit} />
       </fieldset>
 
       {rungs.length > 0 ? (
         <ol data-testid="forge-ladder" aria-label={t.forgeLadderCaption} className="m-0 flex list-none flex-col gap-1 p-0">
           {rungs.map((rung) => {
-            const chance = forgeChance(rung);
+            const chance = forgeChance(rung, 0, stonePpForTarget(stoneRanges, rung));
+            const stone = stoneForTarget(stoneRanges, rung);
             const floor = forgeFailLevel(rung);
             return (
-              <li key={rung} data-testid="forge-ladder-rung" className="grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_auto] items-center gap-2 text-xs">
+              <li key={rung} data-testid="forge-ladder-rung" className={cn('grid items-center gap-2 text-xs', ladderColumns)}>
                 <span className="font-mono font-semibold tabular-nums text-ink">{forgeLevel(rung)}</span>
                 <Bar percent={chance * 100} variant={chance >= GOOD_ODDS ? 'best' : 'fill'} />
                 <span className={cn('text-right', 'font-mono', 'tabular-nums', oddsClass(chance))}>{labels.chance(chance)}</span>
+                {anyStone ? (
+                  <span data-testid="forge-ladder-stone" className="truncate text-[11px] text-muted">
+                    {stone === null ? '' : labels.rarityName(stone)}
+                  </span>
+                ) : null}
                 <span className={cn('font-mono', 'text-[11px]', 'tabular-nums', floor === FORGE_FAIL_FLOOR && rung > FORGE_FAIL_FLOOR + 1 ? 'text-down' : 'text-muted')}>
                   {sub(t.forgeLadderFailTo, { floor: forgeLevel(floor) })}
                 </span>
@@ -267,6 +289,7 @@ export function ForgePlanPanel({
           {labels.warning()}
         </p>
       )}
+      <ForgeStonesShortage forecast={forecast} owned={ownedStones} labels={labels} />
       <p data-testid="forge-stone-note" className="m-0 text-xs text-muted">
         {forecast?.protected ? `${t.forgeProtectNote} ` : ''}
         {t.forgeStoneNote}

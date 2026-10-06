@@ -47,20 +47,30 @@ function item(id: string): InventoryViewItem {
   return found;
 }
 
-const IDLE = { running: false, cancelRequested: false };
+const IDLE = { running: false, cancelRequested: false, stonesChosen: false };
 
 describe('forgeButtonReason', () => {
   it('ranks the reasons: a run in flight, then maxed, then no server, then the switch, then ready', () => {
-    expect(forgeButtonReason({ upgrade: FORGE_MAX, accountSource: 'fixture', forgeWritesEnabled: false, running: true, cancelRequested: false })).toBe('running');
+    expect(forgeButtonReason({ upgrade: FORGE_MAX, accountSource: 'fixture', forgeWritesEnabled: false, running: true, cancelRequested: false, stonesChosen: false })).toBe('running');
     expect(forgeButtonReason({ upgrade: FORGE_MAX, accountSource: 'fixture', forgeWritesEnabled: false, ...IDLE })).toBe('maxed');
     expect(forgeButtonReason({ upgrade: 12, accountSource: 'fixture', forgeWritesEnabled: true, ...IDLE })).toBe('fixture');
     expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: false, ...IDLE })).toBe('switch-off');
     expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, ...IDLE })).toBe('ready');
   });
 
+  it('refuses to start while a Chance Stone is chosen, ahead of the server and the switch, but not ahead of a run or a maxed piece', () => {
+    const chosen = { ...IDLE, stonesChosen: true };
+    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, ...chosen })).toBe('stones');
+    expect(forgeButtonReason({ upgrade: 12, accountSource: 'fixture', forgeWritesEnabled: false, ...chosen })).toBe('stones');
+    expect(forgeButtonReason({ upgrade: FORGE_MAX, accountSource: 'server', forgeWritesEnabled: true, ...chosen })).toBe('maxed');
+    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, running: true, cancelRequested: false, stonesChosen: true })).toBe('running');
+    expect(forgeReasonText('stones', en)).toBe(en.forgeReasonStones);
+    expect(forgeReasonText('stones', ptBR)).toBe(ptBR.forgeReasonStones);
+  });
+
   it('says the cancel landed once it has been asked for, and only while a run is in flight', () => {
-    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, running: true, cancelRequested: true })).toBe('cancelling');
-    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, running: false, cancelRequested: true })).toBe('ready');
+    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, running: true, cancelRequested: true, stonesChosen: false })).toBe('cancelling');
+    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, running: false, cancelRequested: true, stonesChosen: false })).toBe('ready');
   });
 
   it('treats an environment not yet answered as a server, so the switch line still shows', () => {

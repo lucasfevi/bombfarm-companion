@@ -344,6 +344,45 @@ test.describe('forge plan smoke', () => {
     });
   });
 
+  test('chooses a Chance Stone per range, moves the odds and the expected stones, and cannot forge while one is chosen', async ({}, testInfo) => {
+    testInfo.setTimeout(180_000);
+    await withForge(async (page) => {
+      const forgeBand = page.getByRole('combobox', { name: 'Filter by forge level' });
+      await forgeBand.click();
+      await page.getByRole('option', { name: '+10 to +12', exact: true }).click();
+      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBeGreaterThan(0);
+      await rows(page).first().click();
+
+      const plan = page.getByTestId('forge-plan-panel');
+      await plan.getByRole('button', { name: 'Raise the target' }).click();
+      await plan.getByRole('button', { name: 'Raise the target' }).click();
+      const stones = plan.getByTestId('forge-stones');
+      await expect(stones.getByTestId('forge-stone-range')).toHaveCount(1);
+      await expect(plan.getByTestId('forge-fact-stones-2')).toHaveCount(0);
+      const goldWithout = (await plan.getByTestId('forge-fact-gold').textContent()) ?? '';
+
+      await stones.getByRole('combobox', { name: /^Chance Stone for/ }).click();
+      await page.getByRole('option', { name: 'Rare', exact: true }).click();
+      await expect(plan.getByTestId('forge-fact-stones-2')).toBeVisible();
+      await expect(plan.getByTestId('forge-fact-gold')).not.toHaveText(goldWithout);
+      expect(figureOf((await plan.getByTestId('forge-fact-gold').textContent()) ?? '')).toBeLessThan(figureOf(goldWithout));
+      await expect(plan.getByTestId('forge-ladder-stone').first()).toHaveText('Rare');
+
+      await expect(plan.getByTestId('forge-button')).toBeDisabled();
+      await expect(plan.getByTestId('forge-button-reason')).toContainText('cannot use Chance Stones yet');
+
+      await stones.getByTestId('forge-stones-add').click();
+      await expect(stones.getByTestId('forge-stone-range')).toHaveCount(2);
+
+      await stones.getByTestId('forge-stone-remove').first().click();
+      await stones.getByRole('combobox', { name: /^Chance Stone for/ }).click();
+      await page.getByRole('option', { name: 'None', exact: true }).click();
+      await expect(plan.getByTestId('forge-fact-stones-2')).toHaveCount(0);
+      await expect(plan.getByTestId('forge-fact-gold')).toHaveText(goldWithout);
+      await expect(plan.getByTestId('forge-button-reason')).toHaveText('No server to forge on');
+    });
+  });
+
   test('gives the bag the height the window has spare, and takes it back when the window has none', async ({}, testInfo) => {
     testInfo.setTimeout(180_000);
     await withForge(async (page, app) => {

@@ -139,6 +139,12 @@ export function itemKindIconSrc(defId: string, rarityIdx: number): string | null
     return slug ? `${WIKI_ASSETS_BASE}/stones/skill_stone_${slug}.png` : null;
   }
 
+  if (defId.startsWith('forja_pedra_')) {
+    // The stones' own art is not bundled yet, so a stone wears its tier's Chance Stone chest.
+    const band = DIFFICULTY_SLUG[Math.round(rarityIdx) - 1];
+    return `${WIKI_ASSETS_BASE}/chests/chance_stone_chest_${band ?? 'normal'}.png`;
+  }
+
   if (defId.startsWith('chest_')) {
     // Every family but the item chest is drawn per tier, and `rarityIdx` already carries the tier
     // the id's tail encodes (see `chestRarityIdx`). Band and rarity index are the same number —

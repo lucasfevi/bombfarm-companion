@@ -52,12 +52,12 @@ describe('forgeForecast', () => {
   });
 
   it('the guaranteed rungs are certain rolls: +0 to +4 on a level-10 common is 4 rolls and the sum of the four', () => {
-    expect(forgeForecast(0, 4, 10, 0)).toEqual({ rolls: 4, gold: 200 + 450 + 800 + 1_250, essence: 4 });
+    expect(forgeForecast(0, 4, 10, 0)).toMatchObject({ rolls: 4, gold: 200 + 450 + 800 + 1_250, essence: 4 });
   });
 
   it('forecasts nothing when the item already sits at or above the target', () => {
-    expect(forgeForecast(12, 12, 300, 5)).toEqual({ rolls: 0, gold: 0, essence: 0 });
-    expect(forgeForecast(15, 9, 300, 5)).toEqual({ rolls: 0, gold: 0, essence: 0 });
+    expect(forgeForecast(12, 12, 300, 5)).toEqual({ rolls: 0, gold: 0, essence: 0, stones: [0, 0, 0, 0, 0, 0] });
+    expect(forgeForecast(15, 9, 300, 5)).toEqual({ rolls: 0, gold: 0, essence: 0, stones: [0, 0, 0, 0, 0, 0] });
   });
 
   it('throws for a starting level outside the ladder, a negative miss count or a target above it', () => {
@@ -226,7 +226,7 @@ describe('forgeGoldQuantile', () => {
   it('agrees with the simulation within its sampling error across a grid', () => {
     for (const [level, rarity] of [[20, 0], [300, 5]] as const) {
       for (const [from, target] of [[0, 4], [8, 12], [11, 13], [11, 14]] as const) {
-        for (const options of [{}, { protect: true }, { stonePp: 0.3 }, { bonus: 0.1 }] as ForgeOptions[]) {
+        for (const options of [{}, { protect: true }, { stonePp: 0.3 }, { bonus: 0.1 }, { stones: [null, null, null, null, null, null, null, null, 0, 1, 1, 2, 3, 3] }] as ForgeOptions[]) {
           const exact = forgeGoldQuantile(from, target, level, rarity, 0.9, 0, options);
           const simulated = simulatedQuantile(from, target, level, rarity, 0.9, 0, options);
           expect(

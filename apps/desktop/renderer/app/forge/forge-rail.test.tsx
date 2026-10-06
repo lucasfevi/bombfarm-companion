@@ -5,6 +5,7 @@ import { EMPTY_FORGE_HISTORY, type ForgeHistoryResult, type ForgeHistoryRow, typ
 import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { CopyProvider } from '../../lib/copy';
 import { en } from '../../lib/copy/en';
+import { resolveStoneRanges } from '../../lib/forge/forge-stones';
 import { forgeRunReducer, IDLE_FORGE_RUN, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
 import { forgeLabels } from './forge-labels';
 import { ForgeLedger } from './forge-ledger';
@@ -24,7 +25,7 @@ function running(): ForgeRunState {
     itemId: 'g1',
     target: 12,
     from: 8,
-    plan: { forecast: { rolls: 6.5, gold: 650, essence: 0, protected: null, badRunGold: 1_200 } },
+    plan: { forecast: { rolls: 6.5, gold: 650, essence: 0, stones: [0, 0, 0, 0, 0, 0], protected: null, badRunGold: 1_200 } },
   });
   const path: [number, number, ForgeStepEvent['outcome']][] = [
     [8, 9, 'success'],
@@ -401,8 +402,11 @@ function renderPanel(
       locale: 'en',
       children: createElement(ForgePlanPanel, {
         item: item(),
-        plan: { itemId: 'g1', target: 13, maxGold: null, attempts: null },
+        plan: { itemId: 'g1', target: 13, maxGold: null, attempts: null, stones: [] },
         forecast: null,
+        stoneRanges: resolveStoneRanges([], 12, 13),
+        ownedStones: [0, 0, 0, 0, 0, 0],
+        onStoneEdit: () => undefined,
         walletGold: null,
         reason,
         startRefusal,

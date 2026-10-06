@@ -1,5 +1,6 @@
 import {
   FORGE_MAX,
+  FORGE_STONE_RARITIES,
   FORGE_PITY_CAP,
   assertForgeFails,
   assertForgeUpgrade,
@@ -8,7 +9,13 @@ import {
   type ForgeRoll,
 } from './rules';
 
-export type ForgeForecast = { rolls: number; gold: number; essence: number };
+export type ForgeForecast = {
+  rolls: number;
+  gold: number;
+  essence: number;
+  /** Expected Chance Stones spent per rarity, indexed 0…5; only attempts the game accepts a stone on count. */
+  stones: readonly number[];
+};
 
 function rollAt(
   upgrade: number,
@@ -23,9 +30,10 @@ function rollAt(
   return step;
 }
 
-function solve(matrix: number[][], constants: number[]): number[] {
-  const size = constants.length;
-  const rows = matrix.map((row, index) => [...row, constants[index]]);
+function solve(matrix: number[][], constants: number[][]): number[][] {
+  const size = matrix.length;
+  const width = constants[0]?.length ?? 0;
+  const rows = matrix.map((row, index) => [...row, ...constants[index]]);
   for (let column = 0; column < size; column++) {
     let pivot = column;
     for (let row = column + 1; row < size; row++) {
@@ -36,64 +44,85 @@ function solve(matrix: number[][], constants: number[]): number[] {
       if (row === column) continue;
       const factor = rows[row][column] / rows[column][column];
       if (factor === 0) continue;
-      for (let k = column; k <= size; k++) rows[row][k] -= factor * rows[column][k];
+      for (let k = column; k < size + width; k++) rows[row][k] -= factor * rows[column][k];
     }
   }
-  return rows.map((row, index) => row[size] / row[index]);
+  return rows.map((row, index) => row.slice(size).map((value) => value / row[index]));
 }
 
+const PRICED = 3;
+const COMPONENTS = PRICED + FORGE_STONE_RARITIES;
+
+/** What one roll adds to each running total: rolls, gold, essence with scroll, then one count per stone rarity. */
+function componentsOf(roll: ForgeRoll): number[] {
+  const parts = new Array<number>(COMPONENTS).fill(0);
+  parts[0] = 1;
+  parts[1] = roll.cost;
+  parts[2] = roll.essence + roll.protection;
+  if (roll.stone !== null) parts[PRICED + roll.stone] = 1;
+  return parts;
+}
+
+type Affine = { coefficients: number[]; constants: number[] };
+
 /**
- * Expected total of `price` (per roll) to climb from `upgrade` carrying `fails` misses in a row.
- * A hit always resets the miss count, so every state a climb returns to after a hit is a
- * (level, 0) one: each (level, misses) value is written as an affine function of those, from the
- * all-certain miss cap downward, and the small linear system left over is solved exactly. A value
- * iteration would need thousands of passes where a +15 climb takes thousands of cycles.
+ * Expected totals of every component (see {@link componentsOf}) to climb from `upgrade` carrying
+ * `fails` misses in a row. A hit always resets the miss count, so every state a climb returns to
+ * after a hit is a (level, 0) one: each (level, misses) value is written as an affine function of
+ * those, from the all-certain miss cap downward, and the small linear system left over is solved
+ * exactly. A value iteration would need thousands of passes where a +15 climb takes thousands of
+ * cycles. Stones named per target keep the chain stationary; only `stonePp`, for the first attempt
+ * alone, is handled outside it.
  */
-function expectedTotal(
+function expectedTotals(
   from: number,
   fails: number,
   target: number,
-  price: (roll: ForgeRoll) => number,
   level: number,
   rarity: number,
   options: ForgeOptions,
-): number {
+): number[] {
   const { stonePp, ...standing } = options;
-  const width = target + 1;
-  const zero = () => new Array<number>(width).fill(0);
+  const zeros = () => new Array<number>(target).fill(0);
 
-  let above: number[][] = Array.from({ length: target }, () => zero());
-  const byFails: number[][][] = [];
+  let above: Affine[] = Array.from({ length: target }, () => ({
+    coefficients: zeros(),
+    constants: new Array<number>(COMPONENTS).fill(0),
+  }));
+  const byFails: Affine[][] = [];
   for (let missed = FORGE_PITY_CAP; missed >= 0; missed--) {
-    const here: number[][] = [];
+    const here: Affine[] = [];
     for (let upgrade = 0; upgrade < target; upgrade++) {
       const roll = rollAt(upgrade, missed, target, level, rarity, standing);
-      const value = zero();
-      value[target] = price(roll);
       const failure = above[roll.failTo];
-      for (let k = 0; k < width; k++) value[k] += (1 - roll.chance) * failure[k];
-      if (roll.target < target) value[roll.target] += roll.chance;
-      here.push(value);
+      const miss = 1 - roll.chance;
+      const coefficients = failure.coefficients.map((value) => miss * value);
+      const constants = componentsOf(roll).map((value, c) => value + miss * failure.constants[c]);
+      if (roll.target < target) coefficients[roll.target] += roll.chance;
+      here.push({ coefficients, constants });
     }
     byFails[missed] = here;
     above = here;
   }
 
   const matrix = byFails[0].map((value, upgrade) =>
-    Array.from({ length: target }, (_, k) => (upgrade === k ? 1 : 0) - value[k]),
+    value.coefficients.map((coefficient, k) => (upgrade === k ? 1 : 0) - coefficient),
   );
   const solution = solve(
     matrix,
-    byFails[0].map((value) => value[target]),
+    byFails[0].map((value) => value.constants),
   );
-  const valueAt = (upgrade: number, missed: number) => {
+  const valueAt = (upgrade: number, missed: number): number[] => {
     const row = byFails[Math.min(missed, FORGE_PITY_CAP)][upgrade];
-    return row[target] + solution.reduce((sum, value, k) => sum + row[k] * value, 0);
+    return row.constants.map((constant, c) =>
+      row.coefficients.reduce((sum, coefficient, k) => sum + coefficient * solution[k][c], constant),
+    );
   };
   if (!(stonePp !== undefined && stonePp > 0)) return valueAt(from, fails);
   const first = rollAt(from, fails, target, level, rarity, options);
-  const onHit = first.target < target ? solution[first.target] : 0;
-  return price(first) + first.chance * onHit + (1 - first.chance) * valueAt(first.failTo, fails + 1);
+  const onHit = first.target < target ? solution[first.target] : new Array<number>(COMPONENTS).fill(0);
+  const onMiss = valueAt(first.failTo, fails + 1);
+  return componentsOf(first).map((value, c) => value + first.chance * onHit[c] + (1 - first.chance) * onMiss[c]);
 }
 
 export function forgeForecast(
@@ -106,13 +135,10 @@ export function forgeForecast(
 ): ForgeForecast {
   assertForgeUpgrade(from);
   assertForgeFails(fails);
-  if (from >= target) return { rolls: 0, gold: 0, essence: 0 };
+  if (from >= target) return { rolls: 0, gold: 0, essence: 0, stones: new Array<number>(FORGE_STONE_RARITIES).fill(0) };
   if (target > FORGE_MAX) throw new RangeError(`forge target must be +1…+${FORGE_MAX}, got ${target}`);
-  return {
-    rolls: expectedTotal(from, fails, target, () => 1, level, rarity, options),
-    gold: expectedTotal(from, fails, target, (roll) => roll.cost, level, rarity, options),
-    essence: expectedTotal(from, fails, target, (roll) => roll.essence + roll.protection, level, rarity, options),
-  };
+  const totals = expectedTotals(from, fails, target, level, rarity, options);
+  return { rolls: totals[0], gold: totals[1], essence: totals[2], stones: totals.slice(PRICED) };
 }
 
 const GOLD_BUCKETS = 8_000;

@@ -115,6 +115,7 @@ describe('nextForgeStep', () => {
       essence: 1,
       protection: 0,
       stoneUsed: false,
+      stone: null,
     });
     expect(nextForgeStep(3, 7, 10, 0)).toMatchObject({ kind: 'roll', target: 4, chance: 1, failTo: 3, cost: 1_250 });
   });
@@ -129,6 +130,7 @@ describe('nextForgeStep', () => {
       essence: forgeRollEssence(300, 5, 12),
       protection: 0,
       stoneUsed: false,
+      stone: null,
     });
     expect(nextForgeStep(14, 15, 300, 5)).toMatchObject({ target: 15, chance: 0.1, failTo: 10 });
   });

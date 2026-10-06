@@ -24,12 +24,13 @@ export function forgeLevel(upgrade: number): string {
   return `+${String(upgrade)}`;
 }
 
-export type ForgeButtonReason = 'maxed' | 'fixture' | 'switch-off' | 'ready' | 'running' | 'cancelling';
+export type ForgeButtonReason = 'maxed' | 'stones' | 'fixture' | 'switch-off' | 'ready' | 'running' | 'cancelling';
 
 /**
  * What the Forge button is for right now, first reason that applies. A run in flight owns the
  * button outright — it is the cancel, until the cancel has been asked for and the button has
- * nothing left to do but say so. Otherwise a piece with nowhere to go beats everything; an
+ * nothing left to do but say so. Otherwise a piece with nowhere to go beats everything, then a
+ * Chance Stone the run service cannot send; an
  * account with no server behind it beats the switch, because turning the switch on would not
  * help; and only then is the button armed.
  */
@@ -39,9 +40,11 @@ export function forgeButtonReason(input: {
   forgeWritesEnabled: boolean;
   running: boolean;
   cancelRequested: boolean;
+  stonesChosen: boolean;
 }): ForgeButtonReason {
   if (input.running) return input.cancelRequested ? 'cancelling' : 'running';
   if (input.upgrade >= FORGE_MAX) return 'maxed';
+  if (input.stonesChosen) return 'stones';
   if (input.accountSource === 'fixture') return 'fixture';
   if (!input.forgeWritesEnabled) return 'switch-off';
   return 'ready';
@@ -51,6 +54,8 @@ export function forgeReasonText(reason: ForgeButtonReason, t: Copy): string {
   switch (reason) {
     case 'maxed':
       return sub(t.forgeReasonMaxed, { max: forgeLevel(FORGE_MAX) });
+    case 'stones':
+      return t.forgeReasonStones;
     case 'fixture':
       return t.forgeReasonFixture;
     case 'switch-off':

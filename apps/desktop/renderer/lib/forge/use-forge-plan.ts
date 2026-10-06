@@ -15,7 +15,18 @@ import {
   forgeGoldQuantile,
   forgeProtectable,
   type ForgeForecast,
+  type ForgeStones,
 } from '@bombfarm/domain/forge';
+import {
+  addStoneRange,
+  removeStoneRange,
+  resolveStoneRanges,
+  setStoneRangeEnd,
+  setStoneRarity,
+  stoneKey,
+  stonesByTarget,
+  type ForgeStoneRange,
+} from './forge-stones';
 
 export type ForgePlan = {
   /** The piece the target belongs to. A different piece starts from its own default target. */
@@ -23,14 +34,32 @@ export type ForgePlan = {
   readonly target: number;
   readonly maxGold: number | null;
   readonly attempts: number | null;
+  /** The Chance Stone chosen for each stretch of targets; empty is no stones. Belongs to the piece, like the target. */
+  readonly stones: readonly ForgeStoneRange[];
 };
+
+export type ForgeStoneEdit =
+  | { kind: 'stoneRarity'; index: number; rarity: number | null }
+  | { kind: 'stoneEnd'; index: number; upTo: number }
+  | { kind: 'stoneAdd' }
+  | { kind: 'stoneRemove'; index: number };
 
 export type ForgePlanAction =
   | { kind: 'step'; itemId: string; upgrade: number; delta: 1 | -1 }
   | { kind: 'maxGold'; text: string }
-  | { kind: 'attempts'; text: string };
+  | { kind: 'attempts'; text: string }
+  | { kind: 'stoneRarity'; itemId: string; upgrade: number; index: number; rarity: number | null }
+  | { kind: 'stoneEnd'; itemId: string; upgrade: number; index: number; upTo: number }
+  | { kind: 'stoneAdd'; itemId: string; upgrade: number }
+  | { kind: 'stoneRemove'; itemId: string; upgrade: number; index: number };
 
-export const INITIAL_FORGE_PLAN: ForgePlan = { itemId: null, target: FORGE_GUARANTEED, maxGold: null, attempts: null };
+export const INITIAL_FORGE_PLAN: ForgePlan = {
+  itemId: null,
+  target: FORGE_GUARANTEED,
+  maxGold: null,
+  attempts: null,
+  stones: [],
+};
 
 /** The last rung that always lands while the piece is below it; otherwise the very next rung. */
 export function defaultForgeTarget(upgrade: number): number {
@@ -50,12 +79,22 @@ export function parseForgeLimit(text: string): number | null {
   return value > 0 ? value : null;
 }
 
-/** The plan as it applies to `item`: its own target while it is the piece the plan was made for,
- *  the default target otherwise. The limits carry across pieces — a budget is the player's. */
+/** The plan as it applies to `item`: its own target and stones while it is the piece the plan was
+ *  made for, the default target and no stones otherwise. The limits carry across pieces — a budget
+ *  is the player's. */
 export function forgePlanFor(plan: ForgePlan, item: { id: string; upgrade: number } | null): ForgePlan {
-  if (item === null) return { ...plan, itemId: null, target: FORGE_GUARANTEED };
+  if (item === null) return { ...plan, itemId: null, target: FORGE_GUARANTEED, stones: [] };
   if (plan.itemId === item.id) return { ...plan, target: clampForgeTarget(plan.target, item.upgrade) };
-  return { ...plan, itemId: item.id, target: defaultForgeTarget(item.upgrade) };
+  return { ...plan, itemId: item.id, target: defaultForgeTarget(item.upgrade), stones: [] };
+}
+
+function editStones(
+  plan: ForgePlan,
+  piece: { itemId: string; upgrade: number },
+  edit: (stones: readonly ForgeStoneRange[], upgrade: number, target: number) => ForgeStoneRange[],
+): ForgePlan {
+  const current = forgePlanFor(plan, { id: piece.itemId, upgrade: piece.upgrade });
+  return { ...current, stones: edit(current.stones, piece.upgrade, current.target) };
 }
 
 export function forgePlanReducer(plan: ForgePlan, action: ForgePlanAction): ForgePlan {
@@ -68,6 +107,18 @@ export function forgePlanReducer(plan: ForgePlan, action: ForgePlanAction): Forg
       return { ...plan, maxGold: parseForgeLimit(action.text) };
     case 'attempts':
       return { ...plan, attempts: parseForgeLimit(action.text) };
+    case 'stoneRarity':
+      return editStones(plan, action, (stones, upgrade, target) =>
+        setStoneRarity(stones, upgrade, target, action.index, action.rarity),
+      );
+    case 'stoneEnd':
+      return editStones(plan, action, (stones, upgrade, target) =>
+        setStoneRangeEnd(stones, upgrade, target, action.index, action.upTo),
+      );
+    case 'stoneAdd':
+      return editStones(plan, action, addStoneRange);
+    case 'stoneRemove':
+      return editStones(plan, action, (stones, upgrade, target) => removeStoneRange(stones, upgrade, target, action.index));
   }
 }
 
@@ -77,6 +128,8 @@ export type ForgePlanForecast = {
   essence: number;
   /** The same climb with the Protection Scroll ticked on every rung that offers it; null when none does. */
   protected: ForgeForecast | null;
+  /** Expected Chance Stones spent per rarity on the plain climb. */
+  stones: readonly number[];
   /** What a run of bad luck costs — the 90th percentile of the climb's gold. */
   badRunGold: number;
 };
@@ -90,12 +143,13 @@ function computeForgePlanForecast(
   rarityIdx: number,
   chanceBonus = 0,
   fails = 0,
+  stones?: ForgeStones,
 ): ForgePlanForecast | null {
   if (!FORGE_ITEM_LEVELS.includes(level)) return null;
   if (!Number.isInteger(rarityIdx) || rarityIdx < 0) return null;
   if (!Number.isInteger(upgrade) || upgrade < 0 || upgrade >= target || target > FORGE_MAX) return null;
   try {
-    const bonus = { bonus: chanceBonus };
+    const bonus = stones === undefined ? { bonus: chanceBonus } : { bonus: chanceBonus, stones };
     const expected = forgeForecast(upgrade, target, level, rarityIdx, fails, bonus);
     const protectedClimb = forgeProtectable(target)
       ? forgeForecast(upgrade, target, level, rarityIdx, fails, { ...bonus, protect: true })
@@ -117,10 +171,11 @@ export function forgePlanForecast(
   rarityIdx: number,
   chanceBonus = 0,
   fails = 0,
+  stones?: ForgeStones,
 ): ForgePlanForecast | null {
-  const key = `${String(upgrade)}|${String(target)}|${String(level)}|${String(rarityIdx)}|${String(chanceBonus)}|${String(fails)}`;
+  const key = `${String(upgrade)}|${String(target)}|${String(level)}|${String(rarityIdx)}|${String(chanceBonus)}|${String(fails)}|${stoneKey(stones)}`;
   if (forecastCache.has(key)) return forecastCache.get(key) ?? null;
-  const forecast = computeForgePlanForecast(upgrade, target, level, rarityIdx, chanceBonus, fails);
+  const forecast = computeForgePlanForecast(upgrade, target, level, rarityIdx, chanceBonus, fails, stones);
   if (forecastCache.size >= FORECAST_CACHE_LIMIT) forecastCache.delete(forecastCache.keys().next().value as string);
   forecastCache.set(key, forecast);
   return forecast;
@@ -151,12 +206,17 @@ export function useForgePlan(
   const level = item?.level;
   const rarityIdx = item?.rarityIdx;
   const fails = item?.forgeFails ?? 0;
+  const stoneRanges = useMemo(
+    () => (upgrade === undefined ? [] : resolveStoneRanges(plan.stones, upgrade, plan.target)),
+    [upgrade, plan.stones, plan.target],
+  );
+  const stones = useMemo(() => stonesByTarget(stoneRanges), [stoneRanges]);
   const forecast = useMemo(
     () =>
       upgrade === undefined || level === undefined || rarityIdx === undefined
         ? null
-        : forgePlanForecast(upgrade, plan.target, level, rarityIdx, chanceBonus, fails),
-    [upgrade, level, rarityIdx, fails, plan.target, chanceBonus],
+        : forgePlanForecast(upgrade, plan.target, level, rarityIdx, chanceBonus, fails, stones),
+    [upgrade, level, rarityIdx, fails, plan.target, chanceBonus, stones],
   );
 
   const dispatch = useCallback(
@@ -186,5 +246,13 @@ export function useForgePlan(
     [dispatch],
   );
 
-  return { forecast, stepTarget, setMaxGold, setAttempts };
+  const editStoneRanges = useCallback(
+    (action: ForgeStoneEdit) => {
+      if (item === null) return;
+      dispatch({ ...action, itemId: item.id, upgrade: item.upgrade });
+    },
+    [item, dispatch],
+  );
+
+  return { forecast, stoneRanges, stepTarget, setMaxGold, setAttempts, editStoneRanges };
 }

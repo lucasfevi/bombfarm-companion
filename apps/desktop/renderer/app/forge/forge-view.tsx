@@ -26,6 +26,7 @@ import {
   buildInventoryView,
   groupInventoryByKind,
   mapInventoryHeroes,
+  ownedChanceStones,
   type InventoryView,
   type InventoryViewItem,
 } from '@bombfarm/domain/inventory-view';
@@ -59,6 +60,7 @@ import {
   setForgeSort,
   useForgeScreen,
 } from '../../lib/forge/forge-store';
+import { stonesCanBeUsed } from '../../lib/forge/forge-stones';
 import { useContentHeight } from '../../lib/forge/use-content-height';
 import { forgeCollectionBonus, useForgePlan } from '../../lib/forge/use-forge-plan';
 import { useScreenRefreshRegistration } from '../../lib/refresh/screen-refresh-store';
@@ -143,6 +145,7 @@ export function ForgeView({
   const heroes = useMemo(() => mapInventoryHeroes(rawHeroes), [rawHeroes]);
   const inField = useMemo(() => fieldHeroIds(rawHeroes), [rawHeroes]);
   const gear = useMemo(() => gearOf(inventory.items), [inventory]);
+  const ownedStones = useMemo(() => ownedChanceStones(inventory.items), [inventory]);
   const labels = useMemo(() => forgeLabels(t, lang, locale), [t, lang, locale]);
   const tableLabels = useMemo(() => forgeTableLabels(t, lang, heroes), [t, lang, heroes]);
 
@@ -249,7 +252,7 @@ export function ForgeView({
 
   const onForge = useCallback(() => {
     const bridge = bridgeOf();
-    if (!bridge || selected === null) return;
+    if (!bridge || selected === null || stonesCanBeUsed(planControls.stoneRanges)) return;
     const request = { itemId: selected.id, target: plan.target, maxGold: plan.maxGold, maxAttempts: plan.attempts };
     const planNow: ForgeRunPlan = { forecast: planControls.forecast };
     void bridge.invoke('forge:start', request).then((result) => {
@@ -260,7 +263,7 @@ export function ForgeView({
         setStartRefusal(result.reason);
       }
     });
-  }, [selected, plan, planControls.forecast]);
+  }, [selected, plan, planControls.forecast, planControls.stoneRanges]);
 
   // Main honours a cancel between rolls, so the roll in flight has to settle first — the flag
   // goes down here, on the press, or the screen would look inert for a second or two and invite
@@ -298,6 +301,7 @@ export function ForgeView({
     forgeWritesEnabled,
     running,
     cancelRequested,
+    stonesChosen: stonesCanBeUsed(planControls.stoneRanges),
   });
 
   const account = view?.payload.account;
@@ -410,11 +414,14 @@ export function ForgeView({
                 item={selected}
                 plan={plan}
                 forecast={planControls.forecast}
+                stoneRanges={planControls.stoneRanges}
+                ownedStones={ownedStones}
                 walletGold={walletGold}
                 reason={reason}
                 startRefusal={startRefusal}
                 labels={labels}
                 onStepTarget={planControls.stepTarget}
+                onStoneEdit={planControls.editStoneRanges}
                 onMaxGoldChange={planControls.setMaxGold}
                 onAttemptsChange={planControls.setAttempts}
                 onForge={onForge}

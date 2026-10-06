@@ -73,7 +73,8 @@ describe('buildForgeQueue', () => {
       row({ itemId: 'a', forge: { from: 0, to: 13 } }),
     ]);
     expect(queue.entries[0].forecast).toBeNull();
-    expect(queue.total).toEqual(forgeForecast(0, 13, 80, 2));
+    const { rolls, gold, essence } = forgeForecast(0, 13, 80, 2);
+    expect(queue.total).toEqual({ rolls, gold, essence });
   });
 
   it('has no total when nothing needs forging', () => {

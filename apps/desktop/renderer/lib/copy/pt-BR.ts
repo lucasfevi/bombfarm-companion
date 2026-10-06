@@ -348,6 +348,8 @@ export const ptBR: Copy = {
   inventoryEquippedByHero: '{hero} · Nível {level}',
   inventoryGroupTime: 'Peças de Casa',
   inventoryGroupStone: 'Pedras de habilidade',
+  inventoryGroupChanceStone: 'Pedras de Chance',
+  inventoryChanceStone: 'Pedra de Chance {rarity}',
   inventoryGroupChest: 'Baús',
   inventoryGroupRune: 'Runas',
   inventoryGroupSkin: 'Skins',
@@ -463,7 +465,22 @@ export const ptBR: Copy = {
   forgeProtectNote:
     'O Pergaminho de Proteção (a partir do nível 12) mantém a peça onde estava se a rolagem falhar, em essência a cada rolagem marcada; a essência fica quase igual, o ouro cai.',
   forgeStoneNote:
-    'Pedras de Chance somam a uma única rolagem e só valem na forja avulsa, nunca na fila nem nas execuções automáticas; os números aqui não contam com elas.',
+    'Uma Pedra de Chance é gasta em toda rolagem em que é usada, acerte ou erre, e só vale na forja avulsa, nunca na fila nem nas execuções automáticas. O jogo guarda a pedra quando a rolagem já é certa.',
+  forgeStonesTitle: 'Pedras de Chance',
+  forgeStonesUpTo: 'Até',
+  forgeStonesEndLower: 'Diminuir o fim desta faixa',
+  forgeStonesEndRaise: 'Aumentar o fim desta faixa',
+  forgeStonesPick: 'Pedra de Chance de {from} a {to}',
+  forgeStonesNone: 'Nenhuma',
+  forgeStonesAdd: 'Adicionar faixa',
+  forgeStonesRemove: 'Remover esta faixa',
+  forgeStonesRefused: 'não usada até {level}',
+  forgeStonesHeld: '{expected} · {owned} na bolsa',
+  forgeStonesShort: 'A subida espera {expected} Pedras de Chance {rarity} e você tem {owned}.',
+  forgeFactStones: 'Pedras de Chance {rarity}',
+  forgeFactStonesProtected: 'Pedras de Chance {rarity}, protegido',
+  forgeReasonStones:
+    'O app ainda não consegue usar Pedras de Chance — forje no jogo para usá-las, ou deixe as pedras em Nenhuma para forjar daqui',
   forgeFactBadRun: 'Uma maré ruim (p90)',
   forgeFactWallet: 'Carteira',
   forgeWarnRisky:

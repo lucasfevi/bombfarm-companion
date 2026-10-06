@@ -9,6 +9,7 @@ import {
   mapInventoryHeroes,
   mapInventoryViewItem,
   resolveItemKind,
+  ownedChanceStones,
   filterInventoryView,
   isStackableKind,
   kindsInView,
@@ -170,7 +171,7 @@ describe('groupInventoryByKind', () => {
 
   it('returns no groups for an empty inventory rather than one empty group per kind', () => {
     expect(groupInventoryByKind([])).toEqual([]);
-    expect(ITEM_KINDS.length).toBe(9);
+    expect(ITEM_KINDS.length).toBe(10);
   });
 });
 
@@ -313,6 +314,7 @@ describe('resolveItemKind reads the wire category as the total classifier', () =
     [5, 'skill_stone_comum', 'stone'],
     [6, 'skin_6', 'skin'],
     [7, 'rune_critdmg_comum', 'rune'],
+    [8, 'forja_pedra_comum', 'chanceStone'],
   ];
 
   it.each(CODES)('files category %i (%s) as %s', (code, defId, kind) => {
@@ -324,6 +326,41 @@ describe('resolveItemKind reads the wire category as the total classifier', () =
     expect(resolveItemKind(null, 'skill_stone_mitico')).toBe('stone');
     expect(resolveItemKind(null, 'skin_8')).toBe('skin');
     expect(resolveItemKind(null, 'rune_attack_raro')).toBe('rune');
+    expect(resolveItemKind(null, 'forja_pedra_raro')).toBe('chanceStone');
+  });
+});
+
+describe('Chance Stones', () => {
+  const stone = (defId: string, wire = 0, extra: Record<string, unknown> = {}) =>
+    mapInventoryViewItem({ id: defId + String(wire) + JSON.stringify(extra), def_id: defId, category: 8, rarity: wire, ...extra })!;
+
+  it.each([
+    ['forja_pedra_comum', 0],
+    ['forja_pedra_incomum', 1],
+    ['forja_pedra_raro', 2],
+    ['forja_pedra_superraro', 3],
+    ['forja_pedra_lendaria', 4],
+    ['forja_pedra_mitico', 5],
+    ['forja_pedra_common', 0],
+    ['forja_pedra_epic', 3],
+    ['forja_pedra_mythic', 5],
+    ['forja_pedra_4', 4],
+  ])('reads the tier of %s as %i, not the 0 the wire may send', (defId, expected) => {
+    expect(stone(defId).rarityIdx).toBe(expected);
+  });
+
+  it('keeps the wire rarity when the tail names no tier', () => {
+    expect(stone('forja_pedra_x', 2).rarityIdx).toBe(2);
+  });
+
+  it('counts the stones held per rarity, one per row, and nothing else', () => {
+    const rows = [
+      stone('forja_pedra_raro'),
+      stone('forja_pedra_raro', 0, { in_stash: true }),
+      stone('forja_pedra_mitico'),
+      mapInventoryViewItem({ id: 'k', def_id: 'skill_stone_raro', category: 5, rarity: 2 })!,
+    ];
+    expect(ownedChanceStones(rows)).toEqual([0, 0, 2, 0, 0, 1]);
   });
 });
 

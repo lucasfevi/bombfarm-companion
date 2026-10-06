@@ -357,6 +357,8 @@ export const en = {
   inventoryEquippedByHero: '{hero} · Level {level}',
   inventoryGroupTime: 'House parts',
   inventoryGroupStone: 'Skill stones',
+  inventoryGroupChanceStone: 'Chance Stones',
+  inventoryChanceStone: '{rarity} Chance Stone',
   inventoryGroupChest: 'Chests',
   inventoryGroupRune: 'Runes',
   inventoryGroupSkin: 'Skins',
@@ -472,7 +474,22 @@ export const en = {
   forgeProtectNote:
     'The Protection Scroll (from level 12 up) keeps a missed piece where it stood, for essence on every roll it is ticked; the essence comes out about even, the gold falls.',
   forgeStoneNote:
-    'Chance Stones add to one roll only and work on a single forge, never on the queue or automated runs; the figures here assume none.',
+    'A Chance Stone is spent on every roll it is used on, landed or missed, and only on a single forge, never on the queue or automated runs. The game keeps the stone when a roll is already certain.',
+  forgeStonesTitle: 'Chance Stones',
+  forgeStonesUpTo: 'Up to',
+  forgeStonesEndLower: 'Lower the end of this range',
+  forgeStonesEndRaise: 'Raise the end of this range',
+  forgeStonesPick: 'Chance Stone for {from} to {to}',
+  forgeStonesNone: 'None',
+  forgeStonesAdd: 'Add range',
+  forgeStonesRemove: 'Remove this range',
+  forgeStonesRefused: 'not used up to {level}',
+  forgeStonesHeld: '{expected} · {owned} held',
+  forgeStonesShort: 'The climb expects {expected} {rarity} Chance Stones and you hold {owned}.',
+  forgeFactStones: '{rarity} Chance Stones',
+  forgeFactStonesProtected: '{rarity} Chance Stones, protected',
+  forgeReasonStones:
+    'The app cannot use Chance Stones yet — forge in the game to use them, or set the stones to None to forge from here',
   forgeFactBadRun: 'A bad run (p90)',
   forgeFactWallet: 'Wallet',
   forgeWarnRisky:

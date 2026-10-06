@@ -30,7 +30,7 @@ describe('resolveForgeScreen', () => {
     const state = {
       ...INITIAL_FORGE_SCREEN,
       selectedId: 'g1',
-      plan: { itemId: 'g1', target: 9, maxGold: null, attempts: null },
+      plan: { itemId: 'g1', target: 9, maxGold: null, attempts: null, stones: [] },
     };
     // g1 already stands at +12, so +9 is behind it and the lowest legal target is +13.
     expect(resolveForgeScreen(state, gear(['g1'])).plan.target).toBe(13);
@@ -42,7 +42,7 @@ describe('resolveForgeScreen', () => {
     const state = {
       ...INITIAL_FORGE_SCREEN,
       selectedId: null,
-      plan: { itemId: 'g1', target: 14, maxGold: 5_000, attempts: 3 },
+      plan: { itemId: 'g1', target: 14, maxGold: 5_000, attempts: 3, stones: [] },
     };
     const resolved = resolveForgeScreen(state, gear(['g1']));
     expect(resolved.selected).toBeNull();
@@ -73,7 +73,7 @@ describe('the forge screen store', () => {
     store.setFilter({ ...EMPTY_FORGE_FILTER, forge: '8to10' });
     store.setSort([{ key: 'level', direction: 'asc' }]);
     store.select('g1');
-    store.setPlan({ itemId: 'g1', target: 14, maxGold: 5_000, attempts: null });
+    store.setPlan({ itemId: 'g1', target: 14, maxGold: 5_000, attempts: null, stones: [] });
 
     const held = store.getState();
     expect(held.filter.forge).toBe('8to10');

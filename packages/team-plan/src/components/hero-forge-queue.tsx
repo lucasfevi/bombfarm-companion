@@ -46,7 +46,7 @@ function formatCount(value: number, lang: Lang): string {
   return formatNumber(value, lang, Number.isInteger(Math.round(value * 10) / 10) ? 0 : 1);
 }
 
-function forecastLine(t: TeamPlanScreenCopy, lang: Lang, forecast: ForgeForecast): string {
+function forecastLine(t: TeamPlanScreenCopy, lang: Lang, forecast: Omit<ForgeForecast, 'stones'>): string {
   const parts = [sub(t.teamPlanForgeQueueRolls, { rolls: formatCount(forecast.rolls, lang) })];
   parts.push(sub(t.teamPlanForgeQueueGold, { gold: formatCompactNumber(forecast.gold, lang, 1) }));
   parts.push(sub(t.teamPlanForgeQueueEssence, { essence: formatCompactNumber(forecast.essence, lang, 1) }));
