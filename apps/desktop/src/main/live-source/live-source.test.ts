@@ -14,6 +14,7 @@ import {
   LiveSource,
   nodeObservationAppendPort,
   observationCaptureFilePath,
+  type ObservedCollectionsBody,
   type ObservedPvpBody,
   type TapHandle,
 } from './live-source.js';
@@ -60,7 +61,13 @@ function requireNumber(value: number | null): number {
   return value;
 }
 
-function createHarness(opts: { readonly log?: LogPort; readonly onObservedPvpBody?: (observation: ObservedPvpBody) => void } = {}) {
+function createHarness(
+  opts: {
+    readonly log?: LogPort;
+    readonly onObservedPvpBody?: (observation: ObservedPvpBody) => void;
+    readonly onObservedCollectionsBody?: (observation: ObservedCollectionsBody) => void;
+  } = {},
+) {
   const taps: FakeTap[] = [];
   let sequence = 0;
   const clock = { ms: 1_700_000_000_000 };
@@ -71,6 +78,7 @@ function createHarness(opts: { readonly log?: LogPort; readonly onObservedPvpBod
     now: () => clock.ms,
     ...(opts.log ? { log: opts.log } : {}),
     ...(opts.onObservedPvpBody ? { onObservedPvpBody: opts.onObservedPvpBody } : {}),
+    ...(opts.onObservedCollectionsBody ? { onObservedCollectionsBody: opts.onObservedCollectionsBody } : {}),
     createTap: (onEvent, onHttpBody) => {
       const tap = new FakeTap(onEvent, onHttpBody);
       taps.push(tap);
@@ -853,6 +861,35 @@ describe('LiveSource: an observed PVP body is handed on whole, with its bytes', 
 
     expect(warnRecords).toEqual([]);
     expect(infoRecords.some((record) => record.event === 'observed_body.pvp' && record.route === 'duel')).toBe(true);
+  });
+});
+
+describe('LiveSource: the Collections state', () => {
+  const collectionsBody: unknown = JSON.parse(
+    readFileSync(resolve(__dirname, '..', '..', '..', '..', '..', 'packages', 'game-api', 'src', '__fixtures__', 'collections-state.json'), 'utf8'),
+  );
+
+  it('reaches its seam as the parsed body and the time it passed, and is not a warning', () => {
+    const { log, warnRecords } = createSpyLog();
+    const seen: ObservedCollectionsBody[] = [];
+    const { source, currentTap } = createHarness({ log, onObservedCollectionsBody: (observation) => seen.push(observation) });
+    source.start();
+
+    currentTap().emitHttpBody(collectionsBody, 4_321);
+
+    expect(warnRecords).toEqual([]);
+    expect(seen).toEqual([{ body: collectionsBody, atMs: 4_321 }]);
+  });
+
+  it('with no seam wired, is named in the log and dropped rather than reported as unidentified', () => {
+    const { log, warnRecords, infoRecords } = createSpyLog();
+    const { source, currentTap } = createHarness({ log });
+    source.start();
+
+    currentTap().emitHttpBody(collectionsBody, 1);
+
+    expect(warnRecords).toEqual([]);
+    expect(infoRecords.some((record) => record.event === 'observed_body.collections')).toBe(true);
   });
 });
 

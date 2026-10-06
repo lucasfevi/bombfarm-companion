@@ -55,7 +55,7 @@ async function goToForge(page) {
   await page.getByTestId('consent-accept').click();
   await expect(modal).toBeHidden({ timeout: 15_000 });
 
-  await page.getByRole('button', { name: 'Forge' }).click();
+  await page.getByRole('button', { name: 'Forge', exact: true }).click();
   await page.waitForSelector('[data-testid="forge-view"]', { timeout: 20_000 });
   // The rows, not just the screen: the table mounts once the account is in hand, and a count
   // read before then is zero.

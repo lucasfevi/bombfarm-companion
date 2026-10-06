@@ -88,6 +88,7 @@ export {
   type SearchSelectOption,
 } from './search-select';
 export { Switch, type SwitchProps } from './switch';
+export { Checkbox, type CheckboxProps } from './checkbox';
 export { Accordion } from './accordion';
 export type {
   AccordionRootProps,
@@ -267,6 +268,7 @@ export {
 } from './ability-card.recipe';
 export { selectFieldHeightClass, selectFieldRecipe, type SelectSize } from './select.recipe';
 export { switchRootRecipe, type SwitchSize } from './switch.recipe';
+export { checkboxIndicatorClass, checkboxRootClass } from './checkbox.recipe';
 export {
   accordionRecipe,
   accordionLedgerBodyClass,

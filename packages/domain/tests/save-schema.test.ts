@@ -3,6 +3,7 @@ import {
   assertNonEmptyCorpusArray,
   assertOptionalKeyWitnessedBothWays,
   checkSchema,
+  ITEM_ESSENCE_KEYS,
   SCHEMA_LEVELS,
   type SchemaFingerprint,
   type SchemaLevel,
@@ -323,12 +324,23 @@ describe('SCHEMA_LEVELS — the shared catalogue, key sets written as literals',
       'slot',
       'soulbound',
       'export_lock_secs',
-      'essence_value',
-      'forge_fails',
-      'forge_chance',
-      'pergaminho_custo',
+      'jewels',
+      'ritual',
+      ...ITEM_ESSENCE_KEYS,
     ]);
     expect(SCHEMA_LEVELS.item.keys).not.toContain('soulbound');
+    expect(SCHEMA_LEVELS.item.keys).not.toContain('jewels');
+    expect(SCHEMA_LEVELS.item.keys).not.toContain('ritual');
+  });
+
+  it('apiItem: the item level plus the four essence keys as required keys, never also optional', () => {
+    expect(SCHEMA_LEVELS.apiItem.keys).toEqual([...SCHEMA_LEVELS.item.keys, ...ITEM_ESSENCE_KEYS]);
+    expect([...ITEM_ESSENCE_KEYS]).toEqual(['essence_value', 'forge_fails', 'forge_chance', 'pergaminho_custo']);
+    expect(SCHEMA_LEVELS.apiItem.optional).toEqual(['slot', 'soulbound', 'export_lock_secs', 'jewels', 'ritual']);
+    for (const key of ITEM_ESSENCE_KEYS) {
+      expect(SCHEMA_LEVELS.item.keys).not.toContain(key);
+      expect(SCHEMA_LEVELS.apiItem.optional).not.toContain(key);
+    }
   });
 
   it('casa: the measured 7-key set with 4 value-list children (house-indexed arrays)', () => {

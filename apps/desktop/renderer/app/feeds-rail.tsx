@@ -1,18 +1,18 @@
 'use client';
 
 /**
- * The status strip's rail of the four feeds the app keeps asking for — the account read, the PVP
- * standing, the price list, the update check — each as a small ring beside its name. The ring is
+ * The status strip's rail of the five feeds the app keeps asking for — the account read, the PVP
+ * standing, the collections, the price list, the update check — each as a small ring beside its name. The ring is
  * the time left until the feed refreshes itself: full the moment a read lands, draining to empty
  * as its clock runs down, so a glance says whether pressing is even worth it. A read in flight
  * spins; a landing snaps the ring full and lights its centre for a moment; a screen computed from
  * an older copy of the account draws the ring in the warn tone with a filled centre; a feed with
- * no clock of its own (the PVP standing) draws a dotted ring. No figures at rest — the age and the
+ * no clock of its own (the PVP standing, the collections) draws a dotted ring. No figures at rest — the age and the
  * countdown are the tooltip's.
  *
- * Each item is its own press. The button at the rail's end presses all four, one after another,
- * and is itself a ring that fills a quarter per step. The feeds the tab on show does not read are
- * drawn muted — present and pressable, but not what that screen's numbers came from.
+ * Each item is its own press. The button at the rail's end presses all five, one after another,
+ * and is itself a ring that fills a step's share at a time. The feeds the tab on show does not
+ * read are drawn muted — present and pressable, but not what that screen's numbers came from.
  */
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { cn, Tooltip } from '@bombfarm/ui';
@@ -54,6 +54,8 @@ function feedName(feed: FeedId, t: Copy): string {
       return t.feedsAccount;
     case 'pvp':
       return t.feedsPvp;
+    case 'collections':
+      return t.feedsCollections;
     case 'market':
       return t.feedsPrices;
     case 'updates':
@@ -67,12 +69,18 @@ function cycleText(feed: FeedId, t: Copy): string | null {
   return cycle === null ? null : sub(t.feedsCycleMinutes, { n: Math.round(cycle / 60_000) });
 }
 
+function noClockText(feed: FeedId, t: Copy): string {
+  return feed === 'collections' ? t.feedsNoClockCollections : t.feedsNoClock;
+}
+
 function feedWhat(feed: FeedId, t: Copy): string {
   switch (feed) {
     case 'account':
       return t.feedsWhatAccount;
     case 'pvp':
       return t.feedsWhatPvp;
+    case 'collections':
+      return t.feedsWhatCollections;
     case 'market':
       return t.feedsWhatPrices;
     case 'updates':
@@ -113,7 +121,7 @@ export function feedWords(feed: FeedView, t: Copy, now: number): FeedTip {
   const working = feed.busy || feed.readState.kind === 'working';
   const status = working ? t.feedsReadingNow : feed.capturedAt === null ? t.feedsNeverRead : sub(t.feedsLastRead, { age: formatCapturedAt(feed.capturedAt, t, now) });
   const cycle = cycleText(feed.id, t);
-  const what = cycle === null ? `${feedWhat(feed.id, t)} · ${t.feedsNoClock}` : `${feedWhat(feed.id, t)} · ${sub(t.feedsEvery, { cycle })}`;
+  const what = cycle === null ? `${feedWhat(feed.id, t)} · ${noClockText(feed.id, t)}` : `${feedWhat(feed.id, t)} · ${sub(t.feedsEvery, { cycle })}`;
   const note = feed.outOfDate ? t.feedsOutOfDate : feed.readState.kind === 'refused' ? feedRefusalText(feed.readState.reason, t) : null;
   const nextIn = feedNextInMs(feed.id, ageMs);
   const next = nextIn === null ? null : nextIn === 0 ? t.feedsNextDue : sub(t.feedsNextIn, { age: formatAge(nextIn, t) });
@@ -298,7 +306,7 @@ function FeedItem({ feed, t, muted }: { feed: FeedView; t: Copy; muted: boolean 
   );
 }
 
-/** The all-button's ring fills a quarter per step and is full while the last step runs. */
+/** The all-button's ring fills a step's share at a time and is full while the last step runs. */
 export function refreshAllFill(all: RefreshAllState): number {
   return all.running ? (all.step + 0.5) / all.total : 0;
 }

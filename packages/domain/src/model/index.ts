@@ -130,6 +130,27 @@ export {
   collectionSheetPct,
   normalizeCollection,
 } from '../collection';
+export type {
+  CollectionAxisRow,
+  CollectionBagItem,
+  CollectionBoard,
+  CollectionBoardSummary,
+  CollectionPageEffect,
+  CollectionPageRow,
+  CollectionPieceRow,
+  CollectionSetEffectRow,
+  CollectionSetRow,
+  CollectionSetStatus,
+} from '../collection-board';
+export {
+  COLLECTION_PAGES,
+  COLLECTION_PIECES_PER_PAGE,
+  buildCollectionBoard,
+  collectionBagItemsFromInventory,
+  collectionCents,
+  collectionPageGrantCents,
+  collectionPageIncrementsCents,
+} from '../collection-board';
 export {
   nakedFromBirth,
   applySkillTree,

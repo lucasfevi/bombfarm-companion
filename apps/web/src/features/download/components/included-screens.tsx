@@ -55,6 +55,7 @@ export function IncludedScreens({ t }: { t: Strings }) {
             t.downloadScreenForgeItem2,
             t.downloadScreenForgeItem3,
             t.downloadScreenForgeItem4,
+            t.downloadScreenForgeItem5,
           ]}
         />
         <ScreenCard
@@ -85,6 +86,15 @@ export function IncludedScreens({ t }: { t: Strings }) {
           ]}
         />
         <ScreenCard
+          title={t.downloadScreenCollectionsTitle}
+          items={[
+            t.downloadScreenCollectionsItem1,
+            t.downloadScreenCollectionsItem2,
+            t.downloadScreenCollectionsItem3,
+            t.downloadScreenCollectionsItem4,
+          ]}
+        />
+        <ScreenCard
           title={t.downloadScreenAccountTitle}
           items={[
             t.downloadScreenAccountItem1,
@@ -104,10 +114,9 @@ export function IncludedScreens({ t }: { t: Strings }) {
           ]}
         />
         {/* The grid draws its dividers as a line-coloured backdrop showing through 1px gaps, so a
-            trailing empty cell reads as a solid block of that colour. Ten cards fill two columns
-            exactly and leave two cells at three, and none at one. */}
-        <div aria-hidden className="hidden bg-bg xl:block" />
-        <div aria-hidden className="hidden bg-bg xl:block" />
+            trailing empty cell reads as a solid block of that colour. Eleven cards leave one cell
+            short at two columns and at three, and none at one. */}
+        <div aria-hidden className="hidden bg-bg md:block" />
       </div>
     </section>
   );

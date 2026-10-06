@@ -1,4 +1,4 @@
-import { isCommitVector, type CommitVector } from '@bombfarm/contracts';
+import { DECONSTRUCT_BATCH_MAX, isCommitVector, type CommitVector } from '@bombfarm/contracts';
 import {
   DEFAULT_TIMEOUT_MS,
   authorizedHeaders,
@@ -14,8 +14,9 @@ import { WriteSessionRequiredError, isWriteSession, type WriteSession } from './
 
 /**
  * The write twin of `request.ts`, and the only module in the app that can build a POST. It
- * knows five routes — a forge roll, equipping or unequipping an item, and refunding or
- * re-placing a hero's stat points — and refuses anything else at runtime, the way `sendGet`
+ * knows six routes — a forge roll, equipping or unequipping an item, refunding or
+ * re-placing a hero's stat points, and burning items for Forge Essence — and refuses anything
+ * else at runtime, the way `sendGet`
  * refuses a host or method it was not built for. Headers, classifier and timeout are
  * `request.ts`'s own; the token is still read only there.
  */
@@ -29,6 +30,7 @@ export const WRITE_ROUTES = {
   unequip: '/item/unequip',
   respec: '/hero/stat/respec',
   commit: '/hero/stat/commit',
+  deconstruct: '/item/desconstruir',
 } as const;
 
 export const FORGE_ROUTES = { forge: WRITE_ROUTES.forge } as const;
@@ -54,10 +56,12 @@ export type WriteCall =
   | { readonly route: typeof WRITE_ROUTES.unequip; readonly item: string }
   | { readonly route: typeof WRITE_ROUTES.equip; readonly item: string; readonly hero: string }
   | { readonly route: typeof WRITE_ROUTES.respec; readonly hero: string }
-  | { readonly route: typeof WRITE_ROUTES.commit; readonly hero: string; readonly points: CommitVector };
+  | { readonly route: typeof WRITE_ROUTES.commit; readonly hero: string; readonly points: CommitVector }
+  | { readonly route: typeof WRITE_ROUTES.deconstruct; readonly items: readonly string[] };
 
 /** Thrown by `buildWriteRequest` before any header is built, when a `commit` call's `points`
- *  is not a well-formed `CommitVector` — the runtime half of the tuple type. */
+ *  is not a well-formed `CommitVector` or a `deconstruct` call's `items` is not a batch of
+ *  unique numeric ids — the runtime half of the types. */
 export class InvalidWriteCallError extends Error {
   constructor(message: string) {
     super(`InvalidWriteCallError: ${message}`);
@@ -77,7 +81,7 @@ function routePart(path: string): string {
  * is.
  *
  * The value is generated once per write. A write that is ever retried must carry the id it was
- * built with, not a fresh one — a new id is a new call, and every one of these five spends
+ * built with, not a fresh one — a new id is a new call, and every one of these six spends
  * something real.
  */
 export interface RequestIdSource {
@@ -111,6 +115,17 @@ function hasHero(call: WriteCall): call is Extract<WriteCall, { hero: string }> 
   return 'hero' in call;
 }
 
+const DECONSTRUCT_ITEM_ID = /^\d+$/;
+
+function isDeconstructBatch(items: readonly string[]): boolean {
+  return (
+    items.length >= 1 &&
+    items.length <= DECONSTRUCT_BATCH_MAX &&
+    items.every((id) => DECONSTRUCT_ITEM_ID.test(id)) &&
+    new Set(items).size === items.length
+  );
+}
+
 /** Runtime-checks `session` first — a value that only *types* as `WriteSession` without being
  *  minted by `grantWriteSession` throws before any header is built. A `commit` call whose
  *  `points` fails `isCommitVector` throws `InvalidWriteCallError`, also before any header. */
@@ -126,6 +141,11 @@ export function buildWriteRequest(
   if (call.route === WRITE_ROUTES.commit && !isCommitVector(call.points)) {
     throw new InvalidWriteCallError('a commit call requires an eight-element, non-negative-integer points vector');
   }
+  if (call.route === WRITE_ROUTES.deconstruct && !isDeconstructBatch(call.items)) {
+    throw new InvalidWriteCallError(
+      `a deconstruct call requires between 1 and ${String(DECONSTRUCT_BATCH_MAX)} unique, all-digit item ids`,
+    );
+  }
   if (call.route === WRITE_ROUTES.forge && call.stone !== undefined && !isStoneRarity(call.stone)) {
     throw new InvalidWriteCallError('a forge call names its Chance Stone by a rarity from 0 to 5');
   }
@@ -140,6 +160,7 @@ export function buildWriteRequest(
   if (call.route === WRITE_ROUTES.commit) {
     path += `&points=${encodeURIComponent(call.points.join(','))}`;
   }
+  if (call.route === WRITE_ROUTES.deconstruct) path += `&items=${call.items.join(',')}`;
   path += `&request_id=${encodeURIComponent(requestId)}`;
 
   return {
@@ -152,7 +173,7 @@ export function buildWriteRequest(
   };
 }
 
-/** Runtime half of the five-routes invariant. Typed structurally, like `isTrustedHttpRequest`,
+/** Runtime half of the six-routes invariant. Typed structurally, like `isTrustedHttpRequest`,
  *  because against `HttpWriteRequest`'s literal types the host and method comparisons are
  *  statically always true — the unsafe-cast case is the one this exists to catch. */
 export function isTrustedWriteRequest(req: {

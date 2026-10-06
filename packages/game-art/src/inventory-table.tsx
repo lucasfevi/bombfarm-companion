@@ -1,4 +1,15 @@
-import { memo, useEffect, useMemo, useRef, useState, type ReactNode, type UIEvent } from 'react';
+import {
+  memo,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+  type SyntheticEvent,
+  type UIEvent,
+} from 'react';
 import {
   DEFAULT_INVENTORY_SORT,
   EMPTY_INVENTORY_FILTER,
@@ -11,13 +22,14 @@ import {
   type InventoryGroup,
   type InventorySetGroup,
   type InventorySort,
+  type InventorySortDirection,
   type InventorySortKey,
   type InventoryView,
   type InventoryViewItem,
   type ItemKind,
 } from '@bombfarm/domain/inventory-view';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
-import { cn, DataTable, EmptyState, Icon } from '@bombfarm/ui';
+import { Checkbox, cn, DataTable, EmptyState, Icon, Tooltip } from '@bombfarm/ui';
 import { GoldIcon } from './gold-icon';
 import { HeroAvatar } from './hero-avatar';
 import type { ItemPeekPrice } from './peek';
@@ -35,14 +47,17 @@ import {
 import {
   inventoryTableActionButtonClass,
   inventoryTableBlankClass,
+  inventoryTableDisabledRowClass,
   inventoryTableGoldClass,
   inventoryTableGroupCountClass,
   inventoryTableGroupHeaderClass,
   inventoryTableHeroClass,
   inventoryTableHeroNameClass,
   inventoryTableRowClass,
+  inventoryTableSelectCellClass,
   inventoryTableSelectedRowClass,
   inventoryTableSkippedNoteClass,
+  inventoryTableTipTriggerClass,
 } from './inventory-table.recipe';
 
 /**
@@ -90,12 +105,34 @@ export interface InventoryTableLabels extends ItemIdentityLabels<InventoryViewIt
   /** Accessible name for the row's own control. Takes the item name because these repeat down
    *  the page, and a column of identical "Details" buttons names nothing. */
   rowAction: (itemName: string) => string;
+  /** Accessible name for one row's checkbox when the host makes the list a checklist. Takes the
+   *  item name for the same reason {@link rowAction} does. Absent falls back to the bare name. */
+  selectRow?: ((itemName: string) => string) | undefined;
+  /** Name of the checkbox column, read aloud over a header cell that draws nothing. */
+  selectColumn?: string | undefined;
   clear: string;
   /** Shown in place of the rows when the filter is what emptied them. The way out is the button
    *  under it, so a description is only worth having when it says something the title does not. */
   filteredEmpty: { title: string; description?: string | undefined };
   empty: { title: string; description?: string | undefined };
   skippedNote?: ((count: number) => string) | undefined;
+}
+
+/** One column the host draws itself, for a figure the table has no business knowing about. */
+export interface InventoryTableExtraColumn {
+  id: string;
+  header: string;
+  align?: 'start' | 'end' | undefined;
+  /** A CSS length. The table is fixed-layout, so a column needs one to hold its place. */
+  width?: string | undefined;
+  /** Tabular figures, for a column of numbers. */
+  numeric?: boolean | undefined;
+  /** The built-in column it sits behind. Absent or not drawn: ahead of `actions`, else last. */
+  after?: InventoryTableColumnId | undefined;
+  render: (item: InventoryViewItem) => ReactNode;
+  /** Makes the header sortable. The table orders by it itself, largest first on the first pick,
+   *  keeping the sort the host owns as the tie-break underneath. */
+  sortValue?: ((item: InventoryViewItem) => number) | undefined;
 }
 
 export interface InventoryTableProps {
@@ -115,6 +152,23 @@ export interface InventoryTableProps {
   onSelectRow?: ((item: InventoryViewItem) => void) | undefined;
   /** The piece {@link onSelectRow} last picked, marked in the list. */
   selectedItemId?: string | null | undefined;
+  /** Makes the list a checklist: a checkbox column leads, and the whole row toggles. Takes the
+   *  place of {@link onSelectRow} — a host uses one or the other. Keep it stable, as with
+   *  `priceOf`, or every row re-renders on a toggle. */
+  onToggleRow?: ((item: InventoryViewItem) => void) | undefined;
+  /** The items {@link onToggleRow} has ticked, by `InventoryViewItem.id`. */
+  selectedItemIds?: ReadonlySet<string> | undefined;
+  /** A reason this item cannot be ticked, or `null` when it can. The row dims, its checkbox is
+   *  inert, and the reason shows beside the checkbox and is read aloud with it. */
+  rowDisabledReason?: ((item: InventoryViewItem) => string | null) | undefined;
+  /** An extra column of the host's own. Keep the object stable. */
+  extraColumn?: InventoryTableExtraColumn | undefined;
+  /** The direction {@link extraColumn} orders by, `null` for not at all. Supply it, with
+   *  {@link onExtraSortChange}, when the host must know the order the rows are in; absent, the table
+   *  keeps the choice itself and lets go of it when the sort underneath moves. A controlling host
+   *  clears it when it moves that sort. */
+  extraSort?: InventorySortDirection | null | undefined;
+  onExtraSortChange?: ((next: InventorySortDirection | null) => void) | undefined;
   /** `null` for an entry the market says nothing about. Absent drops the price column. */
   priceOf?: ((entry: InventoryEntry) => MarketPriceView | null) | undefined;
   priceLabels?: MarketPriceLabels | undefined;
@@ -158,13 +212,18 @@ export function nextInventorySort(sort: InventorySort, key: InventorySortKey): I
 type ColumnAlign = 'left' | 'right';
 
 type Column = {
-  id: InventoryTableColumnId;
+  id: InventoryTableColumnId | 'select' | 'extra';
   label: string;
   align: ColumnAlign;
   /** `null` for the columns nothing can be ordered by. */
   sortKey: InventorySortKey | null;
   width: string | undefined;
+  extra?: InventoryTableExtraColumn;
 };
+
+const SELECT_COLUMN_WIDTH = '2.5rem';
+const DEFAULT_EXTRA_COLUMN_WIDTH = '6rem';
+const EXTRA_SORT_COL = 'extra';
 
 /**
  * Each column's alignment, what it sorts by, and how wide it stands. The width matters because
@@ -191,6 +250,8 @@ function columnsFor(
   withPrice: boolean,
   withHero: boolean,
   withActions: boolean,
+  withSelect: boolean,
+  extra: InventoryTableExtraColumn | undefined,
 ): Column[] {
   const available = (id: InventoryTableColumnId): boolean => {
     if (id === 'market') return withPrice;
@@ -199,9 +260,61 @@ function columnsFor(
     return true;
   };
 
-  return wanted
+  const columns: Column[] = wanted
     .filter(available)
     .map((id) => ({ id, label: labels.column[id], ...COLUMN_SHAPE[id] }));
+
+  if (extra) {
+    const anchor = columns.findIndex((column) => column.id === extra.after);
+    const beforeActions = columns.findIndex((column) => column.id === 'actions');
+    const at = anchor >= 0 ? anchor + 1 : beforeActions >= 0 ? beforeActions : columns.length;
+    columns.splice(at, 0, {
+      id: 'extra',
+      label: extra.header,
+      align: extra.align === 'end' ? 'right' : 'left',
+      sortKey: null,
+      width: extra.width ?? DEFAULT_EXTRA_COLUMN_WIDTH,
+      extra,
+    });
+  }
+
+  if (withSelect) {
+    columns.unshift({
+      id: 'select',
+      label: labels.selectColumn ?? '',
+      align: 'left',
+      sortKey: null,
+      width: SELECT_COLUMN_WIDTH,
+    });
+  }
+
+  return columns;
+}
+
+function sameSort(a: InventorySort, b: InventorySort): boolean {
+  return a.length === b.length && a.every((term, index) => term.key === b[index]?.key && term.direction === b[index]?.direction);
+}
+
+/** Orders every group by a figure the domain sort knows nothing about. `Array.prototype.sort` is
+ *  stable, so entries that tie keep the order the host's own sort gave them, and every entry keeps
+ *  its reference — a re-order re-renders no rows. Exported so a host that must reproduce the order
+ *  the table shows runs the very function the table does. */
+export function sortInventoryViewByValue(
+  view: InventoryView,
+  valueOf: (item: InventoryViewItem) => number,
+  direction: InventorySortDirection,
+): InventoryView {
+  const sign = direction === 'asc' ? 1 : -1;
+  return {
+    ...view,
+    groups: view.groups.map((group) => ({
+      ...group,
+      entries: group.entries
+        .map((entry) => ({ entry, value: valueOf(entry.item) }))
+        .sort((a, b) => sign * (a.value - b.value))
+        .map(({ entry }) => entry),
+    })),
+  };
 }
 
 const MAX_HERO_STARS = 3;
@@ -286,11 +399,87 @@ function NameCell({
   );
 }
 
+function stopRowActivation(event: SyntheticEvent) {
+  event.stopPropagation();
+}
+
+/**
+ * The checkbox owns every activation inside its own cell — the row's click would otherwise fire a
+ * second time for the same press, once from the box and once from the input behind it. A disabled
+ * row keeps its box genuinely inert and gives the reason twice: in a tooltip for the pointer, and
+ * as text the box is described by for a screen reader. The tooltip's trigger is a wrapper, not the
+ * box, because a trigger drops `disabled`.
+ */
+function SelectCell({
+  item,
+  selected,
+  disabledReason,
+  label,
+  onToggle,
+}: {
+  item: InventoryViewItem;
+  selected: boolean;
+  disabledReason: string | null;
+  label: string;
+  onToggle: (item: InventoryViewItem) => void;
+}) {
+  const reasonId = useId();
+  const disabled = disabledReason !== null;
+
+  const checkbox = (
+    <Checkbox
+      checked={selected}
+      disabled={disabled}
+      aria-label={label}
+      {...(disabled ? { 'aria-describedby': reasonId } : {})}
+      onCheckedChange={() => { onToggle(item); }}
+    />
+  );
+
+  return (
+    <DataTable.Cell
+      className={inventoryTableSelectCellClass}
+      onClick={stopRowActivation}
+      onKeyDown={(event: KeyboardEvent) => {
+        if (event.key !== 'Enter' || disabled) return;
+        event.preventDefault();
+        onToggle(item);
+      }}
+    >
+      {disabledReason === null ? (
+        checkbox
+      ) : (
+        <>
+          <Tooltip.Provider>
+            <Tooltip.Root>
+              <Tooltip.Trigger render={<span />} className={inventoryTableTipTriggerClass}>
+                {checkbox}
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Positioner sideOffset={6}>
+                  <Tooltip.Popup>
+                    <p className="m-0">{disabledReason}</p>
+                  </Tooltip.Popup>
+                </Tooltip.Positioner>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </Tooltip.Provider>
+          <span id={reasonId} className="sr-only">
+            {disabledReason}
+          </span>
+        </>
+      )}
+    </DataTable.Cell>
+  );
+}
+
 /**
  * Memoised for the same reason the card is: `sortInventoryView` re-sorts a copy of each group's
  * array, so every `InventoryEntry` survives with its reference intact and a re-sort re-renders no
- * rows at all. That holds only while `labels`, `columns`, `priceOf` and `renderPriceAction` are
- * stable, which is the host's side of the bargain.
+ * rows at all. That holds only while `labels`, `columns`, `priceOf`, `renderPriceAction` and
+ * `onToggleRow` are stable, which is the host's side of the bargain. Ticking a row hands that one
+ * row a new `selected` boolean and the other rows the same props as before — the Set itself never
+ * reaches them.
  */
 const InventoryTableRow = memo(function InventoryTableRow({
   entry,
@@ -298,34 +487,58 @@ const InventoryTableRow = memo(function InventoryTableRow({
   columns,
   rowIndex,
   selected,
+  disabledReason,
   priceOf,
   priceLabels,
   renderPriceAction,
   onSelectItem,
   onSelectRow,
+  onToggleRow,
 }: {
   entry: InventoryEntry;
   labels: InventoryTableLabels;
   columns: readonly Column[];
   rowIndex: number;
   selected: boolean;
+  disabledReason: string | null;
   priceOf?: ((entry: InventoryEntry) => MarketPriceView | null) | undefined;
   priceLabels?: MarketPriceLabels | undefined;
   renderPriceAction?: ((entry: InventoryEntry) => ReactNode) | undefined;
   onSelectItem?: ((item: InventoryViewItem) => void) | undefined;
   onSelectRow?: ((item: InventoryViewItem) => void) | undefined;
+  onToggleRow?: ((item: InventoryViewItem) => void) | undefined;
 }) {
   const { item, count } = entry;
   const hero = labels.equippedBy?.(item) ?? null;
   const price = priceOf?.(entry) ?? null;
   const peekPrice = price != null && priceLabels != null ? { view: price, labels: priceLabels } : undefined;
+  const pickRow = onToggleRow ? undefined : onSelectRow;
+  const toggleRow = onToggleRow && disabledReason === null ? onToggleRow : undefined;
+  const activate = toggleRow ?? pickRow;
 
   function cell(column: Column): ReactNode {
     switch (column.id) {
+      case 'select':
+        return onToggleRow ? (
+          <SelectCell
+            key={column.id}
+            item={item}
+            selected={selected}
+            disabledReason={disabledReason}
+            label={labels.selectRow?.(labels.itemName(item)) ?? labels.itemName(item)}
+            onToggle={onToggleRow}
+          />
+        ) : null;
+      case 'extra':
+        return (
+          <DataTable.Cell key={column.id} align={column.align} numeric={column.extra?.numeric}>
+            {column.extra?.render(item)}
+          </DataTable.Cell>
+        );
       case 'name':
         return (
           <DataTable.RowHeader key={column.id}>
-            <NameCell item={item} labels={labels} price={peekPrice} onSelect={onSelectRow} />
+            <NameCell item={item} labels={labels} price={peekPrice} onSelect={pickRow} />
           </DataTable.RowHeader>
         );
       case 'forge':
@@ -387,10 +600,17 @@ const InventoryTableRow = memo(function InventoryTableRow({
       data-row-kind="entry"
       data-item-id={entry.key}
       data-selected={selected ? '' : undefined}
+      data-disabled={disabledReason === null ? undefined : ''}
       aria-rowindex={rowIndex}
-      aria-selected={onSelectRow ? selected : undefined}
-      className={cn(inventoryTableRowClass, onSelectRow && 'cursor-pointer', selected && inventoryTableSelectedRowClass)}
-      onClick={onSelectRow ? () => { onSelectRow(item); } : undefined}
+      aria-selected={onToggleRow || onSelectRow ? selected : undefined}
+      aria-disabled={onToggleRow && disabledReason !== null ? true : undefined}
+      className={cn(
+        inventoryTableRowClass,
+        activate && 'cursor-pointer',
+        selected && inventoryTableSelectedRowClass,
+        onToggleRow && disabledReason !== null && inventoryTableDisabledRowClass,
+      )}
+      onClick={activate ? () => { activate(item); } : undefined}
     >
       {columns.map(cell)}
     </DataTable.Row>
@@ -425,6 +645,12 @@ export function InventoryTable({
   onSelectItem,
   onSelectRow,
   selectedItemId = null,
+  onToggleRow,
+  selectedItemIds,
+  rowDisabledReason,
+  extraColumn,
+  extraSort: extraSortProp,
+  onExtraSortChange,
   priceOf,
   priceLabels,
   isPricedItem,
@@ -436,6 +662,9 @@ export function InventoryTable({
 }: InventoryTableProps) {
   const [ownFilter, setOwnFilter] = useState<InventoryFilter>(EMPTY_INVENTORY_FILTER);
   const [ownSort, setOwnSort] = useState<InventorySort>(DEFAULT_INVENTORY_SORT);
+  const [extraSort, setExtraSort] = useState<{ direction: InventorySortDirection; base: InventorySort } | null>(
+    null,
+  );
   const [metrics, setMetrics] = useState(INITIAL_METRICS);
   const [scrollTop, setScrollTop] = useState(0);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -448,6 +677,8 @@ export function InventoryTable({
     if (filterProp === undefined) setOwnFilter(next);
   };
   const changeSort = (next: InventorySort) => {
+    setExtraSort(null);
+    onExtraSortChange?.(null);
     onSortChange?.(next);
     if (sortProp === undefined) setOwnSort(next);
   };
@@ -455,6 +686,18 @@ export function InventoryTable({
   const withPrice = priceOf !== undefined && priceLabels !== undefined;
   const withHero = labels.equippedBy !== undefined;
   const withActions = onSelectItem !== undefined;
+  const withSelect = onToggleRow !== undefined;
+  const extraSortValue = extraColumn?.sortValue;
+  // The host owns `sort`, so it can move under the extra order without telling this table; the
+  // extra order lasts only while the sort it was layered over is the one still in force.
+  const ownExtraDirection = extraSort !== null && sameSort(extraSort.base, sort) ? extraSort.direction : null;
+  const extraDirection =
+    extraSortValue === undefined ? null : extraSortProp !== undefined ? extraSortProp : ownExtraDirection;
+  const sortByExtra = () => {
+    const next = extraDirection === 'desc' ? 'asc' : 'desc';
+    onExtraSortChange?.(next);
+    if (extraSortProp === undefined) setExtraSort({ direction: next, base: sort });
+  };
 
   const marketValueOf = useMemo(() => {
     if (!priceOf) return undefined;
@@ -472,23 +715,32 @@ export function InventoryTable({
     () => sortInventoryView(filtered, sort, labels.itemName, marketValueOf),
     [filtered, sort, labels, marketValueOf],
   );
+  const ordered = useMemo(
+    () =>
+      extraSortValue === undefined || extraDirection === null
+        ? sorted
+        : sortInventoryViewByValue(sorted, extraSortValue, extraDirection),
+    [sorted, extraSortValue, extraDirection],
+  );
 
   const columns = useMemo(
-    () => columnsFor(wantedColumns, labels, withPrice, withHero, withActions),
-    [wantedColumns, labels, withPrice, withHero, withActions],
+    () => columnsFor(wantedColumns, labels, withPrice, withHero, withActions, withSelect, extraColumn),
+    [wantedColumns, labels, withPrice, withHero, withActions, withSelect, extraColumn],
   );
   const leading = sort[0] ?? DEFAULT_INVENTORY_SORT[0];
+  const leadingCol: string = extraDirection === null ? leading.key : EXTRA_SORT_COL;
+  const leadingDirection = extraDirection ?? leading.direction;
 
   // A heading over the only group names nothing that the table's own caption does not.
-  const withGroupHeadings = sorted.groups.length > 1;
+  const withGroupHeadings = ordered.groups.length > 1;
   const rows = useMemo<FlatRow[]>(() => {
     const flat: FlatRow[] = [];
-    for (const group of sorted.groups) {
+    for (const group of ordered.groups) {
       if (withGroupHeadings) flat.push({ kind: 'group', key: `group:${group.kind}`, group });
       for (const entry of group.entries) flat.push({ kind: 'entry', key: entry.key, entry });
     }
     return flat;
-  }, [sorted, withGroupHeadings]);
+  }, [ordered, withGroupHeadings]);
 
   const offsets = useMemo(
     () => rowOffsets(rows.map((row): TableRowKind => row.kind), { entry: metrics.entry, group: metrics.group }),
@@ -582,26 +834,53 @@ export function InventoryTable({
             </colgroup>
             <DataTable.Head>
               <DataTable.Row>
-                {columns.map((column) =>
-                  column.sortKey === null ? (
-                    <DataTable.Header key={column.id} scope="col" align={column.align}>
-                      {column.label}
-                    </DataTable.Header>
-                  ) : (
+                {columns.map((column) => {
+                  const { sortKey } = column;
+                  if (column.id === 'select') {
+                    return (
+                      <DataTable.Header key={column.id} scope="col">
+                        <span className="sr-only">{column.label}</span>
+                      </DataTable.Header>
+                    );
+                  }
+                  if (column.id === 'extra' && column.extra?.sortValue !== undefined) {
+                    return (
+                      <DataTable.Header
+                        key={column.id}
+                        scope="col"
+                        sortable
+                        col={EXTRA_SORT_COL}
+                        sortKey={leadingCol}
+                        sortDir={leadingDirection}
+                        onSort={sortByExtra}
+                        align={column.align}
+                      >
+                        {column.label}
+                      </DataTable.Header>
+                    );
+                  }
+                  if (sortKey === null) {
+                    return (
+                      <DataTable.Header key={column.id} scope="col" align={column.align}>
+                        {column.label}
+                      </DataTable.Header>
+                    );
+                  }
+                  return (
                     <DataTable.Header
                       key={column.id}
                       scope="col"
                       sortable
-                      col={column.sortKey}
-                      sortKey={leading.key}
-                      sortDir={leading.direction}
-                      onSort={(key) => { changeSort(nextInventorySort(sort, key)); }}
+                      col={sortKey}
+                      sortKey={leadingCol}
+                      sortDir={leadingDirection}
+                      onSort={() => { changeSort(nextInventorySort(sort, sortKey)); }}
                       align={column.align}
                     >
                       {column.label}
                     </DataTable.Header>
-                  ),
-                )}
+                  );
+                })}
               </DataTable.Row>
             </DataTable.Head>
 
@@ -630,12 +909,18 @@ export function InventoryTable({
                     labels={labels}
                     columns={columns}
                     rowIndex={start + index + 1}
-                    selected={row.entry.item.id === selectedItemId}
+                    selected={
+                      onToggleRow
+                        ? selectedItemIds?.has(row.entry.item.id) ?? false
+                        : row.entry.item.id === selectedItemId
+                    }
+                    disabledReason={onToggleRow ? rowDisabledReason?.(row.entry.item) ?? null : null}
                     priceOf={priceOf}
                     priceLabels={priceLabels}
                     renderPriceAction={renderPriceAction}
                     onSelectItem={onSelectItem}
                     onSelectRow={onSelectRow}
+                    onToggleRow={onToggleRow}
                   />
                 ),
               )}

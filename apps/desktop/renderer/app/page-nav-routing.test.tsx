@@ -31,6 +31,11 @@ describe('page.tsx routes every nav item', () => {
     expect(source).toContain('<AccountView');
   });
 
+  it('renders the Collections screen on the Collections item', () => {
+    expect(source).toContain("activeNavId === 'collections' ? (");
+    expect(source).toContain('<CollectionsView />');
+  });
+
   it('lets the holdings inventory column lead to the Inventory tab', () => {
     expect(source).toMatch(/onOpenInventory=\{\(\) => \{\s*setActiveNavId\('inventory'\);/);
   });

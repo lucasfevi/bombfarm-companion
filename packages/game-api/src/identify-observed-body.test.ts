@@ -51,6 +51,31 @@ describe('identifyObservedBody: never guesses', () => {
     expect(identifyObservedBody(preSellGate)).toEqual({ kind: 'unidentified' });
   });
 
+  it('returns unidentified for a /state body from before the deconstruct screen — essence and fusion_pity are required', () => {
+    if (!bodies) return;
+    const { essence, fusion_pity, ...preEssence } = required(bodies['/state'], 'missing /state body');
+    expect([essence, fusion_pity].every((value) => value !== undefined)).toBe(true);
+    expect(identifyObservedBody(preEssence)).toEqual({ kind: 'unidentified' });
+  });
+
+  it('returns unidentified for an /inventory body whose items predate the four essence keys', () => {
+    if (!bodies) return;
+    const inventory = required(bodies['/inventory'], 'missing /inventory body');
+    const items = (inventory.items as Record<string, unknown>[]).map(({ essence_value, ...rest }) => {
+      expect(essence_value).toBeDefined();
+      return rest;
+    });
+    expect(identifyObservedBody({ ...inventory, items })).toEqual({ kind: 'unidentified' });
+  });
+
+  it('still identifies an /inventory body when one item carries the optional jewels and ritual keys', () => {
+    if (!bodies) return;
+    const inventory = required(bodies['/inventory'], 'missing /inventory body');
+    const [first, ...rest] = inventory.items as Record<string, unknown>[];
+    const items = [{ ...first, jewels: [], ritual: { desconstruir: true } }, ...rest];
+    expect(identifyObservedBody({ ...inventory, items })).toEqual({ kind: 'identified', section: 'items' });
+  });
+
   it('returns unidentified for a non-object body without throwing', () => {
     expect(identifyObservedBody('not an object')).toEqual({ kind: 'unidentified' });
     expect(identifyObservedBody(null)).toEqual({ kind: 'unidentified' });
@@ -102,6 +127,23 @@ describe('diagnoseObservedBodyDrift — why an unidentified body was rejected', 
     expect(rest).toEqual([]);
     expect(diagnosis?.section).toBe('account');
     expect(diagnosis?.addedKeys).toEqual(['account.some_new_stash']);
+  });
+
+  it('names the added item key when an /inventory item gains one the fingerprint does not declare', () => {
+    if (!bodies) return;
+    const inventory = required(bodies['/inventory'], 'missing /inventory body');
+    const [first, ...rest] = inventory.items as Record<string, unknown>[];
+    const drifted = { ...inventory, items: [{ ...first, a_key_the_game_added: 1 }, ...rest] };
+    expect(identifyObservedBody(drifted).kind).toBe('unidentified');
+    expect(diagnoseObservedBodyDrift(drifted)).toEqual([
+      { section: 'items', addedKeys: ['items.items[0].a_key_the_game_added'] },
+    ]);
+  });
+
+  it('identifies the real committed /state and /inventory bodies, which diagnose as no drift', () => {
+    if (!bodies) return;
+    expect(diagnoseObservedBodyDrift(required(bodies['/state'], 'missing /state body'))).toEqual([]);
+    expect(diagnoseObservedBodyDrift(required(bodies['/inventory'], 'missing /inventory body'))).toEqual([]);
   });
 
   it('stays quiet for a body that is simply some other route — the common case', () => {

@@ -1,5 +1,22 @@
 # @bombfarm/team-plan
 
+## 0.6.2
+
+### Patch Changes
+
+- 93a69c6: The Optimizer's aura chips wrap onto their own line when the setup bar is too narrow for them, instead of running underneath the Build team plan button.
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [5de6480]
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/domain@1.9.0
+  - @bombfarm/ui@0.18.0
+  - @bombfarm/game-art@0.8.0
+  - @bombfarm/farm@1.2.13
+  - @bombfarm/hero@0.5.5
+
 ## 0.6.1
 
 ### Patch Changes

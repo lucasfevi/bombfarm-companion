@@ -7,6 +7,7 @@ import {
   isReplayLiveSourceEnabled,
   REPLAY_FRAME_INTERVAL_MS,
   resolveReplayCapturePath,
+  resolveReplayCollectionsFixturePath,
   resolveReplayPvpFixturePath,
 } from './replay-tap.js';
 import { identifyObservedBody } from '@bombfarm/game-api';
@@ -15,13 +16,19 @@ import { identifyObservedBody } from '@bombfarm/game-api';
 const HERE = __dirname;
 const COMMITTED_CAPTURE = resolve(HERE, 'fixtures', 'live-capture.bfcc');
 const COMMITTED_PVP_FIXTURE = resolve(HERE, 'fixtures', 'pvp-duels-offline.json');
+const COMMITTED_COLLECTIONS_FIXTURE = resolve(HERE, '..', '..', '..', '..', '..', 'packages', 'game-api', 'src', '__fixtures__', 'collections-state.json');
 
 /** The committed capture holds 60 records that decode to 58 ticks — see `live-capture.test.ts`. */
 const CAPTURE_RECORDS = 60;
 const CAPTURE_TICKS = 58;
 
 function drive(
-  overrides: { readonly consent?: () => boolean; readonly capturePath?: string; readonly pvpFixturePath?: string } = {},
+  overrides: {
+    readonly consent?: () => boolean;
+    readonly capturePath?: string;
+    readonly pvpFixturePath?: string;
+    readonly collectionsFixturePath?: string;
+  } = {},
 ) {
   const events: LiveEvent[] = [];
   const observedFrames: Record<string, unknown>[] = [];
@@ -30,6 +37,7 @@ function drive(
   const handle = createReplayTapFactory({
     capturePath: overrides.capturePath ?? COMMITTED_CAPTURE,
     ...(overrides.pvpFixturePath !== undefined ? { pvpFixturePath: overrides.pvpFixturePath } : {}),
+    ...(overrides.collectionsFixturePath !== undefined ? { collectionsFixturePath: overrides.collectionsFixturePath } : {}),
     consent: overrides.consent ?? (() => true),
     onObservedFrame: (wire) => observedFrames.push(wire),
   })(
@@ -88,6 +96,53 @@ describe('resolveReplayPvpFixturePath', () => {
 
   it('falls back to the committed fixture beside the capture', () => {
     expect(resolveReplayPvpFixturePath({}, HERE)).toBe(COMMITTED_PVP_FIXTURE);
+  });
+});
+
+describe('resolveReplayCollectionsFixturePath', () => {
+  it('honours the override, including an empty string as opting out', () => {
+    expect(resolveReplayCollectionsFixturePath({ BFC_REPLAY_COLLECTIONS_FIXTURE: 'C:\\tmp\\book.json' }, HERE)).toBe('C:\\tmp\\book.json');
+    expect(resolveReplayCollectionsFixturePath({ BFC_REPLAY_COLLECTIONS_FIXTURE: '' }, HERE)).toBe('');
+  });
+
+  it('falls back to the synthetic body the wire-reading package commits', () => {
+    expect(resolveReplayCollectionsFixturePath({}, HERE)).toBe(COMMITTED_COLLECTIONS_FIXTURE);
+  });
+});
+
+describe('the replay tap serves the committed Collections body once, ahead of the first frame', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('hands the body to onHttpBody through the HTTP decoder, where the identifier takes it for the Collections state', async () => {
+    const { handle, httpBodies, order } = drive({ collectionsFixturePath: COMMITTED_COLLECTIONS_FIXTURE });
+    handle.start();
+    advanceRecords(1);
+    expect(order.slice(0, 2)).toEqual(['http', 'frame']);
+    expect(identifyObservedBody(JSON.parse(httpBodies[0]?.toString('utf8') ?? 'null'))).toEqual({ kind: 'collections' });
+    await handle.teardown();
+  });
+
+  it('serves it once per tap, however many passes the capture loops through', async () => {
+    const { handle, httpBodies } = drive({ collectionsFixturePath: COMMITTED_COLLECTIONS_FIXTURE });
+    handle.start();
+    advanceRecords(CAPTURE_RECORDS * 2);
+    expect(httpBodies).toHaveLength(1);
+    await handle.teardown();
+  });
+
+  it('serves nothing from a path that does not exist, and still replays', async () => {
+    const { handle, httpBodies, frames } = drive({ collectionsFixturePath: resolve(HERE, 'fixtures', 'no-such-book.json') });
+    handle.start();
+    advanceRecords(CAPTURE_RECORDS);
+    expect(httpBodies).toHaveLength(0);
+    expect(frames().length).toBe(CAPTURE_TICKS);
+    await handle.teardown();
   });
 });
 

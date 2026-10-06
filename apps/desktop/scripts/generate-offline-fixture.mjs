@@ -56,6 +56,140 @@ const CAPS_DROPPED_HERO_IDS = ['73099', '74555', '76184'];
 /** The save export's own `generated_at`, as an ISO instant — fixed, so regenerating is a no-op diff. */
 const CAPTURED_AT = '2026-08-23T00:00:00.000Z';
 
+/** The Forge Essence balance the offline account holds. */
+const OFFLINE_ESSENCE = 102480;
+
+/**
+ * The save export predates the deconstruct screen, so its items carry none of the per-item fields
+ * the screen reads and none of the states that make it worth looking at. The values below are
+ * synthetic, shaped after a live read: gear is worth its level times two to the power of its
+ * rarity, other materials a fixed figure per rarity, a closed chest what its worst content is
+ * worth, and a skin pack nothing. Never a reading of the game's own numbers.
+ *
+ * Every seventh unequipped piece of gear is locked, four chance stones are added, and so are two
+ * hero cages and a gem chest, so the screen shows a blocked row, a non-gear kind and a closed
+ * chest without any account setup.
+ */
+const LOCK_EVERY_NTH_UNEQUIPPED = 7;
+// None is Rare: the forge plan smoke needs an account that holds no Rare Chance Stone.
+const CHANCE_STONES = [
+  { id: '900001', def_id: 'forja_pedra_incomum', rarity: 1 },
+  { id: '900002', def_id: 'forja_pedra_incomum', rarity: 1 },
+  { id: '900003', def_id: 'forja_pedra_lendario', rarity: 4 },
+  { id: '900004', def_id: 'forja_pedra_lendario', rarity: 4 },
+];
+
+const CAGES = [
+  { id: '900011', def_id: 'chest_hero_1', rarity: 0 },
+  { id: '900012', def_id: 'chest_hero_5', rarity: 0 },
+];
+const GEM_CHESTS = [{ id: '900013', def_id: 'chest_gem_2', rarity: 0 }];
+
+/** Per rarity, Common first; a zero is a tier the game never drops. */
+const ESSENCE_BY_CATEGORY = {
+  3: [0, 66, 132, 264, 528, 1056],
+  4: [0, 5, 11, 22, 44, 88],
+  5: [75, 149, 299, 597, 1194, 2389],
+  7: [350, 700, 1399, 2798, 5596, 11191],
+  8: [389, 778, 1557, 3115, 6230, 12461],
+};
+const ESSENCE_GEM_BY_RARITY = { 2: 1446, 3: 2893, 4: 5786 };
+const ESSENCE_BY_CHEST_PREFIX = [
+  ['chest_gem_', 1446],
+  ['chest_forja_', 389],
+  ['chest_rune_', 350],
+  ['chest_skill_', 75],
+  ['chest_time_', 66],
+];
+const ESSENCE_BY_CAGE_ACT = { 1: 10, 2: 30, 3: 80, 4: 150, 5: 230 };
+
+function chestEssence(defId) {
+  const item = /^chest_item_(\d+)$/.exec(defId);
+  if (item) return Number(item[1]);
+  const cage = /^chest_hero_(\d+)$/.exec(defId);
+  if (cage) return ESSENCE_BY_CAGE_ACT[Number(cage[1])];
+  const tiered = ESSENCE_BY_CHEST_PREFIX.find(([prefix]) => defId.startsWith(prefix));
+  if (tiered) return tiered[1];
+  throw new Error(`generate-offline-fixture: no synthetic essence for chest ${defId}`);
+}
+
+export function essenceValue(item) {
+  let value;
+  if (item.category === 0) value = item.level * 2 ** item.rarity;
+  else if (item.category === 1) value = chestEssence(item.def_id);
+  else if (item.category === 2) value = ESSENCE_GEM_BY_RARITY[item.rarity];
+  else if (item.category === 6) value = 0;
+  else value = ESSENCE_BY_CATEGORY[item.category]?.[item.rarity];
+  if (value === undefined) {
+    throw new Error(
+      `generate-offline-fixture: no synthetic essence for ${item.def_id} (category ${String(item.category)}, rarity ${String(item.rarity)})`,
+    );
+  }
+  return value;
+}
+
+function withDeconstructFields(items) {
+  let unequippedGear = 0;
+  const decorated = items.map((item) => {
+    const gear = item.category === 0;
+    const locked = gear && !item.equipped_on && unequippedGear++ % LOCK_EVERY_NTH_UNEQUIPPED === 0;
+    return {
+      ...item,
+      essence_value: essenceValue(item),
+      forge_fails: 0,
+      forge_chance: gear ? 1 : 0,
+      pergaminho_custo: gear ? item.level * 30 : 0,
+      ...(locked ? { locked: true } : {}),
+    };
+  });
+
+  const stones = CHANCE_STONES.map((stone) => ({
+    ...stone,
+    set: '',
+    category: 8,
+    level: 0,
+    stats: [],
+    power: 0,
+    sell_value: '140',
+    essence_value: essenceValue({ ...stone, category: 8 }),
+    forge_fails: 0,
+    forge_chance: 0,
+    pergaminho_custo: 0,
+    sellable: true,
+    upgrade: 0,
+    tradable: true,
+    market_state: 0,
+    locked: false,
+    equipped_on: null,
+    equip_slot: null,
+    in_stash: true,
+  }));
+
+  const chests = [...CAGES, ...GEM_CHESTS].map((chest) => ({
+    ...chest,
+    set: '',
+    category: 1,
+    level: 0,
+    stats: [],
+    power: 0,
+    sell_value: '100',
+    essence_value: essenceValue({ ...chest, category: 1 }),
+    forge_fails: 0,
+    forge_chance: 0,
+    pergaminho_custo: 0,
+    sellable: false,
+    upgrade: 0,
+    tradable: true,
+    market_state: 0,
+    locked: false,
+    equipped_on: null,
+    equip_slot: null,
+    in_stash: true,
+  }));
+
+  return [...decorated, ...stones, ...chests];
+}
+
 /**
  * Walks the `.bfcc` container (5-byte header, then ctxType(1) ctxLength(4 LE) ctx
  * payloadLength(4 LE) payload) and reads each record's frame JSON directly. Parsed here rather
@@ -183,7 +317,7 @@ export function buildOfflineFixture(captureBytes = readFileSync(CAPTURE), { fiel
   const resolved = { status: 'resolved', capturedAt: CAPTURED_AT };
 
   const payload = {
-    account: save.account,
+    account: { ...save.account, essence: OFFLINE_ESSENCE },
     heroes: rekeyedRoster,
     skills: save.skills,
     casa: {
@@ -193,7 +327,7 @@ export function buildOfflineFixture(captureBytes = readFileSync(CAPTURE), { fiel
       heroes: rotationHeroes,
       casa: save.casa,
     },
-    items: save.items,
+    items: withDeconstructFields(save.items),
     fidelity: {
       account: resolved,
       heroes: resolved,

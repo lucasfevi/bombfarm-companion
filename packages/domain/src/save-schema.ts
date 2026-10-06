@@ -241,6 +241,17 @@ const HERO_LEVEL: SchemaLevel = {
   optional: ['soulbound', 'runas', 'export_lock_secs'],
 };
 
+/**
+ * The four per-item keys the live `/inventory` body gained with the forge patch and the
+ * deconstruct screen (game build 25733721): the Forge Essence an item burns for, its forge-roll
+ * failure streak and odds, and the scroll cost of its next forge. Present on every item of two
+ * live reads held out of band (219 and about 1,090 items), equipment and non-equipment alike, so
+ * they are required on the API item level — an absence is a real removal to report. The shared
+ * `item` level tolerates them as optional instead: the committed save exports predate them, and
+ * those are checked against it.
+ */
+export const ITEM_ESSENCE_KEYS = ['essence_value', 'forge_fails', 'forge_chance', 'pergaminho_custo'] as const;
+
 const ITEM_LEVEL: SchemaLevel = {
   keys: [
     'id',
@@ -278,19 +289,22 @@ const ITEM_LEVEL: SchemaLevel = {
   // `optional`, for the same reason: requiring it would turn every unlocked item into a
   // missing-key report. Nothing reads it.
   //
-  // `essence_value`, `forge_fails`, `forge_chance` and `pergaminho_custo` arrived on every
-  // `/inventory.items` record with the 2026-10-05 forge patch (all ~1,090 items of one live read).
-  // `optional`, not `keys`: the save export shares this level and every export taken before the
-  // patch lacks them, and no post-patch export has been seen to say whether exports carry them.
-  optional: [
-    'slot',
-    'soulbound',
-    'export_lock_secs',
-    'essence_value',
-    'forge_fails',
-    'forge_chance',
-    'pergaminho_custo',
-  ],
+  // `jewels` (the gems socketed in an item) and `ritual` (the server's own verdict on whether the
+  // item may be deconstructed, with its reason) are read by the game client when present, and no
+  // live row has carried either yet, so neither can be required. They are declared so the first
+  // row that does carry one is not reported as drift.
+  //
+  // The four {@link ITEM_ESSENCE_KEYS} are `optional` here, not `keys`: the save export shares
+  // this level and every export taken before the 2026-10-05 forge patch lacks them, and no
+  // post-patch export has been seen to say whether exports carry them. The API item level
+  // requires them.
+  optional: ['slot', 'soulbound', 'export_lock_secs', 'jewels', 'ritual', ...ITEM_ESSENCE_KEYS],
+};
+
+const API_ITEM_LEVEL: SchemaLevel = {
+  ...ITEM_LEVEL,
+  keys: [...ITEM_LEVEL.keys, ...ITEM_ESSENCE_KEYS],
+  optional: (ITEM_LEVEL.optional ?? []).filter((key) => !(ITEM_ESSENCE_KEYS as readonly string[]).includes(key)),
 };
 
 const CASA_LEVEL: SchemaLevel = {
@@ -304,12 +318,14 @@ const CASA_LEVEL: SchemaLevel = {
   },
 };
 
-/** The five shared levels — key-set identical across the API routes and the save export. */
+/** The shared levels. All are key-set identical across the API routes and the save export,
+ *  except `apiItem`, which requires {@link ITEM_ESSENCE_KEYS} where `item` tolerates them. */
 export const SCHEMA_LEVELS = {
   skills: SKILLS_LEVEL,
   skillsTotals: SKILLS_TOTALS_LEVEL,
   hero: HERO_LEVEL,
   item: ITEM_LEVEL,
+  apiItem: API_ITEM_LEVEL,
   casa: CASA_LEVEL,
 } as const satisfies Record<string, SchemaLevel>;
 

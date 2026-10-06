@@ -39,8 +39,9 @@ export const ITEM_KINDS: readonly ItemKind[] = [
  * The wire's `category` code → kind. Read off a 63-save corpus where the six codes partition
  * every one of 11,785 item rows with no overlap and no gaps: 0 gear, 1 chest, 2 gem, 3 time
  * part, 4 map key, 5 skill stone. Two more arrived later on a live account read: 6 an unpacked
- * skin (`skin_6`) and 7 a rune (`rune_critdmg_comum`); 8 is the forge's Chance Stone, which is
- * its own kind because a skill stone is a different item that shares the word. This is the game's own classification, so
+ * skin (`skin_6`) and 7 a rune (`rune_critdmg_comum`); 8 is the forge's Chance Stone
+ * (`forja_pedra_incomum`), the item that raises a forge roll's chance. It is its own kind because
+ * a skill stone is a different item that shares the word. This is the game's own classification, so
  * it outranks both the `def_id` prefix and the catalog lookup below.
  */
 const KIND_BY_CATEGORY: Record<number, ItemKind> = {
@@ -102,6 +103,18 @@ export type InventoryViewItem = {
   equipped: boolean;
   equippedBy: string | null;
   inStash: boolean;
+  /** Forge Essence the server says burning this item yields. `null` when the row carries no
+   *  `essence_value` at all — a save export, or a body from before the deconstruct screen — which
+   *  is not the same as a server-stated zero. */
+  essenceValue: number | null;
+  soulbound: boolean;
+  /** The row's `jewels` (socketed gems) is a non-empty list. */
+  hasGems: boolean;
+  /** `export_lock_secs` is a running countdown. */
+  exportLocked: boolean;
+  /** The server's own refusal to let this item be burned, from `ritual.desconstruir: false`;
+   *  `reason` is its `desconstruir_reason`, empty when it gave none. */
+  burnRefusal: { reason: string } | null;
   stats: InventoryViewStat[];
   defResolved: boolean;
 };
@@ -151,6 +164,18 @@ function asNumber(value: unknown, fallback: number): number {
 
 function asString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback;
+}
+
+function optionalNumber(value: unknown): number | null {
+  const parsed = asNumber(value, Number.NaN);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function readBurnRefusal(raw: Record<string, unknown>): { reason: string } | null {
+  const ritual = raw.ritual;
+  if (isObject(ritual) && ritual.desconstruir === false) return { reason: asString(ritual.desconstruir_reason) };
+  const stored = raw.burnRefusal;
+  return isObject(stored) ? { reason: asString(stored.reason) } : null;
 }
 
 const KIND_BY_DEF_PREFIX: readonly (readonly [string, ItemKind])[] = [
@@ -359,6 +384,11 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
     equipped: equippedBy.length > 0,
     equippedBy: equippedBy.length > 0 ? equippedBy : null,
     inStash: raw.in_stash === true || raw.inStash === true,
+    essenceValue: optionalNumber(raw.essence_value ?? raw.essenceValue),
+    soulbound: raw.soulbound === true,
+    hasGems: Array.isArray(raw.jewels) ? raw.jewels.length > 0 : raw.hasGems === true,
+    exportLocked: asNumber(raw.export_lock_secs, 0) > 0 || raw.exportLocked === true,
+    burnRefusal: readBurnRefusal(raw),
     stats: stats.length > 0 ? stats : catalogStats(defId, rarityIdx, level, upgrade),
     defResolved: Boolean(definition),
   };
