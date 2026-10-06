@@ -82,9 +82,9 @@ import {
 import { DeconstructResultBand } from './deconstruct-result-band';
 import { DeconstructToolbar } from './deconstruct-toolbar';
 
-/** The floor under the split, in px, for a window too short to give it more — the same floor the
- *  Forge bag keeps, so the list is worth reading before anything is ticked. */
-const SPLIT_MIN_HEIGHT = 460;
+/** The floor under the split, in px, for a window too short to give it more. Under the Forge bag's
+ *  460: this page's batch column is what really sets the floor, and it fits in less. */
+const SPLIT_MIN_HEIGHT = 400;
 
 const NO_SELECTION: ReadonlySet<string> = new Set();
 
@@ -358,10 +358,14 @@ export function DeconstructView({
       {/* The row takes whatever height the bands around it leave, floored by `SPLIT_MIN_HEIGHT`.
           The list Panel is taken out of flow so the whole list cannot contribute its height to
           the row, which is then measured by the batch column beside it; being absolute also gives
-          the Panel a definite height to bound the table's own scroller against. */}
+          the Panel a definite height to bound the table's own scroller against.
+
+          The batch column takes the width the table can spare: the table needs 738px to print the
+          longest forged name the game can show without clipping, and with the 12px gap that is the
+          750 the column subtracts, between 372px and 540px (seven to eleven tile columns). */}
       <div
         data-testid="deconstruct-split"
-        className="grid shrink-0 grow grid-cols-[minmax(0,1fr)_372px] gap-3 max-compact:grid-cols-[minmax(0,1fr)_316px]"
+        className="grid shrink-0 grow grid-cols-[minmax(0,1fr)_clamp(372px,calc(100%_-_750px),540px)] gap-3 max-compact:grid-cols-[minmax(0,1fr)_316px]"
         style={{ gridTemplateRows: `minmax(${String(SPLIT_MIN_HEIGHT)}px, auto)` }}
       >
         <div className="relative">
@@ -386,7 +390,7 @@ export function DeconstructView({
         </div>
         {/* `relative` keeps `sr-only` table captions in here resolving against this column rather
             than against the shell's `<main>`. */}
-        <div data-testid="deconstruct-aside" className="relative flex flex-col gap-3">
+        <div data-testid="deconstruct-aside" className="@container relative flex flex-col">
           <DeconstructAside
             items={selectedItems}
             summary={summary}
@@ -400,11 +404,13 @@ export function DeconstructView({
             onClear={onClear}
             onBurn={onBurn}
             onRemove={onRemove}
-          />
-          <DeconstructResultBand
-            outcome={run.status === 'result' ? run.outcome : null}
-            labels={labels}
-            onDone={dismissDeconstructRun}
+            result={
+              <DeconstructResultBand
+                outcome={run.status === 'result' ? run.outcome : null}
+                labels={labels}
+                onDone={dismissDeconstructRun}
+              />
+            }
           />
         </div>
       </div>

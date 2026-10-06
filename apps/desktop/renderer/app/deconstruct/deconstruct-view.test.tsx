@@ -216,6 +216,14 @@ describe('the Deconstruct list', () => {
     expect(container.textContent).toContain('Essence');
   });
 
+  it('gives the batch column what the table can spare, bounded, and a fixed width on a narrow window', async () => {
+    await mount();
+    const split = byId('deconstruct-split').className;
+    expect(split).toContain('grid-cols-[minmax(0,1fr)_clamp(372px,calc(100%_-_750px),540px)]');
+    expect(split).toContain('max-compact:grid-cols-[minmax(0,1fr)_316px]');
+    expect(byId('deconstruct-aside').className).toContain('@container');
+  });
+
   it('shows what the server pays for each row in its own column, taken from the row and never worked out', async () => {
     await mount();
     expect(rowOf('2').textContent).toContain('200');

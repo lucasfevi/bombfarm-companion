@@ -57,6 +57,11 @@ const CENSUS = {
 const COMMON = 0;
 const EPIC = 3;
 
+/** The table's width at the longest forged name the game can print, and what the batch column
+ *  leaves out of the split for it: that width plus the gap between the two. */
+const TABLE_MIN_WIDTH = 738;
+const BATCH_COLUMN_RESERVE = TABLE_MIN_WIDTH + 12;
+
 function electronExecutable() {
   return path.join(
     desktopRoot,
@@ -500,7 +505,7 @@ test.describe('deconstruct smoke', () => {
     });
   });
 
-  test('keeps every batch label on one line in both languages, on the wide layout and the narrow one', async () => {
+  test('keeps every batch label on one line in both languages, and gives the batch column what the table can spare', async () => {
     await withApp(async (page, app) => {
       const wrapped = () =>
         page.evaluate(() => {
@@ -510,25 +515,90 @@ test.describe('deconstruct smoke', () => {
             .filter((element) => element.getBoundingClientRect().height > parseFloat(getComputedStyle(element).lineHeight) * 1.5)
             .map((element) => element.textContent);
         });
+      const overflowing = () =>
+        page.evaluate(() =>
+          ['inventory-table-scroll', 'deconstruct-batch-panel'].filter((id) => {
+            const element = document.querySelector(`[data-testid="${id}"]`);
+            return element !== null && element.scrollWidth > element.clientWidth + 1;
+          }),
+        );
 
-      for (const width of [1500, 1100]) {
+      for (const width of [1500, 1250, 1100]) {
         await app.evaluate(({ BrowserWindow }, size) => {
           const win = BrowserWindow.getAllWindows()[0];
           win?.setMinimumSize(200, 200);
           win?.setSize(size, 900);
         }, width);
-        await page.waitForTimeout(400);
+        await page.waitForTimeout(600);
+        const split = await page.getByTestId('deconstruct-split').boundingBox();
         const aside = await page.getByTestId('deconstruct-aside').boundingBox();
-        expect(Math.round(aside?.width ?? 0), `aside width at ${String(width)}`).toBe(width === 1500 ? 372 : 316);
+        const list = await page.getByTestId('deconstruct-list-panel').boundingBox();
+        const spare = Math.min(540, Math.max(372, Math.round(split?.width ?? 0) - BATCH_COLUMN_RESERVE));
+        const expected = width === 1100 ? 316 : spare;
+        expect(Math.round(aside?.width ?? 0), `aside width at ${String(width)}`).toBe(expected);
+        if (width !== 1100) {
+          expect(Math.round(list?.width ?? 0), `list width at ${String(width)}`).toBeGreaterThanOrEqual(TABLE_MIN_WIDTH - 1);
+        }
 
         await switchLanguage(page, 'en');
         await expect(page.getByTestId('deconstruct-selected')).toHaveText(`0 of ${String(CENSUS.batchCap)}`);
         expect(await wrapped(), `English labels wrapped at ${String(width)}`).toEqual([]);
+        expect(await overflowing(), `English overflow at ${String(width)}`).toEqual([]);
         await switchLanguage(page, 'pt');
         await expect(page.getByTestId('deconstruct-selected')).toHaveText(`0 de ${String(CENSUS.batchCap)}`);
         expect(await wrapped(), `Portuguese labels wrapped at ${String(width)}`).toEqual([]);
+        expect(await overflowing(), `Portuguese overflow at ${String(width)}`).toEqual([]);
         await switchLanguage(page, 'en');
       }
+    });
+  });
+
+  test('gives the batch tiles the height the window has, and keeps Burn in view', async () => {
+    await withApp(async (page, app) => {
+      const settle = async (width, height) => {
+        await app.evaluate(({ BrowserWindow }, size) => {
+          const win = BrowserWindow.getAllWindows()[0];
+          win?.setMinimumSize(200, 200);
+          win?.setSize(size.width, size.height);
+        }, { width, height });
+        await page.waitForTimeout(600);
+      };
+      const tileRows = () =>
+        page.evaluate(() => {
+          const region = document.querySelector('[data-testid="deconstruct-batch-tiles"]')?.getBoundingClientRect();
+          if (!region) return { full: 0, columns: 0 };
+          const tops = new Map();
+          for (const tile of document.querySelectorAll('[data-testid="deconstruct-batch-tile"]')) {
+            const box = tile.getBoundingClientRect();
+            if (box.top >= region.top - 0.5 && box.bottom <= region.bottom + 0.5) {
+              tops.set(Math.round(box.top), (tops.get(Math.round(box.top)) ?? 0) + 1);
+            }
+          }
+          return { full: tops.size, columns: Math.max(0, ...tops.values()) };
+        });
+      const burnInView = () =>
+        page.evaluate(() => {
+          const burn = document.querySelector('[data-testid="deconstruct-burn"]')?.getBoundingClientRect();
+          const main = document.querySelector('main')?.getBoundingClientRect();
+          return burn !== undefined && main !== undefined && burn.bottom <= main.bottom + 0.5;
+        });
+
+      await page.getByTestId('deconstruct-select-shown').click();
+      await expect(selectedText(page)).toHaveText(`${String(CENSUS.batchCap)} of ${String(CENSUS.batchCap)}`);
+
+      await settle(1440, 900);
+      const medium = await tileRows();
+      expect(medium.full, 'full tile rows at 1440x900').toBeGreaterThanOrEqual(5);
+      expect(medium.columns, 'tile columns at 1440x900').toBeGreaterThanOrEqual(10);
+      expect(await burnInView(), 'Burn in view at 1440x900').toBe(true);
+
+      await settle(1920, 1080);
+      const tall = await tileRows();
+      expect(tall.full, 'full tile rows at 1920x1080').toBeGreaterThan(medium.full);
+      expect(await burnInView(), 'Burn in view at 1920x1080').toBe(true);
+
+      await settle(1440, 768);
+      expect(await burnInView(), 'Burn in view at 1440x768').toBe(true);
     });
   });
 
