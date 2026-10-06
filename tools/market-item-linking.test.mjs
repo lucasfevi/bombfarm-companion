@@ -94,6 +94,26 @@ describe('the builder supplies every identity the catalog cannot', () => {
     expect(new Set(defIds).size).toBe(ACT_CHEST_FAMILIES.length * ACTS.length);
   });
 
+  /**
+   * The builder's catalog spells rarity 4 `lendaria`, from its label. A Chance Stone spells it
+   * `lendario`, so a stone keyed off the catalog tokens would link every rarity but that one.
+   */
+  it.each([
+    ['Chance Stone (Common)', 'forja_pedra_comum', 0],
+    ['Chance Stone (Uncommon)', 'forja_pedra_incomum', 1],
+    ['Chance Stone (Rare)', 'forja_pedra_raro', 2],
+    ['Chance Stone (Epic)', 'forja_pedra_epico', 3],
+    ['Chance Stone (Legendary)', 'forja_pedra_lendario', 4],
+    ['Chance Stone (Mythic)', 'forja_pedra_mitico', 5],
+  ])('links %s to the stone id an owned copy carries', (hashName, defId, rarityIdx) => {
+    const { entry, anomalies } = reconcileOne(hashName);
+
+    expect(catalog.rarityTokens[4]).toBe('lendaria');
+    expect(entry?.defId).toBe(defId);
+    expect(entry?.key).toBe(priceKey(defId, rarityIdx));
+    expect(anomalies).toEqual([]);
+  });
+
   it('links a real equipment row through the set and slot words the market spells', () => {
     const { entry, anomalies } = reconcileOne('Glacier Chestplate Lv 60 (Legendary)');
 
