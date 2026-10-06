@@ -15,7 +15,7 @@ import {
   deconstructWarnings,
   essenceCell,
 } from './deconstruct-labels';
-import { viewItem } from '../../lib/deconstruct/test-items';
+import { rawOther, viewItem, viewItems } from '../../lib/deconstruct/test-items';
 
 const labels = deconstructLabels(en, 'en', 'en');
 
@@ -118,6 +118,33 @@ describe('deconstructWarnings', () => {
     expect(both.rare).toEqual({ active: true, text: 'Items of Epic rarity or above in the batch: 2.' });
     expect(rare.rarityIdx).toBeGreaterThanOrEqual(3);
     expect(forged.upgrade).toBeGreaterThan(0);
+  });
+});
+
+describe('groupName', () => {
+  const ptLabels = deconstructLabels(ptBR, 'pt', 'pt-BR');
+  const [key, chest, cage] = viewItems([
+    rawOther('1', 'key_epic', 4, { rarity: 3 }),
+    rawOther('2', 'chest_item_80', 1),
+    rawOther('3', 'chest_hero_5', 1),
+  ]);
+  if (!key || !chest || !cage) throw new Error('fixture rows did not map');
+
+  it('puts the rarity before the kind in English', () => {
+    expect(labels.groupName(viewItem({ rarity: 3 }))).toBe('Epic Gear');
+    expect(labels.groupName(key)).toBe('Epic Keys');
+  });
+
+  it('puts the kind before the rarity in Portuguese, so no word has to agree in gender', () => {
+    expect(ptLabels.groupName(viewItem({ rarity: 0 }))).toBe('Equipamentos · Comum');
+    expect(ptLabels.groupName(key)).toBe('Chaves · Épico');
+  });
+
+  it('names a chest by its item level and a cage by its act, as the inventory does', () => {
+    expect(labels.groupName(chest)).toBe('Item chest · Lv 80');
+    expect(labels.groupName(cage)).toBe('Hero cage · Act 5');
+    expect(ptLabels.groupName(chest)).toBe('Baú de item · Nv 80');
+    expect(ptLabels.groupName(cage)).toBe('Jaula de herói · Ato 5');
   });
 });
 

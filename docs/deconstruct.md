@@ -135,3 +135,21 @@ The essence values, forge counters and scroll prices in the committed fixtures a
 shaped after a live read, never the game's own numbers (the offline generator states how). Do not
 read a figure off them. The offline account carries closed chests and hero cages with a positive
 value so the page has some to show.
+
+## The batch panel
+
+The panel beside the list reads top to bottom: the title with a line saying burnt items do not come
+back, the four figures, the tiles, a table of what the batch holds, the hint and the three buttons.
+
+- **Tiles.** One square per ticked item, with a bare ✕ over the top-right corner that takes it back
+  out. The mark overhangs the tile, so the grid is padded and spaced by that overhang rather than
+  letting the scroll region clip it.
+- **The group table.** One row per kind and rarity ("Epic Keys 80"), most numerous first.
+  A chest or cage is grouped by the name it prints instead ("Item chest · Lv 80", "Hero cage · Act
+  5"). The label is one template per language, so Portuguese puts the kind first ("Chaves · Épico")
+  and never has to agree a rarity with a noun's gender. The table is the panel's one flexible
+  neighbour of the tiles: it takes the height its rows need, up to six rows, then scrolls on its
+  own, and the tile region absorbs the difference, so Burn stays where it is as rows come and go.
+  An empty batch leaves only the rule above the table.
+- **Confirm.** The forged and Epic-or-rarer warnings are printed by the confirm dialog alone, where
+  the game prints them.

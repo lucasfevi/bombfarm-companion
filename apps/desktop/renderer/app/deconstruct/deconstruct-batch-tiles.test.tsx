@@ -87,6 +87,20 @@ describe('the batch tiles', () => {
     expect(remove?.getAttribute('aria-label')).toBe(`Remove ${name} from the batch`);
   });
 
+  it('draw the remove mark as a bare glyph over the tile corner, with a 20px hit target', async () => {
+    await mount(gear(1));
+    const classes = removeMarks()[0]?.className.split(' ') ?? [];
+    expect(classes).toEqual(expect.arrayContaining(['absolute', '-top-1.5', '-right-1.5', 'size-5', 'bg-transparent', 'hover:bg-transparent']));
+    expect(classes.some((name) => /^bg-\[/.test(name))).toBe(false);
+  });
+
+  it('pad the grid by the mark overhang and space the tiles past it, so the region clips nothing and no mark sits on a neighbour', async () => {
+    await mount(gear(2));
+    const grid = container?.querySelector('ul');
+    expect(grid?.className).toContain('p-1.5');
+    expect(grid?.className).toContain('gap-1.5');
+  });
+
   it('say so in Portuguese on the remove button', async () => {
     await mount(gear(1), { locale: 'pt-BR' });
     expect(tiles()[0]?.querySelector('button')?.getAttribute('aria-label')).toMatch(/^Tirar .+ do lote$/);

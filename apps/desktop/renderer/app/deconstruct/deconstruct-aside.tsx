@@ -5,12 +5,12 @@ import { DECONSTRUCT_BATCH_MAX, type DeconstructBatchSummary } from '@bombfarm/d
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { Button, cn, Panel, PanelHeader, StatList, Tooltip, type StatListItem } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
+import { DeconstructBatchGroups } from './deconstruct-batch-groups';
 import { DeconstructBatchTiles } from './deconstruct-batch-tiles';
 import {
   BLANK,
   deconstructHintText,
   deconstructReasonText,
-  deconstructWarnings,
   type DeconstructButtonReason,
   type DeconstructHint,
   type DeconstructLabels,
@@ -23,21 +23,6 @@ const STATS_WIDE_CLASS = cn(
   '@min-[27.5rem]:[&_>div:nth-child(3)]:border-b-0',
   '@min-[27.5rem]:[&_>div:nth-child(3)]:pb-0',
 );
-
-/** A warning that is not in play keeps its line and drops out of sight, so the Burn button under
- *  it never moves when a batch gains or loses the thing the line warns about. */
-function Warning({ testId, active, text }: { testId: string; active: boolean; text: string }) {
-  return (
-    <p
-      data-testid={testId}
-      data-active={active ? 'true' : 'false'}
-      aria-hidden={active ? undefined : true}
-      className={cn('m-0', 'text-xs', 'leading-[1.45]', 'text-warn', !active && 'invisible')}
-    >
-      {text}
-    </p>
-  );
-}
 
 export function DeconstructAside({
   items,
@@ -73,8 +58,6 @@ export function DeconstructAside({
   result: ReactNode;
 }) {
   const t = useCopy();
-  const warnings = deconstructWarnings(summary, t, labels);
-
   const facts: StatListItem[] = [
     {
       id: 'selected',
@@ -111,6 +94,9 @@ export function DeconstructAside({
   return (
     <Panel data-testid="deconstruct-batch-panel" className="flex flex-1 flex-col gap-2">
       <PanelHeader title={t.deconstructBatchTitle} className="mb-0" />
+      <p data-testid="deconstruct-batch-subtitle" className="m-0 -mt-1 text-xs leading-[1.45] text-muted">
+        {t.deconstructBatchSubtitle}
+      </p>
       <StatList items={facts} aria-label={t.deconstructBatchTitle} className={STATS_WIDE_CLASS} />
 
       <div className="relative flex min-h-[5.8rem] flex-[1_1_0px] flex-col">
@@ -127,10 +113,7 @@ export function DeconstructAside({
         {sub(t.deconstructHiddenNote, { count: labels.count(hidden) })}
       </p>
 
-      <div className="flex flex-col gap-1.5">
-        <Warning testId="deconstruct-warn-forged" active={warnings.forged.active} text={warnings.forged.text} />
-        <Warning testId="deconstruct-warn-rare" active={warnings.rare.active} text={warnings.rare.text} />
-      </div>
+      <DeconstructBatchGroups items={items} labels={labels} />
 
       <p
         data-testid="deconstruct-hint"
@@ -179,9 +162,6 @@ export function DeconstructAside({
         </span>
       </div>
 
-      <p data-testid="deconstruct-batch-footnote" className="m-0 text-[11px] leading-[1.45] text-muted">
-        {t.deconstructBatchFootnote}
-      </p>
     </Panel>
   );
 }

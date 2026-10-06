@@ -218,6 +218,8 @@ export interface DeconstructLabels extends ItemIdentityLabels<InventoryViewItem>
   locationName: (location: DeconstructLocation) => string;
   setOption: ReturnType<typeof inventoryLabels>['setOption'];
   setOptionCount: ReturnType<typeof inventoryLabels>['setOptionCount'];
+  /** What a batch row says of a group: "Epic Keys", "Item chest · Lv 80". */
+  groupName: (item: InventoryViewItem) => string;
   count: (value: number) => string;
   /** `+1,234` — the sign is data, not copy, so no sentence has to carry a plus. */
   signedCount: (value: number) => string;
@@ -252,6 +254,10 @@ export function deconstructLabels(t: Copy, lang: DomainLang, locale: AppLocale):
     },
     setOption: inventory.setOption,
     setOptionCount: inventory.setOptionCount,
+    groupName: (item) =>
+      item.kind === 'chest'
+        ? inventory.itemName(item)
+        : sub(t.deconstructGroupLabel, { rarity: itemRarityLabel(item.rarityIdx, lang), kind: inventory.groupTitle(item.kind) }),
     count,
     signedCount: (value) => `+${Math.round(value).toLocaleString(bcp47)}`,
     warnRarity: itemRarityLabel(DECONSTRUCT_WARN_RARITY, lang),
@@ -264,7 +270,7 @@ export function essenceCell(item: InventoryViewItem, labels: Pick<DeconstructLab
   return item.essenceValue === null ? BLANK : labels.count(item.essenceValue);
 }
 
-/** The lines the confirm and the aside's warnings print, with the counts that make each apply. */
+/** The lines the confirm prints, with the counts that make each apply. */
 export function deconstructWarnings(summary: DeconstructBatchSummary, t: Copy, labels: DeconstructLabels): {
   forged: { active: boolean; text: string };
   rare: { active: boolean; text: string };

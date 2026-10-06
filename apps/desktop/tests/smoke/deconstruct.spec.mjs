@@ -142,6 +142,26 @@ const openRows = (page) => page.locator('[data-testid="inventory-table-row"]:not
 const countText = (page) => page.getByTestId('deconstruct-result-count');
 const selectedText = (page) => page.getByTestId('deconstruct-selected');
 
+async function resizeWindow(app, page, width, height) {
+  await app.evaluate(({ BrowserWindow }, size) => {
+    const win = BrowserWindow.getAllWindows()[0];
+    win?.setMinimumSize(200, 200);
+    win?.setSize(size.width, size.height);
+  }, { width, height });
+  await page.waitForTimeout(600);
+}
+
+/** The batch's group rows as [group id, label, count], in the order the table draws them. */
+function groupRows(page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll('[data-testid="deconstruct-group-row"]')].map((row) => [
+      row.getAttribute('data-group'),
+      row.textContent,
+      Number(row.closest('div')?.querySelector('dd')?.textContent?.replace(/[^\d]/g, '')),
+    ]),
+  );
+}
+
 function kindChip(page, kind) {
   return page.locator(`[data-testid="deconstruct-kind-chip"][data-kind="${kind}"]`);
 }
@@ -213,8 +233,8 @@ function boxesOf(page, testIds) {
   }, testIds);
 }
 
-/** Everything a band or a warning opening could push: the toolbar and the list above and beside
- *  it, the batch panel, and the Burn button the warning lines sit above. */
+/** Everything a band or a new group row could push: the toolbar and the list above and beside
+ *  it, the batch panel, and the Burn button the group table sits above. */
 const STEADY = ['deconstruct-toolbar', 'deconstruct-list-panel', 'deconstruct-batch-panel', 'deconstruct-burn'];
 
 /**
@@ -325,7 +345,8 @@ test.describe('deconstruct smoke', () => {
   });
 
   test('totals the batch as rows are ticked, warns about forged and Epic pieces, and has Add all, Fill and Clear obey the cap and the filters', async () => {
-    await withApp(async (page) => {
+    await withApp(async (page, app) => {
+      await resizeWindow(app, page, 1440, 900);
       const selected = selectedText(page);
       const essence = page.getByTestId('deconstruct-essence');
       const balance = figure(await page.getByTestId('deconstruct-balance').innerText());
@@ -340,26 +361,24 @@ test.describe('deconstruct smoke', () => {
       await expect(selected).toHaveText(`0 of ${String(CENSUS.batchCap)}`);
       await expect(essence).toHaveText('+0');
 
-      // A warning keeps its line and only switches on, so the Burn button never moves.
-      const forgedWarning = page.getByTestId('deconstruct-warn-forged');
-      const rareWarning = page.getByTestId('deconstruct-warn-rare');
-      await expect(forgedWarning).toHaveAttribute('data-active', 'false');
-      await expect(rareWarning).toHaveAttribute('data-active', 'false');
+      // The group table grows a row per kind and rarity, and the Burn button never moves.
+      await expect(page.getByTestId('deconstruct-group-row')).toHaveCount(0);
       const quiet = await boxesOf(page, STEADY);
 
       const forgedRow = rowsOf(page).filter({ hasText: /\+\d+/ }).first();
       await forgedRow.click();
-      await expect(forgedWarning).toHaveAttribute('data-active', 'true');
-      await expect(forgedWarning).toContainText('Forged items in the batch: 1');
+      await expect(page.getByTestId('deconstruct-group-row')).toHaveCount(1);
       await expectNothingMoved(page, quiet, 'a forged piece was ticked');
       await forgedRow.click();
-      await expect(forgedWarning).toHaveAttribute('data-active', 'false');
+      await expect(page.getByTestId('deconstruct-group-row')).toHaveCount(0);
 
       await rarityChip(page, EPIC).click();
       const quietAgain = await boxesOf(page, STEADY);
       await rowsOf(page).first().click();
-      await expect(rareWarning).toHaveAttribute('data-active', 'true');
-      await expect(rareWarning).toContainText('Epic');
+      const [epicRow] = await groupRows(page);
+      expect(epicRow?.[0]).toBe(`equipment:${String(EPIC)}`);
+      expect(epicRow?.[1]).toContain('Epic');
+      expect(epicRow?.[2]).toBe(1);
       await expectNothingMoved(page, quietAgain, 'an Epic piece was ticked');
       await page.getByTestId('deconstruct-clear').click();
       await rarityChip(page, EPIC).click();
@@ -397,7 +416,8 @@ test.describe('deconstruct smoke', () => {
   });
 
   test('draws the ticked items as tiles in the batch, opens an item card on hover and takes one out with its corner mark', async () => {
-    await withApp(async (page) => {
+    await withApp(async (page, app) => {
+      await resizeWindow(app, page, 1440, 900);
       const tiles = page.getByTestId('deconstruct-batch-tile');
       await expect(tiles).toHaveCount(0);
       await expect(page.getByTestId('deconstruct-batch-empty')).toBeVisible();
@@ -409,13 +429,60 @@ test.describe('deconstruct smoke', () => {
       await expect(page.getByTestId('deconstruct-batch-empty')).toHaveCount(0);
       expect(await tiles.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-item-id')))).toEqual(ids);
       await expectNothingMoved(page, quiet, 'three rows were ticked');
-      expect(await boxesOf(page, ['deconstruct-batch-tiles'])).toEqual(region);
+      const grown = await boxesOf(page, ['deconstruct-batch-tiles']);
+      expect(grown['deconstruct-batch-tiles'], 'the tile region keeps its place and gives height to the group table').toMatchObject({
+        x: region['deconstruct-batch-tiles'].x,
+        y: region['deconstruct-batch-tiles'].y,
+        width: region['deconstruct-batch-tiles'].width,
+      });
+      expect(grown['deconstruct-batch-tiles'].height).toBeLessThanOrEqual(region['deconstruct-batch-tiles'].height);
 
       const trigger = tiles.nth(1).locator('[data-peek="item"]');
       await trigger.hover();
       await page.mouse.move(0, 0, { steps: 1 });
       await trigger.hover({ position: { x: 4, y: 4 } });
       await expect(page.locator('[data-peek-card="item"]')).toBeVisible();
+
+      const forgedRow = rowsOf(page).filter({ hasText: /\+\d+/ }).first();
+      await forgedRow.click();
+      await expect(tiles).toHaveCount(4);
+      const corner = await page.evaluate(() => {
+        const rectOf = (node) => {
+          const box = node.getBoundingClientRect();
+          return { left: box.left, top: box.top, right: box.right, bottom: box.bottom };
+        };
+        const region = rectOf(document.querySelector('[data-testid="deconstruct-batch-tiles"]'));
+        return [...document.querySelectorAll('[data-testid="deconstruct-batch-tile"]')].map((tile, index, all) => {
+          const mark = tile.querySelector('[data-testid="deconstruct-batch-remove"]');
+          const icon = tile.querySelector('[data-peek="item"]');
+          const badge = tile.querySelector('[data-slot="item-upgrade"]');
+          const next = all[index + 1];
+          return {
+            mark: rectOf(mark),
+            icon: rectOf(icon),
+            badge: badge === null ? null : rectOf(badge),
+            next: next === undefined || Math.abs(next.getBoundingClientRect().top - tile.getBoundingClientRect().top) > 1 ? null : rectOf(next),
+            region,
+            background: getComputedStyle(mark).backgroundColor,
+            border: getComputedStyle(mark).borderTopWidth,
+          };
+        });
+      });
+      for (const tile of corner) {
+        expect(tile.mark.right, 'the mark reaches past the icon at the right').toBeGreaterThan(tile.icon.right);
+        expect(tile.mark.top, 'the mark reaches past the icon at the top').toBeLessThan(tile.icon.top);
+        expect(tile.mark.right - tile.mark.left, 'the mark keeps a 20px hit target').toBeGreaterThanOrEqual(20);
+        expect(tile.mark.bottom - tile.mark.top).toBeGreaterThanOrEqual(20);
+        expect(tile.mark.right, 'the mark is not clipped by the region').toBeLessThanOrEqual(tile.region.right);
+        expect(tile.mark.top).toBeGreaterThanOrEqual(tile.region.top);
+        if (tile.next !== null) expect(tile.next.left, 'the mark stays off the next tile').toBeGreaterThanOrEqual(tile.mark.right - 0.5);
+        if (tile.badge !== null) expect(tile.mark.bottom, 'the mark stays above the forge badge').toBeLessThanOrEqual(tile.badge.top);
+        expect(tile.background).toBe('rgba(0, 0, 0, 0)');
+        expect(tile.border).toBe('0px');
+      }
+      expect(corner.some((tile) => tile.badge !== null)).toBe(true);
+      await forgedRow.click();
+      await expect(tiles).toHaveCount(3);
 
       await tiles.nth(1).getByTestId('deconstruct-batch-remove').click();
       await expect(tiles).toHaveCount(2);
@@ -432,6 +499,61 @@ test.describe('deconstruct smoke', () => {
       await expect(tiles).toHaveCount(0);
       await expect(page.getByTestId('deconstruct-batch-empty')).toBeVisible();
       await expectNothingMoved(page, quiet, 'the last tile was removed');
+    });
+  });
+
+  test('groups the batch by kind and rarity, caps the table at six rows with its own scroll, and keeps Burn and the tiles in place as rows arrive', async () => {
+    await withApp(async (page, app) => {
+      await resizeWindow(app, page, 1440, 900);
+      const table = page.getByTestId('deconstruct-batch-groups');
+      const rowCount = () => page.getByTestId('deconstruct-group-row').count();
+      const quiet = await boxesOf(page, STEADY);
+      const empty = await boxesOf(page, ['deconstruct-batch-groups']);
+      expect(empty['deconstruct-batch-groups']?.height, 'an empty table keeps only its rule').toBeLessThanOrEqual(2);
+
+      await kindChip(page, 'chest').click();
+      await page.getByTestId('deconstruct-select-shown').click();
+      await kindChip(page, 'chest').click();
+      await expect(selectedText(page)).toHaveText(`${String(CENSUS.chests)} of ${String(CENSUS.batchCap)}`);
+      const afterChests = await groupRows(page);
+      expect(afterChests.reduce((sum, row) => sum + row[2], 0)).toBe(CENSUS.chests);
+      for (const [id, label] of afterChests) {
+        expect(id).toMatch(/^chest:/);
+        expect(label).toMatch(/chest|cage/i);
+      }
+      await expectNothingMoved(page, quiet, 'the chests and cages were added');
+
+      for (const rarity of [0, 1, 2, 3, 4, 5]) {
+        if ((await rarityChip(page, rarity).count()) === 0) continue;
+        await rarityChip(page, rarity).click();
+        if (await page.getByTestId('deconstruct-select-shown').isEnabled()) await page.getByTestId('deconstruct-select-shown').click();
+        await rarityChip(page, rarity).click();
+        await expectNothingMoved(page, quiet, `rarity ${String(rarity)} was added`);
+      }
+
+      const rows = await groupRows(page);
+      expect(rows.length).toBeGreaterThan(6);
+      const counts = rows.map((row) => row[2]);
+      expect(counts).toEqual([...counts].sort((a, b) => b - a));
+      expect(rows.reduce((sum, row) => sum + row[2], 0)).toBe(Number((await selectedText(page).innerText()).split(' ')[0]));
+      expect(await rowCount()).toBe(rows.length);
+
+      const metrics = await table.evaluate((node) => ({
+        client: node.clientHeight,
+        scroll: node.scrollHeight,
+        rowHeight: node.querySelector('dl > div')?.getBoundingClientRect().height ?? 0,
+        align: getComputedStyle(node.querySelector('dd')).textAlign,
+        numeric: getComputedStyle(node.querySelector('dd')).fontVariantNumeric,
+      }));
+      expect(metrics.scroll, 'the table scrolls on its own').toBeGreaterThan(metrics.client);
+      expect(metrics.client, 'six rows are visible').toBeLessThanOrEqual(metrics.rowHeight * 6 + 8);
+      expect(metrics.client).toBeGreaterThanOrEqual(metrics.rowHeight * 5);
+      expect(metrics.align).toBe('right');
+      expect(metrics.numeric).toContain('tabular-nums');
+
+      await page.getByTestId('deconstruct-clear').click();
+      await expect(page.getByTestId('deconstruct-group-row')).toHaveCount(0);
+      await expectNothingMoved(page, quiet, 'the batch was cleared');
     });
   });
 
@@ -565,14 +687,7 @@ test.describe('deconstruct smoke', () => {
 
   test('gives the batch tiles the height the window has, and keeps Burn in view', async () => {
     await withApp(async (page, app) => {
-      const settle = async (width, height) => {
-        await app.evaluate(({ BrowserWindow }, size) => {
-          const win = BrowserWindow.getAllWindows()[0];
-          win?.setMinimumSize(200, 200);
-          win?.setSize(size.width, size.height);
-        }, { width, height });
-        await page.waitForTimeout(600);
-      };
+      const settle = (width, height) => resizeWindow(app, page, width, height);
       const tileRows = () =>
         page.evaluate(() => {
           const region = document.querySelector('[data-testid="deconstruct-batch-tiles"]')?.getBoundingClientRect();
@@ -598,7 +713,7 @@ test.describe('deconstruct smoke', () => {
 
       await settle(1440, 900);
       const medium = await tileRows();
-      expect(medium.full, 'full tile rows at 1440x900').toBeGreaterThanOrEqual(5);
+      expect(medium.full, 'full tile rows at 1440x900').toBeGreaterThanOrEqual(3);
       expect(medium.columns, 'tile columns at 1440x900').toBeGreaterThanOrEqual(10);
       expect(await burnInView(), 'Burn in view at 1440x900').toBe(true);
 

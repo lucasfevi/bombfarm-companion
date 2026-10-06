@@ -18,16 +18,21 @@ const REGION_CLASS = cn(
   'max-compact:[--art-tile:2.5rem]',
 );
 
-const GRID_CLASS = cn('m-0', 'shrink-0', 'grid', 'list-none', 'content-start', 'justify-center', 'gap-1', 'p-0', 'grid-cols-[repeat(auto-fill,var(--art-tile))]');
+const GRID_CLASS = cn('m-0', 'shrink-0', 'grid', 'list-none', 'content-start', 'justify-center', 'gap-1.5', 'p-1.5', 'grid-cols-[repeat(auto-fill,var(--art-tile))]');
 
 const REMOVE_CLASS = cn(
   'absolute',
-  'top-0',
-  'right-0',
+  '-top-1.5',
+  '-right-1.5',
   'z-10',
-  'size-4',
-  'bg-[color-mix(in_oklch,var(--bg)_82%,transparent)]',
+  'rounded-full',
+  'bg-transparent',
   'text-ink',
+  'hover:bg-transparent',
+  'hover:text-down',
+  '[&_svg]:[filter:drop-shadow(0_0_1px_rgb(0_0_0/0.95))_drop-shadow(0_1px_1px_rgb(0_0_0/0.7))]',
+  'focus-visible:outline-2',
+  'focus-visible:outline-accent',
   'disabled:cursor-not-allowed',
   'disabled:opacity-40',
 );
@@ -39,7 +44,7 @@ function focusNeighbour(tile: HTMLElement): void {
 
 /**
  * The batch as the game's Burn screen draws it: one square tile per ticked item, in the order they
- * were ticked, each with a corner mark that takes it back out and a hover card. The region keeps
+ * were ticked, each with a bare corner mark that takes it back out and a hover card. The region keeps
  * the panel's spare height at zero, one and a hundred tiles, so the buttons under it never move.
  */
 export function DeconstructBatchTiles({

@@ -15,7 +15,7 @@ import {
   setDeconstructSelection,
   setDeconstructSort,
 } from '../../lib/deconstruct/deconstruct-store';
-import { rawGear, sampleRows } from '../../lib/deconstruct/test-items';
+import { rawGear, rawOther, sampleRows } from '../../lib/deconstruct/test-items';
 import { addToForgeQueue, cancelForgeQueue, clearForgeQueue, startForgeQueue } from '../../lib/forge/forge-queue-store';
 import { resetScreenRefreshForTests, screenRefreshOf } from '../../lib/refresh/screen-refresh-store';
 import { DeconstructView } from './deconstruct-view';
@@ -194,6 +194,14 @@ function buttonByText(scope: ParentNode, label: string): HTMLButtonElement {
   return found;
 }
 
+function groupRows(): [string, string, string][] {
+  return [...container.querySelectorAll<HTMLElement>('[data-testid="deconstruct-group-row"]')].map((row) => [
+    row.getAttribute('data-group') ?? '',
+    row.textContent,
+    row.closest('div')?.querySelector('dd')?.textContent ?? '',
+  ]);
+}
+
 function bagOfGear(count: number, overrides: (index: number) => Row = () => ({})): Row[] {
   return Array.from({ length: count }, (_, index) => rawGear({ id: String(1000 + index), level: 60, ...overrides(index) }));
 }
@@ -294,25 +302,61 @@ describe('the batch', () => {
     expect(textOf('deconstruct-selected')).toBe('0 of 100');
   });
 
-  it('lights the forged warning and the Epic-or-rarer warning only while the batch holds what they warn about', async () => {
+  it('sums the batch into one row per kind and rarity, most numerous first', async () => {
+    await pushAccount(
+      accountView([
+        rawGear({ id: '1', rarity: 0 }),
+        rawGear({ id: '2', rarity: 0 }),
+        rawGear({ id: '3', rarity: 3, upgrade: 4 }),
+        rawOther('4', 'gem_ruby', 2, { rarity: 1 }),
+      ]),
+    );
     await mount();
-    expect(byId('deconstruct-warn-forged').getAttribute('data-active')).toBe('false');
-    expect(byId('deconstruct-warn-rare').getAttribute('data-active')).toBe('false');
-    await pick('1');
-    expect(byId('deconstruct-warn-forged').getAttribute('data-active')).toBe('false');
-    await pick('2');
-    expect(byId('deconstruct-warn-forged').getAttribute('data-active')).toBe('true');
-    expect(byId('deconstruct-warn-rare').getAttribute('data-active')).toBe('true');
-    expect(textOf('deconstruct-warn-forged')).toContain('Forged items in the batch: 1.');
-    expect(textOf('deconstruct-warn-rare')).toContain('Epic rarity or above in the batch: 1.');
+    expect(groupRows()).toEqual([]);
+    await pick('4', '3', '1', '2');
+    expect(groupRows()).toEqual([
+      ['equipment:0', 'Common Gear', '2'],
+      ['equipment:3', 'Epic Gear', '1'],
+      ['gem:1', 'Uncommon Gems', '1'],
+    ]);
   });
 
-  it('keeps both warning lines in the tree when they do not apply, hidden from view and from assistive tech', async () => {
+  it('names a chest by its item level and a cage by its act', async () => {
+    await pushAccount(
+      accountView([
+        rawOther('1', 'chest_item_80', 1),
+        rawOther('2', 'chest_item_80', 1),
+        rawOther('3', 'chest_hero_5', 1),
+      ]),
+    );
     await mount();
-    for (const id of ['deconstruct-warn-forged', 'deconstruct-warn-rare']) {
-      expect(byId(id).getAttribute('aria-hidden')).toBe('true');
-      expect(byId(id).className).toContain('invisible');
-    }
+    await pick('1', '2', '3');
+    expect(groupRows().map(([, label, count]) => `${label}: ${count}`)).toEqual(['Item chest · Lv 80: 2', 'Hero cage · Act 5: 1']);
+  });
+
+  it('drops a row when its last item is taken out of the batch', async () => {
+    await mount();
+    await pick('1', '2');
+    expect(groupRows()).toHaveLength(2);
+    await pick('2');
+    expect(groupRows()).toHaveLength(1);
+    await click(byId('deconstruct-clear'));
+    expect(groupRows()).toEqual([]);
+  });
+
+  it('leaves the forged and rarity warnings to the confirm, which still prints both', async () => {
+    await mount();
+    await pick('1', '2');
+    const panel = byId('deconstruct-batch-panel').textContent;
+    expect(panel).not.toContain('Forged items in the batch');
+    expect(panel).not.toContain('rarity or above');
+  });
+
+  it('says what a burn costs under the panel title and nowhere else in the panel', async () => {
+    await mount();
+    expect(textOf('deconstruct-batch-subtitle')).toBe(en.deconstructBatchSubtitle);
+    expect(byId('deconstruct-batch-panel').textContent.split(en.deconstructBatchSubtitle)).toHaveLength(2);
+    expect(byId('deconstruct-batch-panel').children[1]).toBe(byId('deconstruct-batch-subtitle'));
   });
 
   it('empties the batch with Clear', async () => {
