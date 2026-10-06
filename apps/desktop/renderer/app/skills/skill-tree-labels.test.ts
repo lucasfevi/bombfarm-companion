@@ -23,7 +23,7 @@ describe('skillTreeLabels', () => {
     expect(en.effectPerLevel('team_dmg', 0.005)).toBe('+0.50% squad damage');
     expect(pt.effectPerLevel('team_dmg', 0.005)).toBe('+0,50% dano do esquadrão');
     expect(en.effectPerLevel('vagas_campo', 1)).toBe('+1 hero on the field');
-    expect(pt.effectPerLevel('bag_tab', 1)).toBe('+1 aba de bolsa');
+    expect(pt.effectPerLevel('bag_tab', 1)).toBe('+1 aba de inventário');
     expect(en.effectAtLevel('g_luck', 0.1)).toBe('+10.00% luck (chests)');
   });
 

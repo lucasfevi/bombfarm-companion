@@ -284,9 +284,7 @@ describe('forgeLabels', () => {
     expect(labels.itemForge(item('g2'))).toBe('');
   });
 
-  it('describes the span and the warning by the target', () => {
-    expect(labels.span(4)).toBe('sure span — every step lands');
-    expect(labels.span(13)).toBe('risky span — 20% at the top');
+  it('describes the miss rules once, whatever the target', () => {
     expect(labels.warning()).toBe(
       'A missed roll at +5…+15 adds 5 points to the next roll’s chance and the gold is charged either way. From +12 up it also drops the piece one level.',
     );

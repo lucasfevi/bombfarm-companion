@@ -69,8 +69,11 @@ describe('the Chance Stones control', () => {
     expect(html).not.toContain('data-testid="forge-stones-notice"');
     expect(html).not.toContain('data-testid="forge-ladder-stone"');
     expect(html).not.toContain('data-testid="forge-stones-join"');
-    expect(html).toContain(en.forgeStonesHelp);
-    expect(/data-testid="forge-stone-face">([^<]*)</.exec(html)?.[1]).toBe('None');
+    expect(html).not.toContain('data-testid="forge-stones-help"');
+    expect(html).toContain(`aria-label="${en.forgeStonesTitle}: Pick the Chance Stone each roll uses.`);
+    const face = html.split('data-testid="forge-stone-face"')[1]?.split('</button>')[0] ?? '';
+    expect(face).toContain('data-testid="forge-stone-placeholder"');
+    expect(face).toContain('>None<');
     expect(html).not.toMatch(/data-testid="forge-fact-stones-/);
   });
 
@@ -125,11 +128,11 @@ describe('the Chance Stones control', () => {
     expect(html).toMatch(/<img[^>]*src="\/wiki-assets\/stones\/chance_stone_rare\.png"/);
     expect(html).toMatch(/<img[^>]*src="\/wiki-assets\/stones\/chance_stone_epic\.png"/);
     const faces = html.split('data-testid="forge-stone-face"').slice(1).map((part) => part.split('</button>')[0] ?? '');
-    expect(faces[0]).toContain('+30%');
-    expect(faces[0]).toContain('Rare');
+    expect(faces[0]).toContain('+30% chance');
+    expect(faces[0]).not.toContain('Rare');
     expect(faces[0]).toContain('7 owned');
-    expect(faces[1]).toContain('+40%');
-    expect(faces[1]).toContain('Epic');
+    expect(faces[1]).toContain('+40% chance');
+    expect(faces[1]).not.toContain('Epic');
     expect(faces[1]).toContain('0 owned');
     expect(faces[1]).toContain('text-down');
   });
@@ -137,11 +140,12 @@ describe('the Chance Stones control', () => {
   it('warns, without blocking, when the climb expects more stones than are held', () => {
     const short = renderPanel([{ upTo: 13, rarity: 1 }], [0, 1, 0, 0, 0, 0]);
     expect(short).toMatch(/data-testid="forge-stones-notice"[^>]*data-state="short"/);
-    expect(short).toContain('Uncommon Chance Stones and you own 1: the run stops when they run out.');
+    expect(short).toContain('You own 1 of the ');
+    expect(short).toContain('Uncommon Chance Stones this climb should use');
     expect(short.match(/data-testid="forge-stones-notice"/g)).toHaveLength(1);
     expect(short).toMatch(/data-testid="forge-fact-stones-1"[^>]*class="text-warn"/);
     const enough = renderPanel([{ upTo: 13, rarity: 1 }], [0, 99, 0, 0, 0, 0]);
-    expect(enough).toMatch(/data-testid="forge-stones-notice"[^>]*data-state="enough"/);
+    expect(enough).not.toContain('data-testid="forge-stones-notice"');
   });
 
   it('says a stone is not used on the targets that always land', () => {
@@ -178,7 +182,7 @@ describe('forging with a stone chosen', () => {
     expect(forgeButtonReason(idle)).toBe('ready');
   });
 
-  it('says before the start which stones the run may spend, how many are held, and that it stops when they run out', () => {
+  it('says nothing about stones that are held in enough number, and keeps what they do in a tip', () => {
     const html = renderPanel(
       [
         { upTo: 10, rarity: 0 },
@@ -186,19 +190,79 @@ describe('forging with a stone chosen', () => {
       ],
       [4, 0, 90, 0, 0, 0],
     );
-    const notices = [...html.matchAll(/data-testid="forge-stones-notice"[^>]*data-rarity="(\d)"[^>]*>.*?<span>([^<]+)<\/span>/gs)];
-    expect(notices.map((match) => match[1])).toEqual(['0', '2']);
-    expect(notices[0]?.[2]).toBe('Uses up to 4 of your Common Chance Stones, one for each roll that can miss, and stops when they run out.');
-    expect(notices[1]?.[2]).toContain('Uses up to 90 of your Rare Chance Stones');
-    expect(sub(ptBR.forgeStonesNotice, { owned: '4', rarity: 'Comum' })).toContain('4');
+    expect(html).not.toContain('data-testid="forge-stones-notice"');
+    expect(html).toContain(`aria-label="${en.forgeStonesTitle}: A Chance Stone is spent on every roll it is used on`);
+    expect(html).not.toContain('data-testid="forge-stone-note"');
+  });
+
+  it('prints each shortfall as one compact line with a warning icon', () => {
+    const html = renderPanel(
+      [
+        { upTo: 10, rarity: 0 },
+        { upTo: 13, rarity: 2 },
+      ],
+      [1, 0, 90, 0, 0, 0],
+    );
+    const notices = [...html.matchAll(/data-testid="forge-stones-notice"[^>]*data-rarity="(\d)"[^>]*>(.*?)<\/p>/gs)];
+    expect(notices.map((match) => match[1])).toEqual(['0']);
+    expect(notices[0]?.[2]).toMatch(/^<span[^>]*>/);
+    expect(notices[0]?.[2]).toContain('Common Chance Stones this climb should use');
   });
 
   it('warns that the run stops at once when none of the chosen kind is held', () => {
     const html = renderPanel([{ upTo: 13, rarity: 3 }], [0, 0, 0, 0, 0, 0]);
-    expect(html).toContain('You own no Epic Chance Stones: the run stops at the first roll that needs one.');
+    expect(html).toContain('No Epic Chance Stones owned: the run stops at the first roll that needs one');
   });
 
   it('names no stone for a choice confined to the rolls that always land', () => {
     expect(renderPanel([{ upTo: 13, rarity: null }], [4, 0, 0, 0, 0, 0])).not.toContain('data-testid="forge-stones-notice"');
+  });
+});
+
+describe('the range cards and the picker', () => {
+  const two = [
+    { upTo: 10, rarity: 0 },
+    { upTo: 13, rarity: 2 },
+  ];
+
+  it('anchors each remove button to the card corner with no background of its own', () => {
+    const html = renderPanel(two, [4, 0, 9, 0, 0, 0]);
+    const buttons = html.match(/<button[^>]*data-testid="forge-stone-remove"[^>]*>/g) ?? [];
+    expect(buttons).toHaveLength(2);
+    buttons.forEach((button) => {
+      expect(button).toContain('absolute');
+      expect(button).toContain('-top-1');
+      expect(button).toContain('-right-1');
+      expect(button).toContain('bg-transparent');
+      expect(button).toContain(`aria-label="${en.forgeStonesRemove}"`);
+    });
+    const cards = html.split('data-testid="forge-stone-range"').slice(1);
+    cards.forEach((card) => {
+      expect(card.split('>')[0]).toContain('relative');
+    });
+  });
+
+  it('reserves the stone art box when no stone is chosen, so the picker is as tall either way', () => {
+    const none = renderPanel([], [0, 0, 0, 0, 0, 0]);
+    const chosen = renderPanel([{ upTo: 13, rarity: 2 }], [0, 0, 5, 0, 0, 0]);
+    expect(none).toContain('w-7');
+    expect(none).toContain('aspect-[18/19]');
+    expect(chosen).toMatch(/<img[^>]*chance_stone_rare/);
+    expect(chosen).not.toContain('data-testid="forge-stone-placeholder"');
+  });
+
+  it('reads the chosen stone as its bonus and the word chance, in both languages', () => {
+    expect(sub(en.forgeStonesFace, { bonus: '+30%' })).toBe('+30% chance');
+    expect(sub(ptBR.forgeStonesFace, { bonus: '+30%' })).toBe('+30% de chance');
+    expect(sub(ptBR.forgeStonesOwned, { count: '48' })).toBe('48 no inventário');
+  });
+
+  it('explains every control in the section tip, in both languages', () => {
+    for (const copy of [en, ptBR]) {
+      const tip = sub(copy.forgeStonesTip, { join: copy.forgeStonesJoin, split: copy.forgeStonesSplit, none: copy.forgeStonesNone });
+      [copy.forgeStonesJoin, copy.forgeStonesSplit, copy.forgeStonesNone].forEach((control) => {
+        expect(tip).toContain(control);
+      });
+    }
   });
 });

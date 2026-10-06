@@ -1,12 +1,12 @@
 'use client';
 
 import { FORGE_GUARANTEED, FORGE_STONE_RARITIES, forgeStonePp } from '@bombfarm/domain/forge';
-import { Button, Icon, Menu, Stepper, buttonRecipe, cn, type StatListItem } from '@bombfarm/ui';
+import { Button, CornerDismiss, Icon, InfoTip, Menu, Stepper, buttonRecipe, cn, type StatListItem } from '@bombfarm/ui';
 import { sub, useCopy, type Copy } from '../../lib/copy';
 import { MAX_STONE_RANGES, type ResolvedStoneRange } from '../../lib/forge/forge-stones';
 import type { ForgePlanForecast, ForgeStoneEdit } from '../../lib/forge/use-forge-plan';
 import { forgeLevel, type ForgeLabels } from './forge-labels';
-import { StoneIcon } from './forge-stone-art';
+import { StoneIcon, StoneIconPlaceholder } from './forge-stone-art';
 
 const NONE = 'none';
 const RARITIES = Array.from({ length: FORGE_STONE_RARITIES }, (_, rarity) => rarity);
@@ -21,14 +21,38 @@ function stoneBonus(rarity: number, labels: ForgeLabels): string {
   return labels.signedPercent(forgeStonePp(rarity));
 }
 
-function StoneFace({ rarity, owned, labels }: { rarity: number | null; owned: number; labels: ForgeLabels }) {
+/** The picker's closed face says what the stone does ("+30% chance"); an open row names the kind. */
+function StoneFace({
+  rarity,
+  owned,
+  labels,
+  named,
+}: {
+  rarity: number | null;
+  owned: number;
+  labels: ForgeLabels;
+  named: boolean;
+}) {
   const t = useCopy();
-  if (rarity === null) return <span data-testid="forge-stone-face">{t.forgeStonesNone}</span>;
+  if (rarity === null) {
+    return (
+      <span data-testid="forge-stone-face" className={cn('flex', 'min-w-0', 'flex-1', 'items-center', 'gap-2')}>
+        <StoneIconPlaceholder />
+        {t.forgeStonesNone}
+      </span>
+    );
+  }
   return (
     <span data-testid="forge-stone-face" data-rarity={rarity} className={cn('flex', 'min-w-0', 'flex-1', 'items-center', 'gap-2')}>
       <StoneIcon rarity={rarity} dim={owned === 0} />
-      <span className="font-mono font-semibold tabular-nums">{stoneBonus(rarity, labels)}</span>
-      <span className="truncate">{labels.rarityName(rarity)}</span>
+      {named ? (
+        <>
+          <span className="font-mono font-semibold tabular-nums">{stoneBonus(rarity, labels)}</span>
+          <span className="truncate">{labels.rarityName(rarity)}</span>
+        </>
+      ) : (
+        <span className="truncate font-semibold">{sub(t.forgeStonesFace, { bonus: stoneBonus(rarity, labels) })}</span>
+      )}
       <span className={cn('ml-auto', 'shrink-0', 'text-[11px]', owned === 0 ? 'text-down' : 'text-muted')}>
         {sub(t.forgeStonesOwned, { count: labels.count(owned) })}
       </span>
@@ -57,7 +81,7 @@ function StonePicker({
         aria-label={ariaLabel}
         className={cn(buttonRecipe({ variant: 'default' }), 'flex', 'w-full', 'items-center', 'gap-2', 'text-left', 'text-xs')}
       >
-        <StoneFace rarity={rarity} owned={rarity === null ? 0 : (owned[rarity] ?? 0)} labels={labels} />
+        <StoneFace rarity={rarity} owned={rarity === null ? 0 : (owned[rarity] ?? 0)} labels={labels} named={false} />
         <Icon name="chevron-down" size="sm" />
       </Menu.Trigger>
       <Menu.Portal>
@@ -88,7 +112,7 @@ function StonePicker({
                   <Menu.RadioItemIndicator>
                     <Icon name="check" size="xs" />
                   </Menu.RadioItemIndicator>
-                  <StoneFace rarity={option} owned={option === null ? 0 : (owned[option] ?? 0)} labels={labels} />
+                  <StoneFace rarity={option} owned={option === null ? 0 : (owned[option] ?? 0)} labels={labels} named />
                 </Menu.RadioItem>
               ))}
             </Menu.RadioGroup>
@@ -118,7 +142,13 @@ export function ForgeStonesControl({
   return (
     <div data-testid="forge-stones" className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-ink">{t.forgeStonesTitle}</span>
+        <span className="flex items-center gap-1.5">
+          <span className="text-xs font-semibold text-ink">{t.forgeStonesTitle}</span>
+          <InfoTip
+            label={t.forgeStonesTitle}
+            tip={sub(t.forgeStonesTip, { join: t.forgeStonesJoin, split: t.forgeStonesSplit, none: t.forgeStonesNone })}
+          />
+        </span>
         <div className="flex flex-wrap items-center gap-1.5">
           {ranges.length > 1 ? (
             <Button
@@ -145,9 +175,6 @@ export function ForgeStonesControl({
           </Button>
         </div>
       </div>
-      <p data-testid="forge-stones-help" className="m-0 text-[11px] text-muted">
-        {t.forgeStonesHelp}
-      </p>
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {ranges.map((range, index) => {
           const refusedTo = certainUpTo(range);
@@ -155,7 +182,7 @@ export function ForgeStonesControl({
             <li
               key={range.from}
               data-testid="forge-stone-range"
-              className={cn('flex', 'flex-col', 'gap-1.5', 'rounded-sm', 'border', 'border-line', 'p-2')}
+              className={cn('relative', 'flex', 'flex-col', 'gap-1.5', 'rounded-sm', 'border', 'border-line', 'p-2')}
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-muted">{sub(t.forgeStonesFrom, { from: forgeLevel(range.from) })}</span>
@@ -177,21 +204,16 @@ export function ForgeStonesControl({
                     {forgeLevel(range.to)}
                   </span>
                 )}
-                {ranges.length > 1 ? (
-                  <Button
-                    type="button"
-                    variant="icon"
-                    className="ml-auto"
-                    aria-label={t.forgeStonesRemove}
-                    data-testid="forge-stone-remove"
-                    onClick={() => {
-                      onEdit({ kind: 'stoneRemove', index });
-                    }}
-                  >
-                    <Icon name="x-mark" size="sm" />
-                  </Button>
-                ) : null}
               </div>
+              {ranges.length > 1 ? (
+                <CornerDismiss
+                  label={t.forgeStonesRemove}
+                  data-testid="forge-stone-remove"
+                  onClick={() => {
+                    onEdit({ kind: 'stoneRemove', index });
+                  }}
+                />
+              ) : null}
               <StonePicker
                 rarity={range.rarity}
                 owned={owned}
@@ -243,8 +265,8 @@ export function forgeStoneFacts(
   return rows(forecast.stones, 'stones', t.forgeFactStones);
 }
 
-/** What the run will do with the stones before the button is pressed, one line for each kind it may
- *  spend: none held, fewer held than the climb expects, or enough. */
+/** The stones the run cannot cover, before the button is pressed, one compact line for each kind it
+ *  may spend: none held, or fewer held than the climb expects. Enough stones is silence. */
 export function ForgeStonesNotice({
   ranges,
   forecast,
@@ -265,25 +287,25 @@ export function ForgeStonesNotice({
       {kinds.map((rarity) => {
         const held = owned[rarity] ?? 0;
         const expected = forecast?.stones[rarity] ?? 0;
-        const short = held > 0 && shortOf(expected, held);
-        const values = {
-          rarity: labels.rarityName(rarity),
-          owned: labels.count(held),
-          expected: labels.rolls(expected),
-        };
-        let text = t.forgeStonesNotice;
-        if (held === 0) text = t.forgeStonesNoticeNone;
-        else if (short) text = t.forgeStonesShort;
+        const none = held === 0;
+        if (!none && !shortOf(expected, held)) return null;
+        const text = none ? t.forgeStonesNoticeNone : t.forgeStonesShort;
         return (
           <p
             key={rarity}
             data-testid="forge-stones-notice"
             data-rarity={rarity}
-            data-state={held === 0 ? 'none' : short ? 'short' : 'enough'}
-            className={cn('m-0', 'flex', 'items-center', 'gap-1.5', 'text-xs', held === 0 || short ? 'text-warn' : 'text-ink')}
+            data-state={none ? 'none' : 'short'}
+            className={cn('m-0', 'flex', 'items-center', 'gap-1.5', 'text-xs', 'text-warn')}
           >
-            <StoneIcon rarity={rarity} small dim={held === 0} />
-            <span>{sub(text, values)}</span>
+            <Icon name="exclamation-triangle" size="sm" className="shrink-0" />
+            <span>
+              {sub(text, {
+                rarity: labels.rarityName(rarity),
+                owned: labels.count(held),
+                expected: labels.rolls(expected),
+              })}
+            </span>
           </p>
         );
       })}

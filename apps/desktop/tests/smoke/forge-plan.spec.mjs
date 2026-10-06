@@ -194,7 +194,7 @@ test.describe('forge plan smoke', () => {
       await expect(refreshButton).toHaveAttribute('data-state', 'fresh');
       await expect(page.getByTestId('feed-account-tip')).toHaveCount(0);
       await refreshButton.hover();
-      await expect(page.getByTestId('feed-account-tip')).toContainText('Your heroes, bag, skill tree and house');
+      await expect(page.getByTestId('feed-account-tip')).toContainText('Your heroes, inventory, skill tree and house');
       await expect(page.getByTestId('feed-account-tip-status')).toContainText('Last read');
       await expect(page.getByTestId('feed-account-tip')).toContainText('Click to update now');
 
@@ -363,6 +363,8 @@ test.describe('forge plan smoke', () => {
       await expect(stones.getByTestId('forge-stone-range')).toHaveCount(1);
       await expect(forecast.getByTestId('forge-fact-stones-2')).toHaveCount(0);
       const goldWithout = (await forecast.getByTestId('forge-fact-gold').textContent()) ?? '';
+      const pickHeight = () => stones.getByTestId('forge-stone-pick').evaluate((element) => element.getBoundingClientRect().height);
+      const heightWithNone = await pickHeight();
 
       await stones.getByTestId('forge-stone-pick').click();
       const options = page.getByTestId('forge-stone-option');
@@ -373,8 +375,13 @@ test.describe('forge plan smoke', () => {
       await expect(options.nth(3)).toContainText('0 owned');
       await expect(options.nth(3).locator('img[src$="chance_stone_rare.png"]')).toHaveCount(1);
       await options.nth(3).click();
-      await expect(stones.getByTestId('forge-stone-pick')).toContainText('+30%');
+      await expect(stones.getByTestId('forge-stone-pick')).toContainText('+30% chance');
       await expect(forecast.getByTestId('forge-fact-stones-2')).toBeVisible();
+      expect(await pickHeight(), 'the stone picker changed height when a stone was chosen').toBe(heightWithNone);
+      const rungLefts = await forecast.getByTestId('forge-ladder-rung').evaluateAll((rungs) =>
+        rungs.map((rung) => [...rung.children].map((cell) => Math.round(cell.getBoundingClientRect().left)).join(',')),
+      );
+      expect(new Set(rungLefts).size, 'ladder rows do not share one column grid').toBe(1);
       await expect(forecast.getByTestId('forge-fact-gold')).not.toHaveText(goldWithout);
       expect(figureOf((await forecast.getByTestId('forge-fact-gold').textContent()) ?? '')).toBeLessThan(figureOf(goldWithout));
       await expect(forecast.getByTestId('forge-ladder-stone').first()).toHaveAttribute('data-rarity', '2');
@@ -382,7 +389,7 @@ test.describe('forge plan smoke', () => {
 
       const notice = forecast.getByTestId('forge-stones-notice');
       await expect(notice).toHaveAttribute('data-rarity', '2');
-      await expect(notice).toContainText('You own no Rare Chance Stones: the run stops at the first roll that needs one.');
+      await expect(notice).toContainText('No Rare Chance Stones owned: the run stops at the first roll that needs one');
       await expect(forecast.getByTestId('forge-button-reason')).not.toContainText('Chance Stones');
 
       await stones.getByTestId('forge-stones-add').click();
@@ -418,18 +425,16 @@ test.describe('forge plan smoke', () => {
       await expect(scroll).toHaveAttribute('data-state', 'off');
       const switchControl = scroll.getByRole('switch');
       await expect(switchControl).toHaveAttribute('aria-checked', 'false');
-      await expect(plan.getByTestId('forge-scroll-prices')).toHaveCount(0);
-      await expect(forecast.getByTestId('forge-scroll-other')).toContainText('With the scroll:');
+      await expect(forecast.getByTestId('forge-scroll-other')).toContainText('gold');
       await expect(forecast.getByTestId('forge-ladder-scroll')).toHaveCount(0);
       const goldPlain = figureOf((await forecast.getByTestId('forge-fact-gold').textContent()) ?? '');
 
       await switchControl.click();
       await expect(switchControl).toHaveAttribute('aria-checked', 'true');
-      await expect(plan.getByTestId('forge-scroll-prices')).toContainText('at level 12');
-      await expect(forecast.getByTestId('forge-scroll-other')).toContainText('Without the scroll:');
+      await expect(scroll.getByRole('button', { name: /at level 12/ })).toHaveCount(1);
+      await expect(forecast.getByTestId('forge-scroll-other').locator('xpath=ancestor::div[1]/dt')).toHaveText('Without the scroll');
       await expect(forecast.getByTestId('forge-ladder-scroll')).toHaveCount(1);
-      await expect(forecast.getByTestId('forge-ladder-rung').last()).toContainText('miss keeps the level');
-      await expect(forecast.getByTestId('forge-scroll-notice')).toBeVisible();
+      await expect(forecast.getByTestId('forge-ladder-rung').last().getByTestId('forge-ladder-scroll')).toHaveCount(1);
       expect(figureOf((await forecast.getByTestId('forge-fact-gold').textContent()) ?? '')).toBeLessThan(goldPlain);
 
       await plan.getByRole('button', { name: 'Lower the target' }).click();

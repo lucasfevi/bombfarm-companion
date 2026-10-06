@@ -12,7 +12,7 @@ import {
 } from '@bombfarm/domain/forge';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { inventoryFieldClass } from '@bombfarm/game-art';
-import { Bar, Button, cn, Panel, PanelHeader, StatList, Stepper, Switch, type StatListItem } from '@bombfarm/ui';
+import { Bar, Button, Icon, InfoTip, Panel, PanelHeader, StatList, Stepper, Switch, cn, type StatListItem } from '@bombfarm/ui';
 import { sub, useCopy, type Copy } from '../../lib/copy';
 import { stoneForTarget, stonePpForTarget, type ResolvedStoneRange } from '../../lib/forge/forge-stones';
 import type { ForgePlan, ForgePlanForecast, ForgeStoneEdit } from '../../lib/forge/use-forge-plan';
@@ -177,9 +177,6 @@ export function ForgePlanPanel({
             decrementLabel={t.forgeTargetLower}
             incrementLabel={t.forgeTargetRaise}
           />
-          <span data-testid="forge-span" className="text-xs text-muted">
-            {maxed ? '' : labels.span(target)}
-          </span>
         </div>
 
         <div className="flex gap-2">
@@ -204,18 +201,20 @@ export function ForgePlanPanel({
         </div>
 
         {offersScroll ? (
-          <div data-testid="forge-scroll" data-state={plan.scroll ? 'on' : 'off'} className="flex flex-col gap-1">
+          <div data-testid="forge-scroll" data-state={plan.scroll ? 'on' : 'off'} className="flex flex-col gap-1.5">
+            <span className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-ink">{t.forgeScrollTitle}</span>
+              <InfoTip
+                label={t.forgeScrollTitle}
+                tip={`${t.forgeScrollTip} ${sub(t.forgeScrollPrices, { prices: scrollPrices(item, target, labels, t) })}`}
+              />
+            </span>
             <div className="flex items-center gap-2">
               <Switch id="forge-scroll-switch" checked={plan.scroll} onCheckedChange={onScrollChange} disabled={running} />
-              <label htmlFor="forge-scroll-switch" className="text-xs font-semibold text-ink">
+              <label htmlFor="forge-scroll-switch" className="whitespace-nowrap text-xs text-ink">
                 {t.forgeScrollLabel}
               </label>
             </div>
-            {plan.scroll ? (
-              <p data-testid="forge-scroll-prices" className="m-0 text-xs text-ink">
-                {sub(t.forgeScrollPrices, { prices: scrollPrices(item, target, labels, t) })}
-              </p>
-            ) : null}
           </div>
         ) : null}
 
@@ -258,12 +257,14 @@ export function ForgeForecastPanel({
   const anyStone = stoneRanges.some((range) => range.rarity !== null);
   const rungs = ladderRungs(item.upgrade, target, anyStone);
   const ladderColumns = anyStone
-    ? 'grid-cols-[2.5rem_minmax(0,1fr)_3rem_7rem_auto]'
-    : 'grid-cols-[2.5rem_minmax(0,1fr)_3rem_auto]';
+    ? 'grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_6.5rem_5rem]'
+    : 'grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_5rem]';
   const cancelling = reason === 'cancelling';
   const running = reason === 'running' || cancelling;
   const { armed, arm, disarm } = useArmedButton(item.id, target);
   const scrolled = forecast?.scroll === true;
+  const scrollTip = (rung: number) =>
+    sub(t.forgeLadderScrollTip, { essence: labels.count(forgeScrollCost(item.level, item.rarityIdx, rung)) });
 
   const onPress = () => {
     if (running) {
@@ -287,7 +288,7 @@ export function ForgeForecastPanel({
   const stoneFacts = forgeStoneFacts(forecast, ownedStones, labels, t);
   const reasonLine = startRefusal === null || armed ? forgeReasonText(reason, t) : forgeStartRefusalText(startRefusal, t);
 
-  const figures: StatListItem[] = [
+  const facts: StatListItem[] = [
     { id: 'rolls', label: t.forgeFactRolls, value: <span data-testid="forge-fact-rolls">{forecast ? labels.rolls(forecast.rolls) : BLANK}</span> },
     {
       id: 'gold',
@@ -299,8 +300,6 @@ export function ForgeForecastPanel({
       label: t.forgeFactEssence,
       value: <span data-testid="forge-fact-essence">{forecast ? labels.count(Math.round(forecast.essence)) : BLANK}</span>,
     },
-  ];
-  const standing: StatListItem[] = [
     {
       id: 'bad-run',
       label: t.forgeFactBadRun,
@@ -312,119 +311,123 @@ export function ForgeForecastPanel({
       value: <span data-testid="forge-fact-wallet">{walletGold === null ? BLANK : <ForgeGold>{labels.gold(walletGold)}</ForgeGold>}</span>,
     },
   ];
+  if (forecast?.other) {
+    facts.push({
+      id: 'scroll-other',
+      label: scrolled ? t.forgeScrollOtherOn : t.forgeScrollOtherOff,
+      value: (
+        <span data-testid="forge-scroll-other">
+          {sub(t.forgeScrollOtherValue, {
+            gold: labels.gold(forecast.other.gold),
+            essence: labels.count(Math.round(forecast.other.essence)),
+          })}
+        </span>
+      ),
+    });
+  }
 
   return (
     <Panel data-testid="forge-forecast-panel" className="flex flex-col gap-2">
       <PanelHeader title={t.forgeForecastTitle} />
 
       {rungs.length > 0 ? (
-        <ol data-testid="forge-ladder" aria-label={t.forgeLadderCaption} className="m-0 flex list-none flex-col gap-1 p-0">
-          {rungs.map((rung) => {
-            const base = forgeChance(rung, 0, 0);
-            const stone = stoneForTarget(stoneRanges, rung);
-            const refused = stone !== null && base >= 1;
-            const chance = forgeChance(rung, 0, refused ? 0 : stonePpForTarget(stoneRanges, rung));
-            const floor = forgeFailLevel(rung);
-            const covered = scrolled && forgeProtectable(rung) && chance < 1;
-            return (
-              <li
-                key={rung}
-                data-testid="forge-ladder-rung"
-                data-scroll={covered ? 'on' : undefined}
-                className={cn('grid', 'items-center', 'gap-2', 'text-xs', ladderColumns)}
-              >
-                <span className="font-mono font-semibold tabular-nums text-ink">{forgeLevel(rung)}</span>
-                <Bar percent={chance * 100} variant={chance >= GOOD_ODDS ? 'best' : 'fill'} />
-                <span className={cn('text-right', 'font-mono', 'tabular-nums', oddsClass(chance))}>{labels.chance(chance)}</span>
-                {anyStone ? (
-                  stone === null ? (
-                    <span />
-                  ) : (
+        <>
+          <span className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-ink">{t.forgeLadderTitle}</span>
+            <InfoTip label={t.forgeLadderTitle} tip={labels.warning()} />
+          </span>
+          <ol data-testid="forge-ladder" aria-label={t.forgeLadderCaption} className="m-0 flex list-none flex-col gap-1 p-0">
+            {rungs.map((rung) => {
+              const base = forgeChance(rung, 0, 0);
+              const stone = stoneForTarget(stoneRanges, rung);
+              const refused = stone !== null && base >= 1;
+              const chance = forgeChance(rung, 0, refused ? 0 : stonePpForTarget(stoneRanges, rung));
+              const floor = forgeFailLevel(rung);
+              const covered = scrolled && forgeProtectable(rung) && chance < 1;
+              return (
+                <li
+                  key={rung}
+                  data-testid="forge-ladder-rung"
+                  data-scroll={covered ? 'on' : undefined}
+                  className={cn('grid', 'items-center', 'gap-2', 'text-xs', ladderColumns)}
+                >
+                  <span className="font-mono font-semibold tabular-nums text-ink">{forgeLevel(rung)}</span>
+                  <Bar percent={chance * 100} variant={chance >= GOOD_ODDS ? 'best' : 'fill'} />
+                  <span className={cn('text-right', 'font-mono', 'tabular-nums', oddsClass(chance))}>{labels.chance(chance)}</span>
+                  {anyStone ? (
+                    stone === null ? (
+                      <span aria-hidden="true" />
+                    ) : (
+                      <StoneTooltip
+                        text={
+                          refused
+                            ? t.forgeLadderStoneRefused
+                            : sub(t.forgeLadderStoneTip, {
+                                base: labels.chance(base),
+                                bonus: labels.signedPercent(chance - base),
+                                final: labels.chance(chance),
+                              })
+                        }
+                        trigger={
+                          <span
+                            data-testid="forge-ladder-stone"
+                            data-state={refused ? 'refused' : 'used'}
+                            data-rarity={stone}
+                            tabIndex={0}
+                            className={cn('flex', 'min-w-0', 'items-center', 'gap-1', 'text-[11px]', 'text-muted')}
+                          >
+                            <StoneIcon rarity={stone} dim={refused} small />
+                            <span className="truncate">
+                              {refused ? (
+                                t.forgeLadderStoneUnused
+                              ) : (
+                                <>
+                                  {labels.chance(base)} <span className="font-semibold text-ink">{labels.signedPercent(chance - base)}</span>
+                                </>
+                              )}
+                            </span>
+                          </span>
+                        }
+                      />
+                    )
+                  ) : null}
+                  {covered ? (
                     <StoneTooltip
-                      text={
-                        refused
-                          ? t.forgeLadderStoneRefused
-                          : sub(t.forgeLadderStoneTip, {
-                              base: labels.chance(base),
-                              bonus: labels.signedPercent(chance - base),
-                              final: labels.chance(chance),
-                            })
-                      }
+                      text={scrollTip(rung)}
                       trigger={
                         <span
-                          data-testid="forge-ladder-stone"
-                          data-state={refused ? 'refused' : 'used'}
-                          data-rarity={stone}
+                          data-testid="forge-ladder-scroll"
+                          aria-label={scrollTip(rung)}
                           tabIndex={0}
-                          className={cn('flex', 'min-w-0', 'items-center', 'gap-1', 'text-[11px]', 'text-muted')}
+                          className={cn('flex', 'items-center', 'justify-end', 'text-up')}
                         >
-                          <StoneIcon rarity={stone} dim={refused} small />
-                          <span className="truncate">
-                            {refused ? (
-                              t.forgeLadderStoneUnused
-                            ) : (
-                              <>
-                                {labels.chance(base)} <span className="font-semibold text-ink">{labels.signedPercent(chance - base)}</span>
-                              </>
-                            )}
-                          </span>
+                          <Icon name="lock-closed" size="xs" />
                         </span>
                       }
                     />
-                  )
-                ) : null}
-                {covered ? (
-                  <span className={cn('flex', 'items-center', 'gap-1', 'text-[11px]', 'text-up')}>
-                    <span
-                      data-testid="forge-ladder-scroll"
-                      className={cn('rounded-sm', 'border', 'border-line', 'px-1', 'text-[10px]', 'uppercase', 'tracking-[0.04em]', 'text-muted')}
-                    >
-                      {t.forgeLadderScrollChip}
+                  ) : (
+                    <span className={cn('truncate', 'text-right', 'font-mono', 'text-[11px]', 'tabular-nums', forgeProtectable(rung) ? 'text-down' : 'text-muted')}>
+                      {sub(t.forgeLadderFailTo, { floor: forgeLevel(floor) })}
                     </span>
-                    {t.forgeLadderScrollKeeps}
-                  </span>
-                ) : (
-                  <span className={cn('font-mono', 'text-[11px]', 'tabular-nums', forgeProtectable(rung) ? 'text-down' : 'text-muted')}>
-                    {sub(t.forgeLadderFailTo, { floor: forgeLevel(floor) })}
-                  </span>
-                )}
-              </li>
-            );
-          })}
-        </ol>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-x-6">
-        <StatList items={figures} aria-label={t.forgeForecastTitle} />
-        <StatList items={standing} aria-label={t.forgeStandingCaption} />
-      </div>
-      {stoneFacts.length > 0 ? <StatList items={stoneFacts} aria-label={t.forgeStonesTitle} /> : null}
-
-      {forecast?.other ? (
-        <p data-testid="forge-scroll-other" className="m-0 text-xs text-muted">
-          {sub(scrolled ? t.forgeScrollOtherOn : t.forgeScrollOtherOff, {
-            gold: labels.gold(forecast.other.gold),
-            essence: labels.count(Math.round(forecast.other.essence)),
-          })}
-        </p>
+      <StatList items={facts} aria-label={t.forgeForecastTitle} />
+      {stoneFacts.length > 0 ? (
+        <>
+          <span className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-ink">{t.forgeStonesTitle}</span>
+            <InfoTip label={t.forgeStonesTitle} tip={t.forgeStoneNote} />
+          </span>
+          <StatList items={stoneFacts} aria-label={t.forgeStonesTitle} className="[&_>div]:items-center" />
+        </>
       ) : null}
-
-      {maxed ? null : (
-        <p data-testid="forge-warning" className="m-0 text-xs text-muted">
-          {labels.warning()}
-        </p>
-      )}
       <ForgeStonesNotice ranges={stoneRanges} forecast={forecast} owned={ownedStones} labels={labels} />
-      {scrolled ? (
-        <p data-testid="forge-scroll-notice" className="m-0 text-xs text-ink">
-          {t.forgeScrollNotice}
-        </p>
-      ) : null}
-      {anyStone ? (
-        <p data-testid="forge-stone-note" className="m-0 text-xs text-muted">
-          {t.forgeStoneNote}
-        </p>
-      ) : null}
 
       <div className="flex flex-col gap-1">
         <Button

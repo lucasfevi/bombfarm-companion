@@ -17,6 +17,11 @@ export function StoneIcon({ rarity, dim = false, small = false }: { rarity: numb
   );
 }
 
+/** The box a stone's art fills, kept empty where no stone is chosen so a picker is as tall either way. */
+export function StoneIconPlaceholder() {
+  return <span aria-hidden="true" data-testid="forge-stone-placeholder" className={cn('inline-block', 'aspect-[18/19]', 'w-7', 'shrink-0')} />;
+}
+
 export function StoneTooltip({ text, trigger }: { text: string; trigger: ReactElement }) {
   return (
     <Tooltip.Provider delay={200} closeDelay={80}>

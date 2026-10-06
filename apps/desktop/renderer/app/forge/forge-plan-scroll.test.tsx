@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { CopyProvider } from '../../lib/copy';
 import { en } from '../../lib/copy/en';
+import { ptBR } from '../../lib/copy/pt-BR';
 import { resolveStoneRanges } from '../../lib/forge/forge-stones';
 import { forgePlanForecast, type ForgePlan } from '../../lib/forge/use-forge-plan';
 import { forgeLabels } from './forge-labels';
@@ -70,31 +71,42 @@ describe('climbOffersScroll', () => {
   });
 });
 
-describe('the Protection Scroll switch', () => {
+describe('the Protection Scroll section', () => {
   it('is not offered on a climb that never reaches a rung that can lose a level', () => {
     const html = render(8, 11, false);
     expect(html).not.toContain('data-testid="forge-scroll"');
     expect(html).not.toContain('data-testid="forge-scroll-other"');
   });
 
-  it('is offered off by default, with the other option priced beside the forecast', () => {
+  it('has its own title, an info tip carrying the rules and the per-level prices, and a one-line switch label', () => {
     const html = render(8, 15, false);
     expect(html).toMatch(/data-testid="forge-scroll"[^>]*data-state="off"/);
-    expect(html).toContain(en.forgeScrollLabel);
+    expect(html).toContain(`>${en.forgeScrollTitle}</span>`);
+    expect(html).toContain(`aria-label="${en.forgeScrollTitle}: ${en.forgeScrollTip}`);
+    expect(html).toMatch(/aria-label="Protection Scroll: [^"]*Essence per roll: [^"]* at level 12 · [^"]* at level 13 · [^"]* at level 14 · [^"]* at level 15\./);
+    expect(html).toMatch(new RegExp(`<label[^>]*whitespace-nowrap[^>]*>${en.forgeScrollLabel}</label>`));
     expect(html).not.toContain('data-testid="forge-scroll-prices"');
     expect(html).not.toContain('data-testid="forge-scroll-notice"');
-    expect(html).toMatch(/data-testid="forge-scroll-other"[^>]*>With the scroll: /);
-    expect(html).not.toContain('data-testid="forge-ladder-scroll"');
+    expect(html).not.toContain('data-testid="forge-span"');
   });
 
-  it('when on, prices each covered level, marks the rungs it protects and compares with going without', () => {
-    const html = render(8, 15, true);
-    expect(html).toMatch(/data-testid="forge-scroll"[^>]*data-state="on"/);
-    expect(html).toMatch(/data-testid="forge-scroll-prices"[^>]*>Per roll: .* at level 12 · .* at level 13 · .* at level 14 · .* at level 15</);
-    expect(html.match(/data-testid="forge-ladder-scroll"/g)).toHaveLength(4);
-    expect(html.match(/data-scroll="on"/g)).toHaveLength(4);
-    expect(html).toContain('data-testid="forge-scroll-notice"');
-    expect(html).toMatch(/data-testid="forge-scroll-other"[^>]*>Without the scroll: /);
+  it('keeps the switch label short in both languages', () => {
+    expect(en.forgeScrollLabel).toBe('Protect from level 12');
+    expect(ptBR.forgeScrollLabel).toBe('Proteger a partir do nível 12');
+    expect(ptBR.forgeScrollTitle).toBe('Pergaminho de Proteção');
+  });
+
+  it('when off, compares with the scroll as one row; when on, marks the rungs it protects with an icon', () => {
+    const off = render(8, 15, false);
+    expect(off).toMatch(/<dt>With the scroll<\/dt><dd><span data-testid="forge-scroll-other">[^<]* gold · [^<]* essence</);
+    expect(off).not.toContain('data-testid="forge-ladder-scroll"');
+    const on = render(8, 15, true);
+    expect(on).toMatch(/data-testid="forge-scroll"[^>]*data-state="on"/);
+    expect(on).toMatch(/<dt>Without the scroll<\/dt><dd><span data-testid="forge-scroll-other">/);
+    expect(on.match(/data-testid="forge-ladder-scroll"/g)).toHaveLength(4);
+    expect(on.match(/data-scroll="on"/g)).toHaveLength(4);
+    expect(on).not.toContain('forge-ladder-scroll-chip');
+    expect(on).toMatch(/data-testid="forge-ladder-scroll"[^>]*aria-label="Protection Scroll: a miss keeps the level and costs [^"]* essence"/);
   });
 
   it('leaves the rungs below the first protected one on their plain fall target', () => {
@@ -103,6 +115,21 @@ describe('the Protection Scroll switch', () => {
     expect(rungs).toHaveLength(7);
     expect(rungs.filter((rung) => rung.includes('data-scroll="on"'))).toHaveLength(4);
     expect(rungs.filter((rung) => rung.includes('fail → '))).toHaveLength(3);
+  });
+
+  it('draws every ladder row on the same grid, covered or not, with or without a stone', () => {
+    const html = render(8, 15, true);
+    const grids = new Set([...html.matchAll(/data-testid="forge-ladder-rung"[^>]*class="([^"]*)"/g)].map((match) => match[1]));
+    expect(grids.size).toBe(1);
+    expect([...grids][0]).toContain('grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_5rem]');
+  });
+
+  it('explains the miss rules in a tip on the ladder heading rather than in a paragraph', () => {
+    const html = render(8, 15, false);
+    expect(html).toContain(`aria-label="${en.forgeLadderTitle}: A missed roll`);
+    expect(html).not.toContain('data-testid="forge-warning"');
+    expect(html).not.toContain('data-testid="forge-scroll-notice"');
+    expect(html).not.toContain('data-testid="forge-stone-note"');
   });
 
   it('freezes with the rest of the controls while a run is in flight', () => {
