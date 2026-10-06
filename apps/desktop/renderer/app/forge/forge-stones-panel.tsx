@@ -240,20 +240,19 @@ export function forgeStoneFacts(
         ),
       };
     });
-  return [
-    ...rows(forecast.stones, 'stones', t.forgeFactStones),
-    ...(forecast.protected ? rows(forecast.protected.stones, 'stones-protected', t.forgeFactStonesProtected) : []),
-  ];
+  return rows(forecast.stones, 'stones', t.forgeFactStones);
 }
 
-/** What the run will do with the stones before the button is pressed: which kinds it may spend, how
- *  many are held, and that it stops when they run out. */
+/** What the run will do with the stones before the button is pressed, one line for each kind it may
+ *  spend: none held, fewer held than the climb expects, or enough. */
 export function ForgeStonesNotice({
   ranges,
+  forecast,
   owned,
   labels,
 }: {
   ranges: readonly ResolvedStoneRange[];
+  forecast: ForgePlanForecast | null;
   owned: readonly number[];
   labels: ForgeLabels;
 }) {
@@ -265,11 +264,26 @@ export function ForgeStonesNotice({
     <>
       {kinds.map((rarity) => {
         const held = owned[rarity] ?? 0;
-        const values = { rarity: labels.rarityName(rarity), owned: labels.count(held) };
+        const expected = forecast?.stones[rarity] ?? 0;
+        const short = held > 0 && shortOf(expected, held);
+        const values = {
+          rarity: labels.rarityName(rarity),
+          owned: labels.count(held),
+          expected: labels.rolls(expected),
+        };
+        let text = t.forgeStonesNotice;
+        if (held === 0) text = t.forgeStonesNoticeNone;
+        else if (short) text = t.forgeStonesShort;
         return (
-          <p key={rarity} data-testid="forge-stones-notice" data-rarity={rarity} className="m-0 flex items-center gap-1.5 text-xs text-ink">
+          <p
+            key={rarity}
+            data-testid="forge-stones-notice"
+            data-rarity={rarity}
+            data-state={held === 0 ? 'none' : short ? 'short' : 'enough'}
+            className={cn('m-0', 'flex', 'items-center', 'gap-1.5', 'text-xs', held === 0 || short ? 'text-warn' : 'text-ink')}
+          >
             <StoneIcon rarity={rarity} small dim={held === 0} />
-            <span>{sub(held === 0 ? t.forgeStonesNoticeNone : t.forgeStonesNotice, values)}</span>
+            <span>{sub(text, values)}</span>
           </p>
         );
       })}
@@ -291,32 +305,5 @@ export function ForgeStonesUsed({ used, labels }: { used: readonly number[]; lab
         </span>
       ))}
     </span>
-  );
-}
-
-export function ForgeStonesShortage({
-  forecast,
-  owned,
-  labels,
-}: {
-  forecast: ForgePlanForecast | null;
-  owned: readonly number[];
-  labels: ForgeLabels;
-}) {
-  const t = useCopy();
-  if (forecast === null) return null;
-  const short = RARITIES.filter((rarity) => shortOf(forecast.stones[rarity] ?? 0, owned[rarity] ?? 0));
-  return (
-    <>
-      {short.map((rarity) => (
-        <p key={rarity} data-testid="forge-stones-short" className="m-0 text-xs text-warn">
-          {sub(t.forgeStonesShort, {
-            expected: labels.rolls(forecast.stones[rarity] ?? 0),
-            rarity: labels.rarityName(rarity),
-            owned: labels.count(owned[rarity] ?? 0),
-          })}
-        </p>
-      ))}
-    </>
   );
 }

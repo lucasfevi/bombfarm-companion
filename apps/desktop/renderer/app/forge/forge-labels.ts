@@ -115,6 +115,8 @@ export function forgeResultHeading(
       return { text: sub(t.forgeResultStones, { level, rarity }), tone: 'warn' };
     case 'stone_mismatch':
       return { text: sub(t.forgeResultStoneMismatch, { level }), tone: 'down' };
+    case 'scroll_mismatch':
+      return { text: sub(t.forgeResultScrollMismatch, { level }), tone: 'down' };
     case 'cooldown':
       return { text: sub(t.forgeResultCooldown, { level }), tone: 'down' };
     case 'missing':
@@ -181,6 +183,8 @@ export function forgeStopText(stop: ForgeStopReason, t: Copy): string {
       return t.forgeStopStones;
     case 'stone_mismatch':
       return t.forgeStopStoneMismatch;
+    case 'scroll_mismatch':
+      return t.forgeStopScrollMismatch;
     case 'cooldown':
       return t.forgeStopCooldown;
     case 'missing':

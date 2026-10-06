@@ -31,6 +31,7 @@ function row(overrides: Partial<ForgeHistoryRow> & { id: number }): ForgeHistory
     durationMs: 12_000,
     stonesSpent: [0, 0, 0, 0, 0, 0],
     stoneRarity: null,
+    scrollEssence: 0,
     ...overrides,
   };
 }

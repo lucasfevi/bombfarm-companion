@@ -119,7 +119,7 @@ describe('forgeResultHeading', () => {
       text: 'Stopped at +11 — cancelled after roll 14',
       tone: 'warn',
     });
-    expect(forgeResultHeading(result({ stop: 'shortfall', to: 9 }), en)).toEqual({ text: 'Out of gold at +9', tone: 'down' });
+    expect(forgeResultHeading(result({ stop: 'shortfall', to: 9 }), en)).toEqual({ text: 'Out of gold or essence at +9', tone: 'down' });
     expect(forgeResultHeading(result({ stop: 'budget' }), en)).toEqual({ text: 'Stopped by the gold budget at +12', tone: 'warn' });
     expect(forgeResultHeading(result({ stop: 'attempts' }), en)).toEqual({ text: 'Stopped by the attempt limit at +12', tone: 'warn' });
     expect(forgeResultHeading(result({ stop: 'stones', to: 10, stoneRarity: 2 }), en, (rarity) => ['Common', 'Uncommon', 'Rare'][rarity] ?? '')).toEqual({
@@ -138,7 +138,7 @@ describe('forgeStopText', () => {
   it('names every stop in a word or two, leaving the rung to the ledger\'s own climb column', () => {
     expect(forgeStopText('target', en)).toBe('Reached');
     expect(forgeStopText('cancelled', en)).toBe('Cancelled');
-    expect(forgeStopText('shortfall', en)).toBe('Out of gold');
+    expect(forgeStopText('shortfall', en)).toBe('Out of gold or essence');
     expect(forgeStopText('budget', en)).toBe('Gold budget');
     expect(forgeStopText('attempts', en)).toBe('Attempt limit');
     expect(forgeStopText('cooldown', en)).toBe('Server cooldown');
@@ -294,7 +294,7 @@ describe('forgeLabels', () => {
 
   it('prints the factor line with both multipliers', () => {
     expect(labels.statsNote(11, 13)).toBe(
-      'Every roll scales by the same factor — ×2.10 at +13 against ×1.65 now — so this is what the piece becomes if the climb lands, not an average of where it might stop.',
+      'Every stat grows by the same factor — ×2.10 at +13 against ×1.65 now — so this is what the piece becomes if the climb lands, not an average of where it might stop.',
     );
   });
 

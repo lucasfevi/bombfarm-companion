@@ -41,6 +41,7 @@ function record(overrides: Partial<ForgeRunRecord> = {}): ForgeRunRecord {
     durationMs: 30_000,
     stonesSpent: [0, 0, 0, 0, 0, 0],
     stoneRarity: null,
+    scrollEssence: 0,
     ...overrides,
   };
 }
@@ -82,7 +83,7 @@ describe('forge ledger', () => {
 
   it('reads a ledger written before stones existed, and adds the columns in place', () => {
     const open = openTestAccountDb(firstBinding());
-    const beforeStones = INIT_FORGE_RUNS_SQL.replace(/,\s*stones_spent TEXT,\s*stone_rarity INTEGER/, '');
+    const beforeStones = INIT_FORGE_RUNS_SQL.replace(/,\s*stones_spent TEXT,\s*stone_rarity INTEGER,\s*scroll_essence INTEGER/, '');
     expect(beforeStones).not.toBe(INIT_FORGE_RUNS_SQL);
     open.db?.exec(beforeStones);
     open.db
@@ -98,6 +99,33 @@ describe('forge ledger', () => {
 
     history.append(record({ stonesSpent: [1, 0, 0, 0, 0, 0] }));
     expect(history.list({ limit: 10 }).rows[0]?.stonesSpent).toEqual([1, 0, 0, 0, 0, 0]);
+  });
+
+  it('keeps the essence a run paid for Protection Scrolls', () => {
+    const open = openTestAccountDb(firstBinding());
+    const history = createForgeHistory(open.db);
+    history.append(record({ scrollEssence: 26_320 }));
+    expect(history.list({ limit: 10 }).rows[0]?.scrollEssence).toBe(26_320);
+  });
+
+  it('reads a ledger written before scrolls existed as no essence paid, and adds the column in place', () => {
+    const open = openTestAccountDb(firstBinding());
+    const beforeScroll = INIT_FORGE_RUNS_SQL.replace(/,\s*scroll_essence INTEGER/, '');
+    expect(beforeScroll).not.toBe(INIT_FORGE_RUNS_SQL);
+    open.db?.exec(beforeScroll);
+    open.db
+      ?.prepare(
+        'INSERT INTO forge_runs (started_at, finished_at, account_id, item_id, def_id, rarity, slot, item_level, from_upgrade, to_upgrade, ' +
+          'target, stop, reached, rolls, fails, crits, safe_jumps, spent, wallet_after, duration_ms, stones_spent, stone_rarity) ' +
+          "VALUES ('a', 'b', '486', 'g1', 'steel_luva', 1, 2, 20, 8, 10, 10, 'target', 1, 3, 1, 0, 0, 300, 999700, 30000, '[1,0,0,0,0,0]', NULL)",
+      )
+      .run();
+
+    const history = createForgeHistory(open.db);
+    expect(history.list({ limit: 10 }).rows[0]).toMatchObject({ itemId: 'g1', stonesSpent: [1, 0, 0, 0, 0, 0], scrollEssence: 0 });
+
+    history.append(record({ scrollEssence: 500 }));
+    expect(history.list({ limit: 10 }).rows[0]?.scrollEssence).toBe(500);
   });
 
   it('is inert without a database', () => {

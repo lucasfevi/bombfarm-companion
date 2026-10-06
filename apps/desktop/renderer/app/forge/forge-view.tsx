@@ -67,7 +67,7 @@ import { useScreenRefreshRegistration } from '../../lib/refresh/screen-refresh-s
 import { ForgeItemPanel } from './forge-item-panel';
 import { forgeButtonReason, forgeLabels } from './forge-labels';
 import { ForgeLedger } from './forge-ledger';
-import { ForgePlanPanel } from './forge-plan-panel';
+import { ForgeForecastPanel, ForgePlanPanel, climbOffersScroll } from './forge-plan-panel';
 import { ForgeQueuePanel } from './forge-queue-panel';
 import { ForgeRail } from './forge-rail';
 import { FORGE_TABLE_COLUMNS, forgeTableLabels } from './forge-table-labels';
@@ -254,12 +254,14 @@ export function ForgeView({
     const bridge = bridgeOf();
     if (!bridge || selected === null) return;
     const stones = stonesByTarget(planControls.stoneRanges);
+    const scroll = plan.scroll && climbOffersScroll(selected.upgrade, plan.target);
     const request = {
       itemId: selected.id,
       target: plan.target,
       maxGold: plan.maxGold,
       maxAttempts: plan.attempts,
       ...(stones === undefined ? {} : { stones }),
+      ...(scroll ? { scroll } : {}),
     };
     const planNow: ForgeRunPlan = { forecast: planControls.forecast };
     void bridge.invoke('forge:start', request).then((result) => {
@@ -387,7 +389,7 @@ export function ForgeView({
           what the column beside it draws. */}
       <div
         data-testid="forge-split"
-        className="grid shrink-0 grow grid-cols-[minmax(0,1fr)_372px] gap-3"
+        className="grid shrink-0 grow grid-cols-[31rem_minmax(0,1fr)] gap-3"
         style={{ gridTemplateRows: `minmax(${String(SPLIT_MIN_HEIGHT)}px, auto)` }}
       >
         <div className="relative">
@@ -413,35 +415,50 @@ export function ForgeView({
           className="relative overflow-hidden motion-safe:transition-[height] motion-safe:ease-out motion-reduce:transition-none"
           style={{ height: asideHeight, transitionDuration: `${String(motionTokens.panelMs)}ms` }}
         >
-          <div ref={asideRef} className="flex flex-col gap-3">
-            <ForgeItemPanel item={selected} target={plan.target} labels={labels} />
-            {selected === null ? null : (
-              <ForgePlanPanel
-                item={selected}
-                plan={plan}
-                forecast={planControls.forecast}
-                stoneRanges={planControls.stoneRanges}
-                ownedStones={ownedStones}
-                walletGold={walletGold}
-                reason={reason}
-                startRefusal={startRefusal}
+          <div ref={asideRef} className="grid grid-cols-1 items-start gap-3 min-[1400px]:grid-cols-2">
+            <div className="flex min-w-0 flex-col gap-2">
+              <ForgeItemPanel item={selected} target={plan.target} labels={labels} />
+              {selected === null ? null : (
+                <ForgePlanPanel
+                  item={selected}
+                  plan={plan}
+                  stoneRanges={planControls.stoneRanges}
+                  ownedStones={ownedStones}
+                  running={running}
+                  labels={labels}
+                  onStepTarget={planControls.stepTarget}
+                  onStoneEdit={planControls.editStoneRanges}
+                  onMaxGoldChange={planControls.setMaxGold}
+                  onAttemptsChange={planControls.setAttempts}
+                  onScrollChange={planControls.setScroll}
+                />
+              )}
+            </div>
+            <div className="flex min-w-0 flex-col gap-2">
+              {selected === null ? null : (
+                <ForgeForecastPanel
+                  item={selected}
+                  plan={plan}
+                  forecast={planControls.forecast}
+                  stoneRanges={planControls.stoneRanges}
+                  ownedStones={ownedStones}
+                  walletGold={walletGold}
+                  reason={reason}
+                  startRefusal={startRefusal}
+                  labels={labels}
+                  onForge={onForge}
+                  onCancel={onCancel}
+                />
+              )}
+              <ForgeQueuePanel
+                queue={queue}
+                rows={queueRows}
                 labels={labels}
-                onStepTarget={planControls.stepTarget}
-                onStoneEdit={planControls.editStoneRanges}
-                onMaxGoldChange={planControls.setMaxGold}
-                onAttemptsChange={planControls.setAttempts}
-                onForge={onForge}
-                onCancel={onCancel}
+                onRemove={removeFromForgeQueue}
+                forgeWritesEnabled={forgeWritesEnabled}
+                accountSource={accountSource}
               />
-            )}
-            <ForgeQueuePanel
-              queue={queue}
-              rows={queueRows}
-              labels={labels}
-              onRemove={removeFromForgeQueue}
-              forgeWritesEnabled={forgeWritesEnabled}
-              accountSource={accountSource}
-            />
+            </div>
           </div>
         </div>
       </div>

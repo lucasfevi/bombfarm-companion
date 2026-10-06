@@ -453,10 +453,12 @@ export const en = {
   forgeStatsCaption: 'Every roll on the piece now and at the target',
   forgeColumnChange: 'Change',
   forgeStatsNote:
-    'Every roll scales by the same factor — ×{factor} at {target} against ×{now} now — so this is what the piece becomes if the climb lands, not an average of where it might stop.',
+    'Every stat grows by the same factor — ×{factor} at {target} against ×{now} now — so this is what the piece becomes if the climb lands, not an average of where it might stop.',
   forgeStatsNoteCapped:
     'The exception is crit chance and cooldown reduction, which keep the previous, slower ladder: ×{factor} at {target} against ×{now} now.',
   forgePlanTitle: 'Plan',
+  forgeForecastTitle: 'Forecast',
+  forgeStandingCaption: 'Bad luck and your wallet',
   forgeTargetLabel: 'Target',
   forgeTargetLower: 'Lower the target',
   forgeTargetRaise: 'Raise the target',
@@ -471,10 +473,18 @@ export const en = {
   forgeFactRolls: 'Expected rolls',
   forgeFactGold: 'Expected gold',
   forgeFactEssence: 'Expected essence',
-  forgeFactProtectedGold: 'Expected gold, protected',
-  forgeFactProtectedEssence: 'Expected essence, protected',
-  forgeProtectNote:
-    'The Protection Scroll (from level 12 up) keeps a missed piece where it stood, for essence on every roll it is ticked; the essence comes out about even, the gold falls.',
+  forgeScrollLabel: 'Protect rolls from level 12 with the Protection Scroll',
+  forgeScrollPrices: 'Per roll: {prices}',
+  forgeScrollPrice: '{essence} at level {level}',
+  forgeScrollOtherOff: 'With the scroll: {gold} gold, {essence} essence',
+  forgeScrollOtherOn: 'Without the scroll: {gold} gold, {essence} essence',
+  forgeLadderScrollChip: 'scroll',
+  forgeLadderScrollKeeps: 'miss keeps the level',
+  forgeScrollNotice:
+    'The Protection Scroll costs essence on every roll it covers, landed or missed, and only on a single forge, never on the queue. The run stops if the essence runs out.',
+  forgeStopScrollMismatch: 'Scroll not taken',
+  forgeResultScrollMismatch: 'Stopped at {level}: the game did not charge the Protection Scroll as this app asked',
+  forgeResultScrollEssence: 'Essence on scrolls',
   forgeStoneNote:
     'A Chance Stone is spent on every roll it is used on, landed or missed, and only on a single forge, never on the queue or automated runs. The game keeps the stone when a roll is already certain.',
   forgeStonesTitle: 'Chance Stones',
@@ -496,12 +506,11 @@ export const en = {
   forgeLadderStoneUnused: 'Not used',
   forgeStonesUse: '{expected} of {owned} owned',
   forgeStonesShort:
-    'You do not own enough {rarity} Chance Stones: the climb is expected to use {expected} and you own {owned}.',
+    'The climb is expected to use {expected} {rarity} Chance Stones and you own {owned}: the run stops when they run out.',
   forgeFactStones: '{rarity} Chance Stones',
-  forgeFactStonesProtected: '{rarity} Chance Stones, protected',
   forgeStonesNotice:
     'Uses up to {owned} of your {rarity} Chance Stones, one for each roll that can miss, and stops when they run out.',
-  forgeStonesNoticeNone: 'You own no {rarity} Chance Stones, so the run stops at the first roll that needs one.',
+  forgeStonesNoticeNone: 'You own no {rarity} Chance Stones: the run stops at the first roll that needs one.',
   forgeFactBadRun: 'A bad run (p90)',
   forgeFactWallet: 'Wallet',
   forgeWarnRisky:
@@ -552,6 +561,7 @@ export const en = {
   forgeLedgerColumnCrits: 'Crits',
   forgeLedgerColumnSafeJumps: 'Safe jumps',
   forgeLedgerColumnStones: 'Stones',
+  forgeLedgerColumnScroll: 'Scroll essence',
   forgeLedgerColumnGold: 'Gold',
   forgeLedgerColumnDuration: 'Duration',
   forgeLedgerTotals: '{runs} runs · {rolls} rolls · {fails} fails',
@@ -564,7 +574,7 @@ export const en = {
   // thing at length, with the rung it stopped on.
   forgeStopTarget: 'Reached',
   forgeStopCancelled: 'Cancelled',
-  forgeStopShortfall: 'Out of gold',
+  forgeStopShortfall: 'Out of gold or essence',
   forgeStopBudget: 'Gold budget',
   forgeStopAttempts: 'Attempt limit',
   forgeStopStones: 'Out of stones',
@@ -593,7 +603,7 @@ export const en = {
   // The result block, in the player's terms: what happened and what it cost against the plan.
   forgeResultReached: 'Reached {level}',
   forgeResultCancelled: 'Stopped at {level} — cancelled after roll {rolls}',
-  forgeResultShortfall: 'Out of gold at {level}',
+  forgeResultShortfall: 'Out of gold or essence at {level}',
   forgeResultBudget: 'Stopped by the gold budget at {level}',
   forgeResultAttempts: 'Stopped by the attempt limit at {level}',
   forgeResultStones: 'Out of {rarity} Chance Stones at {level}',

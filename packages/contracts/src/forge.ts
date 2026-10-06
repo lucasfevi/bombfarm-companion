@@ -15,6 +15,7 @@ export type ForgeStopReason =
   | 'shortfall'
   | 'stones'
   | 'stone_mismatch'
+  | 'scroll_mismatch'
   | 'missing'
   | 'error';
 
@@ -25,6 +26,8 @@ export interface ForgeStartRequest {
   maxAttempts: number | null;
   /** The Chance Stone rarity (0 to 5) to spend on the roll for each target, indexed target - 1; absent or null is none. */
   stones?: readonly (number | null | undefined)[];
+  /** Ask for the Protection Scroll on every roll that offers it; absent or false is none. */
+  scroll?: boolean;
 }
 
 /** Why a run did not start. `busy` is another run in flight; `offline` is an account with no
@@ -59,6 +62,8 @@ export interface ForgeStepEvent {
   wallet: number | null;
   /** The rarity of the Chance Stone this roll used up, as the server reported it; null when none. */
   stone?: number | null;
+  /** Essence the roll paid for the Protection Scroll, as the server reported it; 0 or absent when none. */
+  scrollEssence?: number;
 }
 
 export interface ForgeRunResult {
@@ -79,6 +84,8 @@ export interface ForgeRunResult {
   stonesSpent?: readonly number[];
   /** The rarity involved when the run stopped for want of stones, or on a stone the server did not take as asked. */
   stoneRarity?: number | null;
+  /** Essence the run paid for Protection Scrolls. */
+  scrollEssence?: number;
 }
 
 /**
@@ -129,6 +136,8 @@ export interface ForgeHistoryRow {
   /** Chance Stones used up by the run, by rarity 0 to 5; all zeros for a run recorded before stones. */
   stonesSpent: readonly number[];
   stoneRarity: number | null;
+  /** Essence paid for Protection Scrolls; zero for a run recorded before scrolls. */
+  scrollEssence: number;
 }
 
 export interface ForgeHistoryTotals {

@@ -131,6 +131,15 @@ export function ForgeResult({
     ...(stonesUsed.some((count) => count > 0)
       ? [{ id: 'stones', label: t.forgeResultStonesUsed, value: <ForgeStonesUsed used={stonesUsed} labels={labels} /> }]
       : []),
+    ...(result.scrollEssence !== undefined && result.scrollEssence > 0
+      ? [
+          {
+            id: 'scroll',
+            label: t.forgeResultScrollEssence,
+            value: <span data-testid="forge-result-scroll">{labels.count(result.scrollEssence)}</span>,
+          },
+        ]
+      : []),
     { id: 'duration', label: t.forgeResultDuration, value: <span data-testid="forge-result-duration">{formatAge(result.durationMs, t)}</span> },
   ];
 

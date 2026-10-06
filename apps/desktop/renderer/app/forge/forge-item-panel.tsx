@@ -39,7 +39,7 @@ export function ForgeItemPanel({
   }
 
   return (
-    <Panel data-testid="forge-item-panel" data-state="item" data-item-id={item.id} className="flex flex-col gap-3">
+    <Panel data-testid="forge-item-panel" data-state="item" data-item-id={item.id} className="flex flex-col gap-2">
       <PanelHeader title={t.forgeItemTitle} />
       <ItemIdentity item={item} labels={labels} size="xl" nameTestId="forge-item-name" />
 

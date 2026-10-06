@@ -14,6 +14,7 @@ export type ForgeLedgerSortKey =
   | 'crits'
   | 'safeJumps'
   | 'stones'
+  | 'scroll'
   | 'spent'
   | 'duration';
 
@@ -54,6 +55,8 @@ function numberOf(row: ForgeHistoryRow, key: ForgeLedgerSortKey): number {
       return row.safeJumps;
     case 'stones':
       return row.stonesSpent.reduce((sum, count) => sum + count, 0);
+    case 'scroll':
+      return row.scrollEssence;
     case 'spent':
       return row.spent;
     case 'duration':

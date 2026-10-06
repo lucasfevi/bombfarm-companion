@@ -25,7 +25,7 @@ import {
 } from '../../lib/forge/forge-ledger-rows';
 import { ForgeGold } from './forge-gold';
 import { ForgeStonesUsed } from './forge-stones-panel';
-import { forgeLevel, forgeStopText, type ForgeLabels } from './forge-labels';
+import { BLANK, forgeLevel, forgeStopText, type ForgeLabels } from './forge-labels';
 
 type Column = { key: ForgeLedgerSortKey; label: string; align: 'left' | 'right' };
 
@@ -81,6 +81,7 @@ export function ForgeLedger({
     { key: 'crits', label: t.forgeLedgerColumnCrits, align: 'right' },
     { key: 'safeJumps', label: t.forgeLedgerColumnSafeJumps, align: 'right' },
     { key: 'stones', label: t.forgeLedgerColumnStones, align: 'right' },
+    { key: 'scroll', label: t.forgeLedgerColumnScroll, align: 'right' },
     { key: 'spent', label: t.forgeLedgerColumnGold, align: 'right' },
     { key: 'duration', label: t.forgeLedgerColumnDuration, align: 'right' },
   ];
@@ -171,6 +172,9 @@ export function ForgeLedger({
                             <span className="flex justify-end">
                               <ForgeStonesUsed used={row.stonesSpent} labels={labels} />
                             </span>
+                          </DataTable.Cell>
+                          <DataTable.Cell align="right" numeric data-testid="forge-ledger-scroll">
+                            {row.scrollEssence > 0 ? labels.count(row.scrollEssence) : BLANK}
                           </DataTable.Cell>
                           <DataTable.Cell align="right" numeric data-testid="forge-ledger-gold">
                             <ForgeGold>{labels.gold(row.spent)}</ForgeGold>

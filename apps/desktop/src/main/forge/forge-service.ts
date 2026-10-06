@@ -31,6 +31,10 @@ import {
   emptyForgeTally,
   evalForgeStop,
   foldForgeStep,
+  forgeChance,
+  forgeProtectable,
+  forgeScrollCost,
+  forgeStonePp,
   nextForgeStep,
 } from '@bombfarm/domain/forge';
 import type { WriterLock } from '../apply/writer-lock.js';
@@ -57,6 +61,8 @@ export interface ForgeItemFacts {
   readonly upgrade: number;
   /** Rolls missed in a row, as the item carries them; each adds to the next roll’s chance. */
   readonly fails: number;
+  /** Essence the Protection Scroll costs on the item's next roll; 0 where the game does not offer it. */
+  readonly scrollCost: number;
 }
 
 export interface ForgeServiceDeps {
@@ -71,6 +77,9 @@ export interface ForgeServiceDeps {
   currentItems: () => readonly unknown[] | null;
   /** The wallet the account section last reported; the first shortfall check reads it. */
   currentGold: () => number | null;
+  /** The essence the account last reported; null when the read does not carry it, in which case the
+   *  server's own refusal is what ends a run that cannot pay. */
+  currentEssence?: () => number | null;
   applyResult: (patch: ForgeAccountPatch) => void;
   history: ForgeHistory;
   writerLock: WriterLock;
@@ -117,7 +126,16 @@ export function resolveForgeItem(rows: readonly unknown[] | null, itemId: string
   const slot = finiteNumber(row.slot);
   const upgrade = finiteNumber(row.upgrade) ?? 0;
   if (!Number.isInteger(upgrade) || upgrade < 0 || upgrade > FORGE_MAX) return null;
-  return { id: itemId, defId: row.def_id, rarity, slot, level, upgrade, fails: nonNegativeInteger(row.forge_fails) ?? 0 };
+  return {
+    id: itemId,
+    defId: row.def_id,
+    rarity,
+    slot,
+    level,
+    upgrade,
+    fails: nonNegativeInteger(row.forge_fails) ?? 0,
+    scrollCost: upgrade < FORGE_MAX ? scrollCostOf(row, upgrade + 1, level, rarity) : 0,
+  };
 }
 
 export function isForgeTarget(target: unknown, upgrade: number): target is number {
@@ -153,6 +171,10 @@ interface ForgeReply {
   readonly gold: number | null;
   readonly critical: boolean;
   readonly fails: number | null;
+  /** Essence the server says it charged for the Protection Scroll; 0 when none. */
+  readonly scrollPaid: number;
+  /** The essence balance after the roll, when the reply carries it. */
+  readonly essence: number | null;
 }
 
 export function parseForgeReply(json: unknown): ForgeReply | null {
@@ -167,7 +189,21 @@ export function parseForgeReply(json: unknown): ForgeReply | null {
     gold: finiteNumber(json.gold),
     critical: json.critical === true,
     fails: nonNegativeInteger(json.item.forge_fails),
+    scrollPaid: nonNegativeInteger(json.pergaminho_pago) ?? 0,
+    essence: finiteNumber(json.essence),
   };
+}
+
+/**
+ * What the item says the Protection Scroll costs for the roll it is about to make: the wire's own
+ * `pergaminho_custo`, which is above zero exactly where the game offers the scroll. A row that
+ * does not carry the field at all falls back to the published price, so an older read does not
+ * read as "never offered".
+ */
+export function scrollCostOf(item: Record<string, unknown>, nextTarget: number, level: number, rarity: number): number {
+  const wire = nonNegativeInteger(item.pergaminho_custo);
+  if (wire !== null) return wire;
+  return forgeProtectable(nextTarget) ? forgeScrollCost(level, rarity, nextTarget) : 0;
 }
 
 function stopFor(outcome: RequestOutcome): ForgeStopReason {
@@ -224,6 +260,9 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
     const owned = usableStoneCounts(deps.currentItems());
     const stonesSpent = new Array<number>(STONE_RARITIES).fill(0);
     let stoneRarity: number | null = null;
+    let scrollCost = item.scrollCost;
+    let scrollEssence = 0;
+    let essence = deps.currentEssence?.() ?? null;
 
     try {
       for (;;) {
@@ -249,28 +288,48 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
           break;
         }
 
+        const wantsScroll = request.scroll === true && forgeProtectable(step.target);
+        const chanceAfterStone = useStone ? forgeChance(step.target, fails, forgeStonePp(wanted)) : step.chance;
+        const useScroll = wantsScroll && chanceAfterStone < 1;
+        if (useScroll && scrollCost <= 0) {
+          stop = 'scroll_mismatch';
+          deps.log.warn({ scope: 'forge', event: 'run.scroll_not_offered', runId, target: step.target });
+          break;
+        }
+        if (useScroll && essence !== null && essence < step.essence + scrollCost) {
+          stop = 'shortfall';
+          break;
+        }
+
         const gapMs = calls > 0 ? deps.gate.nextForgeDelayMs(random) : 0;
         deps.emit({ type: 'pause', runId, ms: gapMs });
         if (gapMs > 0) await deps.sleep(gapMs);
 
-        const send = (stone: number | null): Promise<RequestOutcome> =>
+        const send = (stone: number | null, scroll: boolean): Promise<RequestOutcome> =>
           deps.gate.runWrite(`forge:${item.id}`, () =>
             requestPost(
               session,
               deps.transport,
-              { route: FORGE_ROUTES.forge, item: item.id, ...(stone === null ? {} : { stone }) },
+              {
+                route: FORGE_ROUTES.forge,
+                item: item.id,
+                ...(stone === null ? {} : { stone }),
+                ...(scroll ? { scroll: true as const } : {}),
+              },
               requestIds.next(),
             ),
           );
         let sentStone = useStone ? wanted : null;
+        let sentScroll = useScroll;
         let outcome: RequestOutcome;
         try {
-          outcome = await send(sentStone);
+          outcome = await send(sentStone, sentScroll);
           if (sentStone !== null && outcome.kind === 'api_error' && outcome.code === 'FORGE_AID_USELESS') {
             deps.gate.observe(outcome);
             deps.log.info({ scope: 'forge', event: 'run.stone_useless', runId });
             sentStone = null;
-            outcome = await send(null);
+            sentScroll = false;
+            outcome = await send(null, false);
           }
         } catch (err) {
           stop = err instanceof PacingRefusedError && err.gateState !== 'halted' ? 'cooldown' : 'error';
@@ -310,9 +369,12 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
         tally = foldForgeStep(tally, { outcome: rollOutcome, kind: 'roll', cost });
         wallet = reply.gold ?? (wallet === null ? null : wallet - cost);
         lastItem = reply.item;
+        scrollEssence += reply.scrollPaid;
+        essence = reply.essence ?? (essence === null ? null : essence - step.essence - reply.scrollPaid);
         const from = upgrade;
         upgrade = reply.upgrade;
         fails = reply.fails ?? (rollOutcome === 'fail' ? fails + 1 : 0);
+        if (upgrade < FORGE_MAX) scrollCost = scrollCostOf(reply.item, upgrade + 1, item.level, item.rarity);
         if (reply.stone !== null) {
           owned[reply.stone] = Math.max(0, (owned[reply.stone] ?? 0) - 1);
           stonesSpent[reply.stone] = (stonesSpent[reply.stone] ?? 0) + 1;
@@ -332,12 +394,19 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
           spent: tally.spent,
           wallet,
           stone: reply.stone,
+          scrollEssence: reply.scrollPaid,
         });
 
         if (reply.stone !== sentStone) {
           stop = 'stone_mismatch';
           stoneRarity = sentStone ?? reply.stone;
           deps.log.warn({ scope: 'forge', event: 'run.stone_mismatch', runId, sent: sentStone, spent: reply.stone });
+          break;
+        }
+
+        if (sentScroll !== (reply.scrollPaid > 0)) {
+          stop = 'scroll_mismatch';
+          deps.log.warn({ scope: 'forge', event: 'run.scroll_mismatch', runId, sent: sentScroll, paid: reply.scrollPaid });
           break;
         }
       }
@@ -363,6 +432,7 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
       durationMs: Math.max(0, finishedAt - startedAt),
       stonesSpent,
       stoneRarity,
+      scrollEssence,
     };
 
     if (lastItem !== null) {
@@ -394,6 +464,7 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
         durationMs: result.durationMs,
         stonesSpent,
         stoneRarity,
+        scrollEssence,
       });
     }
 

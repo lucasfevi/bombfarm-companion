@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createElement } from 'react';
+import { Fragment, createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { EMPTY_FORGE_HISTORY, type ForgeHistoryResult, type ForgeHistoryRow, type ForgeStepEvent } from '@bombfarm/contracts';
 import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
@@ -9,7 +9,7 @@ import { resolveStoneRanges } from '../../lib/forge/forge-stones';
 import { forgeRunReducer, IDLE_FORGE_RUN, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
 import { forgeLabels } from './forge-labels';
 import { ForgeLedger } from './forge-ledger';
-import { ForgePlanPanel } from './forge-plan-panel';
+import { ForgeForecastPanel, ForgePlanPanel } from './forge-plan-panel';
 import { ForgeRail, forgeRailState } from './forge-rail';
 
 const labels = forgeLabels(en, 'en', 'en');
@@ -25,7 +25,7 @@ function running(): ForgeRunState {
     itemId: 'g1',
     target: 12,
     from: 8,
-    plan: { forecast: { rolls: 6.5, gold: 650, essence: 0, stones: [0, 0, 0, 0, 0, 0], protected: null, badRunGold: 1_200 } },
+    plan: { forecast: { rolls: 6.5, gold: 650, essence: 0, stones: [0, 0, 0, 0, 0, 0], scroll: false, other: null, badRunGold: 1_200 } },
   });
   const path: [number, number, ForgeStepEvent['outcome']][] = [
     [8, 9, 'success'],
@@ -312,6 +312,7 @@ function historyRow(overrides: Partial<ForgeHistoryRow> & { id: number }): Forge
     durationMs: 14_000,
     stonesSpent: [0, 0, 0, 0, 0, 0],
     stoneRarity: null,
+    scrollEssence: 0,
     ...overrides,
   };
 }
@@ -399,26 +400,41 @@ function renderPanel(
   reason: 'ready' | 'running' | 'cancelling' | 'switch-off',
   startRefusal: 'busy' | null = null,
 ): string {
+  const plan = { itemId: 'g1', target: 13, maxGold: null, attempts: null, stones: [], scroll: false };
+  const stoneRanges = resolveStoneRanges([], 12, 13);
   return renderToStaticMarkup(
     createElement(CopyProvider, {
       locale: 'en',
-      children: createElement(ForgePlanPanel, {
-        item: item(),
-        plan: { itemId: 'g1', target: 13, maxGold: null, attempts: null, stones: [] },
-        forecast: null,
-        stoneRanges: resolveStoneRanges([], 12, 13),
-        ownedStones: [0, 0, 0, 0, 0, 0],
-        onStoneEdit: () => undefined,
-        walletGold: null,
-        reason,
-        startRefusal,
-        labels,
-        onStepTarget: () => {},
-        onMaxGoldChange: () => {},
-        onAttemptsChange: () => {},
-        onForge: () => {},
-        onCancel: () => {},
-      }),
+      children: createElement(
+        Fragment,
+        null,
+        createElement(ForgePlanPanel, {
+          item: item(),
+          plan,
+          stoneRanges,
+          ownedStones: [0, 0, 0, 0, 0, 0],
+          running: reason === 'running' || reason === 'cancelling',
+          labels,
+          onStepTarget: () => {},
+          onStoneEdit: () => undefined,
+          onMaxGoldChange: () => {},
+          onAttemptsChange: () => {},
+          onScrollChange: () => {},
+        }),
+        createElement(ForgeForecastPanel, {
+          item: item(),
+          plan,
+          forecast: null,
+          stoneRanges,
+          ownedStones: [0, 0, 0, 0, 0, 0],
+          walletGold: null,
+          reason,
+          startRefusal,
+          labels,
+          onForge: () => {},
+          onCancel: () => {},
+        }),
+      ),
     }),
   );
 }

@@ -54,6 +54,7 @@ describe('forgePlanFor', () => {
       maxGold: 5000,
       attempts: 3,
       stones: [],
+      scroll: false,
     });
   });
 
@@ -96,6 +97,17 @@ describe('forgePlanReducer', () => {
     expect(withGold.maxGold).toBe(12000);
     const withAttempts = forgePlanReducer(withGold, { kind: 'attempts', text: '' });
     expect(withAttempts).toEqual({ ...INITIAL_FORGE_PLAN, maxGold: 12000, attempts: null });
+  });
+});
+
+describe('forgePlanReducer scroll', () => {
+  it('turns the scroll on for the piece it was asked on, and forgets it with the piece', () => {
+    const on = forgePlanReducer(INITIAL_FORGE_PLAN, { kind: 'scroll', itemId: 'a', upgrade: 11, on: true });
+    expect(on).toMatchObject({ itemId: 'a', scroll: true });
+    expect(forgePlanFor(on, { id: 'a', upgrade: 11 }).scroll).toBe(true);
+    expect(forgePlanFor(on, { id: 'b', upgrade: 11 }).scroll).toBe(false);
+    expect(forgePlanFor(on, null).scroll).toBe(false);
+    expect(forgePlanReducer(on, { kind: 'scroll', itemId: 'a', upgrade: 11, on: false }).scroll).toBe(false);
   });
 });
 
@@ -142,7 +154,7 @@ describe('forgePlanForecast with stones', () => {
     expect(stoned?.rolls).toBeLessThan(plain?.rolls ?? 0);
     expect(stoned?.gold).toBeCloseTo(forgeForecast(11, 12, 20, 2, 0, { stones }).gold, 6);
     expect(stoned?.stones[1]).toBeGreaterThan(0);
-    expect(stoned?.protected?.stones[1]).toBeGreaterThan(0);
+    expect(forgePlanForecast(11, 12, 20, 2, 0, 0, stones, true)?.stones[1]).toBeGreaterThan(0);
     expect(stoned?.badRunGold).toBeLessThan(plain?.badRunGold ?? 0);
     expect(plain?.stones).toEqual([0, 0, 0, 0, 0, 0]);
   });
@@ -188,11 +200,30 @@ describe('forgePlanForecast', () => {
     expect(forecast?.badRunGold).toBeGreaterThanOrEqual(forecast?.gold ?? Number.POSITIVE_INFINITY);
   });
 
-  it('prices the protected climb from +12 up, and not below it', () => {
-    const withScroll = forgePlanForecast(11, 13, 20, 2);
-    expect(withScroll?.protected?.gold).toBeCloseTo(forgeForecast(11, 13, 20, 2, 0, { protect: true }).gold, 6);
-    expect(withScroll?.protected?.gold).toBeLessThan(withScroll?.gold ?? 0);
-    expect(forgePlanForecast(5, 11, 20, 2)?.protected).toBeNull();
+  it('headlines the plain climb with the scroll off, and keeps the protected one as the other option', () => {
+    const off = forgePlanForecast(11, 13, 20, 2);
+    expect(off?.scroll).toBe(false);
+    expect(off?.gold).toBeCloseTo(forgeForecast(11, 13, 20, 2).gold, 6);
+    expect(off?.other?.gold).toBeCloseTo(forgeForecast(11, 13, 20, 2, 0, { protect: true }).gold, 6);
+    expect(off?.other?.gold).toBeLessThan(off?.gold ?? 0);
+  });
+
+  it('headlines the protected climb with the scroll on, and keeps the plain one as the other option', () => {
+    const on = forgePlanForecast(11, 13, 20, 2, 0, 0, undefined, true);
+    const protectedClimb = forgeForecast(11, 13, 20, 2, 0, { protect: true });
+    expect(on?.scroll).toBe(true);
+    expect(on?.gold).toBeCloseTo(protectedClimb.gold, 6);
+    expect(on?.essence).toBeCloseTo(protectedClimb.essence, 6);
+    expect(on?.rolls).toBeCloseTo(protectedClimb.rolls, 6);
+    expect(on?.badRunGold).toBeLessThan(forgePlanForecast(11, 13, 20, 2)?.badRunGold ?? 0);
+    expect(on?.other?.gold).toBeCloseTo(forgeForecast(11, 13, 20, 2).gold, 6);
+  });
+
+  it('does not price a scroll on a climb that never reaches a rung offering one', () => {
+    expect(forgePlanForecast(5, 11, 20, 2)?.other).toBeNull();
+    const asked = forgePlanForecast(5, 11, 20, 2, 0, 0, undefined, true);
+    expect(asked?.scroll).toBe(false);
+    expect(asked?.gold).toBeCloseTo(forgeForecast(5, 11, 20, 2).gold, 6);
   });
 
   it('counts a chance bonus and a starting miss count in every figure', () => {
