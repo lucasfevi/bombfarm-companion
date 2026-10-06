@@ -28,7 +28,7 @@ export function SetupAuraCapField({
   testId?: string;
 }) {
   return (
-    <SetupField label={label} hint={hint} className="min-w-52 flex-1" {...(testId === undefined ? {} : { testId })}>
+    <SetupField label={label} hint={hint} className="min-w-fit flex-1" {...(testId === undefined ? {} : { testId })}>
       <span className="flex h-[34px] items-center">
         <AuraCapChips value={value} onToggle={onToggle} lang={lang} />
       </span>
