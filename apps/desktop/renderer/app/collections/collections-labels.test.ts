@@ -106,8 +106,8 @@ describe('summaryLine', () => {
 
 describe('axisTileLabel', () => {
   it('names the axis, its figure and its cap for a screen reader', () => {
-    expect(axisTileLabel(axisRow('gold'), en, 'en')).toBe('Gold, +7.74%, cap 60%');
-    expect(axisTileLabel(axisRow('gold'), ptBR, 'pt-BR')).toBe('Ouro, +7,74%, teto 60%');
+    expect(axisTileLabel(axisRow('gold'), en, 'en')).toBe('Gold, +7.74%, 7.74 of 60 to the cap');
+    expect(axisTileLabel(axisRow('gold'), ptBR, 'pt-BR')).toBe('Ouro, +7,74%, 7,74 de 60 até o teto');
   });
 });
 

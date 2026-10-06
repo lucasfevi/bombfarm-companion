@@ -5,6 +5,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { CollectionsSnapshot } from '@bombfarm/contracts';
 import { buildCollectionBoard, type CollectionBagItem, type CollectionSetRow } from '@bombfarm/domain/model';
+import { COLLECTION_AXIS_COLOUR } from '../../lib/collections/collections-axis-colour';
 import { collectionsSnapshotFixture } from '../../lib/collections/collections-test-fixture';
 import { en } from '../../lib/copy/en';
 import { ptBR } from '../../lib/copy/pt-BR';
@@ -139,6 +140,12 @@ describe('BookDetailPanel', () => {
     expect(text(effect)).toContain('+7.74%');
     expect(text(effect)).toContain('+26%');
     expect(text(effect)).toContain('+18.26%');
+  });
+
+  it('draws each effect heading in its axis hue', () => {
+    const html = render(book('void'));
+    const headings = [...html.matchAll(/<p style="--axis-colour:([^;"]+)"[^>]*data-testid="collections-detail-effect-heading"/g)].map((match) => match[1]);
+    expect(headings).toEqual([COLLECTION_AXIS_COLOUR.damage, COLLECTION_AXIS_COLOUR.critDamage, COLLECTION_AXIS_COLOUR.cooldown]);
   });
 
   it('draws one block per effect for the three-effect book', () => {

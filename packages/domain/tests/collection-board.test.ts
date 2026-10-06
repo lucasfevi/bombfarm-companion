@@ -302,6 +302,34 @@ describe('buildCollectionBoard: axes', () => {
     expect(rows.find((row) => row.axis === 'gold')).toMatchObject({ maxRaw: 26, books: 1, atCap: false });
   });
 
+  it('names the sets that grant each axis, lowest level first, however the snapshot lists them', () => {
+    const triple: CollectionSetState = {
+      code: 'c',
+      level: 5,
+      piecesByPage: [0, 0, 0, 0, 0, 0],
+      effects: [effect('damage', GOLD_PAGES, 0), effect('critDamage', GOLD_PAGES, 0), effect('cooldown', GOLD_PAGES, 0)],
+    };
+    const shuffled = buildCollectionBoard({ ...snapshot, sets: [damageToo, triple, damageOver] }).axes;
+    const codesOf = (axis: string) => shuffled.find((row) => row.axis === axis)?.setCodes;
+    expect(codesOf('damage')).toEqual(['c', 'a', 'b']);
+    expect(codesOf('gold')).toEqual(['b']);
+    expect(codesOf('critDamage')).toEqual(['c']);
+    expect(codesOf('cooldown')).toEqual(['c']);
+    expect(codesOf('luck')).toEqual([]);
+  });
+
+  it('counts a three-effect book once under each of its three axes, and keeps books equal to the list’s length', () => {
+    const triple: CollectionSetState = {
+      code: 'c',
+      level: 5,
+      piecesByPage: [0, 0, 0, 0, 0, 0],
+      effects: [effect('damage', GOLD_PAGES, 0), effect('critDamage', GOLD_PAGES, 0), effect('cooldown', GOLD_PAGES, 0)],
+    };
+    const axes = buildCollectionBoard({ ...snapshot, sets: [damageOver, damageToo, triple] }).axes;
+    expect(axes.filter((row) => row.setCodes.includes('c')).map((row) => row.axis)).toEqual(['damage', 'critDamage', 'cooldown']);
+    for (const row of axes) expect(row.books).toBe(row.setCodes.length);
+  });
+
   it('never calls an axis with no cap at its cap', () => {
     expect(rows.find((row) => row.axis === 'luck')).toMatchObject({ cap: 0, atCap: false, books: 0, maxRaw: 0 });
   });

@@ -13,6 +13,7 @@ import {
 import { ItemIcon, rarityDotClass, rarityTextClass } from '@bombfarm/game-art';
 import { Button, cn, DataTable, FactTile, Icon, Panel, panelHClass, panelTitleClass, Tooltip, type IconName } from '@bombfarm/ui';
 import { formatBonus } from '../../lib/collections/collections-format';
+import { axisColourStyle } from '../../lib/collections/collections-axis-colour';
 import { weaponDefId } from '../../lib/collections/collections-rows';
 import { bringBandIntoView } from '../../lib/forge/run-into-view';
 import { useCopy, useLocale, type Copy } from '../../lib/copy';
@@ -69,7 +70,13 @@ function EffectFigures({ effect }: { effect: CollectionSetEffectRow }) {
   const { locale } = useLocale();
   return (
     <div data-testid="collections-detail-effect" data-axis={effect.axis} className="flex flex-col gap-1.5">
-      <p className="m-0 text-xs font-semibold text-ink">{axisLabel(effect.axis, t)}</p>
+      <p
+        style={axisColourStyle(effect.axis)}
+        className="m-0 text-xs font-semibold text-[var(--axis-colour)]"
+        data-testid="collections-detail-effect-heading"
+      >
+        {axisLabel(effect.axis, t)}
+      </p>
       <div className="grid grid-cols-3 gap-2">
         <FactTile
           label={t.collectionsColumnNow}

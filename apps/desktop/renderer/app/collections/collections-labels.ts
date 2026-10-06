@@ -7,7 +7,7 @@ import type {
   CollectionPieceRow,
 } from '@bombfarm/domain/model';
 import { sub, type Copy, type CopyKey } from '../../lib/copy';
-import { formatBonus, formatLimit } from '../../lib/collections/collections-format';
+import { formatBonus, formatLimit, formatPoints } from '../../lib/collections/collections-format';
 import { formatCount } from '../../lib/format';
 
 const AXIS_LABEL_KEY = {
@@ -71,13 +71,19 @@ export function countOf(part: number, whole: number, t: Copy, locale: AppLocale)
   return sub(t.collectionsCountOf, { part: formatCount(part, locale), whole: formatCount(whole, locale) });
 }
 
-/** What the bonus tile is called for a screen reader: the axis, its figure and its cap. */
+/** What the bonus tile is called for a screen reader: the axis, its figure, and how far it is to the cap. */
 export function axisTileLabel(row: CollectionAxisRow, t: Copy, locale: AppLocale): string {
   return sub(t.collectionsAxisAria, {
     axis: axisLabel(row.axis, t),
     value: formatBonus(row.total, locale),
-    cap: sub(t.collectionsAxisCap, { cap: formatLimit(row.cap, locale) }),
+    total: formatPoints(row.total, locale),
+    cap: formatPoints(row.cap, locale),
   });
+}
+
+/** The count under the bar: points held over the cap, plain numbers so it never reads as a second bonus. */
+export function axisProgress(row: CollectionAxisRow, t: Copy, locale: AppLocale): string {
+  return sub(t.collectionsAxisProgress, { total: formatPoints(row.total, locale), cap: formatPoints(row.cap, locale) });
 }
 
 export function readyBooksLabel(count: number, t: Copy, locale: AppLocale): string {

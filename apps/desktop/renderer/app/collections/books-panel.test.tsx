@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { buildCollectionBoard, type CollectionBagItem, type CollectionBoard } from '@bombfarm/domain/model';
 import { effectiveFilters, initialCollectionFilters, type CollectionFilters } from '../../lib/collections/collection-filters';
 import { filterBooks } from '../../lib/collections/collections-rows';
+import { COLLECTION_AXIS_COLOUR } from '../../lib/collections/collections-axis-colour';
 import { collectionsSnapshotFixture } from '../../lib/collections/collections-test-fixture';
 import type { CollectionFiltersHandle } from '../../lib/collections/use-collection-filters';
 import { en } from '../../lib/copy/en';
@@ -128,15 +129,25 @@ describe('BooksPanel', () => {
   it('gives each effect exactly one line in Bonus, Now, Max and Left, in both languages', () => {
     for (const locale of ['en', 'pt-BR'] as const) {
       const voidRow = rowOf(render({ locale }), 'void');
-      const lines = (testId: string) => (new RegExp(String.raw`<td[^>]*data-testid="${testId}"[\s\S]*?</td>`).exec(voidRow)?.[0].match(/<span class="(?:block truncate|text-ink|text-muted)">/g) ?? []).length;
+      const lines = (testId: string) => (new RegExp(String.raw`<td[^>]*data-testid="${testId}"[\s\S]*?</td>`).exec(voidRow)?.[0].match(/<span (?:data-axis="\w+" style="[^"]*" )?class="(?:block truncate text-\[var\(--axis-colour\)\]|text-ink|text-muted)">/g) ?? []).length;
       expect([lines('collections-book-bonus'), lines('collections-book-now'), lines('collections-book-max'), lines('collections-book-left')]).toEqual([3, 3, 3, 3]);
     }
+  });
+
+  it('draws each bonus label in its own axis hue, as the tile does', () => {
+    const cell = /<td[^>]*data-testid="collections-book-bonus"[\s\S]*?<\/td>/.exec(rowOf(render(), 'void'))?.[0] ?? '';
+    const hues = [...cell.matchAll(/data-axis="(\w+)" style="--axis-colour:([^;"]+)/g)].map((match) => [match[1], match[2]]);
+    expect(hues).toEqual([
+      ['damage', COLLECTION_AXIS_COLOUR.damage],
+      ['critDamage', COLLECTION_AXIS_COLOUR.critDamage],
+      ['cooldown', COLLECTION_AXIS_COLOUR.cooldown],
+    ]);
   });
 
   it('keeps the bonus labels on one line, truncated rather than wrapped, with the full name still in the cell', () => {
     const cell = /<td[^>]*data-testid="collections-book-bonus"[\s\S]*?<\/td>/.exec(rowOf(render(), 'void'))?.[0] ?? '';
     expect(cell).not.toContain('whitespace-normal');
-    expect(cell.match(/class="block truncate"/g)).toHaveLength(3);
+    expect(cell.match(/class="block truncate text-\[var\(--axis-colour\)\]"/g)).toHaveLength(3);
     expect(text(cell)).toBe('Damage Critical damage Cooldown');
     expect(cell).toContain('leading-5');
   });

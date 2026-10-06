@@ -25,6 +25,7 @@ import {
   type CollectionBonusFilter,
   type CollectionStatusFilter,
 } from '../../lib/collections/collection-filters';
+import { axisColourStyle } from '../../lib/collections/collections-axis-colour';
 import { BOOK_BUTTON_TEST_ID } from '../../lib/collections/collections-focus';
 import { fillPercent, formatBonus } from '../../lib/collections/collections-format';
 import {
@@ -174,7 +175,12 @@ function BookRow({
       </DataTable.RowHeader>
       <DataTable.Cell className="leading-5" data-testid="collections-book-bonus">
         {book.effects.map((effect) => (
-          <span key={effect.axis} className="block truncate">
+          <span
+            key={effect.axis}
+            data-axis={effect.axis}
+            style={axisColourStyle(effect.axis)}
+            className="block truncate text-[var(--axis-colour)]"
+          >
             {axisLabel(effect.axis, t)}
           </span>
         ))}

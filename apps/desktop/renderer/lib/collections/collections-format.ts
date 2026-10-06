@@ -28,3 +28,11 @@ export function fillPercent(value: number, limit: number): number {
   if (!(limit > 0) || !(value > 0)) return 0;
   return Math.min(PERCENT, (value / limit) * PERCENT);
 }
+
+/** A bare count of percentage points, no sign and no percent mark: `5.85`, `30`. */
+export function formatPoints(points: number, locale: AppLocale): string {
+  return new Intl.NumberFormat(BCP47_BY_LOCALE[locale], {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: MAX_FRACTION_DIGITS,
+  }).format(points);
+}

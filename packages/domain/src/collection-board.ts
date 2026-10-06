@@ -46,6 +46,8 @@ export interface CollectionAxisRow {
   readonly cap: number;
   readonly maxRaw: number;
   readonly atCap: boolean;
+  /** The sets with an effect on this axis, lowest level first; `books` is its length. */
+  readonly setCodes: readonly string[];
   readonly books: number;
 }
 
@@ -274,8 +276,10 @@ function setRow(set: CollectionSetState, allPieces: readonly CollectionPieceStat
 }
 
 function axisRows(snapshot: CollectionsSnapshot): CollectionAxisRow[] {
+  const byLevel = [...snapshot.sets].sort((left, right) => left.level - right.level);
   return AXIS_ORDER.map((axis) => {
     const effects = snapshot.sets.flatMap((set) => set.effects.filter((effect) => effect.axis === axis));
+    const setCodes = byLevel.filter((set) => set.effects.some((effect) => effect.axis === axis)).map((set) => set.code);
     const cap = snapshot.caps[axis];
     const raw = snapshot.raw[axis];
     return {
@@ -285,7 +289,8 @@ function axisRows(snapshot: CollectionsSnapshot): CollectionAxisRow[] {
       cap: roundCents(cap),
       maxRaw: fromCents(sum(effects.map((effect) => collectionCents(effect.pageValues[COLLECTION_PAGES - 1] ?? 0)))),
       atCap: cap > 0 && collectionCents(raw) >= collectionCents(cap),
-      books: effects.length,
+      setCodes,
+      books: setCodes.length,
     };
   });
 }

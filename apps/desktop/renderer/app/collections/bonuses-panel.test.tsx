@@ -3,6 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { buildCollectionBoard } from '@bombfarm/domain/model';
 import { COLLECTION_AXES } from '@bombfarm/contracts';
+import { COLLECTION_AXIS_COLOUR } from '../../lib/collections/collections-axis-colour';
 import { collectionsSnapshotFixture } from '../../lib/collections/collections-test-fixture';
 import { en } from '../../lib/copy/en';
 import { ptBR } from '../../lib/copy/pt-BR';
@@ -31,6 +32,10 @@ function render(activeAxis: Parameters<typeof BonusesPanel>[0]['activeAxis'] = '
   return renderToStaticMarkup(createElement(BonusesPanel, { board, activeAxis, onToggleAxis: () => undefined }));
 }
 
+function text(fragment: string): string {
+  return fragment.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 function tiles(html: string): string[] {
   return html.split('<div data-testid="collections-axis"').slice(1);
 }
@@ -49,39 +54,68 @@ describe('BonusesPanel', () => {
     expect(order).toEqual(['damage', 'critDamage', 'critChance', 'cooldown', 'cage', 'energy', 'gold', 'xp', 'luck', 'forge']);
   });
 
-  it('prints each axis’s labelled bonus and cap from the server’s figures', () => {
+  it('prints each axis’s labelled bonus from the server’s figures', () => {
     const html = render();
     const gold = tile(html, 'gold');
     expect(gold).toContain(en.collectionsAxisGold);
     expect(gold).toContain('+7.74%');
-    expect(gold).toContain('cap 60%');
     expect(tile(html, 'damage')).toContain('+30%');
     expect(tile(html, 'critChance')).toContain('+11.4%');
-    expect(tile(html, 'cooldown')).toContain('cap 22.5%');
     expect(tile(html, 'cage')).toContain('+10.9%');
   });
 
-  it('marks only Damage as at its cap, since the fixture’s raw damage runs past 30', () => {
+  const progressOf = (html: string, axis: string) =>
+    text(/<div[^>]*data-testid="collections-axis-cap"[^>]*>[\s\S]*?<\/div>/.exec(tile(html, axis))?.[0] ?? '');
+
+  it('shows progress to the cap as "to cap" over a plain count, never as a second percentage', () => {
     const html = render();
-    const flags = [...html.matchAll(/data-axis="(\w+)" data-at-cap="(\w+)"/g)].map((match) => [match[1], match[2]]);
-    expect(flags.filter(([, atCap]) => atCap === 'true')).toEqual([['damage', 'true']]);
-    expect(html.match(/data-testid="collections-axis-at-cap"/g)).toHaveLength(1);
-    expect(tile(html, 'damage')).toContain(en.collectionsAxisAtCap);
-    expect(tile(html, 'gold')).not.toContain(en.collectionsAxisAtCap);
+    expect(progressOf(html, 'gold')).toBe('to cap 7.74 / 60');
+    expect(progressOf(html, 'cooldown')).toBe('to cap 1.17 / 22.5');
+    expect(progressOf(html, 'xp')).toBe('to cap 0 / 75');
+    for (const row of tiles(html)) {
+      expect(text(/<div[^>]*data-testid="collections-axis-cap"[^>]*>[\s\S]*?<\/div>/.exec(row)?.[0] ?? '')).not.toContain('%');
+    }
+    expect(html).not.toMatch(/of cap|% of/);
   });
 
-  it('fills each bar to the bonus over its cap', () => {
-    const html = render();
-    expect(tile(html, 'damage')).toMatch(/style="width:\s*100%"/);
-    expect(tile(html, 'gold')).toMatch(/style="width:\s*12\.9\d*%"/);
-    expect(tile(html, 'xp')).toMatch(/style="width:\s*0%"/);
+  it('reads 30 / 30 at the cap and keeps the At cap chip', () => {
+    expect(progressOf(render(), 'damage')).toBe('to cap 30 / 30');
+    expect(tile(render(), 'damage')).toContain(en.collectionsAxisAtCap);
   });
 
-  it('draws an axis with nothing in it muted, and still draws it', () => {
-    const xp = tile(render(), 'xp');
-    expect(xp).toContain('data-empty="true"');
-    expect(xp).toContain('+0%');
-    expect(xp).toMatch(/text-muted[^"]*">\+0%/);
+  it('gives every tile its axis hue as a custom property, and uses it for the figure, the bar and the top rule', () => {
+    const html = render();
+    for (const axis of COLLECTION_AXES) {
+      const hue = COLLECTION_AXIS_COLOUR[axis];
+      const markup = tile(html, axis);
+      expect(markup, axis).toContain(`style="--axis-colour:${hue}"`);
+    }
+    const gold = tile(html, 'gold');
+    expect(gold).toContain('text-[var(--axis-colour)]');
+    expect(gold).toMatch(/class="h-full bg-\[var\(--axis-colour\)\]"/);
+    expect(gold).toContain('border-t-[var(--axis-colour)]');
+  });
+
+  it('draws an empty axis’s figure muted rather than in its hue', () => {
+    expect(tile(render(), 'xp')).not.toMatch(/axis-total"[^>]*text-\[var\(--axis-colour\)\]/);
+  });
+
+  it('lists the books that grant each axis under the bar, names of books that grant something in ink and the rest muted', () => {
+    const html = render();
+    const line = (axis: string) => /<p data-testid="collections-axis-sets"[\s\S]*?<\/p>/.exec(tile(html, axis))?.[0] ?? '';
+    expect(text(line('gold'))).toBe('Gold · Desert · Silver');
+    const grants = [...line('gold').matchAll(/data-grants="(\w+)"/g)].map((match) => match[1]);
+    expect(grants).toEqual(['true', 'false', 'false']);
+    expect(line('gold')).toContain('class="text-ink" data-grants="true"');
+    expect(line('gold')).toContain('class="text-muted" data-grants="false"');
+    expect(line('gold')).toContain('truncate');
+  });
+
+  it('shows the first few names and a +N marker when the list does not fit, and the whole list in the tooltip source', () => {
+    const html = render();
+    const damage = /<p data-testid="collections-axis-sets"[\s\S]*?<\/p>/.exec(tile(html, 'damage'))?.[0] ?? '';
+    expect(text(damage)).toBe('Ember · Steel · Toxic · +2');
+    expect(damage).toContain('data-testid="collections-axis-sets-more"');
   });
 
   it('makes the tile a plain container and its label the one real button, so the bar is not inside a button', () => {
@@ -101,8 +135,8 @@ describe('BonusesPanel', () => {
 
   it('names each tile button for a screen reader with the axis, its figure and its cap', () => {
     const html = render();
-    expect(tile(html, 'gold')).toContain('aria-label="Gold, +7.74%, cap 60%"');
-    expect(tile(html, 'damage')).toContain('aria-label="Damage, +30%, cap 30%"');
+    expect(tile(html, 'gold')).toContain('aria-label="Gold, +7.74%, 7.74 of 60 to the cap"');
+    expect(tile(html, 'damage')).toContain('aria-label="Damage, +30%, 30 of 30 to the cap"');
   });
 
   it('stretches the label button over the whole tile and truncates the label to one line', () => {
@@ -115,7 +149,7 @@ describe('BonusesPanel', () => {
     const container = /^[^>]*class="([^"]*)"/.exec(tile(render(), 'gold'))?.[1] ?? '';
     expect(container).toContain('relative');
     expect(container).toContain('has-[:focus-visible]:outline-accent');
-    expect(container).toContain('has-[[aria-pressed=true]]:border-accent');
+    expect(container).toContain('has-[[aria-pressed=true]]:bg-[color-mix(in_oklch,var(--axis-colour)_12%,var(--surface))]');
   });
 
   it('puts the at-cap chip on the value line, after the figure, and not in the label button', () => {
@@ -156,7 +190,7 @@ describe('BonusesPanel', () => {
     expect(tile(html, 'critDamage')).toContain('Dano crítico');
     expect(tile(html, 'cage')).toContain('Jaula e chefe');
     expect(tile(html, 'gold')).toContain('+7,74%');
-    expect(tile(html, 'cooldown')).toContain('teto 22,5%');
+    expect(progressOf(html, 'cooldown')).toBe('até o teto 1,17 / 22,5');
     expect(tile(html, 'damage')).toContain('No teto');
     expect(html).toContain('em andamento');
   });
