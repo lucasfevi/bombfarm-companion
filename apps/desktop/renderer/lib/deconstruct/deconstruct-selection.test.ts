@@ -8,7 +8,7 @@ import {
   toggleDeconstructSelection,
   withoutDeconstructIds,
 } from './deconstruct-selection';
-import { rawGear, viewItems } from './test-items';
+import { rawGear, rawOther, viewItems } from './test-items';
 
 const CAP = 3;
 
@@ -95,6 +95,16 @@ describe('fillDeconstruct', () => {
 
   it('picks Common and Uncommon only, the cheapest first', () => {
     expect(fillDeconstruct(rows, [], 10).ids).toEqual(['common-low', 'common-high', 'uncommon']);
+  });
+
+  it('leaves a chest and a hero cage for the player to tick, though both are burnable', () => {
+    const withChests = viewItems([
+      rawGear({ id: 'gear', rarity: 0, level: 10 }),
+      rawOther('chest', 'chest_item_10', 1, { rarity: 0, essence_value: 10 }),
+      rawOther('cage', 'chest_hero_1', 1, { rarity: 0, essence_value: 10 }),
+    ]);
+    expect(fillDeconstruct(withChests, [], 10).ids).toEqual(['gear']);
+    expect(selectShownDeconstruct(withChests, [], 10).ids).toEqual(['gear', 'chest', 'cage']);
   });
 
   it('stops at the cap, counting what is already ticked', () => {

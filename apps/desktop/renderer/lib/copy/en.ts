@@ -671,7 +671,7 @@ export const en = {
   deconstructAddAllDone: 'Everything shown is already in the batch',
   deconstructAddAllNothing: 'Nothing shown can be burned',
   deconstructFill: 'Fill',
-  deconstructFillTip: 'Tops the batch up with Common and Uncommon items only, cheapest first. Only items the filters show are used.',
+  deconstructFillTip: 'Tops the batch up with Common and Uncommon items only, cheapest first, never chests or cages. Only items the filters show are used.',
   deconstructClear: 'Clear',
   deconstructBurn: 'Burn',
   deconstructHintOverflow: '{count} more did not fit under the limit of {max}.',

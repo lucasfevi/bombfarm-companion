@@ -61,9 +61,16 @@ describe('deconstructBlockReason', () => {
     expect(deconstructBlockReason(viewItem({ essence_value: 0 }))).toBe('not_burnable');
   });
 
-  it('refuses a chest, which the server prices at zero', () => {
+  it('refuses a chest the server prices at zero', () => {
     const chest = viewItem({ def_id: 'chest_item_90', category: 1, essence_value: 0 });
     expect(deconstructBlockReason(chest)).toBe('not_burnable');
+  });
+
+  it('lets a closed item chest and a hero cage through once the server gives them a worth', () => {
+    const chest = viewItem({ def_id: 'chest_item_10', category: 1, rarity: 0, level: 0, essence_value: 10, in_stash: true });
+    const cage = viewItem({ def_id: 'chest_hero_1', category: 1, rarity: 0, level: 0, essence_value: 10, in_stash: true });
+    expect(deconstructBlockReason(chest)).toBeNull();
+    expect(deconstructBlockReason(cage)).toBeNull();
   });
 
   it('lets a non-gear item through when the server gives it a positive worth', () => {
@@ -253,6 +260,18 @@ describe('deconstructFillCandidates', () => {
       viewItem({ id: '7' }),
     ];
     expect(deconstructFillCandidates(blocked, [], 100)).toEqual(['7']);
+  });
+
+  it('never picks a chest or a hero cage, though both are burnable and fall below the threshold', () => {
+    const chest = viewItem({ id: '40', def_id: 'chest_item_10', category: 1, rarity: 0, level: 0, essence_value: 10, in_stash: true });
+    const cage = viewItem({ id: '41', def_id: 'chest_hero_1', category: 1, rarity: 0, level: 0, essence_value: 10, in_stash: true });
+    const gem = viewItem({ id: '42', def_id: 'gem_sapphire', category: 2, rarity: 0, level: 0, essence_value: 1446, in_stash: true });
+    expect(chest.kind).toBe('chest');
+    expect(cage.kind).toBe('chest');
+    expect(cage.rarityIdx).toBeLessThan(DECONSTRUCT_FILL_BELOW_RARITY);
+    expect(deconstructBlockReason(chest)).toBeNull();
+    expect(deconstructBlockReason(cage)).toBeNull();
+    expect(deconstructFillCandidates([chest, cage, gem], [], 100)).toEqual(['42']);
   });
 
   it('takes a burnable low-rarity material as well as gear', () => {

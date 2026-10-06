@@ -199,7 +199,7 @@ function bagOfGear(count: number, overrides: (index: number) => Row = () => ({})
 }
 
 describe('the Deconstruct list', () => {
-  it('lists every burnable item and leaves out chests the server will never burn', async () => {
+  it('lists every burnable item and leaves out the chest the server gave no worth', async () => {
     await mount();
     expect(rowIds().sort()).toEqual(['1', '2', '3', '5', '6']);
     expect(textOf('deconstruct-result-count')).toBe('5 of 6');

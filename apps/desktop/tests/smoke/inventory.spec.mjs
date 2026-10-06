@@ -15,7 +15,7 @@ const desktopRoot = path.join(__dirname, '..', '..');
  * draws the card, and this shell supplies the words and the roster. Each layer has unit tests; only
  * a launched app proves they were wired to each other.
  *
- * Uses the offline fixture (225 items, 13 heroes) rather than `account-full.json`, because it is
+ * Uses the offline fixture (228 items, 13 heroes) rather than `account-full.json`, because it is
  * the only committed fixture carrying every item kind — the classifier's seven `category` codes
  * (the six it started with, and the chance stone) are all represented, and a screen that only ever saw gear would not have exercised the interesting
  * half.
@@ -147,7 +147,7 @@ test.describe('inventory smoke', () => {
       // Stacking: fewer cards than rows, because only gear is one-card-per-row.
       const cardCount = await cards(page).count();
       expect(cardCount).toBeGreaterThan(0);
-      expect(cardCount).toBeLessThan(225);
+      expect(cardCount).toBeLessThan(228);
 
       // A stacked card states its count in the footer slot a gear card gives its hero; gear never
       // does, because a forge level makes two swords different objects.

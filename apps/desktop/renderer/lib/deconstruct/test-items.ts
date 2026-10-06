@@ -43,8 +43,8 @@ export function viewItem(overrides: RawRow = {}): InventoryViewItem {
 }
 
 /** The raw rows of a small bag that exercises every axis of the filter: four gear pieces across
- *  two sets (one worn, one forged, one in the stash), a gem, a rune, and a chest the server will
- *  not burn. */
+ *  two sets (one worn, one forged, one in the stash), a gem, a rune, and a chest the server
+ *  gives no worth. */
 export function sampleRows(): RawRow[] {
   return [
     rawGear({ id: '1', def_id: 'glacier_calca', set: 'glacier', rarity: 1, level: 60, essence_value: 30 }),

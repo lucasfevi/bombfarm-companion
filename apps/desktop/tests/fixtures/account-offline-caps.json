@@ -1701,7 +1701,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 90,
+      "essence_value": 40,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 300
@@ -1741,7 +1741,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 90,
+      "essence_value": 40,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 300
@@ -1781,7 +1781,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 90,
+      "essence_value": 40,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 300
@@ -1821,7 +1821,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 90,
+      "essence_value": 40,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 300
@@ -1861,7 +1861,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 90,
+      "essence_value": 40,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 300
@@ -1901,7 +1901,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 180,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 600
@@ -1996,7 +1996,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 60,
+      "essence_value": 40,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 600
@@ -2036,7 +2036,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 180,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 600
@@ -2071,7 +2071,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 60,
+      "essence_value": 40,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 600
@@ -2106,7 +2106,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 60,
+      "essence_value": 40,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 600
@@ -2141,7 +2141,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 60,
+      "essence_value": 40,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 600
@@ -2176,7 +2176,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 60,
+      "essence_value": 40,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 600
@@ -2216,7 +2216,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -2251,7 +2251,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 60,
+      "essence_value": 40,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 600
@@ -2286,7 +2286,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -2321,7 +2321,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -2361,7 +2361,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -2426,7 +2426,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -2461,7 +2461,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -2496,7 +2496,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -2536,7 +2536,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -2571,7 +2571,7 @@
       ],
       "tradable": false,
       "upgrade": 9,
-      "essence_value": 120,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1200
@@ -2606,7 +2606,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 120,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1200
@@ -2646,7 +2646,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 360,
+      "essence_value": 160,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1200
@@ -2681,7 +2681,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 120,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1200
@@ -2751,7 +2751,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -2786,7 +2786,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -2826,7 +2826,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -2896,7 +2896,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -2941,7 +2941,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -2976,7 +2976,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3011,7 +3011,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3051,7 +3051,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3086,7 +3086,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3121,7 +3121,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3161,7 +3161,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3201,7 +3201,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3241,7 +3241,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3281,7 +3281,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3326,7 +3326,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3366,7 +3366,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3389,7 +3389,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 1446,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -3429,7 +3429,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3469,7 +3469,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3509,7 +3509,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3554,7 +3554,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3594,7 +3594,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -3639,7 +3639,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 270,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 300
@@ -3674,7 +3674,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 120,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1200
@@ -3709,7 +3709,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 120,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1200
@@ -3744,7 +3744,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 120,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1200
@@ -3869,7 +3869,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 150,
+      "essence_value": 100,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1500
@@ -3909,7 +3909,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 450,
+      "essence_value": 200,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1500
@@ -3974,7 +3974,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 150,
+      "essence_value": 100,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1500
@@ -4009,7 +4009,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 150,
+      "essence_value": 100,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1500
@@ -4044,7 +4044,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 150,
+      "essence_value": 100,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1500
@@ -4109,7 +4109,7 @@
       ],
       "tradable": false,
       "upgrade": 0,
-      "essence_value": 150,
+      "essence_value": 100,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1500
@@ -4144,7 +4144,7 @@
       ],
       "tradable": false,
       "upgrade": 0,
-      "essence_value": 150,
+      "essence_value": 100,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1500
@@ -4179,7 +4179,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 150,
+      "essence_value": 100,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1500
@@ -4249,7 +4249,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -4284,7 +4284,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -4329,7 +4329,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 270,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 300
@@ -4374,7 +4374,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 270,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 300
@@ -4414,7 +4414,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -4459,7 +4459,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -4499,7 +4499,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -4522,7 +4522,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -4545,7 +4545,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -4568,7 +4568,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -4591,7 +4591,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -4614,7 +4614,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -4637,7 +4637,7 @@
       "stats": [],
       "tradable": false,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 597,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -4707,7 +4707,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 360,
+      "essence_value": 160,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1200
@@ -4742,7 +4742,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 120,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1200
@@ -4777,7 +4777,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 120,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1200
@@ -4812,7 +4812,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 120,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1200
@@ -4847,7 +4847,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 120,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1200
@@ -4887,7 +4887,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 540,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1800
@@ -4922,7 +4922,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 180,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1800
@@ -4957,7 +4957,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 180,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1800
@@ -4992,7 +4992,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 180,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1800
@@ -5032,7 +5032,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -5077,7 +5077,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -5112,7 +5112,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 180,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1800
@@ -5147,7 +5147,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 180,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1800
@@ -5212,7 +5212,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 180,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1800
@@ -5247,7 +5247,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 180,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1800
@@ -5292,7 +5292,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -5392,7 +5392,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 360,
+      "essence_value": 160,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1200
@@ -5437,7 +5437,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -5482,7 +5482,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -5522,7 +5522,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -5562,7 +5562,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -5607,7 +5607,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -5630,7 +5630,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -5653,7 +5653,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -5676,7 +5676,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -5699,7 +5699,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -5722,7 +5722,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -5767,7 +5767,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -5812,7 +5812,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -5867,7 +5867,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 7290,
+      "essence_value": 960,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -5912,7 +5912,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -5957,7 +5957,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -5980,7 +5980,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 1446,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6003,7 +6003,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6026,7 +6026,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6049,7 +6049,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6072,7 +6072,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6095,7 +6095,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6118,7 +6118,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6141,7 +6141,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6164,7 +6164,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6187,7 +6187,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6210,7 +6210,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6233,7 +6233,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6256,7 +6256,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6279,7 +6279,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6302,7 +6302,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6325,7 +6325,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6348,7 +6348,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6371,7 +6371,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6394,7 +6394,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6417,7 +6417,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6440,7 +6440,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6463,7 +6463,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6486,7 +6486,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6509,7 +6509,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6532,7 +6532,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 132,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6555,7 +6555,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6578,7 +6578,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6601,7 +6601,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 132,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6624,7 +6624,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6647,7 +6647,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6670,7 +6670,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 132,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6693,7 +6693,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6716,7 +6716,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 132,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6739,7 +6739,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -6774,7 +6774,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -6819,7 +6819,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -6864,7 +6864,7 @@
       ],
       "tradable": true,
       "upgrade": 12,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -6904,7 +6904,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -6974,7 +6974,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 540,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1800
@@ -7009,7 +7009,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 180,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1800
@@ -7049,7 +7049,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 540,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1800
@@ -7072,7 +7072,7 @@
       "stats": [],
       "tradable": false,
       "upgrade": 0,
-      "essence_value": 10,
+      "essence_value": 75,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7137,7 +7137,7 @@
       ],
       "tradable": false,
       "upgrade": 8,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -7172,7 +7172,7 @@
       ],
       "tradable": false,
       "upgrade": 12,
-      "essence_value": 210,
+      "essence_value": 140,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 2100
@@ -7212,7 +7212,7 @@
       ],
       "tradable": true,
       "upgrade": 8,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -7235,7 +7235,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7258,7 +7258,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7281,7 +7281,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7304,7 +7304,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 132,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7327,7 +7327,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7350,7 +7350,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7373,7 +7373,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7418,7 +7418,7 @@
       ],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -7463,7 +7463,7 @@
       ],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -7558,7 +7558,7 @@
       ],
       "tradable": false,
       "upgrade": 0,
-      "essence_value": 210,
+      "essence_value": 140,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 2100
@@ -7593,7 +7593,7 @@
       ],
       "tradable": false,
       "upgrade": 0,
-      "essence_value": 210,
+      "essence_value": 140,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 2100
@@ -7616,7 +7616,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 22,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7639,7 +7639,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 22,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7662,7 +7662,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 11,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7685,7 +7685,7 @@
       "stats": [],
       "tradable": false,
       "upgrade": 0,
-      "essence_value": 10,
+      "essence_value": 75,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7708,7 +7708,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 149,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7731,7 +7731,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7754,7 +7754,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7777,7 +7777,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7800,7 +7800,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7823,7 +7823,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7846,7 +7846,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7869,7 +7869,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7892,7 +7892,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 132,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7915,7 +7915,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 132,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7938,7 +7938,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7961,7 +7961,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 132,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -7984,7 +7984,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 132,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -8007,7 +8007,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -8030,7 +8030,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 132,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -8053,7 +8053,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 132,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -8076,7 +8076,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -8099,7 +8099,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -8122,7 +8122,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 30,
+      "essence_value": 66,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -8145,7 +8145,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 132,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -8168,7 +8168,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 264,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -8203,7 +8203,7 @@
       ],
       "tradable": false,
       "upgrade": 0,
-      "essence_value": 120,
+      "essence_value": 80,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 1200
@@ -8248,7 +8248,7 @@
       ],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -8271,7 +8271,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 11,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -8336,7 +8336,7 @@
       ],
       "tradable": false,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -8371,7 +8371,7 @@
       ],
       "tradable": false,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -8406,7 +8406,7 @@
       ],
       "tradable": false,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -8441,7 +8441,7 @@
       ],
       "tradable": false,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 60,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -8481,7 +8481,7 @@
       ],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -8521,7 +8521,7 @@
       ],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 270,
+      "essence_value": 120,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -8566,7 +8566,7 @@
       ],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 810,
+      "essence_value": 240,
       "forge_fails": 0,
       "forge_chance": 1,
       "pergaminho_custo": 900
@@ -8649,7 +8649,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 11,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -8672,7 +8672,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 90,
+      "essence_value": 11,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -8695,7 +8695,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 0,
+      "essence_value": 30,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -8718,7 +8718,7 @@
       "stats": [],
       "tradable": true,
       "upgrade": 0,
-      "essence_value": 0,
+      "essence_value": 30,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0
@@ -8733,7 +8733,7 @@
       "stats": [],
       "power": 0,
       "sell_value": "140",
-      "essence_value": 30,
+      "essence_value": 778,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0,
@@ -8756,7 +8756,7 @@
       "stats": [],
       "power": 0,
       "sell_value": "140",
-      "essence_value": 30,
+      "essence_value": 778,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0,
@@ -8779,7 +8779,7 @@
       "stats": [],
       "power": 0,
       "sell_value": "140",
-      "essence_value": 90,
+      "essence_value": 1557,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0,
@@ -8802,11 +8802,80 @@
       "stats": [],
       "power": 0,
       "sell_value": "140",
-      "essence_value": 90,
+      "essence_value": 1557,
       "forge_fails": 0,
       "forge_chance": 0,
       "pergaminho_custo": 0,
       "sellable": true,
+      "upgrade": 0,
+      "tradable": true,
+      "market_state": 0,
+      "locked": false,
+      "equipped_on": null,
+      "equip_slot": null,
+      "in_stash": true
+    },
+    {
+      "id": "900011",
+      "def_id": "chest_hero_1",
+      "rarity": 0,
+      "set": "",
+      "category": 1,
+      "level": 0,
+      "stats": [],
+      "power": 0,
+      "sell_value": "100",
+      "essence_value": 10,
+      "forge_fails": 0,
+      "forge_chance": 0,
+      "pergaminho_custo": 0,
+      "sellable": false,
+      "upgrade": 0,
+      "tradable": true,
+      "market_state": 0,
+      "locked": false,
+      "equipped_on": null,
+      "equip_slot": null,
+      "in_stash": true
+    },
+    {
+      "id": "900012",
+      "def_id": "chest_hero_5",
+      "rarity": 0,
+      "set": "",
+      "category": 1,
+      "level": 0,
+      "stats": [],
+      "power": 0,
+      "sell_value": "100",
+      "essence_value": 230,
+      "forge_fails": 0,
+      "forge_chance": 0,
+      "pergaminho_custo": 0,
+      "sellable": false,
+      "upgrade": 0,
+      "tradable": true,
+      "market_state": 0,
+      "locked": false,
+      "equipped_on": null,
+      "equip_slot": null,
+      "in_stash": true
+    },
+    {
+      "id": "900013",
+      "def_id": "chest_gem_2",
+      "rarity": 0,
+      "set": "",
+      "category": 1,
+      "level": 0,
+      "stats": [],
+      "power": 0,
+      "sell_value": "100",
+      "essence_value": 1446,
+      "forge_fails": 0,
+      "forge_chance": 0,
+      "pergaminho_custo": 0,
+      "sellable": false,
       "upgrade": 0,
       "tradable": true,
       "market_state": 0,

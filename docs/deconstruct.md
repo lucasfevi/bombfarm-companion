@@ -54,6 +54,10 @@ export or a body from before the screen existed has no `essence_value` at all; t
 "unknown" (`null`), never as zero, and an unknown piece of equipment is still offered while an
 unknown anything-else is not.
 
+Closed chests and hero cages burn too: the server prices each at its worst possible content, so a
+chest is listed, tickable and counted like any other item once its `essence_value` is above zero.
+Only what the server prices at zero, such as a skin pack, stays out of the list.
+
 ## Eligibility lives in the domain package
 
 [`packages/domain/src/deconstruct.ts`](../packages/domain/src/deconstruct.ts) holds the rules the
@@ -66,7 +70,10 @@ page reads, so the filter, the tick boxes, the Fill button and the confirm warni
 - `deconstructBatchSummary` — count, essence, how many are forged, how many are Epic or rarer. The
   confirm always appears; the last two drive its warnings.
 - `deconstructFillCandidates` — the game's autofill: burnable items below Rare, lowest rarity then
-  lowest level first, up to the cap. The page applies it to the rows the filter shows.
+  lowest level first, up to the cap, **never a chest or a cage**. Their derived tiers sit low, so
+  they would be swept in; the game burns them only when chosen explicitly, and so does this page —
+  ticking one, or "Add all" on a list that shows it, adds it. The page applies Fill to the rows the
+  filter shows.
 
 The renderer treats these as a pre-filter. The main process does not re-check them; it checks the
 ids are items the account holds, and the server's verdict stands.
@@ -125,5 +132,6 @@ The offline fixture account is refused (`offline`), so the page can be looked at
 result through the same event channel and is honoured only where the forge's own injector is.
 
 The essence values, forge counters and scroll prices in the committed fixtures are **synthetic**:
-shaped after a live read, never the game's own numbers (the offline generator states the formula).
-Do not read a figure off them.
+shaped after a live read, never the game's own numbers (the offline generator states how). Do not
+read a figure off them. The offline account carries closed chests and hero cages with a positive
+value so the page has some to show.

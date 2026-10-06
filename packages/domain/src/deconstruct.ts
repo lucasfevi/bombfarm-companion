@@ -96,7 +96,9 @@ function compareIds(a: string, b: string): number {
 /**
  * The ids the game's autofill would add on top of what is already selected: burnable items below
  * {@link DECONSTRUCT_FILL_BELOW_RARITY}, lowest rarity then lowest level first, as many as fit
- * under `cap`. Ties on both fall to the lower id so the answer never depends on list order.
+ * under `cap`. Chests and hero cages are never picked — they burn only when chosen explicitly,
+ * though their low derived tiers would otherwise sweep them in. Ties on both fall to the lower id
+ * so the answer never depends on list order.
  */
 export function deconstructFillCandidates(
   items: readonly InventoryViewItem[],
@@ -111,6 +113,7 @@ export function deconstructFillCandidates(
     .filter(
       (item) =>
         !selected.has(item.id) &&
+        item.kind !== 'chest' &&
         item.rarityIdx < DECONSTRUCT_FILL_BELOW_RARITY &&
         deconstructBlockReason(item) === null,
     )

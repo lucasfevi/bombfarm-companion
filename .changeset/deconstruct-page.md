@@ -13,9 +13,10 @@ or rarer.
 
 The page keeps the game's rules. Equipped, locked, on-the-market, gem-socketed and recently imported
 items cannot be burned, and each says why. A Fill button tops the batch up with Common and Uncommon
-items, the way the game's own does, from the rows your filter shows. The page never works out how
-much essence you will get: it adds up what the game says each item is worth, and your balance after
-a burn is the one the game reports.
+items, the way the game's own does, from the rows your filter shows, and never with a chest or a
+cage: those burn only when you tick them yourself, and they are listed whenever the game gives
+them a value. The page never works out how much essence you will get: it adds up what the game says
+each item is worth, and your balance after a burn is the one the game reports.
 
 Burning is a write, so it follows the same rules as forging: it works only when the Settings switch
 "Let the app forge, equip and reset points" is on, only after you confirm, and it is sent once and

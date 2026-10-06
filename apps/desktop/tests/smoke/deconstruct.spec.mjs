@@ -19,9 +19,10 @@ const desktopRoot = path.join(__dirname, '..', '..');
  * forge rail. The injector removes nothing from the fixture account, so the list does not shrink
  * when a burn "lands"; what is proved is the page's side of the seam.
  *
- * The counts below are the committed fixture's: 223 items the game could burn, of which 134 can be
- * ticked (89 are worn or locked), 29 of those forged, 12 Common, 2 gems. Regenerating the fixture
- * moves them, and this spec should fail when it does.
+ * The counts below are the committed fixture's: 228 items the game could burn, of which 139 can be
+ * ticked (89 are worn or locked), 29 of those forged, 14 Common, 2 gems, 5 closed chests and cages
+ * (3 of them Common or Uncommon, which Fill still leaves alone). Regenerating the fixture moves
+ * them, and this spec should fail when it does.
  */
 const ACCOUNT_OFFLINE_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-offline.json');
 
@@ -46,12 +47,14 @@ const en = (key) => readCopyValue(EN_COPY_PATH, key);
 const pt = (key) => readCopyValue(PT_BR_COPY_PATH, key);
 
 const CENSUS = {
-  listed: 223,
-  burnable: 134,
+  listed: 228,
+  burnable: 139,
   forged: 29,
-  common: 12,
-  uncommon: 59,
+  common: 14,
+  uncommon: 60,
   gems: 2,
+  chests: 5,
+  chestsBelowRare: 3,
   batchCap: 100,
 };
 const COMMON = 0;
@@ -293,6 +296,11 @@ test.describe('deconstruct smoke', () => {
       await kindChip(page, 'gem').click();
       await expect(count).toHaveText(`${String(CENSUS.burnable)} of ${String(CENSUS.listed)}`);
 
+      await kindChip(page, 'chest').click();
+      await expect(count).toHaveText(`${String(CENSUS.chests)} of ${String(CENSUS.listed)}`);
+      await kindChip(page, 'chest').click();
+      await expect(count).toHaveText(`${String(CENSUS.burnable)} of ${String(CENSUS.listed)}`);
+
       await rarityChip(page, COMMON).click();
       await expect(count).toHaveText(`${String(CENSUS.common)} of ${String(CENSUS.listed)}`);
       await rarityChip(page, COMMON).click();
@@ -370,14 +378,16 @@ test.describe('deconstruct smoke', () => {
       await page.getByTestId('deconstruct-clear').click();
       await expect(page.getByTestId('deconstruct-hint')).toHaveText('');
 
-      // Fill tops up with Common and Uncommon only.
+      // Fill tops up with Common and Uncommon only, and never with a chest or a cage.
+      const filled = CENSUS.common + CENSUS.uncommon - CENSUS.chestsBelowRare;
       await page.getByTestId('deconstruct-fill').click();
-      await expect(selected).toHaveText(`${String(CENSUS.common + CENSUS.uncommon)} of ${String(CENSUS.batchCap)}`);
+      await expect(selected).toHaveText(`${String(filled)} of ${String(CENSUS.batchCap)}`);
       await page.getByTestId('deconstruct-selected-only').click();
-      await expect(countText(page)).toHaveText(`${String(CENSUS.common + CENSUS.uncommon)} of ${String(CENSUS.listed)}`);
+      await expect(countText(page)).toHaveText(`${String(filled)} of ${String(CENSUS.listed)}`);
       for (const text of await rowsOf(page).allInnerTexts()) {
         expect(text).toMatch(/Common|Uncommon/);
         expect(text).not.toMatch(/\b(Rare|Epic|Mythic)\b/);
+        expect(text).not.toMatch(/Item chest|Gem chest|Hero cage/);
       }
       await page.getByTestId('deconstruct-selected-only').click();
 

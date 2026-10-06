@@ -80,7 +80,7 @@ function fold(text: string): string {
     .toLowerCase();
 }
 
-/** A chest or a skin package is never listed; an equipped piece is, and cannot be ticked. */
+/** Only what the server prices at zero, such as a skin package, is never listed; an equipped piece is, and cannot be ticked. */
 export function deconstructCandidates(items: readonly InventoryViewItem[]): InventoryViewItem[] {
   return items.filter((item) => deconstructBlockReason(item) !== 'not_burnable');
 }

@@ -18,7 +18,7 @@ import {
   isEmptyDeconstructFilter,
   type DeconstructFilter,
 } from './deconstruct-rows';
-import { rawGear, sampleBag, viewItems } from './test-items';
+import { rawGear, rawOther, sampleBag, viewItems } from './test-items';
 
 const labels = deconstructLabels(en, 'en', 'en');
 
@@ -30,8 +30,17 @@ function idsOf(filter: Partial<DeconstructFilter>, selected: readonly string[] =
 }
 
 describe('deconstructCandidates', () => {
-  it('lists everything the server would burn and leaves out what it never will, such as a chest', () => {
+  it('lists everything the server would burn and leaves out what it prices at zero, such as a chest it gave no worth', () => {
     expect(deconstructCandidates(sampleBag()).map((item) => item.id)).toEqual(['1', '2', '3', '4', '5', '6']);
+  });
+
+  it('lists a closed chest and a hero cage once the server gives them a worth', () => {
+    const bag = viewItems([
+      rawOther('c1', 'chest_item_10', 1, { rarity: 0, essence_value: 10 }),
+      rawOther('c2', 'chest_hero_1', 1, { rarity: 0, essence_value: 10 }),
+      rawOther('c3', 'skin_pack_1', 6, { rarity: 0, essence_value: 0 }),
+    ]);
+    expect(deconstructCandidates(bag).map((item) => item.id)).toEqual(['c1', 'c2']);
   });
 });
 

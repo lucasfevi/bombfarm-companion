@@ -637,7 +637,7 @@ export const ptBR: Copy = {
   deconstructAddAllDone: 'Tudo o que aparece já está no lote',
   deconstructAddAllNothing: 'Nada do que aparece pode ser queimado',
   deconstructFill: 'Preencher',
-  deconstructFillTip: 'Completa o lote só com itens Comuns e Incomuns, dos mais baratos para os mais caros. Só entram os itens que os filtros mostram.',
+  deconstructFillTip: 'Completa o lote só com itens Comuns e Incomuns, dos mais baratos para os mais caros, nunca baús nem jaulas. Só entram os itens que os filtros mostram.',
   deconstructClear: 'Limpar',
   deconstructBurn: 'Queimar',
   deconstructHintOverflow: 'Mais {count} não couberam no limite de {max}.',
