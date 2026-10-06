@@ -189,6 +189,35 @@ describe('ROUTE_FINGERPRINTS', () => {
     expect(withoutSlot.length, 'items WITHOUT slot').toBeGreaterThan(0);
   });
 
+  describe('the forge-patch item fields', () => {
+    const forgeFields = { essence_value: 420, forge_fails: 0, forge_chance: 0.15, pergaminho_custo: 12320 };
+    const prePatchItem = () => Object.fromEntries(SCHEMA_LEVELS.item.keys.map((key) => [key, 0]));
+    const inventoryBody = (item: Record<string, unknown>) => ({
+      items: [item],
+      chests: [],
+      bag_tabs: 1,
+      bag_capacity: 100,
+      items_count: 1,
+    });
+
+    it('an item carrying all four reports no drift, on the route and on the section', () => {
+      const item = { ...prePatchItem(), ...forgeFields };
+      expect(checkSchema(inventoryBody(item), ROUTE_FINGERPRINTS.items)).toEqual({ ok: true });
+      expect(checkSectionShape([item], SECTION_FINGERPRINTS.items)).toEqual({ ok: true });
+    });
+
+    it('an item from before the patch reports no drift either', () => {
+      const item = prePatchItem();
+      expect(checkSchema(inventoryBody(item), ROUTE_FINGERPRINTS.items)).toEqual({ ok: true });
+      expect(checkSectionShape([item], SECTION_FINGERPRINTS.items)).toEqual({ ok: true });
+    });
+
+    it('an unrelated new key is still reported', () => {
+      const item = { ...prePatchItem(), ...forgeFields, brand_new_key: 1 };
+      expect(checkSectionShape([item], SECTION_FINGERPRINTS.items)).toMatchObject({ ok: false });
+    });
+  });
+
   it('no runtime override exists — no env var and no refresh function name the fingerprint', () => {
     // Mirrors the literal verification command (`git grep -nE
     // 'process\.env\.[A-Z_]*FINGERPRINT|refreshFingerprint' packages/game-api/src`) as an

@@ -30,10 +30,13 @@ import { describe, expect, it } from 'vitest';
 import { sumGearBonuses } from '@bombfarm/domain/gear';
 import { inferSpentPoints } from '@bombfarm/domain/point-inference';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
+import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
 const FILE = 'save-20260818-12heroes.json';
 const RESPEC_FILE = 'save-20260819-respec-crit-cdr.json';
+
+holdSuiteUntilInRegime(`sheet-math/${FILE}`, 'itemForge');
 
 /** `olho_clinico`, in percent-of-base per rank (`ABILITIES`, measured post-revert). */
 const OLHO_PCT_PER_RANK = 4.285714285714286;

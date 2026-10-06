@@ -119,9 +119,14 @@ describe('forgeResultHeading', () => {
       text: 'Stopped at +11 — cancelled after roll 14',
       tone: 'warn',
     });
-    expect(forgeResultHeading(result({ stop: 'shortfall', to: 9 }), en)).toEqual({ text: 'Out of gold at +9', tone: 'down' });
+    expect(forgeResultHeading(result({ stop: 'shortfall', to: 9 }), en)).toEqual({ text: 'Out of gold or essence at +9', tone: 'down' });
     expect(forgeResultHeading(result({ stop: 'budget' }), en)).toEqual({ text: 'Stopped by the gold budget at +12', tone: 'warn' });
     expect(forgeResultHeading(result({ stop: 'attempts' }), en)).toEqual({ text: 'Stopped by the attempt limit at +12', tone: 'warn' });
+    expect(forgeResultHeading(result({ stop: 'stones', to: 10, stoneRarity: 2 }), en, (rarity) => ['Common', 'Uncommon', 'Rare'][rarity] ?? '')).toEqual({
+      text: 'Out of Rare Chance Stones at +10',
+      tone: 'warn',
+    });
+    expect(forgeResultHeading(result({ stop: 'stone_mismatch', to: 10 }), en).tone).toBe('down');
     expect(forgeResultHeading(result({ stop: 'cooldown' }), en)).toEqual({ text: 'Server cooldown at +12', tone: 'down' });
     expect(forgeResultHeading(result({ stop: 'missing' }), en)).toEqual({ text: 'Server refused the item', tone: 'down' });
     expect(forgeResultHeading(result({ stop: 'error', to: 8 }), en)).toEqual({ text: 'Stopped by an error at +8', tone: 'down' });
@@ -133,12 +138,15 @@ describe('forgeStopText', () => {
   it('names every stop in a word or two, leaving the rung to the ledger\'s own climb column', () => {
     expect(forgeStopText('target', en)).toBe('Reached');
     expect(forgeStopText('cancelled', en)).toBe('Cancelled');
-    expect(forgeStopText('shortfall', en)).toBe('Out of gold');
+    expect(forgeStopText('shortfall', en)).toBe('Out of gold or essence');
     expect(forgeStopText('budget', en)).toBe('Gold budget');
     expect(forgeStopText('attempts', en)).toBe('Attempt limit');
     expect(forgeStopText('cooldown', en)).toBe('Server cooldown');
     expect(forgeStopText('missing', en)).toBe('Item refused');
     expect(forgeStopText('error', en)).toBe('Error');
+    expect(forgeStopText('stones', en)).toBe('Out of stones');
+    expect(forgeStopText('stone_mismatch', en)).toBe('Stone not taken');
+    expect(forgeStopText('stones', ptBR)).toBe('Pedras acabaram');
     expect(forgeStopText('target', ptBR)).toBe('Chegou');
   });
 });
@@ -233,14 +241,23 @@ describe('the difference against the plan', () => {
 });
 
 describe('forgeStatRows', () => {
-  it('scales every roll by the ratio of the two multipliers and prints the change signed', () => {
+  it('scales every roll by the ratio of the two multipliers on each stat’s own ladder and prints the change signed', () => {
     const rows = forgeStatRows(item('g1').stats, 12, 13, 'en', 'en');
     expect(rows.map((row) => row.now)).toEqual(['107.8', '78.40%']);
-    // 107.8 × 2.04 / 1.96 = 112.2
-    expect(rows[0]?.target).toBe('112.2');
-    expect(rows[0]?.change).toBe('+4.4');
+    // 107.8 × 2.10 / 1.85 = 122.4
+    expect(rows[0]?.target).toBe('122.4');
+    expect(rows[0]?.change).toBe('+14.6');
     expect(rows[0]?.direction).toBe('up');
-    expect(rows[1]?.change).toBe('+3.20%');
+    // 78.40% × 2.10 / 1.85 = 88.99%
+    expect(rows[1]?.change).toBe('+10.59%');
+  });
+
+  it('scales crit chance and cooldown reduction on the previous ladder, not the new one', () => {
+    const crit = { name: 'crit', code: 4, unit: 'pct', value: 0.05, effective: 0.1 } as const;
+    const [row] = forgeStatRows([crit], 12, 13, 'en', 'en');
+    // 10% × 1.95 / 1.75 = 11.14%
+    expect(row?.target).toBe('11.14%');
+    expect(row?.change).toBe('+1.14%');
   });
 
   it('prints no change as a dash', () => {
@@ -251,7 +268,7 @@ describe('forgeStatRows', () => {
 
   it('follows the locale for separators', () => {
     const rows = forgeStatRows(item('g1').stats, 12, 13, 'pt', 'pt-BR');
-    expect(rows[0]?.target).toBe('112,2');
+    expect(rows[0]?.target).toBe('122,4');
     expect(rows[1]?.now).toBe('78,40%');
   });
 });
@@ -267,20 +284,23 @@ describe('forgeLabels', () => {
     expect(labels.itemForge(item('g2'))).toBe('');
   });
 
-  it('describes the span and the warning by the target', () => {
-    expect(labels.span(8)).toBe('safe span — every step lands');
-    expect(labels.span(13)).toBe('risky span — 40% at the top');
-    expect(labels.warning(13, 1.2)).toBe(
-      'A failed roll at +9…+14 drops the piece back to +8 and the gold is charged either way.',
-    );
-    expect(labels.warning(15, 2.34)).toBe(
-      '+15 is the only rung that wipes the piece to +0. Expect to rebuild from the safe floor about 2.3 times on the way.',
+  it('describes the miss rules once, whatever the target', () => {
+    expect(labels.warning()).toBe(
+      'A missed roll at +5…+15 adds 5 points to the next roll’s chance and the gold is charged either way. From +12 up it also drops the piece one level.',
     );
   });
 
   it('prints the factor line with both multipliers', () => {
     expect(labels.statsNote(11, 13)).toBe(
-      'Every roll scales by the same factor — ×2.04 at +13 against ×1.88 now — so this is what the piece becomes if the climb lands, not an average of where it might stop.',
+      'Every stat grows by the same factor — ×2.10 at +13 against ×1.65 now — so this is what the piece becomes if the climb lands, not an average of where it might stop.',
+    );
+  });
+
+  it('adds the slower ladder of crit chance and cooldown reduction only when the piece rolls one', () => {
+    const crit = { name: 'crit', code: 4, unit: 'pct', value: 0.05, effective: 0.1 } as const;
+    expect(labels.statsNote(11, 13, item('g1').stats)).toBe(labels.statsNote(11, 13));
+    expect(labels.statsNote(11, 13, [crit])).toBe(
+      `${labels.statsNote(11, 13)} The exception is crit chance and cooldown reduction, which keep the previous, slower ladder: ×1.95 at +13 against ×1.60 now.`,
     );
   });
 
@@ -288,7 +308,7 @@ describe('forgeLabels', () => {
     expect(labels.gold(127595)).toBe('127,595');
     expect(labels.rolls(2.5)).toBe('2.5');
     expect(labels.chance(0.5)).toBe('50%');
-    expect(labels.multiplier(13)).toBe('2.04');
+    expect(labels.multiplier(13)).toBe('2.10');
     expect(forgeLevel(0)).toBe('+0');
   });
 });

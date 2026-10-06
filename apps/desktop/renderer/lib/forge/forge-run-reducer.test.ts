@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ForgeDoneEvent, ForgeStepEvent } from '@bombfarm/contracts';
-import { forgeRunReducer, IDLE_FORGE_RUN, rungTally, shouldAdoptLiveAfter, type ForgeRunState } from './forge-run-reducer';
+import { forgeRunReducer, IDLE_FORGE_RUN, rungTally, shouldAdoptLiveAfter, stonesUsed, type ForgeRunState } from './forge-run-reducer';
 
 function step(overrides: Partial<ForgeStepEvent>): ForgeStepEvent {
   return {
@@ -15,6 +15,7 @@ function step(overrides: Partial<ForgeStepEvent>): ForgeStepEvent {
     cost: 100,
     spent: 100,
     wallet: 900,
+    essence: 10,
     ...overrides,
   };
 }
@@ -55,7 +56,7 @@ const DONE: ForgeDoneEvent = {
   },
 };
 
-const PLAN = { forecast: { rolls: 6.5, safeJumps: 0, gold: 650, badRunGold: 1_200 } };
+const PLAN = { forecast: { rolls: 6.5, gold: 650, essence: 0, stones: [0, 0, 0, 0, 0, 0], scroll: false, other: null, badRunGold: 1_200, badRunEssence: 0 } };
 
 function started(): ForgeRunState {
   return forgeRunReducer(IDLE_FORGE_RUN, { kind: 'start', runId: 'r1', itemId: 'g1', target: 12, from: 8, plan: PLAN });
@@ -78,7 +79,7 @@ describe('forgeRunReducer', () => {
     let state = started();
     for (const event of climb()) state = forgeRunReducer(state, { kind: 'step', event, adopt: null });
     if (state.status !== 'running') throw new Error('expected a running state');
-    expect(state.run.tally).toEqual({ rolls: 8, fails: 1, crits: 0, safeJumps: 0, spent: 800 });
+    expect(state.run.tally).toEqual({ rolls: 8, fails: 1, crits: 0, safeJumps: 0, spent: 800, essence: 80 });
     expect(state.run.upgrade).toBe(12);
     expect(state.run.wallet).toBe(900);
     expect(state.run.steps).toHaveLength(8);
@@ -196,27 +197,39 @@ describe('shouldAdoptLiveAfter', () => {
 describe('rungTally', () => {
   it('merges consecutive quiet rungs into one row and leaves the rung that missed on its own', () => {
     expect(rungTally(climb())).toEqual([
-      { from: 9, to: 11, rolls: 6, fails: 0, gold: 600 },
-      { from: 12, to: 12, rolls: 2, fails: 1, gold: 200 },
+      { from: 9, to: 11, rolls: 6, fails: 0, gold: 600, essence: 60 },
+      { from: 12, to: 12, rolls: 2, fails: 1, gold: 200, essence: 20 },
     ]);
   });
 
   it('starts a new quiet row after a rung with a miss, and counts a safe jump as gold without a roll', () => {
     const steps = [
-      step({ attempt: 1, kind: 'safe', target: 8, from: 3, to: 8, cost: 50 }),
+      step({ attempt: 1, kind: 'safe', target: 8, from: 3, to: 8, cost: 50, essence: 0 }),
       step({ attempt: 2, target: 9, from: 8, to: 8, outcome: 'fail' }),
       step({ attempt: 3, target: 9, from: 8, to: 9 }),
       step({ attempt: 4, target: 10, from: 9, to: 10 }),
       step({ attempt: 5, target: 11, from: 10, to: 11 }),
     ];
     expect(rungTally(steps)).toEqual([
-      { from: 8, to: 8, rolls: 0, fails: 0, gold: 50 },
-      { from: 9, to: 9, rolls: 2, fails: 1, gold: 200 },
-      { from: 10, to: 11, rolls: 2, fails: 0, gold: 200 },
+      { from: 8, to: 8, rolls: 0, fails: 0, gold: 50, essence: 0 },
+      { from: 9, to: 9, rolls: 2, fails: 1, gold: 200, essence: 20 },
+      { from: 10, to: 11, rolls: 2, fails: 0, gold: 200, essence: 20 },
     ]);
   });
 
   it('is empty before the first call', () => {
     expect(rungTally([])).toEqual([]);
+  });
+});
+
+describe('stonesUsed', () => {
+  it('counts the stones the server reported using, by rarity, and ignores rolls that used none', () => {
+    const steps = [step({ stone: 0 }), step({ stone: 0 }), step({ stone: 3 }), step({ stone: null }), step({})];
+    expect(stonesUsed(steps)).toEqual([2, 0, 0, 1, 0, 0]);
+    expect(stonesUsed([])).toEqual([0, 0, 0, 0, 0, 0]);
+  });
+
+  it('does not count a rarity outside the six kinds', () => {
+    expect(stonesUsed([step({ stone: 9 }), step({ stone: -1 })])).toEqual([0, 0, 0, 0, 0, 0]);
   });
 });

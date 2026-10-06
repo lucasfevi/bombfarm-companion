@@ -124,6 +124,7 @@ describe('reconcile', () => {
     ['Time Chest', 'chest_time'],
     ['Gem Chest', 'chest_gem'],
     ['Skill Stone Chest', 'chest_skill'],
+    ['Chance Stone Chest', 'chest_forja'],
   ])('reaches every act of %s, the act doubling as the rarity tier', (family, defPrefix) => {
     for (const act of [1, 2]) {
       const { entries } = reconcileOne(`${family} (Act ${String(act)})`);

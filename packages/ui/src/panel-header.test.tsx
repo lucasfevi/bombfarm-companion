@@ -29,6 +29,16 @@ describe('PanelHeader', () => {
     expect(html.indexOf('<h2')).toBeLessThan(html.indexOf('data-testid="counter"'));
   });
 
+  it('draws an info tip right after the title, before anything on the right-hand side', () => {
+    const html = render({
+      title: 'Item',
+      info: createElement('span', { 'data-testid': 'info' }, 'i'),
+      children: createElement('span', { 'data-testid': 'counter' }, '3'),
+    });
+    expect(html.indexOf('<h2')).toBeLessThan(html.indexOf('data-testid="info"'));
+    expect(html.indexOf('data-testid="info"')).toBeLessThan(html.indexOf('data-testid="counter"'));
+  });
+
   it('merges a caller className with the header row classes, caller winning on conflicts', () => {
     const html = render({ title: 'Points', className: 'mb-0' });
     expect(html).toContain('mb-0');

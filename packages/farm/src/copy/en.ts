@@ -49,6 +49,7 @@ export const farmEn = {
   phasesDropTime: "Time chest",
   phasesDropGem: "Gem chest",
   phasesDropStone: "Stone chest",
+  phasesDropChance: "Chance Stone chest",
   phasesDropActualHint: "base value + your skill tree's luck + your squad's average luck.",
   phasesDropsSectionDesc: "Which drops can roll depends on whether the phase is a gate.",
   phasesDropGateOnly: "Gates only",

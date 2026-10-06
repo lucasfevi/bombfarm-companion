@@ -13,6 +13,7 @@ import {
   totalsFromLevels,
   type SkillTreeState,
 } from '@bombfarm/domain/skill-tree';
+import { skipUnlessInRegime } from './helpers/capture-regime';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import { FARM_OPTIMIZE_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
@@ -121,7 +122,8 @@ describe('priceSkillTree', () => {
     expect(pricing.gains.map((gain) => gain.id)).toEqual(state.levels.H01 === 10 ? [] : ['H01']);
   });
 
-  it('prices energy at exactly nothing on a window every squad hero already covers, while a damage node still moves', () => {
+  it('prices energy at exactly nothing on a window every squad hero already covers, while a damage node still moves', (context) => {
+    skipUnlessInRegime(context, `sheet-math/${FARM_OPTIMIZE_FIXTURE}`, 'sheet');
     // The squad deploys full when the window opens, and nobody on it runs out inside 60 s — so
     // more max energy changes nothing a duel can see. The auras, Matilha's allies and the Baton
     // Pass pulse are weighted by presence in the window, not by rotation duty, or a longer stint

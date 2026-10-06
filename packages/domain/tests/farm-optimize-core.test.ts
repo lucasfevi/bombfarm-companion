@@ -105,7 +105,7 @@ describe('one entry per enabled hero, including unchanged ones with their own co
 
     const changed = result.heroes.filter((h) => h.changed);
     expect(changed.length, 'expected at least one changed hero too').toBeGreaterThan(0);
-    const expectedTotal = changed.reduce((sum, h) => sum + h.respecCostGold, 0);
+    const expectedTotal = changed.filter((h) => h.requiresReset).reduce((sum, h) => sum + h.respecCostGold, 0);
     expect(result.respecCostGold).toBe(expectedTotal);
   });
 });

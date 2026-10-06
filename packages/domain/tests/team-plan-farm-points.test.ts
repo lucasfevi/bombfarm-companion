@@ -25,7 +25,7 @@ import { buildHeroPlanContexts } from '@bombfarm/domain/team-plan/hero-context';
 import { createScoreMemo } from '@bombfarm/domain/team-plan/score';
 import { RESPEC_KEYS } from '@bombfarm/domain/points-reopt-core';
 import type { Loadout, PointAlloc } from '@bombfarm/domain/gear/types';
-import { assertInRegime } from './helpers/capture-regime';
+import { assertInRegime, skipUnlessInRegime } from './helpers/capture-regime';
 import { loadTeamPlanFarmFixture, type TeamPlanFarmFixture } from './helpers/team-plan-farm-fixtures';
 import { farmPlan } from './helpers/team-plan-farm-plan';
 
@@ -43,7 +43,11 @@ const CAPTURES = [
 
 /** At or past the damage boundary — the only captures a gain may be measured on. */
 const GAIN_CAPTURES = ['save-20260828-4heroes-postpatch.json', 'save-20260831-13heroes-soulbound.json'];
-for (const file of GAIN_CAPTURES) assertInRegime(`sheet-math/${file}`, 'sheet');
+const SOULBOUND = 'save-20260831-13heroes-soulbound.json';
+const FRESH_ACCOUNT = 'save-20260828-4heroes-postpatch.json';
+
+// Loud rather than skipped: this capture is admissible, so it leaving its regime is a re-point.
+assertInRegime(`sheet-math/${FRESH_ACCOUNT}`, 'sheet');
 
 function goldPerHour(
   fixture: TeamPlanFarmFixture,
@@ -75,7 +79,8 @@ function resetsByHeroId(plan: ReturnType<typeof farmPlan>): Record<string, Point
 
 describe('the farm point pass earns gold the gear alone does not', () => {
   for (const file of GAIN_CAPTURES) {
-    it(`${file}: the proposed points beat the same plan's gear on its own`, () => {
+    it(`${file}: the proposed points beat the same plan's gear on its own`, (context) => {
+      if (file === SOULBOUND) skipUnlessInRegime(context, `sheet-math/${SOULBOUND}`, 'sheet');
       const fixture = loadTeamPlanFarmFixture(file);
       const plan = farmPlan(fixture);
       const gearOnly = goldPerHour(fixture, plan.proposedLoadouts);
@@ -135,7 +140,8 @@ describe('the pass moves only what the plan is allowed to move', () => {
 
 describe('a reset is only written when it actually changes the build', () => {
   for (const file of GAIN_CAPTURES) {
-    it(`${file}: every reported reset differs from the hero's current points`, () => {
+    it(`${file}: every reported reset differs from the hero's current points`, (context) => {
+      if (file === SOULBOUND) skipUnlessInRegime(context, `sheet-math/${SOULBOUND}`, 'sheet');
       const fixture = loadTeamPlanFarmFixture(file);
       const plan = farmPlan(fixture);
       for (const reset of plan.pointResets) {

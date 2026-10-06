@@ -21,11 +21,10 @@ export const teamPlanGearFlowEn = {
   teamPlanForgeQueueHeading: 'Forge queue',
   teamPlanForgeQueueLadderAria: 'Forge ladder for {item}: +{from} to +{to}',
   teamPlanForgeQueueRolls: '≈ {rolls} rolls',
-  teamPlanForgeQueueSafeJumpOne: '1 safe jump',
-  teamPlanForgeQueueSafeJumpMany: '{count} safe jumps',
+  teamPlanForgeQueueEssence: '≈ {essence} essence',
   teamPlanForgeQueueGold: '≈ {gold} gold',
   teamPlanForgeQueueTotal: 'Expected for all {count}',
   teamPlanForgeQueueNoForecast: 'No estimate — this item level is not on the forge table.',
   teamPlanForgeQueueLegend:
-    'Solid: up to +8 in one safe jump, which cannot fail. Fading: each roll past +8 — the lighter the segment, the lower its chance; a failed roll drops back to +8 (a failed +15 drops to +0). Figures are expected values over many attempts.',
+    'Solid: +1 to +4 always land. Fading: each roll past +4 — the lighter the segment, the lower its chance, and every miss in a row adds 5 points to the next roll. From the roll for +12 up, a miss drops the piece one level, never under +10. Figures are expected values over many attempts.',
 } as const;

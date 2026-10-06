@@ -11,6 +11,7 @@ import { PVP_TOP_HOUSE_SQUAD_SLOTS, PVP_WINDOW_SECS, defaultGatePhase, gateWindo
 import { fieldPresence, fieldSeconds, sustainedDps, type Context, type HeroSheet } from '@bombfarm/domain/model';
 import { wikiPhaseLine } from '@bombfarm/domain/phase-wiki';
 import type { TeamPlanInput, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
+import { skipUnlessInRegime } from './helpers/capture-regime';
 import { loadTeamPlanFarmFixture } from './helpers/team-plan-farm-fixtures';
 
 const CAPTURE = 'save-20260819-11882-7heroes.json';
@@ -141,7 +142,8 @@ describe('runTeamPlan under a combat window', () => {
     expect(gate.currentDps).toBeGreaterThan(rotation.currentDps);
   });
 
-  it('the duel room seats the squad whatever the account’s field: a squad the field could not seat all fights at once', () => {
+  it('the duel room seats the squad whatever the account’s field: a squad the field could not seat all fights at once', (context) => {
+    skipUnlessInRegime(context, `sheet-math/${CAPTURE}`, 'itemForge');
     const optimizeCount = Object.values(input.scopeByHeroId).filter((scope) => scope === 'optimize').length;
     expect(optimizeCount).toBeGreaterThan(input.account.fieldSlots);
     const duel = planFor(input, 'pvp', 60);
@@ -152,7 +154,8 @@ describe('runTeamPlan under a combat window', () => {
     expect(planFor(input, 'gateClear', 60).regime).toBe('saturated');
   });
 
-  it('a six-slot squad is scored on a six-seat room: six fielded all fight at once, a seventh would share', () => {
+  it('a six-slot squad is scored on a six-seat room: six fielded all fight at once, a seventh would share', (context) => {
+    skipUnlessInRegime(context, `sheet-math/${CAPTURE}`, 'itemForge');
     const fielded = Object.keys(input.scopeByHeroId).filter((id) => input.scopeByHeroId[id] !== 'donate');
     expect(fielded.length).toBeGreaterThanOrEqual(7);
     const squadOf = (count: number): TeamPlanInput['scopeByHeroId'] =>

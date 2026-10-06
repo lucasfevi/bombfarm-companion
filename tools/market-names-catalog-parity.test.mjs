@@ -87,7 +87,7 @@ const everyGemHasAnIdentity = (gems) =>
   );
 
 const chestTableIsKeyedByFamily = (source) =>
-  tableEntries(source, 'ACT_CHEST_FAMILY_DEF').length === 4 &&
+  tableEntries(source, 'ACT_CHEST_FAMILY_DEF').length === 5 &&
   tableEntries(source, 'ACT_CHEST_FAMILY_DEF').every(([, def]) => def.startsWith('chest_')) &&
   !/\(Act \d/.test(tableBody(source, 'ACT_CHEST_FAMILY_DEF') ?? '');
 
@@ -95,7 +95,7 @@ describe('the market name words against the committed catalog', () => {
   it('finds real tables to read, so the predicates below are not vacuous', () => {
     expect(tableEntries(namesSource, 'MARKET_SLOT_WORD').length).toBeGreaterThan(0);
     expect(tableEntries(namesSource, 'MARKET_RARITY_WORD').length).toBeGreaterThan(0);
-    expect(tableEntries(tagsSource, 'ACT_CHEST_FAMILY_DEF').length).toBe(4);
+    expect(tableEntries(tagsSource, 'ACT_CHEST_FAMILY_DEF').length).toBe(5);
     expect(catalogSlots.length).toBe(8);
     expect(catalogRarityIdxs).toEqual([0, 1, 2, 3, 4, 5]);
   });

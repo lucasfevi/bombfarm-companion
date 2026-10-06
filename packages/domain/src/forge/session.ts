@@ -43,15 +43,15 @@ export function evalForgeStop(state: ForgeSessionState, limits: ForgeLimits): Fo
   return null;
 }
 
-export type ForgeTally = { rolls: number; fails: number; crits: number; safeJumps: number; spent: number };
+export type ForgeTally = { rolls: number; fails: number; crits: number; safeJumps: number; spent: number; essence: number };
 
 export function emptyForgeTally(): ForgeTally {
-  return { rolls: 0, fails: 0, crits: 0, safeJumps: 0, spent: 0 };
+  return { rolls: 0, fails: 0, crits: 0, safeJumps: 0, spent: 0, essence: 0 };
 }
 
 export function foldForgeStep(
   tally: ForgeTally,
-  step: { outcome: ForgeOutcome; kind: ForgeCallKind; cost: number },
+  step: { outcome: ForgeOutcome; kind: ForgeCallKind; cost: number; essence?: number },
 ): ForgeTally {
   return {
     rolls: tally.rolls + (step.kind === 'roll' ? 1 : 0),
@@ -59,5 +59,6 @@ export function foldForgeStep(
     crits: tally.crits + (step.outcome === 'critical' ? 1 : 0),
     safeJumps: tally.safeJumps + (step.kind === 'safe' ? 1 : 0),
     spent: tally.spent + step.cost,
+    essence: tally.essence + (step.essence ?? 0),
   };
 }

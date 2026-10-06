@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { sub, subNodes, useCopy, useLocale, type Copy } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import { addManyToForgeQueue } from '../../lib/forge/forge-queue-store';
-import { bagUpgrades, forgeQueueExpectedGold, resolveForgeQueue } from '../../lib/forge/forge-queue-view';
+import { bagUpgrades, forgeQueueExpectedEssence, forgeQueueExpectedGold, resolveForgeQueue } from '../../lib/forge/forge-queue-view';
 import { planForgeQueueBatch, type ForgeQueueBatch } from '../../lib/forge/forge-queue-batch';
 import type { StepRecord } from '../../lib/optimizer/apply-progress-reducer';
 import { applyActions, useApplyProgress } from '../../lib/optimizer/apply-store';
@@ -62,6 +62,7 @@ export function ApplyForgeRow({ forgeList, queue, gear, gate, record, onDone, ne
     [forgeList, queue, gear],
   );
   const expectedGold = useMemo(() => forgeQueueExpectedGold(resolveForgeQueue(batch.toAdd, gear)), [batch.toAdd, gear]);
+  const expectedEssence = useMemo(() => forgeQueueExpectedEssence(resolveForgeQueue(batch.toAdd, gear)), [batch.toAdd, gear]);
   const state = describeForgeRow(batch, record);
   const skipCount = batch.missing + batch.atTarget;
 
@@ -72,12 +73,13 @@ export function ApplyForgeRow({ forgeList, queue, gear, gate, record, onDone, ne
         ? t.applyStepForgeAllQueued
         : batch.total === 0
       ? t.applyStepNothing
-      : expectedGold === null
+      : expectedGold === null || expectedEssence === null
         ? sub(t.applyStepForgeFactsNoEstimate, { pieces: batch.adding, queued: batch.queued })
         : subNodes(t.applyStepForgeFacts, {
             pieces: batch.adding,
             queued: batch.queued,
             gold: <ForgeGold>{formatCount(expectedGold, locale)}</ForgeGold>,
+            essence: formatCount(Math.round(expectedEssence), locale),
           });
 
   const notes: ReactNode[] = [];

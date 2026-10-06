@@ -38,7 +38,7 @@ export const EQUIPMENT_CATEGORY_TAG = 'equip';
 export const LEVEL_CHEST_DEF_PREFIX = 'chest_item';
 
 /**
- * The act-scoped chests, by the family their def id uses. Four families, owner-confirmed complete;
+ * The act-scoped chests, by the family their def id uses. Five families (the fifth, from the 2026-10-05 patch, is unconfirmed against a live listing);
  * `chest_auto`, `chest_easy` and `chest_inferno` never reach the market.
  *
  * Only the family is tabled, because only the family is arbitrary: the act follows the name form
@@ -55,6 +55,7 @@ export const ACT_CHEST_FAMILY_DEF: Readonly<Record<string, string>> = {
   'Time Chest': 'chest_time',
   'Gem Chest': 'chest_gem',
   'Skill Stone Chest': 'chest_skill',
+  'Chance Stone Chest': 'chest_forja',
 };
 
 /**

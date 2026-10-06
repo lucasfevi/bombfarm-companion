@@ -1,27 +1,45 @@
 import { describe, expect, it } from 'vitest';
 import {
-  FORGE_SAFE,
+  FORGE_FAIL_FLOOR,
+  FORGE_GUARANTEED,
+  FORGE_PITY_CAP,
   forgeChance,
   forgeCritChance,
-  forgeFailFloor,
+  forgeFailLevel,
+  forgeProtectable,
   forgeRollCost,
-  forgeSafeJumpCost,
+  forgeRollEssence,
+  forgeScrollCost,
   nextForgeStep,
 } from '@bombfarm/domain/forge';
 
 describe('forgeChance', () => {
-  it('is certain for +1…+8 and falls from 0.8 at +9 to 0.2 at +15', () => {
+  it('is certain for +1…+4 and falls from 0.9 at +5 to 0.1 at +15', () => {
     expect(forgeChance(1)).toBe(1);
-    expect(forgeChance(8)).toBe(1);
-    expect(forgeChance(9)).toBe(0.8);
-    expect(forgeChance(12)).toBe(0.5);
-    expect(forgeChance(15)).toBe(0.2);
+    expect(forgeChance(FORGE_GUARANTEED)).toBe(1);
+    expect(forgeChance(5)).toBe(0.9);
+    expect(forgeChance(9)).toBe(0.5);
+    expect(forgeChance(12)).toBe(0.25);
+    expect(forgeChance(15)).toBe(0.1);
   });
 
-  it('throws for a target outside +1…+15 or one that is not a whole level', () => {
+  it('adds five points per miss in a row and never passes certainty', () => {
+    expect(forgeChance(15, 1)).toBeCloseTo(0.15, 12);
+    expect(forgeChance(15, 5)).toBeCloseTo(0.35, 12);
+    expect(forgeChance(5, 2)).toBe(1);
+    expect(forgeChance(5, 50)).toBe(1);
+  });
+
+  it('is certain for every target once the miss cap is reached', () => {
+    for (let target = 1; target <= 15; target++) expect(forgeChance(target, FORGE_PITY_CAP)).toBe(1);
+    expect(forgeChance(15, FORGE_PITY_CAP - 1)).toBeLessThan(1);
+  });
+
+  it('throws for a target outside +1…+15, a fractional one, or a negative miss count', () => {
     expect(() => forgeChance(0)).toThrow(RangeError);
     expect(() => forgeChance(16)).toThrow(RangeError);
     expect(() => forgeChance(9.5)).toThrow(RangeError);
+    expect(() => forgeChance(9, -1)).toThrow(RangeError);
   });
 });
 
@@ -33,33 +51,52 @@ describe('forgeCritChance', () => {
   });
 });
 
-describe('forgeFailFloor', () => {
-  it('sends a failed +9…+14 back to +8 and a failed +15 back to +0', () => {
-    expect(forgeFailFloor(9)).toBe(8);
-    expect(forgeFailFloor(14)).toBe(8);
-    expect(forgeFailFloor(15)).toBe(0);
+describe('forgeFailLevel', () => {
+  it('keeps the level through +11 and drops a miss by exactly one level from +12 up', () => {
+    expect(forgeFailLevel(1)).toBe(0);
+    expect(forgeFailLevel(5)).toBe(4);
+    expect(forgeFailLevel(11)).toBe(10);
+    expect(forgeFailLevel(12)).toBe(FORGE_FAIL_FLOOR);
+    expect(forgeFailLevel(13)).toBe(11);
+    expect(forgeFailLevel(14)).toBe(12);
+    expect(forgeFailLevel(15)).toBe(13);
+  });
+
+  it('never lands above the level the roll was made from', () => {
+    for (let target = 1; target <= 15; target++) expect(forgeFailLevel(target)).toBeLessThanOrEqual(target - 1);
   });
 
   it('throws for a target outside the ladder', () => {
-    expect(() => forgeFailFloor(0)).toThrow(RangeError);
-    expect(() => forgeFailFloor(16)).toThrow(RangeError);
+    expect(() => forgeFailLevel(0)).toThrow(RangeError);
+    expect(() => forgeFailLevel(16)).toThrow(RangeError);
   });
 });
 
-describe('forgeRollCost', () => {
+describe('forgeRollCost and forgeRollEssence', () => {
   it('throws for an item level the table has no row for', () => {
     expect(() => forgeRollCost(15, 0, 1)).toThrow(/level 15/);
-    expect(() => forgeRollCost(310, 0, 1)).toThrow(/level 310/);
+    expect(() => forgeRollEssence(310, 0, 1)).toThrow(/level 310/);
   });
 
   it('throws for a rarity outside 0…5', () => {
     expect(() => forgeRollCost(10, -1, 1)).toThrow(/rarity -1/);
-    expect(() => forgeRollCost(10, 6, 1)).toThrow(/rarity 6/);
+    expect(() => forgeRollEssence(10, 6, 1)).toThrow(/rarity 6/);
   });
 
   it('throws for a target outside +1…+15', () => {
     expect(() => forgeRollCost(10, 0, 0)).toThrow(RangeError);
-    expect(() => forgeRollCost(10, 0, 16)).toThrow(RangeError);
+    expect(() => forgeRollEssence(10, 0, 16)).toThrow(RangeError);
+  });
+});
+
+describe('forgeScrollCost', () => {
+  it('prices a level-140 uncommon +14 roll at 135 x 2 x 140 / 10', () => {
+    expect(forgeScrollCost(140, 1, 14)).toBe(3_780);
+  });
+
+  it('only exists for +12…+15', () => {
+    expect(() => forgeScrollCost(100, 2, 11)).toThrow(/scroll/);
+    expect(forgeScrollCost(100, 2, 15)).toBe(28_200);
   });
 });
 
@@ -70,42 +107,83 @@ describe('nextForgeStep', () => {
     expect(nextForgeStep(0, 0, 10, 0)).toEqual({ kind: 'done' });
   });
 
-  it('takes the safe jump only from below +8 with a target of +8 or higher', () => {
-    expect(nextForgeStep(0, 8, 10, 0)).toEqual({ kind: 'safe', target: FORGE_SAFE, cost: 14_200 });
-    expect(nextForgeStep(7, 15, 10, 0)).toEqual({ kind: 'safe', target: FORGE_SAFE, cost: 14_200 });
-    expect(nextForgeStep(8, 15, 10, 0).kind).toBe('roll');
-  });
-
-  it('climbs one step at a time when the target is below +8, because a safe jump would overshoot', () => {
-    expect(nextForgeStep(3, 7, 10, 0)).toEqual({ kind: 'roll', target: 4, chance: 1, failTo: 8, cost: 1_250 });
-    expect(nextForgeStep(6, 7, 10, 0)).toEqual({ kind: 'roll', target: 7, chance: 1, failTo: 8, cost: 3_200 });
-  });
-
-  it('rolls for the next level above +8, carrying its chance, its fail floor and its cost', () => {
-    expect(nextForgeStep(8, 15, 300, 5)).toEqual({
+  it('rolls every rung one at a time, never jumping, so the guaranteed rungs are rolls at 100%', () => {
+    expect(nextForgeStep(0, 15, 10, 0)).toEqual({
       kind: 'roll',
-      target: 9,
-      chance: 0.8,
-      failTo: 8,
-      cost: forgeRollCost(300, 5, 9),
-    });
-    expect(nextForgeStep(14, 15, 300, 5)).toEqual({
-      kind: 'roll',
-      target: 15,
-      chance: 0.2,
+      target: 1,
+      chance: 1,
       failTo: 0,
-      cost: forgeRollCost(300, 5, 15),
+      cost: 200,
+      essence: 1,
+      protection: 0,
+      stoneUsed: false,
+      stone: null,
     });
+    expect(nextForgeStep(3, 7, 10, 0)).toMatchObject({ kind: 'roll', target: 4, chance: 1, failTo: 3, cost: 1_250 });
   });
 
-  it('prices the safe jump at the safe-jump cost and a roll at that single roll', () => {
-    const safe = nextForgeStep(2, 10, 200, 3);
-    expect(safe.kind === 'safe' && safe.cost).toBe(forgeSafeJumpCost(200, 3));
-    const roll = nextForgeStep(10, 12, 200, 3);
-    expect(roll.kind === 'roll' && roll.cost).toBe(forgeRollCost(200, 3, 11));
+  it('carries the chance with its pity, the landing level and the gold and essence of the roll', () => {
+    expect(nextForgeStep(11, 15, 300, 5, 2)).toEqual({
+      kind: 'roll',
+      target: 12,
+      chance: 0.35,
+      failTo: 10,
+      cost: forgeRollCost(300, 5, 12),
+      essence: forgeRollEssence(300, 5, 12),
+      protection: 0,
+      stoneUsed: false,
+      stone: null,
+    });
+    expect(nextForgeStep(14, 15, 300, 5)).toMatchObject({ target: 15, chance: 0.1, failTo: 13 });
+    expect(nextForgeStep(12, 15, 300, 5)).toMatchObject({ target: 13, failTo: 11 });
   });
 
   it('throws for a target above the ladder rather than inventing a level', () => {
     expect(() => nextForgeStep(15, 16, 300, 5)).toThrow(RangeError);
+  });
+});
+
+describe('a Chance Stone', () => {
+  it('adds its points to the one attempt, on top of the pity, capped at certainty', () => {
+    const plain = nextForgeStep(13, 15, 100, 2, 0, { stonePp: 0.3 });
+    expect(plain).toMatchObject({ stoneUsed: true });
+    expect(plain.kind === 'roll' && plain.chance).toBeCloseTo(0.45, 12);
+    const withPity = nextForgeStep(13, 15, 100, 2, 2, { stonePp: 0.3 });
+    expect(withPity).toMatchObject({ stoneUsed: true });
+    expect(withPity.kind === 'roll' && withPity.chance).toBeCloseTo(0.55, 12);
+    expect(nextForgeStep(13, 15, 100, 2, 0, { stonePp: 0.9 })).toMatchObject({ chance: 1, stoneUsed: true });
+  });
+
+  it('is refused, and not spent, when the chance is already certain', () => {
+    expect(nextForgeStep(0, 15, 100, 2, 0, { stonePp: 0.6 })).toMatchObject({ chance: 1, stoneUsed: false });
+    expect(nextForgeStep(4, 15, 100, 2, 2, { stonePp: 0.6 })).toMatchObject({ chance: 1, stoneUsed: false });
+  });
+});
+
+describe('the Protection Scroll', () => {
+  it('is offered only where a miss would cost levels, +12…+15', () => {
+    expect([10, 11, 12, 13, 14, 15].map(forgeProtectable)).toEqual([false, false, true, true, true, true]);
+  });
+
+  it('keeps the piece one level under the target on a miss, and charges its essence price', () => {
+    expect(nextForgeStep(13, 15, 140, 1, 0, { protect: true })).toMatchObject({
+      target: 14,
+      failTo: 13,
+      protection: 3_780,
+    });
+    expect(nextForgeStep(10, 15, 140, 1, 0, { protect: true })).toMatchObject({ target: 11, failTo: 10, protection: 0 });
+  });
+
+  it('changes nothing when it is not ticked', () => {
+    expect(nextForgeStep(13, 15, 140, 1, 0, { protect: false })).toMatchObject({ failTo: 12, protection: 0 });
+  });
+});
+
+describe('the Collection forge bonus', () => {
+  it('is a flat addend to the chance, capped at certainty, and defaults to nothing', () => {
+    expect(forgeChance(15, 0, 0.1)).toBeCloseTo(0.2, 12);
+    expect(forgeChance(15, 0, 5)).toBe(1);
+    expect(nextForgeStep(14, 15, 100, 2, 0, { bonus: 0.05 })).toMatchObject({ target: 15 });
+    expect(nextForgeStep(14, 15, 100, 2, 0, {})).toMatchObject({ chance: 0.1 });
   });
 });

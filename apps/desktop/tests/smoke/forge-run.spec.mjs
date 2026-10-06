@@ -168,6 +168,7 @@ function scriptedSteps(itemId) {
     cost: 1_000,
     spent: 1_000 * (index + 1),
     wallet: 222_054_630 - 1_000 * (index + 1),
+    essence: 10,
   }));
 }
 
@@ -196,6 +197,7 @@ function scriptedDone(itemId) {
       spent: 8_000,
       walletAfter: 222_054_630 - 8_000,
       durationMs: 14_000,
+      essence: 80,
     },
   };
 }
@@ -400,7 +402,81 @@ async function openingTheLedgerTakesOnlyFromBelow(page, ledger) {
     .toEqual({ split: before.split.height, scroll: before.mainScroll });
 }
 
+/** Rolls for +9 and +10 each used one Common stone and the +10 roll one Rare stone more; the
+ *  run then stopped for want of Rare stones, as main reports it. */
+function stoneRunEvents(itemId) {
+  const rolls = [
+    [8, 9, 'success', 0],
+    [9, 8, 'fail', 0],
+    [8, 9, 'success', 2],
+  ];
+  const steps = rolls.map(([from, to, outcome, stone], index) => ({
+    type: 'step',
+    runId: RUN_ID,
+    itemId,
+    attempt: index + 1,
+    kind: 'roll',
+    target: outcome === 'fail' ? from + 1 : to,
+    from,
+    to,
+    outcome,
+    cost: 1_000,
+    spent: 1_000 * (index + 1),
+    wallet: 222_054_630 - 1_000 * (index + 1),
+    stone,
+  }));
+  const done = {
+    type: 'done',
+    runId: RUN_ID,
+    result: {
+      itemId,
+      from: 8,
+      to: 9,
+      target: 12,
+      stop: 'stones',
+      reached: false,
+      rolls: 3,
+      fails: 1,
+      crits: 0,
+      safeJumps: 0,
+      spent: 3_000,
+      walletAfter: 222_054_630 - 3_000,
+      durationMs: 6_000,
+      stonesSpent: [2, 0, 1, 0, 0, 0],
+      stoneRarity: 2,
+    },
+  };
+  return { steps, done };
+}
+
 test.describe('forge run smoke', () => {
+  test('shows the stones a run has used up while it rolls and on its result, and names the kind it ran out of', async () => {
+    test.setTimeout(180_000);
+    await withForge(async (page) => {
+      const itemId = await selectFirstWornPiece(page);
+      const rail = page.getByTestId('forge-rail');
+      const { steps, done } = stoneRunEvents(itemId);
+
+      expect(await inject(page, steps)).toEqual({ ok: true });
+      await expect(rail).toHaveAttribute('data-state', 'running');
+      const used = rail.getByTestId('forge-stones-used-kind');
+      await expect(used).toHaveCount(2);
+      await expect(used.nth(0)).toHaveAttribute('data-rarity', '0');
+      await expect(used.nth(0)).toContainText('×2');
+      await expect(used.nth(0).locator('img[src$="chance_stone_common.png"]')).toHaveCount(1);
+      await expect(used.nth(1)).toHaveAttribute('data-rarity', '2');
+      await expect(used.nth(1)).toContainText('×1');
+
+      expect(await inject(page, [done])).toEqual({ ok: true });
+      await expect(rail).toHaveAttribute('data-state', 'finished');
+      await expect(rail.getByTestId('forge-result-heading')).toHaveText('Out of Rare Chance Stones at +9');
+      await expect(rail.getByTestId('forge-stones-used-kind')).toHaveCount(2);
+
+      await rail.getByTestId('forge-done').click();
+      await expect(rail).toHaveAttribute('data-state', 'collapsed', { timeout: 5_000 });
+    });
+  });
+
   test('draws an injected run through running and finished and back to a collapsed rail, spanning the row while the bag stays as tall as the column beside it', async ({}, testInfo) => {
     testInfo.setTimeout(180_000);
     await withForge(async (page) => {
@@ -426,6 +502,7 @@ test.describe('forge run smoke', () => {
       await expect(tallyRows.nth(0).getByTestId('forge-tally-rolls')).toHaveText('6');
       await expect(tallyRows.nth(1).getByTestId('forge-tally-rolls')).toHaveText('2');
       await expect(tallyRows.nth(1).getByTestId('forge-tally-fails')).toHaveText('1');
+      await expect(tallyRows.nth(0).getByTestId('forge-tally-essence')).toHaveText('60');
       await expect(page.getByTestId('forge-button')).toHaveText('Cancel after this roll');
       await expect(rail.getByTestId('forge-rail-cancel')).toBeEnabled();
       await page.waitForTimeout(400);
@@ -482,6 +559,7 @@ test.describe('forge run smoke', () => {
       await expect(rail).toHaveAttribute('data-state', 'finished');
       await expect(rail.getByTestId('forge-result-heading')).toHaveText('Reached +12');
       await expect(rail.getByTestId('forge-result-climb')).toHaveText('+8 → +12');
+      await expect(rail.getByTestId('forge-result-spent')).toContainText('80 essence');
       await expect(rail.getByTestId('forge-chart')).toBeVisible();
       await expect(rail.getByTestId('forge-tally-rung')).toHaveText(['+9…+11', '+12']);
       await expect(ghost).toHaveCount(0);
@@ -498,7 +576,7 @@ test.describe('forge run smoke', () => {
       await expect(rail.getByTestId('forge-chart')).toHaveCount(0);
       await expect(ledger).toHaveAttribute('data-state', 'empty');
       await expect(ledger.getByTestId('forge-ledger-summary')).toHaveText('0 runs');
-      await expect(ledger.getByTestId('forge-ledger-summary-gold')).toHaveText('0 gold');
+      await expect(ledger.getByTestId('forge-ledger-summary-gold')).toHaveText('0 gold · 0 essence');
       await ledger.getByRole('button', { name: 'Run ledger' }).click();
       await expect(ledger.getByText('No runs yet')).toBeVisible();
       await expect(ledger.getByTestId('forge-ledger-body')).toHaveCount(0);
