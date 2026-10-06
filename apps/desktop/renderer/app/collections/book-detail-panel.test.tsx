@@ -217,11 +217,12 @@ describe('BookDetailPanel', () => {
     expect(pieceAt(html, 5, 2)).toContain('aria-label="Gold Gloves, Rare — not sacrificed"');
   });
 
-  it('draws each piece’s art at the cell’s rarity with the set’s level and no forge glyph', () => {
+  it('draws each piece’s art at the cell’s rarity with neither a level nor a forge glyph, since every piece of a book shares its level', () => {
     const html = render(book('gold'));
     expect(html).toContain('/items/lvl20_helmet_gold.png');
-    expect(html).not.toContain('data-slot="item-upgrade"');
-    expect(html).toContain('data-slot="item-level"');
+    const grid = /data-testid="collections-piece-grid"[\s\S]*?<\/table>/.exec(html)?.[0] ?? '';
+    expect(grid).not.toContain('data-slot="item-upgrade"');
+    expect(grid).not.toContain('data-slot="item-level"');
   });
 
   it('dresses each state differently: a ready piece ringed, a missing one dimmed, an arriving one dashed', () => {
@@ -237,10 +238,6 @@ describe('BookDetailPanel', () => {
     expect(legend).toBe(
       [en.collectionsLegendSacrificed, en.collectionsLegendReady, en.collectionsLegendPending, en.collectionsLegendNotSacrificed].join(' '),
     );
-  });
-
-  it('says in one line that pieces are sacrificed in the game and the app only reads', () => {
-    expect(render(book('gold'))).toContain(en.collectionsGuidance);
   });
 
   it('replaces the grid with a note when the read carried no pieces for the set', () => {
@@ -263,7 +260,6 @@ describe('BookDetailPanel', () => {
   it('renders in Portuguese with the game’s own words', () => {
     const html = render(book('gold'), 'pt-BR');
     expect(html).toMatch(/<h2[^>]*>Ouro<\/h2>/);
-    expect(html).toContain(ptBR.collectionsGuidance);
     expect(html).toContain(ptBR.collectionsPageComplete);
     expect(html).toContain('>Elmo<');
     expect(html).toContain('>Calça<');
@@ -280,13 +276,6 @@ describe('BookDetailPanel', () => {
     expect([1500, 1680].map(columns)).toEqual(['grid-cols-1', 'grid-cols-1']);
   });
 
-  it('lets the guidance line span both columns exactly where there are two, and nowhere else', () => {
-    const guidance = classOf(render(book('gold')), 'collections-guidance');
-    const span = (width: number) => effectiveAt(guidance, 'col-span', width);
-    expect([960, 1023, 1500, 1680].map(span)).toEqual([null, null, null, null]);
-    expect([1024, 1280, 1499].map(span)).toEqual(['col-span-2', 'col-span-2', 'col-span-2']);
-  });
-
   it('never leaves two placement rules of one kind applying at the same width, anywhere in the panel', () => {
     const html = render(book('gold'));
     const classLists = [...html.matchAll(/class="([^"]*)"/g)].map((match) => match[1] ?? '');
@@ -298,16 +287,15 @@ describe('BookDetailPanel', () => {
     }
   });
 
-  it('places no element by column span or row except the guidance line, so each child stacks in document order', () => {
+  it('places no element by column span or row, so each child stacks in document order', () => {
     const html = render(book('gold'));
     const placed = [...html.matchAll(/class="([^"]*)"/g)]
       .map((match) => match[1] ?? '')
       .filter((classList) => placementsOf(classList).some((placement) => placement.group !== 'grid-cols'));
-    expect(placed).toHaveLength(1);
-    expect(placed[0]).toContain('lg:max-wide:col-span-2');
+    expect(placed).toHaveLength(0);
   });
 
-  it('keeps the document order the single-column stack reads in: heading, effects, pages, piece grid, legend, guidance', () => {
+  it('keeps the document order the single-column stack reads in: heading, effects, pages, piece grid, legend', () => {
     const html = render(book('gold'));
     const order = [
       'collections-detail-heading',
@@ -315,7 +303,6 @@ describe('BookDetailPanel', () => {
       'collections-detail-page',
       'collections-piece-grid',
       'collections-piece-legend',
-      'collections-guidance',
     ].map((id) => html.indexOf(`data-testid="${id}"`));
     expect(order.every((position) => position > -1)).toBe(true);
     expect(order).toEqual([...order].sort((left, right) => left - right));
@@ -359,17 +346,6 @@ describe('BookDetailPanel', () => {
     const row = pageRows(render(book('void')))[0] ?? '';
     expect(row).toContain('flex flex-col items-end');
     expect(row).toContain('truncate');
-  });
-
-  it('draws each piece icon at the piece’s own level, not the set’s', () => {
-    const reLevelled: CollectionsSnapshot = {
-      ...withArrival,
-      pieces: withArrival.pieces.map((piece) => (piece.defId === 'gold_elmo' ? { ...piece, level: 25 } : piece)),
-    };
-    const html = render(book('gold', buildCollectionBoard(reLevelled, BAG)));
-    const glyphs = (cell: string) => /data-slot="item-level"[^>]*>(\d+)</.exec(html.slice(html.indexOf(cell)))?.[1];
-    expect(glyphs(pieceAt(html, 1, 0))).toBe('25');
-    expect(glyphs(pieceAt(html, 0, 0))).toBe('20');
   });
 
   it('brings itself into view when a book is chosen, through the shell’s own scroll helper', () => {

@@ -1071,7 +1071,6 @@ export const en = {
   collectionsLegendPending: 'Arriving',
   collectionsLegendNotSacrificed: 'Not sacrificed',
   collectionsNoPieces: 'The read carried no pieces for this book.',
-  collectionsGuidance: 'Pieces are sacrificed in the game, under Ritual and then Collection. This app only reads.',
   collectionsEmptyTitle: 'The collections have not been read yet',
   collectionsEmptyDescription: 'They are read from the game when this tab opens, once the game is running.',
   collectionsReadNow: 'Read now',

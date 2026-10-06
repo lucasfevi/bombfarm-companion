@@ -1012,7 +1012,6 @@ export const ptBR: Copy = {
   collectionsLegendPending: 'A caminho',
   collectionsLegendNotSacrificed: 'Não queimada',
   collectionsNoPieces: 'A leitura não trouxe as peças deste livro.',
-  collectionsGuidance: 'As peças são queimadas no jogo, em Ritual e depois em Coleção. O app só lê.',
   collectionsEmptyTitle: 'As coleções ainda não foram lidas',
   collectionsEmptyDescription: 'Elas são lidas do jogo quando esta aba abre, com o jogo aberto.',
   collectionsReadNow: 'Ler agora',

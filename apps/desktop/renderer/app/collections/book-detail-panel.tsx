@@ -11,7 +11,7 @@ import {
   type CollectionSetRow,
 } from '@bombfarm/domain/model';
 import { ItemIcon, rarityDotClass, rarityTextClass } from '@bombfarm/game-art';
-import { Button, cn, DataTable, FactTile, Icon, Panel, panelHClass, panelTitleClass, Tooltip } from '@bombfarm/ui';
+import { Button, cn, DataTable, FactTile, Icon, Panel, panelHClass, panelTitleClass, Tooltip, type IconName } from '@bombfarm/ui';
 import { formatBonus } from '../../lib/collections/collections-format';
 import { weaponDefId } from '../../lib/collections/collections-rows';
 import { bringBandIntoView } from '../../lib/forge/run-into-view';
@@ -31,7 +31,6 @@ const sectionHeadingClass = 'm-0 text-[10.5px] font-semibold uppercase tracking-
  *  up to `wide` (effects and pages beside the piece grid, which keeps its natural width), and the
  *  same single stack again from `wide`, where the panel sits beside the table in a narrow column. */
 const bodyClass = 'grid grid-cols-1 gap-4 lg:max-wide:grid-cols-[minmax(0,1fr)_auto]';
-const guidanceClass = 'm-0 text-xs text-muted lg:max-wide:col-span-2';
 
 const RARITIES = Array.from({ length: COLLECTION_PAGES }, (_, rarity) => rarity);
 
@@ -188,26 +187,21 @@ function PagesTable({ book, bagAvailable }: { book: CollectionSetRow; bagAvailab
   );
 }
 
-const markerBase = 'absolute -right-1 -bottom-1 grid size-3.5 place-items-center rounded-full border border-bg';
+const markerBase = 'grid size-3.5 place-items-center rounded-full border border-bg';
+/** On a piece the marker hangs off the tile's corner; in the legend it sits in the text line. */
+const markerPlacement = { corner: 'absolute -right-1 -bottom-1', inline: 'inline-grid shrink-0' } as const;
 
-function StateMarker({ state }: { state: Exclude<PieceState, 'missing'> }) {
-  if (state === 'sacrificed') {
-    return (
-      <span aria-hidden className={cn(markerBase, 'bg-up text-bg')} data-marker="sacrificed">
-        <Icon name="check" size="xs" className="size-2.5" />
-      </span>
-    );
-  }
-  if (state === 'ready') {
-    return (
-      <span aria-hidden className={cn(markerBase, 'bg-accent text-accent-ink')} data-marker="ready">
-        <Icon name="archive-box" size="xs" className="size-2.5" />
-      </span>
-    );
-  }
+const markerLook = {
+  sacrificed: { icon: 'check', className: 'bg-up text-bg' },
+  ready: { icon: 'archive-box', className: 'bg-accent text-accent-ink' },
+  pending: { icon: 'arrow-path', className: 'bg-surface text-ink' },
+} as const satisfies Record<Exclude<PieceState, 'missing'>, { icon: IconName; className: string }>;
+
+function StateMarker({ state, placement = 'corner' }: { state: Exclude<PieceState, 'missing'>; placement?: keyof typeof markerPlacement }) {
+  const look = markerLook[state];
   return (
-    <span aria-hidden className={cn(markerBase, 'bg-surface text-ink')} data-marker="pending">
-      <Icon name="arrow-path" size="xs" className="size-2.5" />
+    <span aria-hidden className={cn(markerBase, markerPlacement[placement], look.className)} data-marker={state}>
+      <Icon name={look.icon} size="xs" className="size-2.5" />
     </span>
   );
 }
@@ -238,7 +232,7 @@ function PieceCell({ piece, rarity }: { piece: CollectionPieceRow; rarity: numbe
         data-state={state}
         className={cn('relative inline-block rounded-sm', cellStateClass[state])}
       >
-        <ItemIcon item={{ defId: piece.defId, rarityIdx: rarity, level: piece.level, upgrade: 0 }} size="sm" />
+        <ItemIcon item={{ defId: piece.defId, rarityIdx: rarity, level: piece.level, upgrade: 0 }} size="sm" showLevel={false} />
         {state === 'missing' ? null : <StateMarker state={state} />}
       </Tooltip.Trigger>
       <Tooltip.Portal>
@@ -317,13 +311,15 @@ function Legend({ t, bagAvailable }: { t: Copy; bagAvailable: boolean }) {
     { state: 'missing', label: t.collectionsLegendNotSacrificed },
   ];
   return (
-    <p data-testid="collections-piece-legend" className="m-0 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted">
+    <p data-testid="collections-piece-legend" className="m-0 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] leading-none text-muted">
       {entries.map((entry) => (
         <span key={entry.state} className="inline-flex items-center gap-1.5" data-state={entry.state}>
-          <span aria-hidden className={cn('relative inline-block size-3.5 rounded-sm', entry.state === 'missing' && 'border border-line opacity-35')}>
-            {entry.state === 'missing' ? null : <StateMarker state={entry.state} />}
-          </span>
-          {entry.label}
+          {entry.state === 'missing' ? (
+            <span aria-hidden className="inline-block size-3.5 shrink-0 rounded-sm border border-line opacity-35" />
+          ) : (
+            <StateMarker state={entry.state} placement="inline" />
+          )}
+          <span>{entry.label}</span>
         </span>
       ))}
     </p>
@@ -399,9 +395,6 @@ export function BookDetailPanel({
               </>
             )}
           </div>
-          <p className={guidanceClass} data-testid="collections-guidance">
-            {t.collectionsGuidance}
-          </p>
         </div>
       </div>
     </Panel>
