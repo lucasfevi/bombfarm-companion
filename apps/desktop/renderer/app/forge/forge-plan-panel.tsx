@@ -264,7 +264,7 @@ export function ForgePlanPanel({
             const stone = stoneForTarget(stoneRanges, rung);
             const floor = forgeFailLevel(rung);
             return (
-              <li key={rung} data-testid="forge-ladder-rung" className={cn('grid items-center gap-2 text-xs', ladderColumns)}>
+              <li key={rung} data-testid="forge-ladder-rung" className={cn('grid', 'items-center', 'gap-2', 'text-xs', ladderColumns)}>
                 <span className="font-mono font-semibold tabular-nums text-ink">{forgeLevel(rung)}</span>
                 <Bar percent={chance * 100} variant={chance >= GOOD_ODDS ? 'best' : 'fill'} />
                 <span className={cn('text-right', 'font-mono', 'tabular-nums', oddsClass(chance))}>{labels.chance(chance)}</span>
