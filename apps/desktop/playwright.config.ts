@@ -35,6 +35,7 @@ export default defineConfig({
         'optimizer-apply.spec.mjs',
         'pvp.spec.mjs',
         'skills.spec.mjs',
+        'collections.spec.mjs',
         'heroes-combat.spec.mjs',
         'heroes-roster-board.spec.mjs',
         'heroes-share-card.spec.mjs',

@@ -73,7 +73,7 @@ function navButton(page, index) {
 }
 
 const OPTIMIZER_TAB_INDEX = 5;
-const SETTINGS_TAB_INDEX = 9;
+const SETTINGS_TAB_INDEX = 10;
 
 async function openOptimizer(page) {
   await navButton(page, OPTIMIZER_TAB_INDEX).click();

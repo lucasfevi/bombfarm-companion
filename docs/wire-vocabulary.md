@@ -203,3 +203,47 @@ The duel result the client receives on Challenge and the film it fetches right a
 | `pvp` | `by` | The PVP points leaderboard. | English |
 | `hero` | `by` | The strongest-hero leaderboard. | English |
 | `power` | `by` | The total-power leaderboard. | English |
+
+
+## Collections state
+
+The Collections state the client requests for its panel carries the catalog of set books and the account’s progress in them, under Portuguese keys (`tetos`, `por_pagina`, `alavanca`) beside a few English ones (`sets`, `def_id`, `mask`) — see `packages/game-api/src/collections/lexicon.ts`. Percentages are in percent.
+
+### Keys
+
+| Wire token | Domain field | Description | Origin |
+| --- | --- | --- | --- |
+| `versao` | `version` | The body's version number (4 in the committed body). Not read. | Portuguese |
+| `ligada` | `enabled` | Whether Collections is open to the account. Not read. | Portuguese |
+| `parcial_pct` | `partialPct` | The share of a page's increment each piece pays before the page is complete, in percent (60 in the committed body). | Portuguese |
+| `upgrades` | `upgrades` | Six numbers, one per rarity. Meaning not established. Not read. | English |
+| `tetos` | `caps` | The cap of each axis, one number per axis. | Portuguese |
+| `totais` | `totals` | What the account actually gets on each axis: the raw sum held to its cap. | Portuguese |
+| `brutos` | `raw` | The uncapped sum of every set's current bonus, per axis. | Portuguese |
+| `sets` | `sets` | One entry per set book, with its effects and its progress. | English |
+| `pecas` | `pieces` | Every piece of every set, eight per set. | Portuguese |
+| `set` | `code` | The set's code. | English |
+| `nivel` | `level` | The item level of the set. | Portuguese |
+| `paginas` | `pagesComplete` | The count of leading complete pages. Recomputable from `por_pagina`; not read. | Portuguese |
+| `na_pagina` | `piecesOnOpenPage` | Pieces on the first incomplete page. Recomputable from `por_pagina`; not read. | Portuguese |
+| `por_pagina` | `piecesByPage` | Pieces sacrificed on the page of each rarity, common first: six entries, 0 to 8. Pages need not fill in order. | Portuguese |
+| `efeitos` | `effects` | The bonuses the set's book grants: one for most sets, three for the highest. | Portuguese |
+| `alavanca` | `axis` | The axis an effect adds to, by its wire axis key. | Portuguese |
+| `paginas` | `pageValues` | Six cumulative bonuses: entry r is the bonus with the pages of rarity 0 through r complete. | Portuguese |
+| `agora` | `now` | What the effect grants at the current progress. | Portuguese |
+| `def_id` | `defId` | The piece's item definition id. | English |
+| `set` | `set` | The code of the set the piece belongs to. | English |
+| `slot` | `slot` | The equipment slot, 0 to 7: weapon, helmet, chestplate, leggings, boots, gloves, ring, amulet. | English |
+| `level` | `level` | The piece's item level. | English |
+| `mask` | `sacrificedMask` | Bit r set means the piece is sacrificed on the page of rarity r. | English |
+| `pendente` | `pendingMask` | The same bits as `mask`, for a sacrifice still arriving from outside the bag. | Portuguese |
+| `dano` | `damage` | The Damage axis. | Portuguese |
+| `critd` | `critDamage` | The Critical damage axis. | Portuguese |
+| `critc` | `critChance` | The Critical chance axis. | Portuguese |
+| `recarga` | `cooldown` | The Cooldown axis. | Portuguese |
+| `jaula` | `cage` | The Cage and boss axis. | Portuguese |
+| `energia` | `energy` | The Energy axis. | Portuguese |
+| `ouro` | `gold` | The Gold axis. | Portuguese |
+| `xp` | `xp` | The Experience axis. | English |
+| `sorte` | `luck` | The Luck axis. | Portuguese |
+| `forja` | `forge` | The Forge axis. | Portuguese |

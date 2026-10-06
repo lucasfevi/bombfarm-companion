@@ -45,6 +45,7 @@ import { ForgeView } from './forge/forge-view';
 import { OptimizerView } from './optimizer/optimizer-view';
 import { PvpView } from './pvp/pvp-view';
 import { SkillsView } from './skills/skills-view';
+import { CollectionsView } from './collections/collections-view';
 import { AccountView } from './account/account-view';
 import { ConsentSection } from './settings/consent-section';
 import { ForgeSection } from './settings/forge-section';
@@ -523,6 +524,8 @@ function HomePageContent({
             <PvpView />
           ) : activeNavId === 'skills' ? (
             <SkillsView />
+          ) : activeNavId === 'collections' ? (
+            <CollectionsView />
           ) : activeNavId === 'account' ? (
             <AccountView
               marketQuoteCurrency={marketQuoteCurrency}
