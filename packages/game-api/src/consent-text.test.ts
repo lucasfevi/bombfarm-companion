@@ -14,12 +14,14 @@ const KNOWN_BODY_DIGESTS: Readonly<Record<'en' | 'pt-BR', Readonly<Record<number
     3: '899613bee52877b8e3a66e2864500117f8cc239abf0288f0a3964acc5bca8ec4',
     4: 'bedbd31213ce49606ceadb85774b1c322fdda20fe35582fa02402295a8cb2baa',
     5: 'af6606e267b4e3658e6f94380de76d3ba193da484f7eed966e48687e89aaafa7',
+    6: 'b9036725ffdb60065b5e61de5afb0795491abec7d80c3fded6bb3692864a44ef',
   },
   'pt-BR': {
     2: '1aa62c031159c769ae95530b147d7dc2f9eafdc3229f06e27a7d3d56ce0d886d',
     3: '2045be379089bf57ef168741f42e734de7d31e93bb17179ea97c4b5cd91d54fa',
     4: '24d67f662e7a0dcd3c7cc4aeb45d797e67b94028e9185c1a596f625a4713d3c0',
     5: 'f7d2821ba7eb64b92afd3da592b682e36d190905378a40b7500d1a876480dd6d',
+    6: '987b939a339e6195be69d6c972278211b83b9c130dba781fe9733a3ae0517182',
   },
 };
 
@@ -70,13 +72,15 @@ describe('CONSENT_TEXT.en — clause content', () => {
     expect(clause?.text).toMatch(/traffic that client is already exchanging/i);
   });
 
-  it('states every write it can make, the three gates in front of them, and that nothing else can change the account, the client, or progress', () => {
+  it('states every write it can make including burning items, the three gates in front of them, and that nothing else can change the account, the client, or progress', () => {
     const clause = body.find((c) => c.heading === 'Writes only when you tell it to.');
     expect(clause).toBeDefined();
     expect(clause?.text).toMatch(/^Everything it shows is read\./);
     expect(clause?.text).toMatch(/forge roll/i);
     expect(clause?.text).toMatch(/equip/i);
     expect(clause?.text).toMatch(/stat points|reset points/i);
+    expect(clause?.text).toMatch(/burning items for Forge Essence/);
+    expect(clause?.text).toMatch(/Deconstruct page/);
     expect(clause?.text).toMatch(/Forge tab/);
     expect(clause?.text).toMatch(/forge queue/i);
     expect(clause?.text).toMatch(/Optimizer/);
@@ -119,13 +123,15 @@ describe('CONSENT_TEXT["pt-BR"] — clause content, the same facts in Portuguese
     expect(clause?.text).toMatch(/tráfego que esse cliente já troca/i);
   });
 
-  it('states every write it can make, the three gates in front of them, and that nothing else can change the account, the client, or progress', () => {
+  it('states every write it can make including burning items, the three gates in front of them, and that nothing else can change the account, the client, or progress', () => {
     const clause = body.find((c) => c.heading === 'Escreve só quando você manda.');
     expect(clause).toBeDefined();
     expect(clause?.text).toMatch(/^Tudo o que ele mostra é leitura\./);
     expect(clause?.text).toMatch(/rolagem de forja/i);
     expect(clause?.text).toMatch(/equipar/i);
     expect(clause?.text).toMatch(/pontos de status/i);
+    expect(clause?.text).toMatch(/queimar itens para obter Essência de Forja/);
+    expect(clause?.text).toMatch(/página Desconstruir/);
     expect(clause?.text).toMatch(/aba Forja/);
     expect(clause?.text).toMatch(/fila de forja/i);
     expect(clause?.text).toMatch(/Otimizador/);

@@ -31,6 +31,7 @@ export default defineConfig({
         'forge-plan.spec.mjs',
         'forge-run.spec.mjs',
         'forge-queue.spec.mjs',
+        'deconstruct.spec.mjs',
         'optimizer.spec.mjs',
         'optimizer-apply.spec.mjs',
         'pvp.spec.mjs',

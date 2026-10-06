@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { createElement } from 'react';
+// @vitest-environment happy-dom
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, createElement, useCallback, useState, type ReactNode } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
   DEFAULT_INVENTORY_SORT,
@@ -7,10 +9,12 @@ import {
   buildInventoryView,
   type InventoryEntry,
   type InventorySort,
+  type InventoryViewItem,
 } from '@bombfarm/domain/inventory-view';
 import {
   InventoryTable,
   nextInventorySort,
+  type InventoryTableExtraColumn,
   type InventoryTableLabels,
   type InventoryTableProps,
 } from './inventory-table';
@@ -47,6 +51,8 @@ const labels: InventoryTableLabels = {
     actions: 'Actions',
   },
   rowAction: (itemName) => `Details for ${itemName}`,
+  selectRow: (itemName) => `Pick ${itemName}`,
+  selectColumn: 'Picked',
   setOption: (group) => group.set,
   setOptionCount: (group) => String(group.count),
   toolbar: {
@@ -356,5 +362,374 @@ describe('InventoryTable virtualization', () => {
 
     expect(spacerHeight(html, 'top')).toBe(0);
     expect(spacerHeight(html, 'bottom') + mounted * rowHeight).toBe(300 * rowHeight);
+  });
+});
+
+// react-dom/client warns that act() is unsupported unless this is set — there is no testing
+// library here to do it.
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+function tableMarkup(props: Partial<InventoryTableProps> = {}) {
+  return render({ showToolbar: false, ...props });
+}
+
+describe('InventoryTable checklist', () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    window.matchMedia = ((media: string) => ({
+      matches: false,
+      media,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })) as unknown as typeof window.matchMedia;
+    container = document.createElement('div');
+    document.body.append(container);
+    act(() => {
+      root = createRoot(container);
+    });
+  });
+
+  afterEach(() => {
+    act(() => {
+      root.unmount();
+    });
+    container.remove();
+  });
+
+  function mount(node: ReactNode) {
+    act(() => {
+      root.render(node);
+    });
+  }
+
+  function table(props: Partial<InventoryTableProps> = {}) {
+    return createElement(InventoryTable, { view, labels, showToolbar: false, ...props });
+  }
+
+  function rowFor(id: string): HTMLElement {
+    const row = container.querySelector<HTMLElement>(`[data-item-id="${id}"]`);
+    if (!row) throw new Error(`no row for ${id}`);
+    return row;
+  }
+
+  function checkboxFor(id: string): HTMLElement {
+    const box = rowFor(id).querySelector<HTMLElement>('[role="checkbox"]');
+    if (!box) throw new Error(`no checkbox in row ${id}`);
+    return box;
+  }
+
+  function cellOf(id: string, index: number): HTMLElement {
+    const cell = rowFor(id).querySelectorAll<HTMLElement>('td, th')[index];
+    if (!cell) throw new Error(`no cell ${String(index)} in row ${id}`);
+    return cell;
+  }
+
+  function press(target: HTMLElement) {
+    act(() => {
+      target.click();
+    });
+  }
+
+  function key(target: HTMLElement, type: 'keydown' | 'keyup', name: string) {
+    act(() => {
+      target.dispatchEvent(new KeyboardEvent(type, { key: name, bubbles: true, cancelable: true }));
+    });
+  }
+
+  function headerCell(label: string): Element | undefined {
+    return [...container.querySelectorAll('thead th')].find((th) => th.textContent.trim() === label);
+  }
+
+  function headerButton(label: string): HTMLButtonElement {
+    const button = headerCell(label)?.querySelector('button');
+    if (!button) throw new Error(`no sortable header labelled ${label}`);
+    return button;
+  }
+
+  function renderedIds(): string[] {
+    return [...container.querySelectorAll<HTMLElement>('[data-item-id]')].map((row) => row.dataset.itemId ?? '');
+  }
+
+  function toggledIds(onToggleRow: ReturnType<typeof vi.fn>): string[] {
+    return onToggleRow.mock.calls.map(([item]) => (item as InventoryViewItem).id);
+  }
+
+  it('draws a checkbox column only for a host that supplies onToggleRow', () => {
+    const plain = tableMarkup({ onSelectRow: () => {} });
+    expect(plain).not.toContain('role="checkbox"');
+    expect(headCells(plain).map((cell) => cell.label)).toEqual(['Item', 'Qty', 'Gold']);
+
+    const checklist = tableMarkup({ onToggleRow: () => {} });
+    expect(checklist.match(/role="checkbox"/g)).toHaveLength(3);
+    expect(headCells(checklist).map((cell) => cell.label)).toEqual(['Picked', 'Item', 'Qty', 'Gold']);
+  });
+
+  it('leaves the header cell over the checkboxes without a control, named for assistive technology', () => {
+    const header = headCells(tableMarkup({ onToggleRow: () => {} }))[0];
+    expect(header.body).not.toContain('role="checkbox"');
+    expect(header.body).not.toContain('<button');
+    expect(header.body).toContain('sr-only');
+    expect(header.label).toBe('Picked');
+  });
+
+  it('names each checkbox after its own item', () => {
+    const html = tableMarkup({ onToggleRow: () => {} });
+    expect(html).toContain('aria-label="Pick Coal Boots"');
+    expect(html).toContain('aria-label="Pick Iron Ring"');
+  });
+
+  it('falls back to the bare item name when the host supplies no checkbox label', () => {
+    const html = tableMarkup({
+      onToggleRow: () => {},
+      labels: { ...labels, selectRow: undefined, selectColumn: undefined },
+    });
+    expect(html).toContain('aria-label="Iron Ring"');
+  });
+
+  it('takes the checked state and aria-selected from selectedItemIds', () => {
+    mount(table({ onToggleRow: () => {}, selectedItemIds: new Set(['ring-2']) }));
+
+    expect(checkboxFor('ring-2').getAttribute('aria-checked')).toBe('true');
+    expect(checkboxFor('boots-3').getAttribute('aria-checked')).toBe('false');
+    expect(rowFor('ring-2').getAttribute('aria-selected')).toBe('true');
+    expect(rowFor('boots-3').getAttribute('aria-selected')).toBe('false');
+    expect(rowFor('ring-2').hasAttribute('data-selected')).toBe(true);
+  });
+
+  it('calls onToggleRow with the item when the row is pressed', () => {
+    const onToggleRow = vi.fn();
+    mount(table({ onToggleRow }));
+
+    press(cellOf('boots-5', 2));
+
+    expect(toggledIds(onToggleRow)).toEqual(['boots-5']);
+  });
+
+  it('toggles once, not twice, when the checkbox itself is pressed', () => {
+    const onToggleRow = vi.fn();
+    mount(table({ onToggleRow }));
+
+    press(checkboxFor('ring-2'));
+
+    expect(toggledIds(onToggleRow)).toEqual(['ring-2']);
+  });
+
+  it('toggles from the keyboard with Space and with Enter on the checkbox', () => {
+    const onToggleRow = vi.fn();
+    mount(table({ onToggleRow }));
+    const box = checkboxFor('boots-3');
+
+    key(box, 'keydown', ' ');
+    key(box, 'keyup', ' ');
+    expect(toggledIds(onToggleRow)).toEqual(['boots-3']);
+
+    key(box, 'keydown', 'Enter');
+    key(box, 'keyup', 'Enter');
+    expect(toggledIds(onToggleRow)).toEqual(['boots-3', 'boots-3']);
+  });
+
+  it('does not turn the item name into a button when the row itself is the control', () => {
+    mount(table({ onToggleRow: () => {} }));
+    expect(rowFor('ring-2').querySelector('th button')).toBeNull();
+  });
+
+  describe('a row with a reason it cannot be picked', () => {
+    const rowDisabledReason = (item: InventoryViewItem) => (item.id === 'ring-2' ? 'Equipped by a hero' : null);
+
+    it('dims the row, disables the checkbox and keeps the reason readable', () => {
+      mount(table({ onToggleRow: () => {}, rowDisabledReason }));
+
+      const row = rowFor('ring-2');
+      const box = checkboxFor('ring-2');
+      expect(row.hasAttribute('data-disabled')).toBe(true);
+      expect(row.getAttribute('aria-disabled')).toBe('true');
+      expect(box.hasAttribute('data-disabled')).toBe(true);
+      expect(row.querySelector<HTMLInputElement>('input[type="checkbox"]')?.disabled).toBe(true);
+
+      const reasonId = box.getAttribute('aria-describedby');
+      expect(reasonId).toBeTruthy();
+      expect(document.getElementById(reasonId ?? '')?.textContent).toBe('Equipped by a hero');
+
+      expect(rowFor('boots-3').hasAttribute('data-disabled')).toBe(false);
+      expect(checkboxFor('boots-3').getAttribute('aria-describedby')).toBeNull();
+    });
+
+    it('never calls onToggleRow for it, whether the row, the checkbox or the keyboard is used', () => {
+      const onToggleRow = vi.fn();
+      mount(table({ onToggleRow, rowDisabledReason }));
+      const box = checkboxFor('ring-2');
+
+      press(cellOf('ring-2', 2));
+      press(box);
+      key(box, 'keydown', ' ');
+      key(box, 'keyup', ' ');
+      key(box, 'keydown', 'Enter');
+
+      expect(onToggleRow).not.toHaveBeenCalled();
+
+      press(checkboxFor('boots-3'));
+      expect(toggledIds(onToggleRow)).toEqual(['boots-3']);
+    });
+
+    it('keeps the reason in the markup of the first paint', () => {
+      const html = tableMarkup({ onToggleRow: () => {}, rowDisabledReason });
+      expect(html).toContain('Equipped by a hero');
+      expect(html).toContain('aria-disabled="true"');
+    });
+  });
+
+  it('re-renders only the row that was toggled', () => {
+    const equippedBy = vi.fn(() => null);
+    const counting = { ...labels, equippedBy };
+    const columns = ['name', 'count'] as const;
+
+    function Host() {
+      const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
+      const onToggleRow = useCallback((item: InventoryViewItem) => {
+        setPicked((current) => {
+          const next = new Set(current);
+          if (!next.delete(item.id)) next.add(item.id);
+          return next;
+        });
+      }, []);
+      return createElement(InventoryTable, {
+        view,
+        labels: counting,
+        columns,
+        showToolbar: false,
+        onToggleRow,
+        selectedItemIds: picked,
+      });
+    }
+
+    mount(createElement(Host));
+    expect(equippedBy).toHaveBeenCalledTimes(3);
+
+    equippedBy.mockClear();
+    press(checkboxFor('boots-3'));
+
+    expect(checkboxFor('boots-3').getAttribute('aria-checked')).toBe('true');
+    expect(equippedBy).toHaveBeenCalledTimes(1);
+  });
+
+  describe('extra column', () => {
+    const levelColumn: InventoryTableExtraColumn = {
+      id: 'level',
+      header: 'Level',
+      align: 'end',
+      width: '5rem',
+      numeric: true,
+      sortValue: (item) => item.level,
+      render: (item) => `L${String(item.level)}`,
+    };
+
+    const sortAttr = (label: string) => headerCell(label)?.getAttribute('aria-sort');
+
+    it('draws the host header and cell for every row, ahead of the actions column by default', () => {
+      const html = tableMarkup({ extraColumn: levelColumn, onSelectItem: () => {} });
+      expect(headCells(html).map((cell) => cell.label)).toEqual(['Item', 'Qty', 'Gold', 'Level', 'Actions']);
+      expect(html).toContain('L30');
+      expect(html).toContain('L10');
+      expect(html).toContain('L40');
+      expect(html).toContain('<col data-column="extra" style="width:5rem"');
+    });
+
+    it('sits behind the column the host names', () => {
+      const html = tableMarkup({ extraColumn: { ...levelColumn, after: 'name' } });
+      expect(headCells(html).map((cell) => cell.label)).toEqual(['Item', 'Level', 'Qty', 'Gold']);
+    });
+
+    it('draws a plain header when the host gives it nothing to sort by', () => {
+      const html = tableMarkup({ extraColumn: { ...levelColumn, sortValue: undefined } });
+      expect(cellFor(html, 'Level').hasButton).toBe(false);
+      expect(cellFor(html, 'Level').ariaSort).toBeNull();
+    });
+
+    it('orders by it largest first, then smallest first, when its header is picked', () => {
+      mount(table({ extraColumn: levelColumn }));
+      expect(renderedIds()).toEqual(['boots-5', 'boots-3', 'ring-2']);
+      expect(sortAttr('Level')).toBe('none');
+
+      press(headerButton('Level'));
+      expect(renderedIds()).toEqual(['ring-2', 'boots-3', 'boots-5']);
+      expect(sortAttr('Level')).toBe('descending');
+      expect(sortAttr('Item')).toBe('none');
+
+      press(headerButton('Level'));
+      expect(renderedIds()).toEqual(['boots-5', 'boots-3', 'ring-2']);
+      expect(sortAttr('Level')).toBe('ascending');
+    });
+
+    it('keeps the sort the host owns as the tie-break underneath', () => {
+      mount(table({ extraColumn: { ...levelColumn, sortValue: () => 0 } }));
+      press(headerButton('Level'));
+      expect(renderedIds()).toEqual(['boots-5', 'boots-3', 'ring-2']);
+    });
+
+    it('gives way to a built-in column the moment one is picked', () => {
+      mount(table({ extraColumn: levelColumn }));
+      press(headerButton('Level'));
+
+      press(headerButton('Gold'));
+
+      expect(sortAttr('Level')).toBe('none');
+      expect(sortAttr('Gold')).toBe('descending');
+      expect(renderedIds()).toEqual(['ring-2', 'boots-3', 'boots-5']);
+    });
+
+    it('draws the order the host holds and only reports a header pick, keeping none of its own', () => {
+      const onExtraSortChange = vi.fn();
+      mount(table({ extraColumn: levelColumn, extraSort: 'desc', onExtraSortChange }));
+      expect(renderedIds()).toEqual(['ring-2', 'boots-3', 'boots-5']);
+      expect(sortAttr('Level')).toBe('descending');
+
+      press(headerButton('Level'));
+      expect(onExtraSortChange).toHaveBeenLastCalledWith('asc');
+      expect(renderedIds()).toEqual(['ring-2', 'boots-3', 'boots-5']);
+
+      mount(table({ extraColumn: levelColumn, extraSort: 'asc', onExtraSortChange }));
+      expect(renderedIds()).toEqual(['boots-5', 'boots-3', 'ring-2']);
+      expect(sortAttr('Level')).toBe('ascending');
+
+      press(headerButton('Level'));
+      expect(onExtraSortChange).toHaveBeenLastCalledWith('desc');
+    });
+
+    it('starts a controlled order largest first, and is rid of it when a built-in header is picked', () => {
+      const onExtraSortChange = vi.fn();
+      mount(table({ extraColumn: levelColumn, extraSort: null, onExtraSortChange }));
+      expect(sortAttr('Level')).toBe('none');
+      press(headerButton('Level'));
+      expect(onExtraSortChange).toHaveBeenLastCalledWith('desc');
+
+      mount(table({ extraColumn: levelColumn, extraSort: 'desc', onExtraSortChange }));
+      press(headerButton('Gold'));
+      expect(onExtraSortChange).toHaveBeenLastCalledWith(null);
+    });
+
+    it('lets go of its order when the host moves the sort it owns', () => {
+      mount(table({ extraColumn: levelColumn, sort: byValue('desc'), onSortChange: () => {} }));
+      press(headerButton('Level'));
+      expect(sortAttr('Level')).toBe('descending');
+
+      mount(table({ extraColumn: levelColumn, sort: byValue('asc'), onSortChange: () => {} }));
+
+      expect(sortAttr('Level')).toBe('none');
+      expect(renderedIds()).toEqual(['boots-5', 'boots-3', 'ring-2']);
+    });
+  });
+
+  it('still makes the whole row a single-select control, with no checkbox, for a host that uses onSelectRow', () => {
+    const onSelectRow = vi.fn();
+    mount(table({ onSelectRow, selectedItemId: 'ring-2' }));
+
+    expect(container.querySelector('[role="checkbox"]')).toBeNull();
+    expect(rowFor('ring-2').getAttribute('aria-selected')).toBe('true');
+
+    press(cellOf('boots-3', 1));
+
+    expect(toggledIds(onSelectRow)).toEqual(['boots-3']);
   });
 });

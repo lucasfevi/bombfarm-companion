@@ -25,6 +25,14 @@ export const Ok: Story = {
   },
 };
 
+export const Danger: Story = {
+  args: {
+    tone: 'danger',
+    title: 'This cannot be undone.',
+    children: 'The items are destroyed the moment the game accepts the burn.',
+  },
+};
+
 export const Embedded: Story = {
   args: {
     layout: 'embedded',

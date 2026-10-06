@@ -2,7 +2,8 @@ import { ConsentedSessionRequiredError, isConsentedSession, type ConsentedSessio
 
 /**
  * `WriteSession` — the capability to make the app's writes: a forge roll, equipping or
- * unequipping an item, and refunding or re-placing a hero's stat points. It is the same shape as
+ * unequipping an item, refunding or re-placing a hero's stat points, and burning items for Forge
+ * Essence. It is the same shape as
  * `ConsentedSession` one layer up: a class with a true private `#brand` field that is never
  * exported as a value, minted only by `grantWriteSession`, and re-checked at runtime by
  * `isWriteSession` in `write-request.ts` before a token is ever read. `session.ts` explains why a

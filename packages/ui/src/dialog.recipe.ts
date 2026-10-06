@@ -1,3 +1,5 @@
+import { cva } from 'class-variance-authority';
+
 /** Dialog shell backdrop — dark scrim behind import / confirm dialogs. */
 export const dialogBackdropClass =
   'fixed inset-0 z-40 bg-[color-mix(in_oklch,black_55%,transparent)]';
@@ -14,3 +16,17 @@ export const dialogBodyClass = 'min-h-0 flex-1 overflow-y-auto';
  *  footer supplies its own and reaches the popup's edges to rule a full-width line. */
 export const dialogFooterClass =
   '-mx-4 mt-3 flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-line bg-surface px-4 py-3';
+
+/** The confirm shell's popup: compact for a line of copy, wide for a body of block content, which
+ *  also bounds the popup to the window so the body scrolls before the actions leave the screen. */
+export const confirmDialogPopupRecipe = cva('!p-4', {
+  variants: {
+    size: {
+      compact: '!max-h-none !w-[min(92vw,420px)]',
+      wide: '!max-h-[calc(100vh-2rem)] !w-[min(92vw,560px)]',
+    },
+  },
+  defaultVariants: { size: 'compact' },
+});
+
+export const confirmDialogBodyClass = 'm-0 mb-3 min-h-0 flex-1 overflow-y-auto';

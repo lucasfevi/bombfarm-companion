@@ -24,6 +24,8 @@ import {
   type ApplyStartResult,
   type CollectionsView,
   type ConsentRecord,
+  type DeconstructStartRequest,
+  type DeconstructStartResult,
   type ForgeHistoryResult,
   type ForgeStartRequest,
   type ForgeStartResult,
@@ -109,6 +111,10 @@ export interface ApplyInjectorPort {
   arm(payload: unknown): { ok: boolean };
 }
 
+export interface DeconstructServicePort {
+  start(request: DeconstructStartRequest): DeconstructStartResult;
+}
+
 export interface PvpHistoryPort {
   list(): PvpHistoryResult;
   readFilm(filmId: number): string | null;
@@ -175,6 +181,8 @@ export interface IpcHandlerDeps<Image extends ClipboardImageLike = ClipboardImag
   getForgeInjector: () => InjectorPort | null;
   getApplyService: () => ApplyServicePort | null;
   getApplyInjector: () => ApplyInjectorPort | null;
+  getDeconstructService: () => DeconstructServicePort | null;
+  getDeconstructInjector: () => InjectorPort | null;
   getPvpHistory: () => PvpHistoryPort | null;
   getPvpReader: () => PvpReaderPort | null;
   getCollectionsStore: () => CollectionsStorePort | null;
@@ -361,6 +369,9 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.getApplyService()?.start(request) ?? { ok: false, reason: 'unavailable' },
     'apply:stop': (runId: string): boolean => deps.getApplyService()?.stop(runId) ?? false,
     'apply:inject': (payload: unknown) => deps.getApplyInjector()?.arm(payload) ?? { ok: false },
+    'deconstruct:start': (request: DeconstructStartRequest): DeconstructStartResult =>
+      deps.getDeconstructService()?.start(request) ?? { ok: false, reason: 'unavailable' },
+    'deconstruct:inject': (payload: unknown) => deps.getDeconstructInjector()?.inject(payload) ?? { ok: false },
     'pvp:history': (): PvpHistoryResult => deps.getPvpHistory()?.list() ?? EMPTY_PVP_HISTORY,
     'pvp:refresh': (): AccountReadResult => deps.getPvpReader()?.refresh() ?? { ok: false, reason: 'unavailable' },
     'pvp:film': readPvpFilm,

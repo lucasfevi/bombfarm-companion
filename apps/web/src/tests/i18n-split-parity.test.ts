@@ -708,6 +708,7 @@ const KEYS_ADDED: readonly string[] = [
   'downloadScreenForgeItem2',
   'downloadScreenForgeItem3',
   'downloadScreenForgeItem4',
+  'downloadScreenForgeItem5',
   'downloadMiniHeading',
   'downloadMiniLede',
   'downloadMiniControlsTitle',

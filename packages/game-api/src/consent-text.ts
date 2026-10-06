@@ -23,7 +23,7 @@ export interface ConsentText {
   readonly declineLabel: string;
 }
 
-export const CONSENT_TEXT_VERSION = 5;
+export const CONSENT_TEXT_VERSION = 6;
 
 export const CONSENT_TEXT: Readonly<Record<AppLocale, ConsentText>> = {
   en: {
@@ -39,11 +39,11 @@ export const CONSENT_TEXT: Readonly<Record<AppLocale, ConsentText>> = {
       {
         heading: 'Writes only when you tell it to.',
         text: 'Everything it shows is read. The writes it can make are a forge roll, equipping or ' +
-          "unequipping an item, and refunding and re-placing a hero's stat points — from the " +
-          'Forge tab, the forge queue, and the Optimizer\'s Apply steps, only after you turn on ' +
-          '"Let the app forge, equip and reset points" in Settings, and only after you confirm ' +
-          'each run. Nothing else in it can change your account, your game client, or your ' +
-          'progress.',
+          "unequipping an item, refunding and re-placing a hero's stat points, and burning items " +
+          'for Forge Essence — from the Forge tab (its Deconstruct page included), the forge ' +
+          'queue, and the Optimizer\'s Apply steps, only after you turn on "Let the app forge, ' +
+          'equip and reset points" in Settings, and only after you confirm each run. Nothing ' +
+          'else in it can change your account, your game client, or your progress.',
       },
       {
         heading: 'Your token stays put.',
@@ -78,11 +78,12 @@ export const CONSENT_TEXT: Readonly<Record<AppLocale, ConsentText>> = {
       {
         heading: 'Escreve só quando você manda.',
         text: 'Tudo o que ele mostra é leitura. As escritas que ele pode fazer são uma rolagem de ' +
-          'forja, equipar ou desequipar um item, e reembolsar e redistribuir os pontos de status ' +
-          'de um herói — pela aba Forja, pela fila de forja e pelas etapas de Aplicar do ' +
-          'Otimizador, só depois que você ligar "Deixar o app forjar, equipar e redistribuir ' +
-          'pontos" nas Configurações, e só depois de confirmar cada execução. Nada mais nele pode ' +
-          'alterar sua conta, o cliente do jogo ou seu progresso.',
+          'forja, equipar ou desequipar um item, reembolsar e redistribuir os pontos de status ' +
+          'de um herói, e queimar itens para obter Essência de Forja — pela aba Forja (inclusive ' +
+          'a página Desconstruir), pela fila de forja e pelas etapas de Aplicar do Otimizador, só ' +
+          'depois que você ligar "Deixar o app forjar, equipar e redistribuir pontos" nas ' +
+          'Configurações, e só depois de confirmar cada execução. Nada mais nele pode alterar ' +
+          'sua conta, o cliente do jogo ou seu progresso.',
       },
       {
         heading: 'Seu token não sai do lugar.',

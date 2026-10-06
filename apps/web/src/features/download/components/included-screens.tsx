@@ -55,6 +55,7 @@ export function IncludedScreens({ t }: { t: Strings }) {
             t.downloadScreenForgeItem2,
             t.downloadScreenForgeItem3,
             t.downloadScreenForgeItem4,
+            t.downloadScreenForgeItem5,
           ]}
         />
         <ScreenCard

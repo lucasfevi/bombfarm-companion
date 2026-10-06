@@ -1,5 +1,6 @@
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import {
+  setupBannerDangerTitleClass,
   setupBannerEmbeddedClass,
   setupBannerOkTitleClass,
   setupBannerPClass,
@@ -16,8 +17,14 @@ export type BannerProps = Omit<ComponentPropsWithoutRef<'div'>, 'title'> & {
   title?: ReactNode;
 };
 
+const TITLE_CLASS = {
+  warn: setupBannerTitleClass,
+  ok: setupBannerOkTitleClass,
+  danger: setupBannerDangerTitleClass,
+} as const;
+
 /**
- * Status / warning banner — dresses `setupBannerRecipe` (warn | ok).
+ * Status / warning banner — dresses `setupBannerRecipe` (warn | ok | danger).
  * Presentation-only; callers own copy and actions.
  */
 export function Banner({
@@ -43,7 +50,7 @@ export function Banner({
       {...props}
     >
       {title != null && title !== '' && (
-        <h2 className={tone === 'ok' ? setupBannerOkTitleClass : setupBannerTitleClass}>{title}</h2>
+        <h2 className={TITLE_CLASS[tone]}>{title}</h2>
       )}
       {typeof children === 'string' || typeof children === 'number' ? (
         <p className={setupBannerPClass}>{children}</p>

@@ -237,3 +237,20 @@ describe('desktop inventory labels', () => {
     expect(text).toContain('steel_luva');
   });
 });
+
+describe('chance stones', () => {
+  const [stone] = buildInventoryView([
+    { id: 'f1', def_id: 'forja_pedra_incomum', category: 8, rarity: 1, level: 0, sell_value: '140', essence_value: 30 },
+  ]).items;
+
+  it('names a chance stone by its tier, leaving no second tier line, and its group in both languages', () => {
+    if (!stone) throw new Error('no chance stone row');
+    const english = inventoryLabels(en, 'en');
+    const portuguese = inventoryLabels(ptBR, 'pt');
+    expect(english.itemName(stone)).toBe('Uncommon Chance Stone');
+    expect(portuguese.itemName(stone)).toBe('Pedra de Chance Incomum');
+    expect(english.groupTitle('chanceStone')).toBe('Chance Stones');
+    expect(portuguese.groupTitle('chanceStone')).toBe('Pedras de Chance');
+    expect(english.itemRarity(stone)).toBe('');
+  });
+});
