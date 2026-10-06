@@ -17,9 +17,14 @@ import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { hasRuneOnSheet, runesOf } from '@bombfarm/domain/runes';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { TEAM_AURA_SWITCH_IDS, type TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
+import { holdSuiteUntilInRegime } from '../../../domain/tests/helpers/capture-regime';
 import { factsForHero, loadBreakdownFixture, storedPowerAfterWideBlastNerf } from './combat-breakdown.test-fixture';
 
-const fixture = loadBreakdownFixture('payload-20260913-20heroes-runes.json');
+const RUNES_PAYLOAD = 'payload-20260913-20heroes-runes.json';
+
+holdSuiteUntilInRegime(`sheet-math/${RUNES_PAYLOAD}`, 'itemForge');
+
+const fixture = loadBreakdownFixture(RUNES_PAYLOAD);
 const treeCritDmgPct = fixture.account.tree.critDmg;
 const everyAuraOn = Object.fromEntries(TEAM_AURA_SWITCH_IDS.map((id) => [id, true])) as TeamAuraSwitches;
 
@@ -32,7 +37,7 @@ function panelInput(hero: HeroRecord, switches?: TeamAuraSwitches) {
 }
 
 function runeFreePower(hero: HeroRecord, switches?: TeamAuraSwitches): number {
-  return gamePower(gamePowerInputWithoutRunes(panelInput(hero, switches), runesOf(hero), treeCritDmgPct));
+  return gamePower(gamePowerInputWithoutRunes(panelInput(hero, switches), runesOf(hero), { critDmgPct: treeCritDmgPct, cdrFlat: 0 }));
 }
 
 function storedPower(hero: HeroRecord): number {
@@ -70,7 +75,7 @@ describe('the Power panel on a live account read', () => {
       const zeroPoints = gamePowerInputWithoutRunes(
         gamePowerInputOf(hero.gearedOverride, hero.abilities),
         runesOf(hero),
-        treeCritDmgPct,
+        { critDmgPct: treeCritDmgPct, cdrFlat: 0 },
       );
       return relativeError(gamePower(zeroPoints), storedPower(hero)) > 1e-3;
     });
@@ -79,7 +84,7 @@ describe('the Power panel on a live account read', () => {
 
   it('the highest rune-free cooldown this read checks is the bound the chart draws solid to', () => {
     const cooldowns = fixture.heroes.map(
-      (hero) => gamePowerInputWithoutRunes(panelInput(hero), runesOf(hero), treeCritDmgPct).sheet.cdr,
+      (hero) => gamePowerInputWithoutRunes(panelInput(hero), runesOf(hero), { critDmgPct: treeCritDmgPct, cdrFlat: 0 }).sheet.cdr,
     );
     expect(Math.max(...cooldowns)).toBeCloseTo(GAME_POWER_CDR_CHECKED_MAX_PCT, 2);
   });

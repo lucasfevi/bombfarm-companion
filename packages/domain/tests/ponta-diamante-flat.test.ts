@@ -14,12 +14,15 @@
  * not asserted here; penetration is not one of them.
  */
 import { describe, expect, it } from 'vitest';
+import { skipUnlessInRegime } from './helpers/capture-regime';
 import { nakedFromBirth, type BirthStats, type TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
 import { applyGear, emptySheetOther, sumGearBonuses } from '@bombfarm/domain/gear';
 import type { Loadout } from '@bombfarm/domain/gear/types';
 import { abilityMods } from '@bombfarm/domain/model';
 import { inferSpentPoints } from '@bombfarm/domain/point-inference';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
+
+const WITNESS_CAPTURE = 'payload-20260913-20heroes-runes.json';
 
 const MINATO = {
   level: 123,
@@ -63,7 +66,8 @@ describe('Ponta de Diamante is a flat addend outside the gear/points pool', () =
     expect(naked.penetration).not.toBeCloseTo(MINATO.birth.penetration * 1.5 * 21, 0);
   });
 
-  it('composing the export back: gear scales the roll alone, and the +20 survives untouched', () => {
+  it('composing the export back: gear scales the roll alone, and the +20 survives untouched', (context) => {
+    skipUnlessInRegime(context, `sheet-math/${WITNESS_CAPTURE}`, 'itemForge');
     const naked = nakedFromBirth(MINATO.birth, MINATO.level, MINATO.stars, sheetOther);
     const geared = applyGear(naked, MINATO.loadout, sheetOther);
     const relative = Math.abs(geared.penetration - MINATO.exportedPenetration) / MINATO.exportedPenetration;

@@ -9,8 +9,11 @@ import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { runesOf } from '@bombfarm/domain/runes';
 import { importHeroes, loadHeroes, normalizeHero } from '@/shared/lib/storage';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
+import { holdSuiteUntilInRegime } from '../../../../packages/domain/tests/helpers/capture-regime';
 
 const FILE = 'payload-20260913-20heroes-runes.json';
+
+holdSuiteUntilInRegime(`sheet-math/${FILE}`, 'sheet');
 
 function memoryLocalStorage(): Storage {
   const store = new Map<string, string>();

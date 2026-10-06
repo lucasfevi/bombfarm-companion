@@ -56,8 +56,8 @@ export type GearBonuses = {
  * Non-item bonuses already baked into the unequipped sheet. Today that is sheet abilities only
  * (e.g. Olho Clínico, Ponta de Diamante). Tree / Marcha / team buffs are combat-only — not in here.
  *
- * `speed` / `cdr` are **fractions of the rolled base** (wiki `final = base × (1 + Σ)`) — and
- * today nothing feeds either. `critChanceFlat`, `critDmgFlat` and `penetration` are flat addends
+ * `speed` is a **fraction of the rolled base** (wiki `final = base × (1 + Σ)`) — and today
+ * nothing feeds it. `critChanceFlat`, `critDmgFlat`, `penetration` and `cdr` are flat addends
  * in the sheet's own units, ADDED after the star factor and held outside the pool that gear and
  * spent points scale, never multiplied against the roll. See `POINT_GAIN.critDmgFlat` and the
  * `critChanceFlat` / `penetrationPp` ability kinds for the three measurements.
@@ -78,6 +78,7 @@ export type SheetOtherPct = {
    * 2026-09-02 patch (see the `penetrationPp` ability kind's on-sheet note).
    */
   penetration: number;
+  /** FLAT cooldown-reduction points — an addend outside the shared pool. Pavio Curto is the only source. */
   cdr: number;
 };
 

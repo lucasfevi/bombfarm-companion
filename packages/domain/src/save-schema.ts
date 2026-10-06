@@ -277,7 +277,20 @@ const ITEM_LEVEL: SchemaLevel = {
   // 2026-09-22 observation, the same key and the same meaning the hero level already declares.
   // `optional`, for the same reason: requiring it would turn every unlocked item into a
   // missing-key report. Nothing reads it.
-  optional: ['slot', 'soulbound', 'export_lock_secs'],
+  //
+  // `essence_value`, `forge_fails`, `forge_chance` and `pergaminho_custo` arrived on every
+  // `/inventory.items` record with the 2026-10-05 forge patch (all ~1,090 items of one live read).
+  // `optional`, not `keys`: the save export shares this level and every export taken before the
+  // patch lacks them, and no post-patch export has been seen to say whether exports carry them.
+  optional: [
+    'slot',
+    'soulbound',
+    'export_lock_secs',
+    'essence_value',
+    'forge_fails',
+    'forge_chance',
+    'pergaminho_custo',
+  ],
 };
 
 const CASA_LEVEL: SchemaLevel = {

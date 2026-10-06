@@ -32,12 +32,11 @@ const USAGE_PING_HOST = 'api.bombfarm-companion.app';
 const ONLINE_PLAYERS_TRANSPORT_FILE = join(DESKTOP_MAIN, 'online-players/online-players-transport.ts');
 const SESSION_TOKEN_FILE_FILE = join(DESKTOP_MAIN, 'game-api/session-token-file.ts');
 const REQUEST_FILE = join(GAME_API_SRC, 'request.ts');
-/** The one write surface. It may name `POST` and exactly the six write routes below, and nothing
+/** The one write surface. It may name `POST` and exactly the five write routes below, and nothing
  *  else in either tree may name either — the read-only posture is reversed for that width only. */
 const WRITE_REQUEST_FILE = join(GAME_API_SRC, 'write-request.ts');
 const WRITE_ROUTE_PATHS = [
   '/item/forge',
-  '/item/forge_to_safe',
   '/item/equip',
   '/item/unequip',
   '/hero/stat/respec',
@@ -69,7 +68,7 @@ function isTestFile(file: string): boolean {
 }
 
 // -------------------------------------------------------------------------------------------
-// Guard 1 — one write surface, six routes wide. Every source file that can reach the network:
+// Guard 1 — one write surface, five routes wide. Every source file that can reach the network:
 // packages/game-api/src (the classification/typing half) AND apps/desktop/src/main (the one
 // real socket, https-transport.ts, plus everything around it) — the scan used to cover only the
 // former, which is exactly why a hard-coded non-GET method in https-transport.ts was invisible
@@ -104,7 +103,7 @@ function foldStringConcatenation(text: string): string {
  *  semver build-metadata string already is above. */
 const LOOPBACK_IPS = new Set(['127.0.0.1', '0.0.0.0']);
 
-describe('Guard 1 — one write surface, six routes wide, anywhere the network can be reached', () => {
+describe('Guard 1 — one write surface, five routes wide, anywhere the network can be reached', () => {
   const sourceFiles = [...walkTsFiles(GAME_API_SRC), ...walkTsFiles(DESKTOP_MAIN)].filter((f) => !isTestFile(f));
 
   it('scans a non-empty set of non-test source files, including apps/desktop/src/main', () => {
@@ -127,7 +126,7 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
     expect(/['"]POST['"]/.test(readFileSync(WRITE_REQUEST_FILE, 'utf8'))).toBe(true);
   });
 
-  it('write-request.ts names no path literal other than the six write routes', () => {
+  it('write-request.ts names no path literal other than the five write routes', () => {
     const text = foldStringConcatenation(readFileSync(WRITE_REQUEST_FILE, 'utf8'));
     const pathLiterals = Array.from(text.matchAll(/['"](\/[^'"]*)['"]/g), (match) => match[1]);
     expect(pathLiterals.length, 'sanity: write-request.ts must name its routes as path literals').toBeGreaterThan(0);

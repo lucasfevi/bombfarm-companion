@@ -34,6 +34,11 @@ this table is for.
 | `chests/skill_stone_chest_hard.png` | `steam/chest_skill_3.png` | |
 | `chests/skill_stone_chest_very_hard.png` | `steam/chest_skill_4.png` | |
 | `chests/skill_stone_chest_inferno.png` | `steam/chest_skill_5.png` | |
+| `chests/chance_stone_chest_easy.png` | `icons/chest_forja_1.png` | Chance Stone chest of that band |
+| `chests/chance_stone_chest_normal.png` | `icons/chest_forja_2.png` | Chance Stone chest of that band |
+| `chests/chance_stone_chest_hard.png` | `icons/chest_forja_3.png` | Chance Stone chest of that band |
+| `chests/chance_stone_chest_very_hard.png` | `icons/chest_forja_4.png` | Chance Stone chest of that band |
+| `chests/chance_stone_chest_inferno.png` | `icons/chest_forja_5.png` | Chance Stone chest of that band |
 | `houses/house_easy.png` | `steam/house_house_1.png` | The time chest's icon is the House of that band |
 | `houses/house_normal.png` | `steam/house_house_2.png` | |
 | `houses/house_hard.png` | `steam/house_house_3.png` | |
@@ -59,6 +64,7 @@ backdrops, and the card used to approximate them with hand-written CSS gradients
 | `gems/gem_*.png` | `icons/gem_*_icon.png` | `_icon` dropped so the filename is the `def_id` verbatim, which is how `itemKindIconSrc` reaches it |
 | `houseparts/houseparts_{uncommon,rare,epic,legendary,mythic}.png` | `houseparts/houseparts_*.png` | The game's name for what a save calls `time_part_*` |
 | `stones/skill_stone_{common,uncommon,rare,epic,legendary,mythic}.png` | *(game client)* `ui/icons/pedra_habilidades/pedra_habilidade_0N_*.png` | Not published by the wiki; renamed from the Portuguese and from a 1-based index |
+| `stones/chance_stone_{common,uncommon,rare,epic,legendary,mythic}.png` | `icons/forja_pedra_{common,uncommon,rare,epic,legendary,mythic}.png` | |
 
 The skill stones are the second family after the gem chests that the wiki does not publish, and
 the only one filed under a Portuguese name with a 1-based index (`01_comum`…`06_mitico`). They

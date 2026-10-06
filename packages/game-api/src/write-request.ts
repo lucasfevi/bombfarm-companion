@@ -14,7 +14,7 @@ import { WriteSessionRequiredError, isWriteSession, type WriteSession } from './
 
 /**
  * The write twin of `request.ts`, and the only module in the app that can build a POST. It
- * knows six routes — a forge roll, equipping or unequipping an item, and refunding or
+ * knows five routes — a forge roll, equipping or unequipping an item, and refunding or
  * re-placing a hero's stat points — and refuses anything else at runtime, the way `sendGet`
  * refuses a host or method it was not built for. Headers, classifier and timeout are
  * `request.ts`'s own; the token is still read only there.
@@ -25,15 +25,13 @@ const METHOD = 'POST';
 
 export const WRITE_ROUTES = {
   forge: '/item/forge',
-  forgeToSafe: '/item/forge_to_safe',
   equip: '/item/equip',
   unequip: '/item/unequip',
   respec: '/hero/stat/respec',
   commit: '/hero/stat/commit',
 } as const;
 
-/** Unchanged subset — the two routes the forge run has always used. */
-export const FORGE_ROUTES = { forge: WRITE_ROUTES.forge, forgeToSafe: WRITE_ROUTES.forgeToSafe } as const;
+export const FORGE_ROUTES = { forge: WRITE_ROUTES.forge } as const;
 
 export type WriteRoute = (typeof WRITE_ROUTES)[keyof typeof WRITE_ROUTES];
 export type ForgeRoute = (typeof FORGE_ROUTES)[keyof typeof FORGE_ROUTES];
@@ -45,7 +43,15 @@ export interface HttpWriteRequest extends HttpRequestTarget {
 }
 
 export type WriteCall =
-  | { readonly route: ForgeRoute | typeof WRITE_ROUTES.unequip; readonly item: string }
+  | {
+      readonly route: ForgeRoute;
+      readonly item: string;
+      /** The Chance Stone rarity (0 to 5) the server spends on this roll; absent when none is used. */
+      readonly stone?: number;
+      /** Ask for the Protection Scroll; absent, never false, when it is not wanted. */
+      readonly scroll?: true;
+    }
+  | { readonly route: typeof WRITE_ROUTES.unequip; readonly item: string }
   | { readonly route: typeof WRITE_ROUTES.equip; readonly item: string; readonly hero: string }
   | { readonly route: typeof WRITE_ROUTES.respec; readonly hero: string }
   | { readonly route: typeof WRITE_ROUTES.commit; readonly hero: string; readonly points: CommitVector };
@@ -71,7 +77,7 @@ function routePart(path: string): string {
  * is.
  *
  * The value is generated once per write. A write that is ever retried must carry the id it was
- * built with, not a fresh one — a new id is a new call, and every one of these six spends
+ * built with, not a fresh one — a new id is a new call, and every one of these five spends
  * something real.
  */
 export interface RequestIdSource {
@@ -91,6 +97,10 @@ export function createRequestIdSource(deps: {
       return `c${String(uptime)}-${String(sequence)}-${String(draw)}`;
     },
   };
+}
+
+function isStoneRarity(value: number): boolean {
+  return Number.isInteger(value) && value >= 0 && value <= 5;
 }
 
 function hasItem(call: WriteCall): call is Extract<WriteCall, { item: string }> {
@@ -116,10 +126,17 @@ export function buildWriteRequest(
   if (call.route === WRITE_ROUTES.commit && !isCommitVector(call.points)) {
     throw new InvalidWriteCallError('a commit call requires an eight-element, non-negative-integer points vector');
   }
+  if (call.route === WRITE_ROUTES.forge && call.stone !== undefined && !isStoneRarity(call.stone)) {
+    throw new InvalidWriteCallError('a forge call names its Chance Stone by a rarity from 0 to 5');
+  }
 
   let path = withAccountId(call.route, session.session.accountId);
   if (hasItem(call)) path += `&item=${encodeURIComponent(call.item)}`;
   if (hasHero(call)) path += `&hero=${encodeURIComponent(call.hero)}`;
+  if (call.route === WRITE_ROUTES.forge) {
+    if (call.stone !== undefined) path += `&pedra=${String(call.stone)}`;
+    if (call.scroll === true) path += '&pergaminho=1';
+  }
   if (call.route === WRITE_ROUTES.commit) {
     path += `&points=${encodeURIComponent(call.points.join(','))}`;
   }
@@ -135,7 +152,7 @@ export function buildWriteRequest(
   };
 }
 
-/** Runtime half of the six-routes invariant. Typed structurally, like `isTrustedHttpRequest`,
+/** Runtime half of the five-routes invariant. Typed structurally, like `isTrustedHttpRequest`,
  *  because against `HttpWriteRequest`'s literal types the host and method comparisons are
  *  statically always true — the unsafe-cast case is the one this exists to catch. */
 export function isTrustedWriteRequest(req: {

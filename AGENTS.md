@@ -72,8 +72,15 @@ pnpm typecheck
 pnpm lint
 pnpm test
 pnpm --filter @bombfarm/web exec playwright test --project=smoke
-pnpm test:smoke   # Windows — builds static renderer + launches Electron
+pnpm test:smoke:hidden   # Windows — builds static renderer + launches Electron, no window on screen
 ```
+
+**Hard rule: agents run the Electron smoke suite hidden, never visible.** Locally that is
+`pnpm test:smoke:hidden` (or `BFC_HIDE_WINDOWS=1` on a filtered `playwright test` run) — never plain
+`pnpm test:smoke`, and never a visible Electron launch for screenshots. A visible run paints windows
+over the maintainer's screen and steals focus every launch. Hidden windows run no animation frames
+and `page.screenshot` hangs there; if a screenshot is wanted, capture through the main process
+(`webContents.capturePage()`) or go without. CI keeps running the visible form.
 
 The full sequence is ~7 minutes through the Vitest line alone (measured 2026-09-17, machine to
 itself). `pnpm test`, the web e2e suite and the Electron smoke suite each take the machine-wide
@@ -82,7 +89,7 @@ sessions running them at once finish one after another instead of all at once, f
 with four times the memory. Tier 1 never queues. See [`docs/machine-load.md`](docs/machine-load.md).
 
 `pnpm test` is two Vitest passes, not one: the workspace projects, then the solver pass
-(`vitest.solver.config.ts` — the four solver suites whose single synchronous test bodies cross
+(`vitest.solver.config.ts` — the five solver suites whose single synchronous test bodies cross
 Vitest's 60 s worker RPC window, held out of the domain project because such a body fails the run
 with every test passing). `pnpm vitest run --project …` never reaches those files; run
 `pnpm vitest run --config vitest.solver.config.ts` for them.
@@ -105,9 +112,8 @@ stale server silently serves an old export and the run describes code you are no
 that listener belongs to another session on the machine, do not kill it: set `E2E_PORT` (say
 `4322`) and the run serves and tests its own export there instead.
 
-The Electron smoke suite (`pnpm test:smoke`) is owed on the same terms for `apps/desktop` — see
-[`apps/desktop/AGENTS.md`](apps/desktop/AGENTS.md) for the hidden variant that gives you the
-screen back.
+The Electron smoke suite is owed on the same terms for `apps/desktop` — run it as
+`pnpm test:smoke:hidden` (the hard rule above); see [`apps/desktop/AGENTS.md`](apps/desktop/AGENTS.md).
 
 ## Running the desktop app without the game
 

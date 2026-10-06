@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { ItemIdentity } from '@bombfarm/game-art';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import { DataTable, EmptyState, Panel, PanelHeader } from '@bombfarm/ui';
+import { DataTable, EmptyState, InfoTip, Panel, PanelHeader } from '@bombfarm/ui';
 import { useCopy, useLocale } from '../../lib/copy';
 import { forgeLevel, forgeStatRows, type ForgeLabels } from './forge-labels';
 
@@ -39,8 +39,11 @@ export function ForgeItemPanel({
   }
 
   return (
-    <Panel data-testid="forge-item-panel" data-state="item" data-item-id={item.id} className="flex flex-col gap-3">
-      <PanelHeader title={t.forgeItemTitle} />
+    <Panel data-testid="forge-item-panel" data-state="item" data-item-id={item.id} className="flex flex-col gap-2">
+      <PanelHeader
+        title={t.forgeItemTitle}
+        info={<InfoTip label={t.forgeStatsInfoLabel} tip={labels.statsNote(item.upgrade, target, item.stats)} />}
+      />
       <ItemIdentity item={item} labels={labels} size="xl" nameTestId="forge-item-name" />
 
       <DataTable.Root>
@@ -78,8 +81,6 @@ export function ForgeItemPanel({
           </DataTable.Body>
         </DataTable.Table>
       </DataTable.Root>
-
-      <p className="m-0 text-xs text-muted">{labels.statsNote(item.upgrade, target)}</p>
     </Panel>
   );
 }

@@ -43,6 +43,24 @@ export type AbilityEffect =
    * aura's (Brecha), summed over the field and capped like Presságio Mortal's crit points.
    */
   | { kind: 'penetrationPp'; perLevel: number; onSheet?: boolean }
+  /**
+   * FLAT cooldown-reduction percentage points per ability level, planner units of
+   * `SheetStats.cdr`. Short Fuse is the only source; the wiki says it is "added directly, the same
+   * on any hero" and "after everything else, up to the Cooldown Reduction cap", so the addend
+   * sits outside the shared gear/points pool and outside the skill tree, exactly like
+   * `critChanceFlat`, and the final sheet value is clamped at `STAT_CAPS.cdr`. The same wording
+   * puts it outside the rune multiplier too (`applyRuneMultipliers`), unlike Olho Clínico, whose
+   * plain "crit chance" text was measured inside it. No live save carries this ability yet: both
+   * placements follow the wiki's wording, they are not measurements.
+   */
+  | { kind: 'cdrFlat'; perLevel: number }
+  /**
+   * FLAT crit-damage points per ability level contributed to the whole field — Carnage. Planner
+   * units of `SheetStats.critDmg`; summed over the deployed carriers and capped at one carrier's
+   * maximum (the wiki: two in the field never go past the maximum of one). Never on a hero's own
+   * sheet, like Presságio Mortal's crit points.
+   */
+  | { kind: 'teamCritDmgFlat'; perLevel: number }
   | { kind: 'rangeCells'; perLevel: number }
   | { kind: 'secondBlastPct'; perLevel: number } // chance of 2nd blast at 50% dmg
   | { kind: 'executePct'; perLevel: number } // executes rock below threshold
@@ -53,6 +71,7 @@ export type AbilityEffect =
   | { kind: 'attackPct'; perLevel: number }
   | { kind: 'speedPct'; perLevel: number }
   | { kind: 'gateAttackPct'; perLevel: number } // attack bonus in timed phases only
+  | { kind: 'bossDmgPct'; perLevel: number } // damage against the gate boss only, never rocks or the cage
   /**
    * FLAT crit-damage percentage points per ability level — planner units, the same units as
    * `SheetStats.critDmg` (`(save crit_dmg − 1) × 100`), so `perLevel: 4` moves the save's
@@ -142,19 +161,20 @@ export const ABILITIES: AbilityDef[] = [
   // Added 2026-09-26 (wiki `kind: shatter`, `per_level` 0.025): rocks only, never the boss or the
   // cage, and a rock felled by a shard does not shatter again.
   { id: 'estilhacos', name: 'Estilhaços', max: 20, effectText: `+2.5% de chance de a rocha destruída estilhaçar: cada rocha nos 4 lados leva ${SHATTER_FRAC * 100}% do golpe/nível`, effect: { kind: 'shatterPct', perLevel: 2.5 } },
-  { id: 'pavio_curto', name: 'Pavio Curto', max: 20, effectText: '+0.5% redução de recarga (próprio)/nível, somada no fim, até o teto (não modelado)', effect: { kind: 'none' } },
-  { id: 'carnificina', name: 'Carnificina', max: 20, effectText: '+5% dano crítico do TIME/nível, somado ao bônus de crítico; dois portadores não passam do máximo de um (não modelado)', effect: { kind: 'none' } },
-  { id: 'matador_chefes', name: 'Matador de Chefes', max: 20, effectText: '+5% dano (próprio) no chefe do portão 2×2/nível, não vale para a Jaula (não modelado)', effect: { kind: 'none' } },
+  { id: 'pavio_curto', name: 'Pavio Curto', max: 20, effectText: '+0.5% redução de recarga (próprio)/nível, somada no fim, até o teto', effect: { kind: 'cdrFlat', perLevel: 0.5 } },
+  { id: 'carnificina', name: 'Carnificina', max: 20, effectText: '+5% dano crítico do TIME/nível, somado ao bônus de crítico; dois portadores não passam do máximo de um', effect: { kind: 'teamCritDmgFlat', perLevel: 5 } },
+  { id: 'matador_chefes', name: 'Matador de Chefes', max: 20, effectText: '+5% dano (próprio) no chefe do portão 2×2/nível, não vale para a Jaula', effect: { kind: 'bossDmgPct', perLevel: 5 } },
   { id: 'aprendiz', name: 'Aprendiz', max: 20, effectText: '+0.75% XP do TIME/nível por rocha quebrada com ele em campo, dividido como o XP normal; dois portadores não passam do máximo de um (não modelado)', effect: { kind: 'none' } },
 ];
 
 /** Inventory-sheet abilities (shared Σ with gear) — kept out of the combat ability grid. */
 export function isSheetAbility(ability: AbilityDef): boolean {
   return (
-    (ability.effect.kind === 'critChanceFlat' ||
+    ((ability.effect.kind === 'critChanceFlat' ||
       ability.effect.kind === 'penetrationPp' ||
       ability.effect.kind === 'critDmgFlat') &&
-    ability.effect.onSheet === true
+      ability.effect.onSheet === true) ||
+    ability.effect.kind === 'cdrFlat'
   );
 }
 
@@ -211,18 +231,23 @@ export interface AbilityMods {
   /** Golpe Brutal — FLAT crit-damage percentage points (planner units), already on the hero
    *  sheet. Feeds `SheetOtherPct.critDmgFlat` as an addend, NOT a pool fraction. */
   sheetCritDmgFlat: number;
+  /** Pavio Curto — FLAT cooldown-reduction points (+0.5 per level), already on the hero sheet.
+   *  Feeds `SheetOtherPct.cdr` as an addend held OUTSIDE the shared pool. */
+  sheetCdrFlat: number;
   /** Cells of blast reach past the base 1 — always whole, see {@link wholeRangeCells}. */
   rangeCells: number;
   dmgMult: number; // second blast + execute
   /** Estilhaços — percent chance a rock this hero destroys shatters, 0..100. */
   shatterChancePct: number;
   gateAttackMult: number; // applies only inside timed phases (self ability, Contra o Relógio)
+  /** Matador de Chefes — the carrier's own damage against the gate boss; never rocks, the cage or PVP. */
+  bossDmgMult: number;
 }
 
 /**
  * Team auras — Grito de Guerra (`attackPct`), Marcha Acelerada (`speedPct`), Fôlego de Mineiro
  * (`drainPct`), Presságio Mortal (`critChanceFlat`, not `onSheet`), Brecha (`penetrationPp`, not
- * `onSheet`) and Passagem de Bastão (`teamPulseDmgPct`) — never reach a hero's own `AbilityMods`
+ * `onSheet`), Carnificina (`teamCritDmgFlat`) and Passagem de Bastão (`teamPulseDmgPct`) — never reach a hero's own `AbilityMods`
  * (PR #139). Under the confirmed rule a team aura is a property of the FIELD: every deployed hero
  * experiences the SAME capped roster total (`team-buffs.ts`, `computeCombatMults`), carrier or
  * not, so there is no "this hero's own share" for `abilityMods` to fold in — doing so was exactly
@@ -237,10 +262,12 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
     sheetPenetrationFlat: 0,
     packDmgPctPerAlly: 0,
     sheetCritDmgFlat: 0,
+    sheetCdrFlat: 0,
     rangeCells: 0,
     dmgMult: 1,
     shatterChancePct: 0,
     gateAttackMult: 1,
+    bossDmgMult: 1,
   };
   for (const ability of ABILITIES) {
     const count = levels[ability.id] ?? 0;
@@ -262,6 +289,12 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
       case 'critDmgFlat':
         mods.sheetCritDmgFlat += effect.perLevel * count;
         break;
+      case 'cdrFlat':
+        mods.sheetCdrFlat += effect.perLevel * count;
+        break;
+      case 'teamCritDmgFlat':
+        // Carnage (team) — see the module doc above.
+        break;
       case 'rangeCells':
         mods.rangeCells += wholeRangeCells(effect.perLevel, count);
         break;
@@ -282,6 +315,9 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
         break;
       case 'gateAttackPct':
         mods.gateAttackMult *= 1 + (effect.perLevel * count) / 100;
+        break;
+      case 'bossDmgPct':
+        mods.bossDmgMult += (effect.perLevel * count) / 100;
         break;
       case 'packDmgPct':
         mods.packDmgPctPerAlly += effect.perLevel * count;

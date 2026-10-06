@@ -26,6 +26,9 @@ export type CombatMults = {
   /** The roster-wide Brecha total in FLAT penetration points, already clamped at
    *  `TEAM_BUFF_CAP.brecha` — `derive()`'s `penetrationPp`. */
   teamPenFlat: number;
+  /** The roster-wide Carnificina total in FLAT crit-damage points, already clamped at
+   *  `TEAM_BUFF_CAP.carnificina` — added to the sheet's crit damage. */
+  teamCritDmgFlat: number;
   attackMult: number;
   speedMult: number;
   gateAttackMult: number;
@@ -81,6 +84,7 @@ export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults 
     teamDrainMult: auras.teamDrainMult,
     teamCritFlat: auras.teamCritFlat,
     teamPenFlat: auras.teamPenFlat,
+    teamCritDmgFlat: auras.teamCritDmgFlat,
     attackMult: auras.attackMult,
     speedMult: auras.speedMult,
     gateAttackMult: mods.gateAttackMult,
@@ -114,6 +118,9 @@ export type DeriveInput = {
   /** FLAT penetration points added after the sheet — the roster's capped Brecha total
    *  (`CombatMults.teamPenFlat`), the same shape as `teamCritFlat`. */
   penetrationPp: number;
+  /** FLAT crit-damage points added after the sheet — the roster's capped Carnificina total
+   *  (`CombatMults.teamCritDmgFlat`). */
+  critDmgPp: number;
   context: Context;
   /** `CombatMults.hitMult` — what `hit` carries. */
   hitMult: number;
@@ -171,6 +178,7 @@ export function derive(input: DeriveInput): DeriveResult {
     teamCritFlat,
     treeSheet,
     penetrationPp,
+    critDmgPp,
     context,
     hitMult,
     dmgMult,
@@ -183,14 +191,14 @@ export function derive(input: DeriveInput): DeriveResult {
   const gem = naked.energy > 0 ? gearedX.energy / naked.energy : 1;
   // Shared pool: +1 pt adds naked×perPt/(1+O), not naked×perPt.
   const oSpeed = 1 + sheetOther.speed;
-  const oCdr = 1 + sheetOther.cdr;
   // The birth roll everything crit-chance scales off: gear, the stat point and the skill tree
   // all read it, and Olho Clínico's flat points — which none of them multiply — come back off.
   // Presságio Mortal no longer reads it at all: it is flat points now, added straight to the
   // sheet below (already capped at TEAM_BUFF_CAP.pressagio_mortal by computeCombatMults).
   const baseCrit = naked.critChance - Math.max(0, sheetOther.critChanceFlat);
-  // Same placement for penetration: Ponta de Diamante's points are flat and outside the pool.
+  // Same placement for penetration and cooldown reduction: Ponta de Diamante's and Pavio Curto's points are flat and outside the pool.
   const basePen = naked.penetration - Math.max(0, sheetOther.penetration);
+  const baseCdr = naked.cdr - Math.max(0, sheetOther.cdr);
   const star = starsMult(stars);
   const atkPt = attackPointGain(level) * star;
   // Resolved: the six pooled shared-divisor deltas below
@@ -215,7 +223,7 @@ export function derive(input: DeriveInput): DeriveResult {
     // Flat — no `naked.critDmg` factor and no shared-pool divisor (POINT_GAIN.critDmgFlat).
     critDmg: POINT_GAIN.critDmgFlat * rune.critDmg * collectionFactor(collection.critDmgPct),
     penetration: POINT_GAIN.penetrationPctOfBase * basePen,
-    cdr: ((POINT_GAIN.cdrPctOfBase * naked.cdr) / oCdr) * rune.cdr * collectionFactor(collection.cdrPct),
+    cdr: POINT_GAIN.cdrPctOfBase * baseCdr * rune.cdr * collectionFactor(collection.cdrPct),
     // Luck has no `other` term — no divisor, unlike the shared-pool stats above.
     luck: POINT_GAIN.luckPctOfBase * naked.luck,
   };
@@ -227,7 +235,7 @@ export function derive(input: DeriveInput): DeriveResult {
     energy: adjusted.energy * energyMult,
     speed: adjusted.speed * speedMult,
     critChance: adjusted.critChance + teamCritFlat,
-    critDmg: adjusted.critDmg,
+    critDmg: adjusted.critDmg + critDmgPp,
     penetration: adjusted.penetration + penetrationPp,
     cdr: adjusted.cdr,
     attackPerPoint: delta.attack * attackMult,

@@ -18,11 +18,14 @@ import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { spentPointsOf } from '@bombfarm/domain/point-inference';
 import { assertOptionalKeyWitnessedBothWays, checkSchema, EXPORT_FINGERPRINT } from '@bombfarm/domain/save-schema';
 import { capSheetValue } from '@bombfarm/domain/sheet-view';
-import { assertInRegime } from './helpers/capture-regime';
+import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
 const SECOND_ACCOUNT = 'save-20260914-9heroes-second-account.json';
 const MAIN_ACCOUNT = 'save-20260914-20heroes-phase101.json';
+
+holdSuiteUntilInRegime(`sheet-math/${SECOND_ACCOUNT}`, 'sheet');
+holdSuiteUntilInRegime(`sheet-math/${MAIN_ACCOUNT}`, 'sheet');
 
 type RawHero = { name: string; abilities: { code: string; level: number }[]; stars: number; battle_allowed: boolean };
 
@@ -35,7 +38,6 @@ function abilityRank(hero: RawHero, code: string): number | undefined {
 }
 
 function loadExport(file: string) {
-  assertInRegime(`sheet-math/${file}`, 'sheet');
   const raw = loadFixtureJson(file);
   return { raw, parsed: parseSaveFile(raw, []), heroes: raw.heroes as RawHero[] };
 }

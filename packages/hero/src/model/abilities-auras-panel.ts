@@ -73,7 +73,7 @@ export type OwnAbilityRow = {
 
 function ownAbilityStatus(effect: AbilityEffectReadout, gatePhase: boolean): OwnAbilityStatus {
   if (!isPricedReadout(effect)) return 'notModelled';
-  if (effect.kind === 'gateAttackPct') return gatePhase ? 'own' : 'notHere';
+  if (effect.kind === 'gateAttackPct' || effect.kind === 'bossDmgPct') return gatePhase ? 'own' : 'notHere';
   return 'own';
 }
 

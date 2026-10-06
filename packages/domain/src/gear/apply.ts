@@ -32,8 +32,10 @@ function sharedReverse(geared: number, gearPct: number, otherPct: number): numbe
  * outside the pool that gear (~5× on a geared hero) and spent points scale — the 2026-09-13
  * live read leaves a residual of exactly 20 once the ability is held out.
  *
- * There is no `otherPct` parameter because no crit-chance or penetration source is a pool
- * fraction any more; a future one would want {@link sharedForward}'s divisor restored around this.
+ * Short Fuse's cooldown-reduction points ride outside the pool the same way.
+ *
+ * There is no `otherPct` parameter because no crit-chance, penetration or cooldown-reduction
+ * source is a pool fraction any more; a future one would want {@link sharedForward}'s divisor restored around this.
  */
 function flatOutsidePoolForward(naked: number, gearPct: number, flat: number): number {
   const flatClamped = Math.max(0, flat);
@@ -49,8 +51,8 @@ function flatOutsidePoolReverse(sheet: number, gearPct: number, flat: number): n
 /**
  * Apply gear onto a naked (unequipped) sheet.
  * Ataque is flat; Energia multiplies (no sheet-ability energy % today).
- * Speed / CDR use the shared pool with `other` (sheet abilities); crit chance and penetration
- * pool the birth roll only, with Olho Clínico's and Ponta de Diamante's flat points held out
+ * Speed uses the shared pool with `other` (sheet abilities); crit chance, penetration and CDR
+ * pool the birth roll only, with Olho Clínico's, Ponta de Diamante's and Pavio Curto's flat points held out
  * ({@link flatOutsidePoolForward}).
  * Items never roll crit damage.
  */
@@ -67,7 +69,7 @@ export function applyGear(
     critChance: flatOutsidePoolForward(naked.critChance, bonuses.critPct, other.critChanceFlat),
     critDmg: naked.critDmg,
     penetration: flatOutsidePoolForward(naked.penetration, bonuses.penPct, other.penetration),
-    cdr: sharedForward(naked.cdr, bonuses.cdrPct, other.cdr),
+    cdr: flatOutsidePoolForward(naked.cdr, bonuses.cdrPct, other.cdr),
     luck: sharedForward(naked.luck, bonuses.luckPct, 0),
   };
 }
@@ -87,7 +89,7 @@ export function reverseGear(
     critChance: flatOutsidePoolReverse(geared.critChance, bonuses.critPct, other.critChanceFlat),
     critDmg: geared.critDmg,
     penetration: flatOutsidePoolReverse(geared.penetration, bonuses.penPct, other.penetration),
-    cdr: sharedReverse(geared.cdr, bonuses.cdrPct, other.cdr),
+    cdr: flatOutsidePoolReverse(geared.cdr, bonuses.cdrPct, other.cdr),
     luck: sharedReverse(geared.luck, bonuses.luckPct, 0),
   };
 }
@@ -149,7 +151,7 @@ export function applyPoints(
       bonuses.penPct + pts.penetration * POINT_GAIN.penetrationPctOfBase,
       other.penetration,
     ),
-    cdr: sharedForward(
+    cdr: flatOutsidePoolForward(
       naked.cdr,
       bonuses.cdrPct + pts.cdr * POINT_GAIN.cdrPctOfBase,
       other.cdr,
@@ -197,7 +199,7 @@ export function reverseSheet(
       bonuses.penPct + pts.penetration * POINT_GAIN.penetrationPctOfBase,
       other.penetration,
     ),
-    cdr: sharedReverse(
+    cdr: flatOutsidePoolReverse(
       sheet.cdr,
       bonuses.cdrPct + pts.cdr * POINT_GAIN.cdrPctOfBase,
       other.cdr,

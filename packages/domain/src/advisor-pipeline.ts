@@ -22,7 +22,7 @@ import { spentPointsOf } from './point-inference';
 import type { SheetKey } from './planner-constants';
 import { computeCombatMults, derive, type DeriveResult } from './derive';
 import { applySkillTree, type BirthStats, type TreeSheetTotals } from './birth-sheet';
-import { applyRuneMultipliers, runeSheetMultipliers, type HeroRune } from './runes';
+import { applyRuneMultipliers, flatAddsOutsideRune, runeSheetMultipliers, type HeroRune } from './runes';
 import { resolveCloneGeared, resolveDeriveSheets } from './advisor-pipeline-sheets';
 import {
   effectiveFarmPhase,
@@ -139,6 +139,7 @@ export type AdvisorPipelineResult = {
   speedMult: number;
   teamCritFlat: number;
   teamPenFlat: number;
+  teamCritDmgFlat: number;
   /** Matilha's pack factor inside `dmgMult`, at `fieldAllies`. */
   packMult: number;
   /** The allies `packMult` was priced at — echoed so a breakdown can name the field size. */
@@ -257,6 +258,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     critChanceFlat: mods.sheetCritChanceFlat,
     penetration: mods.sheetPenetrationFlat,
     critDmgFlat: mods.sheetCritDmgFlat,
+    cdr: mods.sheetCdrFlat,
   };
 
   const { treeSheet, nakedForDerive, gearedForDerive } = resolveDeriveSheets({
@@ -291,6 +293,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     energyMult,
     teamCritFlat,
     teamPenFlat,
+    teamCritDmgFlat,
     teamDrainMult,
     packMult,
     hitMult,
@@ -323,6 +326,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     teamCritFlat,
     treeSheet,
     penetrationPp: teamPenFlat,
+    critDmgPp: teamCritDmgFlat,
     context,
     hitMult,
     dmgMult,
@@ -398,7 +402,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
       sheetOther,
       treeSheet,
     ),
-    treeSheet,
+    flatAddsOutsideRune(treeSheet, sheetOther),
     runeSheetMultipliers(runes),
   );
 
@@ -407,7 +411,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const htkHit = equippedResult.hit * mods.dmgMult * critFactor(effective.critChance, effective.critDmg);
   const propRows: PropHtkRow[] = propHtkRows(stoneHp, htkHit, targetProp);
   const bossHp = propHp(stoneHp, BOSS_HP_MULT);
-  const bossHits = hitsToKill(htkHit, bossHp);
+  const bossHits = hitsToKill(htkHit * mods.bossDmgMult, bossHp);
   const avgPropHp = weightedAvgPropHp(stoneHp);
 
   const gateRows: GateRow[] = buildGateRows(effective, context, field, dmgMult, gateAttackMult);
@@ -439,6 +443,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     speedMult,
     teamCritFlat,
     teamPenFlat,
+    teamCritDmgFlat,
     packMult,
     fieldAllies,
     entryPulse,

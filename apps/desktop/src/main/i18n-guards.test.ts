@@ -68,7 +68,7 @@ const STRING_OR_TEMPLATE_LITERAL = /'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"|`((?
  *    `source-guards.test.ts` never scans `className` for exactly this reason (its
  *    `ALLOWED_PROPS` set).
  * 2. **`'use client'` / `'use server'`** — React/Next.js directives, not prose, exact-matched.
- * 3. **SQL text** (`db.prepare(...)`  bodies: `SELECT`/`INSERT INTO`/`CREATE TABLE`/`PRAGMA`/
+ * 3. **SQL text** (`db.prepare(...)`  bodies: `SELECT`/`INSERT INTO`/`CREATE TABLE`/`ALTER TABLE`/`PRAGMA`/
  *    `ON CONFLICT`) — recognisable by keyword, and never player-facing.
  * 5. **The immediate first argument to `new Error(...)`, `console.*(...)`, `log.*(...)`, or
  *    `execSync(...)`** — diagnostic/log text, never rendered: every hit is a log field, an
@@ -77,7 +77,7 @@ const STRING_OR_TEMPLATE_LITERAL = /'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"|`((?
  *    rendered.
  */
 const CLASS_NAME_CONTEXT = /className=$/;
-const SQL_KEYWORDS = /\b(SELECT|INSERT INTO|CREATE TABLE|PRAGMA|ON CONFLICT|DELETE FROM)\b/;
+const SQL_KEYWORDS = /\b(SELECT|INSERT INTO|CREATE TABLE|ALTER TABLE|PRAGMA|ON CONFLICT|DELETE FROM)\b/;
 const NON_PROSE_CALL_CONTEXT = /(new\s+Error\(\s*$|console\.\w+\(\s*$|log\.\w+\(\s*$|execSync\(\s*$|\.write\(\s*$)/;
 const CONTEXT_WINDOW = 40;
 

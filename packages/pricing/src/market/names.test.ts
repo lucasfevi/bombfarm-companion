@@ -61,6 +61,7 @@ describe('the non-equipment name forms', () => {
     ['Item Chest (Lv 30)', { category: 'chest', defId: 'chest_item_30', rarityIdx: 0, level: 30 }],
     ['Hero Cage (Act 1)', { category: 'chest', defId: 'chest_hero_1', rarityIdx: 1, act: 1 }],
     ['Skill Stone Chest (Act 1)', { category: 'chest', defId: 'chest_skill_1', act: 1 }],
+    ['Chance Stone Chest (Act 3)', { category: 'chest', defId: 'chest_forja_3', rarityIdx: 3, act: 3 }],
     ['Time Chest (Act 3)', { category: 'chest', defId: 'chest_time_3', rarityIdx: 3, act: 3 }],
     ['Gem Chest (Act 2)', { category: 'chest', defId: 'chest_gem_2', rarityIdx: 2, act: 2 }],
     ['Hero (Legendary)', { category: 'hero', defId: null, rarityIdx: 4 }],
@@ -104,7 +105,7 @@ describe('the generated set as a whole', () => {
     const gems = 9;
     const raritySuffixed = 3 * 6;
     const itemChests = 30;
-    const actChests = 4 * 5;
+    const actChests = 5 * 5;
     const rankChests = 5;
     const heroes = 6;
     // Every bought skin: indices 4-15 since the 2026-09-26 patch took the game to sixteen.

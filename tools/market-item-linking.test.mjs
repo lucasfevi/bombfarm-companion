@@ -50,6 +50,7 @@ const ACT_CHEST_FAMILIES = [
   ['Time Chest', 'chest_time'],
   ['Gem Chest', 'chest_gem'],
   ['Skill Stone Chest', 'chest_skill'],
+  ['Chance Stone Chest', 'chest_forja'],
 ];
 const ACTS = [1, 2, 3];
 

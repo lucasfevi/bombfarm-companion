@@ -30,7 +30,7 @@ export type PropSpawnRow = WikiProp & {
 
 /** One drop-rate row: wiki base fraction, the luck-scaled actual fraction, and whether it rolls
  *  on this phase (gate vs. non-gate — see {@link dropAppliesOnPhase}). Emitted in a fixed order
- *  (chest, key, time, gem, stone) regardless of `applies`, so the UI owns presentation/filtering. */
+ *  (chest, key, time, gem, stone, chance) regardless of `applies`, so the UI owns presentation/filtering. */
 export type DropChanceRow = {
   id: DropRateId;
   wiki: number;
@@ -145,7 +145,7 @@ export function weightedAvgGold(
   return rows.reduce((sum, row) => sum + row[field] * row.weightShare, 0);
 }
 
-const DROP_CHANCE_ORDER: DropRateId[] = ['chest', 'key', 'time', 'gem', 'stone'];
+const DROP_CHANCE_ORDER: DropRateId[] = ['chest', 'key', 'time', 'gem', 'stone', 'chance'];
 
 function computeDropChances(gate: boolean, luckFraction: number): DropChanceRow[] {
   const luckMult = 1 + Math.max(0, luckFraction);

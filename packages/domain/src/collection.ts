@@ -108,8 +108,15 @@ export function collectionSheetPct(collection: CollectionSheetPct | undefined): 
   return { energyPct: c.energyPct, critChancePct: c.critChancePct, critDmgPct: c.critDmgPct, cdrPct: c.cdrPct };
 }
 
-/** Applies the sheet axes to a tree-inclusive sheet. `treeCritDmgPct` is the tree's flat crit-damage add. */
-export function applyCollection(sheet: SheetStats, collection: CollectionSheetPct, treeCritDmgPct: number): SheetStats {
+/**
+ * Applies the sheet axes to a tree-inclusive sheet. `treeCritDmgPct` is the tree's flat crit-damage add.
+ * `recarga` scales the whole cooldown reduction, Short Fuse's flat term included (measured 2026-10-06).
+ */
+export function applyCollection(
+  sheet: SheetStats,
+  collection: CollectionSheetPct,
+  treeCritDmgPct: number,
+): SheetStats {
   return {
     ...sheet,
     energy: sheet.energy * (1 + collection.energyPct / 100),
@@ -120,10 +127,14 @@ export function applyCollection(sheet: SheetStats, collection: CollectionSheetPc
 }
 
 /** Exact inverse of {@link applyCollection}. */
-export function stripCollection(sheet: SheetStats, collection: CollectionSheetPct, treeCritDmgPct: number): SheetStats {
+export function stripCollection(
+  sheet: SheetStats,
+  collection: CollectionSheetPct,
+  treeCritDmgPct: number,
+): SheetStats {
   return {
     ...sheet,
-    energy: sheet.energy / (1 + collection.energyPct / 100),
+    energy: sheet.energy /(1 + collection.energyPct / 100),
     critChance: sheet.critChance / (1 + collection.critChancePct / 100),
     critDmg: (sheet.critDmg - treeCritDmgPct) / (1 + collection.critDmgPct / 100) + treeCritDmgPct,
     cdr: sheet.cdr / (1 + collection.cdrPct / 100),

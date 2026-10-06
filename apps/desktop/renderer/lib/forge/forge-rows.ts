@@ -8,9 +8,8 @@ import type { InventorySetGroup, InventoryViewItem } from '@bombfarm/domain/inve
 
 /**
  * The stretches of the forge ladder the toolbar offers. The two lowest are single rungs because
- * they are the ones worth asking for exactly — `+0` is a piece nobody has touched and `+8` is the
- * safe floor, the last rung reachable without a roll that can wipe the piece; above the floor a
- * reader is choosing a stretch rather than a rung.
+ * they are the ones worth asking for exactly — `+0` is a piece nobody has touched and `+8` is where
+ * the long stretches start; above it a reader is choosing a stretch rather than a rung.
  *
  * The bands share their endpoints on purpose: a piece at `+10` is in both the band that ends
  * there and the band that starts there, because a reader looking at either stretch wants the

@@ -8,6 +8,8 @@ import {
   emptyLoadout,
   emptySheetOther,
   upgradeMult,
+  itemStatUpgradeMult,
+  scaledValores,
   sumGearBonuses,
   gearBonusDeltas,
   defaultNaked,
@@ -72,10 +74,35 @@ const zeroBonuses = (): GearBonuses => ({
 });
 
 describe('upgradeMult', () => {
-  it('uses +8% per forja level', () => {
+  it('follows the cumulative forge table, not a straight line', () => {
     expect(upgradeMult(0)).toBe(1);
-    expect(upgradeMult(5)).toBeCloseTo(1.4, 6);
-    expect(upgradeMult(15)).toBeCloseTo(2.2, 6);
+    expect(upgradeMult(5)).toBeCloseTo(1.25, 6);
+    expect(upgradeMult(10)).toBeCloseTo(1.5, 6);
+    expect(upgradeMult(13)).toBeCloseTo(2.1, 6);
+    expect(upgradeMult(14)).toBeCloseTo(2.6, 6);
+    expect(upgradeMult(15)).toBeCloseTo(3.5, 6);
+  });
+
+  it('keeps crit chance and cooldown on the gentler ladder: x1.95 at +13, x2.20 at +14', () => {
+    expect(itemStatUpgradeMult('crit', 13)).toBeCloseTo(1.95, 6);
+    expect(itemStatUpgradeMult('cooldown', 14)).toBeCloseTo(2.2, 6);
+    expect(itemStatUpgradeMult('dmg', 13)).toBeCloseTo(2.1, 6);
+    expect(itemStatUpgradeMult('energia', 14)).toBeCloseTo(2.6, 6);
+    expect(itemStatUpgradeMult('sorte', 15)).toBeCloseTo(3.5, 6);
+    expect(itemStatUpgradeMult('crit', 10)).toBe(itemStatUpgradeMult('dmg', 10));
+  });
+
+  it('prices an item the way the game reads it at +13', () => {
+    const [plain] = scaledValores('earth_arma', 1, 140, 0);
+    const [forged] = scaledValores('earth_arma', 1, 140, 13);
+    expect(plain.valor).toBeCloseTo(4042.5, 3);
+    expect(forged.valor).toBeCloseTo(8489.25, 3);
+    const plainPants = scaledValores('ash_calca', 3, 80, 0);
+    const forgedPants = scaledValores('ash_calca', 3, 80, 13);
+    expect(forgedPants[0].stat).toBe('cooldown');
+    expect(forgedPants[0].valor).toBeCloseTo(plainPants[0].valor * 1.95, 9);
+    expect(forgedPants[1].stat).toBe('velocidade');
+    expect(forgedPants[1].valor).toBeCloseTo(plainPants[1].valor * 2.1, 9);
   });
 });
 

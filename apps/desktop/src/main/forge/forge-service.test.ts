@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ForgeEvent, ForgeStartRequest } from '@bombfarm/contracts';
-import { forgeRollCost } from '@bombfarm/domain/forge';
+import { forgeRollCost, forgeRollEssence } from '@bombfarm/domain/forge';
 import {
   FORGE_ROUTES,
   SessionToken,
@@ -14,24 +14,38 @@ import { consentRecord, grantedConsent } from '@bombfarm/game-api/test-fixtures'
 import { createWriterLock } from '../apply/writer-lock.js';
 import type { ForgeAccountPatch } from './forge-account-patch.js';
 import type { ForgeHistory, ForgeRunRecord } from './forge-history.js';
-import { createForgeService, parseForgeReply, resolveForgeItem, type ForgeServiceDeps } from './forge-service.js';
+import {
+  createForgeService,
+  parseForgeReply,
+  resolveForgeItem,
+  scrollCostOf,
+  usableStoneCounts,
+  type ForgeServiceDeps,
+} from './forge-service.js';
 
 const GRANTED = grantedConsent('2026-09-05T10:00:00.000Z');
 const ITEM_ROW = { id: 'g1', def_id: 'steel_luva', rarity: 1, slot: 2, level: 20, upgrade: 8, locked: false };
 const NOOP_LOG = { info: () => undefined, warn: () => undefined, error: () => undefined };
 
 type Reply =
-  | { upgrade: number; critical?: boolean; status?: undefined; body?: undefined; hold?: boolean }
-  | { upgrade?: undefined; critical?: undefined; status: number; body: string; hold?: boolean };
+  | { upgrade: number; critical?: boolean; stone?: number; scroll?: number; scrollCost?: number; essence?: number; essenceCost?: number; status?: undefined; body?: undefined; hold?: boolean }
+  | { upgrade?: undefined; critical?: undefined; stone?: undefined; scroll?: undefined; scrollCost?: undefined; essence?: undefined; essenceCost?: undefined; status: number; body: string; hold?: boolean };
 
 /** Answers the two forge routes from a script, one reply per call, and records what it saw. A
  *  reply marked `hold` stays in flight until `release()`. */
 function scriptedTransport(script: Reply[]) {
-  const calls: { route: string; itemId: string }[] = [];
+  const calls: { route: string; itemId: string; pedra: string | null; pergaminho: string | null; requestId: string | null }[] = [];
   const pending: (() => void)[] = [];
   const transport: HttpTransport = (req) => {
     const [route, query] = req.path.split('?');
-    calls.push({ route: route ?? '', itemId: new URLSearchParams(query).get('item') ?? '' });
+    const params = new URLSearchParams(query);
+    calls.push({
+      route: route ?? '',
+      itemId: params.get('item') ?? '',
+      pedra: params.get('pedra'),
+      pergaminho: params.get('pergaminho'),
+      requestId: params.get('request_id'),
+    });
     const reply = script.shift();
     if (!reply) throw new Error(`no scripted reply for call ${String(calls.length)}`);
     const response: HttpResponse =
@@ -43,7 +57,12 @@ function scriptedTransport(script: Reply[]) {
               cost: 100,
               critical: reply.critical === true,
               gold: 1_000_000 - 100 * calls.length,
-              item: { ...ITEM_ROW, upgrade: reply.upgrade },
+              item: { ...ITEM_ROW, upgrade: reply.upgrade, ...(reply.scrollCost === undefined ? {} : { pergaminho_custo: reply.scrollCost }) },
+              pedra_gasta: reply.stone ?? -1,
+              ...(reply.essence === undefined ? {} : { essence: reply.essence }),
+              ...(reply.essenceCost === undefined ? {} : { essence_cost: reply.essenceCost }),
+              pergaminho_pago: reply.scroll ?? 0,
+              pergaminho_protegeu: (reply.scroll ?? 0) > 0,
             }),
           };
     if (reply.hold !== true) return Promise.resolve(response);
@@ -77,7 +96,7 @@ function harness(overrides: Partial<ForgeServiceDeps> & { script?: Reply[]; cons
     append: (record) => {
       appended.push(record);
     },
-    list: () => ({ rows: [], totals: { runs: 0, spent: 0, rolls: 0, fails: 0 } }),
+    list: () => ({ rows: [], totals: { runs: 0, spent: 0, essence: 0, rolls: 0, fails: 0 } }),
     clear: () => undefined,
   };
   const gate = overrides.gate ?? immediateGate();
@@ -130,34 +149,34 @@ function steps(events: ForgeEvent[]) {
 const REQUEST: ForgeStartRequest = { itemId: 'g1', target: 10, maxGold: null, maxAttempts: null };
 
 describe('a full climb', () => {
-  it('safe-jumps below the floor, rolls each rung, lands where the server says, and finishes on target', async () => {
+  it('rolls every rung from the bottom — never a safe jump — lands where the server says, and finishes on target', async () => {
     const h = harness({
-      script: [{ upgrade: 8 }, { upgrade: 9 }, { upgrade: 10 }],
+      script: [{ upgrade: 4 }, { upgrade: 5 }, { upgrade: 6 }],
       currentItems: () => [{ ...ITEM_ROW, upgrade: 3 }],
     });
-    const started = h.service.start(REQUEST);
+    const started = h.service.start({ ...REQUEST, target: 6 });
     expect(started.ok).toBe(true);
     expect(h.service.isRunning()).toBe(true);
 
     const done = await untilDone(h.events);
-    expect(h.wire.calls.map((call) => call.route)).toEqual([FORGE_ROUTES.forgeToSafe, FORGE_ROUTES.forge, FORGE_ROUTES.forge]);
+    expect(h.wire.calls.map((call) => call.route)).toEqual([FORGE_ROUTES.forge, FORGE_ROUTES.forge, FORGE_ROUTES.forge]);
     expect(h.wire.calls.every((call) => call.itemId === 'g1')).toBe(true);
     expect(steps(h.events).map((step) => [step.kind, step.from, step.to, step.outcome])).toEqual([
-      ['safe', 3, 8, 'success'],
-      ['roll', 8, 9, 'success'],
-      ['roll', 9, 10, 'success'],
+      ['roll', 3, 4, 'success'],
+      ['roll', 4, 5, 'success'],
+      ['roll', 5, 6, 'success'],
     ]);
     expect(done.result).toMatchObject({
       itemId: 'g1',
       from: 3,
-      to: 10,
-      target: 10,
+      to: 6,
+      target: 6,
       stop: 'target',
       reached: true,
-      rolls: 2,
+      rolls: 3,
       fails: 0,
       crits: 0,
-      safeJumps: 1,
+      safeJumps: 0,
       spent: 300,
       walletAfter: 1_000_000 - 300,
     });
@@ -266,15 +285,15 @@ describe('stopping', () => {
     expect(h.appended).toHaveLength(0);
   });
 
-  it('the attempt limit counts rolls, not safe jumps', async () => {
+  it('the attempt limit counts rolls', async () => {
     const h = harness({
-      script: [{ upgrade: 8 }, { upgrade: 9 }, { upgrade: 10 }],
+      script: [{ upgrade: 4 }, { upgrade: 5 }],
       currentItems: () => [{ ...ITEM_ROW, upgrade: 3 }],
     });
     h.service.start({ ...REQUEST, target: 12, maxAttempts: 2 });
     const done = await untilDone(h.events);
-    expect(h.wire.calls).toHaveLength(3);
-    expect(done.result).toMatchObject({ stop: 'attempts', rolls: 2, safeJumps: 1, to: 10 });
+    expect(h.wire.calls).toHaveLength(2);
+    expect(done.result).toMatchObject({ stop: 'attempts', rolls: 2, safeJumps: 0, to: 5 });
   });
 
   it('an HTTP error for the item stops with missing; an unauthorized answer halts the gate and stops with error', async () => {
@@ -343,10 +362,16 @@ describe('refusals', () => {
 
 describe('resolveForgeItem / parseForgeReply', () => {
   it('reads the piece from the items section and refuses a level the cost table does not carry', () => {
-    expect(resolveForgeItem([ITEM_ROW], 'g1')).toEqual({ id: 'g1', defId: 'steel_luva', rarity: 1, slot: 2, level: 20, upgrade: 8 });
+    expect(resolveForgeItem([ITEM_ROW], 'g1')).toEqual({ id: 'g1', defId: 'steel_luva', rarity: 1, slot: 2, level: 20, upgrade: 8, fails: 0, scrollCost: 0 });
     expect(resolveForgeItem([{ ...ITEM_ROW, level: 21 }], 'g1')).toBeNull();
     expect(resolveForgeItem([ITEM_ROW], 'g2')).toBeNull();
     expect(resolveForgeItem(null, 'g1')).toBeNull();
+  });
+
+  it('carries the misses in a row the item reports, and none when it reports none', () => {
+    expect(resolveForgeItem([{ ...ITEM_ROW, forge_fails: 3 }], 'g1')?.fails).toBe(3);
+    expect(resolveForgeItem([{ ...ITEM_ROW, forge_fails: -1 }], 'g1')?.fails).toBe(0);
+    expect(resolveForgeItem([ITEM_ROW], 'g1')?.fails).toBe(0);
   });
 
   it('needs the returned item\'s upgrade and reads the wallet as a number even when the wire quotes it', () => {
@@ -356,9 +381,301 @@ describe('resolveForgeItem / parseForgeReply', () => {
       cost: 5,
       gold: 99,
       critical: false,
+      fails: null,
+      stone: null,
+      scrollPaid: 0,
+      essenceCost: null,
+      essence: null,
     });
+    expect(parseForgeReply({ item: { id: 'g1', upgrade: 9 }, essence_cost: 64, pergaminho_pago: 0 })).toMatchObject({ essenceCost: 64, scrollPaid: 0 });
+    expect(parseForgeReply({ item: { id: 'g1', upgrade: 9 }, pedra_gasta: 2 })?.stone).toBe(2);
+    expect(parseForgeReply({ item: { id: 'g1', upgrade: 9 }, pedra_gasta: -1 })?.stone).toBeNull();
+    expect(parseForgeReply({ item: { id: 'g1', upgrade: 9 }, pedra_gasta: 9 })?.stone).toBeNull();
+    expect(parseForgeReply({ item: { id: 'g1', upgrade: 8, forge_fails: 2 } })?.fails).toBe(2);
     expect(parseForgeReply({ item: {} })).toBeNull();
     expect(parseForgeReply('nope')).toBeNull();
+  });
+});
+
+const stoneRow = (id: string, word: string, extra: Record<string, unknown> = {}) => ({
+  id,
+  def_id: 'forja_pedra_' + word,
+  category: 8,
+  rarity: 0,
+  market_state: 0,
+  equipped_on: null,
+  locked: false,
+  ...extra,
+});
+
+const CAPTURED_MISS = {
+  cost: '59625',
+  critical: false,
+  essence: 212464,
+  essence_cost: 64,
+  forge_fails: 1,
+  gold: '2101016350',
+  item: { id: 'g1', def_id: 'steel_luva', rarity: 1, slot: 2, level: 20, upgrade: 12, forge_fails: 1, forge_chance: 0.25, pergaminho_custo: 864 },
+  pedra_gasta: 0,
+  pergaminho_pago: 0,
+  pergaminho_protegeu: false,
+  success: false,
+  target: 14,
+};
+
+describe('Chance Stones', () => {
+  const OWNED = [stoneRow('s1', 'comum'), stoneRow('s2', 'comum'), stoneRow('s3', 'raro')];
+  const items = (rows: unknown[] = OWNED) => () => [ITEM_ROW, ...rows];
+  const stonesFor = (rarity: number | null, upTo = 10): (number | null)[] =>
+    Array.from({ length: upTo }, (_, index) => (index + 1 >= 9 ? rarity : null));
+
+  it('counts only the stones the game would offer', () => {
+    expect(
+      usableStoneCounts([
+        stoneRow('a', 'comum'),
+        stoneRow('b', 'comum', { locked: true }),
+        stoneRow('c', 'comum', { market_state: 1 }),
+        stoneRow('d', 'comum', { equipped_on: 'h1' }),
+        stoneRow('e', 'comum', { category: 3 }),
+        stoneRow('f', 'mitico'),
+        stoneRow('g', 'epico'),
+        ITEM_ROW,
+      ]),
+    ).toEqual([1, 0, 0, 1, 0, 1]);
+    expect(usableStoneCounts(null)).toEqual([0, 0, 0, 0, 0, 0]);
+  });
+
+  it('sends the chosen stone only on the rolls that can miss', async () => {
+    const h = harness({
+      script: [{ upgrade: 4 }, { upgrade: 5, stone: 0 }, { upgrade: 6, stone: 0 }],
+      currentItems: () => [{ ...ITEM_ROW, upgrade: 3 }, ...OWNED],
+    });
+    h.service.start({ ...REQUEST, target: 6, stones: [0, 0, 0, 0, 0, 0] });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls.map((call) => call.pedra)).toEqual([null, '0', '0']);
+    expect(h.wire.calls.map((call) => call.pergaminho)).toEqual([null, null, null]);
+    expect(done.result).toMatchObject({ stop: 'target', stonesSpent: [2, 0, 0, 0, 0, 0] });
+  });
+
+  it('a split plan spends each kind on its own targets and carries the stones through events, result and ledger row', async () => {
+    const stones = [null, null, null, null, null, null, null, null, 0, 2];
+    const h = harness({ script: [{ upgrade: 9, stone: 0 }, { upgrade: 10, stone: 2 }], currentItems: items([stoneRow('s1', 'comum'), stoneRow('s2', 'raro')]) });
+    h.service.start({ ...REQUEST, stones });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls.map((call) => call.pedra)).toEqual(['0', '2']);
+    expect(steps(h.events).map((step) => step.stone)).toEqual([0, 2]);
+    expect(done.result).toMatchObject({ stop: 'target', stonesSpent: [1, 0, 1, 0, 0, 0] });
+    expect(h.appended[0]).toMatchObject({ stonesSpent: [1, 0, 1, 0, 0, 0], stoneRarity: null });
+  });
+
+  it('decrements the owned count on every reply and stops, without sending, once the kind is used up', async () => {
+    const h = harness({
+      script: [{ upgrade: 9, stone: 0 }, { upgrade: 8, stone: 0 }],
+      currentItems: items([stoneRow('s1', 'comum'), stoneRow('s2', 'comum')]),
+    });
+    h.service.start({ ...REQUEST, target: 12, stones: stonesFor(0, 12) });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(2);
+    expect(done.result).toMatchObject({ stop: 'stones', stoneRarity: 0, stonesSpent: [2, 0, 0, 0, 0, 0], rolls: 2 });
+  });
+
+  it('stops before the first call when a chosen kind is not owned at all', async () => {
+    const h = harness({ script: [{ upgrade: 9 }], currentItems: items([stoneRow('s1', 'comum')]) });
+    h.service.start({ ...REQUEST, stones: stonesFor(4) });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(0);
+    expect(done.result).toMatchObject({ stop: 'stones', stoneRarity: 4, rolls: 0 });
+    expect(h.appended).toHaveLength(0);
+  });
+
+  it('stops when the server used a different stone than the one asked for, after counting the roll it made', async () => {
+    const h = harness({ script: [{ upgrade: 9, stone: 1 }, { upgrade: 10, stone: 1 }], currentItems: items() });
+    h.service.start({ ...REQUEST, stones: stonesFor(0) });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(1);
+    expect(done.result).toMatchObject({ stop: 'stone_mismatch', rolls: 1, stoneRarity: 0, stonesSpent: [0, 1, 0, 0, 0, 0] });
+  });
+
+  it('stops when the server says no stone was used though one was sent, and when it used one that was not sent', async () => {
+    const none = harness({ script: [{ upgrade: 9 }, { upgrade: 10 }], currentItems: items() });
+    none.service.start({ ...REQUEST, stones: stonesFor(0) });
+    expect((await untilDone(none.events)).result).toMatchObject({ stop: 'stone_mismatch', rolls: 1, stonesSpent: [0, 0, 0, 0, 0, 0] });
+
+    const unasked = harness({ script: [{ upgrade: 9, stone: 0 }, { upgrade: 10 }], currentItems: items() });
+    unasked.service.start(REQUEST);
+    expect((await untilDone(unasked.events)).result).toMatchObject({ stop: 'stone_mismatch', rolls: 1, stonesSpent: [1, 0, 0, 0, 0, 0] });
+  });
+
+  it('stops on NO_FORGE_AID naming the kind, with nothing counted for the refused roll', async () => {
+    const h = harness({ script: [{ status: 400, body: '{"error":"NO_FORGE_AID"}' }], currentItems: items() });
+    h.service.start({ ...REQUEST, stones: stonesFor(2) });
+    const done = await untilDone(h.events);
+    expect(done.result).toMatchObject({ stop: 'stones', stoneRarity: 2, rolls: 0, stonesSpent: [0, 0, 0, 0, 0, 0] });
+    expect(h.wire.calls).toHaveLength(1);
+  });
+
+  it('retries a roll once without the stone on FORGE_AID_USELESS, under a new request id, and carries on', async () => {
+    const h = harness({
+      script: [{ status: 400, body: '{"error":"FORGE_AID_USELESS"}' }, { upgrade: 9 }, { upgrade: 10 }],
+      currentItems: items(),
+    });
+    h.service.start({ ...REQUEST, stones: [null, null, null, null, null, null, null, null, 0, null] });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls.map((call) => call.pedra)).toEqual(['0', null, null]);
+    expect(new Set(h.wire.calls.map((call) => call.requestId)).size).toBe(3);
+    expect(done.result).toMatchObject({ stop: 'target', rolls: 2, stonesSpent: [0, 0, 0, 0, 0, 0] });
+  });
+
+  it('retries only once: a second refusal without the stone ends the run as an ordinary refusal', async () => {
+    const h = harness({
+      script: [{ status: 400, body: '{"error":"FORGE_AID_USELESS"}' }, { status: 400, body: '{"error":"FORGE_AID_USELESS"}' }],
+      currentItems: items(),
+    });
+    h.service.start({ ...REQUEST, stones: stonesFor(0) });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(2);
+    expect(done.result.stop).toBe('missing');
+  });
+
+  it('reads the captured reply of a stone roll that missed', () => {
+    expect(parseForgeReply(CAPTURED_MISS)).toMatchObject({ upgrade: 12, stone: 0, cost: 59625, fails: 1, critical: false });
+  });
+
+  it('a run with no stones chosen never names pedra, whatever the bag holds', async () => {
+    const h = harness({ script: [{ upgrade: 9 }, { upgrade: 10 }], currentItems: items() });
+    h.service.start(REQUEST);
+    await untilDone(h.events);
+    expect(h.wire.calls.map((call) => call.pedra)).toEqual([null, null]);
+  });
+
+  it('an essence shortfall ends the run as a shortfall rather than a refused item', async () => {
+    const h = harness({ script: [{ status: 400, body: '{"error":"NOT_ENOUGH_ESSENCE"}' }] });
+    h.service.start(REQUEST);
+    expect((await untilDone(h.events)).result.stop).toBe('shortfall');
+  });
+});
+
+describe('the essence a run is charged', () => {
+  it("adds up each reply's essence_cost, on the events, the result and the ledger row", async () => {
+    const h = harness({ script: [{ upgrade: 9, essenceCost: 64 }, { upgrade: 10, essenceCost: 70 }] });
+    h.service.start(REQUEST);
+    const done = await untilDone(h.events);
+    expect(steps(h.events).map((step) => step.essence)).toEqual([64, 70]);
+    expect(done.result).toMatchObject({ stop: 'target', essence: 134 });
+    expect(h.appended[0]).toMatchObject({ essence: 134 });
+  });
+
+  it('prices a roll from the rules when the reply does not say what it cost', async () => {
+    const h = harness({ script: [{ upgrade: 9 }, { upgrade: 10 }] });
+    h.service.start(REQUEST);
+    const done = await untilDone(h.events);
+    expect(done.result.essence).toBe(forgeRollEssence(20, 1, 9) + forgeRollEssence(20, 1, 10));
+  });
+
+  it("puts the Protection Scroll on top of the roll's own essence", async () => {
+    const h = harness({
+      script: [{ upgrade: 11 }, { upgrade: 12, scroll: 12_320, essenceCost: 100 }],
+      currentItems: () => [{ ...ITEM_ROW, upgrade: 10, pergaminho_custo: 0 }],
+    });
+    h.service.start({ ...REQUEST, target: 12, scroll: true });
+    const done = await untilDone(h.events);
+    const [first, second] = steps(h.events);
+    expect(second?.essence).toBe(12_420);
+    expect(second?.scrollEssence).toBe(12_320);
+    expect(done.result).toMatchObject({ essence: (first?.essence ?? 0) + 12_420, scrollEssence: 12_320 });
+  });
+});
+
+describe('the Protection Scroll', () => {
+  const AT_11 = { ...ITEM_ROW, upgrade: 11, pergaminho_custo: 12_320 };
+
+  it('is sent only on the rolls the game offers it on, and the essence it costs is tallied from the replies', async () => {
+    const h = harness({
+      script: [{ upgrade: 11 }, { upgrade: 12, scroll: 12_320 }, { upgrade: 13, scroll: 14_000 }],
+      currentItems: () => [{ ...ITEM_ROW, upgrade: 10, pergaminho_custo: 0 }],
+    });
+    h.service.start({ ...REQUEST, target: 13, scroll: true });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls.map((call) => call.pergaminho)).toEqual([null, '1', '1']);
+    expect(steps(h.events).map((step) => step.scrollEssence)).toEqual([0, 12_320, 14_000]);
+    expect(done.result).toMatchObject({ stop: 'target', rolls: 3, scrollEssence: 26_320 });
+    expect(h.appended[0]).toMatchObject({ scrollEssence: 26_320 });
+  });
+
+  it('is never sent when the plan did not ask for it, even on a rung that offers it', async () => {
+    const h = harness({ script: [{ upgrade: 12 }], currentItems: () => [AT_11] });
+    h.service.start({ ...REQUEST, target: 12 });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls.map((call) => call.pergaminho)).toEqual([null]);
+    expect(done.result).toMatchObject({ stop: 'target', scrollEssence: 0 });
+  });
+
+  it('stops, counting the roll it made, when the game did not charge a scroll that was sent', async () => {
+    const h = harness({ script: [{ upgrade: 12 }, { upgrade: 13 }], currentItems: () => [AT_11] });
+    h.service.start({ ...REQUEST, target: 13, scroll: true });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(1);
+    expect(done.result).toMatchObject({ stop: 'scroll_mismatch', rolls: 1, scrollEssence: 0 });
+  });
+
+  it('stops when the game charged a scroll that was not sent', async () => {
+    const h = harness({ script: [{ upgrade: 9, scroll: 500 }, { upgrade: 10 }] });
+    h.service.start(REQUEST);
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(1);
+    expect(done.result).toMatchObject({ stop: 'scroll_mismatch', rolls: 1, scrollEssence: 500 });
+  });
+
+  it('stops before sending when the essence on hand cannot pay for the roll and its scroll', async () => {
+    const h = harness({ script: [{ upgrade: 12, scroll: 12_320 }], currentItems: () => [AT_11], currentEssence: () => 12_000 });
+    h.service.start({ ...REQUEST, target: 12, scroll: true });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(0);
+    expect(done.result).toMatchObject({ stop: 'shortfall', rolls: 0 });
+  });
+
+  it('keeps the balance as it goes, so a later roll that cannot be paid is not sent', async () => {
+    const h = harness({
+      script: [{ upgrade: 12, scroll: 12_320, scrollCost: 14_000 }, { upgrade: 13, scroll: 14_000 }],
+      currentItems: () => [AT_11],
+      currentEssence: () => 25_000,
+    });
+    h.service.start({ ...REQUEST, target: 13, scroll: true });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(1);
+    expect(done.result).toMatchObject({ stop: 'shortfall', rolls: 1, to: 12 });
+  });
+
+  it('takes the balance from each reply over its own subtraction, so the next check is against what the server holds', async () => {
+    const h = harness({
+      script: [{ upgrade: 12, scroll: 12_320, scrollCost: 14_000, essence: 500 }, { upgrade: 13, scroll: 14_000 }],
+      currentItems: () => [AT_11],
+      currentEssence: () => 1_000_000,
+    });
+    h.service.start({ ...REQUEST, target: 13, scroll: true });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(1);
+    expect(done.result).toMatchObject({ stop: 'shortfall', rolls: 1, to: 12 });
+  });
+
+  it('reads the balance a reply reports as a number, and nothing when it does not', () => {
+    expect(parseForgeReply({ item: { id: 'g1', upgrade: 9 }, essence: 4_200 })?.essence).toBe(4_200);
+    expect(parseForgeReply({ item: { id: 'g1', upgrade: 9 } })?.essence).toBeNull();
+  });
+
+  it('stops without sending when the plan wants a scroll the item says the game does not offer', async () => {
+    const h = harness({ script: [{ upgrade: 12 }], currentItems: () => [{ ...AT_11, pergaminho_custo: 0 }] });
+    h.service.start({ ...REQUEST, target: 12, scroll: true });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(0);
+    expect(done.result).toMatchObject({ stop: 'scroll_mismatch', rolls: 0 });
+  });
+
+  it('reads the price the item carries for its next roll, and the published one when the row has none', () => {
+    expect(scrollCostOf({ pergaminho_custo: 777 }, 12, 20, 1)).toBe(777);
+    expect(scrollCostOf({ pergaminho_custo: 0 }, 12, 20, 1)).toBe(0);
+    expect(scrollCostOf({}, 12, 20, 1)).toBeGreaterThan(0);
+    expect(scrollCostOf({}, 9, 20, 1)).toBe(0);
   });
 });
 
