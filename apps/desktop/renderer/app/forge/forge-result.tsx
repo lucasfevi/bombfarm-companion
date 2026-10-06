@@ -7,7 +7,7 @@ import { useCopy } from '../../lib/copy';
 import { formatAge } from '../../lib/format';
 import type { ForgeRunPlan } from '../../lib/forge/forge-run-reducer';
 import { ForgeRailRow } from './forge-climb';
-import { ForgeGold } from './forge-gold';
+import { ForgeGold, ForgeSpend } from './forge-gold';
 import { ForgeStonesUsed } from './forge-stones-panel';
 import {
   forgeLevel,
@@ -124,7 +124,7 @@ export function ForgeResult({
       label: t.forgeResultSpent,
       value: (
         <span data-testid="forge-result-spent">
-          <ForgeGold>{labels.gold(result.spent)}</ForgeGold>
+          <ForgeSpend gold={labels.gold(result.spent)} essence={result.essence === undefined ? null : labels.count(result.essence)} />
         </span>
       ),
     },

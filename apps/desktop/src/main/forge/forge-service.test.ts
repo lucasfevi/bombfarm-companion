@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ForgeEvent, ForgeStartRequest } from '@bombfarm/contracts';
-import { forgeRollCost } from '@bombfarm/domain/forge';
+import { forgeRollCost, forgeRollEssence } from '@bombfarm/domain/forge';
 import {
   FORGE_ROUTES,
   SessionToken,
@@ -28,8 +28,8 @@ const ITEM_ROW = { id: 'g1', def_id: 'steel_luva', rarity: 1, slot: 2, level: 20
 const NOOP_LOG = { info: () => undefined, warn: () => undefined, error: () => undefined };
 
 type Reply =
-  | { upgrade: number; critical?: boolean; stone?: number; scroll?: number; scrollCost?: number; essence?: number; status?: undefined; body?: undefined; hold?: boolean }
-  | { upgrade?: undefined; critical?: undefined; stone?: undefined; scroll?: undefined; scrollCost?: undefined; essence?: undefined; status: number; body: string; hold?: boolean };
+  | { upgrade: number; critical?: boolean; stone?: number; scroll?: number; scrollCost?: number; essence?: number; essenceCost?: number; status?: undefined; body?: undefined; hold?: boolean }
+  | { upgrade?: undefined; critical?: undefined; stone?: undefined; scroll?: undefined; scrollCost?: undefined; essence?: undefined; essenceCost?: undefined; status: number; body: string; hold?: boolean };
 
 /** Answers the two forge routes from a script, one reply per call, and records what it saw. A
  *  reply marked `hold` stays in flight until `release()`. */
@@ -60,6 +60,7 @@ function scriptedTransport(script: Reply[]) {
               item: { ...ITEM_ROW, upgrade: reply.upgrade, ...(reply.scrollCost === undefined ? {} : { pergaminho_custo: reply.scrollCost }) },
               pedra_gasta: reply.stone ?? -1,
               ...(reply.essence === undefined ? {} : { essence: reply.essence }),
+              ...(reply.essenceCost === undefined ? {} : { essence_cost: reply.essenceCost }),
               pergaminho_pago: reply.scroll ?? 0,
               pergaminho_protegeu: (reply.scroll ?? 0) > 0,
             }),
@@ -95,7 +96,7 @@ function harness(overrides: Partial<ForgeServiceDeps> & { script?: Reply[]; cons
     append: (record) => {
       appended.push(record);
     },
-    list: () => ({ rows: [], totals: { runs: 0, spent: 0, rolls: 0, fails: 0 } }),
+    list: () => ({ rows: [], totals: { runs: 0, spent: 0, essence: 0, rolls: 0, fails: 0 } }),
     clear: () => undefined,
   };
   const gate = overrides.gate ?? immediateGate();
@@ -383,8 +384,10 @@ describe('resolveForgeItem / parseForgeReply', () => {
       fails: null,
       stone: null,
       scrollPaid: 0,
+      essenceCost: null,
       essence: null,
     });
+    expect(parseForgeReply({ item: { id: 'g1', upgrade: 9 }, essence_cost: 64, pergaminho_pago: 0 })).toMatchObject({ essenceCost: 64, scrollPaid: 0 });
     expect(parseForgeReply({ item: { id: 'g1', upgrade: 9 }, pedra_gasta: 2 })?.stone).toBe(2);
     expect(parseForgeReply({ item: { id: 'g1', upgrade: 9 }, pedra_gasta: -1 })?.stone).toBeNull();
     expect(parseForgeReply({ item: { id: 'g1', upgrade: 9 }, pedra_gasta: 9 })?.stone).toBeNull();
@@ -549,6 +552,37 @@ describe('Chance Stones', () => {
     const h = harness({ script: [{ status: 400, body: '{"error":"NOT_ENOUGH_ESSENCE"}' }] });
     h.service.start(REQUEST);
     expect((await untilDone(h.events)).result.stop).toBe('shortfall');
+  });
+});
+
+describe('the essence a run is charged', () => {
+  it("adds up each reply's essence_cost, on the events, the result and the ledger row", async () => {
+    const h = harness({ script: [{ upgrade: 9, essenceCost: 64 }, { upgrade: 10, essenceCost: 70 }] });
+    h.service.start(REQUEST);
+    const done = await untilDone(h.events);
+    expect(steps(h.events).map((step) => step.essence)).toEqual([64, 70]);
+    expect(done.result).toMatchObject({ stop: 'target', essence: 134 });
+    expect(h.appended[0]).toMatchObject({ essence: 134 });
+  });
+
+  it('prices a roll from the rules when the reply does not say what it cost', async () => {
+    const h = harness({ script: [{ upgrade: 9 }, { upgrade: 10 }] });
+    h.service.start(REQUEST);
+    const done = await untilDone(h.events);
+    expect(done.result.essence).toBe(forgeRollEssence(20, 1, 9) + forgeRollEssence(20, 1, 10));
+  });
+
+  it("puts the Protection Scroll on top of the roll's own essence", async () => {
+    const h = harness({
+      script: [{ upgrade: 11 }, { upgrade: 12, scroll: 12_320, essenceCost: 100 }],
+      currentItems: () => [{ ...ITEM_ROW, upgrade: 10, pergaminho_custo: 0 }],
+    });
+    h.service.start({ ...REQUEST, target: 12, scroll: true });
+    const done = await untilDone(h.events);
+    const [first, second] = steps(h.events);
+    expect(second?.essence).toBe(12_420);
+    expect(second?.scrollEssence).toBe(12_320);
+    expect(done.result).toMatchObject({ essence: (first?.essence ?? 0) + 12_420, scrollEssence: 12_320 });
   });
 });
 

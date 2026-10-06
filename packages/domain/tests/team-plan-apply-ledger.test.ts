@@ -68,6 +68,10 @@ describe('computeApplyLedger — the hand-computed fixture', () => {
     expect(ledger.forge.goldExpected).toBe(expectedForgeGold);
   });
 
+  it('forge.essenceExpected sums the same forecasts', () => {
+    expect(ledger.forge.essenceExpected).toBe(forgeForecast(5, 10, 60, 3).essence + forgeForecast(8, 12, 100, 2).essence);
+  });
+
   it('totalGold and walletAfter', () => {
     const totalGold = 135_000 + expectedForgeGold;
     expect(ledger.totalGold).toBe(totalGold);
@@ -146,7 +150,7 @@ describe('computeApplyLedger — wallet and empty inputs', () => {
     const ledger = computeApplyLedger({ equipUnits: [], pointsUnits: [], forgeList: [], items: [], walletBefore: 0 });
     expect(ledger.equip).toEqual({ calls: 0, estimatedMs: 0 });
     expect(ledger.points).toEqual({ heroes: 0, respecs: 0, calls: 0, estimatedMs: 0, goldExact: 0 });
-    expect(ledger.forge).toEqual({ pieces: 0, goldExpected: null });
+    expect(ledger.forge).toEqual({ pieces: 0, goldExpected: null, essenceExpected: null });
     expect(ledger.totalGold).toBe(0);
     expect(ledger.walletAfter).toBe(0);
   });

@@ -135,20 +135,22 @@ export type ForgeRungRow = {
   readonly rolls: number;
   readonly fails: number;
   readonly gold: number;
+  readonly essence: number;
 };
 
 /**
- * Rolls, fails and gold by the rung they were rolling for, lowest first, with consecutive
+ * Rolls, fails, gold and essence by the rung they were rolling for, lowest first, with consecutive
  * quiet rungs — no fail on any of them — merged into one row, so a climb that only stumbled at
  * the top reads as `+9…+11` and `+12` rather than four identical lines.
  */
 export function rungTally(steps: readonly ForgeStepEvent[]): ForgeRungRow[] {
-  const byRung = new Map<number, { rolls: number; fails: number; gold: number }>();
+  const byRung = new Map<number, { rolls: number; fails: number; gold: number; essence: number }>();
   for (const step of steps) {
-    const row = byRung.get(step.target) ?? { rolls: 0, fails: 0, gold: 0 };
+    const row = byRung.get(step.target) ?? { rolls: 0, fails: 0, gold: 0, essence: 0 };
     row.rolls += step.kind === 'roll' ? 1 : 0;
     row.fails += step.outcome === 'fail' ? 1 : 0;
     row.gold += step.cost;
+    row.essence += step.essence ?? 0;
     byRung.set(step.target, row);
   }
   const rungs = [...byRung.keys()].sort((a, b) => a - b);
@@ -160,7 +162,7 @@ export function rungTally(steps: readonly ForgeStepEvent[]): ForgeRungRow[] {
     const previous = rows[rows.length - 1];
     const quiet = row.fails === 0;
     if (previous && quiet && previous.fails === 0 && previous.to === rung - 1) {
-      rows[rows.length - 1] = { ...previous, to: rung, rolls: previous.rolls + row.rolls, gold: previous.gold + row.gold };
+      rows[rows.length - 1] = { ...previous, to: rung, rolls: previous.rolls + row.rolls, gold: previous.gold + row.gold, essence: previous.essence + row.essence };
     } else {
       rows.push({ from: rung, to: rung, ...row });
     }

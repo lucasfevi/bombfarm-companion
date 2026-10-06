@@ -28,3 +28,4 @@ never use the scroll. The Forge tab is also laid out in three columns on a wide 
 contents, so the item, the plan and the forecast fit on one screen; on a narrower window they stack beside the bag
 as before. A run that stops for lack of essence now says "Out of gold or essence".
 The Forge tab's forecast now shows a bad run (p90) for essence next to gold, the "Without the scroll" comparison carries the gold coin, and every forge confirmation says it spends gold and essence, with the queue's expected essence beside its expected gold.
+Everywhere the desktop Forge tab shows the gold a run spent, it now shows the essence beside it: the live run line, the result's Spent figure, a new Essence column in the rung table and the run ledger (a dash for runs recorded before this version), the ledger totals, the queue's progress line and the Optimizer's expected forge cost.

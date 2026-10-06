@@ -168,6 +168,7 @@ function scriptedSteps(itemId) {
     cost: 1_000,
     spent: 1_000 * (index + 1),
     wallet: 222_054_630 - 1_000 * (index + 1),
+    essence: 10,
   }));
 }
 
@@ -196,6 +197,7 @@ function scriptedDone(itemId) {
       spent: 8_000,
       walletAfter: 222_054_630 - 8_000,
       durationMs: 14_000,
+      essence: 80,
     },
   };
 }
@@ -500,6 +502,7 @@ test.describe('forge run smoke', () => {
       await expect(tallyRows.nth(0).getByTestId('forge-tally-rolls')).toHaveText('6');
       await expect(tallyRows.nth(1).getByTestId('forge-tally-rolls')).toHaveText('2');
       await expect(tallyRows.nth(1).getByTestId('forge-tally-fails')).toHaveText('1');
+      await expect(tallyRows.nth(0).getByTestId('forge-tally-essence')).toHaveText('60');
       await expect(page.getByTestId('forge-button')).toHaveText('Cancel after this roll');
       await expect(rail.getByTestId('forge-rail-cancel')).toBeEnabled();
       await page.waitForTimeout(400);
@@ -556,6 +559,7 @@ test.describe('forge run smoke', () => {
       await expect(rail).toHaveAttribute('data-state', 'finished');
       await expect(rail.getByTestId('forge-result-heading')).toHaveText('Reached +12');
       await expect(rail.getByTestId('forge-result-climb')).toHaveText('+8 → +12');
+      await expect(rail.getByTestId('forge-result-spent')).toContainText('80 essence');
       await expect(rail.getByTestId('forge-chart')).toBeVisible();
       await expect(rail.getByTestId('forge-tally-rung')).toHaveText(['+9…+11', '+12']);
       await expect(ghost).toHaveCount(0);
@@ -572,7 +576,7 @@ test.describe('forge run smoke', () => {
       await expect(rail.getByTestId('forge-chart')).toHaveCount(0);
       await expect(ledger).toHaveAttribute('data-state', 'empty');
       await expect(ledger.getByTestId('forge-ledger-summary')).toHaveText('0 runs');
-      await expect(ledger.getByTestId('forge-ledger-summary-gold')).toHaveText('0 gold');
+      await expect(ledger.getByTestId('forge-ledger-summary-gold')).toHaveText('0 gold · 0 essence');
       await ledger.getByRole('button', { name: 'Run ledger' }).click();
       await expect(ledger.getByText('No runs yet')).toBeVisible();
       await expect(ledger.getByTestId('forge-ledger-body')).toHaveCount(0);

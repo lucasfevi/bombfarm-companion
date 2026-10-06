@@ -91,12 +91,12 @@ describe('evalForgeStop', () => {
 
 describe('foldForgeStep', () => {
   it('starts every count at zero', () => {
-    expect(emptyForgeTally()).toEqual({ rolls: 0, fails: 0, crits: 0, safeJumps: 0, spent: 0 });
+    expect(emptyForgeTally()).toEqual({ rolls: 0, fails: 0, crits: 0, safeJumps: 0, spent: 0, essence: 0 });
   });
 
   it('counts safe jumps apart from rolls', () => {
     const tally = foldForgeStep(emptyForgeTally(), { outcome: 'success', kind: 'safe', cost: 14_200 });
-    expect(tally).toEqual({ rolls: 0, fails: 0, crits: 0, safeJumps: 1, spent: 14_200 });
+    expect(tally).toEqual({ rolls: 0, fails: 0, crits: 0, safeJumps: 1, spent: 14_200, essence: 0 });
   });
 
   it('counts fails and crits among the rolls and accumulates gold across every step', () => {
@@ -105,8 +105,16 @@ describe('foldForgeStep', () => {
     tally = foldForgeStep(tally, { outcome: 'fail', kind: 'roll', cost: 200 });
     tally = foldForgeStep(tally, { outcome: 'critical', kind: 'roll', cost: 300 });
     tally = foldForgeStep(tally, { outcome: 'success', kind: 'safe', cost: 400 });
-    expect(tally).toEqual({ rolls: 3, fails: 1, crits: 1, safeJumps: 1, spent: 1_000 });
+    expect(tally).toEqual({ rolls: 3, fails: 1, crits: 1, safeJumps: 1, spent: 1_000, essence: 0 });
     expect(tally.rolls - tally.fails - tally.crits).toBe(1);
+  });
+
+  it('accumulates the essence each step was charged, and counts a step that names none as zero', () => {
+    let tally = emptyForgeTally();
+    tally = foldForgeStep(tally, { outcome: 'success', kind: 'roll', cost: 100, essence: 64 });
+    tally = foldForgeStep(tally, { outcome: 'fail', kind: 'roll', cost: 100, essence: 70 });
+    tally = foldForgeStep(tally, { outcome: 'success', kind: 'safe', cost: 400 });
+    expect(tally.essence).toBe(134);
   });
 
   it('leaves the tally it was given untouched', () => {

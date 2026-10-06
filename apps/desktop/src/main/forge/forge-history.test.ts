@@ -42,6 +42,7 @@ function record(overrides: Partial<ForgeRunRecord> = {}): ForgeRunRecord {
     stonesSpent: [0, 0, 0, 0, 0, 0],
     stoneRarity: null,
     scrollEssence: 0,
+    essence: 40,
     ...overrides,
   };
 }
@@ -66,7 +67,7 @@ describe('forge ledger', () => {
     expect(listed.rows.map((row) => row.itemId)).toEqual(['g2', 'g1']);
     expect(listed.rows[1]).toEqual({ id: 1, ...record() });
     expect(listed.rows[0]).toMatchObject({ id: 2, stop: 'cancelled', reached: false, walletAfter: null, slot: null });
-    expect(listed.totals).toEqual({ runs: 2, spent: 500, rolls: 5, fails: 1 });
+    expect(listed.totals).toEqual({ runs: 2, spent: 500, essence: 80, rolls: 5, fails: 1 });
 
     expect(history.list({ limit: 1 }).rows).toHaveLength(1);
 
@@ -83,7 +84,7 @@ describe('forge ledger', () => {
 
   it('reads a ledger written before stones existed, and adds the columns in place', () => {
     const open = openTestAccountDb(firstBinding());
-    const beforeStones = INIT_FORGE_RUNS_SQL.replace(/,\s*stones_spent TEXT,\s*stone_rarity INTEGER,\s*scroll_essence INTEGER/, '');
+    const beforeStones = INIT_FORGE_RUNS_SQL.replace(/,\s*stones_spent TEXT,\s*stone_rarity INTEGER,\s*scroll_essence INTEGER,\s*essence_spent INTEGER/, '');
     expect(beforeStones).not.toBe(INIT_FORGE_RUNS_SQL);
     open.db?.exec(beforeStones);
     open.db
@@ -110,7 +111,7 @@ describe('forge ledger', () => {
 
   it('reads a ledger written before scrolls existed as no essence paid, and adds the column in place', () => {
     const open = openTestAccountDb(firstBinding());
-    const beforeScroll = INIT_FORGE_RUNS_SQL.replace(/,\s*scroll_essence INTEGER/, '');
+    const beforeScroll = INIT_FORGE_RUNS_SQL.replace(/,\s*scroll_essence INTEGER,\s*essence_spent INTEGER/, '');
     expect(beforeScroll).not.toBe(INIT_FORGE_RUNS_SQL);
     open.db?.exec(beforeScroll);
     open.db
@@ -126,6 +127,38 @@ describe('forge ledger', () => {
 
     history.append(record({ scrollEssence: 500 }));
     expect(history.list({ limit: 10 }).rows[0]?.scrollEssence).toBe(500);
+  });
+
+  it('keeps the essence a run was charged and totals it', () => {
+    const open = openTestAccountDb(firstBinding());
+    const history = createForgeHistory(open.db);
+    history.append(record({ essence: 134 }));
+    history.append(record({ essence: 66 }));
+    const { rows, totals } = history.list({ limit: 10 });
+    expect(rows.map((row) => row.essence)).toEqual([66, 134]);
+    expect(totals.essence).toBe(200);
+  });
+
+  it('reads a ledger written before essence was tracked as unknown, not zero, and adds the column in place', () => {
+    const open = openTestAccountDb(firstBinding());
+    const beforeEssence = INIT_FORGE_RUNS_SQL.replace(/,\s*essence_spent INTEGER/, '');
+    expect(beforeEssence).not.toBe(INIT_FORGE_RUNS_SQL);
+    open.db?.exec(beforeEssence);
+    open.db
+      ?.prepare(
+        'INSERT INTO forge_runs (started_at, finished_at, account_id, item_id, def_id, rarity, slot, item_level, from_upgrade, to_upgrade, ' +
+          'target, stop, reached, rolls, fails, crits, safe_jumps, spent, wallet_after, duration_ms) ' +
+          "VALUES ('a', 'b', '486', 'g1', 'steel_luva', 1, 2, 20, 8, 10, 10, 'target', 1, 3, 1, 0, 0, 300, 999700, 30000)",
+      )
+      .run();
+
+    const history = createForgeHistory(open.db);
+    expect(history.list({ limit: 10 }).rows[0]?.essence).toBeNull();
+
+    history.append(record({ essence: 40 }));
+    const { rows, totals } = history.list({ limit: 10 });
+    expect(rows.map((row) => row.essence)).toEqual([40, null]);
+    expect(totals.essence).toBe(40);
   });
 
   it('is inert without a database', () => {

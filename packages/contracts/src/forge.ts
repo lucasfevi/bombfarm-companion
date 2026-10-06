@@ -62,7 +62,9 @@ export interface ForgeStepEvent {
   wallet: number | null;
   /** The rarity of the Chance Stone this roll used up, as the server reported it; null when none. */
   stone?: number | null;
-  /** Essence the roll paid for the Protection Scroll, as the server reported it; 0 or absent when none. */
+  /** Essence the roll was charged in all, the Protection Scroll's included; absent when the reply did not say. */
+  essence?: number;
+  /** The part of that essence the Protection Scroll cost, as the server reported it; 0 or absent when none. */
   scrollEssence?: number;
 }
 
@@ -84,7 +86,9 @@ export interface ForgeRunResult {
   stonesSpent?: readonly number[];
   /** The rarity involved when the run stopped for want of stones, or on a stone the server did not take as asked. */
   stoneRarity?: number | null;
-  /** Essence the run paid for Protection Scrolls. */
+  /** Essence the run was charged in all, Protection Scrolls included. */
+  essence?: number;
+  /** The part of that essence the Protection Scrolls cost. */
   scrollEssence?: number;
 }
 
@@ -138,11 +142,15 @@ export interface ForgeHistoryRow {
   stoneRarity: number | null;
   /** Essence paid for Protection Scrolls; zero for a run recorded before scrolls. */
   scrollEssence: number;
+  /** Essence the run was charged in all, scrolls included; null for a run recorded before essence was tracked. */
+  essence: number | null;
 }
 
 export interface ForgeHistoryTotals {
   runs: number;
   spent: number;
+  /** Essence across the runs that recorded it. */
+  essence: number;
   rolls: number;
   fails: number;
 }
@@ -152,4 +160,4 @@ export interface ForgeHistoryResult {
   totals: ForgeHistoryTotals;
 }
 
-export const EMPTY_FORGE_HISTORY: ForgeHistoryResult = { rows: [], totals: { runs: 0, spent: 0, rolls: 0, fails: 0 } };
+export const EMPTY_FORGE_HISTORY: ForgeHistoryResult = { rows: [], totals: { runs: 0, spent: 0, essence: 0, rolls: 0, fails: 0 } };

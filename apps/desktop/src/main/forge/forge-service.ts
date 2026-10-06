@@ -173,6 +173,8 @@ interface ForgeReply {
   readonly fails: number | null;
   /** Essence the server says it charged for the Protection Scroll; 0 when none. */
   readonly scrollPaid: number;
+  /** Essence the server says the roll itself cost, the scroll's not included; null when the reply omits it. */
+  readonly essenceCost: number | null;
   /** The essence balance after the roll, when the reply carries it. */
   readonly essence: number | null;
 }
@@ -190,6 +192,7 @@ export function parseForgeReply(json: unknown): ForgeReply | null {
     critical: json.critical === true,
     fails: nonNegativeInteger(json.item.forge_fails),
     scrollPaid: nonNegativeInteger(json.pergaminho_pago) ?? 0,
+    essenceCost: nonNegativeInteger(json.essence_cost),
     essence: finiteNumber(json.essence),
   };
 }
@@ -366,11 +369,12 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
           kind: 'roll',
           serverCritical: reply.critical,
         });
-        tally = foldForgeStep(tally, { outcome: rollOutcome, kind: 'roll', cost });
+        const rollEssence = (reply.essenceCost ?? step.essence) + reply.scrollPaid;
+        tally = foldForgeStep(tally, { outcome: rollOutcome, kind: 'roll', cost, essence: rollEssence });
         wallet = reply.gold ?? (wallet === null ? null : wallet - cost);
         lastItem = reply.item;
         scrollEssence += reply.scrollPaid;
-        essence = reply.essence ?? (essence === null ? null : essence - step.essence - reply.scrollPaid);
+        essence = reply.essence ?? (essence === null ? null : essence - rollEssence);
         const from = upgrade;
         upgrade = reply.upgrade;
         fails = reply.fails ?? (rollOutcome === 'fail' ? fails + 1 : 0);
@@ -394,6 +398,7 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
           spent: tally.spent,
           wallet,
           stone: reply.stone,
+          essence: rollEssence,
           scrollEssence: reply.scrollPaid,
         });
 
@@ -432,6 +437,7 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
       durationMs: Math.max(0, finishedAt - startedAt),
       stonesSpent,
       stoneRarity,
+      essence: tally.essence,
       scrollEssence,
     };
 
@@ -465,6 +471,7 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
         stonesSpent,
         stoneRarity,
         scrollEssence,
+        essence: tally.essence,
       });
     }
 

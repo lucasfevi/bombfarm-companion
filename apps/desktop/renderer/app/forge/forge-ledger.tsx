@@ -23,7 +23,7 @@ import {
   type ForgeLedgerSort,
   type ForgeLedgerSortKey,
 } from '../../lib/forge/forge-ledger-rows';
-import { ForgeGold } from './forge-gold';
+import { ForgeGold, ForgeSpend } from './forge-gold';
 import { ForgeStonesUsed } from './forge-stones-panel';
 import { BLANK, forgeLevel, forgeStopText, type ForgeLabels } from './forge-labels';
 
@@ -83,6 +83,7 @@ export function ForgeLedger({
     { key: 'stones', label: t.forgeLedgerColumnStones, align: 'right' },
     { key: 'scroll', label: t.forgeLedgerColumnScroll, align: 'right' },
     { key: 'spent', label: t.forgeLedgerColumnGold, align: 'right' },
+    { key: 'essence', label: t.forgeLedgerColumnEssence, align: 'right' },
     { key: 'duration', label: t.forgeLedgerColumnDuration, align: 'right' },
   ];
 
@@ -104,7 +105,10 @@ export function ForgeLedger({
               data-testid="forge-ledger-summary-gold"
               className="text-xs font-normal tracking-normal normal-case tabular-nums text-muted"
             >
-              <ForgeGold>{sub(t.forgeLedgerGold, { spent: labels.gold(history.totals.spent) })}</ForgeGold>
+              <ForgeSpend
+                gold={sub(t.forgeLedgerGold, { spent: labels.gold(history.totals.spent) })}
+                essence={labels.count(history.totals.essence)}
+              />
             </span>
           </span>
         </Collapsible.Trigger>
@@ -179,6 +183,9 @@ export function ForgeLedger({
                           <DataTable.Cell align="right" numeric data-testid="forge-ledger-gold">
                             <ForgeGold>{labels.gold(row.spent)}</ForgeGold>
                           </DataTable.Cell>
+                          <DataTable.Cell align="right" numeric data-testid="forge-ledger-essence">
+                            {row.essence === null ? BLANK : labels.count(row.essence)}
+                          </DataTable.Cell>
                           <DataTable.Cell align="right" nowrap numeric>
                             {formatAge(row.durationMs, t)}
                           </DataTable.Cell>
@@ -198,7 +205,10 @@ export function ForgeLedger({
                   })}
                 </span>
                 <span data-testid="forge-ledger-totals-gold" className="tabular-nums text-muted">
-                  <ForgeGold>{sub(t.forgeLedgerGold, { spent: labels.gold(history.totals.spent) })}</ForgeGold>
+                  <ForgeSpend
+                    gold={sub(t.forgeLedgerGold, { spent: labels.gold(history.totals.spent) })}
+                    essence={labels.count(history.totals.essence)}
+                  />
                 </span>
                 <Button type="button" variant="text" className="ml-auto" data-testid="forge-ledger-clear" onClick={onClearHistory}>
                   {t.forgeLedgerClear}

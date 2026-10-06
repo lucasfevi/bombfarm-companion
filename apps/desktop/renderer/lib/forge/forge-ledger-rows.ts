@@ -16,6 +16,7 @@ export type ForgeLedgerSortKey =
   | 'stones'
   | 'scroll'
   | 'spent'
+  | 'essence'
   | 'duration';
 
 export type ForgeLedgerSortDirection = 'asc' | 'desc';
@@ -59,6 +60,8 @@ function numberOf(row: ForgeHistoryRow, key: ForgeLedgerSortKey): number {
       return row.scrollEssence;
     case 'spent':
       return row.spent;
+    case 'essence':
+      return row.essence ?? -1;
     case 'duration':
       return row.durationMs;
     case 'item':

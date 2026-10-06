@@ -18,7 +18,7 @@ import { stonesUsed, type ForgeRunActive, type ForgeRunState } from '../../lib/f
 import { bringBandIntoView } from '../../lib/forge/run-into-view';
 import { useContentHeight } from '../../lib/forge/use-content-height';
 import { ForgeClimb } from './forge-climb';
-import { ForgeGold } from './forge-gold';
+import { ForgeSpend } from './forge-gold';
 import { BLANK, forgeLevel, type ForgeLabels } from './forge-labels';
 import { ForgeResult } from './forge-result';
 import { ForgeStonesUsed } from './forge-stones-panel';
@@ -57,7 +57,10 @@ function Running({
           {sub(t.forgeRailRolls, { rolls: run.tally.rolls })}
         </span>
         <span data-testid="forge-rail-spent" className="tabular-nums text-ink">
-          <ForgeGold>{sub(t.forgeRailSpent, { spent: gold(run.tally.spent) })}</ForgeGold>
+          <ForgeSpend
+            gold={sub(t.forgeRailSpent, { spent: gold(run.tally.spent) })}
+            essence={labels.count(run.tally.essence)}
+          />
         </span>
         <ForgeStonesUsed used={stonesUsed(run.steps)} labels={labels} />
         <span data-testid="forge-rail-wallet" className="tabular-nums text-muted">
@@ -76,7 +79,7 @@ function Running({
         </Button>
       </div>
 
-      <ForgeClimb from={run.from} target={run.target} steps={run.steps} pending={run.rollPending} gold={gold} />
+      <ForgeClimb from={run.from} target={run.target} steps={run.steps} pending={run.rollPending} gold={gold} count={labels.count} />
     </Panel>
   );
 }
@@ -131,7 +134,7 @@ export function ForgeRail({
           plan={run.run.plan}
           labels={labels}
           onDone={onDone}
-          climb={<ForgeClimb from={run.run.from} target={run.run.target} steps={run.run.steps} pending={false} gold={gold} />}
+          climb={<ForgeClimb from={run.run.from} target={run.run.target} steps={run.run.steps} pending={false} gold={gold} count={labels.count} />}
         />
       </Panel>
     );
