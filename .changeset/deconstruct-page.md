@@ -8,7 +8,9 @@ The Forge tab has a second page, Deconstruct, that mirrors the game's new Decons
 what the game's own screen lacks: filters. Search by name and narrow every burnable item in your bag
 and stash by kind, rarity, set, slot, level range, whether it has been forged, and where it is kept.
 Tick up to 100 items, press Burn, and confirm to receive Forge Essence, the currency the forge
-spends. The confirm always appears, and it warns when the batch holds forged items or anything Epic
+spends. The confirm always appears. It puts the item count and the Essence you receive in large
+figures, with your balance before and after, says in a red callout that a burn cannot be undone,
+lists what burns by kind and rarity, and warns when the batch holds forged items or anything Epic
 or rarer.
 
 The page keeps the game's rules. Equipped, locked, on-the-market, gem-socketed and recently imported

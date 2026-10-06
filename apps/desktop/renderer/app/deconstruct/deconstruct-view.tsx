@@ -79,6 +79,7 @@ import {
   essenceCell,
   type DeconstructHint,
 } from './deconstruct-labels';
+import { DeconstructConfirmBody } from './deconstruct-confirm-body';
 import { DeconstructResultBand } from './deconstruct-result-band';
 import { DeconstructToolbar } from './deconstruct-toolbar';
 
@@ -337,23 +338,21 @@ export function DeconstructView({
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title={t.deconstructConfirmTitle}
-        description={
-          <>
-            <span className="block">{sub(t.deconstructConfirmItems, { count: labels.count(summary.count) })}</span>
-            <span className="block">{sub(t.deconstructConfirmEssence, { essence: labels.signedCount(summary.essence) })}</span>
-            {hiddenSelected > 0 ? (
-              <span className="block">{sub(t.deconstructConfirmHidden, { count: labels.count(hiddenSelected) })}</span>
-            ) : null}
-            {warnings.forged.active ? <span className="block text-warn">{warnings.forged.text}</span> : null}
-            {warnings.rare.active ? <span className="block text-warn">{warnings.rare.text}</span> : null}
-            <span className="block">{t.deconstructConfirmIrreversible}</span>
-          </>
-        }
+        size="wide"
         confirmLabel={sub(t.deconstructConfirmAction, { count: labels.count(summary.count) })}
         cancelLabel={t.deconstructConfirmCancel}
         closeLabel={t.confirmDialogClose}
         onConfirm={onConfirm}
-      />
+      >
+        <DeconstructConfirmBody
+          items={selectedItems}
+          summary={summary}
+          hidden={hiddenSelected}
+          balance={balance}
+          warnings={warnings}
+          labels={labels}
+        />
+      </ConfirmDialog>
 
       {/* The row takes whatever height the bands around it leave, floored by `SPLIT_MIN_HEIGHT`.
           The list Panel is taken out of flow so the whole list cannot contribute its height to

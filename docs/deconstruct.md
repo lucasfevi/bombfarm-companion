@@ -152,4 +152,7 @@ back, the four figures, the tiles, a table of what the batch holds, the hint and
   own, and the tile region absorbs the difference, so Burn stays where it is as rows come and go.
   An empty batch leaves only the rule above the table.
 - **Confirm.** The forged and Epic-or-rarer warnings are printed by the confirm dialog alone, where
-  the game prints them.
+  the game prints them. The dialog leads with two display figures — the item count and the Essence
+  it pays, with the balance before and after beneath it — then a danger callout saying the burn
+  cannot be undone, the same group table as the panel (capped at six rows at any window height) and
+  the warnings in one warn callout. Focus starts on the corner close, never on the Burn button.

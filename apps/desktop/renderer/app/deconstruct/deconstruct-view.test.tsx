@@ -512,7 +512,7 @@ describe('the batch', () => {
     await click(byId('deconstruct-burn'));
     const dialog = document.body.querySelector<HTMLElement>('[role="dialog"]');
     if (!dialog) throw new Error('no confirm opened');
-    expect(dialog.textContent).toContain('Items in the fire: 2.');
+    expect(confirmFigure(dialog, 'deconstruct-confirm-items')).toBe('2');
     expect(dialog.textContent).toContain('1 of these are not shown by the current filters.');
   });
 });
@@ -535,7 +535,7 @@ describe('the batch on the Burn press', () => {
 
     const dialog = await pressBurn();
     if (!dialog) throw new Error('no confirm opened');
-    expect(dialog.textContent).toContain('Items in the fire: 1.');
+    expect(confirmFigure(dialog, 'deconstruct-confirm-items')).toBe('1');
     expect(textOf('deconstruct-hint')).toBe('1 item left your batch because it can no longer be burned.');
     expect(deconstructSelection()).toEqual(['1']);
 
@@ -549,7 +549,7 @@ describe('the batch on the Burn press', () => {
     await pick('1', '3', '5');
     await pushAccount(accountView(sampleRows().filter((row) => row.id === '1')));
     const dialog = await pressBurn();
-    expect(dialog?.textContent).toContain('Items in the fire: 1.');
+    expect(dialog && confirmFigure(dialog, 'deconstruct-confirm-items')).toBe('1');
     expect(textOf('deconstruct-hint')).toBe('2 items left your batch because they can no longer be burned.');
   });
 
@@ -801,6 +801,18 @@ describe('the Burn button', () => {
   });
 });
 
+function within(root: HTMLElement, testId: string): HTMLElement {
+  const element = root.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+  if (!element) throw new Error(`nothing rendered with test id ${testId} inside the dialog`);
+  return element;
+}
+
+function confirmFigure(dialog: HTMLElement, testId: string): string {
+  const figure = within(dialog, testId).querySelectorAll('p')[1];
+  if (!figure) throw new Error(`${testId} has no figure line`);
+  return figure.textContent;
+}
+
 describe('the confirm', () => {
   async function openConfirm(): Promise<HTMLElement> {
     await click(byId('deconstruct-burn'));
@@ -814,10 +826,87 @@ describe('the confirm', () => {
     await pick('1');
     const dialog = await openConfirm();
     expect(dialog.textContent).toContain('Burn these items?');
-    expect(dialog.textContent).toContain('Items in the fire: 1.');
-    expect(dialog.textContent).toContain('Forge Essence you receive: +30.');
-    expect(dialog.textContent).toContain('This cannot be undone.');
+    expect(dialog.textContent).toContain(en.deconstructConfirmItems);
+    expect(confirmFigure(dialog, 'deconstruct-confirm-items')).toBe('1');
+    expect(dialog.textContent).toContain(en.deconstructConfirmEssence);
+    expect(confirmFigure(dialog, 'deconstruct-confirm-essence')).toBe('+30');
     expect(startCalls).toEqual([]);
+  });
+
+  it('shows the balance before and after the burn under the essence, and a dash when the read has none', async () => {
+    await mount();
+    await pick('1', '2');
+    const dialog = await openConfirm();
+    expect(within(dialog, 'deconstruct-confirm-essence').textContent).toContain('1,000 → 1,230');
+    await click(buttonByText(dialog, en.deconstructConfirmCancel));
+    await unmount();
+    await act(async () => {
+      setDeconstructSelection([]);
+      await Promise.resolve();
+    });
+
+    await pushAccount(accountView(sampleRows(), null));
+    await mount();
+    await pick('1');
+    const unknown = await openConfirm();
+    expect(within(unknown, 'deconstruct-confirm-essence').textContent).toBe(`${en.deconstructConfirmEssence}+30—`);
+  });
+
+  it('states in a danger callout that a burn cannot be undone and when the items are destroyed', async () => {
+    await mount();
+    await pick('1');
+    const callout = within(await openConfirm(), 'deconstruct-confirm-irreversible');
+    expect(callout.textContent).toContain(en.deconstructConfirmIrreversible);
+    expect(callout.textContent).toContain(en.deconstructConfirmDestroyed);
+    expect(callout.className).toContain('var(--down)');
+  });
+
+  it('lists what burns by group, one row per kind and rarity, over a title', async () => {
+    await mount();
+    await pick('1', '2', '5');
+    const section = within(await openConfirm(), 'deconstruct-confirm-groups');
+    expect(section.textContent).toContain(en.deconstructConfirmGroupsTitle);
+    expect(section.querySelectorAll('[data-testid="deconstruct-group-row"]')).toHaveLength(3);
+  });
+
+  it('keeps the groups list to its own scroll region so a long batch cannot outgrow the window', async () => {
+    await mount();
+    await pick('1', '2', '5');
+    const region = within(await openConfirm(), 'deconstruct-confirm-groups').querySelector('[data-testid="deconstruct-batch-groups"]');
+    expect(region?.className).toContain('overflow-y-auto');
+    expect(region?.className).toContain('max-h-[7.125rem]');
+    expect(region?.className).not.toContain('max-h-[4.75rem]');
+  });
+
+  it('puts the warnings in a warn callout only when the batch holds them, one line each', async () => {
+    await mount();
+    await pick('1');
+    const plain = await openConfirm();
+    expect(plain.querySelector('[data-testid="deconstruct-confirm-warnings"]')).toBeNull();
+    await click(buttonByText(plain, en.deconstructConfirmCancel));
+
+    await pick('2');
+    const warned = within(await openConfirm(), 'deconstruct-confirm-warnings');
+    expect([...warned.querySelectorAll('li')].map((line) => line.textContent)).toEqual([
+      'Forged items in the batch: 1. Their forge is lost, and only part of the Essence comes back.',
+      'Items of Epic rarity or above in the batch: 1.',
+    ]);
+  });
+
+  it('is described by its own body, which holds the figures and the callout', async () => {
+    await mount();
+    await pick('1');
+    const dialog = await openConfirm();
+    const body = document.getElementById(dialog.getAttribute('aria-describedby') ?? '');
+    expect(body?.querySelector('[data-testid="deconstruct-confirm-items"]')).not.toBeNull();
+    expect(body?.querySelector('[data-testid="deconstruct-confirm-irreversible"]')).not.toBeNull();
+  });
+
+  it('lands focus on the corner close, never on the destructive button', async () => {
+    await mount();
+    await pick('1');
+    const dialog = await openConfirm();
+    expect(document.activeElement).toBe(dialog.querySelector(`button[aria-label="${en.confirmDialogClose}"]`));
   });
 
   it('prints the forged and the Epic-or-rarer lines only when the batch holds them', async () => {

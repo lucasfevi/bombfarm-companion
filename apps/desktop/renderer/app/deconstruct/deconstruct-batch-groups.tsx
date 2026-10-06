@@ -20,7 +20,15 @@ const REGION_CLASS = cn(
 const LIST_CLASS = cn('gap-0', '[&_>div]:py-px', '[&_dt]:leading-4', '[&_dd]:leading-4');
 
 /** Capped at six rows, four on a window under 820px tall: the tile region above absorbs the rows, but a short window has no spare height for them. */
-export function DeconstructBatchGroups({ items, labels }: { items: readonly InventoryViewItem[]; labels: DeconstructLabels }) {
+export function DeconstructBatchGroups({
+  items,
+  labels,
+  className,
+}: {
+  items: readonly InventoryViewItem[];
+  labels: DeconstructLabels;
+  className?: string;
+}) {
   const t = useCopy();
   const rows = useMemo<StatListItem[]>(
     () =>
@@ -37,7 +45,7 @@ export function DeconstructBatchGroups({ items, labels }: { items: readonly Inve
   );
 
   return (
-    <div data-testid="deconstruct-batch-groups" className={REGION_CLASS}>
+    <div data-testid="deconstruct-batch-groups" className={cn(REGION_CLASS, className)}>
       <StatList items={rows} aria-label={t.deconstructGroupsLabel} className={LIST_CLASS} />
     </div>
   );
