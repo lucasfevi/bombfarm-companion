@@ -42,3 +42,13 @@ export const inventoryTableToolbarClass = 'flex flex-wrap items-center gap-2 pb-
 export const inventoryTableResultCountClass = 'shrink-0 text-xs tabular-nums text-muted';
 
 export const inventoryTableSkippedNoteClass = 'pt-3 text-xs text-muted';
+
+/** A row the checklist will not take. Dimmed rather than hidden, so the reason it is out is still
+ *  readable beside the item it is about. */
+export const inventoryTableDisabledRowClass = 'opacity-55';
+
+/** `relative` is the containing block for the reason text read aloud only — absolutely positioned
+ *  text with no positioned ancestor escapes every scroll container above it. */
+export const inventoryTableSelectCellClass = 'relative';
+
+export const inventoryTableTipTriggerClass = 'inline-flex';

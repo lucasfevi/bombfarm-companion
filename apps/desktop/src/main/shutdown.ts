@@ -26,6 +26,8 @@ export const SHUTDOWN_STEPS = [
   'releaseForgeInjector',
   'releaseApplyService',
   'releaseApplyInjector',
+  'releaseDeconstructService',
+  'releaseDeconstructInjector',
   'releaseForgeHistory',
   'releasePvpReader',
   'releasePvpRecorder',

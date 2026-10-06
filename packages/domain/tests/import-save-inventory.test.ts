@@ -36,7 +36,7 @@ describe('parseSaveFile inventory pass', () => {
     expect(inventory).toHaveLength(27);
     expect(inventory.filter((item) => item.equipped)).toHaveLength(23);
     expect(inventory.filter((item) => !item.equipped)).toHaveLength(4);
-    expect(categoryHistogram(raw)).toEqual({ 0: 27, 4: 3 });
+    expect(categoryHistogram(raw)).toEqual({ 0: 27, 4: 3, 8: 1 });
     expect(account.slots).toBe(3);
   });
 

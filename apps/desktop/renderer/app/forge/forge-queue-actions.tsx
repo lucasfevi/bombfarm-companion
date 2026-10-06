@@ -12,6 +12,8 @@ import { useCallback, useState } from 'react';
 import type { AccountSource } from '@bombfarm/contracts';
 import { Button, ConfirmDialog, cn } from '@bombfarm/ui';
 import { sub, subNodes, useCopy } from '../../lib/copy';
+import { isBurning } from '../../lib/deconstruct/deconstruct-run-reducer';
+import { useDeconstructRun } from '../../lib/deconstruct/deconstruct-run-store';
 import type { ForgeQueueState } from '../../lib/forge/forge-queue-reducer';
 import { cancelForgeQueue, clearForgeQueue, startForgeQueue } from '../../lib/forge/forge-queue-store';
 import { forgeQueueExpectedGold, type ForgeQueueRow } from '../../lib/forge/forge-queue-view';
@@ -45,6 +47,7 @@ export function ForgeQueueActions({
 }) {
   const t = useCopy();
   const run = useForgeRun();
+  const burning = isBurning(useDeconstructRun());
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const queueRunId = queue.active?.runId ?? null;
@@ -63,7 +66,7 @@ export function ForgeQueueActions({
   // write gate.
   const holds = running || queue.status === 'paused';
   const reason = forgeButtonReason({ upgrade: 0, accountSource, forgeWritesEnabled, running: false, cancelRequested: false });
-  const canStart = reason === 'ready' && !holds && queue.pieces.length > 0;
+  const canStart = reason === 'ready' && !holds && !burning && queue.pieces.length > 0;
 
   const haltText =
     queue.halt === null
@@ -108,6 +111,11 @@ export function ForgeQueueActions({
       {!holds && reason !== 'ready' ? (
         <span data-testid="forge-queue-reason" className="text-[11px] text-muted">
           {forgeReasonText(reason, t)}
+        </span>
+      ) : null}
+      {!holds && reason === 'ready' && burning ? (
+        <span data-testid="forge-queue-reason" className="text-[11px] text-muted">
+          {t.deconstructReasonRunning}
         </span>
       ) : null}
       {holds ? (

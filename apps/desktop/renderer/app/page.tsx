@@ -40,8 +40,9 @@ import { FeedsRail } from './feeds-rail';
 import { GameFeed, liveTabMark } from './game-feed';
 import { OnlinePlayersFeed } from './online-players-feed';
 import { useFeeds } from '../lib/feeds/use-feeds';
+import { setForgePage } from '../lib/forge/forge-page-store';
 import { useForgeQueue } from '../lib/forge/forge-queue-store';
-import { ForgeView } from './forge/forge-view';
+import { ForgePage } from './forge/forge-page';
 import { OptimizerView } from './optimizer/optimizer-view';
 import { PvpView } from './pvp/pvp-view';
 import { SkillsView } from './skills/skills-view';
@@ -422,6 +423,7 @@ function HomePageContent({
               forgeWritesEnabled={forgeWritesEnabled}
               accountSource={environment?.accountSource ?? null}
               onOpenForge={() => {
+                setForgePage('forge');
                 setActiveNavId('forge');
               }}
             />
@@ -516,7 +518,7 @@ function HomePageContent({
           ) : activeNavId === 'inventory' ? (
             <InventoryView marketQuoteCurrency={marketQuoteCurrency} />
           ) : activeNavId === 'forge' ? (
-            <ForgeView forgeWritesEnabled={forgeWritesEnabled} accountSource={environment?.accountSource ?? null} />
+            <ForgePage forgeWritesEnabled={forgeWritesEnabled} accountSource={environment?.accountSource ?? null} />
           ) : activeNavId === 'optimizer' ? (
             <OptimizerView forgeWritesEnabled={forgeWritesEnabled} accountSource={environment?.accountSource ?? null} />
           ) : activeNavId === 'pvp' ? (

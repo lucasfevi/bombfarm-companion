@@ -35,6 +35,7 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [offline-dev-mode.md](offline-dev-mode.md) | `pnpm dev:offline` — the desktop app with no game and no server: fixture account, replayed live capture, and why it is not a mock server |
 | [pvp-duel-history.md](pvp-duel-history.md) | The PVP tab: how a duel result and its film are told apart on the tap, why the film has to be kept the moment it passes, the two-table store and what a skipped battle leaves behind |
 | [skill-tree.md](skill-tree.md) | The Skill Tree tab: what it draws, where the catalog and layout bundles come from, the rules it applies, how a node is priced against the Farm board's inputs, what is not priced, and why it never buys |
+| [deconstruct.md](deconstruct.md) | The Forge tab's Deconstruct page: the one batch burn route and its comma-joined `items`, all-or-nothing refusals, why essence is the server's number and never computed, the 100 cap, one attempt then a re-read, the writer lock shared with forge and apply, and where the eligibility rules live |
 | [hero-runes.md](hero-runes.md) | Hero runes: the timed stat buff on the account read — where it enters the sheet arithmetic (fitted, per axis), how every figure treats a buff that expires, and the two axes nothing prices yet |
 
 ## Web-only

@@ -22,6 +22,8 @@ import type { ForgeQueueState } from '../../lib/forge/forge-queue-reducer';
 import { syncForgeQueue, useForgeQueue } from '../../lib/forge/forge-queue-store';
 import { bagUpgrades, resolveForgeQueue } from '../../lib/forge/forge-queue-view';
 import { gearOf } from '../../lib/forge/forge-rows';
+import { isBurning } from '../../lib/deconstruct/deconstruct-run-reducer';
+import { useDeconstructRun } from '../../lib/deconstruct/deconstruct-run-store';
 import { useForgeRun } from '../../lib/forge/forge-run-store';
 import { forgeLabels, forgeLevel } from './forge-labels';
 import { ForgeQueueActions } from './forge-queue-actions';
@@ -46,6 +48,7 @@ export function ForgeQueueBar({
   const { lang, locale } = useLocale();
   const queue = useForgeQueue();
   const run = useForgeRun();
+  const burning = isBurning(useDeconstructRun());
   const account = useAccountView();
 
   const shown = isForgeQueueShown(queue);
@@ -113,7 +116,7 @@ export function ForgeQueueBar({
           </span>
           {queue.status === 'paused' ? (
             <span data-testid="forge-queue-paused" className="text-muted">
-              {t.forgeQueuePausedForApply}
+              {burning ? t.forgeQueuePausedForBurn : t.forgeQueuePausedForApply}
             </span>
           ) : queue.active !== null ? (
             <span className="text-muted">

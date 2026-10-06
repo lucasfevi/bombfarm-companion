@@ -56,6 +56,73 @@ const CAPS_DROPPED_HERO_IDS = ['73099', '74555', '76184'];
 /** The save export's own `generated_at`, as an ISO instant — fixed, so regenerating is a no-op diff. */
 const CAPTURED_AT = '2026-08-23T00:00:00.000Z';
 
+/** The Forge Essence balance the offline account holds. */
+const OFFLINE_ESSENCE = 102480;
+
+/**
+ * The save export predates the deconstruct screen, so its items carry none of the per-item fields
+ * the screen reads and none of the states that make it worth looking at. The values below are
+ * synthetic, shaped after a live read: gear is worth its level times three to the power of its
+ * rarity, other materials ten times three to the power of their rarity, and chests nothing.
+ * Never a reading of the game's own numbers.
+ *
+ * Every seventh unequipped piece of gear is locked and four chance stones are added, so the screen
+ * shows a blocked row and a non-gear kind without any account setup.
+ */
+const LOCK_EVERY_NTH_UNEQUIPPED = 7;
+const CHANCE_STONES = [
+  { id: '900001', def_id: 'forja_pedra_incomum', rarity: 1 },
+  { id: '900002', def_id: 'forja_pedra_incomum', rarity: 1 },
+  { id: '900003', def_id: 'forja_pedra_raro', rarity: 2 },
+  { id: '900004', def_id: 'forja_pedra_raro', rarity: 2 },
+];
+
+function essenceValue(item) {
+  if (item.category === 1) return 0;
+  if (item.category === 0) return item.level * 3 ** item.rarity;
+  return 10 * 3 ** item.rarity;
+}
+
+function withDeconstructFields(items) {
+  let unequippedGear = 0;
+  const decorated = items.map((item) => {
+    const gear = item.category === 0;
+    const locked = gear && !item.equipped_on && unequippedGear++ % LOCK_EVERY_NTH_UNEQUIPPED === 0;
+    return {
+      ...item,
+      essence_value: essenceValue(item),
+      forge_fails: 0,
+      forge_chance: gear ? 1 : 0,
+      pergaminho_custo: gear ? item.level * 30 : 0,
+      ...(locked ? { locked: true } : {}),
+    };
+  });
+
+  const stones = CHANCE_STONES.map((stone) => ({
+    ...stone,
+    set: '',
+    category: 8,
+    level: 0,
+    stats: [],
+    power: 0,
+    sell_value: '140',
+    essence_value: essenceValue({ category: 8, rarity: stone.rarity }),
+    forge_fails: 0,
+    forge_chance: 0,
+    pergaminho_custo: 0,
+    sellable: true,
+    upgrade: 0,
+    tradable: true,
+    market_state: 0,
+    locked: false,
+    equipped_on: null,
+    equip_slot: null,
+    in_stash: true,
+  }));
+
+  return [...decorated, ...stones];
+}
+
 /**
  * Walks the `.bfcc` container (5-byte header, then ctxType(1) ctxLength(4 LE) ctx
  * payloadLength(4 LE) payload) and reads each record's frame JSON directly. Parsed here rather
@@ -168,7 +235,7 @@ export function buildOfflineFixture(captureBytes = readFileSync(CAPTURE), { fiel
   const resolved = { status: 'resolved', capturedAt: CAPTURED_AT };
 
   const payload = {
-    account: save.account,
+    account: { ...save.account, essence: OFFLINE_ESSENCE },
     heroes: rekeyedRoster,
     skills: save.skills,
     casa: {
@@ -178,7 +245,7 @@ export function buildOfflineFixture(captureBytes = readFileSync(CAPTURE), { fiel
       heroes: rotationHeroes,
       casa: save.casa,
     },
-    items: save.items,
+    items: withDeconstructFields(save.items),
     fidelity: {
       account: resolved,
       heroes: resolved,

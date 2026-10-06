@@ -32,7 +32,7 @@ const USAGE_PING_HOST = 'api.bombfarm-companion.app';
 const ONLINE_PLAYERS_TRANSPORT_FILE = join(DESKTOP_MAIN, 'online-players/online-players-transport.ts');
 const SESSION_TOKEN_FILE_FILE = join(DESKTOP_MAIN, 'game-api/session-token-file.ts');
 const REQUEST_FILE = join(GAME_API_SRC, 'request.ts');
-/** The one write surface. It may name `POST` and exactly the six write routes below, and nothing
+/** The one write surface. It may name `POST` and exactly the seven write routes below, and nothing
  *  else in either tree may name either — the read-only posture is reversed for that width only. */
 const WRITE_REQUEST_FILE = join(GAME_API_SRC, 'write-request.ts');
 const WRITE_ROUTE_PATHS = [
@@ -42,12 +42,15 @@ const WRITE_ROUTE_PATHS = [
   '/item/unequip',
   '/hero/stat/respec',
   '/hero/stat/commit',
+  '/item/desconstruir',
 ];
 const ACCOUNT_REFRESH_FILE = join(DESKTOP_MAIN, 'game-api/account-refresh.ts');
-/** The two callers of `requestPost()` — the forge run and an apply run. Both typed to a
- *  `WriteSession`; `FORGE_SERVICE_FILE` is also the root of the live-tap walk below (Guard 4). */
+/** The three callers of `requestPost()` — the forge run, an apply run and a deconstruct run. All
+ *  typed to a `WriteSession`; the forge and deconstruct services are also roots of the live-tap
+ *  walk below (Guard 4). */
 const FORGE_SERVICE_FILE = join(DESKTOP_MAIN, 'forge/forge-service.ts');
 const APPLY_SERVICE_FILE = join(DESKTOP_MAIN, 'apply/apply-service.ts');
+const DECONSTRUCT_SERVICE_FILE = join(DESKTOP_MAIN, 'deconstruct/deconstruct-service.ts');
 /** This guard file itself necessarily names the strings it checks for — excluded from every scan. */
 const BOUNDARIES_TEST_FILE = join(DESKTOP_MAIN, 'game-api/boundaries.test.ts');
 
@@ -69,7 +72,7 @@ function isTestFile(file: string): boolean {
 }
 
 // -------------------------------------------------------------------------------------------
-// Guard 1 — one write surface, six routes wide. Every source file that can reach the network:
+// Guard 1 — one write surface, seven routes wide. Every source file that can reach the network:
 // packages/game-api/src (the classification/typing half) AND apps/desktop/src/main (the one
 // real socket, https-transport.ts, plus everything around it) — the scan used to cover only the
 // former, which is exactly why a hard-coded non-GET method in https-transport.ts was invisible
@@ -104,7 +107,7 @@ function foldStringConcatenation(text: string): string {
  *  semver build-metadata string already is above. */
 const LOOPBACK_IPS = new Set(['127.0.0.1', '0.0.0.0']);
 
-describe('Guard 1 — one write surface, six routes wide, anywhere the network can be reached', () => {
+describe('Guard 1 — one write surface, seven routes wide, anywhere the network can be reached', () => {
   const sourceFiles = [...walkTsFiles(GAME_API_SRC), ...walkTsFiles(DESKTOP_MAIN)].filter((f) => !isTestFile(f));
 
   it('scans a non-empty set of non-test source files, including apps/desktop/src/main', () => {
@@ -127,7 +130,7 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
     expect(/['"]POST['"]/.test(readFileSync(WRITE_REQUEST_FILE, 'utf8'))).toBe(true);
   });
 
-  it('write-request.ts names no path literal other than the six write routes', () => {
+  it('write-request.ts names no path literal other than the seven write routes', () => {
     const text = foldStringConcatenation(readFileSync(WRITE_REQUEST_FILE, 'utf8'));
     const pathLiterals = Array.from(text.matchAll(/['"](\/[^'"]*)['"]/g), (match) => match[1]);
     expect(pathLiterals.length, 'sanity: write-request.ts must name its routes as path literals').toBeGreaterThan(0);
@@ -392,16 +395,16 @@ describe('Guard 3 — no path to the network or the token file bypasses consent'
     expect(offenders, `Every write call site must be typed to a WriteSession. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 
-  it('write-request.ts is the only definer of requestPost(), and apply-service.ts/forge-service.ts are its only callers — the app\'s writes', () => {
+  it('write-request.ts is the only definer of requestPost(), and the apply, deconstruct and forge services are its only callers — the app\'s writes', () => {
     const definers = nonTestFiles.filter((file) => /export async function requestPost\(/.test(readFileSync(file, 'utf8')));
     expect(definers).toEqual([WRITE_REQUEST_FILE]);
 
     const callers = nonTestFiles.filter((file) => file !== WRITE_REQUEST_FILE && /\brequestPost\(/.test(readFileSync(file, 'utf8')));
-    expect(callers).toEqual([APPLY_SERVICE_FILE, FORGE_SERVICE_FILE]);
+    expect(callers).toEqual([APPLY_SERVICE_FILE, DECONSTRUCT_SERVICE_FILE, FORGE_SERVICE_FILE]);
   });
 
-  it('apply-service.ts and forge-service.ts each mint their session through grantWriteSession() and name WriteSession (sanity — the caller rule above is not vacuous)', () => {
-    for (const file of [APPLY_SERVICE_FILE, FORGE_SERVICE_FILE]) {
+  it('the apply, deconstruct and forge services each mint their session through grantWriteSession() and name WriteSession (sanity — the caller rule above is not vacuous)', () => {
+    for (const file of [APPLY_SERVICE_FILE, DECONSTRUCT_SERVICE_FILE, FORGE_SERVICE_FILE]) {
       const text = readFileSync(file, 'utf8');
       expect(text).toContain('grantWriteSession(');
       expect(text).toContain('WriteSession');
@@ -643,6 +646,22 @@ describe('Guard 4 — the forge run never reaches the live tap either', () => {
   it('walked a non-empty import graph from forge-service.ts', () => {
     expect(visited.size).toBeGreaterThan(0);
     expect(visited.has(FORGE_SERVICE_FILE)).toBe(true);
+  });
+
+  it('reaches no edge into live-source/ or its LiveSource class', () => {
+    expect(
+      violations,
+      `A write is never sourced from, or informed by, the live tap. Violations: ${JSON.stringify(violations)}`,
+    ).toEqual([]);
+  });
+});
+
+describe('Guard 4 — the deconstruct run never reaches the live tap either', () => {
+  const { violations, visited } = walkImportGraph(DECONSTRUCT_SERVICE_FILE);
+
+  it('walked a non-empty import graph from deconstruct-service.ts', () => {
+    expect(visited.size).toBeGreaterThan(0);
+    expect(visited.has(DECONSTRUCT_SERVICE_FILE)).toBe(true);
   });
 
   it('reaches no edge into live-source/ or its LiveSource class', () => {

@@ -102,7 +102,7 @@ async function turnOnForgeWrites(page) {
 }
 
 async function goToForge(page) {
-  await page.getByRole('button', { name: 'Forge' }).click();
+  await page.getByRole('button', { name: 'Forge', exact: true }).click();
   await page.waitForSelector('[data-testid="forge-view"]', { timeout: 20_000 });
   await page.waitForSelector('[data-testid="inventory-table-row"]', { timeout: 20_000 });
 }

@@ -16,6 +16,9 @@ import { createAccountNotifier, resolveAccountView, resolveCachedAccountView } f
 import { createApplyInjector, type ApplyInjector } from './apply/apply-inject.js';
 import { createApplyService, type ApplyService } from './apply/apply-service.js';
 import { createWriterLock, type WriterLock } from './apply/writer-lock.js';
+import { patchAccountAfterDeconstruct } from './deconstruct/deconstruct-account-patch.js';
+import { createDeconstructInjector, type DeconstructInjector } from './deconstruct/deconstruct-inject.js';
+import { createDeconstructService, type DeconstructService } from './deconstruct/deconstruct-service.js';
 import { patchAccountAfterForge } from './forge/forge-account-patch.js';
 import { createForgeHistory, type ForgeHistory } from './forge/forge-history.js';
 import { createForgeInjector, shouldHonourForgeInject, type ForgeInjector } from './forge/forge-inject.js';
@@ -141,6 +144,8 @@ let forgeService: ForgeService | null = null;
 let forgeHistory: ForgeHistory | null = null;
 let applyService: ApplyService | null = null;
 let applyInjector: ApplyInjector | null = null;
+let deconstructService: DeconstructService | null = null;
+let deconstructInjector: DeconstructInjector | null = null;
 let pvpHistory: PvpHistory | null = null;
 let pvpRecorder: PvpRecorder | null = null;
 let pvpReader: PvpReader | null = null;
@@ -332,6 +337,8 @@ function registerIpcHandlers(): void {
       getForgeInjector: () => forgeInjector,
       getApplyService: () => applyService,
       getApplyInjector: () => applyInjector,
+      getDeconstructService: () => deconstructService,
+      getDeconstructInjector: () => deconstructInjector,
       getPvpHistory: () => pvpHistory,
       getPvpReader: () => pvpReader,
       getMainWindow: () => mainWindow,
@@ -1011,6 +1018,33 @@ async function bootstrap(): Promise<void> {
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   });
 
+  deconstructService = createDeconstructService({
+    consentStore,
+    readToken,
+    settings: () => currentSettings,
+    transport: gameApiTransport,
+    gate,
+    accountSource: currentAccountSource,
+    isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
+    currentItems,
+    applyResult: (patch) => {
+      accountRefresh?.applyPatch((payload) => patchAccountAfterDeconstruct(payload, patch, new Date().toISOString()));
+    },
+    writerLock,
+    requestReadNow: requestAccountReadNow,
+    emit: (event) => {
+      emitEvent('deconstruct:event', event);
+    },
+    log,
+    now: () => Date.now(),
+  });
+  deconstructInjector = createDeconstructInjector({
+    honoured: () => shouldHonourForgeInject(process.env, resolveAppEnv().isPackaged),
+    emit: (event) => {
+      emitEvent('deconstruct:event', event);
+    },
+  });
+
   // Fixture mode's ~20×/s ticker is the second producer that can
   // commit an account; wired the same way, ignoring its own payload argument for the same
   // reason. Production's live-tap-backed reader never commits (GameReaderService.tickLive() has
@@ -1222,6 +1256,12 @@ if (!gotLock) {
         },
         releaseApplyInjector: () => {
           applyInjector = null;
+        },
+        releaseDeconstructService: () => {
+          deconstructService = null;
+        },
+        releaseDeconstructInjector: () => {
+          deconstructInjector = null;
         },
         // forgeHistory borrows accountOpen.db the way settingsStore does; accountStore.close()
         // below owns the handle, so it gains no close() of its own.

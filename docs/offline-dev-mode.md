@@ -16,7 +16,7 @@ it applied, and every one of them is overridable.
 
 | Surface | Source | Fidelity |
 | --- | --- | --- |
-| Account, Inventory | `apps/desktop/tests/fixtures/account-offline.json` — 13 heroes, 221 items, all five sections `resolved` | Real captured bodies |
+| Account, Inventory | `apps/desktop/tests/fixtures/account-offline.json` — 13 heroes, 225 items, all five sections `resolved` | Real captured bodies, plus synthetic per-item Forge Essence fields, a balance and four Chance Stones so the Forge tab's Deconstruct page has rows to show; its burn is refused offline, see [deconstruct.md](deconstruct.md) |
 | Live | `live-capture.bfcc` — 60 records decoding to 58 ticks, replayed at ~10 Hz | Real captured bytes, looped |
 | PVP | `pvp-duels-offline.json` — two duel results (one with its film, one without) served once ahead of the first frame | Hand-written bodies in the wire's shape; see [pvp-duel-history.md](pvp-duel-history.md) |
 | Skill Tree | the same `account-offline.json` — its `skills` block: 72 owned levels, the server's totals, gold and furthest phase | Real captured body; priced from the fixture's 13 heroes, see [skill-tree.md](skill-tree.md) |
