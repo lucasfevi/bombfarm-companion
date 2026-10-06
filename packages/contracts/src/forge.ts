@@ -13,6 +13,8 @@ export type ForgeStopReason =
   | 'cancelled'
   | 'cooldown'
   | 'shortfall'
+  | 'stones'
+  | 'stone_mismatch'
   | 'missing'
   | 'error';
 
@@ -21,6 +23,8 @@ export interface ForgeStartRequest {
   target: number;
   maxGold: number | null;
   maxAttempts: number | null;
+  /** The Chance Stone rarity (0 to 5) to spend on the roll for each target, indexed target - 1; absent or null is none. */
+  stones?: readonly (number | null | undefined)[];
 }
 
 /** Why a run did not start. `busy` is another run in flight; `offline` is an account with no
@@ -53,6 +57,8 @@ export interface ForgeStepEvent {
   cost: number;
   spent: number;
   wallet: number | null;
+  /** The rarity of the Chance Stone this roll used up, as the server reported it; null when none. */
+  stone?: number | null;
 }
 
 export interface ForgeRunResult {
@@ -69,6 +75,10 @@ export interface ForgeRunResult {
   spent: number;
   walletAfter: number | null;
   durationMs: number;
+  /** Chance Stones used up by the run, by rarity 0 to 5. */
+  stonesSpent?: readonly number[];
+  /** The rarity involved when the run stopped for want of stones, or on a stone the server did not take as asked. */
+  stoneRarity?: number | null;
 }
 
 /**
@@ -116,6 +126,9 @@ export interface ForgeHistoryRow {
   spent: number;
   walletAfter: number | null;
   durationMs: number;
+  /** Chance Stones used up by the run, by rarity 0 to 5; all zeros for a run recorded before stones. */
+  stonesSpent: readonly number[];
+  stoneRarity: number | null;
 }
 
 export interface ForgeHistoryTotals {

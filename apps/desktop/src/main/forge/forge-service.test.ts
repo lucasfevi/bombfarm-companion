@@ -14,24 +14,31 @@ import { consentRecord, grantedConsent } from '@bombfarm/game-api/test-fixtures'
 import { createWriterLock } from '../apply/writer-lock.js';
 import type { ForgeAccountPatch } from './forge-account-patch.js';
 import type { ForgeHistory, ForgeRunRecord } from './forge-history.js';
-import { createForgeService, parseForgeReply, resolveForgeItem, type ForgeServiceDeps } from './forge-service.js';
+import { createForgeService, parseForgeReply, resolveForgeItem, usableStoneCounts, type ForgeServiceDeps } from './forge-service.js';
 
 const GRANTED = grantedConsent('2026-09-05T10:00:00.000Z');
 const ITEM_ROW = { id: 'g1', def_id: 'steel_luva', rarity: 1, slot: 2, level: 20, upgrade: 8, locked: false };
 const NOOP_LOG = { info: () => undefined, warn: () => undefined, error: () => undefined };
 
 type Reply =
-  | { upgrade: number; critical?: boolean; status?: undefined; body?: undefined; hold?: boolean }
-  | { upgrade?: undefined; critical?: undefined; status: number; body: string; hold?: boolean };
+  | { upgrade: number; critical?: boolean; stone?: number; status?: undefined; body?: undefined; hold?: boolean }
+  | { upgrade?: undefined; critical?: undefined; stone?: undefined; status: number; body: string; hold?: boolean };
 
 /** Answers the two forge routes from a script, one reply per call, and records what it saw. A
  *  reply marked `hold` stays in flight until `release()`. */
 function scriptedTransport(script: Reply[]) {
-  const calls: { route: string; itemId: string }[] = [];
+  const calls: { route: string; itemId: string; pedra: string | null; pergaminho: string | null; requestId: string | null }[] = [];
   const pending: (() => void)[] = [];
   const transport: HttpTransport = (req) => {
     const [route, query] = req.path.split('?');
-    calls.push({ route: route ?? '', itemId: new URLSearchParams(query).get('item') ?? '' });
+    const params = new URLSearchParams(query);
+    calls.push({
+      route: route ?? '',
+      itemId: params.get('item') ?? '',
+      pedra: params.get('pedra'),
+      pergaminho: params.get('pergaminho'),
+      requestId: params.get('request_id'),
+    });
     const reply = script.shift();
     if (!reply) throw new Error(`no scripted reply for call ${String(calls.length)}`);
     const response: HttpResponse =
@@ -44,6 +51,9 @@ function scriptedTransport(script: Reply[]) {
               critical: reply.critical === true,
               gold: 1_000_000 - 100 * calls.length,
               item: { ...ITEM_ROW, upgrade: reply.upgrade },
+              pedra_gasta: reply.stone ?? -1,
+              pergaminho_pago: 0,
+              pergaminho_protegeu: false,
             }),
           };
     if (reply.hold !== true) return Promise.resolve(response);
@@ -363,10 +373,172 @@ describe('resolveForgeItem / parseForgeReply', () => {
       gold: 99,
       critical: false,
       fails: null,
+      stone: null,
     });
+    expect(parseForgeReply({ item: { id: 'g1', upgrade: 9 }, pedra_gasta: 2 })?.stone).toBe(2);
+    expect(parseForgeReply({ item: { id: 'g1', upgrade: 9 }, pedra_gasta: -1 })?.stone).toBeNull();
+    expect(parseForgeReply({ item: { id: 'g1', upgrade: 9 }, pedra_gasta: 9 })?.stone).toBeNull();
     expect(parseForgeReply({ item: { id: 'g1', upgrade: 8, forge_fails: 2 } })?.fails).toBe(2);
     expect(parseForgeReply({ item: {} })).toBeNull();
     expect(parseForgeReply('nope')).toBeNull();
+  });
+});
+
+const stoneRow = (id: string, word: string, extra: Record<string, unknown> = {}) => ({
+  id,
+  def_id: 'forja_pedra_' + word,
+  category: 8,
+  rarity: 0,
+  market_state: 0,
+  equipped_on: null,
+  locked: false,
+  ...extra,
+});
+
+const CAPTURED_MISS = {
+  cost: '59625',
+  critical: false,
+  essence: 212464,
+  essence_cost: 64,
+  forge_fails: 1,
+  gold: '2101016350',
+  item: { id: 'g1', def_id: 'steel_luva', rarity: 1, slot: 2, level: 20, upgrade: 12, forge_fails: 1, forge_chance: 0.25, pergaminho_custo: 864 },
+  pedra_gasta: 0,
+  pergaminho_pago: 0,
+  pergaminho_protegeu: false,
+  success: false,
+  target: 14,
+};
+
+describe('Chance Stones', () => {
+  const OWNED = [stoneRow('s1', 'comum'), stoneRow('s2', 'comum'), stoneRow('s3', 'raro')];
+  const items = (rows: unknown[] = OWNED) => () => [ITEM_ROW, ...rows];
+  const stonesFor = (rarity: number | null, upTo = 10): (number | null)[] =>
+    Array.from({ length: upTo }, (_, index) => (index + 1 >= 9 ? rarity : null));
+
+  it('counts only the stones the game would offer', () => {
+    expect(
+      usableStoneCounts([
+        stoneRow('a', 'comum'),
+        stoneRow('b', 'comum', { locked: true }),
+        stoneRow('c', 'comum', { market_state: 1 }),
+        stoneRow('d', 'comum', { equipped_on: 'h1' }),
+        stoneRow('e', 'comum', { category: 3 }),
+        stoneRow('f', 'mitico'),
+        stoneRow('g', 'epico'),
+        ITEM_ROW,
+      ]),
+    ).toEqual([1, 0, 0, 1, 0, 1]);
+    expect(usableStoneCounts(null)).toEqual([0, 0, 0, 0, 0, 0]);
+  });
+
+  it('sends the chosen stone only on the rolls that can miss', async () => {
+    const h = harness({
+      script: [{ upgrade: 4 }, { upgrade: 5, stone: 0 }, { upgrade: 6, stone: 0 }],
+      currentItems: () => [{ ...ITEM_ROW, upgrade: 3 }, ...OWNED],
+    });
+    h.service.start({ ...REQUEST, target: 6, stones: [0, 0, 0, 0, 0, 0] });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls.map((call) => call.pedra)).toEqual([null, '0', '0']);
+    expect(h.wire.calls.map((call) => call.pergaminho)).toEqual([null, null, null]);
+    expect(done.result).toMatchObject({ stop: 'target', stonesSpent: [2, 0, 0, 0, 0, 0] });
+  });
+
+  it('a split plan spends each kind on its own targets and carries the stones through events, result and ledger row', async () => {
+    const stones = [null, null, null, null, null, null, null, null, 0, 2];
+    const h = harness({ script: [{ upgrade: 9, stone: 0 }, { upgrade: 10, stone: 2 }], currentItems: items([stoneRow('s1', 'comum'), stoneRow('s2', 'raro')]) });
+    h.service.start({ ...REQUEST, stones });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls.map((call) => call.pedra)).toEqual(['0', '2']);
+    expect(steps(h.events).map((step) => step.stone)).toEqual([0, 2]);
+    expect(done.result).toMatchObject({ stop: 'target', stonesSpent: [1, 0, 1, 0, 0, 0] });
+    expect(h.appended[0]).toMatchObject({ stonesSpent: [1, 0, 1, 0, 0, 0], stoneRarity: null });
+  });
+
+  it('decrements the owned count on every reply and stops, without sending, once the kind is used up', async () => {
+    const h = harness({
+      script: [{ upgrade: 9, stone: 0 }, { upgrade: 8, stone: 0 }],
+      currentItems: items([stoneRow('s1', 'comum'), stoneRow('s2', 'comum')]),
+    });
+    h.service.start({ ...REQUEST, target: 12, stones: stonesFor(0, 12) });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(2);
+    expect(done.result).toMatchObject({ stop: 'stones', stoneRarity: 0, stonesSpent: [2, 0, 0, 0, 0, 0], rolls: 2 });
+  });
+
+  it('stops before the first call when a chosen kind is not owned at all', async () => {
+    const h = harness({ script: [{ upgrade: 9 }], currentItems: items([stoneRow('s1', 'comum')]) });
+    h.service.start({ ...REQUEST, stones: stonesFor(4) });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(0);
+    expect(done.result).toMatchObject({ stop: 'stones', stoneRarity: 4, rolls: 0 });
+    expect(h.appended).toHaveLength(0);
+  });
+
+  it('stops when the server used a different stone than the one asked for, after counting the roll it made', async () => {
+    const h = harness({ script: [{ upgrade: 9, stone: 1 }, { upgrade: 10, stone: 1 }], currentItems: items() });
+    h.service.start({ ...REQUEST, stones: stonesFor(0) });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(1);
+    expect(done.result).toMatchObject({ stop: 'stone_mismatch', rolls: 1, stoneRarity: 0, stonesSpent: [0, 1, 0, 0, 0, 0] });
+  });
+
+  it('stops when the server says no stone was used though one was sent, and when it used one that was not sent', async () => {
+    const none = harness({ script: [{ upgrade: 9 }, { upgrade: 10 }], currentItems: items() });
+    none.service.start({ ...REQUEST, stones: stonesFor(0) });
+    expect((await untilDone(none.events)).result).toMatchObject({ stop: 'stone_mismatch', rolls: 1, stonesSpent: [0, 0, 0, 0, 0, 0] });
+
+    const unasked = harness({ script: [{ upgrade: 9, stone: 0 }, { upgrade: 10 }], currentItems: items() });
+    unasked.service.start(REQUEST);
+    expect((await untilDone(unasked.events)).result).toMatchObject({ stop: 'stone_mismatch', rolls: 1, stonesSpent: [1, 0, 0, 0, 0, 0] });
+  });
+
+  it('stops on NO_FORGE_AID naming the kind, with nothing counted for the refused roll', async () => {
+    const h = harness({ script: [{ status: 400, body: '{"error":"NO_FORGE_AID"}' }], currentItems: items() });
+    h.service.start({ ...REQUEST, stones: stonesFor(2) });
+    const done = await untilDone(h.events);
+    expect(done.result).toMatchObject({ stop: 'stones', stoneRarity: 2, rolls: 0, stonesSpent: [0, 0, 0, 0, 0, 0] });
+    expect(h.wire.calls).toHaveLength(1);
+  });
+
+  it('retries a roll once without the stone on FORGE_AID_USELESS, under a new request id, and carries on', async () => {
+    const h = harness({
+      script: [{ status: 400, body: '{"error":"FORGE_AID_USELESS"}' }, { upgrade: 9 }, { upgrade: 10 }],
+      currentItems: items(),
+    });
+    h.service.start({ ...REQUEST, stones: [null, null, null, null, null, null, null, null, 0, null] });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls.map((call) => call.pedra)).toEqual(['0', null, null]);
+    expect(new Set(h.wire.calls.map((call) => call.requestId)).size).toBe(3);
+    expect(done.result).toMatchObject({ stop: 'target', rolls: 2, stonesSpent: [0, 0, 0, 0, 0, 0] });
+  });
+
+  it('retries only once: a second refusal without the stone ends the run as an ordinary refusal', async () => {
+    const h = harness({
+      script: [{ status: 400, body: '{"error":"FORGE_AID_USELESS"}' }, { status: 400, body: '{"error":"FORGE_AID_USELESS"}' }],
+      currentItems: items(),
+    });
+    h.service.start({ ...REQUEST, stones: stonesFor(0) });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(2);
+    expect(done.result.stop).toBe('missing');
+  });
+
+  it('reads the captured reply of a stone roll that missed', () => {
+    expect(parseForgeReply(CAPTURED_MISS)).toMatchObject({ upgrade: 12, stone: 0, cost: 59625, fails: 1, critical: false });
+  });
+
+  it('a run with no stones chosen never names pedra, whatever the bag holds', async () => {
+    const h = harness({ script: [{ upgrade: 9 }, { upgrade: 10 }], currentItems: items() });
+    h.service.start(REQUEST);
+    await untilDone(h.events);
+    expect(h.wire.calls.map((call) => call.pedra)).toEqual([null, null]);
+  });
+
+  it('an essence shortfall ends the run as a shortfall rather than a refused item', async () => {
+    const h = harness({ script: [{ status: 400, body: '{"error":"NOT_ENOUGH_ESSENCE"}' }] });
+    h.service.start(REQUEST);
+    expect((await untilDone(h.events)).result.stop).toBe('shortfall');
   });
 });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ForgeDoneEvent, ForgeStepEvent } from '@bombfarm/contracts';
-import { forgeRunReducer, IDLE_FORGE_RUN, rungTally, shouldAdoptLiveAfter, type ForgeRunState } from './forge-run-reducer';
+import { forgeRunReducer, IDLE_FORGE_RUN, rungTally, shouldAdoptLiveAfter, stonesUsed, type ForgeRunState } from './forge-run-reducer';
 
 function step(overrides: Partial<ForgeStepEvent>): ForgeStepEvent {
   return {
@@ -218,5 +218,17 @@ describe('rungTally', () => {
 
   it('is empty before the first call', () => {
     expect(rungTally([])).toEqual([]);
+  });
+});
+
+describe('stonesUsed', () => {
+  it('counts the stones the server reported using, by rarity, and ignores rolls that used none', () => {
+    const steps = [step({ stone: 0 }), step({ stone: 0 }), step({ stone: 3 }), step({ stone: null }), step({})];
+    expect(stonesUsed(steps)).toEqual([2, 0, 0, 1, 0, 0]);
+    expect(stonesUsed([])).toEqual([0, 0, 0, 0, 0, 0]);
+  });
+
+  it('does not count a rarity outside the six kinds', () => {
+    expect(stonesUsed([step({ stone: 9 }), step({ stone: -1 })])).toEqual([0, 0, 0, 0, 0, 0]);
   });
 });

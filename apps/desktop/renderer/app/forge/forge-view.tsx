@@ -60,7 +60,7 @@ import {
   setForgeSort,
   useForgeScreen,
 } from '../../lib/forge/forge-store';
-import { stonesCanBeUsed } from '../../lib/forge/forge-stones';
+import { stonesByTarget } from '../../lib/forge/forge-stones';
 import { useContentHeight } from '../../lib/forge/use-content-height';
 import { forgeCollectionBonus, useForgePlan } from '../../lib/forge/use-forge-plan';
 import { useScreenRefreshRegistration } from '../../lib/refresh/screen-refresh-store';
@@ -252,8 +252,15 @@ export function ForgeView({
 
   const onForge = useCallback(() => {
     const bridge = bridgeOf();
-    if (!bridge || selected === null || stonesCanBeUsed(planControls.stoneRanges)) return;
-    const request = { itemId: selected.id, target: plan.target, maxGold: plan.maxGold, maxAttempts: plan.attempts };
+    if (!bridge || selected === null) return;
+    const stones = stonesByTarget(planControls.stoneRanges);
+    const request = {
+      itemId: selected.id,
+      target: plan.target,
+      maxGold: plan.maxGold,
+      maxAttempts: plan.attempts,
+      ...(stones === undefined ? {} : { stones }),
+    };
     const planNow: ForgeRunPlan = { forecast: planControls.forecast };
     void bridge.invoke('forge:start', request).then((result) => {
       if (result.ok) {
@@ -301,7 +308,6 @@ export function ForgeView({
     forgeWritesEnabled,
     running,
     cancelRequested,
-    stonesChosen: stonesCanBeUsed(planControls.stoneRanges),
   });
 
   const account = view?.payload.account;

@@ -12,7 +12,7 @@ import type { ForgePlan, ForgePlanForecast, ForgeStoneEdit } from '../../lib/for
 import { ForgeGold } from './forge-gold';
 import { ForgeQueueAdd } from './forge-queue-add';
 import { StoneIcon, StoneTooltip } from './forge-stone-art';
-import { ForgeStonesControl, ForgeStonesShortage, forgeStoneFacts } from './forge-stones-panel';
+import { ForgeStonesControl, ForgeStonesNotice, ForgeStonesShortage, forgeStoneFacts } from './forge-stones-panel';
 import {
   BLANK,
   forgeLevel,
@@ -325,6 +325,7 @@ export function ForgePlanPanel({
           {labels.warning()}
         </p>
       )}
+      <ForgeStonesNotice ranges={stoneRanges} owned={ownedStones} labels={labels} />
       <ForgeStonesShortage forecast={forecast} owned={ownedStones} labels={labels} />
       <p data-testid="forge-stone-note" className="m-0 text-xs text-muted">
         {forecast?.protected ? `${t.forgeProtectNote} ` : ''}

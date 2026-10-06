@@ -240,11 +240,13 @@ export function chanceStoneRarityIdx(defId: string, wireRarity: number): number 
   return CHANCE_STONE_TAIL_IDX.get(defId.slice('forja_pedra_'.length)) ?? wireRarity;
 }
 
-/** Chance Stones held per rarity, indexed 0…5. Every row is one stone, as for every other stack. */
+/** Chance Stones the game would let a forge roll use, per rarity, indexed 0…5: not locked, not on the
+ *  market, not worn. Every row is one stone, as for every other stack. */
 export function ownedChanceStones(items: readonly InventoryViewItem[]): number[] {
   const owned = new Array<number>(rarityByIdx.size).fill(0);
   for (const item of items) {
-    if (item.kind === 'chanceStone' && item.rarityIdx >= 0 && item.rarityIdx < owned.length) owned[item.rarityIdx] += 1;
+    if (item.kind !== 'chanceStone' || item.locked || item.marketBlocked || item.equipped) continue;
+    if (item.rarityIdx >= 0 && item.rarityIdx < owned.length) owned[item.rarityIdx] += 1;
   }
   return owned;
 }

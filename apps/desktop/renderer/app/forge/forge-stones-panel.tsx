@@ -246,6 +246,54 @@ export function forgeStoneFacts(
   ];
 }
 
+/** What the run will do with the stones before the button is pressed: which kinds it may spend, how
+ *  many are held, and that it stops when they run out. */
+export function ForgeStonesNotice({
+  ranges,
+  owned,
+  labels,
+}: {
+  ranges: readonly ResolvedStoneRange[];
+  owned: readonly number[];
+  labels: ForgeLabels;
+}) {
+  const t = useCopy();
+  const kinds = RARITIES.filter((rarity) =>
+    ranges.some((range) => range.rarity === rarity && range.to > FORGE_GUARANTEED),
+  );
+  return (
+    <>
+      {kinds.map((rarity) => {
+        const held = owned[rarity] ?? 0;
+        const values = { rarity: labels.rarityName(rarity), owned: labels.count(held) };
+        return (
+          <p key={rarity} data-testid="forge-stones-notice" data-rarity={rarity} className="m-0 flex items-center gap-1.5 text-xs text-ink">
+            <StoneIcon rarity={rarity} small dim={held === 0} />
+            <span>{sub(held === 0 ? t.forgeStonesNoticeNone : t.forgeStonesNotice, values)}</span>
+          </p>
+        );
+      })}
+    </>
+  );
+}
+
+/** The stones a run has used up, by kind — an icon and a count each, nothing when none. */
+export function ForgeStonesUsed({ used, labels }: { used: readonly number[]; labels: ForgeLabels }) {
+  const t = useCopy();
+  const kinds = RARITIES.filter((rarity) => (used[rarity] ?? 0) > 0);
+  if (kinds.length === 0) return null;
+  return (
+    <span data-testid="forge-stones-used" role="group" aria-label={t.forgeResultStonesUsed} className="flex items-center gap-2">
+      {kinds.map((rarity) => (
+        <span key={rarity} data-testid="forge-stones-used-kind" data-rarity={rarity} className="flex items-center gap-0.5 tabular-nums">
+          <StoneIcon rarity={rarity} small />
+          <span className="font-mono">{`×${labels.count(used[rarity] ?? 0)}`}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export function ForgeStonesShortage({
   forecast,
   owned,

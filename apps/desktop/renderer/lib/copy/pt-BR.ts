@@ -490,8 +490,9 @@ export const ptBR: Copy = {
     'Você não tem Pedras de Chance {rarity} suficientes: a subida deve usar {expected} e você tem {owned}.',
   forgeFactStones: 'Pedras de Chance {rarity}',
   forgeFactStonesProtected: 'Pedras de Chance {rarity}, protegido',
-  forgeReasonStones:
-    'Este app ainda não consegue forjar com Pedras de Chance. Forje no jogo para usá-las, ou escolha Nenhuma em todas as faixas para forjar daqui.',
+  forgeStonesNotice:
+    'Usa até {owned} das suas Pedras de Chance {rarity}, uma por rolagem que pode falhar, e para quando elas acabam.',
+  forgeStonesNoticeNone: 'Você não tem Pedras de Chance {rarity}, então a execução para na primeira rolagem que precisar de uma.',
   forgeFactBadRun: 'Uma maré ruim (p90)',
   forgeFactWallet: 'Carteira',
   forgeWarnRisky:
@@ -531,6 +532,7 @@ export const ptBR: Copy = {
   forgeLedgerColumnFails: 'Falhas',
   forgeLedgerColumnCrits: 'Críticos',
   forgeLedgerColumnSafeJumps: 'Saltos seguros',
+  forgeLedgerColumnStones: 'Pedras',
   forgeLedgerColumnGold: 'Ouro',
   forgeLedgerColumnDuration: 'Duração',
   forgeLedgerTotals: '{runs} execuções · {rolls} rolagens · {fails} falhas',
@@ -544,6 +546,8 @@ export const ptBR: Copy = {
   forgeStopShortfall: 'Ouro acabou',
   forgeStopBudget: 'Orçamento de ouro',
   forgeStopAttempts: 'Limite de tentativas',
+  forgeStopStones: 'Pedras acabaram',
+  forgeStopStoneMismatch: 'Pedra não aceita',
   forgeStopCooldown: 'Servidor em espera',
   forgeStopMissing: 'Item recusado',
   forgeStopError: 'Erro',
@@ -567,6 +571,9 @@ export const ptBR: Copy = {
   forgeResultShortfall: 'Ouro acabou em {level}',
   forgeResultBudget: 'Parada pelo orçamento de ouro em {level}',
   forgeResultAttempts: 'Parada pelo limite de tentativas em {level}',
+  forgeResultStones: 'Pedras de Chance {rarity} acabaram em {level}',
+  forgeResultStoneMismatch: 'Parou em {level}: o jogo não usou a Pedra de Chance que o app pediu',
+  forgeResultStonesUsed: 'Pedras de Chance usadas',
   forgeResultCooldown: 'Servidor em espera em {level}',
   forgeResultMissing: 'O servidor recusou o item',
   forgeResultError: 'Parada por um erro em {level}',

@@ -499,8 +499,9 @@ export const en = {
     'You do not own enough {rarity} Chance Stones: the climb is expected to use {expected} and you own {owned}.',
   forgeFactStones: '{rarity} Chance Stones',
   forgeFactStonesProtected: '{rarity} Chance Stones, protected',
-  forgeReasonStones:
-    'This app cannot forge with Chance Stones yet. Forge in the game to use them, or choose None for every range to forge from here.',
+  forgeStonesNotice:
+    'Uses up to {owned} of your {rarity} Chance Stones, one for each roll that can miss, and stops when they run out.',
+  forgeStonesNoticeNone: 'You own no {rarity} Chance Stones, so the run stops at the first roll that needs one.',
   forgeFactBadRun: 'A bad run (p90)',
   forgeFactWallet: 'Wallet',
   forgeWarnRisky:
@@ -550,6 +551,7 @@ export const en = {
   forgeLedgerColumnFails: 'Fails',
   forgeLedgerColumnCrits: 'Crits',
   forgeLedgerColumnSafeJumps: 'Safe jumps',
+  forgeLedgerColumnStones: 'Stones',
   forgeLedgerColumnGold: 'Gold',
   forgeLedgerColumnDuration: 'Duration',
   forgeLedgerTotals: '{runs} runs · {rolls} rolls · {fails} fails',
@@ -565,6 +567,8 @@ export const en = {
   forgeStopShortfall: 'Out of gold',
   forgeStopBudget: 'Gold budget',
   forgeStopAttempts: 'Attempt limit',
+  forgeStopStones: 'Out of stones',
+  forgeStopStoneMismatch: 'Stone not taken',
   forgeStopCooldown: 'Server cooldown',
   forgeStopMissing: 'Item refused',
   forgeStopError: 'Error',
@@ -592,6 +596,9 @@ export const en = {
   forgeResultShortfall: 'Out of gold at {level}',
   forgeResultBudget: 'Stopped by the gold budget at {level}',
   forgeResultAttempts: 'Stopped by the attempt limit at {level}',
+  forgeResultStones: 'Out of {rarity} Chance Stones at {level}',
+  forgeResultStoneMismatch: 'Stopped at {level}: the game did not use the Chance Stone this app asked for',
+  forgeResultStonesUsed: 'Chance Stones used',
   forgeResultCooldown: 'Server cooldown at {level}',
   forgeResultMissing: 'Server refused the item',
   forgeResultError: 'Stopped by an error at {level}',

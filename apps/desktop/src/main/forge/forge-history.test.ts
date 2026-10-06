@@ -3,7 +3,7 @@ import { EMPTY_FORGE_HISTORY } from '@bombfarm/contracts';
 import { SCHEMA_VERSION } from '../storage/account-schema.js';
 import type { SqliteBinding } from '../storage/index.js';
 import { detectAvailableBindings, openTestAccountDb, warnForUnavailableBindings } from '../storage/test-support.js';
-import { createForgeHistory, type ForgeRunRecord } from './forge-history.js';
+import { INIT_FORGE_RUNS_SQL, createForgeHistory, type ForgeRunRecord } from './forge-history.js';
 
 const AVAILABLE_BINDINGS = detectAvailableBindings();
 
@@ -39,6 +39,8 @@ function record(overrides: Partial<ForgeRunRecord> = {}): ForgeRunRecord {
     spent: 300,
     walletAfter: 999_700,
     durationMs: 30_000,
+    stonesSpent: [0, 0, 0, 0, 0, 0],
+    stoneRarity: null,
     ...overrides,
   };
 }
@@ -69,6 +71,33 @@ describe('forge ledger', () => {
 
     history.clear();
     expect(history.list({ limit: 10 })).toEqual(EMPTY_FORGE_HISTORY);
+  });
+
+  it('keeps the stones a run used up and the rarity it stopped on', () => {
+    const open = openTestAccountDb(firstBinding());
+    const history = createForgeHistory(open.db);
+    history.append(record({ stop: 'stones', stonesSpent: [0, 2, 0, 0, 1, 0], stoneRarity: 1 }));
+    expect(history.list({ limit: 10 }).rows[0]).toMatchObject({ stop: 'stones', stonesSpent: [0, 2, 0, 0, 1, 0], stoneRarity: 1 });
+  });
+
+  it('reads a ledger written before stones existed, and adds the columns in place', () => {
+    const open = openTestAccountDb(firstBinding());
+    const beforeStones = INIT_FORGE_RUNS_SQL.replace(/,\s*stones_spent TEXT,\s*stone_rarity INTEGER/, '');
+    expect(beforeStones).not.toBe(INIT_FORGE_RUNS_SQL);
+    open.db?.exec(beforeStones);
+    open.db
+      ?.prepare(
+        'INSERT INTO forge_runs (started_at, finished_at, account_id, item_id, def_id, rarity, slot, item_level, from_upgrade, to_upgrade, ' +
+          'target, stop, reached, rolls, fails, crits, safe_jumps, spent, wallet_after, duration_ms) ' +
+          "VALUES ('a', 'b', '486', 'g1', 'steel_luva', 1, 2, 20, 8, 10, 10, 'target', 1, 3, 1, 0, 0, 300, 999700, 30000)",
+      )
+      .run();
+
+    const history = createForgeHistory(open.db);
+    expect(history.list({ limit: 10 }).rows[0]).toMatchObject({ itemId: 'g1', stonesSpent: [0, 0, 0, 0, 0, 0], stoneRarity: null });
+
+    history.append(record({ stonesSpent: [1, 0, 0, 0, 0, 0] }));
+    expect(history.list({ limit: 10 }).rows[0]?.stonesSpent).toEqual([1, 0, 0, 0, 0, 0]);
   });
 
   it('is inert without a database', () => {

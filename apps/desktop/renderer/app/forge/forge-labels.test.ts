@@ -47,30 +47,20 @@ function item(id: string): InventoryViewItem {
   return found;
 }
 
-const IDLE = { running: false, cancelRequested: false, stonesChosen: false };
+const IDLE = { running: false, cancelRequested: false };
 
 describe('forgeButtonReason', () => {
   it('ranks the reasons: a run in flight, then maxed, then no server, then the switch, then ready', () => {
-    expect(forgeButtonReason({ upgrade: FORGE_MAX, accountSource: 'fixture', forgeWritesEnabled: false, running: true, cancelRequested: false, stonesChosen: false })).toBe('running');
+    expect(forgeButtonReason({ upgrade: FORGE_MAX, accountSource: 'fixture', forgeWritesEnabled: false, running: true, cancelRequested: false })).toBe('running');
     expect(forgeButtonReason({ upgrade: FORGE_MAX, accountSource: 'fixture', forgeWritesEnabled: false, ...IDLE })).toBe('maxed');
     expect(forgeButtonReason({ upgrade: 12, accountSource: 'fixture', forgeWritesEnabled: true, ...IDLE })).toBe('fixture');
     expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: false, ...IDLE })).toBe('switch-off');
     expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, ...IDLE })).toBe('ready');
   });
 
-  it('refuses to start while a Chance Stone is chosen, ahead of the server and the switch, but not ahead of a run or a maxed piece', () => {
-    const chosen = { ...IDLE, stonesChosen: true };
-    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, ...chosen })).toBe('stones');
-    expect(forgeButtonReason({ upgrade: 12, accountSource: 'fixture', forgeWritesEnabled: false, ...chosen })).toBe('stones');
-    expect(forgeButtonReason({ upgrade: FORGE_MAX, accountSource: 'server', forgeWritesEnabled: true, ...chosen })).toBe('maxed');
-    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, running: true, cancelRequested: false, stonesChosen: true })).toBe('running');
-    expect(forgeReasonText('stones', en)).toBe(en.forgeReasonStones);
-    expect(forgeReasonText('stones', ptBR)).toBe(ptBR.forgeReasonStones);
-  });
-
   it('says the cancel landed once it has been asked for, and only while a run is in flight', () => {
-    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, running: true, cancelRequested: true, stonesChosen: false })).toBe('cancelling');
-    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, running: false, cancelRequested: true, stonesChosen: false })).toBe('ready');
+    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, running: true, cancelRequested: true })).toBe('cancelling');
+    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, running: false, cancelRequested: true })).toBe('ready');
   });
 
   it('treats an environment not yet answered as a server, so the switch line still shows', () => {
@@ -132,6 +122,11 @@ describe('forgeResultHeading', () => {
     expect(forgeResultHeading(result({ stop: 'shortfall', to: 9 }), en)).toEqual({ text: 'Out of gold at +9', tone: 'down' });
     expect(forgeResultHeading(result({ stop: 'budget' }), en)).toEqual({ text: 'Stopped by the gold budget at +12', tone: 'warn' });
     expect(forgeResultHeading(result({ stop: 'attempts' }), en)).toEqual({ text: 'Stopped by the attempt limit at +12', tone: 'warn' });
+    expect(forgeResultHeading(result({ stop: 'stones', to: 10, stoneRarity: 2 }), en, (rarity) => ['Common', 'Uncommon', 'Rare'][rarity] ?? '')).toEqual({
+      text: 'Out of Rare Chance Stones at +10',
+      tone: 'warn',
+    });
+    expect(forgeResultHeading(result({ stop: 'stone_mismatch', to: 10 }), en).tone).toBe('down');
     expect(forgeResultHeading(result({ stop: 'cooldown' }), en)).toEqual({ text: 'Server cooldown at +12', tone: 'down' });
     expect(forgeResultHeading(result({ stop: 'missing' }), en)).toEqual({ text: 'Server refused the item', tone: 'down' });
     expect(forgeResultHeading(result({ stop: 'error', to: 8 }), en)).toEqual({ text: 'Stopped by an error at +8', tone: 'down' });
@@ -149,6 +144,9 @@ describe('forgeStopText', () => {
     expect(forgeStopText('cooldown', en)).toBe('Server cooldown');
     expect(forgeStopText('missing', en)).toBe('Item refused');
     expect(forgeStopText('error', en)).toBe('Error');
+    expect(forgeStopText('stones', en)).toBe('Out of stones');
+    expect(forgeStopText('stone_mismatch', en)).toBe('Stone not taken');
+    expect(forgeStopText('stones', ptBR)).toBe('Pedras acabaram');
     expect(forgeStopText('target', ptBR)).toBe('Chegou');
   });
 });

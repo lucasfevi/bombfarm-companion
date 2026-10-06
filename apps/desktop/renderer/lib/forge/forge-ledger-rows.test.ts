@@ -29,6 +29,8 @@ function row(overrides: Partial<ForgeHistoryRow> & { id: number }): ForgeHistory
     spent: 8_000,
     walletAfter: null,
     durationMs: 12_000,
+    stonesSpent: [0, 0, 0, 0, 0, 0],
+    stoneRarity: null,
     ...overrides,
   };
 }

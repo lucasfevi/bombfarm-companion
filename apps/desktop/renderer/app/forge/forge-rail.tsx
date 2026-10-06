@@ -14,13 +14,14 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Button, motionTokens, Panel } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
-import type { ForgeRunActive, ForgeRunState } from '../../lib/forge/forge-run-reducer';
+import { stonesUsed, type ForgeRunActive, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
 import { bringBandIntoView } from '../../lib/forge/run-into-view';
 import { useContentHeight } from '../../lib/forge/use-content-height';
 import { ForgeClimb } from './forge-climb';
 import { ForgeGold } from './forge-gold';
 import { BLANK, forgeLevel, type ForgeLabels } from './forge-labels';
 import { ForgeResult } from './forge-result';
+import { ForgeStonesUsed } from './forge-stones-panel';
 
 export type ForgeRailState = 'collapsed' | 'running' | 'finished';
 
@@ -30,7 +31,17 @@ export function forgeRailState(run: ForgeRunState): ForgeRailState {
   return 'collapsed';
 }
 
-function Running({ run, gold, onCancel }: { run: ForgeRunActive; gold: (amount: number) => string; onCancel: () => void }) {
+function Running({
+  run,
+  gold,
+  labels,
+  onCancel,
+}: {
+  run: ForgeRunActive;
+  gold: (amount: number) => string;
+  labels: ForgeLabels;
+  onCancel: () => void;
+}) {
   const t = useCopy();
 
   return (
@@ -48,6 +59,7 @@ function Running({ run, gold, onCancel }: { run: ForgeRunActive; gold: (amount: 
         <span data-testid="forge-rail-spent" className="tabular-nums text-ink">
           <ForgeGold>{sub(t.forgeRailSpent, { spent: gold(run.tally.spent) })}</ForgeGold>
         </span>
+        <ForgeStonesUsed used={stonesUsed(run.steps)} labels={labels} />
         <span data-testid="forge-rail-wallet" className="tabular-nums text-muted">
           {run.wallet === null ? BLANK : sub(t.forgeRailWallet, { wallet: gold(run.wallet) })}
         </span>
@@ -109,12 +121,13 @@ export function ForgeRail({
   }, [run.status, height]);
 
   let content: ReactNode = null;
-  if (run.status === 'running') content = <Running run={run.run} gold={gold} onCancel={onCancel} />;
+  if (run.status === 'running') content = <Running run={run.run} gold={gold} labels={labels} onCancel={onCancel} />;
   else if (run.status === 'done') {
     content = (
       <Panel>
         <ForgeResult
           result={run.result}
+          stonesUsed={run.result.stonesSpent ?? stonesUsed(run.run.steps)}
           plan={run.run.plan}
           labels={labels}
           onDone={onDone}

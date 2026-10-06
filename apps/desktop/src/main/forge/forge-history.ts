@@ -30,9 +30,33 @@ CREATE TABLE IF NOT EXISTS forge_runs (
   safe_jumps   INTEGER NOT NULL,
   spent        INTEGER NOT NULL,
   wallet_after INTEGER,
-  duration_ms  INTEGER NOT NULL
+  duration_ms  INTEGER NOT NULL,
+  stones_spent TEXT,
+  stone_rarity INTEGER
 );
 `;
+
+/** A ledger file written before stones existed lacks these two columns; they are added in place and
+ *  an older row reads as no stones spent. */
+const ADD_STONE_COLUMNS_SQL = [
+  'ALTER TABLE forge_runs ADD COLUMN stones_spent TEXT',
+  'ALTER TABLE forge_runs ADD COLUMN stone_rarity INTEGER',
+];
+
+const NO_STONES: readonly number[] = [0, 0, 0, 0, 0, 0];
+
+function parseStonesSpent(text: string | null): readonly number[] {
+  if (text === null) return NO_STONES;
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (!Array.isArray(parsed) || parsed.length !== NO_STONES.length) return NO_STONES;
+    return parsed.every((count) => typeof count === 'number' && Number.isInteger(count) && count >= 0)
+      ? (parsed as number[])
+      : NO_STONES;
+  } catch {
+    return NO_STONES;
+  }
+}
 
 export type ForgeRunRecord = Omit<ForgeHistoryRow, 'id'>;
 
@@ -64,6 +88,8 @@ interface StoredRow {
   spent: number;
   wallet_after: number | null;
   duration_ms: number;
+  stones_spent: string | null;
+  stone_rarity: number | null;
 }
 
 interface TotalsRow {
@@ -98,6 +124,8 @@ function toRow(stored: StoredRow): ForgeHistoryRow {
     spent: stored.spent,
     walletAfter: stored.wallet_after,
     durationMs: stored.duration_ms,
+    stonesSpent: parseStonesSpent(stored.stones_spent),
+    stoneRarity: stored.stone_rarity,
   };
 }
 
@@ -105,6 +133,10 @@ export function createForgeHistory(db: SqliteDb | null, log: LogPort = NOOP_LOG)
   if (db) {
     try {
       db.exec(INIT_FORGE_RUNS_SQL);
+      const columns = db.prepare('PRAGMA table_info(forge_runs)').all() as { name: string }[];
+      if (!columns.some((column) => column.name === 'stones_spent')) {
+        for (const statement of ADD_STONE_COLUMNS_SQL) db.exec(statement);
+      }
     } catch (err) {
       log.error({ scope: 'forge', event: 'history.init_failed', error: String(err) });
     }
@@ -116,8 +148,9 @@ export function createForgeHistory(db: SqliteDb | null, log: LogPort = NOOP_LOG)
       try {
         db.prepare(
           'INSERT INTO forge_runs (started_at, finished_at, account_id, item_id, def_id, rarity, slot, item_level, ' +
-            'from_upgrade, to_upgrade, target, stop, reached, rolls, fails, crits, safe_jumps, spent, wallet_after, duration_ms) ' +
-            'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'from_upgrade, to_upgrade, target, stop, reached, rolls, fails, crits, safe_jumps, spent, wallet_after, duration_ms, ' +
+            'stones_spent, stone_rarity) ' +
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         ).run(
           record.startedAt,
           record.finishedAt,
@@ -139,6 +172,8 @@ export function createForgeHistory(db: SqliteDb | null, log: LogPort = NOOP_LOG)
           record.spent,
           record.walletAfter,
           record.durationMs,
+          JSON.stringify(record.stonesSpent),
+          record.stoneRarity,
         );
       } catch (err) {
         log.error({ scope: 'forge', event: 'history.append_failed', error: String(err) });

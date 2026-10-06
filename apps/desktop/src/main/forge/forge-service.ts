@@ -23,6 +23,7 @@ import {
   type RequestOutcome,
   type WriteSession,
 } from '@bombfarm/game-api';
+import { chanceStoneRarityIdx } from '@bombfarm/domain/inventory-view';
 import {
   FORGE_ITEM_LEVELS,
   FORGE_MAX,
@@ -123,8 +124,30 @@ export function isForgeTarget(target: unknown, upgrade: number): target is numbe
   return typeof target === 'number' && Number.isInteger(target) && target > upgrade && target <= FORGE_MAX;
 }
 
+const STONE_RARITIES = 6;
+
+export function usableStoneCounts(rows: readonly unknown[] | null): number[] {
+  const owned = new Array<number>(STONE_RARITIES).fill(0);
+  for (const row of rows ?? []) {
+    if (!isRecord(row) || typeof row.def_id !== 'string' || !row.def_id.startsWith('forja_pedra_')) continue;
+    const category = finiteNumber(row.category);
+    if (category !== null && category !== 8) continue;
+    if (row.locked === true || (finiteNumber(row.market_state) ?? 0) !== 0) continue;
+    if (typeof row.equipped_on === 'string' && row.equipped_on !== '') continue;
+    const rarity = chanceStoneRarityIdx(row.def_id, -1);
+    if (rarity >= 0 && rarity < STONE_RARITIES) owned[rarity] = (owned[rarity] ?? 0) + 1;
+  }
+  return owned;
+}
+
+function stoneRarityOrNull(value: unknown): number | null {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value < STONE_RARITIES ? value : null;
+}
+
 interface ForgeReply {
   readonly item: Record<string, unknown>;
+  /** The rarity of the stone the server says it used up; null when it says none. */
+  readonly stone: number | null;
   readonly upgrade: number;
   readonly cost: number | null;
   readonly gold: number | null;
@@ -138,6 +161,7 @@ export function parseForgeReply(json: unknown): ForgeReply | null {
   if (upgrade === null || !Number.isInteger(upgrade)) return null;
   return {
     item: json.item,
+    stone: stoneRarityOrNull(json.pedra_gasta),
     upgrade,
     cost: finiteNumber(json.cost),
     gold: finiteNumber(json.gold),
@@ -153,6 +177,7 @@ function stopFor(outcome: RequestOutcome): ForgeStopReason {
     case 'http_error':
       return 'missing';
     case 'api_error':
+      if (outcome.code === 'NOT_ENOUGH_ESSENCE') return 'shortfall';
       // A named refusal on a 4xx/5xx carries the same signal `http_error` did — the server
       // rejected this item. A refusal on an otherwise-OK response (maintenance, a dead session)
       // says nothing about the item, so it stays a plain error.
@@ -160,6 +185,10 @@ function stopFor(outcome: RequestOutcome): ForgeStopReason {
     default:
       return 'error';
   }
+}
+
+function stoneWanted(stones: ForgeStartRequest['stones'], target: number): number | null {
+  return stoneRarityOrNull(stones?.[target - 1] ?? null);
 }
 
 function limitOrNull(value: number | null): number | null {
@@ -192,6 +221,9 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
     let lastItem: Record<string, unknown> | null = null;
     let calls = 0;
     let stop: ForgeStopReason = 'error';
+    const owned = usableStoneCounts(deps.currentItems());
+    const stonesSpent = new Array<number>(STONE_RARITIES).fill(0);
+    let stoneRarity: number | null = null;
 
     try {
       for (;;) {
@@ -209,14 +241,37 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
           break;
         }
 
+        const wanted = stoneWanted(request.stones, step.target);
+        const useStone = wanted !== null && step.chance < 1;
+        if (useStone && (owned[wanted] ?? 0) <= 0) {
+          stop = 'stones';
+          stoneRarity = wanted;
+          break;
+        }
+
         const gapMs = calls > 0 ? deps.gate.nextForgeDelayMs(random) : 0;
         deps.emit({ type: 'pause', runId, ms: gapMs });
         if (gapMs > 0) await deps.sleep(gapMs);
 
-        const route = FORGE_ROUTES.forge;
+        const send = (stone: number | null): Promise<RequestOutcome> =>
+          deps.gate.runWrite(`forge:${item.id}`, () =>
+            requestPost(
+              session,
+              deps.transport,
+              { route: FORGE_ROUTES.forge, item: item.id, ...(stone === null ? {} : { stone }) },
+              requestIds.next(),
+            ),
+          );
+        let sentStone = useStone ? wanted : null;
         let outcome: RequestOutcome;
         try {
-          outcome = await deps.gate.runWrite(`forge:${item.id}`, () => requestPost(session, deps.transport, { route, item: item.id }, requestIds.next()));
+          outcome = await send(sentStone);
+          if (sentStone !== null && outcome.kind === 'api_error' && outcome.code === 'FORGE_AID_USELESS') {
+            deps.gate.observe(outcome);
+            deps.log.info({ scope: 'forge', event: 'run.stone_useless', runId });
+            sentStone = null;
+            outcome = await send(null);
+          }
         } catch (err) {
           stop = err instanceof PacingRefusedError && err.gateState !== 'halted' ? 'cooldown' : 'error';
           deps.log.warn({ scope: 'forge', event: 'run.refused_by_gate', runId, error: String(err) });
@@ -226,7 +281,13 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
 
         if (outcome.kind !== 'ok') {
           deps.gate.observe(outcome);
-          stop = stopFor(outcome);
+          if (sentStone !== null && outcome.kind === 'api_error' && outcome.code === 'NO_FORGE_AID') {
+            owned[sentStone] = 0;
+            stop = 'stones';
+            stoneRarity = sentStone;
+          } else {
+            stop = stopFor(outcome);
+          }
           deps.log.warn({ scope: 'forge', event: 'run.call_failed', runId, kind: outcome.kind });
           break;
         }
@@ -252,6 +313,10 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
         const from = upgrade;
         upgrade = reply.upgrade;
         fails = reply.fails ?? (rollOutcome === 'fail' ? fails + 1 : 0);
+        if (reply.stone !== null) {
+          owned[reply.stone] = Math.max(0, (owned[reply.stone] ?? 0) - 1);
+          stonesSpent[reply.stone] = (stonesSpent[reply.stone] ?? 0) + 1;
+        }
 
         deps.emit({
           type: 'step',
@@ -266,7 +331,15 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
           cost,
           spent: tally.spent,
           wallet,
+          stone: reply.stone,
         });
+
+        if (reply.stone !== sentStone) {
+          stop = 'stone_mismatch';
+          stoneRarity = sentStone ?? reply.stone;
+          deps.log.warn({ scope: 'forge', event: 'run.stone_mismatch', runId, sent: sentStone, spent: reply.stone });
+          break;
+        }
       }
     } catch (err) {
       stop = 'error';
@@ -288,6 +361,8 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
       spent: tally.spent,
       walletAfter: wallet,
       durationMs: Math.max(0, finishedAt - startedAt),
+      stonesSpent,
+      stoneRarity,
     };
 
     if (lastItem !== null) {
@@ -317,6 +392,8 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
         spent: result.spent,
         walletAfter: result.walletAfter,
         durationMs: result.durationMs,
+        stonesSpent,
+        stoneRarity,
       });
     }
 

@@ -310,6 +310,8 @@ function historyRow(overrides: Partial<ForgeHistoryRow> & { id: number }): Forge
     spent: 8_000,
     walletAfter: 214_054_630,
     durationMs: 14_000,
+    stonesSpent: [0, 0, 0, 0, 0, 0],
+    stoneRarity: null,
     ...overrides,
   };
 }
@@ -459,5 +461,78 @@ describe('ForgePlanPanel — the button', () => {
     const html = renderPanel('ready');
     expect(html).toContain(en.forgeFactWallet);
     expect(html).not.toContain('data-testid="forge-fact-buys"');
+  });
+});
+
+describe('Chance Stones in the rail, the result and the ledger', () => {
+  function withStones(): ForgeRunState {
+    let state = forgeRunReducer(IDLE_FORGE_RUN, { kind: 'start', runId: 'r1', itemId: 'g1', target: 11, from: 8, plan: null });
+    const path: [number, number, number | null][] = [
+      [8, 9, 0],
+      [9, 8, 0],
+      [8, 9, 2],
+      [9, 10, null],
+    ];
+    path.forEach(([from, to, stone], index) => {
+      state = forgeRunReducer(state, {
+        kind: 'step',
+        event: { ...step(index + 1, from, to, to < from ? 'fail' : 'success'), stone },
+        adopt: null,
+      });
+    });
+    return state;
+  }
+
+  it('shows the stones used so far while the run is live, an icon and a count for each kind', () => {
+    const html = renderRail(withStones());
+    const kinds = [...html.matchAll(/data-testid="forge-stones-used-kind"[^>]*data-rarity="(\d)"[^>]*>.*?<span class="font-mono">([^<]+)</gs)];
+    expect(kinds.map((match) => [match[1], match[2]])).toEqual([
+      ['0', '×2'],
+      ['2', '×1'],
+    ]);
+  });
+
+  it('shows nothing about stones for a run that used none', () => {
+    expect(renderRail(running())).not.toContain('data-testid="forge-stones-used"');
+  });
+
+  it('keeps them on the finished result, from the result itself when it carries them', () => {
+    const done = forgeRunReducer(withStones(), {
+      kind: 'done',
+      event: {
+        runId: 'r1',
+        result: { itemId: 'g1', from: 8, to: 10, target: 11, stop: 'stones', reached: false, rolls: 4, fails: 1, crits: 0, safeJumps: 0, spent: 400, walletAfter: null, durationMs: 1_000, stonesSpent: [3, 0, 0, 0, 0, 0], stoneRarity: 0 },
+      },
+    });
+    const html = renderRail(done);
+    expect(html).toMatch(/data-testid="forge-result-heading"[^>]*>Out of Common Chance Stones at \+10</);
+    expect(html).toContain('data-testid="forge-stones-used"');
+    expect(html.match(/data-testid="forge-stones-used-kind"/g)).toHaveLength(1);
+    expect(html).toContain('×3');
+  });
+
+  it('falls back to the steps for a result that predates the field', () => {
+    expect(renderRail(finished())).not.toContain('data-testid="forge-stones-used"');
+    const done = forgeRunReducer(withStones(), {
+      kind: 'done',
+      event: { runId: 'r1', result: { itemId: 'g1', from: 8, to: 10, target: 11, stop: 'cancelled', reached: false, rolls: 4, fails: 1, crits: 0, safeJumps: 0, spent: 400, walletAfter: null, durationMs: 1_000 } },
+    });
+    expect(renderRail(done).match(/data-testid="forge-stones-used-kind"/g)).toHaveLength(2);
+  });
+
+  it('adds a Stones column to the ledger, blank for a run that used none', () => {
+    const html = renderLedger({
+      rows: [
+        historyRow({ id: 2, stonesSpent: [0, 0, 4, 0, 1, 0] }),
+        historyRow({ id: 1 }),
+      ],
+      totals: { runs: 2, spent: 16_000, rolls: 16, fails: 2 },
+    });
+    expect(html).toContain(en.forgeLedgerColumnStones);
+    const cells = [...html.matchAll(/data-testid="forge-ledger-stones"[^>]*>(.*?)<\/td>/gs)].map((match) => match[1] ?? '');
+    expect(cells).toHaveLength(2);
+    expect(cells[0]).toContain('×4');
+    expect(cells[0]).toContain('×1');
+    expect(cells[1]).not.toContain('forge-stones-used');
   });
 });

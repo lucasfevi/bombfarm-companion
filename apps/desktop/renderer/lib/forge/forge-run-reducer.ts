@@ -5,7 +5,7 @@
  * mounted) is adopted from the event itself rather than dropped.
  */
 import type { ForgeDoneEvent, ForgePauseEvent, ForgeRunResult, ForgeStepEvent } from '@bombfarm/contracts';
-import { emptyForgeTally, foldForgeStep, type ForgeTally } from '@bombfarm/domain/forge';
+import { FORGE_STONE_RARITIES, emptyForgeTally, foldForgeStep, type ForgeTally } from '@bombfarm/domain/forge';
 import type { ForgePlanForecast } from './use-forge-plan';
 
 /** The figures the plan panel printed when the run started — never recomputed afterwards. */
@@ -117,6 +117,15 @@ export function forgeRunReducer(state: ForgeRunState, action: ForgeRunAction): F
  *  adopts the live read once, here, rather than waiting for the toolbar's refresh. */
 export function shouldAdoptLiveAfter(previous: ForgeRunState['status'], next: ForgeRunState['status']): boolean {
   return previous === 'running' && next === 'done';
+}
+
+/** Chance Stones the run's rolls used up so far, by rarity, as the server reported each one. */
+export function stonesUsed(steps: readonly ForgeStepEvent[]): number[] {
+  const used = new Array<number>(FORGE_STONE_RARITIES).fill(0);
+  for (const step of steps) {
+    if (typeof step.stone === 'number' && step.stone >= 0 && step.stone < used.length) used[step.stone] = (used[step.stone] ?? 0) + 1;
+  }
+  return used;
 }
 
 export type ForgeRungRow = {

@@ -13,8 +13,10 @@ the game's lower essence and Protection Scroll prices. From +12 up the plan also
 with the Protection Scroll. The desktop Forge tab lets you pick a Chance Stone for the whole climb or for up to four stretches of
 targets, each shown with its art, its chance bonus and how many you own. Every rung of the odds ladder
 shows the stone it uses and how the chance adds up, and the stones you will use are listed against the
-ones you own; the app cannot forge with stones yet, so starting a run stays off until they are set to
-None. Chance Stones now show in the inventory
-under their own heading.
+ones you own. The app now uses your Chance Stones when it forges: it says before the start which kinds
+it may spend and how many you hold, uses one on each roll that can miss, shows the stones used as the run
+goes and on its result and ledger row, and stops when a kind runs out or the game does not take a stone
+as asked. Stones that are locked, on the market or worn are not counted as yours to spend. Chance Stones
+now show in the inventory under their own heading.
 The bad-run gold figure is now read off the exact distribution instead of a sampled one, so it no longer
 shifts by a percent or so between runs and stepping the target to +13 through +15 is instant.

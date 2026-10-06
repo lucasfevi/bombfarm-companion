@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import { CopyProvider } from '../../lib/copy';
+import { CopyProvider, sub } from '../../lib/copy';
 import { en } from '../../lib/copy/en';
 import { ptBR } from '../../lib/copy/pt-BR';
 import { resolveStoneRanges, stonesByTarget, type ForgeStoneRange } from '../../lib/forge/forge-stones';
 import { forgePlanForecast } from '../../lib/forge/use-forge-plan';
-import { forgeButtonReason, forgeLabels, forgeReasonText, type ForgeButtonReason } from './forge-labels';
+import { forgeButtonReason, forgeLabels, type ForgeButtonReason } from './forge-labels';
 import { ForgePlanPanel } from './forge-plan-panel';
 
 const labels = forgeLabels(en, 'en', 'en');
@@ -163,16 +163,34 @@ describe('the Chance Stones control', () => {
 });
 
 describe('forging with a stone chosen', () => {
-  it('disables the button and says why, in both languages', () => {
-    const html = renderPanel([{ upTo: 13, rarity: 2 }], [0, 0, 5, 0, 0, 0], 'stones');
-    expect(/<button[^>]*data-testid="forge-button"[^>]*>/.exec(html)?.[0]).toContain(' disabled=""');
-    expect(html).toContain(en.forgeReasonStones);
-    expect(forgeReasonText('stones', ptBR)).toBe(ptBR.forgeReasonStones);
+  it('leaves the button armed: a chosen stone is no longer a reason to refuse a run', () => {
+    const html = renderPanel([{ upTo: 13, rarity: 2 }], [0, 0, 5, 0, 0, 0]);
+    expect(/<button[^>]*data-testid="forge-button"[^>]*>/.exec(html)?.[0]).not.toContain(' disabled=""');
+    const idle = { upgrade: 8, accountSource: 'server', forgeWritesEnabled: true, running: false, cancelRequested: false } as const;
+    expect(forgeButtonReason(idle)).toBe('ready');
   });
 
-  it('is the button reason only while a stone could actually be used', () => {
-    const idle = { upgrade: 8, accountSource: 'server', forgeWritesEnabled: true, running: false, cancelRequested: false } as const;
-    expect(forgeButtonReason({ ...idle, stonesChosen: false })).toBe('ready');
-    expect(forgeButtonReason({ ...idle, stonesChosen: true })).toBe('stones');
+  it('says before the start which stones the run may spend, how many are held, and that it stops when they run out', () => {
+    const html = renderPanel(
+      [
+        { upTo: 10, rarity: 0 },
+        { upTo: 13, rarity: 2 },
+      ],
+      [4, 0, 9, 0, 0, 0],
+    );
+    const notices = [...html.matchAll(/data-testid="forge-stones-notice"[^>]*data-rarity="(\d)"[^>]*>.*?<span>([^<]+)<\/span>/gs)];
+    expect(notices.map((match) => match[1])).toEqual(['0', '2']);
+    expect(notices[0]?.[2]).toBe('Uses up to 4 of your Common Chance Stones, one for each roll that can miss, and stops when they run out.');
+    expect(notices[1]?.[2]).toContain('Uses up to 9 of your Rare Chance Stones');
+    expect(sub(ptBR.forgeStonesNotice, { owned: '4', rarity: 'Comum' })).toContain('4');
+  });
+
+  it('warns that the run stops at once when none of the chosen kind is held', () => {
+    const html = renderPanel([{ upTo: 13, rarity: 3 }], [0, 0, 0, 0, 0, 0]);
+    expect(html).toContain('You own no Epic Chance Stones, so the run stops at the first roll that needs one.');
+  });
+
+  it('names no stone for a choice confined to the rolls that always land', () => {
+    expect(renderPanel([{ upTo: 13, rarity: null }], [4, 0, 0, 0, 0, 0])).not.toContain('data-testid="forge-stones-notice"');
   });
 });

@@ -344,7 +344,7 @@ test.describe('forge plan smoke', () => {
     });
   });
 
-  test('chooses a Chance Stone per range, moves the odds and the expected stones, and cannot forge while one is chosen', async ({}, testInfo) => {
+  test('chooses a Chance Stone per range, moves the odds and the expected stones, and says up front what a run would spend', async ({}, testInfo) => {
     testInfo.setTimeout(180_000);
     await withForge(async (page) => {
       const forgeBand = page.getByRole('combobox', { name: 'Filter by forge level' });
@@ -378,8 +378,10 @@ test.describe('forge plan smoke', () => {
       await expect(plan.getByTestId('forge-ladder-stone').first().locator('img[src$="chance_stone_rare.png"]')).toHaveCount(1);
       await expect(plan.getByTestId('forge-stones-short')).toContainText('You do not own enough Rare Chance Stones');
 
-      await expect(plan.getByTestId('forge-button')).toBeDisabled();
-      await expect(plan.getByTestId('forge-button-reason')).toContainText('cannot forge with Chance Stones yet');
+      const notice = plan.getByTestId('forge-stones-notice');
+      await expect(notice).toHaveAttribute('data-rarity', '2');
+      await expect(notice).toContainText('You own no Rare Chance Stones, so the run stops at the first roll that needs one.');
+      await expect(plan.getByTestId('forge-button-reason')).not.toContainText('Chance Stones');
 
       await stones.getByTestId('forge-stones-add').click();
       await expect(stones.getByTestId('forge-stone-range')).toHaveCount(2);
@@ -389,6 +391,7 @@ test.describe('forge plan smoke', () => {
       await stones.getByTestId('forge-stone-pick').click();
       await page.getByTestId('forge-stone-option').first().click();
       await expect(plan.getByTestId('forge-fact-stones-2')).toHaveCount(0);
+      await expect(plan.getByTestId('forge-stones-notice')).toHaveCount(0);
       await expect(plan.getByTestId('forge-fact-gold')).toHaveText(goldWithout);
       await expect(plan.getByTestId('forge-button-reason')).toHaveText('No server to forge on');
     });

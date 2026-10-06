@@ -366,6 +366,16 @@ describe('Chance Stones', () => {
     ];
     expect(ownedChanceStones(rows)).toEqual([0, 0, 2, 0, 0, 1]);
   });
+
+  it('leaves out the stones the game would not offer a roll: locked, on the market or worn', () => {
+    const rows = [
+      stone('forja_pedra_comum'),
+      stone('forja_pedra_comum', 0, { locked: true }),
+      stone('forja_pedra_comum', 0, { market_state: 1 }),
+      stone('forja_pedra_comum', 0, { equipped_on: 'h1' }),
+    ];
+    expect(ownedChanceStones(rows)).toEqual([1, 0, 0, 0, 0, 0]);
+  });
 });
 
 /** A rune reads `rarity: 0` on the wire; its tier is the catalog rarity word ending its id. */
