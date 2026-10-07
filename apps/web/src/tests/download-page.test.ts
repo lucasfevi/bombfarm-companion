@@ -722,3 +722,64 @@ describe('install count strip', () => {
     expect(en).toContain('4,182');
   });
 });
+
+describe('replica sample damage', () => {
+  const instants = Array.from({ length: LOOP_SECONDS * 2 + 1 }, (_unused, index) => index / 2);
+
+  it('adds up exactly at every instant: heroes plus Unattributed make the team damage, props and gold', () => {
+    for (const t of instants) {
+      const { heroes, unattributed, team } = replicaFrameAt(t).damage;
+      const sum = (pick: (row: { damage: number; props: number; gold: number }) => number) =>
+        heroes.reduce((total, hero) => total + pick(hero), pick(unattributed));
+
+      expect(sum((row) => row.damage)).toBe(team.damage);
+      expect(sum((row) => row.props)).toBe(team.props);
+      expect(sum((row) => row.gold)).toBe(team.gold);
+    }
+  });
+
+  it('names only heroes the heroes card draws, each once', () => {
+    for (const t of instants) {
+      const frame = replicaFrameAt(t);
+      const cardIds = frame.heroes.map((hero) => hero.id);
+      const ids = frame.damage.heroes.map((hero) => hero.id);
+
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(ids.filter((id) => !cardIds.includes(id))).toEqual([]);
+    }
+  });
+
+  it('prints each DPS as its damage over its seconds, for the team in both windows and for every hero', () => {
+    for (const t of instants) {
+      const { teamDps10, teamDpsSession, window10, sessionSeconds, team, heroes } = replicaFrameAt(t).damage;
+
+      expect(teamDpsSession).toBe(team.damage / sessionSeconds);
+      expect(teamDps10).toBe(window10.damage / window10.seconds);
+      for (const hero of heroes) expect(hero.dps).toBe(hero.damage / hero.fieldSeconds);
+    }
+  });
+
+  it('lists the heroes by damage, largest first', () => {
+    for (const t of instants) {
+      const damages = replicaFrameAt(t).damage.heroes.map((hero) => hero.damage);
+      expect(damages).toEqual([...damages].sort((a, b) => b - a));
+    }
+  });
+
+  it('counts the same props and gold the earnings card counts for the session', () => {
+    for (const t of instants) {
+      const frame = replicaFrameAt(t);
+      expect(frame.damage.team.props).toBe(frame.measured.propsSession);
+      expect(frame.damage.team.gold).toBe(frame.earnings.goldSessionTotal);
+    }
+  });
+
+  it('keeps an Unattributed share that is real but a minority of every figure', () => {
+    const { team, unattributed } = replicaFrameAt(0).damage;
+
+    for (const key of ['damage', 'props', 'gold'] as const) {
+      expect(unattributed[key]).toBeGreaterThan(0);
+      expect(unattributed[key]).toBeLessThan(team[key] / 2);
+    }
+  });
+});
