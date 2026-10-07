@@ -73,6 +73,18 @@ function innerOf(out: string, testId: string): string {
   throw new Error(`unterminated element ${testId}`);
 }
 
+const HEAD_HEIGHT_PX = 32;
+const ROW_HEIGHT_PX = 40;
+
+/** Evaluates the `calc(calc(A px + B px / N) * N)` the scroller carries for one of its height
+ *  limits, so a test asserts the pixels it reserves and not the way that sum is spelled. */
+function reservedPx(tag: string, property: 'min-height' | 'max-height'): number {
+  const expression = new RegExp(`${property}:calc\\(calc\\(([\\d.]+)px \\+ ([\\d.]+)px / (\\d+)\\) \\* (\\d+)\\)`).exec(tag);
+  if (expression === null) throw new Error(`no ${property} in ${tag}`);
+  const [, row, head, slots, rows] = expression.map(Number);
+  return ((row ?? 0) + (head ?? 0) / (slots ?? 1)) * (rows ?? 0);
+}
+
 function textOf(markup: string): string {
   return markup.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
@@ -234,20 +246,32 @@ describe('DamagePanel', () => {
     [9, 6],
     [0, 9],
     [3, 9],
-  ])('reserves %d rows of a %d-slot field as exactly that many row units, minimum and maximum', (rowCount, fieldSize) => {
+  ])('reserves a %d-row table of a %d-slot field as one 32px header plus that many 40px rows, as minimum and maximum alike', (rowCount, fieldSize) => {
     const heroes = Array.from({ length: rowCount }, (_unused, index) => heroRow({ heroId: `hero-${String(index)}` }));
     const style = html(damage({ heroes }), { fieldSize }).match(/<div[^>]*data-testid="live-damage-scroller"[^>]*>/)?.[0] ?? '';
 
-    expect(style).toContain(`min-height:calc(calc(40px + 32px / ${String(fieldSize)}) * ${String(fieldSize)})`);
-    expect(style).toContain(`max-height:calc(calc(40px + 32px / ${String(fieldSize)}) * ${String(fieldSize)})`);
+    expect(reservedPx(style, 'min-height')).toBeCloseTo(HEAD_HEIGHT_PX + ROW_HEIGHT_PX * fieldSize, 6);
+    expect(reservedPx(style, 'max-height')).toBeCloseTo(HEAD_HEIGHT_PX + ROW_HEIGHT_PX * fieldSize, 6);
   });
 
   it.each([0, 1, 9, 12])('falls back to nine slots while the field size is unknown, with %d rows', (rowCount) => {
     const heroes = Array.from({ length: rowCount }, (_unused, index) => heroRow({ heroId: `hero-${String(index)}` }));
     const style = html(damage({ heroes }), { fieldSize: undefined }).match(/<div[^>]*data-testid="live-damage-scroller"[^>]*>/)?.[0] ?? '';
 
-    expect(style).toContain('max-height:calc(calc(40px + 32px / 9) * 9)');
-    expect(style).toContain('min-height:calc(calc(40px + 32px / 9) * 9)');
+    expect(reservedPx(style, 'max-height')).toBeCloseTo(HEAD_HEIGHT_PX + ROW_HEIGHT_PX * 9, 6);
+    expect(reservedPx(style, 'min-height')).toBeCloseTo(HEAD_HEIGHT_PX + ROW_HEIGHT_PX * 9, 6);
+  });
+
+  it('makes every body row 40px tall: a fixed cell height, and the base table padding overridden so it cannot add to it', () => {
+    const out = html(damage());
+    const cellTags = [...innerOf(out, 'live-damage-row-astra').matchAll(/<td[^>]*>/g)].map((match) => match[0]);
+    const tableTags = [...out.matchAll(/<table[^>]*>/g)].map((match) => match[0]);
+
+    expect(cellTags).toHaveLength(4);
+    for (const tag of cellTags) expect(tag).toMatch(/class="[^"]*\bh-10\b/);
+    expect(tableTags).toHaveLength(2);
+    for (const tag of tableTags) expect(tag).toContain('[&amp;_td]:py-1');
+    for (const tag of tableTags) expect(tag).not.toContain('[&amp;_td]:py-1.5');
   });
 
   it('scrolls the table body under its own header', () => {

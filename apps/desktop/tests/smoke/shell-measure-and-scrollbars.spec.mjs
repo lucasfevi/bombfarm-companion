@@ -83,8 +83,7 @@ function documentScrollRange(page) {
 }
 
 /** Every element the user could actually scroll, so "how many scrollbars are on screen" is counted
- *  rather than inferred. `<main>` is the one legitimate entry, and the Damage table's own scroller
- *  the one deliberate second: it holds a field's worth of rows and scrolls only past that. */
+ *  rather than inferred. `<main>` is the one legitimate entry. */
 function scrollContainers(page) {
   return page.evaluate(() => {
     const found = [];
@@ -151,10 +150,7 @@ test.describe('shell measure — one scrollbar, two columns, capped and centred 
       const detail = `${size.width}x${size.height}: ${JSON.stringify(containers)}`;
 
       expect(moved, `the document itself scrolled at ${detail}`).toEqual({ x: 0, y: 0 });
-      expect(
-        containers.filter((c) => c.tag !== 'main' && c.testId !== 'live-damage-scroller'),
-        `only <main> and the Damage table may scroll — ${detail}`,
-      ).toEqual([]);
+      expect(containers.filter((c) => c.tag !== 'main'), `only <main> may scroll — ${detail}`).toEqual([]);
     }
   });
 

@@ -29,7 +29,6 @@ function Columns() {
   );
 }
 
-const TABLE_CLASS = 'w-[32rem] table-fixed';
 const CELL_CLASS = 'h-10 py-1';
 const GUTTER_CLASS = '[scrollbar-gutter:stable]';
 const GOLD_CELL_CLASS = 'h-10 py-1 text-gold';
@@ -101,7 +100,7 @@ const DamageHeroRowView = memo(function DamageHeroRowView({
 function UnattributedRow({ amounts, t, lang }: { amounts: CreditAmounts | null; t: Copy; lang: Lang }) {
   return (
     <DataTable.Root className="overflow-y-auto border-t border-line [scrollbar-gutter:stable]">
-      <DataTable.Table className={TABLE_CLASS} aria-label={t.liveDamageUnattributedLabel}>
+      <DataTable.Table className="w-[32rem] table-fixed [&_td]:py-1" aria-label={t.liveDamageUnattributedLabel}>
         <Columns />
         <DataTable.Body>
           <DataTable.Row data-testid="live-damage-unattributed">
@@ -182,7 +181,7 @@ export function DamagePanel({
             className={GUTTER_CLASS}
             data-testid="live-damage-scroller"
           >
-            <DataTable.Table className={TABLE_CLASS} aria-label={t.liveDamageTableAria}>
+            <DataTable.Table className="w-[32rem] table-fixed [&_td]:py-1" aria-label={t.liveDamageTableAria}>
               <Columns />
               <Head t={t} />
               <DataTable.Body>

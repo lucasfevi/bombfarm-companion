@@ -454,6 +454,13 @@ function liveDamage(heroIds: readonly string[], overrides: Partial<LiveDamage> =
   };
 }
 
+function reservedPx(markup: string, property: 'min-height' | 'max-height'): number {
+  const expression = new RegExp(`${property}:calc\\(calc\\(([\\d.]+)px \\+ ([\\d.]+)px / (\\d+)\\) \\* (\\d+)\\)`).exec(markup);
+  if (expression === null) throw new Error(`no ${property} in the Damage scroller`);
+  const [, row, head, slots, rows] = expression.map(Number);
+  return ((row ?? 0) + (head ?? 0) / (slots ?? 1)) * (rows ?? 0);
+}
+
 function renderWithDamage(damage: LiveDamage | null, slow: LiveSlowModel = slowModel()) {
   return renderToStaticMarkup(
     createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast: emptyFast, damage }),
@@ -514,15 +521,14 @@ describe('LivePanel — the Damage panel', () => {
   it('passes the field size through as the number of rows the table reserves', () => {
     const html = renderWithDamage(liveDamage([]), slowModel({ occupancy: { occupied: 0, fieldSize: 6 } }));
 
-    expect(html).toContain('max-height:calc(calc(40px + 32px / 6) * 6)');
-    expect(html).toContain('min-height:calc(calc(40px + 32px / 6) * 6)');
+    expect(reservedPx(html, 'max-height')).toBeCloseTo(32 + 40 * 6, 6);
+    expect(reservedPx(html, 'min-height')).toBeCloseTo(32 + 40 * 6, 6);
   });
 
   it('reserves the maximum field while the field size is still unknown', () => {
     const html = renderWithDamage(liveDamage([]), slowModel({ occupancy: { occupied: 0 } }));
-    const slots = String(FIELD_SLOTS_MAX);
 
-    expect(html).toContain(`max-height:calc(calc(40px + 32px / ${slots}) * ${slots})`);
+    expect(reservedPx(html, 'max-height')).toBeCloseTo(32 + 40 * FIELD_SLOTS_MAX, 6);
   });
 
   it('draws the slice it is handed, and draws dashes for it when there is none yet', () => {

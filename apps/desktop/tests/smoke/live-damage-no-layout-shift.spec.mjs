@@ -111,12 +111,18 @@ function startRecording(page) {
       };
       window.__damageSamples = [];
       window.__damageRecorder = setInterval(() => {
-        const rows = document.querySelectorAll('tr[data-testid^="live-damage-row-"]').length;
+        const rowElements = [...document.querySelectorAll('tr[data-testid^="live-damage-row-"]')];
+        const rows = rowElements.length;
+        const propsSum = rowElements.reduce(
+          (sum, row) => sum + (Number.parseFloat(row.querySelectorAll('td')[2]?.textContent ?? '') || 0),
+          0,
+        );
         const session = document.querySelector('[data-testid="live-damage-team-dps-session"]');
         const unattributed = document.querySelector('[data-testid="live-damage-unattributed"]');
         window.__damageSamples.push({
           boxes: Object.fromEntries(boxIds.map((id) => [id, box(id)])),
           rows,
+          propsSum,
           session: session === null ? null : session.textContent,
           unattributed: unattributed === null ? null : unattributed.textContent,
         });
@@ -254,6 +260,94 @@ test.describe('live damage panel: no layout shift smoke', () => {
       expect(lefts.head).toHaveLength(4);
       expect(lefts.unattributed).toEqual(lefts.head);
       expect(lefts.scrollWidth).toBeLessThanOrEqual(lefts.clientWidth);
+    } finally {
+      await closeApp(app, userDataDir);
+    }
+  });
+
+  test('a full field fits its reservation: no scrollbar, no clipped row, rows 40px under a 32px header', async () => {
+    test.setTimeout(180_000);
+    const { app, page, userDataDir, acceptConsent } = await launchWithConsentPending('bfc-damage-fit-');
+
+    try {
+      await acceptConsent();
+      const scroller = page.getByTestId('live-damage-scroller');
+      const slots = await scroller.evaluate((el) => (Number.parseFloat(getComputedStyle(el).maxHeight) - 32) / 40);
+      expect(Number.isInteger(slots), 'the reserved height is one header plus whole 40px rows').toBe(true);
+      await expect(page.locator('tr[data-testid^="live-damage-row-"]')).toHaveCount(slots, { timeout: 30_000 });
+
+      const fit = await scroller.evaluate((el) => {
+        const scrollerRect = el.getBoundingClientRect();
+        const head = el.querySelector('thead th').getBoundingClientRect();
+        return {
+          scrollHeight: el.scrollHeight,
+          clientHeight: el.clientHeight,
+          headHeight: head.height,
+          rows: [...el.querySelectorAll('tbody tr')].map((row) => {
+            const rect = row.getBoundingClientRect();
+            return { height: rect.height, top: rect.top - scrollerRect.top, bottom: scrollerRect.bottom - rect.bottom };
+          }),
+        };
+      });
+
+      expect(fit.scrollHeight, `a scrollbar appeared:\n${JSON.stringify(fit)}`).toBeLessThanOrEqual(fit.clientHeight);
+      expect(fit.headHeight).toBeCloseTo(32, 0);
+      expect(fit.rows).toHaveLength(slots);
+      for (const row of fit.rows) {
+        expect(row.height, `a row is not 40px tall:\n${JSON.stringify(fit)}`).toBeCloseTo(40, 0);
+        expect(row.top).toBeGreaterThanOrEqual(0);
+        expect(row.bottom, `a row is clipped at the bottom:\n${JSON.stringify(fit)}`).toBeGreaterThanOrEqual(-0.5);
+      }
+    } finally {
+      await closeApp(app, userDataDir);
+    }
+  });
+
+  test('sits in its own row: below both earnings and map, above the heroes panel, aligned with the earnings panel', async () => {
+    test.setTimeout(180_000);
+    const { app, page, userDataDir, acceptConsent } = await launchWithConsentPending('bfc-damage-placement-');
+
+    try {
+      await acceptConsent();
+      const rect = (id) =>
+        page.getByTestId(id).evaluate((el) => {
+          const box = el.getBoundingClientRect();
+          return { left: box.left, top: box.top, right: box.right, bottom: box.bottom };
+        });
+      const [earnings, map, damage, heroes] = await Promise.all(
+        ['live-earnings', 'live-map', 'live-damage', 'live-heroes'].map(rect),
+      );
+
+      expect(damage.top).toBeGreaterThanOrEqual(Math.max(earnings.bottom, map.bottom) - 0.5);
+      expect(damage.bottom).toBeLessThanOrEqual(heroes.top + 0.5);
+      expect(damage.left).toBeCloseTo(earnings.left, 0);
+    } finally {
+      await closeApp(app, userDataDir);
+    }
+  });
+
+  test('the earnings Reset restarts the damage session too: the per-hero props fall back from what they had reached', async () => {
+    test.setTimeout(180_000);
+    const { app, page, userDataDir, acceptConsent } = await launchWithConsentPending('bfc-damage-reset-');
+
+    try {
+      await startRecording(page);
+      await acceptConsent();
+      await expect
+        .poll(async () => (await page.evaluate(() => window.__damageSamples.at(-1)?.propsSum ?? 0)), { timeout: 40_000 })
+        .toBeGreaterThanOrEqual(8);
+
+      const before = await page.evaluate(() => {
+        window.__resetAt = window.__damageSamples.length;
+        return window.__damageSamples.at(-1).propsSum;
+      });
+      await page.getByTestId('live-earnings-reset').click();
+      await page.waitForTimeout(1_500);
+      const samples = await stopRecording(page);
+
+      const after = samples.slice(await page.evaluate(() => window.__resetAt));
+      const lowest = Math.min(...after.map((sample) => sample.propsSum));
+      expect(lowest, `props never fell below ${String(before)} after the Reset`).toBeLessThan(before / 2);
     } finally {
       await closeApp(app, userDataDir);
     }
