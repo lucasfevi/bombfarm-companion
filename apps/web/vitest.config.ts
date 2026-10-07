@@ -9,7 +9,10 @@ export default defineConfig({
   root,
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    // `e2e/` is Playwright's directory, and its suites are `*.spec.ts`. The perf harness's own
+    // pure helpers are unit-tested beside them as `*.test.ts`, which only this project collects —
+    // the `.test.ts` glob is what keeps the two apart, so do not widen it to `*.{test,spec}.ts`.
+    include: ['src/**/*.test.ts', 'e2e/**/*.test.ts'],
     // team-plan-runner.test.ts calls the real solver — see vitest.workers.ts. Set here as
     // well as at the root so `pnpm --filter @bombfarm/web test` is capped too.
     maxWorkers: MAX_TEST_WORKERS,
