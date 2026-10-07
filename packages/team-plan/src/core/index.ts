@@ -32,6 +32,8 @@ export {
   resolveHeroScope,
   buildDefaultScopeMap,
   mergeScopeForRoster,
+  pruneScopeToRoster,
+  dropMaterialisedScopeDefaults,
   countOptimizeScopeHeroes,
   heroScopeKey,
 } from './hero-scope';

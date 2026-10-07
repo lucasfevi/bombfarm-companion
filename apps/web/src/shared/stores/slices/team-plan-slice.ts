@@ -17,12 +17,12 @@ import type {
   TeamPlanObjective,
 } from '@bombfarm/domain/team-plan/types';
 import {
-  buildDefaultScopeMap,
   clampForgeFloor,
   computeTeamPlanInputSignature,
   DEFAULT_TEAM_PLAN_ALLOWED_CHANGES,
   DEFAULT_TEAM_PLAN_OBJECTIVE,
-  mergeScopeForRoster,
+  dropMaterialisedScopeDefaults,
+  pruneScopeToRoster,
 } from '@/shared/stores/team-plan/types';
 // Legal intra-element import (boundaries/elements declares one `shared-stores` element covering
 // both slices/ and selectors/) — the reverse edge of the same shape already ships in
@@ -72,7 +72,7 @@ export type TeamPlanSlice = {
   openHeroIds: readonly string[] | null;
 
   hydrateInventory: (snapshot: InventorySnapshot, forgeFloor: number) => void;
-  hydrateScope: (persisted: Record<string, ScopeState>) => void;
+  hydrateScope: (persisted: Record<string, ScopeState>, options?: { dropMaterialisedDefaults?: boolean }) => void;
   restoreTeamPlan: (envelope: TeamPlanEnvelope | null) => void;
   replaceInventoryFromImport: (items: InventoryItem[]) => void;
   setScope: (heroId: string, scope: ScopeState) => void;
@@ -154,20 +154,20 @@ export const createTeamPlanSlice: StateCreator<
     hydrateInventory: (snapshot, forgeFloor) => {
       const normalized = normalizeInventorySnapshot(snapshot);
       const clampedFloor = clampForgeFloor(forgeFloor);
-      const scopeByHeroId = buildDefaultScopeMap(get().heroes);
       set({
         inventory: normalized,
         forgeFloor: clampedFloor,
-        scopeByHeroId,
         ...CLEARED_PLAN,
       });
     },
 
-    // Merges persisted scope choices over the battleAllowed-derived defaults, for heroes still on
-    // the roster. Runs once at boot, after `hydrateInventory` has already set the defaults —
-    // without this, a page reload silently forgot every Donate/Leave alone choice.
-    hydrateScope: (persisted) => {
-      set({ scopeByHeroId: mergeScopeForRoster(get().heroes, persisted) });
+    hydrateScope: (persisted, options) => {
+      const { heroes } = get();
+      set({
+        scopeByHeroId: options?.dropMaterialisedDefaults
+          ? pruneScopeToRoster(heroes, dropMaterialisedScopeDefaults(heroes, persisted))
+          : pruneScopeToRoster(heroes, persisted),
+      });
     },
 
     restoreTeamPlan: (envelope) => {
@@ -258,10 +258,8 @@ export const createTeamPlanSlice: StateCreator<
       set({ openHeroIds: [...heroIds] });
     },
 
-    // Keep prior per-hero choices; seed defaults only for heroes missing from the map (import /
-    // roster churn). Never wipe Donate/Leave alone back to battleAllowed defaults.
     syncScopeForRoster: () => {
-      const next = mergeScopeForRoster(get().heroes, get().scopeByHeroId);
+      const next = pruneScopeToRoster(get().heroes, get().scopeByHeroId);
       if (scopeMapsEqual(get().scopeByHeroId, next)) return;
       set({ scopeByHeroId: next });
     },
