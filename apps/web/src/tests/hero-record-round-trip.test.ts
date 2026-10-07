@@ -137,6 +137,21 @@ describe('a hero record survives the storage → draft → storage round trip wh
     expect(rebuilt).toStrictEqual(expectedWithoutStamp);
   });
 
+  it('loading a bare hero after a populated one carries nothing over from the populated one', () => {
+    loadIntoDraft(populatedHeroRecord());
+    const { expected, rebuilt } = roundTrip(bareRecord());
+    const { updatedAt: _stamp, ...expectedWithoutStamp } = expected;
+
+    expect(rebuilt).toStrictEqual(expectedWithoutStamp);
+  });
+
+  it('a present but empty value stays present and empty — it does not collapse to absent', () => {
+    const { expected, rebuilt } = roundTrip({ ...populatedHeroRecord(), runes: [], statRanges: {} });
+
+    expect(rebuilt.runes).toStrictEqual(expected.runes);
+    expect(rebuilt.statRanges).toStrictEqual(expected.statRanges);
+  });
+
   it('the rebuilt name is trimmed, and a blank name falls back to the default name', () => {
     const record = populatedHeroRecord();
 
