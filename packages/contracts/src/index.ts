@@ -4,9 +4,12 @@ import type { LiveDiagnosticsDumpOutcome, LiveEvent, LiveView } from './live-sou
 import type { UpdateStatus } from './update.js';
 import type { MarketQuoteCurrency, MarketQuoteResult, MarketQuoteTarget, MarketSnapshotView } from './market.js';
 import { DEFAULT_MARKET_QUOTE_CURRENCY } from './market.js';
+import type { OnlinePlayersView } from './online-players.js';
 import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
 import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
+import type { CollectionsView } from './collections.js';
 import type { ApplyEvent, ApplyStartRequest, ApplyStartResult } from './apply.js';
+import type { DeconstructEvent, DeconstructStartRequest, DeconstructStartResult } from './deconstruct.js';
 
 export { accountChangeKey, canonicalStringify } from './account-change-key.js';
 export {
@@ -43,6 +46,22 @@ export type {
   ApplyVerdictStatus,
   CommitVector,
 } from './apply.js';
+export {
+  DECONSTRUCT_BATCH_MAX,
+  isDeconstructEvent,
+  isDeconstructInjectRequest,
+  isDeconstructStartRequest,
+} from './deconstruct.js';
+export type {
+  DeconstructDoneEvent,
+  DeconstructEvent,
+  DeconstructFailure,
+  DeconstructInjectRequest,
+  DeconstructRunResult,
+  DeconstructStartReason,
+  DeconstructStartRequest,
+  DeconstructStartResult,
+} from './deconstruct.js';
 export { EMPTY_FORGE_HISTORY } from './forge.js';
 export type {
   ForgeCallKind,
@@ -60,6 +79,16 @@ export type {
   ForgeStepEvent,
   ForgeStopReason,
 } from './forge.js';
+export { COLLECTION_AXES, EMPTY_COLLECTIONS_VIEW } from './collections.js';
+export type {
+  CollectionAxis,
+  CollectionAxisValues,
+  CollectionEffectState,
+  CollectionPieceState,
+  CollectionSetState,
+  CollectionsSnapshot,
+  CollectionsView,
+} from './collections.js';
 export { EMPTY_PVP_HISTORY } from './pvp.js';
 export type {
   PvpDuelPrize,
@@ -107,15 +136,21 @@ export type {
 } from './rotation-snapshot.js';
 export type {
   CountdownBasis,
+  CreditAmounts,
   FieldCountdown,
+  LiveBomb,
   LiveCurrency,
   LiveDiagnosticsDumpOutcome,
   LiveDiagnosticsDumpReason,
   LiveEarnings,
   LiveEvent,
+  LiveExplosion,
   LiveFrame,
   LiveGapExtra,
   LiveGapReason,
+  LiveDamage,
+  LiveDamageHeroRow,
+  LiveDamageUnattributed,
   LiveHeroEnergy,
   LiveHit,
   LiveLootPop,
@@ -125,8 +160,9 @@ export type {
   LiveTickHero,
   LiveView,
   RecoveryCountdown,
+  UnattributedReason,
 } from './live-source.js';
-export { energyDisplayPercent, isActionableGap, isConnectedCurrency, isLiveCurrency, liveGap, LIVE_DISPLAY_REFRESH_MS } from './live-source.js';
+export { energyDisplayPercent, isActionableGap, isConnectedCurrency, isLiveCurrency, liveGap, LIVE_DISPLAY_REFRESH_MS, sameLiveDamage, UNATTRIBUTED_REASONS } from './live-source.js';
 export type {
   MarketQuoteCurrency,
   MarketQuoteFailureReason,
@@ -144,6 +180,14 @@ export {
   isMarketQuoteCurrency,
   isMarketQuoteTarget,
 } from './market.js';
+export type { OnlinePlayersReading, OnlinePlayersView } from './online-players.js';
+export {
+  ONLINE_PLAYERS_CHECK_MS,
+  ONLINE_PLAYERS_MAX,
+  ONLINE_PLAYERS_MAX_AGE_MS,
+  emptyOnlinePlayersView,
+  readOnlinePlayersBody,
+} from './online-players.js';
 export type {
   AccountStoreReason,
   AccountStoreStatus,
@@ -366,8 +410,8 @@ export interface AppSettings {
   alwaysOnTopMain: boolean;
   alwaysOnTopMini: boolean;
   /** "Let the app forge, equip and reset points" — off until the player turns it on; the only
-   *  thing that lets the app send a forge roll, equip or unequip an item, or refund and re-place
-   *  a hero's stat points. */
+   *  thing that lets the app send a forge roll, equip or unequip an item, refund and re-place
+   *  a hero's stat points, or burn items for Forge Essence. */
   forgeWritesEnabled: boolean;
   /** Off until the player turns it on. While on, a game process this app already saw running and
    *  which then disappears is asked back through Steam. Nothing here ever stops a living game. */
@@ -517,6 +561,9 @@ export interface IpcChannels {
    *  not `ready` it is a no-op and the unchanged status comes back. */
   'updates:installOnRestart': { args: []; result: UpdateStatus };
   'market:getSnapshot': { args: []; result: MarketSnapshotView };
+  /** How many players the game's server counts right now — the number the status strip prints.
+   *  Empty until the first reading lands, and again once the one held is too old to show. */
+  'onlinePlayers:get': { args: []; result: OnlinePlayersView };
   /** The first channel to carry an argument. Its target is re-validated in main with
    *  `isMarketQuoteTarget` before anything acts on it — the renderer is not trusted to have sent
    *  a well-formed one. */
@@ -548,6 +595,13 @@ export interface IpcChannels {
    *  `apply:event` seam. Main honours it only unpackaged on the fixture reader; anywhere else it
    *  answers `{ ok: false }` and arms nothing. */
   'apply:inject': { args: [unknown]; result: { ok: boolean } };
+  /** Burns the listed inventory items for Forge Essence in one call. Main re-validates the ids
+   *  against the account it holds and refuses with a named reason rather than trusting the
+   *  renderer's selection. */
+  'deconstruct:start': { args: [DeconstructStartRequest]; result: DeconstructStartResult };
+  /** Test-only: replays a scripted event through the real `deconstruct:event` seam. Main honours
+   *  it only unpackaged on the fixture reader; anywhere else it answers `{ ok: false }`. */
+  'deconstruct:inject': { args: [unknown]; result: { ok: boolean } };
   /** Every duel the tap has seen settle, newest first, with whether each one's film is held. */
   'pvp:history': { args: []; result: PvpHistoryResult };
   /** Asks main to read the PVP state and the points ranking now, the way `account:readNow` asks
@@ -557,6 +611,12 @@ export interface IpcChannels {
   /** A kept film, read down to one point per second and the facts the frames settle. `null` when
    *  no film with that id is held. The 2 MB body never crosses the bridge. */
   'pvp:film': { args: [number]; result: PvpFilmView | null };
+  /** The last good Collections read, with when it was read; empty before any read landed. */
+  'collections:get': { args: []; result: CollectionsView };
+  /** Asks main to read the Collections state now. `ok` means the read was started; a read that
+   *  lands arrives on `collections:changed`, even when it repeats what is held, because the date
+   *  beside the book means "last confirmed". */
+  'collections:refresh': { args: []; result: AccountReadResult };
   /** Puts a PNG the renderer drew on the system clipboard as an image. The renderer has no
    *  clipboard of its own that holds pictures reliably — the web one refuses an unfocused
    *  window — so main writes it. Main re-checks the bytes are a PNG before writing anything. */
@@ -606,6 +666,7 @@ export const IPC_CHANNELS = [
   'updates:download',
   'updates:installOnRestart',
   'market:getSnapshot',
+  'onlinePlayers:get',
   'market:refreshItem',
   'market:check',
   'forge:start',
@@ -616,9 +677,13 @@ export const IPC_CHANNELS = [
   'apply:start',
   'apply:stop',
   'apply:inject',
+  'deconstruct:start',
+  'deconstruct:inject',
   'pvp:history',
   'pvp:refresh',
   'pvp:film',
+  'collections:get',
+  'collections:refresh',
   'clipboard:writeImage',
 ] as const satisfies readonly IpcInvokeChannel[];
 
@@ -629,10 +694,13 @@ export type IpcEventChannel =
   | 'live:event'
   | 'updates:changed'
   | 'market:changed'
+  | 'onlinePlayers:changed'
   | 'settings:changed'
   | 'forge:event'
   | 'apply:event'
+  | 'deconstruct:event'
   | 'pvp:changed'
+  | 'collections:changed'
   | 'window:changed';
 
 export interface IpcEvents {
@@ -655,6 +723,9 @@ export interface IpcEvents {
   /** Fired whenever main adopts a different snapshot body, or merges a fresh per-item quote into
    *  the one it holds. A check that changed nothing (a 304, a failed fetch) does not fire it. */
   'market:changed': MarketSnapshotView;
+  /** Fired when the count, or whether one is shown at all, changed — a check that read the same
+   *  number again does not fire it. */
+  'onlinePlayers:changed': OnlinePlayersView;
   /** Fired whenever main adopts new settings — persisted or not, since a locale or always-on-top
    *  change applies for the session either way — so every window follows without a relaunch. */
   'settings:changed': AppSettings;
@@ -664,9 +735,16 @@ export interface IpcEvents {
   /** Every event an apply run pushes: a call sent/settled, a cooldown pause and its resume, then
    *  one `done`. */
   'apply:event': ApplyEvent;
+  /** The settled outcome of a deconstruct run: what the server burned and the Forge Essence
+   *  balance it left, or the refusal code, or why no answer came. */
+  'deconstruct:event': DeconstructEvent;
   /** Fired when a duel result or a film has just been kept — the same list `pvp:history` serves,
    *  so a screen already open sees the duel without polling. */
   'pvp:changed': PvpHistoryResult;
+  /** Fired whenever a Collections read lands for the account the app is bound to — the same view
+   *  `collections:get` serves, re-dated even when the snapshot repeats the last one. A read that
+   *  lands for an account that is no longer the bound one is stored and not announced. */
+  'collections:changed': CollectionsView;
   /** Fired on every maximize and unmaximize of the main window, so the header's own caption
    *  buttons follow a state change the OS made (a double-clicked title bar, a snap, Win+Up)
    *  and not only the ones they asked for. */
@@ -680,10 +758,13 @@ export const IPC_EVENT_CHANNELS = [
   'live:event',
   'updates:changed',
   'market:changed',
+  'onlinePlayers:changed',
   'settings:changed',
   'forge:event',
   'apply:event',
+  'deconstruct:event',
   'pvp:changed',
+  'collections:changed',
   'window:changed',
 ] as const satisfies readonly IpcEventChannel[];
 

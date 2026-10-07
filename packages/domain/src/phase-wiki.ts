@@ -1,4 +1,5 @@
 import wiki from './data/phase-wiki.json' with { type: 'json' };
+import forgeWiki from './data/forge-wiki.json' with { type: 'json' };
 import phaseMapNamesEn from './data/phase-map-names-en.json' with { type: 'json' };
 
 export type WikiPhaseLine = (typeof wiki.lines)[number];
@@ -81,20 +82,29 @@ export const WIKI_EMITTED_AT: string = wiki.emittedAt;
  *    stone ← `drops.stoneChestDropRate`  0.0005   — stone chest, GATE phases only
  *                                                   (live wiki key `pedra.drop_rate`; raised
  *                                                   tenfold from 0.00005 by the 2026-08-23
- *                                                   patch, so it is no longer the gem rate) */
-export type DropRates = { chest: number; key: number; gem: number; time: number; stone: number };
+ *                                                   patch, so it is no longer the gem rate)
+ *    chance ← forge `ajudas.drop_rate`   0.0001   — Chance Stone chest, ANY phase */
+export type DropRates = {
+  chest: number;
+  key: number;
+  gem: number;
+  time: number;
+  stone: number;
+  chance: number;
+};
 export const DROP_RATES: DropRates = {
   chest: wiki.drops.chestDropRate,
   key: wiki.drops.keyDropRate,
   gem: wiki.drops.gemChestDropRate,
   time: wiki.drops.timechestDropRate,
   stone: wiki.drops.stoneChestDropRate,
+  chance: forgeWiki.ajudas.drop_rate,
 };
 
 /** Stable id for one drop-rate row — shared by {@link DROP_RATES}, {@link dropAppliesOnPhase},
  *  and `phase-intel.ts`'s `DropChanceRow`. Order here is the display order (chest, key, time,
- *  gem, stone), not `DropRates`' declaration order. */
-export type DropRateId = 'chest' | 'key' | 'time' | 'gem' | 'stone';
+ *  gem, stone, chance), not `DropRates`' declaration order. */
+export type DropRateId = 'chest' | 'key' | 'time' | 'gem' | 'stone' | 'chance';
 
 /**
  * Whether this drop applies on a gate vs. non-gate phase. Item chest rolls on every phase; the
@@ -105,6 +115,7 @@ export type DropRateId = 'chest' | 'key' | 'time' | 'gem' | 'stone';
 export function dropAppliesOnPhase(id: DropRateId, gate: boolean): boolean {
   switch (id) {
     case 'chest':
+    case 'chance':
       return true;
     case 'key':
       return !gate;

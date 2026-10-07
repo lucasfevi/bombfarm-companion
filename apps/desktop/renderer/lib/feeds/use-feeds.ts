@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * The strip's view of the four feeds: what each was last read, what its press is doing, and the
- * press itself — plus "refresh all", which runs the four presses one after another and moves on
- * past a refusal. Sequence rather than fan-out: the account and PVP reads share the game server's
+ * The strip's view of the five feeds: what each was last read, what its press is doing, and the
+ * press itself — plus "refresh all", which runs the five presses one after another and moves on
+ * past a refusal. Sequence rather than fan-out: the account, PVP and Collections reads share the game server's
  * pacing gate, so presses fired together would only queue behind each other there.
  *
  * The account feed speaks for the screen on show when that screen computes from a copy of its
@@ -17,6 +17,8 @@ import type { UpdateStatus } from '@bombfarm/contracts';
 import { oldestCaptureOf } from '../account/account-facts';
 import { useAccountReadRequest } from '../account/use-account-read-request';
 import { useAccountView } from '../account/use-account-view';
+import { useCollections } from '../collections/use-collections';
+import { useCollectionsRefresh } from '../collections/use-collections-refresh';
 import { usePvpHistory } from '../pvp/use-pvp-history';
 import { usePvpRefresh } from '../pvp/use-pvp-refresh';
 import { useMarketSnapshot } from '../market/use-market-snapshot';
@@ -81,6 +83,9 @@ export function useFeeds({
   const pvp = usePvpHistory();
   const pvpRefresh = usePvpRefresh();
 
+  const collections = useCollections();
+  const collectionsRefresh = useCollectionsRefresh();
+
   const { state: market } = useMarketSnapshot();
   const marketCheck = useMarketCheck();
 
@@ -114,6 +119,14 @@ export function useFeeds({
         request: pvpRefresh.request,
       },
       {
+        id: 'collections',
+        capturedAt: collections.view.capturedAt,
+        outOfDate: false,
+        busy: false,
+        readState: collectionsRefresh.state,
+        request: collectionsRefresh.request,
+      },
+      {
         id: 'market',
         capturedAt: market.view?.checkedUtc ?? null,
         outOfDate: false,
@@ -130,7 +143,7 @@ export function useFeeds({
         request: updateCheck.request,
       },
     ],
-    [screen, live, liveRead, pvp, pvpRefresh, market.view, marketCheck, updateStatus?.lastCheckedAt, updateCheck],
+    [screen, live, liveRead, pvp, pvpRefresh, collections.view.capturedAt, collectionsRefresh, market.view, marketCheck, updateStatus?.lastCheckedAt, updateCheck],
   );
 
   // The sequence: a step is requested once, waited on until its press settles, then the next. A

@@ -13,7 +13,7 @@
  */
 import { useEffect, useMemo } from 'react';
 import type { AccountSource } from '@bombfarm/contracts';
-import { buildInventoryView } from '@bombfarm/domain/inventory-view';
+import { buildInventoryView, ownedChanceStones } from '@bombfarm/domain/inventory-view';
 import { ItemIcon, itemPeekFromInventory } from '@bombfarm/game-art';
 import { cn } from '@bombfarm/ui';
 import { sub, useCopy, useLocale } from '../../lib/copy';
@@ -22,11 +22,15 @@ import type { ForgeQueueState } from '../../lib/forge/forge-queue-reducer';
 import { syncForgeQueue, useForgeQueue } from '../../lib/forge/forge-queue-store';
 import { bagUpgrades, resolveForgeQueue } from '../../lib/forge/forge-queue-view';
 import { gearOf } from '../../lib/forge/forge-rows';
+import { useForgeQueuePricing } from '../../lib/forge/use-forge-queue-pricing';
+import { isBurning } from '../../lib/deconstruct/deconstruct-run-reducer';
+import { useDeconstructRun } from '../../lib/deconstruct/deconstruct-run-store';
 import { useForgeRun } from '../../lib/forge/forge-run-store';
 import { forgeLabels, forgeLevel } from './forge-labels';
 import { ForgeQueueActions } from './forge-queue-actions';
 
 const NO_GEAR: never[] = [];
+const NO_STONES: number[] = [];
 
 export function isForgeQueueShown(queue: ForgeQueueState): boolean {
   return queue.pieces.length > 0 || queue.active !== null;
@@ -46,11 +50,14 @@ export function ForgeQueueBar({
   const { lang, locale } = useLocale();
   const queue = useForgeQueue();
   const run = useForgeRun();
+  const burning = isBurning(useDeconstructRun());
   const account = useAccountView();
 
   const shown = isForgeQueueShown(queue);
   const items = shown && account.status === 'loaded' ? account.view.payload.items : undefined;
-  const gear = useMemo(() => (items === undefined ? NO_GEAR : gearOf(buildInventoryView(items).items)), [items]);
+  const inventory = useMemo(() => (items === undefined ? null : buildInventoryView(items)), [items]);
+  const gear = useMemo(() => (inventory === null ? NO_GEAR : gearOf(inventory.items)), [inventory]);
+  const ownedStones = useMemo(() => (inventory === null ? NO_STONES : ownedChanceStones(inventory.items)), [inventory]);
   const labels = useMemo(() => forgeLabels(t, lang, locale), [t, lang, locale]);
 
   useEffect(() => {
@@ -59,6 +66,7 @@ export function ForgeQueueBar({
   }, [items, gear]);
 
   const rows = useMemo(() => resolveForgeQueue(queue.pieces, gear), [queue.pieces, gear]);
+  const { settings, pricing } = useForgeQueuePricing(rows, ownedStones);
 
   if (!shown) return null;
 
@@ -113,13 +121,17 @@ export function ForgeQueueBar({
           </span>
           {queue.status === 'paused' ? (
             <span data-testid="forge-queue-paused" className="text-muted">
-              {t.forgeQueuePausedForApply}
+              {burning ? t.forgeQueuePausedForBurn : t.forgeQueuePausedForApply}
             </span>
           ) : queue.active !== null ? (
             <span className="text-muted">
               {inFlight === null
                 ? t.forgeQueueRolling
-                : sub(t.forgeQueueProgress, { rolls: labels.count(inFlight.tally.rolls), spent: labels.gold(inFlight.tally.spent) })}
+                : sub(t.forgeQueueProgress, {
+                    rolls: labels.count(inFlight.tally.rolls),
+                    spent: labels.gold(inFlight.tally.spent),
+                    essence: labels.count(inFlight.tally.essence),
+                  })}
             </span>
           ) : null}
         </span>
@@ -128,6 +140,8 @@ export function ForgeQueueBar({
         <ForgeQueueActions
           queue={queue}
           rows={rows}
+          pricing={pricing}
+          settings={settings}
           labels={labels}
           forgeWritesEnabled={forgeWritesEnabled}
           accountSource={accountSource}

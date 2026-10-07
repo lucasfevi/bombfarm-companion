@@ -17,7 +17,7 @@
  */
 import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import { FORJA_MAX } from '@bombfarm/domain/gear';
-import type { RankMode } from '@bombfarm/domain/model';
+import { normalizeCollection, type Collection, type RankMode } from '@bombfarm/domain/model';
 import {
   toRequiredAccountFields,
   type RequiredAccountField,
@@ -64,6 +64,8 @@ export type TreeState = {
   fieldSlotsBonus?: number;
   /** `bag_tabs_bonus` — extra bag tabs the tree grants. */
   bagTabsBonus?: number;
+  /** `skills.totals.colecao` — absent on a save from before Collections existed. */
+  collection?: Collection;
 };
 
 export type HeroContext = {
@@ -217,7 +219,13 @@ function normalizeTree(raw?: Partial<TreeState> | null): TreeState {
     geoMult: raw.geoMult ?? base.geoMult,
     fieldSlotsBonus: raw.fieldSlotsBonus ?? base.fieldSlotsBonus,
     bagTabsBonus: raw.bagTabsBonus ?? base.bagTabsBonus,
+    ...collectionField(normalizeCollection(raw.collection)),
   };
+}
+
+/** Omitted rather than written `undefined`, so a record from before Collections round-trips unchanged. */
+function collectionField(collection: Collection | undefined): { collection?: Collection } {
+  return collection === undefined ? {} : { collection };
 }
 
 /** A non-empty trimmed string, else `null` — a blank name is an absent name, not a label. */

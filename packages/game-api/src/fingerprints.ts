@@ -23,8 +23,9 @@ import {
  * The required key sets below are the real top-level (and now nested) keys of the
  * 2026-08-12 anchor-calibration capture, taken out of band, then scrubbed and copied into
  * `src/__fixtures__/api-bodies.json` — each fingerprint below names that artifact and capture
- * directly via `sourceArtifact`, rather than only in this file-level comment. `/state` is the one
- * level re-anchored since (see `STATE_SELL_GATE_KEYS`); its fixture body carries the later keys.
+ * directly via `sourceArtifact`, rather than only in this file-level comment. `/state` and
+ * `/inventory` are the two levels re-anchored since (see `STATE_SELL_GATE_KEYS` and
+ * `ITEM_ESSENCE_KEYS`); their fixture bodies carry the later keys.
  *
  * `account_id` and `player_name` are declared `allowance` (never `keys`) on `/state`: they are the
  * two fields the scrub removes (matching this file's own committed fixture), and requiring them
@@ -33,6 +34,7 @@ import {
 export type RouteFingerprint = SchemaFingerprint;
 
 const GAME_BUILD = '0.1.0.0+2026-08-11T21:38:23Z';
+const DECONSTRUCT_STEAM_BUILD = '25733721';
 const CAPTURED_AT = '2026-08-12T13:15:38.000Z';
 const SOURCE_ARTIFACT = 'packages/game-api/src/__fixtures__/api-bodies.json — 2026-08-12 capture';
 
@@ -43,11 +45,23 @@ const SOURCE_ARTIFACT = 'packages/game-api/src/__fixtures__/api-bodies.json — 
  * build id, so the account fingerprint's `gameBuild` names both builds by what is known of them,
  * and its `capturedAt` is the later observation — the date the declared key set became true.
  */
-const STATE_GAME_BUILD = `${GAME_BUILD}, plus unrecorded later builds that added the sell-gate keys and the rune stash`;
-const STATE_CAPTURED_AT = '2026-09-22T12:00:00.000Z';
+const STATE_GAME_BUILD = `${GAME_BUILD}, plus unrecorded later builds that added the sell-gate keys and the rune stash, and Steam build ${DECONSTRUCT_STEAM_BUILD}`;
+const STATE_CAPTURED_AT = '2026-10-05T12:00:00.000Z';
 const STATE_SOURCE_ARTIFACT =
   `${SOURCE_ARTIFACT}, with client_can_sell/sell_phase/sell_mode carried over from a 2026-09-10 ` +
-  'live observation and rune_stash from a 2026-09-22 one, both held out of band';
+  'live observation, rune_stash from a 2026-09-22 one and essence/fusion_pity from a 2026-10-05 one, ' +
+  'all held out of band';
+
+/**
+ * `/inventory` carries the four essence keys on every item (see `ITEM_ESSENCE_KEYS`), observed on
+ * all 219 items of a live read taken on Steam build 25733721; the rest of its key set
+ * is the 2026-08-12 capture's.
+ */
+const INVENTORY_GAME_BUILD = `${GAME_BUILD}, plus Steam build ${DECONSTRUCT_STEAM_BUILD}, which added the per-item essence keys`;
+const INVENTORY_CAPTURED_AT = '2026-10-05T12:00:00.000Z';
+const INVENTORY_SOURCE_ARTIFACT =
+  `${SOURCE_ARTIFACT}, with the per-item essence keys carried over from a 2026-10-05 live ` +
+  'observation held out of band';
 
 /** The account-level gate on selling to the Steam market, added by the game after the 2026-08-12
  *  anchor capture: `client_can_sell` (boolean), `sell_phase` (a phase number) and `sell_mode` (a
@@ -63,6 +77,14 @@ export const STATE_SELL_GATE_KEYS = ['client_can_sell', 'sell_phase', 'sell_mode
  *  variance to tolerate. Nothing reads it yet; it is declared so the account section stops being
  *  rejected outright. */
 export const STATE_RUNE_STASH_KEY = 'rune_stash';
+
+/** The Forge Essence balance and the fusion pity counters, added by the game with the deconstruct
+ *  screen. `essence` is a number — unlike `gold`, which is a string — and `fusion_pity` is
+ *  `{item, hero}`, each `{fails, chance}` with five entries per rarity. Required keys, never
+ *  `optional`: both were on every `/state` body of a 2026-10-05 live read, so an absence is a
+ *  real removal to report. `essence` feeds the deconstruct screen's balance; `fusion_pity` is
+ *  declared so the account section stops being rejected outright. */
+export const STATE_ESSENCE_KEYS = ['essence', 'fusion_pity'] as const;
 
 /** `/rotation.heroes[]` — a sixth declared element level, distinct from the export/API roster
  *  hero. One variant across 8 elements in the committed corpus. */
@@ -99,6 +121,7 @@ const STATE_LEVEL: SchemaLevel = {
     'items_count',
     ...STATE_SELL_GATE_KEYS,
     STATE_RUNE_STASH_KEY,
+    ...STATE_ESSENCE_KEYS,
   ],
   allowance: ['account_id', 'player_name'],
 };
@@ -121,7 +144,7 @@ const ROTATION_LEVEL: SchemaLevel = {
 /** `/inventory` — the items route body. */
 const INVENTORY_LEVEL: SchemaLevel = {
   keys: ['items', 'chests', 'bag_tabs', 'bag_capacity', 'items_count'],
-  children: { items: { kind: 'array', element: SCHEMA_LEVELS.item } },
+  children: { items: { kind: 'array', element: SCHEMA_LEVELS.apiItem } },
 };
 
 export const ROUTE_FINGERPRINTS: Readonly<Record<AccountSection, RouteFingerprint>> = {
@@ -156,9 +179,9 @@ export const ROUTE_FINGERPRINTS: Readonly<Record<AccountSection, RouteFingerprin
   items: {
     root: 'items',
     level: INVENTORY_LEVEL,
-    gameBuild: GAME_BUILD,
-    capturedAt: CAPTURED_AT,
-    sourceArtifact: SOURCE_ARTIFACT,
+    gameBuild: INVENTORY_GAME_BUILD,
+    capturedAt: INVENTORY_CAPTURED_AT,
+    sourceArtifact: INVENTORY_SOURCE_ARTIFACT,
   },
 };
 
@@ -203,10 +226,10 @@ export const SECTION_FINGERPRINTS: Readonly<Record<AccountSection, SectionFinger
   items: {
     kind: 'array',
     root: 'items',
-    element: SCHEMA_LEVELS.item,
-    gameBuild: GAME_BUILD,
-    capturedAt: CAPTURED_AT,
-    sourceArtifact: SOURCE_ARTIFACT,
+    element: SCHEMA_LEVELS.apiItem,
+    gameBuild: INVENTORY_GAME_BUILD,
+    capturedAt: INVENTORY_CAPTURED_AT,
+    sourceArtifact: INVENTORY_SOURCE_ARTIFACT,
   },
 };
 

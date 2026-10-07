@@ -13,6 +13,9 @@ export type ForgeStopReason =
   | 'cancelled'
   | 'cooldown'
   | 'shortfall'
+  | 'stones'
+  | 'stone_mismatch'
+  | 'scroll_mismatch'
   | 'missing'
   | 'error';
 
@@ -21,6 +24,12 @@ export interface ForgeStartRequest {
   target: number;
   maxGold: number | null;
   maxAttempts: number | null;
+  /** The Chance Stone rarity (0 to 5) to spend on the roll for each target, indexed target - 1; absent or null is none. */
+  stones?: readonly (number | null | undefined)[];
+  /** Ask for the Protection Scroll on every roll that offers it; absent or false is none. */
+  scroll?: boolean;
+  /** Absent or true stops the run when a chosen Chance Stone runs out; false rolls on without it. */
+  stopWhenOutOfStones?: boolean;
 }
 
 /** Why a run did not start. `busy` is another run in flight; `offline` is an account with no
@@ -53,6 +62,12 @@ export interface ForgeStepEvent {
   cost: number;
   spent: number;
   wallet: number | null;
+  /** The rarity of the Chance Stone this roll used up, as the server reported it; null when none. */
+  stone?: number | null;
+  /** Essence the roll was charged in all, the Protection Scroll's included; absent when the reply did not say. */
+  essence?: number;
+  /** The part of that essence the Protection Scroll cost, as the server reported it; 0 or absent when none. */
+  scrollEssence?: number;
 }
 
 export interface ForgeRunResult {
@@ -69,6 +84,14 @@ export interface ForgeRunResult {
   spent: number;
   walletAfter: number | null;
   durationMs: number;
+  /** Chance Stones used up by the run, by rarity 0 to 5. */
+  stonesSpent?: readonly number[];
+  /** The rarity involved when the run stopped for want of stones, or on a stone the server did not take as asked. */
+  stoneRarity?: number | null;
+  /** Essence the run was charged in all, Protection Scrolls included. */
+  essence?: number;
+  /** The part of that essence the Protection Scrolls cost. */
+  scrollEssence?: number;
 }
 
 /**
@@ -116,11 +139,20 @@ export interface ForgeHistoryRow {
   spent: number;
   walletAfter: number | null;
   durationMs: number;
+  /** Chance Stones used up by the run, by rarity 0 to 5; all zeros for a run recorded before stones. */
+  stonesSpent: readonly number[];
+  stoneRarity: number | null;
+  /** Essence paid for Protection Scrolls; zero for a run recorded before scrolls. */
+  scrollEssence: number;
+  /** Essence the run was charged in all, scrolls included; null for a run recorded before essence was tracked. */
+  essence: number | null;
 }
 
 export interface ForgeHistoryTotals {
   runs: number;
   spent: number;
+  /** Essence across the runs that recorded it. */
+  essence: number;
   rolls: number;
   fails: number;
 }
@@ -130,4 +162,4 @@ export interface ForgeHistoryResult {
   totals: ForgeHistoryTotals;
 }
 
-export const EMPTY_FORGE_HISTORY: ForgeHistoryResult = { rows: [], totals: { runs: 0, spent: 0, rolls: 0, fails: 0 } };
+export const EMPTY_FORGE_HISTORY: ForgeHistoryResult = { rows: [], totals: { runs: 0, spent: 0, essence: 0, rolls: 0, fails: 0 } };

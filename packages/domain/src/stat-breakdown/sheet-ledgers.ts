@@ -8,8 +8,10 @@ import {
   pushBirthThenGear,
   pushBirthThroughAbilities,
   pushMul,
+  pushCollection,
   pushRune,
   runeFactorFor,
+  sheetBuffFactorFor,
   teamAddNote,
   teamMultNote,
 } from './ledger-kit';
@@ -40,8 +42,9 @@ export function ledgerEnergy(facts: PipelineFacts): StatBreakdown {
   // energia_add multiplies the Hero+Gear subtotal.
   pushBirthThenGear(steps, 'energy', facts, facts.treeEnergy);
   // `delta.energy` carries the rune through `gem` (derive.ts); the rune step below multiplies once.
-  pushAdd(steps, 'points', (facts.pts.energy * facts.delta.energy) / runeFactorFor('energy', facts));
+  pushAdd(steps, 'points', (facts.pts.energy * facts.delta.energy) / sheetBuffFactorFor('energy', facts));
   pushRune(steps, 'energy', facts);
+  pushCollection(steps, 'energy', facts);
   return { kind: 'ledger', total: facts.effective.energy, steps };
 }
 
@@ -80,6 +83,7 @@ export function ledgerCritChance(facts: PipelineFacts): StatBreakdown {
     baseCrit,
   );
   pushRune(steps, 'critChance', facts);
+  pushCollection(steps, 'critChance', facts);
   // Presságio Mortal is a team aura (PR #139) — `facts.teamCritFlat` is already the full
   // roster total, capped; there is no separate "own" line to add alongside it. Flat crit points
   // since the 2026-08-23 patch, so it is a plain addend rather than a share of the roll.
@@ -92,9 +96,10 @@ export function ledgerCritDmg(facts: PipelineFacts): StatBreakdown {
   // Every crit-damage term is a flat percentage-point addend — the tree node (inside
   // pushBirthThenGear) as much as the point (POINT_GAIN.critDmgFlat) — so neither
   // line carries `pctOfBase` provenance.
-  if (runeFactorFor('critDmg', facts) === 1) {
+  if (sheetBuffFactorFor('critDmg', facts) === 1) {
     pushBirthThenGear(steps, 'critDmg', facts, facts.treeCritDmg);
     pushAdd(steps, 'points', facts.pts.critDmg * POINT_GAIN.critDmgFlat);
+    pushCarnageLine(steps, facts);
     return { kind: 'ledger', total: facts.effective.critDmg, steps };
   }
   // A crit-damage rune multiplies everything BEFORE the tree's flat add (`applyRuneMultipliers`),
@@ -105,8 +110,14 @@ export function ledgerCritDmg(facts: PipelineFacts): StatBreakdown {
   pushAdd(steps, 'gear', gearAmount);
   pushAdd(steps, 'points', facts.pts.critDmg * POINT_GAIN.critDmgFlat);
   pushRune(steps, 'critDmg', facts);
+  pushCollection(steps, 'critDmg', facts);
   pushAdd(steps, 'tree', facts.treeCritDmg);
+  pushCarnageLine(steps, facts);
   return { kind: 'ledger', total: facts.effective.critDmg, steps };
+}
+
+function pushCarnageLine(steps: LedgerStep[], facts: PipelineFacts): void {
+  pushAdd(steps, 'team', facts.teamCritDmgFlat, teamAddNote(facts.teamCritDmgFlat, TEAM_BUFF_CAP.carnificina));
 }
 
 export function ledgerPenetration(facts: PipelineFacts): StatBreakdown {
@@ -163,7 +174,7 @@ export function ledgerLuck(facts: PipelineFacts): StatBreakdown {
 
 export function ledgerCdr(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
-  const baseCdr = facts.naked.cdr / (1 + facts.sheetOther.cdr);
+  const baseCdr = facts.naked.cdr - Math.max(0, facts.sheetOther.cdr);
   pushBirthThenGear(steps, 'cdr', facts);
   pushAddPctOfBase(
     steps,
@@ -172,5 +183,6 @@ export function ledgerCdr(facts: PipelineFacts): StatBreakdown {
     baseCdr,
   );
   pushRune(steps, 'cdr', facts);
+  pushCollection(steps, 'cdr', facts);
   return { kind: 'ledger', total: facts.effective.cdr, steps };
 }

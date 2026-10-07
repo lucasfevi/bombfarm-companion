@@ -5,6 +5,7 @@ import { CAPTURE_REGISTRY, isInRegimeFor, MECHANICS } from '../packages/domain/t
 import { HELD_SUITES } from './held-suites.manifest.mjs';
 import {
   deriveVitestRoots,
+  derivePlaywrightTestDirs,
   isUnder,
   REPO_ROOT as root,
   trackedFilesUnderRunnerRoots,
@@ -16,18 +17,20 @@ import {
  * package one guard reaches and the other does not is a suite that reports green while running
  * nothing, and two hand-kept lists are how that gap opened.
  */
-const SCAN_ROOTS = deriveVitestRoots();
+const SCAN_ROOTS = [...new Set([...deriveVitestRoots(), ...derivePlaywrightTestDirs().map(({ dir }) => dir)])].sort();
 
 /** Kept only as a floor — the derivation may widen these roots, never drop one. */
 const LEGACY_SCAN_ROOTS = ['packages/domain/tests', 'apps/web/src/tests'];
 
-const HOLD_HELPERS = ['holdSuiteUntilInRegime', 'holdTeamPlanSuiteUntilInRegime', 'skipUnlessInRegime'];
+const HOLD_HELPERS = ['holdSuiteUntilInRegime', 'holdTeamPlanSuiteUntilInRegime', 'holdSpecUntilInRegime', 'skipUnlessInRegime'];
 const THROWING_HELPER = 'assertInRegime';
 
 const REGIME_HELPER = 'packages/domain/tests/helpers/capture-regime.ts';
 const TEAM_PLAN_HELPER = 'packages/domain/tests/helpers/team-plan-fixtures.ts';
 const NOT_CONSUMERS = [
   REGIME_HELPER,
+  'packages/domain/tests/helpers/capture-regime-core.ts',
+  'apps/web/e2e/fixtures/hold-spec.ts',
   TEAM_PLAN_HELPER,
   'packages/domain/tests/capture-regime.test.ts',
   'packages/domain/tests/capture-regime-expiry.test.ts',

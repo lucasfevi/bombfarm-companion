@@ -1,5 +1,132 @@
 # @bombfarm/team-plan
 
+## 0.6.2
+
+### Patch Changes
+
+- 93a69c6: The Optimizer's aura chips wrap onto their own line when the setup bar is too narrow for them, instead of running underneath the Build team plan button.
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [5de6480]
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/domain@1.9.0
+  - @bombfarm/ui@0.18.0
+  - @bombfarm/game-art@0.8.0
+  - @bombfarm/farm@1.2.13
+  - @bombfarm/hero@0.5.5
+
+## 0.6.1
+
+### Patch Changes
+
+- c13d140: The Forge tab, the forge queue and the expected-cost figures follow the game's reworked Forge. Only
+  +1 to +4 always land now; from the roll for +12 up a miss drops the piece one level, never under +10,
+  and each miss in a row adds 5 points to the next roll. The old safe jump to +8 is gone, so every rung
+  is rolled one at a time, and the expected gold now comes with the expected essence, which follows
+  the game's lower essence and Protection Scroll prices. The desktop Forge tab lets you pick a Chance Stone for the whole climb or for up to four stretches of
+  targets, each shown with its art, its chance bonus and how many you own. Every rung of the odds ladder
+  shows the stone it uses and how the chance adds up, and the stones you will use are listed against the
+  ones you own. The app now uses your Chance Stones when it forges: it says before the start which kinds
+  it may spend and how many you hold, uses one on each roll that can miss, shows the stones used as the run
+  goes and on its result and ledger row, and stops when a kind runs out or the game does not take a stone
+  as asked. Stones that are locked, on the market or worn are not counted as yours to spend. Chance Stones
+  now show in the inventory under their own heading.
+  The bad-run gold figure is now read off the exact distribution instead of a sampled one, so it no longer
+  shifts by a percent or so between runs and stepping the target to +13 through +15 is instant.
+  The desktop Forge tab has a Protection Scroll switch for any climb that reaches +12 or higher: with it on, the
+  plan shows what the climb costs with the scroll, the price of the scroll on each level it covers, which rungs it
+  protects ("miss keeps the level"), and a one-line comparison with going without. When you forge, the app asks for
+  the scroll only on the rolls where the game offers it, stops if you do not have the essence or the game does not
+  charge it as asked, and counts the essence it cost on the result and in the run ledger. The queue and the Optimizer
+  never use the scroll. The Forge tab is also laid out in three columns on a wide window, with the bag narrowed to its
+  contents, so the item, the plan and the forecast fit on one screen; on a narrower window they stack beside the bag
+  as before. A run that stops for lack of essence now says "Out of gold or essence".
+  The Forge tab's forecast now shows a bad run (p90) for essence next to gold, the "Without the scroll" comparison carries the gold coin, and every forge confirmation says it spends gold and essence, with the queue's expected essence beside its expected gold.
+  Everywhere the desktop Forge tab shows the gold a run spent, it now shows the essence beside it: the live run line, the result's Spent figure, a new Essence column in the rung table and the run ledger (a dash for runs recorded before this version), the ledger totals, the queue's progress line and the Optimizer's expected forge cost.
+- c13d140: The player's item storage is now called the inventory everywhere in the app's words, in English and Portuguese — "bag" and "bolsa" are gone from the skill tree, the account panel, the plan-changes list and the download page.
+- Updated dependencies [b7e061c]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [b7e061c]
+  - @bombfarm/domain@1.8.1
+  - @bombfarm/hero@0.5.4
+  - @bombfarm/farm@1.2.12
+  - @bombfarm/game-art@0.7.7
+
+## 0.6.0
+
+### Minor Changes
+
+- 804572b: The Optimizer can plan for farming one equipment set
+
+  A new objective, Set farm, sits beside Gold / hr and Gate clear. Pick the set you are collecting
+  and the Optimizer searches only the phases where that set drops and re-spends stat points with
+  Luck on the table — it multiplies every chest roll, but it is weighed against clear speed, since a
+  slower clear drops fewer chests. The plan's figures are that set's item chests per hour, printed to
+  two decimals rather than abbreviated the way gold is. Rarity cannot be steered: Luck changes how
+  many chests drop, not which rarity they roll.
+
+  The phase card says roughly how long a clear takes at the phase the plan picked, and warns when it
+  takes a minute or more: those phases are hard for the squad, and the estimate is least certain at
+  slow clears.
+
+  The set picker lists all thirty sets with the phases each drops on, and marks the ones whose phases
+  your account has not reached yet. Until a set is picked the plan does not run, and the setup panel
+  says why.
+
+### Patch Changes
+
+- 034b719: The app reads the Collections bonuses the game added on 2026-09-30
+
+  Burning a full equipment set now unlocks an account-wide bonus, and the game started folding those
+  bonuses into every hero's stats. The app did not know about them, so working a hero's spent points
+  back out of its stats came out too high for every hero on an account with any collection unlocked —
+  and every one of those heroes was left out. On the desktop the Optimizer showed no heroes at all and
+  the Farm board left the whole roster out; an imported save on the web planner did the same.
+
+  Each bonus is now read and applied where the game applies it:
+
+  - Energy, Critical chance and Cooldown multiply the hero's stat; Critical damage multiplies the part
+    of it the skill tree does not add. Hero stats, DPS and the stat breakdown (which gains a
+    "Collection" step) include them.
+  - Damage and Experience are already inside the skill-tree totals the game reports, so they are not
+    applied a second time. Pricing a skill-tree node no longer drops the Damage bonus from the total.
+  - Gold multiplies gold per prop on top of the skill tree's Team Coin bonus — measured: every prop
+    the game paid out reproduces to the coin that way. Luck adds to the squad's drop luck; how it
+    combines with the skill tree is not measured yet.
+  - Cage and boss and Forge are read but not applied until their effect is known.
+
+  The game's own skill-tree read is recognised again (it carries the new Collections field), so the
+  desktop no longer discards the stored skill tree each time it starts.
+
+- Updated dependencies [b0719ac]
+- Updated dependencies [d05770f]
+- Updated dependencies [804572b]
+- Updated dependencies [41c8786]
+- Updated dependencies [034b719]
+  - @bombfarm/domain@1.8.0
+  - @bombfarm/hero@0.5.3
+  - @bombfarm/game-art@0.7.6
+  - @bombfarm/farm@1.2.11
+
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies [c99325d]
+- Updated dependencies [c99325d]
+- Updated dependencies [2c54735]
+- Updated dependencies [47d106f]
+- Updated dependencies [47d106f]
+  - @bombfarm/hero@0.5.2
+  - @bombfarm/ui@0.17.0
+  - @bombfarm/domain@1.7.1
+  - @bombfarm/farm@1.2.10
+  - @bombfarm/game-art@0.7.5
+
 ## 0.5.1
 
 ### Patch Changes

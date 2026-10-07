@@ -99,6 +99,26 @@ Ubiquitous language for the companion's game model. Terms only — no implementa
 - **Field** — the heroes standing in a phase at once: the deployed heroes plus the hero whose
   figures are being read, who is on it by definition. Team auras are summed over the field.
 
+## Live damage
+
+- **Birth** — a bomb's first appearance in the live feed. The one moment that ties a bomb to
+  the hero that planted it; everything the bomb later does inherits that tie.
+- **Owner** — the hero a bomb is tied to. A bomb has one owner or none; the game never names
+  one, so the owner is established at birth from evidence, never assumed.
+- **Fuse fingerprint** — a bomb's total fuse length, which is a property of the hero that
+  planted it: every bomb a hero plants burns for the same total, and different heroes almost
+  always burn for different totals. The primary evidence of ownership.
+- **Attributed** — damage, a destroyed prop, or a gold payout that has been tied to exactly one
+  owner. Only ever to one hero; a figure that could belong to two is not attributed to either.
+- **Unattributed** — the explicit remainder: what could not be tied to one hero. Always shown
+  beside the attributed figures as its own row, never folded into a hero or dropped, so the
+  per-hero figures and the team total always reconcile.
+- **Hero DPS** — a hero's attributed damage divided by the seconds that hero spent on the field
+  in the window. Measured from the live feed; a hero at rest keeps the figure from its last
+  stint. Distinct from the planner's modelled DPS, which predicts the same quantity.
+- **Team DPS** — all damage dealt in the window, attributed or not, divided by the window's
+  seconds of play, idle time included. Needs no ownership at all.
+
 ## Market value
 
 - **Holdings** — what the account could liquidate on the Steam market right now: the inventory,

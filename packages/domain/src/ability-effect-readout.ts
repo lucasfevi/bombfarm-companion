@@ -45,6 +45,14 @@ export type AbilityEffectReadout =
   | { kind: 'dropTierPct'; value: number }
   /** Veia de Ouro (own) and Fortuna (TEAM) — gold. */
   | { kind: 'goldPct'; value: number }
+  /** Pavio Curto — cooldown reduction, added after everything else. */
+  | { kind: 'cdrPct'; value: number }
+  /** Carnificina — TEAM crit damage. */
+  | { kind: 'teamCritDmgPct'; value: number }
+  /** Matador de Chefes — damage against the gate boss. */
+  | { kind: 'bossDmgPct'; value: number }
+  /** Aprendiz — TEAM XP. */
+  | { kind: 'xpPct'; value: number }
   | { kind: 'none' };
 
 /**
@@ -52,7 +60,12 @@ export type AbilityEffectReadout =
  * it — loot and cage effects the farm board prices elsewhere or not at all. A test holds each
  * figure against the ability's own effect text, so the two cannot drift apart.
  */
-type UnmodelledReadoutKind = 'cageDmgPct' | 'passageAttackPct' | 'dropTierPct' | 'goldPct';
+type UnmodelledReadoutKind =
+  | 'cageDmgPct'
+  | 'passageAttackPct'
+  | 'dropTierPct'
+  | 'goldPct'
+  | 'xpPct';
 
 const UNMODELLED_PER_LEVEL: Record<string, { kind: UnmodelledReadoutKind; perLevel: number }> = {
   caca_hero: { kind: 'cageDmgPct', perLevel: 5 },
@@ -60,11 +73,12 @@ const UNMODELLED_PER_LEVEL: Record<string, { kind: UnmodelledReadoutKind; perLev
   olho_lapidador: { kind: 'dropTierPct', perLevel: 2.5 },
   veia_ouro: { kind: 'goldPct', perLevel: 2 },
   fortuna: { kind: 'goldPct', perLevel: 0.5 },
+  aprendiz: { kind: 'xpPct', perLevel: 0.75 },
 };
 
 export const UNMODELLED_READOUT_PER_LEVEL: Readonly<typeof UNMODELLED_PER_LEVEL> = UNMODELLED_PER_LEVEL;
 
-const UNMODELLED_KINDS = new Set<AbilityEffectReadout['kind']>(['none', 'cageDmgPct', 'passageAttackPct', 'dropTierPct', 'goldPct']);
+const UNMODELLED_KINDS = new Set<AbilityEffectReadout['kind']>(['none', 'cageDmgPct', 'passageAttackPct', 'dropTierPct', 'goldPct', 'xpPct']);
 
 /** Whether the combat model prices this readout, or merely repeats a figure the wiki publishes. */
 export function isPricedReadout(readout: AbilityEffectReadout): boolean {
@@ -76,10 +90,11 @@ const TEAM_BUFF_IDS = new Set<string>(TEAM_BUFF_ABILITY_IDS);
 const TEAM_AURA_IDS = new Set<string>(TEAM_AURA_SWITCH_IDS);
 
 /**
- * Every ability the game scopes to the TEAM: the switched auras plus Fortuna, a team gold aura the
- * combat model never prices (loot is the farm board's layer), so it belongs to no switch list.
+ * Every ability the game scopes to the TEAM: the switched auras plus the team auras the combat
+ * model never prices (Fortuna's gold is the farm board's layer; Aprendiz is not modelled yet), so
+ * they belong to no switch list.
  */
-export const TEAM_ABILITY_IDS = [...TEAM_AURA_SWITCH_IDS, 'fortuna'] as const;
+export const TEAM_ABILITY_IDS = [...TEAM_AURA_SWITCH_IDS, 'fortuna', 'aprendiz'] as const;
 
 export type TeamAbilityId = (typeof TEAM_ABILITY_IDS)[number];
 
@@ -113,6 +128,10 @@ function readoutKind(effect: AbilityEffect): AbilityEffectReadout['kind'] {
       return 'penetrationPoints';
     case 'critDmgFlat':
       return 'critDmgPct';
+    case 'cdrFlat':
+      return 'cdrPct';
+    case 'teamCritDmgFlat':
+      return 'teamCritDmgPct';
     case 'rangeCells':
       return 'rangeCells';
     case 'secondBlastPct':
@@ -123,6 +142,8 @@ function readoutKind(effect: AbilityEffect): AbilityEffectReadout['kind'] {
       return 'shatter';
     case 'gateAttackPct':
       return 'gateAttackPct';
+    case 'bossDmgPct':
+      return 'bossDmgPct';
     case 'packDmgPct':
       return 'packDmgPctPerAlly';
     case 'teamPulseDmgPct':
@@ -161,6 +182,8 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
       return { kind, value: mods.sheetPenetrationFlat };
     case 'critDmgPct':
       return { kind, value: mods.sheetCritDmgFlat };
+    case 'cdrPct':
+      return { kind, value: mods.sheetCdrFlat };
     case 'rangeCells':
       return { kind, value: mods.rangeCells };
     case 'secondBlast':
@@ -171,6 +194,8 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
       return { kind, chancePct: mods.shatterChancePct, shardHitPct: SHATTER_FRAC * 100 };
     case 'gateAttackPct':
       return { kind, value: (mods.gateAttackMult - 1) * 100 };
+    case 'bossDmgPct':
+      return { kind, value: (mods.bossDmgMult - 1) * 100 };
     case 'packDmgPctPerAlly':
       return { kind, value: mods.packDmgPctPerAlly };
     case 'teamPulseDmgPct':
@@ -185,6 +210,8 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
     case 'passageAttackPct':
     case 'dropTierPct':
     case 'goldPct':
+    case 'teamCritDmgPct':
+    case 'xpPct':
       return { kind: 'none' };
   }
 }

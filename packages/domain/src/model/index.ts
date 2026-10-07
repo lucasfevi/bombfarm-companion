@@ -53,6 +53,7 @@ export {
   marginalFuseSeconds,
   bombsPerSecond,
   critFactor,
+  readCritChance,
   mitigationFactor,
   HERO_MAX_LEVEL,
   levelPowerMult,
@@ -119,6 +120,37 @@ export {
 export { MATILHA_PER_RANK_PER_ALLY, MATILHA_CAP, matilhaMult, alliesOverRotation } from './matilha';
 
 export type { BirthStats, TreeSheetTotals, ComposeSheetFromBirthInput } from '../birth-sheet';
+export type { Collection, CollectionSheetPct } from '../collection';
+export {
+  NO_COLLECTION,
+  collectionFromSave,
+  collectionGoldMult,
+  collectionKey,
+  collectionLuckPct,
+  collectionSheetPct,
+  normalizeCollection,
+} from '../collection';
+export type {
+  CollectionAxisRow,
+  CollectionBagItem,
+  CollectionBoard,
+  CollectionBoardSummary,
+  CollectionPageEffect,
+  CollectionPageRow,
+  CollectionPieceRow,
+  CollectionSetEffectRow,
+  CollectionSetRow,
+  CollectionSetStatus,
+} from '../collection-board';
+export {
+  COLLECTION_PAGES,
+  COLLECTION_PIECES_PER_PAGE,
+  buildCollectionBoard,
+  collectionBagItemsFromInventory,
+  collectionCents,
+  collectionPageGrantCents,
+  collectionPageIncrementsCents,
+} from '../collection-board';
 export {
   nakedFromBirth,
   applySkillTree,

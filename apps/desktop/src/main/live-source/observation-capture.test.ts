@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { liveGap } from '@bombfarm/contracts';
 import { SessionToken } from '@bombfarm/game-api';
+import { collectionsBody } from '../collections/collections-test-support.js';
 import {
   createObservationCapture,
   encodeObservationLine,
@@ -235,6 +236,17 @@ describe('createObservationCapture: what it records', () => {
     expect(records().find((entry) => entry.kind === 'body')).toMatchObject({
       verdict: { kind: 'identified', section: 'casa' },
       body: knownShapeBody,
+    });
+  });
+
+  it('stamps the Collections state with its own verdict when the real identifier takes it', () => {
+    const body = collectionsBody();
+    const { capture, records } = createCapture();
+    capture.body(bodyBytes(body), 1_700_000_000_000);
+
+    expect(records().find((entry) => entry.kind === 'body')).toMatchObject({
+      verdict: { kind: 'collections' },
+      body,
     });
   });
 

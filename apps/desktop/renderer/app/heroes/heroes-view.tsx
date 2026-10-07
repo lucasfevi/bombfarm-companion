@@ -774,6 +774,7 @@ function effectiveFacts(
     speedMult: combat.speedMult,
     teamCritFlat: combat.teamCritFlat,
     teamPenFlat: combat.teamPenFlat,
+    teamCritDmgFlat: combat.teamCritDmgFlat,
     packMult: combat.packMult,
     entryPulseMult: combat.entryPulse.expectedMult,
     treeSpeed: account.tree.speed,
@@ -791,6 +792,7 @@ function effectiveFacts(
     uptime: combat.uptime,
     rest: combat.rest,
     runes: hero.runes,
+    collection: combat.treeSheet.collection,
   };
 }
 

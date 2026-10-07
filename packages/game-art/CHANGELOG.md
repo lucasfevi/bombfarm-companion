@@ -1,5 +1,62 @@
 # @bombfarm/game-art
 
+## 0.8.0
+
+### Minor Changes
+
+- 7ab7d0e: A checkbox and a checklist mode for the inventory table
+
+  The design system gains a Checkbox for lists where rows are picked one by one. The inventory table
+  can now draw itself as a checklist: a tick column in front, a click anywhere on a row toggling it,
+  rows that cannot be picked dimmed with the reason beside the checkbox and read aloud to screen
+  readers, and room for one extra column of the host's own. That column's sort order can be held by the
+  host, so a screen that acts on the rows as listed acts on the order the reader sees.
+
+### Patch Changes
+
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [5de6480]
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/domain@1.9.0
+  - @bombfarm/ui@0.18.0
+
+## 0.7.7
+
+### Patch Changes
+
+- Updated dependencies [b7e061c]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [b7e061c]
+  - @bombfarm/domain@1.8.1
+
+## 0.7.6
+
+### Patch Changes
+
+- 41c8786: Four more abilities from the 2026-09-30 game patch are recognised: Short Fuse (Pavio Curto), Carnage (Carnificina), Boss Slayer (Matador de Chefes) and Apprentice (Aprendiz). Heroes carrying them used to import with an "Unknown ability" warning and lost them. They now import cleanly and show each ability with its icon, name and per-level value, and Carnage and Apprentice appear among the team auras a squad covers. Their effects are not priced yet, so the Farm board, active DPS and the Optimizer treat them as no bonus until they are modelled.
+- Updated dependencies [b0719ac]
+- Updated dependencies [d05770f]
+- Updated dependencies [804572b]
+- Updated dependencies [41c8786]
+- Updated dependencies [034b719]
+  - @bombfarm/domain@1.8.0
+
+## 0.7.5
+
+### Patch Changes
+
+- Updated dependencies [c99325d]
+- Updated dependencies [2c54735]
+- Updated dependencies [47d106f]
+- Updated dependencies [47d106f]
+  - @bombfarm/ui@0.17.0
+  - @bombfarm/domain@1.7.1
+
 ## 0.7.4
 
 ### Patch Changes

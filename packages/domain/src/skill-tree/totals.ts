@@ -1,4 +1,5 @@
 import type { TreeSheetTotals } from '../birth-sheet';
+import { collectionSheetPct, type Collection } from '../collection';
 import type { TreeState } from '../shims/storage';
 import { SKILL_TREE, type SkillEffectKind, type SkillNode, type SkillTreeCatalog } from './catalog';
 import { effectiveLevel } from './rules';
@@ -16,7 +17,8 @@ export type EffectTotalBinding = {
 /**
  * Effect kind → the totals key its levels build. Every row reproduces the server's own total
  * from the owned levels to machine precision on three accounts; `dmg_static` is not built by any
- * kind — it is the product `(1 + team_dmg_add) × geo_mult`, see {@link withDerivedTotals}.
+ * kind — it is the product `(1 + team_dmg_add) × geo_mult` times whatever the server folds in
+ * beyond the tree (the Collections damage bonus), see {@link withDerivedTotals}.
  */
 export const EFFECT_TOTAL_BINDINGS: Readonly<Record<SkillEffectKind, EffectTotalBinding>> = {
   team_dmg: { key: 'team_dmg_add', composition: 'additive', base: 0 },
@@ -47,8 +49,14 @@ export const EMPTY_SKILL_TOTALS: SkillTotals = {
   bag_tabs_bonus: 0,
 };
 
-function withDerivedTotals(totals: Record<SkillTotalsKey, number>): SkillTotals {
-  return { ...totals, dmg_static: (1 + totals.team_dmg_add) * totals.geo_mult };
+/** The part of `dmg_static` no tree node builds — 1 for a tree-only total. */
+function foldedDamageFactor(totals: SkillTotals): number {
+  const factor = totals.dmg_static / ((1 + totals.team_dmg_add) * totals.geo_mult);
+  return Number.isFinite(factor) && factor > 0 ? factor : 1;
+}
+
+function withDerivedTotals(totals: Record<SkillTotalsKey, number>, foldedFactor: number): SkillTotals {
+  return { ...totals, dmg_static: (1 + totals.team_dmg_add) * totals.geo_mult * foldedFactor };
 }
 
 /** `levels` more levels of `node` folded into `totals`. */
@@ -62,7 +70,7 @@ export function totalsWithNode(totals: SkillTotals, node: SkillNode, levels = 1)
       next[binding.key] += effect.perLevel * levels;
     }
   }
-  return withDerivedTotals(next);
+  return withDerivedTotals(next, foldedDamageFactor(totals));
 }
 
 /** The totals the owned levels add up to — the server's `totals`, rebuilt from the catalog. */
@@ -79,7 +87,7 @@ export function fieldSlotsFromTotals(totals: SkillTotals, catalog: SkillTreeCata
   return catalog.fieldBaseSlots + totals.vagas_campo;
 }
 
-export function treeSheetFromTotals(totals: SkillTotals): TreeSheetTotals {
+export function treeSheetFromTotals(totals: SkillTotals, collection: Collection | undefined): TreeSheetTotals {
   return {
     danoStatic: totals.dmg_static,
     energyPct: totals.energia_add * 100,
@@ -87,10 +95,11 @@ export function treeSheetFromTotals(totals: SkillTotals): TreeSheetTotals {
     critChancePct: totals.crit_chance_add * 100,
     critDmgPct: totals.crit_dmg_add * 100,
     luckFlatPct: totals.luck_add * 100,
+    collection: collectionSheetPct(collection),
   };
 }
 
-export function treeStateFromTotals(totals: SkillTotals): TreeState {
+export function treeStateFromTotals(totals: SkillTotals, collection: Collection | undefined): TreeState {
   return {
     danoTotal: totals.dmg_static,
     critChance: totals.crit_chance_add * 100,
@@ -100,5 +109,6 @@ export function treeStateFromTotals(totals: SkillTotals): TreeState {
     teamCoinPct: totals.coin_add * 100,
     luckFlatPct: totals.luck_add * 100,
     xpMult: totals.xp_mult,
+    ...(collection !== undefined ? { collection } : {}),
   };
 }

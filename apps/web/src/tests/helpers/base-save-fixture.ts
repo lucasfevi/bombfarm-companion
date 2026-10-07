@@ -63,19 +63,21 @@ export function baseSave() {
         // the shape round-tripped — the small residual difference from 0.15348165135 is the
         // item catalog's crit-base rescale (`gold_amuleto`'s crit roll moved with it).
         //
+        // Recomputed 2026-10-05 for the cumulative forge table: the +10 amulet reads ×1.5, not ×1.8.
+        //
         // Recomputed 2026-08-22 for `STAR_MULT_PER_STAR` 0.5 → 0.25: this hero is ★2, so its
         // star factor moves ×2 → ×1.5 and every star-scaled stat drops with it. `speed` is the
         // control — it is the one stat the star never touched, and it does NOT move here.
         stats: {
-          dmg: 807.3824274417394,
+          dmg: 784.6434197925024,
           energia: 342.55296607500003,
           speed: 46.223410365,
-          crit_chance: 0.11685010061250001,
+          crit_chance: 0.11656029026249999,
           crit_dmg: 1.946153846,
           penetration: 0.75,
           cooldown_reduction: 0.015,
           power: 13133.6,
-          luck: 0.0727911275,
+          luck: 0.0722367275,
         },
       },
       {
@@ -169,6 +171,8 @@ export function baseSave() {
         // budget of 0, so the importer BLOCKED her, which is why the check below had been
         // skipped: it asserts Brenna is not blocked.
         //
+        // Recomputed 2026-10-05 for the cumulative forge table: the +5 ring reads ×1.25, not ×1.4.
+        //
         // `penetration` recomputed again 2026-09-13, when Ponta de Diamante became a flat +10
         // outside the pool: 0.6 × (1 + 0.392 gear) + 10, where it had been 0.6 × (1 + 10 + 0.392).
         stat_points_available: 30,
@@ -186,10 +190,10 @@ export function baseSave() {
           dmg: 297.67428195364795,
           energia: 182.69491524,
           speed: 45.196223468,
-          crit_chance: 0.0689782120875,
+          crit_chance: 0.0688912689825,
           crit_dmg: 1.696153846,
-          penetration: 10.8352,
-          cooldown_reduction: 0.015393443820000002,
+          penetration: 10.81,
+          cooldown_reduction: 0.015351289124999999,
           power: 2500,
           luck: 0.0594647275,
         },

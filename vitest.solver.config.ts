@@ -14,6 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { configDefaults, defineConfig } from 'vitest/config';
 import domainConfig from './packages/domain/vitest.config';
+import { DOMAIN_COVERAGE } from './vitest.coverage';
 import { SOLVER_TEST_FILES } from './vitest.solver-files.mjs';
 import { MAX_TEST_WORKERS } from './vitest.workers';
 
@@ -22,6 +23,7 @@ export default defineConfig({
   test: {
     maxWorkers: MAX_TEST_WORKERS,
     dangerouslyIgnoreUnhandledErrors: true,
+    coverage: DOMAIN_COVERAGE,
     projects: [
       {
         ...domainConfig,

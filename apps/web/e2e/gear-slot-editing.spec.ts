@@ -176,7 +176,7 @@ test.describe('gear slot editing on the planner', () => {
     const weapon = currentSlot(page, 'arma');
     await equipLevel100Weapon(page);
     await pick(page, weapon.getByRole('combobox', { name: ITEM_RARITY }), EPIC);
-    await pick(page, weapon.getByRole('combobox', { name: FORGE_LEVEL }), /^\+5 ×1\.40$/);
+    await pick(page, weapon.getByRole('combobox', { name: FORGE_LEVEL }), /^\+5 ×1\.25$/);
 
     await expect
       .poll(() => storedLoadoutItem(page, CORA, 'arma'), {
@@ -203,7 +203,7 @@ test.describe('gear slot editing on the planner', () => {
     await expect(reloadedWeapon.getByRole('combobox', { name: ITEM_LEVEL })).toHaveText(LEVEL_100);
     await expect(reloadedWeapon.getByRole('combobox', { name: ITEM_RARITY })).toHaveText(EPIC);
     await expect(reloadedWeapon.getByRole('combobox', { name: FORGE_LEVEL })).toHaveText(
-      '+5 ×1.40',
+      '+5 ×1.25',
     );
 
     await openTab(page, COMBAT_TAB);
@@ -250,11 +250,11 @@ test.describe('gear slot editing on the planner', () => {
     await pick(
       page,
       cloneSlot(page, 'arma').getByRole('combobox', { name: FORGE_LEVEL }),
-      /^\+10 ×1\.80$/,
+      /^\+10 ×1\.50$/,
     );
 
     await expect(cloneSlot(page, 'arma').getByRole('combobox', { name: FORGE_LEVEL })).toHaveText(
-      '+10 ×1.80',
+      '+10 ×1.50',
     );
     await expect(
       currentSlot(page, 'arma').getByRole('combobox', { name: FORGE_LEVEL }),
@@ -273,7 +273,7 @@ test.describe('gear slot editing on the planner', () => {
 
     await activePanel(page).getByRole('button', { name: APPLY_TO_CURRENT }).click();
     await expect(currentSlot(page, 'arma').getByRole('combobox', { name: FORGE_LEVEL })).toHaveText(
-      '+10 ×1.80',
+      '+10 ×1.50',
     );
     const appliedDps = await readMetric(page, 0);
     expect(appliedDps, 'the current DPS after applying the clone to current gear').toBeGreaterThan(

@@ -12,8 +12,6 @@ import {
 import {
   emptyLoadout,
   nakedAfterSheetAbilityChange,
-  rescaleNakedCritDmg,
-  rescaleNakedPen,
   type Loadout,
   type Slot,
   type EquippedItem,
@@ -21,6 +19,8 @@ import {
 import { gearedAfterLoadoutChange, loadoutsEqual, patchSlot } from '@bombfarm/domain/loadout';
 import { resetHeroAbilities } from '@bombfarm/domain/hero-abilities';
 import { usePlannerStore, selectAdvisorPipeline, selectTreeSheetTotals } from '@/shared/stores';
+
+const SHEET_ABILITY_KINDS = ['critChanceFlat', 'penetrationPp', 'critDmgFlat', 'cdrFlat'] as const;
 
 function syncGearedAfterLoadout(
   previous: Loadout,
@@ -124,16 +124,11 @@ export function useHeroBuildActions() {
     const next = resetHeroAbilities(previous);
     const prevMods = abilityMods(previous);
     const nextMods = abilityMods(next);
-    // Same dispatcher as setAbilityLevel — preserves the hero's own crit roll.
-    if (prevMods.sheetCritChanceFlat !== nextMods.sheetCritChanceFlat) {
-      setNaked(nakedAfterSheetAbilityChange(nakedRef.current, 'critChanceFlat', prevMods, nextMods));
-    }
-    if (prevMods.sheetPenetrationFlat !== nextMods.sheetPenetrationFlat) {
-      setNaked(rescaleNakedPen(nakedRef.current, prevMods.sheetPenetrationFlat, nextMods.sheetPenetrationFlat));
-    }
-    if (prevMods.sheetCritDmgFlat !== nextMods.sheetCritDmgFlat) {
-      setNaked(rescaleNakedCritDmg(nakedRef.current, prevMods.sheetCritDmgFlat, nextMods.sheetCritDmgFlat));
-    }
+    const rescaled = SHEET_ABILITY_KINDS.reduce(
+      (current, kind) => nakedAfterSheetAbilityChange(current, kind, prevMods, nextMods),
+      nakedRef.current,
+    );
+    if (rescaled !== nakedRef.current) setNaked(rescaled);
     setAbilities(next);
   }, [setAbilities, setNaked]);
 

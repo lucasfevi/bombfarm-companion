@@ -171,6 +171,27 @@ test.describe('the forge queue, fed from the Optimizer', () => {
     await shoot(page, testInfo, 'forge-tab-queue.png');
   });
 
+  test('the queue settings sit on the panel with stopping on and the scroll off, and the switches flip', async () => {
+    await openForge(page);
+    const settings = page.getByTestId('forge-queue-settings');
+    await expect(settings).toBeVisible();
+    await expect(settings).toBeEnabled();
+    const stop = page.getByTestId('forge-queue-stop').getByRole('switch');
+    const scroll = page.getByTestId('forge-queue-scroll').getByRole('switch');
+    await expect(stop).toHaveAttribute('aria-checked', 'true');
+    await expect(scroll).toHaveAttribute('aria-checked', 'false');
+
+    await stop.click();
+    await scroll.click();
+    await expect(stop).toHaveAttribute('aria-checked', 'false');
+    await expect(scroll).toHaveAttribute('aria-checked', 'true');
+
+    await stop.click();
+    await scroll.click();
+    await expect(stop).toHaveAttribute('aria-checked', 'true');
+    await expect(scroll).toHaveAttribute('aria-checked', 'false');
+  });
+
   test('the plan panel queues the piece in hand at the target it shows', async ({}, testInfo) => {
     await openForge(page);
     await page.waitForSelector('[data-testid="inventory-table-row"]', { timeout: 20_000 });
@@ -186,7 +207,7 @@ test.describe('the forge queue, fed from the Optimizer', () => {
     await expect(itemPanel).toHaveAttribute('data-state', 'item');
     const itemId = await itemPanel.getAttribute('data-item-id');
 
-    const add = page.getByTestId('forge-plan-panel').getByTestId('forge-queue-add');
+    const add = page.getByTestId('forge-forecast-panel').getByTestId('forge-queue-add');
     await expect(add).toHaveText(readCopyValue('forgeQueueAdd'));
     await add.click();
     await expect(add).toHaveAttribute('data-queued', 'true');

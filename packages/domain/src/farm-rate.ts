@@ -106,7 +106,7 @@ import {
   type AurasAtCap,
   type TeamBuffId,
 } from './team-buffs';
-import { teamAuraLayer, teamDrainMultFromTeamBuffs } from './team-aura-layer';
+import { critPointCeilingOf, teamAuraLayer, teamDrainMultFromTeamBuffs } from './team-aura-layer';
 import { combineDrainRate } from './drain';
 import { abilityMods } from './model/abilities';
 import type { SheetKey } from './planner-constants';
@@ -133,6 +133,7 @@ import {
 } from './phase-wiki';
 import { hitsToKill, propHp } from './phases';
 import type { HeroRecord, AccountShared } from './shims/storage';
+import { collectionGoldMult, collectionLuckPct } from './collection';
 
 /**
  * Seconds between consecutive hero activations at the head of a clear. Heroes do not all start
@@ -263,6 +264,9 @@ export type HeroFarmFacts = {
   /** Estilhaços: the chance, as a FRACTION, that a rock this hero destroys shatters. OPTIONAL, and
    *  absent means none, so a hand-built `HeroFarmFacts` prices as it always has. */
   shatterChance?: number;
+  /** Matador de Chefes: the multiplier on this hero's hit against the gate boss alone — never the
+   *  rocks, the shards or the cage. OPTIONAL, and absent means 1. */
+  bossDmgMult?: number;
   /** True when this hero contributes no throughput: `avgHitBase <= 0` or `plantsPerSec <= 0`. */
   degenerate: boolean;
 };
@@ -340,6 +344,7 @@ export type HeroFarmBasis = {
   fortunaLevel: number;
   passagemBastaoLevel: number;
   estilhacosLevel: number;
+  matadorChefesLevel: number;
   /** `1 + 0.5 × context.blastRange`, blocks struck per bomb — ability-driven, build-independent,
    *  precomputed. Geometry, not damage: see {@link HeroFarmFacts.blocksPerBomb}. */
   blocksPerBomb: number;
@@ -350,6 +355,11 @@ export type HeroFarmBasis = {
    * aura layer it was built with.
    */
   auraFree?: AuraFreeFarmTerms;
+  /** See `critPointCeilingOf`. */
+  critPointCeiling?: number;
+  /** The plan prices builds it has yet to choose, so its ceiling clamps the whole sheet; a board
+   *  pricing the build a player owns clamps only what points add on top. */
+  critCeilingBindsSheet?: boolean;
 };
 
 /**
@@ -387,6 +397,8 @@ export type HeroFarmBasisParts = {
   treeLuckFlatPct: number;
   abilities: Record<string, number>;
   auraFree?: AuraFreeFarmTerms;
+  critPointCeiling?: number;
+  critCeilingBindsSheet?: boolean;
 };
 
 /**
@@ -411,8 +423,11 @@ export function heroFarmBasisFromParts(parts: HeroFarmBasisParts): HeroFarmBasis
     fortunaLevel: clampAbilityLevel(parts.abilities.fortuna ?? 0),
     passagemBastaoLevel: clampAbilityLevel(parts.abilities.passagem_bastao ?? 0),
     estilhacosLevel: clampAbilityLevel(parts.abilities.estilhacos ?? 0),
+    matadorChefesLevel: clampAbilityLevel(parts.abilities.matador_chefes ?? 0),
     blocksPerBomb: 1 + 0.5 * parts.context.blastRange,
     ...(parts.auraFree ? { auraFree: parts.auraFree } : {}),
+    ...(parts.critPointCeiling !== undefined ? { critPointCeiling: parts.critPointCeiling } : {}),
+    ...(parts.critCeilingBindsSheet ? { critCeilingBindsSheet: true } : {}),
   };
 }
 
@@ -463,6 +478,7 @@ function auraFreeBasesForAccount(
  *  field for one candidate assignment. */
 type FieldLayer = {
   teamBuffs: Record<TeamBuffId, number>;
+  critFlatAtFullPresence: number;
   alliesByHeroId: ReadonlyMap<string, number>;
 };
 
@@ -470,7 +486,7 @@ type FieldLayer = {
  * What the team auras and the field size do to one hero's pipeline terms, in closed form. The
  * pipeline applies the auras as the LAST step of `derive`: Grito multiplies attack (and so the
  * attack per point), Marcha multiplies speed (and its delta), Presságio adds flat crit points,
- * Brecha adds flat penetration points, and Fôlego combines with the hero's own drain reduction
+ * Carnificina adds flat crit-damage points, Brecha adds flat penetration points, and Fôlego combines with the hero's own drain reduction
  * ({@link combineDrainRate}) — nothing else in the sheet or the farm `Context` reads them.
  * Matilha's pack factor multiplies `dmgMult` at the allies the rotation keeps beside the
  * carrier. Applying the same operations to the aura-free terms reproduces the pipeline's output
@@ -485,11 +501,13 @@ function priceAuraLayer(basis: HeroFarmBasis, field: FieldLayer): HeroFarmBasis 
   return {
     ...basis,
     dmgMult: base.dmgMult * matilhaMult(packRatePerAlly, field.alliesByHeroId.get(basis.heroId) ?? 0),
+    critPointCeiling: critPointCeilingOf(field.critFlatAtFullPresence, mults.teamCritFlat),
     effective: {
       ...base.effective,
       attack: base.effective.attack * mults.attackMult,
       speed: base.effective.speed * mults.speedMult,
       critChance: base.effective.critChance + mults.teamCritFlat,
+      critDmg: base.effective.critDmg + mults.teamCritDmgFlat,
       penetration: base.effective.penetration + mults.teamPenFlat,
       attackPerPoint: base.effective.attackPerPoint * mults.attackMult,
     },
@@ -559,6 +577,7 @@ function priceFieldForAssignment(
   });
   return {
     teamBuffs: holdAurasAtCap(computeTeamBuffsOverRotation(carriers, presence), account.aurasAtCap),
+    critFlatAtFullPresence: teamAuraLayer(atFullPresence).teamCritFlat,
     alliesByHeroId,
   };
 }
@@ -650,6 +669,13 @@ export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
   return auraFreeBases.map((basis) => priceAuraLayer(basis, field));
 }
 
+export function critCeilingOfBasis(basis: HeroFarmBasis): number | undefined {
+  if (basis.critPointCeiling === undefined) return undefined;
+  return basis.critCeilingBindsSheet
+    ? basis.critPointCeiling
+    : Math.max(basis.critPointCeiling, basis.effective.critChance);
+}
+
 /**
  * Facts for ANY candidate 8-key vector. Pure scalar math; zero pipeline calls.
  * `heroFactsFromBasis(b, b.pts)` is byte-identical to `computeHeroFarmFacts`'s entry for `b`.
@@ -667,6 +693,8 @@ export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
  */
 export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, number>): HeroFarmFacts {
   const sheet = buildCandidateSheet(basis.effective, basis.pts, basis.effectiveDelta, pts);
+  const critCeiling = critCeilingOfBasis(basis);
+  if (critCeiling !== undefined) sheet.critChance = Math.min(sheet.critChance, critCeiling);
 
   const hitNoCritBase = predictHitDamage(sheet.attack, 0, sheet.penetration, basis.dmgMult);
   const avgHitBase = hitNoCritBase * critFactor(sheet.critChance, sheet.critDmg);
@@ -712,6 +740,9 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
     fortunaLevel: basis.fortunaLevel,
     ...(basis.estilhacosLevel > 0
       ? { shatterChance: abilityMods({ estilhacos: basis.estilhacosLevel }).shatterChancePct / 100 }
+      : {}),
+    ...(basis.matadorChefesLevel > 0
+      ? { bossDmgMult: abilityMods({ matador_chefes: basis.matadorChefesLevel }).bossDmgMult }
       : {}),
     degenerate,
     ...(passagemBastao ? { passagemBastao } : {}),
@@ -790,7 +821,7 @@ export type SquadFarmFacts = {
    * binding constraint: 5.21 vs 3 on account 486.
    */
   houseSlotDemand: number;
-  /** Sorte as a FRACTION: `(uptime-weighted mean heroLuckPct + treeLuckFlatPct) / 100`. */
+  /** Sorte as a FRACTION: `(uptime-weighted mean heroLuckPct + treeLuckFlatPct + Collections luck) / 100`. */
   sorteFraction: number;
   /**
    * Uptime-weighted mean bomb fuse over the pool, seconds — the fuse the head of a clear burns
@@ -810,7 +841,7 @@ export type SquadFarmFacts = {
    * cap instead when the account's `aurasAtCap` names the ability.
    */
   entryPulse: PassagemBastaoFieldPulse;
-  /** `1 + max(0, tree.teamCoinPct) / 100`. */
+  /** `1 + max(0, tree.teamCoinPct) / 100`, times the Collections gold bonus. */
   teamCoinMult: number;
   /** `tree.luckFlatPct ?? 0`, percentage points — echoed for the board's breakdown tooltip. */
   treeLuckFlatPct: number;
@@ -855,7 +886,8 @@ export function computeSquadFarmFacts(
   const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
 
   const heroLuckWeightedSum = heroFacts.reduce((sum, hero) => sum + hero.uptime * hero.heroLuckPct, 0);
-  const sorteFraction = ((uptimeSum > 0 ? heroLuckWeightedSum / uptimeSum : 0) + treeLuckFlatPct) / 100;
+  const sorteFraction =
+    ((uptimeSum > 0 ? heroLuckWeightedSum / uptimeSum : 0) + treeLuckFlatPct + collectionLuckPct(account.tree.collection)) / 100;
 
   const fuseWeightedSum = heroFacts.reduce((sum, hero) => sum + hero.uptime * hero.fuseSecs, 0);
   const meanFuseSecs = uptimeSum > 0 ? fuseWeightedSum / uptimeSum : 0;
@@ -864,7 +896,7 @@ export function computeSquadFarmFacts(
     ? PASSAGEM_BASTAO_CAPPED_PULSE
     : passagemBastaoFieldPulse(heroFacts.flatMap((hero) => (hero.passagemBastao ? [hero.passagemBastao] : [])));
 
-  const teamCoinMult = 1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100;
+  const teamCoinMult = (1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100) * collectionGoldMult(account.tree.collection);
 
   const rawXpMult = account.tree.xpMult;
   const xpMult = typeof rawXpMult === 'number' && Number.isFinite(rawXpMult) ? rawXpMult : 1;
@@ -1296,7 +1328,8 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
         (sum, prop) => sum + prop.share * hitsToKill(hit, propHp(line.hp, prop.hpMult)),
         0,
       );
-    const bossHtkFor = (hit: number) => hitsToKill(hit, propHp(line.hp, BOSS_HP_MULT_WIKI));
+    const bossDmgMult = hero.bossDmgMult ?? 1;
+    const bossHtkFor = (hit: number) => hitsToKill(hit * bossDmgMult, propHp(line.hp, BOSS_HP_MULT_WIKI));
     const eHtk = pulseBlendedHtk(pulse, avgHit, propHtkFor);
     const bossHtk = pulseBlendedHtk(pulse, avgHit, bossHtkFor);
     const hps = hitsPerSec(hero, line.ato);

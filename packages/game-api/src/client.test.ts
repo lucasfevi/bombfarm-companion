@@ -38,6 +38,7 @@ describe('the committed fixtures are scrubbed (D19 — the repo is public)', () 
     expect(fixtureFiles.sort()).toEqual([
       'api-bodies-after.json',
       'api-bodies.json',
+      'collections-state.json',
       'roster-optional-keys.json',
       'rotation-ready.json',
     ]);

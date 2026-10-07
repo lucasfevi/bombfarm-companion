@@ -93,12 +93,51 @@
  * roster levelling through the window; levelling is real but day-scale, and the clear stream shows
  * the opposite happening inside these three hours. The full window is used because it is the
  * longest and the most stable, not because it is corroborated.
+ *
+ * WHAT THIS FILE ASSERTS, AND IN WHICH OF TWO KINDS. It used to pin residuals and nothing else,
+ * which made it wrong in both directions: a genuine model IMPROVEMENT failed it, and a game change
+ * was absorbed by editing the pinned number until it passed again. The assertions are split now,
+ * and every describe block below declares which kind it holds.
+ *
+ * BOUNDS claim the model is within X of the telemetry, and X is the MEASUREMENT'S OWN uncertainty
+ * as stated above — never a width chosen so today's figure fits. Each comparator gets its own:
+ *
+ *   - `clearSecs`: the measured target is itself only defined to ~6%. The choice of mean moves it
+ *     4.8% (28.795s time-weighted against 27.483s arithmetic) and the adjacent sub-window reads
+ *     29.12s, +6.0% on the window used. Anything tighter pins the choice of statistic and window
+ *     rather than the model.
+ *   - `goldPerHour`: the weakest comparator here — treat its residual as an order of magnitude,
+ *     never a precise figure — and its own sub-windows disagree by 17.7% (22.4M over the last hour
+ *     against 19.03M over the full three), rising to +41% over the clears after the export. The
+ *     bound IS that disagreement, so it cannot be tightened before someone settles which window is
+ *     right. Deliberately the loosest bound in the file, for the reason the header gives.
+ *   - `heroesOnField`: 10%, wider than the -6.9% residual this header leaves open on purpose. A
+ *     tighter bound would assert that open question closed.
+ *
+ * EVERY BOUND IS ASYMMETRIC IN PRACTICE, and the test names do not say so. All three residuals are
+ * negative today, so each bound is taken up from one side already: the model may drift UP by the
+ * bound's width plus the residual it has spent, but DOWN by the remainder only. `heroesOnField` may
+ * rise 18.2% before "within 10%" fires and fall just 3.3%; `clearSecs` may rise 14.2% and fall
+ * 5.4%. The downward margin is 2-3x the tighter one, which is the direction a model regression on
+ * an early-game roster would most likely take — read "within X%" as a band around the MEASURED
+ * figure, never as X% of slack in both directions from where the model sits.
+ *
+ * The two RATE bounds are REGIME-GATED on `blastDamage`: while the capture predates the 2026-09-26
+ * patch, each carries that patch's own documented move on this row (clear time +3.45%, gold/hr
+ * -3.33%) on top of the measurement uncertainty, because the two sides are priced under different
+ * reach rules. Re-anchoring onto a post-patch pair drops that allowance automatically — the bounds
+ * tighten by themselves, with no number edited here.
+ *
+ * CHARACTERIZATION records what the model reads TODAY, to the digit, and claims nothing about
+ * whether it is right. Its job is to keep an unrelated move (a wiki refresh, a sheet-math change)
+ * visible as a diff instead of hiding inside a bound's slack. A characterization test going red is
+ * a prompt to read the change and re-pin; a BOUND going red is a defect or a game change.
  */
 import { describe, expect, it } from 'vitest';
 import { computeFarmRates } from '@bombfarm/domain/farm-rate';
 import { wikiPhaseLine, goldRarityMult } from '@bombfarm/domain/phase-wiki';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
-import { isInRegimeFor } from './helpers/capture-regime';
+import { holdSuiteUntilInRegime, isInRegimeFor } from './helpers/capture-regime';
 
 const FIXTURE = 'save-20260823-13heroes-crit-points.json';
 /** The retired pair's save, kept for the two per-prop gold checks alone: their client readings
@@ -141,13 +180,43 @@ const OBSERVED_GOLD_PER_STONE = 1030;
  *  ~1.61k gold. Three significant figures. */
 const OBSERVED_GOLD_PER_BLUE_CRYSTAL = 1610;
 
+/**
+ * The same two quantities over the LAST HOUR of the same window. Neither is a comparator: the
+ * distance from the full-window figure beside it is what the measured side disagrees with ITSELF
+ * by, and that disagreement is the width of the bound below. Reading either as a second target
+ * would be choosing a sub-window, which is exactly what the header says nothing here can justify.
+ */
+const OBSERVED_GOLD_PER_HOUR_LAST_HOUR = 22_400_000;
+const OBSERVED_CLEAR_SECS_LAST_HOUR = 29.12;
+
+/** What the 2026-09-26 patch moved on THIS row, as the header records it. The measured side was
+ *  taken before it, so until the pair is re-anchored the two sides are priced under different
+ *  reach rules and each rate bound owes the difference. */
+const BLAST_PATCH_CLEAR_SECS_PCT = 0.0345;
+const BLAST_PATCH_GOLD_PER_HOUR_PCT = 0.0333;
+
+const CAPTURE = `sheet-math/${FIXTURE}`;
+holdSuiteUntilInRegime(`sheet-math/${FIXTURE}`, 'itemForge');
+const MEASURED_SIDE_PREDATES_THE_BLAST_PATCH = !isInRegimeFor(CAPTURE, 'blastDamage');
+
+const CLEAR_SECS_BOUND =
+  Math.abs(OBSERVED_CLEAR_SECS_LAST_HOUR / OBSERVED_CLEAR_SECS - 1) +
+  (MEASURED_SIDE_PREDATES_THE_BLAST_PATCH ? BLAST_PATCH_CLEAR_SECS_PCT : 0);
+const GOLD_PER_HOUR_BOUND =
+  Math.abs(OBSERVED_GOLD_PER_HOUR_LAST_HOUR / OBSERVED_GOLD_PER_HOUR - 1) +
+  (MEASURED_SIDE_PREDATES_THE_BLAST_PATCH ? BLAST_PATCH_GOLD_PER_HOUR_PCT : 0);
+/** The blast patch does not reach presence, so this one is not gated — only wide enough to clear
+ *  the open -6.9% without asserting it closed. */
+const HEROES_ON_FIELD_BOUND = 0.1;
+
 const { heroes, account, maxPhase } = loadFarmRateFixture(FIXTURE, 'sheet-math');
 const { heroFacts, squad, rows } = computeFarmRates({ heroes, account, maxPhase });
 const row = rows[PHASE - 1];
 
-describe('the save is read as three distinct quantities', () => {
-  it('the capture predates the Wide Blast patch, so its throughput is the old rule’s, not today’s', () => {
-    expect(isInRegimeFor(`sheet-math/${FIXTURE}`, 'blastDamage')).toBe(false);
+describe('STRUCTURE — the save is read as three distinct quantities', () => {
+  it('the capture predates the Wide Blast patch, so its throughput is the old rule’s, not today’s — and the two rate bounds are gated on exactly this', () => {
+    expect(isInRegimeFor(CAPTURE, 'blastDamage')).toBe(false);
+    expect(MEASURED_SIDE_PREDATES_THE_BLAST_PATCH).toBe(true);
     const carriers = heroes.filter((hero) => (hero.abilities?.explosao_ampla ?? 0) >= 10);
     expect(carriers).toHaveLength(4);
   });
@@ -174,25 +243,19 @@ describe('the save is read as three distinct quantities', () => {
   });
 });
 
-describe('nothing binds on this account — the structural change since the retired pair', () => {
-  it('Σ uptime is 7.3648 — under the roster size, as it always is', () => {
-    expect(squad.uptimeSum).toBeCloseTo(7.3648, 4);
+describe('STRUCTURE — nothing binds on this account, the change since the retired pair', () => {
+  it('Σ uptime is under the roster size, as it always is', () => {
     expect(squad.uptimeSum).toBeLessThan(heroFacts.length);
   });
 
-  it('the roster demands 5.6352 recovery slots against the 9 it owns — the House stopped being the constraint', () => {
-    expect(squad.houseSlotDemand).toBeCloseTo(5.6352, 4);
+  it('the roster demands fewer recovery slots than the 9 it owns — the House stopped being the constraint', () => {
     expect(squad.houseSlotDemand).toBeLessThan(squad.houseSlots);
-    // The retired pair demanded 7.81 against 5 — a 1.56x overcommit that cut heroes-on-field well
-    // below Σ uptime. This account sits at 0.63x.
-    expect(squad.houseSlotDemand / squad.houseSlots).toBeCloseTo(0.62613, 4);
     // The identity the demand is derived from: Σ uptime + Σ (1 − uptime) === roster size.
     expect(squad.uptimeSum + squad.houseSlotDemand).toBeCloseTo(13, 9);
   });
 
   it('so heroesOnField is Σ uptime EXACTLY — the allocation had nothing to cut', () => {
     expect(row.heroesOnField).toBe(squad.uptimeSum);
-    expect(row.heroesOnField).toBeCloseTo(7.3648, 4);
   });
 
   it('the field cap bites LIGHTLY — the mean fits under 9 slots, but the peaks do not', () => {
@@ -203,20 +266,56 @@ describe('nothing binds on this account — the structural change since the reti
     // run optimistic.
     expect(row.heroesOnField).toBeLessThan(squad.fieldSlots);
     expect(row.concurrencyScale).toBeLessThan(1);
-    expect(row.concurrencyScale).toBeCloseTo(0.98020, 4);
     expect(row.fieldContentionPct).toBeGreaterThan(0);
   });
+});
 
-  it('heroesOnField is 7.3648 — ~6.9% BELOW the time-weighted measured 7.913', () => {
+describe('BOUND — the model against the telemetry, at the width the measurement itself allows', () => {
+  it("clearSecs sits inside the measured window's own spread plus the patch allowance — no tighter, because a tighter bound pins the choice of statistic and window rather than the model", () => {
+    expect(Math.abs(row.clearSecs / OBSERVED_CLEAR_SECS - 1)).toBeLessThan(CLEAR_SECS_BOUND);
+  });
+
+  it("goldPerHour sits inside the gold comparator's own sub-window disagreement plus the patch allowance — the loosest bound in this file, because the header says to treat this residual as an order of magnitude", () => {
+    expect(Math.abs(row.goldPerHour / OBSERVED_GOLD_PER_HOUR - 1)).toBeLessThan(GOLD_PER_HOUR_BOUND);
+  });
+
+  it('heroesOnField is within 10% of the measured 7.913 — wider than the -6.9% this file leaves open, so the bound does not assert that open question closed', () => {
+    expect(Math.abs(row.heroesOnField / OBSERVED_HEROES_ON_FIELD - 1)).toBeLessThan(HEROES_ON_FIELD_BOUND);
+  });
+
+  it('no bound is wider than the uncertainty that justifies it — a width nothing above can account for is named here, not waved through', () => {
+    const ceilings: readonly [string, number, number][] = [
+      ['clearSecs', CLEAR_SECS_BOUND, 0.1],
+      ['goldPerHour', GOLD_PER_HOUR_BOUND, 0.22],
+      ['heroesOnField', HEROES_ON_FIELD_BOUND, 0.11],
+    ];
+    const unjustified = ceilings.filter(([, width, ceiling]) => width >= ceiling).map(([name]) => name);
+    expect(unjustified).toEqual([]);
+  });
+});
+
+describe('CHARACTERIZATION — what the model reads today; recorded, NOT claimed correct', () => {
+  it('Σ uptime reads 7.3648, and the roster demands 5.6352 of its 9 recovery slots', () => {
+    expect(squad.uptimeSum).toBeCloseTo(7.3648, 4);
+    expect(squad.houseSlotDemand).toBeCloseTo(5.6352, 4);
+    // The retired pair demanded 7.81 against 5 — a 1.56x overcommit that cut heroes-on-field well
+    // below Σ uptime. This account sits at 0.63x.
+    expect(squad.houseSlotDemand / squad.houseSlots).toBeCloseTo(0.62613, 4);
+  });
+
+  it('heroesOnField reads 7.3648 and concurrencyScale 0.98020', () => {
+    expect(row.heroesOnField).toBeCloseTo(7.3648, 4);
+    expect(row.concurrencyScale).toBeCloseTo(0.98020, 4);
+  });
+
+  it('the presence residual is -6.9% against the time-weighted measured 7.913', () => {
     // Negative, where the retired pair read +4.1%. Recorded, not tuned, and deliberately left
     // alone by the head-term change: it is the one term still carrying the gold residual, and
     // moving two at once would make neither judgeable.
     const residual = row.heroesOnField / OBSERVED_HEROES_ON_FIELD - 1;
     expect(residual).toBeCloseTo(-0.0693, 3);
   });
-});
 
-describe('the resulting rates', () => {
   // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017): the row no longer prices a
   // constant kill rate from a crit-averaged hit but integrates over the props left standing,
   // with the crit rolled per hit. Before that change this row read 27.7041s and 17,997,272 gold/h
@@ -225,18 +324,25 @@ describe('the resulting rates', () => {
   // before, cadence 0.96602.
   // RE-PINNED 2026-09-27 for the plant-cycle refit (ADR-018): 30.1398s and 16,542,820 gold/h
   // before, cadence 0.93384. Measured on two post-patch fields and held out here, not fitted to it.
-  it('clearSecs is 26.32s — ~4.2% below the measured arithmetic mean of 27.483s', () => {
+  it('clearSecs reads 26.32s, a -4.2% residual on the measured arithmetic mean of 27.483s', () => {
     expect(row.clearSecs).toBeCloseTo(26.3226, 3);
 
     const residual = row.clearSecs / OBSERVED_CLEAR_SECS - 1;
     expect(residual).toBeCloseTo(-0.0422, 3);
+  });
+
+  it('and it reads FASTER than the telemetry, which is the sign the header does not expect', () => {
+    // The measured side is an upper bound on throughput — an automated account taking House slots
+    // the instant they empty — so the model ought to clear SLOWER, not faster. It does not, and
+    // that is the cadence term below rather than anything this file has settled. Pinned as the
+    // sign it currently has, not as the sign it should have.
     expect(row.clearSecs).toBeLessThan(OBSERVED_CLEAR_SECS);
   });
 
-  it('goldPerHour is ~18.94M — ~0.5% BELOW the measured 19,033,500', () => {
-    // Left as a point comparison rather than a tolerance band, so that any UNRELATED move (a wiki
-    // refresh, a sheet-math change) shows up as a change to THIS number, distinct from the
-    // tracked residual itself.
+  it('goldPerHour reads ~18.94M, a -0.5% residual on the measured 19,033,500', () => {
+    // Left as a point comparison beside the bound, so that any UNRELATED move (a wiki refresh, a
+    // sheet-math change) shows up as a change to THIS number instead of disappearing into the
+    // bound's slack.
     expect(row.goldPerHour).toBeCloseTo(18_941_817, -3);
 
     const residual = row.goldPerHour / OBSERVED_GOLD_PER_HOUR - 1;
@@ -272,21 +378,28 @@ describe("per-prop gold — the retired pair's account, whose client readings th
   const teamCoinMult = 1 + Math.max(0, goldReadingAccount.tree.teamCoinPct ?? 0) / 100;
   const goldComumActual = line.goldComum * teamCoinMult;
 
-  it('gold per stone (rarity 1) matches the direct client reading (1.03k) to within 1%', () => {
-    const goldPerStone = goldComumActual * goldRarityMult(1);
-    expect(goldPerStone).toBeCloseTo(1037.859375, 4);
-    expect(Math.abs(goldPerStone / OBSERVED_GOLD_PER_STONE - 1)).toBeLessThan(0.01);
+  describe('BOUND — against the direct client readings, at the width three significant figures allow', () => {
+    it('gold per stone (rarity 1) matches the direct client reading (1.03k) to within 1%', () => {
+      const goldPerStone = goldComumActual * goldRarityMult(1);
+      expect(Math.abs(goldPerStone / OBSERVED_GOLD_PER_STONE - 1)).toBeLessThan(0.01);
+    });
+
+    it("gold per blue crystal (rarity 3) matches the direct client reading (1.61k) to ~1.3% — outside the stone check's 1%, both readings are three-significant-figure", () => {
+      const goldPerBlueCrystal = goldComumActual * goldRarityMult(3);
+      // Genuinely 1.2995%, not 1%: documented rather than forced. The two readings' OWN implied
+      // goldComumActual values (735.71 from the stone reading, 731.82 from the blue-crystal
+      // reading) already differ from each other by ~0.53%, consistent with both being rounded to
+      // three significant figures — this model's 741.33 sits a little above both, closer to the
+      // stone reading's implied value than the blue crystal reading's.
+      expect(Math.abs(goldPerBlueCrystal / OBSERVED_GOLD_PER_BLUE_CRYSTAL - 1)).toBeLessThan(0.013);
+    });
   });
 
-  it("gold per blue crystal (rarity 3) matches the direct client reading (1.61k) to ~1.3% — outside the stone check's 1%, both readings are three-significant-figure", () => {
-    const goldPerBlueCrystal = goldComumActual * goldRarityMult(3);
-    expect(goldPerBlueCrystal).toBeCloseTo(1630.921875, 4);
-    // Genuinely 1.2995%, not 1%: documented rather than forced. The two readings' OWN implied
-    // goldComumActual values (735.71 from the stone reading, 731.82 from the blue-crystal
-    // reading) already differ from each other by ~0.53%, consistent with both being rounded to
-    // three significant figures — this model's 741.33 sits a little above both, closer to the
-    // stone reading's implied value than the blue crystal reading's.
-    expect(Math.abs(goldPerBlueCrystal / OBSERVED_GOLD_PER_BLUE_CRYSTAL - 1)).toBeLessThan(0.013);
+  describe('CHARACTERIZATION — what the per-prop formula reads today', () => {
+    it('a stone banks 1037.859375 and a blue crystal 1630.921875 on this account', () => {
+      expect(goldComumActual * goldRarityMult(1)).toBeCloseTo(1037.859375, 4);
+      expect(goldComumActual * goldRarityMult(3)).toBeCloseTo(1630.921875, 4);
+    });
   });
 
   it('the per-prop formula takes no sheet-math input, which is why a second account can share it', () => {

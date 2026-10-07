@@ -10,7 +10,7 @@
 import { useMemo } from 'react';
 import { Button, Collapsible, cn, panelTitleClass } from '@bombfarm/ui';
 import { HeroIdentityChip, ItemIcon } from '@bombfarm/game-art';
-import { abilityName, itemName, itemRarityLabel } from '@bombfarm/domain/game-labels';
+import { abilityName, itemName, itemRarityLabel, setName } from '@bombfarm/domain/game-labels';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import type { HeroRune } from '@bombfarm/domain/runes';
@@ -54,6 +54,8 @@ function objectiveLabel(raw: string, t: Copy): string {
   switch (raw) {
     case 'farm':
       return t.teamPlanObjectiveOptionGold;
+    case 'setFarm':
+      return t.teamPlanObjectiveOptionSet;
     case 'gateClear':
       return t.teamPlanObjectiveOptionGate;
     case 'pvp':
@@ -182,6 +184,7 @@ export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames
         aurasAtCap: t.teamPlanChangesControlAurasAtCap,
         targetPhase: t.teamPlanChangesControlTargetPhase,
         pvpSquadSlots: t.teamPlanChangesControlPvpSquadSlots,
+        farmSet: t.teamPlanChangesControlFarmSet,
       }[d.name];
       const value = (raw: string): string => {
         switch (d.name) {
@@ -199,6 +202,8 @@ export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames
             return raw === 'null' ? t.teamPlanPhaseNone : raw;
           case 'pvpSquadSlots':
             return raw === 'null' ? none : raw;
+          case 'farmSet':
+            return raw === 'null' ? none : setName(raw, lang);
         }
       };
       return { change: label, before: text(value(d.before)), after: text(value(d.after)), note: null };

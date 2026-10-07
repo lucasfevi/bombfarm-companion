@@ -106,6 +106,7 @@ function buildFixture(opts: FixtureOpts = {}) {
       critChanceFlat: mods.sheetCritChanceFlat,
       penetration: mods.sheetPenetrationFlat,
       critDmgFlat: mods.sheetCritDmgFlat,
+      cdr: mods.sheetCdrFlat,
     } satisfies SheetOtherPct);
 
   const naked =
@@ -178,6 +179,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     teamCritFlat: mults.teamCritFlat,
     treeSheet,
     penetrationPp: mults.teamPenFlat,
+    critDmgPp: mults.teamCritDmgFlat,
     context,
     hitMult: mults.hitMult,
     dmgMult: mults.dmgMult,
@@ -203,6 +205,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     speedMult: mults.speedMult,
     teamCritFlat: mults.teamCritFlat,
     teamPenFlat: mults.teamPenFlat,
+    teamCritDmgFlat: mults.teamCritDmgFlat,
     packMult: mults.packMult,
     treeSpeed,
     treeCritChance,
@@ -539,6 +542,7 @@ describe('LEDGER_SOURCE_GROUP is exhaustive over LedgerSource', () => {
     'team',
     'abilitiesTeam',
     'rune',
+    'collection',
   ];
 
   it('every LedgerSource union member has a mapped LedgerGroup', () => {

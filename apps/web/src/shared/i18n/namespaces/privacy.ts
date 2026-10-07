@@ -53,9 +53,10 @@ export const en = {
     {
       title: "Other services the desktop app talks to",
       p: [
-        "The game's server, for your own account, only after you give permission — and, if you turn on “Let the app forge, equip and reset points”, to make those changes for you.",
+        "The game's server, for your own account, only after you give permission — and, if you turn on “Let the app forge, equip and reset points”, to make those changes for you and to burn items for Forge Essence.",
         "GitHub, to check for updates and to download a published snapshot of market prices.",
         "The Steam Community Market, to look up public item prices.",
+        "Our own server, about every five minutes, to read how many players are online in the game. That request carries nothing about you, and the server does not store your IP address.",
         "Only the requests to the game's own server include your account.",
       ],
     },
@@ -141,9 +142,10 @@ export const pt: typeof en = {
     {
       title: "Outros serviços com que o app se comunica",
       p: [
-        "O servidor do jogo, para a sua própria conta, só depois que você der permissão — e, se você ligar “Deixar o app forjar, equipar e redistribuir pontos”, para fazer essas alterações por você.",
+        "O servidor do jogo, para a sua própria conta, só depois que você der permissão — e, se você ligar “Deixar o app forjar, equipar e redistribuir pontos”, para fazer essas alterações por você e para queimar itens e obter Essência de Forja.",
         "O GitHub, para verificar atualizações e baixar um retrato publicado dos preços do mercado.",
         "O Mercado da Comunidade Steam, para consultar preços públicos de itens.",
+        "O nosso próprio servidor, a cada cerca de cinco minutos, para ler quantos jogadores estão online no jogo. Essa requisição não leva nada sobre você, e o servidor não guarda o seu endereço IP.",
         "Só as requisições ao próprio servidor do jogo incluem a sua conta.",
       ],
     },

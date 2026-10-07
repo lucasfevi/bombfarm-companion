@@ -27,6 +27,12 @@ on:
       - 'vitest.config.ts'
       - 'vitest.solver.config.ts'
       - 'vitest.solver-files.mjs'
+      - 'vitest.coverage.ts'
+      - 'vitest.workers.ts'
+      - 'tools/domain-coverage*.mjs'
+      - 'tools/cpu-budget.mjs'
+      - 'tools/with-heavy-slot.mjs'
+      - 'tools/shell-command.mjs'
       - '.github/workflows/ci-web.yml'
   pull_request:
 
@@ -43,6 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       web: ${{ steps.filter.outputs.web }}
+      domain: ${{ steps.filter.outputs.domain }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -74,16 +81,32 @@ jobs:
               - 'vitest.solver.config.ts'
               - 'vitest.solver-files.mjs'
               - '.github/workflows/ci-web.yml'
+            domain:
+              - 'packages/domain/**'
+              - 'packages/contracts/**'
+              - 'vitest.config.ts'
+              - 'vitest.solver.config.ts'
+              - 'vitest.solver-files.mjs'
+              - 'vitest.coverage.ts'
+              - 'vitest.workers.ts'
+              - 'tools/domain-coverage*.mjs'
+              - 'tools/cpu-budget.mjs'
+              - 'tools/with-heavy-slot.mjs'
+              - 'tools/shell-command.mjs'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
+              - 'tsconfig.base.json'
+              - '.github/workflows/ci-web.yml'
 
   quality:
     name: Typecheck, lint, build, unit (web)
     needs: changes
     if: github.event_name != 'pull_request' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
-    # The domain suite alone is ~12 minutes of wall clock on this runner since the farm board
-    # prices a clear as an integral (the optimizer tests sweep thousands of rows); ci-desktop
-    # runs the same suite inside a 30-minute job.
-    timeout-minutes: 30
+    # The domain suite runs in the `domain` jobs below, not here. This job takes ~7 minutes on a
+    # slow runner; the cap is loose on purpose, so slow-runner variance cannot cancel a green run.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -109,13 +132,11 @@ jobs:
         run: pnpm --filter @bombfarm/contracts --filter @bombfarm/pricing build
 
       # apps/web itself still resolves @bombfarm/domain SOURCE via tsconfig `paths` and the
-      # Vitest `resolve.alias` — this step is NOT that. It exists so
-      # packages/domain's own packaging test (dist-package-exports.test.ts) has a
-      # dist/ to assert against when "Unit tests (domain)" below runs, and because
-      # @bombfarm/farm and @bombfarm/hero reach domain through its exports map (which points
-      # at dist), so the typecheck and lint steps below cannot run before this. Do not
-      # "simplify" this into a web dependency; web never reads packages/domain/dist.
-      - name: Build domain (its own packaging test needs dist)
+      # Vitest `resolve.alias` — this step is NOT that. It exists because @bombfarm/farm and
+      # @bombfarm/hero reach domain through its exports map (which points at dist), so the
+      # typecheck and lint steps below cannot run before this. Do not "simplify" this into a
+      # web dependency; web never reads packages/domain/dist.
+      - name: Build domain (typecheck and lint reach it through dist)
         run: pnpm --filter @bombfarm/domain build
 
       - name: Typecheck web + domain + ui + game-art + farm + hero + team-plan
@@ -130,11 +151,6 @@ jobs:
           --filter @bombfarm/farm --filter @bombfarm/hero --filter @bombfarm/team-plan
           --filter @bombfarm/web lint
 
-      # Domain tests need no build output, so they stay ahead of the (slow) build to keep
-      # fast feedback on the most common failures.
-      - name: Unit tests (domain)
-        run: pnpm --filter @bombfarm/domain test
-
       # MUST stay before the web unit tests. Several web tests assert on real build output
       # in apps/web/out (team-plan-worker-bundle, devtools-not-in-production-bundle) — the
       # only byte-level proof that a chunk actually shipped. This step used to run AFTER
@@ -145,6 +161,107 @@ jobs:
 
       - name: Unit tests (web, asserts against the build above)
         run: pnpm --filter @bombfarm/web test
+
+  # The domain suite is two Vitest passes (see vitest.solver.config.ts) and the heaviest thing in
+  # CI, so each piece gets its own runner. Vitest splits shards by a hash of the file path and
+  # balances by file count, not duration, so the shard count was chosen by summing per-file
+  # times: more shards did not lower the slowest one, because the heaviest file is a floor.
+  # tools/vitest-solver-split.test.mjs fails when these entries stop covering every shard or
+  # the solver pass goes missing.
+  domain:
+    name: ${{ matrix.name }}
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    # On a slow runner a shard takes ~8 minutes with setup and the solver pass ~11, ending on
+    # its longest single test. The caps are loose on purpose.
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Unit tests (domain, shard 1/2)
+            timeout: 25
+            build: true
+            run: pnpm --filter @bombfarm/domain exec vitest run --shard=1/2
+          - name: Unit tests (domain, shard 2/2)
+            timeout: 25
+            build: true
+            run: pnpm --filter @bombfarm/domain exec vitest run --shard=2/2
+          - name: Unit tests (domain, solver pass)
+            timeout: 35
+            build: false
+            run: pnpm vitest run --config vitest.solver.config.ts
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Only the domain project needs a build: its packaging test (dist-package-exports.test.ts)
+      # asserts against packages/domain/dist, and building domain resolves @bombfarm/contracts
+      # through its dist (see the quality job). The solver pass aliases both to source.
+      - name: Build contracts and domain (the packaging test needs dist)
+        if: matrix.build
+        run: pnpm --filter @bombfarm/contracts --filter @bombfarm/domain build
+
+      - name: ${{ matrix.name }}
+        run: ${{ matrix.run }}
+
+  # The coverage ratchet is its own job, not part of the shards above: instrumented runs are
+  # several times slower than plain ones, and the two Vitest passes (domain project and solver
+  # pass) have to be measured in one place so vitest itself can merge their raw V8 data into one
+  # per-file picture. A shard sees only part of the files; coverage from one pass alone would
+  # understate everything the solver suite reaches. The dedicated filter keeps pull requests that
+  # cannot move domain coverage from paying for it.
+  domain-coverage:
+    name: Domain coverage ratchet
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.domain == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build contracts and domain (the packaging test needs dist)
+        run: pnpm --filter @bombfarm/contracts --filter @bombfarm/domain build
+
+      - name: Measure both passes and compare with the committed baseline
+        run: pnpm coverage:domain
+
+      - name: Compare the baseline with the base branch
+        if: github.event_name == 'pull_request' && !cancelled()
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch --no-tags --depth=1 origin "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+          node tools/domain-coverage.mjs guard-base --base "origin/$BASE_REF"
+
+      - name: Upload the coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: domain-coverage
+          path: coverage
+          retention-days: 7
+          if-no-files-found: ignore
 
   design-system:
     name: Storybook build + a11y test-runner (packages/ui)
@@ -179,7 +296,7 @@ jobs:
 
   ci-web-required:
     name: ci-web-required
-    needs: [changes, quality]
+    needs: [changes, quality, domain, domain-coverage]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -191,6 +308,21 @@ jobs:
         if: needs.changes.outputs.web == 'true' && needs.quality.result != 'success'
         run: |
           echo "quality: ${{ needs.quality.result }}"
+          exit 1
+
+      # Skipped or cancelled counts as failure here too, for the reason design-system-required
+      # spells out below. One failed or cancelled matrix entry makes the whole result non-success.
+      - name: Require domain tests when the filter matched
+        if: needs.changes.outputs.web == 'true' && needs.domain.result != 'success'
+        run: |
+          echo "domain: ${{ needs.domain.result }}"
+          exit 1
+
+      # Same rule: a coverage ratchet that was skipped or cancelled has not guarded anything.
+      - name: Require the domain coverage ratchet when its filter matched
+        if: needs.changes.outputs.domain == 'true' && needs.domain-coverage.result != 'success'
+        run: |
+          echo "domain-coverage: ${{ needs.domain-coverage.result }}"
           exit 1
 
   design-system-required:

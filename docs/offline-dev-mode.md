@@ -16,9 +16,10 @@ it applied, and every one of them is overridable.
 
 | Surface | Source | Fidelity |
 | --- | --- | --- |
-| Account, Inventory | `apps/desktop/tests/fixtures/account-offline.json` — 13 heroes, 221 items, all five sections `resolved` | Real captured bodies |
+| Account, Inventory | `apps/desktop/tests/fixtures/account-offline.json` — 13 heroes, 225 items, all five sections `resolved` | Real captured bodies, plus synthetic per-item Forge Essence fields, a balance and four Chance Stones so the Forge tab's Deconstruct page has rows to show; its burn is refused offline, see [deconstruct.md](deconstruct.md) |
 | Live | `live-capture.bfcc` — 60 records decoding to 58 ticks, replayed at ~10 Hz | Real captured bytes, looped |
 | PVP | `pvp-duels-offline.json` — two duel results (one with its film, one without) served once ahead of the first frame | Hand-written bodies in the wire's shape; see [pvp-duel-history.md](pvp-duel-history.md) |
+| Collections | `packages/game-api/src/__fixtures__/collections-state.json` — the synthetic Collections body (the set table is the game's, the progress is invented), served once ahead of the first frame | Synthetic, not a capture; see [collections.md](collections.md) |
 | Skill Tree | the same `account-offline.json` — its `skills` block: 72 owned levels, the server's totals, gold and furthest phase | Real captured body; priced from the fixture's 13 heroes, see [skill-tree.md](skill-tree.md) |
 | Consent flow | Unchanged | Real |
 
@@ -235,6 +236,7 @@ Set any of these before the command; the script only fills in what you left blan
 | `BFC_LIVE_SOURCE` | `replay` | `replay` reads a capture; anything else uses the real tap |
 | `BFC_REPLAY_CAPTURE` | the committed `live-capture.bfcc` | Any `.bfcc` capture. A scenario with its own capture sets this for you |
 | `BFC_REPLAY_PVP_FIXTURE` | the committed `pvp-duels-offline.json` | Any `{ "bodies": [...] }` JSON of duel results and films, served once per tap; an empty string serves none |
+| `BFC_REPLAY_COLLECTIONS_FIXTURE` | the synthetic `collections-state.json` the wire-reading package commits | Any single Collections body as a JSON object, served once per tap; an empty string serves none |
 | `BFC_RENDERER_PORT` | `3100` | Renderer dev-server port |
 | `BFC_USER_DATA_DIR` | `.offline-user-data/` at the repo root, or `.offline-user-data-<name>/` for a named scenario | Where this mode's database lives |
 
@@ -291,6 +293,13 @@ Worth knowing before you trust a screen you developed against it.
   about 19M/hour extrapolated, roughly fifty times the mid-game calibration anchor. Loot pops sum
   to exactly the gold delta, which makes it a good stream to build a rate readout against; the
   number that readout shows is not a plausible one.
+- **Its damage reads about double.** Each recorded frame is 0.2 s of game time and the replay
+  pumps one every 100 ms, so the game plays at twice speed and Team DPS and Hero DPS come out about
+  twice what the same hits would read live. Per-hero attribution still reconciles with the team
+  total; only the rate is off.
+- **It replays the older, smaller capture, not the combat one.** The combat capture the tests
+  replay to check damage attribution is a test fixture, not the offline default, so offline damage
+  has no second-blast hits and sends hits that land outside every blast to Unattributed.
 - **No bonus window.** `bonus_secs` / `bonus_mult` are documented in
   [wire-vocabulary.md](wire-vocabulary.md) but absent from this capture — it was taken outside one.
 - **One account, one moment.** The account fixture is a single capture pair. Any regime it does not

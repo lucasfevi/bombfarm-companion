@@ -114,7 +114,7 @@ export type SkillTreePricing = {
 };
 
 function accountForTotals(base: FarmAccount, totals: SkillTotals, fieldSlots: number): FarmAccount {
-  return { ...base, tree: treeStateFromTotals(totals), fieldSlots };
+  return { ...base, tree: treeStateFromTotals(totals, base.tree.collection), fieldSlots };
 }
 
 function scaleAttack(basis: HeroFarmBasis, factor: number): HeroFarmBasis {
@@ -211,7 +211,7 @@ function windowedTeamDpsOf(model: DpsModel, input: SkillTreePricingInput, totals
   if (model.heroes.length === 0) return null;
   const base = input.account;
   const account: TeamPlanAccountInput = {
-    treeSheet: treeSheetFromTotals(totals),
+    treeSheet: treeSheetFromTotals(totals, base.tree.collection),
     houseIdx: base.context.houseIdx,
     houseLevel: base.context.houseLevel,
     phase: model.phase,

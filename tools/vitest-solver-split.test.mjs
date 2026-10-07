@@ -11,7 +11,8 @@
  * 2. `dangerouslyIgnoreUnhandledErrors` creeps back into another config, hiding real unhandled
  *    rejections there, or leaves the solver config, where the split needs it.
  * 3. A runner (`pnpm test`, the domain package script, `check-changed`, CI) runs the first pass
- *    and never the second, so the solver files stop executing while everything stays green.
+ *    and never the second, so the solver files stop executing while everything stays green. CI's
+ *    web workflow splits the first pass into shards, so a missing shard drops files the same way.
  * 4. The per-test yield is unwired, or its behavioural guard inside the domain project is deleted.
  * 5. The two docs that spell the suite count out in words drift from the list. Nothing breaks, but
  *    a reader is told there are five suites when there are four and goes looking for the fifth —
@@ -252,6 +253,35 @@ describe('every runner reaches both passes', () => {
 
   it('ci-desktop.yml runs the solver pass as its own step', () => {
     expect(read('.github/workflows/ci-desktop.yml')).toMatch(/^\s*run:\s*pnpm vitest run --config vitest\.solver\.config\.ts\s*$/m);
+  });
+
+  it('ci-web.yml runs the solver pass as one entry of the domain matrix', () => {
+    expect(read('.github/workflows/ci-web.yml')).toMatch(
+      /^\s*run:\s*pnpm vitest run --config vitest\.solver\.config\.ts\s*$/m,
+    );
+  });
+
+  it('ci-web.yml runs every shard of the domain project, once each', () => {
+    const shards = [
+      ...read('.github/workflows/ci-web.yml').matchAll(
+        /^\s*run:\s*pnpm --filter @bombfarm\/domain exec vitest run --shard=(\d+)\/(\d+)\s*$/gm,
+      ),
+    ].map(([, index, count]) => ({ index: Number(index), count: Number(count) }));
+
+    expect(shards.length, 'ci-web.yml runs no sharded domain pass').toBeGreaterThan(0);
+    const [{ count }] = shards;
+    expect(
+      shards.map((shard) => shard.count),
+      'the shard entries disagree about the shard count',
+    ).toEqual(shards.map(() => count));
+    expect(
+      shards.map((shard) => shard.index).sort((a, b) => a - b),
+      `ci-web.yml must run each of shards 1..${count} exactly once, or some domain files never run`,
+    ).toEqual(Array.from({ length: count }, (_, i) => i + 1));
+  });
+
+  it('ci-web.yml no longer runs the domain suite inside the quality job', () => {
+    expect(read('.github/workflows/ci-web.yml')).not.toMatch(/^\s*run:\s*pnpm --filter @bombfarm\/domain test\s*$/m);
   });
 
   it.each([

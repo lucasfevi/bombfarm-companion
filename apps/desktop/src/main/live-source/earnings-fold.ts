@@ -17,8 +17,8 @@ const MS_PER_HOUR = 3_600_000;
  *  never the whole gap, so a rate computed across it does not collapse toward zero. */
 export const MAX_TICK_GAP_MS = 2_000;
 
-const BUCKET_SPAN_MS = 1_000;
-const TEN_MINUTES_MS = 10 * 60 * 1000;
+export const BUCKET_SPAN_MS = 1_000;
+export const TEN_MINUTES_MS = 10 * 60 * 1000;
 const MS_PER_MINUTE = 60_000;
 
 /** How many slices the rolling window is reported as. Chosen for what a trend line can actually
@@ -87,9 +87,10 @@ export class EarningsFold {
   }
 
   /**
-   * `sequence` is the frame's own monotonic counter, not derived from `now()` — a tick whose
-   * sequence does not advance past the last one consumed is ignored outright, which is the real
-   * defence against the offline replay loop restarting the capture from its first record.
+   * `sequence` is the process-level frame counter the caller stamps on every frame it hands over,
+   * never one tap's own count and not derived from `now()` — a tick whose counter does not advance
+   * past the last one consumed is ignored outright, so a repeated or older frame is never folded
+   * twice.
    */
   consumeTick(tick: LiveTick, sequence: number, xpMult: number | undefined): void {
     if (sequence <= this.#lastSequence) return;

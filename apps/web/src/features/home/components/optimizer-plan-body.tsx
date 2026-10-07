@@ -1,5 +1,5 @@
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
-import { scoredPhaseHint, scoredPhaseValue } from '@bombfarm/team-plan/model';
+import { scoredPhaseHint, scoredPhaseValue, slowClearWarning } from '@bombfarm/team-plan/model';
 import { cn, formatNumber } from '@bombfarm/ui';
 import { mutedClass } from '@bombfarm/ui/panel-field.recipe';
 import { sub, type Lang, type Strings } from '@/shared/i18n';
@@ -16,6 +16,8 @@ function headlineFor(objective: PlannerStore['objective'], strings: Strings): st
   switch (objective) {
     case 'farm':
       return strings.homeCardOptimizerHeadlineFarm;
+    case 'setFarm':
+      return strings.homeCardOptimizerHeadlineSetFarm;
     case 'gateClear':
       return strings.homeCardOptimizerHeadlineGate;
     case 'pvp':
@@ -39,6 +41,7 @@ export function OptimizerPlanBody({
   const headline = headlineFor(objective, t);
   const hint = scoredPhaseHint(t, plan, objective);
   const scoredAt = sub(t.homeCardOptimizerScoredAt, { phase: scoredPhaseValue(lang, plan) });
+  const warning = slowClearWarning(t, lang, plan, objective);
 
   return (
     <>
@@ -51,6 +54,11 @@ export function OptimizerPlanBody({
       <p className={cn(mutedClass, 'm-0 text-xs')} data-testid="home-optimizer-scored-at">
         {hint === null ? scoredAt : `${scoredAt} · ${hint}`}
       </p>
+      {warning === null ? null : (
+        <p className="m-0 text-xs text-warn" role="status" data-testid="home-optimizer-slow-clear">
+          {warning}
+        </p>
+      )}
     </>
   );
 }

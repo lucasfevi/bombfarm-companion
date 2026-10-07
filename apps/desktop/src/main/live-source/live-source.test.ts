@@ -14,6 +14,7 @@ import {
   LiveSource,
   nodeObservationAppendPort,
   observationCaptureFilePath,
+  type ObservedCollectionsBody,
   type ObservedPvpBody,
   type TapHandle,
 } from './live-source.js';
@@ -60,7 +61,13 @@ function requireNumber(value: number | null): number {
   return value;
 }
 
-function createHarness(opts: { readonly log?: LogPort; readonly onObservedPvpBody?: (observation: ObservedPvpBody) => void } = {}) {
+function createHarness(
+  opts: {
+    readonly log?: LogPort;
+    readonly onObservedPvpBody?: (observation: ObservedPvpBody) => void;
+    readonly onObservedCollectionsBody?: (observation: ObservedCollectionsBody) => void;
+  } = {},
+) {
   const taps: FakeTap[] = [];
   let sequence = 0;
   const clock = { ms: 1_700_000_000_000 };
@@ -71,6 +78,7 @@ function createHarness(opts: { readonly log?: LogPort; readonly onObservedPvpBod
     now: () => clock.ms,
     ...(opts.log ? { log: opts.log } : {}),
     ...(opts.onObservedPvpBody ? { onObservedPvpBody: opts.onObservedPvpBody } : {}),
+    ...(opts.onObservedCollectionsBody ? { onObservedCollectionsBody: opts.onObservedCollectionsBody } : {}),
     createTap: (onEvent, onHttpBody) => {
       const tap = new FakeTap(onEvent, onHttpBody);
       taps.push(tap);
@@ -856,6 +864,35 @@ describe('LiveSource: an observed PVP body is handed on whole, with its bytes', 
   });
 });
 
+describe('LiveSource: the Collections state', () => {
+  const collectionsBody: unknown = JSON.parse(
+    readFileSync(resolve(__dirname, '..', '..', '..', '..', '..', 'packages', 'game-api', 'src', '__fixtures__', 'collections-state.json'), 'utf8'),
+  );
+
+  it('reaches its seam as the parsed body and the time it passed, and is not a warning', () => {
+    const { log, warnRecords } = createSpyLog();
+    const seen: ObservedCollectionsBody[] = [];
+    const { source, currentTap } = createHarness({ log, onObservedCollectionsBody: (observation) => seen.push(observation) });
+    source.start();
+
+    currentTap().emitHttpBody(collectionsBody, 4_321);
+
+    expect(warnRecords).toEqual([]);
+    expect(seen).toEqual([{ body: collectionsBody, atMs: 4_321 }]);
+  });
+
+  it('with no seam wired, is named in the log and dropped rather than reported as unidentified', () => {
+    const { log, warnRecords, infoRecords } = createSpyLog();
+    const { source, currentTap } = createHarness({ log });
+    source.start();
+
+    currentTap().emitHttpBody(collectionsBody, 1);
+
+    expect(warnRecords).toEqual([]);
+    expect(infoRecords.some((record) => record.event === 'observed_body.collections')).toBe(true);
+  });
+});
+
 describe('LiveSource: manual diagnostics dump', () => {
   it('reports written: false with reason no-source rather than a silent success when no ring is attached', () => {
     const { source } = createHarness();
@@ -1241,6 +1278,240 @@ describe('LiveSource: earnings', () => {
     const after = source.getView().earnings;
     expect(after?.goldSession).toBe(before?.goldSession);
     expect(after?.gold10).toBe(before?.gold10);
+  });
+
+  it('keeps accruing after a tap rebuild whose frames are numbered from 1 again', async () => {
+    const { source, taps, clock, goLive } = createHarness();
+    source.start();
+    goLive();
+
+    function emitFrame(tapIndex: number, sequence: number, tick: LiveTick): void {
+      clock.ms += 100;
+      const tap = taps[tapIndex];
+      if (!tap) throw new Error('harness: expected the tap to exist');
+      tap.emit({ type: 'frame', frame: { at: new Date(clock.ms).toISOString(), sequence, tick } });
+    }
+
+    for (let sequence = 1; sequence <= 5; sequence += 1) {
+      emitFrame(0, sequence, { heroes: [], phase: 1, loot: [{ cell: 0, gold: 100 }] });
+    }
+    const before = source.getView().earnings;
+    expect(before?.goldSessionTotal).toBe(500);
+
+    await source.forceDetach();
+    for (let sequence = 1; sequence <= 3; sequence += 1) {
+      emitFrame(1, sequence, { heroes: [], phase: 1, loot: [{ cell: 0, gold: 100 }] });
+    }
+
+    const after = source.getView().earnings;
+    expect(after?.goldSessionTotal).toBe(800);
+    expect(after?.sessionSeconds).toBeCloseTo((before?.sessionSeconds ?? 0) + 0.3, 6);
+  });
+
+  it('keeps the map reading current after a tap rebuild whose frames are numbered from 1 again', async () => {
+    const { source, taps, clock, goLive } = createHarness();
+    source.start();
+    goLive();
+
+    function emitFrame(tapIndex: number, sequence: number, tick: LiveTick): void {
+      clock.ms += 100;
+      const tap = taps[tapIndex];
+      if (!tap) throw new Error('harness: expected the tap to exist');
+      tap.emit({ type: 'frame', frame: { at: new Date(clock.ms).toISOString(), sequence, tick } });
+    }
+
+    for (let sequence = 1; sequence <= 5; sequence += 1) {
+      emitFrame(0, sequence, { heroes: [], phase: 61, kinds: [1, 1, 1, 1] });
+    }
+    expect(source.getView().map?.propsAlive).toBe(4);
+
+    await source.forceDetach();
+    emitFrame(1, 1, { heroes: [], phase: 62, kinds: [1, 1, -1, -1] });
+
+    expect(source.getView().map?.phase).toBe(62);
+    expect(source.getView().map?.propsAlive).toBe(2);
+  });
+});
+
+function rosterHero(id: string, cooldownReduction: number, abilities: readonly Record<string, unknown>[] = []) {
+  return { id, name: id, birth_stats: MINIMAL_BIRTH_STATS, stats: { ...MINIMAL_BIRTH_STATS, cooldown_reduction: cooldownReduction }, abilities };
+}
+
+/** An account read that carries a roster and nothing else: no `casa`, so `ingestRotation` takes
+ *  its early return before the rotation body is applied. */
+function rosterOnlyAccountView(heroes: readonly unknown[], binding: string | null = null): AccountView {
+  return {
+    payload: { heroes },
+    gameRunning: true,
+    store: { status: 'ok', reason: null, binding },
+  };
+}
+
+describe('LiveSource: damage', () => {
+  const FUSE_FOR_COOLDOWN_REDUCTION_0_2 = 1.6;
+
+  function bombBurstFromAbsentPlanter(
+    pushFrame: (tick: LiveTick) => LiveFrame,
+    heroId: string,
+    damage: number,
+  ): void {
+    const heroes = [{ id: heroId, cell: 3 }];
+    pushFrame({
+      heroes,
+      bombs: [
+        {
+          cell: 50,
+          radius: 2,
+          fuseRemainingSeconds: FUSE_FOR_COOLDOWN_REDUCTION_0_2 - 0.1,
+          fuseTotalSeconds: FUSE_FOR_COOLDOWN_REDUCTION_0_2,
+        },
+      ],
+    });
+    pushFrame({ heroes, explosions: [{ cell: 50, radius: 2 }], hits: [{ cell: 51, damage }] });
+  }
+
+  it('is null in the view before the first tap frame', () => {
+    const { source } = createHarness();
+    source.start();
+
+    expect(source.getView().damage).toBeNull();
+  });
+
+  it('carries team and per-hero figures in the view once frames have arrived', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(rosterOnlyAccountView([rosterHero('A', 0.2)]));
+    goLive();
+
+    bombBurstFromAbsentPlanter(pushFrame, 'A', 25);
+    pushFrame({ heroes: [{ id: 'A', cell: 3 }] });
+
+    const damage = source.getView().damage;
+    expect(damage?.team).toEqual({ damage: 25, props: 0, gold: 0 });
+    expect(damage?.heroes.map((row) => [row.heroId, row.damage, row.onField])).toEqual([['A', 25, true]]);
+    expect(damage?.teamDpsSession).toBeCloseTo(25 / 0.2, 6);
+    expect(damage?.sessionSeconds).toBeCloseTo(0.2, 9);
+  });
+
+  it('seeds the fold from an account read that carries no casa', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(rosterOnlyAccountView([rosterHero('A', 0.2)]));
+    goLive();
+
+    bombBurstFromAbsentPlanter(pushFrame, 'A', 25);
+
+    expect(source.getView().damage?.heroes.find((row) => row.heroId === 'A')?.damage).toBe(25);
+  });
+
+  it('leaves the bomb unowned when no roster was ever read', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    goLive();
+
+    bombBurstFromAbsentPlanter(pushFrame, 'A', 25);
+
+    const damage = source.getView().damage;
+    expect(damage?.heroes.find((row) => row.heroId === 'A')?.damage ?? 0).toBe(0);
+    expect(damage?.unattributedReasons.noOwnerAtBirth.damage).toBe(25);
+  });
+
+  it('keeps the seeds when a tap-observed rotation body arrives, which carries no roster', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(
+      rosterOnlyAccountView([rosterHero('A', 0.2), rosterHero('G', 0.1, [{ code: 'fantasma', level: 1 }])]),
+    );
+    source.ingestObservedRotation(bodyWithHeroes([completeHero('A')]), Date.now());
+    goLive();
+
+    bombBurstFromAbsentPlanter(pushFrame, 'A', 25);
+    pushFrame({ heroes: [{ id: 'G', cell: 7 }], hits: [{ cell: 7, damage: 60 }] });
+
+    const heroes = source.getView().damage?.heroes;
+    expect(heroes?.find((row) => row.heroId === 'A')?.damage).toBe(25);
+    expect(heroes?.find((row) => row.heroId === 'G')?.damage).toBe(60);
+  });
+
+  it('resetEarnings zeroes the damage session and keeps the 10-minute team figure', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(rosterOnlyAccountView([rosterHero('A', 0.2)]));
+    goLive();
+    bombBurstFromAbsentPlanter(pushFrame, 'A', 25);
+    pushFrame({ heroes: [{ id: 'A', cell: 3 }] });
+    const before = source.getView().damage;
+    expect(before?.teamDps10).toBeGreaterThan(0);
+
+    source.resetEarnings();
+
+    const after = source.getView().damage;
+    expect(after?.team).toEqual({ damage: 0, props: 0, gold: 0 });
+    expect(after?.sessionSeconds).toBe(0);
+    expect(after?.heroes).toEqual([]);
+    expect(after?.teamDpsSession).toBeNull();
+    expect(after?.teamDps10).toBe(before?.teamDps10);
+  });
+
+  it('a different account binding clears both windows and what was learned', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(rosterOnlyAccountView([rosterHero('A', 0.2)], 'account-a'));
+    goLive();
+    bombBurstFromAbsentPlanter(pushFrame, 'A', 25);
+    expect(source.getView().damage?.teamDps10).toBeGreaterThan(0);
+
+    source.ingestRotation(rosterOnlyAccountView([], 'account-b'));
+
+    const after = source.getView().damage;
+    expect(after?.team.damage).toBe(0);
+    expect(after?.teamDps10).toBeNull();
+    expect(after?.coverageSeconds).toBe(0);
+    expect(after?.heroes).toEqual([]);
+  });
+
+  it('seeds the new account\'s roster after the binding change cleared the old one', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(rosterOnlyAccountView([rosterHero('A', 0.5)], 'account-a'));
+    goLive();
+    pushFrame({ heroes: [{ id: 'A', cell: 3 }] });
+
+    source.ingestRotation(rosterOnlyAccountView([rosterHero('B', 0.2)], 'account-b'));
+    bombBurstFromAbsentPlanter(pushFrame, 'B', 25);
+
+    expect(source.getView().damage?.heroes.find((row) => row.heroId === 'B')?.damage).toBe(25);
+  });
+
+  it('re-ingesting the same binding clears nothing', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(rosterOnlyAccountView([rosterHero('A', 0.2)], 'account-a'));
+    goLive();
+    bombBurstFromAbsentPlanter(pushFrame, 'A', 25);
+
+    source.ingestRotation(rosterOnlyAccountView([rosterHero('A', 0.2)], 'account-a'));
+
+    expect(source.getView().damage?.team.damage).toBe(25);
+  });
+
+  it('keeps counting damage after a tap rebuild whose frames are numbered from 1 again', async () => {
+    const { source, taps, clock, goLive } = createHarness();
+    source.start();
+    goLive();
+
+    function emitFrame(tapIndex: number, sequence: number, tick: LiveTick): void {
+      clock.ms += 100;
+      const tap = taps[tapIndex];
+      if (!tap) throw new Error('harness: expected the tap to exist');
+      tap.emit({ type: 'frame', frame: { at: new Date(clock.ms).toISOString(), sequence, tick } });
+    }
+
+    for (let sequence = 1; sequence <= 4; sequence += 1) emitFrame(0, sequence, { heroes: [], hits: [{ cell: 1, damage: 10 }] });
+    await source.forceDetach();
+    for (let sequence = 1; sequence <= 2; sequence += 1) emitFrame(1, sequence, { heroes: [], hits: [{ cell: 1, damage: 10 }] });
+
+    expect(source.getView().damage?.team.damage).toBe(60);
   });
 });
 

@@ -18,6 +18,12 @@ describe('AppNav', () => {
     expect(out).toMatch(/<nav[^>]*aria-label="Main"/);
   });
 
+  it('pads a worded tab by 10px a side, the figure the top bar density widths are summed from', () => {
+    const out = html({ items: ITEMS });
+    expect(out.split(' px-2.5 ')).toHaveLength(3);
+    expect(out).not.toContain('px-3');
+  });
+
   it('accepts a caller-supplied aria-label', () => {
     const out = html({ items: ITEMS, ariaLabel: 'Main sections' });
     expect(out).toMatch(/<nav[^>]*aria-label="Main sections"/);

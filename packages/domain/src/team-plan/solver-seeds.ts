@@ -109,10 +109,20 @@ function bestItemFirstSeed(
       if (diff !== 0) return diff;
       return a.id.localeCompare(b.id);
     });
+  // One placement per hero and slot. `items` is a snapshot taken best-first, so a hero whose slot
+  // could be filled twice keeps whichever item came LAST — the weakest — and every better one it
+  // displaced sits back in the pool behind the iteration, unreachable. That inverts the seed this
+  // function exists to offer, which is the best items on the strongest heroes that can wear them.
+  //
+  // The snapshot still makes this seed differ from `greedyBySlotValueSeed`, which re-reads the pool
+  // per hero and slot: an item displaced here returns to the bag and is not reconsidered. That is
+  // what keeps the two starting points distinct, and the climb can recover the difference.
+  const filled = new Set<string>();
   for (const item of items) {
     if (!state.pool.has(item.id) || !item.slot) continue;
     let bestHero: HeroPlanContext | null = null;
     for (const ctx of heroOrder) {
+      if (filled.has(`${ctx.heroId}\u0000${item.slot}`)) continue;
       if (!eligibleForHero(poolEntryForItem(item, input.forgeFloor), ctx, item.slot)) continue;
       bestHero = ctx;
       break;
@@ -124,6 +134,7 @@ function bestItemFirstSeed(
       heroId: bestHero.heroId,
       slot: item.slot,
     });
+    filled.add(`${bestHero.heroId}\u0000${item.slot}`);
   }
   return state;
 }

@@ -73,6 +73,7 @@ export function PhasesExplorerView({
 
   const teamCoinPct = account.tree.teamCoinPct ?? 0;
   const xpMult = account.tree.xpMult ?? 1;
+  const collectionGoldPct = account.tree.collection?.goldPct ?? 0;
 
   // Map/mitigation facts don't depend on teamCoinPct/xpMult/luckFraction, so this pass gives
   // `topSquadRows` a `phase`/`mitigationPct` to rank against before the squad's own average luck
@@ -81,8 +82,8 @@ export function PhasesExplorerView({
   // running it twice here is fine; `rankRosterByDps` (the actual per-hero pipeline cost) still
   // runs exactly once.
   const intelBase = useMemo(
-    () => computePhaseIntelGlobal(phase, { teamCoinPct, xpMult }),
-    [phase, teamCoinPct, xpMult],
+    () => computePhaseIntelGlobal(phase, { teamCoinPct, xpMult, collectionGoldPct }),
+    [phase, teamCoinPct, xpMult, collectionGoldPct],
   );
 
   const topSquadRows = useMemo(
@@ -130,11 +131,12 @@ export function PhasesExplorerView({
       computePhaseIntelGlobal(phase, {
         teamCoinPct,
         xpMult,
+        collectionGoldPct,
         luckFraction,
         treeLuckFlatPct,
         squadLuckPct,
       }),
-    [phase, teamCoinPct, xpMult, luckFraction, treeLuckFlatPct, squadLuckPct],
+    [phase, teamCoinPct, xpMult, collectionGoldPct, luckFraction, treeLuckFlatPct, squadLuckPct],
   );
 
   const heroesById = useMemo(() => new Map(heroes.map((hero) => [hero.id, hero])), [heroes]);

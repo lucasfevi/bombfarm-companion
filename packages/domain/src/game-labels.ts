@@ -213,6 +213,10 @@ const ABILITY_NAMES: Record<string, Bilingual> = {
   fortuna: { pt: 'Fortuna', en: 'Fortune' },
   brecha: { pt: 'Brecha', en: 'Breach' },
   estilhacos: { pt: 'Estilhaços', en: 'Shrapnel' },
+  pavio_curto: { pt: 'Pavio Curto', en: 'Short Fuse' },
+  carnificina: { pt: 'Carnificina', en: 'Carnage' },
+  matador_chefes: { pt: 'Matador de Chefes', en: 'Boss Slayer' },
+  aprendiz: { pt: 'Aprendiz', en: 'Apprentice' },
 };
 
 const ABILITY_EFFECTS: Record<string, Bilingual> = {
@@ -300,6 +304,22 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     pt: `+2.5% de chance de a rocha destruída estilhaçar: cada rocha nos 4 lados leva ${SHATTER_FRAC * 100}% do golpe/nível`,
     en: `+2.5% chance for a destroyed rock to shatter: each rock on its 4 sides takes ${SHATTER_FRAC * 100}% of the hit/level`,
   },
+  pavio_curto: {
+    pt: '+0.5% redução de recarga (próprio)/nível, somada no fim, até o teto',
+    en: '+0.5% cooldown reduction (self)/level, added last, up to the cap',
+  },
+  carnificina: {
+    pt: '+5% dano crítico do TIME/nível, somado ao bônus de crítico; dois portadores não passam do máximo de um',
+    en: "+5% TEAM crit damage/level, added to the crit bonus; two carriers never exceed one's maximum",
+  },
+  matador_chefes: {
+    pt: '+5% dano (próprio) no chefe do portão 2×2/nível, não vale para a Jaula',
+    en: '+5% damage (self) against the 2×2 gate boss/level, not the Cage',
+  },
+  aprendiz: {
+    pt: '+0.75% XP do TIME/nível por rocha quebrada com ele em campo, dividido como o XP normal; dois portadores não passam do máximo de um (não modelado)',
+    en: "+0.75% TEAM XP/level for every rock broken while it is on the field, split like normal XP; two carriers never exceed one's maximum (not modeled)",
+  },
 };
 
 const LEVEL_PREFIX: Bilingual = { pt: 'Nv', en: 'Lv' };
@@ -340,6 +360,10 @@ const ABILITY_READOUT_DECIMALS: Record<AbilityReadoutKind, number> = {
   passageAttackPct: 2,
   dropTierPct: 1,
   goldPct: 1,
+  cdrPct: 1,
+  teamCritDmgPct: 0,
+  bossDmgPct: 0,
+  xpPct: 2,
 };
 
 /** Crit and penetration points print as `%`: that is the unit the game's own sheet shows them
@@ -362,6 +386,10 @@ const ABILITY_READOUT_UNITS: Record<AbilityReadoutKind, Bilingual> = {
   passageAttackPct: { pt: '+{value}% de Ataque de passagem', en: '+{value}% attack from passage' },
   dropTierPct: { pt: '+{value}% de chance de subir raridade', en: '+{value}% chance of a rarer drop' },
   goldPct: { pt: '+{value}% de ouro', en: '+{value}% gold' },
+  cdrPct: { pt: '+{value}% de redução de recarga', en: '+{value}% cooldown reduction' },
+  teamCritDmgPct: { pt: '+{value}% de dano crítico do time', en: '+{value}% team crit damage' },
+  bossDmgPct: { pt: '+{value}% de dano no chefe', en: '+{value}% boss damage' },
+  xpPct: { pt: '+{value}% de XP', en: '+{value}% XP' },
 };
 
 const PEEK_LABELS = {
@@ -372,6 +400,7 @@ const PEEK_LABELS = {
   teamAura: { pt: 'aura do time', en: 'team aura' },
   ownSheet: { pt: 'ficha própria', en: 'own sheet' },
   forge: { pt: 'Forja', en: 'Forge' },
+  forgeChance: { pt: 'Chance de forja', en: 'Forge chance' },
   power: { pt: 'Poder', en: 'Power' },
   deployed: { pt: 'Em campo', en: 'Deployed' },
   emptySlot: { pt: 'Vazio', en: 'Empty' },

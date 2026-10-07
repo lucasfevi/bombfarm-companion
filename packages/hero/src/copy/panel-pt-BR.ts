@@ -105,6 +105,7 @@ export const statPanelPtBR: StatPanelCopy = {
   bdSrcTeam: 'Auras de time',
   bdSrcAbilitiesTeam: 'Habilidades + Time',
   bdSrcRune: 'Runa',
+  bdSrcCollection: 'Coleção',
   bdSrcHero: 'Herói',
   bdSrcAbility: 'Habilidade',
   bdNoteCapped: 'Bônus próprio + time limitado a +100%',

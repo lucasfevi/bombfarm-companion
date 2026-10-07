@@ -144,6 +144,7 @@ export function extractHero(
     critChanceFlat: mods.sheetCritChanceFlat,
     penetration: mods.sheetPenetrationFlat,
     critDmgFlat: mods.sheetCritDmgFlat,
+    cdr: mods.sheetCdrFlat,
   };
 
   const rarityIdx = Math.round(num(rawHero.rarity, -1));

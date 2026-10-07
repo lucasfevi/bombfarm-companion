@@ -52,6 +52,7 @@ const IPC_CHANNEL_LIST = [
   'updates:download',
   'updates:installOnRestart',
   'market:getSnapshot',
+  'onlinePlayers:get',
   'market:refreshItem',
   'market:check',
   'forge:start',
@@ -62,9 +63,13 @@ const IPC_CHANNEL_LIST = [
   'apply:start',
   'apply:stop',
   'apply:inject',
+  'deconstruct:start',
+  'deconstruct:inject',
   'pvp:history',
   'pvp:refresh',
   'pvp:film',
+  'collections:get',
+  'collections:refresh',
   'clipboard:writeImage',
 ] as const;
 
@@ -75,10 +80,13 @@ const IPC_EVENT_CHANNEL_LIST = [
   'live:event',
   'updates:changed',
   'market:changed',
+  'onlinePlayers:changed',
   'settings:changed',
   'forge:event',
   'apply:event',
+  'deconstruct:event',
   'pvp:changed',
+  'collections:changed',
   'window:changed',
 ] as const;
 
@@ -91,7 +99,7 @@ type _AllInvokeChannelsListed = AssertNever<Exclude<import('./index.js').IpcInvo
 type _AllEventChannelsListed = AssertNever<Exclude<import('./index.js').IpcEventChannel, (typeof IPC_EVENT_CHANNELS)[number]>>;
 
 describe('contracts IPC surface', () => {
-  it('lists stable invoke channels, including the four consent channels and the three apply channels (right after forge:inject, before pvp:history)', () => {
+  it('lists stable invoke channels, including the four consent channels and the three apply channels (right after forge:inject) and the two deconstruct channels (before pvp:history)', () => {
     expect(IPC_CHANNELS).toEqual(IPC_CHANNEL_LIST);
   });
 
@@ -111,6 +119,9 @@ describe('contracts IPC surface', () => {
     expect(isIpcChannel('apply:start')).toBe(true);
     expect(isIpcChannel('apply:stop')).toBe(true);
     expect(isIpcChannel('apply:inject')).toBe(true);
+    expect(isIpcChannel('deconstruct:start')).toBe(true);
+    expect(isIpcChannel('deconstruct:inject')).toBe(true);
+    expect(isIpcChannel('deconstruct:event')).toBe(false);
     expect(isIpcChannel('apply:preflight')).toBe(false);
     expect(isIpcChannel('not-a-channel')).toBe(false);
   });
@@ -120,6 +131,7 @@ describe('contracts IPC surface', () => {
     expect(isIpcEventChannel('consent:changed')).toBe(true);
     expect(isIpcEventChannel('account:changed')).toBe(true);
     expect(isIpcEventChannel('apply:event')).toBe(true);
+    expect(isIpcEventChannel('deconstruct:event')).toBe(true);
     expect(isIpcEventChannel('not-an-event')).toBe(false);
   });
 

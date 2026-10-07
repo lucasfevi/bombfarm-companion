@@ -59,6 +59,7 @@ export function advisorInputForHero(
     treeSpeed: account.tree.speed,
     treeEnergy: account.tree.energy,
     treeLuckFlatPct: account.tree.luckFlatPct ?? 0,
+    treeCollection: account.tree.collection,
     teamBuffs: account.teamBuffs,
     fieldAllies: account.fieldAllies ?? 0,
     entryPulseRankFloor: account.entryPulseRankFloor ?? 0,

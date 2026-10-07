@@ -6,9 +6,11 @@ import {
 import { writeClipboardImage, type ImageClipboard } from './shell/clipboard-image.js';
 import type { AppEnv } from './env.js';
 import {
+  EMPTY_COLLECTIONS_VIEW,
   EMPTY_FORGE_HISTORY,
   EMPTY_PVP_HISTORY,
   emptyMarketSnapshotView,
+  emptyOnlinePlayersView,
   initialUpdateStatus,
   isIpcChannel,
   isMarketQuoteTarget,
@@ -20,7 +22,10 @@ import {
   type AppSettings,
   type ApplyStartRequest,
   type ApplyStartResult,
+  type CollectionsView,
   type ConsentRecord,
+  type DeconstructStartRequest,
+  type DeconstructStartResult,
   type ForgeHistoryResult,
   type ForgeStartRequest,
   type ForgeStartResult,
@@ -34,6 +39,7 @@ import {
   type MarketQuoteResult,
   type MarketQuoteTarget,
   type MarketSnapshotView,
+  type OnlinePlayersView,
   type MiniLiveLayoutView,
   type PvpFilmView,
   type PvpHistoryResult,
@@ -72,6 +78,10 @@ export interface UpdateServicePort {
   installOnRestart(): UpdateStatus;
 }
 
+export interface OnlinePlayersServicePort {
+  getView(): OnlinePlayersView;
+}
+
 export interface MarketServicePort {
   getView(): MarketSnapshotView;
   refreshSnapshot(): Promise<MarketSnapshotView>;
@@ -101,12 +111,24 @@ export interface ApplyInjectorPort {
   arm(payload: unknown): { ok: boolean };
 }
 
+export interface DeconstructServicePort {
+  start(request: DeconstructStartRequest): DeconstructStartResult;
+}
+
 export interface PvpHistoryPort {
   list(): PvpHistoryResult;
   readFilm(filmId: number): string | null;
 }
 
 export interface PvpReaderPort {
+  refresh(): AccountReadResult;
+}
+
+export interface CollectionsStorePort {
+  view(): CollectionsView;
+}
+
+export interface CollectionsReaderPort {
   refresh(): AccountReadResult;
 }
 
@@ -153,13 +175,18 @@ export interface IpcHandlerDeps<Image extends ClipboardImageLike = ClipboardImag
   getLiveSource: () => LiveSourcePort | null;
   getUpdateService: () => UpdateServicePort | null;
   getMarketService: () => MarketServicePort | null;
+  getOnlinePlayersService: () => OnlinePlayersServicePort | null;
   getForgeService: () => ForgeServicePort | null;
   getForgeHistory: () => ForgeHistoryPort | null;
   getForgeInjector: () => InjectorPort | null;
   getApplyService: () => ApplyServicePort | null;
   getApplyInjector: () => ApplyInjectorPort | null;
+  getDeconstructService: () => DeconstructServicePort | null;
+  getDeconstructInjector: () => InjectorPort | null;
   getPvpHistory: () => PvpHistoryPort | null;
   getPvpReader: () => PvpReaderPort | null;
+  getCollectionsStore: () => CollectionsStorePort | null;
+  getCollectionsReader: () => CollectionsReaderPort | null;
   getMainWindow: () => MainWindowPort | null;
   getMiniLiveController: () => MiniLiveControllerPort | null;
   getWindowLayoutStore: () => WindowLayoutStorePort | null;
@@ -193,6 +220,7 @@ export function defaultLiveView(nowIso: string): LiveView {
     onFieldHeroIds: [],
     earnings: null,
     map: null,
+    damage: null,
     updatedAt: nowIso,
   };
 }
@@ -326,6 +354,7 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
     'updates:installOnRestart': (): UpdateStatus =>
       deps.getUpdateService()?.installOnRestart() ?? preServiceUpdateStatus(),
     'market:getSnapshot': () => deps.getMarketService()?.getView() ?? emptyMarketSnapshotView(),
+    'onlinePlayers:get': () => deps.getOnlinePlayersService()?.getView() ?? emptyOnlinePlayersView,
     'market:refreshItem': refreshMarketItem,
     'market:check': checkMarketNow,
     'forge:start': (request: ForgeStartRequest): ForgeStartResult =>
@@ -341,9 +370,15 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.getApplyService()?.start(request) ?? { ok: false, reason: 'unavailable' },
     'apply:stop': (runId: string): boolean => deps.getApplyService()?.stop(runId) ?? false,
     'apply:inject': (payload: unknown) => deps.getApplyInjector()?.arm(payload) ?? { ok: false },
+    'deconstruct:start': (request: DeconstructStartRequest): DeconstructStartResult =>
+      deps.getDeconstructService()?.start(request) ?? { ok: false, reason: 'unavailable' },
+    'deconstruct:inject': (payload: unknown) => deps.getDeconstructInjector()?.inject(payload) ?? { ok: false },
     'pvp:history': (): PvpHistoryResult => deps.getPvpHistory()?.list() ?? EMPTY_PVP_HISTORY,
     'pvp:refresh': (): AccountReadResult => deps.getPvpReader()?.refresh() ?? { ok: false, reason: 'unavailable' },
     'pvp:film': readPvpFilm,
+    'collections:get': (): CollectionsView => deps.getCollectionsStore()?.view() ?? EMPTY_COLLECTIONS_VIEW,
+    'collections:refresh': (): AccountReadResult =>
+      deps.getCollectionsReader()?.refresh() ?? { ok: false, reason: 'unavailable' },
     'window:minimize': () => {
       deps.getMainWindow()?.minimize();
       return null;

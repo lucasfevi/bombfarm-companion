@@ -39,9 +39,11 @@ import {
   type FieldCountdownState,
   type RosterHeroAbilities,
 } from '@bombfarm/domain/live';
+import { collectionFromSave } from '@bombfarm/domain/model';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { xpPerProp } from '@bombfarm/domain/phase-wiki';
 import { gameProcessQuery, runPowerShellAsync, runPowerShellSync } from '../game-reader/process.js';
+import { DamageFold } from './damage-fold.js';
 import { EarningsFold } from './earnings-fold.js';
 import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
 import { FrameRing } from './frame-ring.js';
@@ -275,12 +277,21 @@ export interface ObservedPvpBody {
   readonly atMs: number;
 }
 
+/** The Collections state as the tap saw it. No raw bytes: it is read once and never kept whole. */
+export interface ObservedCollectionsBody {
+  readonly body: unknown;
+  readonly atMs: number;
+}
+
 export interface LiveSourceDeps {
   /** Checked at the attach site by the underlying tap, never inferred from construction order. */
   readonly consent: () => boolean;
   /** Where a duel result or a film goes the moment it is identified. Omitted, both are named in
    *  the log and dropped, the way every non-rotation section still is. */
   readonly onObservedPvpBody?: (observation: ObservedPvpBody) => void;
+  /** Where the Collections state goes when the client fetches it; omitted, it is named in the log
+   *  and dropped. */
+  readonly onObservedCollectionsBody?: (observation: ObservedCollectionsBody) => void;
   readonly userDataDir: string;
   /** Gates the frame capture inside the default tap factory — irrelevant, and safe to omit, when
    *  `createTap` overrides that factory entirely. Defaults to `'prod'`, the flavor capture never
@@ -479,7 +490,11 @@ function fieldHeroesFromRotation(rotation: RotationSnapshot): readonly LiveTickH
  * siblings are the unboosted base and are deliberately not what a player-facing panel shows.
  */
 function wikiFactsFor(phase: number, boosts: MapAccountBoosts): MapWikiFacts | null {
-  const intel = computePhaseIntelGlobal(phase, { teamCoinPct: boosts.teamCoinPct, xpMult: boosts.xpMult });
+  const intel = computePhaseIntelGlobal(phase, {
+    teamCoinPct: boosts.teamCoinPct,
+    xpMult: boosts.xpMult,
+    collectionGoldPct: boosts.collectionGoldPct,
+  });
   if (!intel) return null;
   return {
     propsTotal: intel.propCount,
@@ -500,6 +515,14 @@ function readTeamCoinPct(skills: Record<string, unknown> | undefined): number | 
   if (!isPlainObject(totals)) return undefined;
   const value = totals.coin_add ?? totals.team_coin_add;
   return typeof value === 'number' && Number.isFinite(value) ? value * 100 : undefined;
+}
+
+/** `skills.totals.colecao.ouro` — `undefined` when the read carries no Collections block. */
+function readCollectionGoldPct(skills: Record<string, unknown> | undefined): number | undefined {
+  if (!isPlainObject(skills)) return undefined;
+  const totals = skills.totals;
+  if (!isPlainObject(totals) || !isPlainObject(totals.colecao)) return undefined;
+  return collectionFromSave(totals).goldPct;
 }
 
 /** `skills.totals.xp_mult` is present even on a read where `casa` did not resolve — the same
@@ -566,6 +589,11 @@ export class LiveSource {
 
   readonly #earningsFold: EarningsFold;
   readonly #mapFold: MapFold;
+  readonly #damageFold: DamageFold;
+  /** Every tap numbers its own frames from 1, so a tap rebuilt by {@link forceDetach} restarts at 1
+   *  while the folds still remember the previous tap's last number and would drop its frames. The
+   *  folds are handed this process-level count instead, which only ever grows. */
+  #frameCounter = 0;
   /** `null` until the first tap frame of the session has been folded — {@link LiveView.earnings}
    *  stays `null` until then too, rather than reporting a rate computed over zero real ticks. */
   #goldBalance: number | null = null;
@@ -574,6 +602,7 @@ export class LiveSource {
    *  shows a real (if aging) balance instead of an em dash. */
   readonly #observer: ObservationCapture | null;
   readonly #onObservedPvpBody: ((observation: ObservedPvpBody) => void) | null;
+  readonly #onObservedCollectionsBody: ((observation: ObservedCollectionsBody) => void) | null;
   #accountGoldBalance: number | null = null;
   /** When {@link #accountGoldBalance} was captured. `null` only alongside a `null` balance. */
   #accountGoldCapturedAt: string | null = null;
@@ -584,6 +613,7 @@ export class LiveSource {
   /** The last `skills.totals.coin_add` seen, sticky across a partial read for the same reason
    *  {@link #xpMult} is. */
   #teamCoinPct: number | undefined;
+  #collectionGoldPct: number | undefined;
   /** `undefined` means no binding has been observed yet, the state a `null` read from the store
    *  must never be mistaken for — see {@link #trackAccountBinding}. */
   #lastBinding: string | undefined;
@@ -592,9 +622,11 @@ export class LiveSource {
     this.#log = deps.log ?? NOOP_LOG_PORT;
     this.#observer = deps.observer ?? null;
     this.#onObservedPvpBody = deps.onObservedPvpBody ?? null;
+    this.#onObservedCollectionsBody = deps.onObservedCollectionsBody ?? null;
     this.#now = deps.now ?? Date.now;
     this.#earningsFold = new EarningsFold({ now: this.#now, xpPerProp, log: this.#log });
     this.#mapFold = new MapFold({ wikiFactsFor });
+    this.#damageFold = new DamageFold({ now: this.#now, log: this.#log });
     if (deps.createTap) {
       this.#createTap = deps.createTap;
       this.#ring = null;
@@ -674,6 +706,7 @@ export class LiveSource {
       onFieldHeroIds: this.#fieldState.onFieldHeroIdsSorted,
       earnings: this.#buildEarnings(),
       map: this.#mapFold.current,
+      damage: this.#damageFold.view,
       updatedAt: this.#updatedAt,
     };
   }
@@ -703,6 +736,7 @@ export class LiveSource {
    *  window is untouched: see {@link EarningsFold.reset}. */
   resetEarnings(): void {
     this.#earningsFold.reset('reset');
+    this.#damageFold.reset('reset');
   }
 
   /** The REST rotation projection: the base view every countdown falls back to when no live tap
@@ -714,8 +748,14 @@ export class LiveSource {
   ingestRotation(view: AccountView, atMs: number = this.#now()): void {
     this.#xpMult = readXpMult(view.payload.skills) ?? this.#xpMult;
     this.#teamCoinPct = readTeamCoinPct(view.payload.skills) ?? this.#teamCoinPct;
-    this.#mapFold.setAccountBoosts({ xpMult: this.#xpMult ?? 1, teamCoinPct: this.#teamCoinPct ?? 0 });
+    this.#collectionGoldPct = readCollectionGoldPct(view.payload.skills) ?? this.#collectionGoldPct;
+    this.#mapFold.setAccountBoosts({
+      xpMult: this.#xpMult ?? 1,
+      teamCoinPct: this.#teamCoinPct ?? 0,
+      collectionGoldPct: this.#collectionGoldPct ?? 0,
+    });
     this.#trackAccountBinding(view.store.binding);
+    if (Array.isArray(view.payload.heroes)) this.#damageFold.setRoster(view.payload.heroes);
     const accountGold = readAccountGold(view.payload.account);
     if (accountGold !== undefined) {
       this.#accountGoldBalance = accountGold;
@@ -733,6 +773,7 @@ export class LiveSource {
     if (binding === null) return;
     if (this.#lastBinding !== undefined && binding !== this.#lastBinding) {
       this.#earningsFold.reset('accountChange');
+      this.#damageFold.reset('accountChange');
       // Only the stream-derived half is dropped. The boosts were read from THIS call's payload,
       // a few lines above — they already belong to the new account, and clearing them here would
       // report the map's economy at no boost at all until the next rotation read landed. Same
@@ -786,7 +827,7 @@ export class LiveSource {
   /** Reads the client's own traffic before this app's own requests: {@link identifyObservedBody}
    *  is the strict, shape-only discriminator (the tap sees responses with no URL, so a path is
    *  never available to identify by) — a match resolves to exactly one route or not at all, never
-   *  a guess. The rotation route and the two PVP bodies are wired downstream; every other
+   *  a guess. The rotation route, the two PVP bodies and the Collections state are wired downstream; every other
    *  identified section is named in the log and otherwise left alone, the seam the next one plugs
    *  into. */
   #handleObservedHttpBody(bodyBuf: Buffer, atMs: number): void {
@@ -830,6 +871,11 @@ export class LiveSource {
     if (identification.kind === 'pvp') {
       this.#log.info({ scope: 'live-source', event: 'observed_body.pvp', route: identification.route, byteLength: bodyBuf.length });
       this.#onObservedPvpBody?.({ route: identification.route, body: parsed, raw: bodyBuf, atMs });
+      return;
+    }
+    if (identification.kind === 'collections') {
+      this.#log.info({ scope: 'live-source', event: 'observed_body.collections', byteLength: bodyBuf.length });
+      this.#onObservedCollectionsBody?.({ body: parsed, atMs });
       return;
     }
 
@@ -896,8 +942,10 @@ export class LiveSource {
       this.#currency = event.currency;
       this.#touch();
     } else if (event.type === 'frame') {
-      this.#earningsFold.consumeTick(event.frame.tick, event.frame.sequence, this.#xpMult);
-      this.#mapFold.consumeTick(event.frame.tick, event.frame.sequence);
+      this.#frameCounter += 1;
+      this.#earningsFold.consumeTick(event.frame.tick, this.#frameCounter, this.#xpMult);
+      this.#mapFold.consumeTick(event.frame.tick, this.#frameCounter);
+      this.#damageFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#earningsStarted = true;
       if (event.frame.tick.gold !== undefined) this.#goldBalance = event.frame.tick.gold;
       this.#ingestTick(event.frame.tick, Date.parse(event.frame.at));

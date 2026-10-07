@@ -23,12 +23,12 @@ import { capSheetValue } from '@bombfarm/domain/sheet-view';
 import { buildStatBreakdown, foldLedger, type PipelineFacts } from '@bombfarm/domain/stat-breakdown';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { runTeamPlan } from '@bombfarm/domain/team-plan';
-import { assertInRegime } from './helpers/capture-regime';
+import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 import { teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
 
 const FILE = 'payload-20260913-20heroes-runes.json';
-assertInRegime(`sheet-math/${FILE}`, 'sheet');
+holdSuiteUntilInRegime(`sheet-math/${FILE}`, 'sheet');
 
 const payload = loadFixtureJson(FILE);
 const parsed = parseAccountPayload(payload as never, []);
@@ -141,6 +141,7 @@ describe('the per-statistic breakdown on this read', () => {
     speedMult: combat.speedMult,
     teamCritFlat: combat.teamCritFlat,
     teamPenFlat: combat.teamPenFlat,
+    teamCritDmgFlat: combat.teamCritDmgFlat,
     packMult: combat.packMult,
     treeSpeed: tree.speed_add * 100,
     treeCritChance: tree.crit_chance_add * 100,

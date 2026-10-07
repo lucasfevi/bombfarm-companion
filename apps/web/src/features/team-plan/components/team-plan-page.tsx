@@ -48,6 +48,7 @@ export function TeamPlanPage({
   const setIgnoreFieldCrowding = usePlannerStore((state) => state.setIgnoreFieldCrowding);
   const setTargetPhase = usePlannerStore((state) => state.setTargetPhase);
   const setGatePhase = usePlannerStore((state) => state.setGatePhase);
+  const setFarmSet = usePlannerStore((state) => state.setFarmSet);
   const startRun = usePlannerStore((state) => state.startRun);
   const resolveRun = usePlannerStore((state) => state.resolveRun);
   const applyPlan = usePlannerStore((state) => state.applyPlan);
@@ -76,6 +77,7 @@ export function TeamPlanPage({
         setIgnoreFieldCrowding,
         setTargetPhase,
         setGatePhase,
+        setFarmSet,
         startRun,
         resolveRun,
         applyPlan,

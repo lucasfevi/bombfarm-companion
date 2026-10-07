@@ -18,6 +18,7 @@ export const TEAM_BUFF_ABILITY_IDS = [
   'marcha_acelerada',
   'folego_mineiro',
   'brecha',
+  'carnificina',
 ] as const;
 
 export type TeamBuffId = (typeof TEAM_BUFF_ABILITY_IDS)[number];
@@ -39,12 +40,13 @@ export const TEAM_BUFF_PER_LEVEL: Record<TeamBuffId, number> = Object.fromEntrie
 
 /**
  * Each aura's own maximum — the confirmed field-wide cap every carrier's COMBINED rank clamps
- * at (two rank-20 Fôlego carriers give -20%, same as one rank-20 carrier alone). For these five
+ * at (two rank-20 Fôlego carriers give -20%, same as one rank-20 carrier alone). For these six
  * abilities this equals `max rank (20) × perLevel`, but is stored as a literal per ability
  * rather than computed from that formula: `matilha`'s published cap
  * (`combate.pack_dmg_cap: 0.9`) does NOT follow it, so `max × perLevel` is a reading, not a law
  * safe to lean on for an ability not yet checked against the wiki's own cap field. Brecha's 20 is
- * the wiki's own "+20 no teto" (2026-09-13).
+ * the wiki's own "+20 no teto" (2026-09-13); Carnificina's 100 is one carrier's maximum (20 × 5), the
+ * wiki's "two in the field never go past the maximum of one".
  */
 export const TEAM_BUFF_CAP: Record<TeamBuffId, number> = {
   grito_guerra: 20,
@@ -52,6 +54,7 @@ export const TEAM_BUFF_CAP: Record<TeamBuffId, number> = {
   marcha_acelerada: 3.7,
   folego_mineiro: 20,
   brecha: 20,
+  carnificina: 100,
 };
 
 export function zeroTeamBuffs(): Record<TeamBuffId, number> {
@@ -61,6 +64,7 @@ export function zeroTeamBuffs(): Record<TeamBuffId, number> {
     marcha_acelerada: 0,
     folego_mineiro: 0,
     brecha: 0,
+    carnificina: 0,
   };
 }
 
@@ -71,6 +75,7 @@ export const TEAM_BUFF_FIELDS = [
   { id: 'marcha_acelerada', label: 'Marcha Acelerada', hint: 'Speed %', step: 0.1 },
   { id: 'folego_mineiro', label: 'Fôlego de Mineiro', hint: 'Drain −%', step: 1 },
   { id: 'brecha', label: 'Brecha', hint: 'Pen pts', step: 1 },
+  { id: 'carnificina', label: 'Carnificina', hint: 'Crit dmg pts', step: 5 },
 ] as const satisfies readonly { id: TeamBuffId; label: string; hint: string; step: number }[];
 
 /**
@@ -236,7 +241,7 @@ export function computeTeamBuffsOverRotation(
 }
 
 /**
- * Every team aura a per-hero screen offers behind a switch: the five standing ones and Passagem
+ * Every team aura a per-hero screen offers behind a switch: the six standing ones and Passagem
  * de Bastão, which is not a standing total (`computeTeamBuffsAroundHero` never carries it) but
  * is priced at its cap on the hero's own entry pulse when switched on (`entryPulseRankFloor`).
  */

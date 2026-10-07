@@ -26,6 +26,10 @@ const MARKET_SNAPSHOT_HOST = 'raw.githubusercontent.com';
  *  its one host. The account path's rules are not widened for anything else. */
 const USAGE_PING_TRANSPORT_FILE = join(DESKTOP_MAIN, 'usage-ping/usage-ping-transport.ts');
 const USAGE_PING_HOST = 'api.bombfarm-companion.app';
+/** The online-players readout's one socket. A GET of one public number from the same host the
+ *  usage ping posts to; it carries no identity and reads nothing from the account. Exempted by
+ *  file for the host and the socket only — its GET-only shape is asserted below. */
+const ONLINE_PLAYERS_TRANSPORT_FILE = join(DESKTOP_MAIN, 'online-players/online-players-transport.ts');
 const SESSION_TOKEN_FILE_FILE = join(DESKTOP_MAIN, 'game-api/session-token-file.ts');
 const REQUEST_FILE = join(GAME_API_SRC, 'request.ts');
 /** The one write surface. It may name `POST` and exactly the six write routes below, and nothing
@@ -33,17 +37,19 @@ const REQUEST_FILE = join(GAME_API_SRC, 'request.ts');
 const WRITE_REQUEST_FILE = join(GAME_API_SRC, 'write-request.ts');
 const WRITE_ROUTE_PATHS = [
   '/item/forge',
-  '/item/forge_to_safe',
   '/item/equip',
   '/item/unequip',
   '/hero/stat/respec',
   '/hero/stat/commit',
+  '/item/desconstruir',
 ];
 const ACCOUNT_REFRESH_FILE = join(DESKTOP_MAIN, 'game-api/account-refresh.ts');
-/** The two callers of `requestPost()` — the forge run and an apply run. Both typed to a
- *  `WriteSession`; `FORGE_SERVICE_FILE` is also the root of the live-tap walk below (Guard 4). */
+/** The three callers of `requestPost()` — the forge run, an apply run and a deconstruct run. All
+ *  typed to a `WriteSession`; the forge and deconstruct services are also roots of the live-tap
+ *  walk below (Guard 4). */
 const FORGE_SERVICE_FILE = join(DESKTOP_MAIN, 'forge/forge-service.ts');
 const APPLY_SERVICE_FILE = join(DESKTOP_MAIN, 'apply/apply-service.ts');
+const DECONSTRUCT_SERVICE_FILE = join(DESKTOP_MAIN, 'deconstruct/deconstruct-service.ts');
 /** This guard file itself necessarily names the strings it checks for — excluded from every scan. */
 const BOUNDARIES_TEST_FILE = join(DESKTOP_MAIN, 'game-api/boundaries.test.ts');
 
@@ -156,7 +162,7 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
       const allowed = new Set([
         'app.bombfarm.net',
         ...(file === MARKET_TRANSPORT_FILE ? [MARKET_SNAPSHOT_HOST] : []),
-        ...(file === USAGE_PING_TRANSPORT_FILE ? [USAGE_PING_HOST] : []),
+        ...(file === USAGE_PING_TRANSPORT_FILE || file === ONLINE_PLAYERS_TRANSPORT_FILE ? [USAGE_PING_HOST] : []),
       ]);
       for (const pattern of hostPatterns) {
         const re = new RegExp(pattern);
@@ -268,7 +274,14 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
     const fetchPattern = /\bfetch\s*\(/;
     const offenders: string[] = [];
     for (const file of scannedFiles) {
-      if (file === HTTPS_TRANSPORT_FILE || file === MARKET_TRANSPORT_FILE || file === USAGE_PING_TRANSPORT_FILE) continue;
+      if (
+        file === HTTPS_TRANSPORT_FILE ||
+        file === MARKET_TRANSPORT_FILE ||
+        file === USAGE_PING_TRANSPORT_FILE ||
+        file === ONLINE_PLAYERS_TRANSPORT_FILE
+      ) {
+        continue;
+      }
       const text = readFileSync(file, 'utf8');
       if (importPattern.test(text) || fetchPattern.test(text)) {
         offenders.push(file);
@@ -300,9 +313,22 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
 
   it('nothing outside usage-ping-transport.ts names the usage ping host', () => {
     const offenders = scannedFiles.filter(
-      (file) => file !== USAGE_PING_TRANSPORT_FILE && readFileSync(file, 'utf8').includes(USAGE_PING_HOST),
+      (file) =>
+        file !== USAGE_PING_TRANSPORT_FILE &&
+        file !== ONLINE_PLAYERS_TRANSPORT_FILE &&
+        readFileSync(file, 'utf8').includes(USAGE_PING_HOST),
     );
-    expect(offenders, `Only usage-ping-transport.ts names the usage host. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+    expect(offenders, `Only the usage ping and online-players transports name the API host. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+  });
+
+  it('the online-players transport names the API host, reaches the network, and sets no HTTP method, so it can only ever GET', () => {
+    const text = readFileSync(ONLINE_PLAYERS_TRANSPORT_FILE, 'utf8');
+    expect(text, 'sanity: the transport must name the host it reads').toContain(USAGE_PING_HOST);
+    expect(text, 'sanity: its exemption is not vacuous').toMatch(/\bfetch\s*\(/);
+    expect(/\bmethod\s*:/.test(foldStringConcatenation(text)), 'the online-players transport must never set a method').toBe(false);
+    expect(text, 'it must never import the game API or the session token').not.toMatch(
+      /from\s+['"](@bombfarm\/game-api|[^'"]*game-api\/[^'"]*|[^'"]*session-token[^'"]*)['"]/,
+    );
   });
 });
 
@@ -368,16 +394,16 @@ describe('Guard 3 — no path to the network or the token file bypasses consent'
     expect(offenders, `Every write call site must be typed to a WriteSession. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 
-  it('write-request.ts is the only definer of requestPost(), and apply-service.ts/forge-service.ts are its only callers — the app\'s writes', () => {
+  it('write-request.ts is the only definer of requestPost(), and the apply, deconstruct and forge services are its only callers — the app\'s writes', () => {
     const definers = nonTestFiles.filter((file) => /export async function requestPost\(/.test(readFileSync(file, 'utf8')));
     expect(definers).toEqual([WRITE_REQUEST_FILE]);
 
     const callers = nonTestFiles.filter((file) => file !== WRITE_REQUEST_FILE && /\brequestPost\(/.test(readFileSync(file, 'utf8')));
-    expect(callers).toEqual([APPLY_SERVICE_FILE, FORGE_SERVICE_FILE]);
+    expect(callers).toEqual([APPLY_SERVICE_FILE, DECONSTRUCT_SERVICE_FILE, FORGE_SERVICE_FILE]);
   });
 
-  it('apply-service.ts and forge-service.ts each mint their session through grantWriteSession() and name WriteSession (sanity — the caller rule above is not vacuous)', () => {
-    for (const file of [APPLY_SERVICE_FILE, FORGE_SERVICE_FILE]) {
+  it('the apply, deconstruct and forge services each mint their session through grantWriteSession() and name WriteSession (sanity — the caller rule above is not vacuous)', () => {
+    for (const file of [APPLY_SERVICE_FILE, DECONSTRUCT_SERVICE_FILE, FORGE_SERVICE_FILE]) {
       const text = readFileSync(file, 'utf8');
       expect(text).toContain('grantWriteSession(');
       expect(text).toContain('WriteSession');
@@ -619,6 +645,22 @@ describe('Guard 4 — the forge run never reaches the live tap either', () => {
   it('walked a non-empty import graph from forge-service.ts', () => {
     expect(visited.size).toBeGreaterThan(0);
     expect(visited.has(FORGE_SERVICE_FILE)).toBe(true);
+  });
+
+  it('reaches no edge into live-source/ or its LiveSource class', () => {
+    expect(
+      violations,
+      `A write is never sourced from, or informed by, the live tap. Violations: ${JSON.stringify(violations)}`,
+    ).toEqual([]);
+  });
+});
+
+describe('Guard 4 — the deconstruct run never reaches the live tap either', () => {
+  const { violations, visited } = walkImportGraph(DECONSTRUCT_SERVICE_FILE);
+
+  it('walked a non-empty import graph from deconstruct-service.ts', () => {
+    expect(visited.size).toBeGreaterThan(0);
+    expect(visited.has(DECONSTRUCT_SERVICE_FILE)).toBe(true);
   });
 
   it('reaches no edge into live-source/ or its LiveSource class', () => {

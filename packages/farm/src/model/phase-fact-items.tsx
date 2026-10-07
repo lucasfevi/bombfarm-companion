@@ -250,6 +250,8 @@ function dropLabel(dropId: DropChanceRow['id'], strings: FarmCopy): string {
       return strings.phasesDropGem;
     case 'stone':
       return strings.phasesDropStone;
+    case 'chance':
+      return strings.phasesDropChance;
   }
 }
 

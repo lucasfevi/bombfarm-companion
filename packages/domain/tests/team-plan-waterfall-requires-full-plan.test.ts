@@ -89,7 +89,7 @@ describe('buildWaterfall requiresFullPlan / gearDipDps (mocked evaluateRoster)',
     ] as unknown as HeroPlanContext[];
 
     const gearInput = {
-      heroes: [{ heroId: 'hero1', name: 'Hero One', level: 50, pts: currentPts.hero1 }],
+      heroes: [{ heroId: 'hero1', name: 'Hero One', level: 50, abilities: {}, pts: currentPts.hero1 }],
       inventory: [],
       account: { slots: 1, fieldSlots: 1 },
       scopeByHeroId: { hero1: 'optimize' },
@@ -138,7 +138,7 @@ describe('buildWaterfall requiresFullPlan / gearDipDps (mocked evaluateRoster)',
     ] as unknown as HeroPlanContext[];
 
     const gearInput = {
-      heroes: [{ heroId: 'hero1', name: 'Hero One', level: 50, pts: currentPts.hero1 }],
+      heroes: [{ heroId: 'hero1', name: 'Hero One', level: 50, abilities: {}, pts: currentPts.hero1 }],
       inventory: [],
       account: { slots: 1, fieldSlots: 1 },
       scopeByHeroId: { hero1: 'optimize' },

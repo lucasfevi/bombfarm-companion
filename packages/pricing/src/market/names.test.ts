@@ -58,15 +58,28 @@ describe('the non-equipment name forms', () => {
     ['Gate Key (Rare)', { category: 'key', defId: 'map_key_raro', rarityIdx: 2, kind: 'key' }],
     ['Skill Stone (Uncommon)', { category: 'stone', defId: 'skill_stone_incomum', rarityIdx: 1 }],
     ['Time Part (Epic)', { category: 'time', defId: 'time_part_epico', rarityIdx: 3 }],
+    ['Chance Stone (Rare)', { category: 'chanceStone', defId: 'forja_pedra_raro', rarityIdx: 2 }],
     ['Item Chest (Lv 30)', { category: 'chest', defId: 'chest_item_30', rarityIdx: 0, level: 30 }],
     ['Hero Cage (Act 1)', { category: 'chest', defId: 'chest_hero_1', rarityIdx: 1, act: 1 }],
     ['Skill Stone Chest (Act 1)', { category: 'chest', defId: 'chest_skill_1', act: 1 }],
+    ['Chance Stone Chest (Act 3)', { category: 'chest', defId: 'chest_forja_3', rarityIdx: 3, act: 3 }],
     ['Time Chest (Act 3)', { category: 'chest', defId: 'chest_time_3', rarityIdx: 3, act: 3 }],
     ['Gem Chest (Act 2)', { category: 'chest', defId: 'chest_gem_2', rarityIdx: 2, act: 2 }],
     ['Hero (Legendary)', { category: 'hero', defId: null, rarityIdx: 4 }],
     ['Royal Sentinel Skin', { category: 'skin', defId: null, rarityIdx: null }],
   ])('generates %s', (name, identity) => {
     expect(generated.get(name)).toMatchObject(identity);
+  });
+
+  it('spells a Chance Stone with its own id tails, not the catalog rarity labels', () => {
+    expect(COMMITTED_CATALOG.rarityTokens[4]).toBe('lendaria');
+    expect(generated.get('Chance Stone (Legendary)')?.defId).toBe('forja_pedra_lendario');
+    expect(generated.get('Chance Stone (Mythic)')?.defId).toBe('forja_pedra_mitico');
+  });
+
+  it('leaves the other rarity-suffixed families on the catalog rarity labels', () => {
+    expect(generated.get('Gate Key (Legendary)')?.defId).toBe('map_key_lendaria');
+    expect(generated.get('Skill Stone (Legendary)')?.defId).toBe('skill_stone_lendaria');
   });
 
   it('takes a gem rarity from the bundle, because the name carries none', () => {
@@ -102,9 +115,9 @@ describe('the generated set as a whole', () => {
   it('gives each family its own names, with none lost to a collision', () => {
     const equipment = 240 * 6 * 2;
     const gems = 9;
-    const raritySuffixed = 3 * 6;
+    const raritySuffixed = 4 * 6;
     const itemChests = 30;
-    const actChests = 4 * 5;
+    const actChests = 5 * 5;
     const rankChests = 5;
     const heroes = 6;
     // Every bought skin: indices 4-15 since the 2026-09-26 patch took the game to sixteen.

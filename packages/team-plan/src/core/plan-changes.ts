@@ -114,7 +114,7 @@ function planningAccountView(inputs: TeamPlanInputs): AccountView {
   return view;
 }
 
-export const CONTROL_FIELDS = ['forgeFloor', 'objective', 'allowedChanges', 'ignoreFieldCrowding', 'aurasAtCap', 'targetPhase', 'pvpSquadSlots'] as const;
+export const CONTROL_FIELDS = ['forgeFloor', 'objective', 'allowedChanges', 'ignoreFieldCrowding', 'aurasAtCap', 'targetPhase', 'pvpSquadSlots', 'farmSet'] as const;
 export type ControlField = (typeof CONTROL_FIELDS)[number];
 
 type ControlsView = {
@@ -128,6 +128,9 @@ type ControlsView = {
   targetPhase: number | null;
   /** The slots the duel squad is planned for — `null` under every other objective. */
   pvpSquadSlots: number | null;
+  /** The set a Set farm plan collects. Absent rather than `null` under every other objective, so
+   *  adding the control left every other plan's signature as it was. */
+  farmSet?: string | null;
   scopeByHeroId: Record<string, ScopeState>;
 };
 
@@ -142,6 +145,7 @@ function planningControlsView(inputs: TeamPlanInputs, controls: TeamPlanControls
     aurasAtCap: [...controls.aurasAtCap].sort().join(','),
     targetPhase: planTargetPhase(inputs, controls),
     pvpSquadSlots: controls.objective === 'pvp' ? teamPlanPvpSquadSlots(inputs) : null,
+    ...(controls.objective === 'setFarm' ? { farmSet: controls.farmSet } : {}),
     scopeByHeroId,
   };
 }
@@ -434,8 +438,8 @@ export function describePlanChanges(basis: PlanBasis, now: PlanBasis, plan: Team
   const controlsBefore = planningControlsView(basis.inputs, basis.controls);
   const controlsAfter = planningControlsView(now.inputs, now.controls);
   for (const name of CONTROL_FIELDS) {
-    const from = controlsBefore[name];
-    const to = controlsAfter[name];
+    const from = controlsBefore[name] ?? null;
+    const to = controlsAfter[name] ?? null;
     if (from !== to) out.push(change({ kind: 'controls' }, { field: 'control', name, before: String(from), after: String(to) }, 'plan'));
   }
   for (const hero of now.inputs.heroes) {

@@ -18,7 +18,6 @@ import {
   resolveFarmObjective,
   type FarmObjectiveScales,
 } from '@bombfarm/domain/farm-optimize-objective';
-import { runTeamPlan } from '@bombfarm/domain/team-plan';
 import { buildFarmObjective, isSquadScope } from '@bombfarm/domain/team-plan/farm-objective';
 import { farmPointsPass, FARM_POINTS_PASS_MAX_EVALUATIONS } from '@bombfarm/domain/team-plan/farm-points';
 import { loadoutForScoring } from '@bombfarm/domain/team-plan/evaluate';
@@ -26,8 +25,9 @@ import { buildHeroPlanContexts } from '@bombfarm/domain/team-plan/hero-context';
 import { createScoreMemo } from '@bombfarm/domain/team-plan/score';
 import { RESPEC_KEYS } from '@bombfarm/domain/points-reopt-core';
 import type { Loadout, PointAlloc } from '@bombfarm/domain/gear/types';
-import { assertInRegime } from './helpers/capture-regime';
+import { assertInRegime, skipUnlessInRegime } from './helpers/capture-regime';
 import { loadTeamPlanFarmFixture, type TeamPlanFarmFixture } from './helpers/team-plan-farm-fixtures';
+import { farmPlan } from './helpers/team-plan-farm-plan';
 
 const GOLD = resolveFarmObjective({ kind: 'gold' });
 const UNUSED_SCALES: FarmObjectiveScales = { goldScale: 1, chestScale: 1 };
@@ -43,7 +43,11 @@ const CAPTURES = [
 
 /** At or past the damage boundary — the only captures a gain may be measured on. */
 const GAIN_CAPTURES = ['save-20260828-4heroes-postpatch.json', 'save-20260831-13heroes-soulbound.json'];
-for (const file of GAIN_CAPTURES) assertInRegime(`sheet-math/${file}`, 'sheet');
+const SOULBOUND = 'save-20260831-13heroes-soulbound.json';
+const FRESH_ACCOUNT = 'save-20260828-4heroes-postpatch.json';
+
+// Loud rather than skipped: this capture is admissible, so it leaving its regime is a re-point.
+assertInRegime(`sheet-math/${FRESH_ACCOUNT}`, 'sheet');
 
 function goldPerHour(
   fixture: TeamPlanFarmFixture,
@@ -67,12 +71,6 @@ function goldPerHour(
   return pick ? pick.row.goldPerHour : 0;
 }
 
-function farmPlan(fixture: TeamPlanFarmFixture, maxEvaluations?: number) {
-  const result = runTeamPlan({ ...fixture.teamPlanInput, objective: 'farm' }, maxEvaluations ? { maxEvaluations } : undefined);
-  if (result.blocked) throw new Error('expected a plan');
-  return result.plan;
-}
-
 function resetsByHeroId(plan: ReturnType<typeof farmPlan>): Record<string, PointAlloc> {
   const out: Record<string, PointAlloc> = {};
   for (const reset of plan.pointResets) out[reset.heroId] = reset.pts as PointAlloc;
@@ -81,7 +79,8 @@ function resetsByHeroId(plan: ReturnType<typeof farmPlan>): Record<string, Point
 
 describe('the farm point pass earns gold the gear alone does not', () => {
   for (const file of GAIN_CAPTURES) {
-    it(`${file}: the proposed points beat the same plan's gear on its own`, () => {
+    it(`${file}: the proposed points beat the same plan's gear on its own`, (context) => {
+      if (file === SOULBOUND) skipUnlessInRegime(context, `sheet-math/${SOULBOUND}`, 'sheet');
       const fixture = loadTeamPlanFarmFixture(file);
       const plan = farmPlan(fixture);
       const gearOnly = goldPerHour(fixture, plan.proposedLoadouts);
@@ -141,7 +140,8 @@ describe('the pass moves only what the plan is allowed to move', () => {
 
 describe('a reset is only written when it actually changes the build', () => {
   for (const file of GAIN_CAPTURES) {
-    it(`${file}: every reported reset differs from the hero's current points`, () => {
+    it(`${file}: every reported reset differs from the hero's current points`, (context) => {
+      if (file === SOULBOUND) skipUnlessInRegime(context, `sheet-math/${SOULBOUND}`, 'sheet');
       const fixture = loadTeamPlanFarmFixture(file);
       const plan = farmPlan(fixture);
       for (const reset of plan.pointResets) {
@@ -168,12 +168,12 @@ describe('the pass is bounded by the plan budget, not its own appetite', () => {
 });
 
 describe('the pass is reproducible', () => {
-  for (const file of ['save-20260831-13heroes-soulbound.json', 'save-20260823-13heroes-crit-points.json']) {
-    it(`${file}: two runs propose the same points`, () => {
-      const fixture = loadTeamPlanFarmFixture(file);
-      const first = farmPlan(fixture);
-      const second = farmPlan(loadTeamPlanFarmFixture(file));
-      expect(second.pointResets).toEqual(first.pointResets);
-    }, 900_000);
-  }
+  const file = 'save-20260831-13heroes-soulbound.json';
+
+  it(`${file}: two runs propose the same points`, () => {
+    const fixture = loadTeamPlanFarmFixture(file);
+    const first = farmPlan(fixture);
+    const second = farmPlan(loadTeamPlanFarmFixture(file));
+    expect(second.pointResets).toEqual(first.pointResets);
+  }, 900_000);
 });

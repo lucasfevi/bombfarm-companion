@@ -12,6 +12,10 @@ import { SLOTS } from '../gear/catalog';
 import type { PointAlloc } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { wikiPhaseLine } from '../phase-wiki';
+import { computeTeamBuffsOverRotation, holdAurasAtCap } from '../team-buffs';
+import { teamAuraLayer } from '../team-aura-layer';
+import { isSquadScope } from './auras';
+import { scopeOfHero } from './hero-context';
 import { planFieldSlots, resolveCombatWindow } from './combat-window';
 import { dominates, statsForEntry } from './dominance';
 import { evaluateRoster } from './evaluate';
@@ -42,6 +46,7 @@ const EPS = 1e-9;
  */
 export function farmFromAccount(input: TeamPlanInput): FarmContext {
   const window = resolveCombatWindow(input);
+  const critFlatAtFullPresence = critFlatAtFullPresenceOf(input);
   const targetPhase = window ? window.phase : input.targetPhase;
   const line = targetPhase != null && Number.isFinite(targetPhase) ? wikiPhaseLine(targetPhase) : undefined;
   return {
@@ -52,8 +57,15 @@ export function farmFromAccount(input: TeamPlanInput): FarmContext {
     cycleSecs: input.account.cycleSecs,
     cycleSecsHouseIdx: input.account.cycleSecsHouseIdx,
     cycleSecsLevel: input.account.cycleSecsLevel,
+    critFlatAtFullPresence,
     ...(window ? { windowSecs: window.windowSecs } : {}),
   };
+}
+
+function critFlatAtFullPresenceOf(input: TeamPlanInput): number {
+  const carriers = input.heroes.filter((hero) => isSquadScope(scopeOfHero(hero, input.scopeByHeroId)));
+  const total = holdAurasAtCap(computeTeamBuffsOverRotation(carriers, null), input.aurasAtCap);
+  return teamAuraLayer(total).teamCritFlat;
 }
 
 export function evaluateAt(

@@ -1,5 +1,55 @@
 # @bombfarm/account
 
+## 0.3.11
+
+### Patch Changes
+
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [5de6480]
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/domain@1.9.0
+  - @bombfarm/ui@0.18.0
+  - @bombfarm/game-art@0.8.0
+
+## 0.3.10
+
+### Patch Changes
+
+- Updated dependencies [b7e061c]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [b7e061c]
+  - @bombfarm/domain@1.8.1
+  - @bombfarm/game-art@0.7.7
+
+## 0.3.9
+
+### Patch Changes
+
+- Updated dependencies [b0719ac]
+- Updated dependencies [d05770f]
+- Updated dependencies [804572b]
+- Updated dependencies [41c8786]
+- Updated dependencies [034b719]
+  - @bombfarm/domain@1.8.0
+  - @bombfarm/game-art@0.7.6
+
+## 0.3.8
+
+### Patch Changes
+
+- Updated dependencies [c99325d]
+- Updated dependencies [2c54735]
+- Updated dependencies [47d106f]
+- Updated dependencies [47d106f]
+  - @bombfarm/ui@0.17.0
+  - @bombfarm/domain@1.7.1
+  - @bombfarm/game-art@0.7.5
+
 ## 0.3.7
 
 ### Patch Changes

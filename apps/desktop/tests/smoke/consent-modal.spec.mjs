@@ -69,6 +69,7 @@ test.describe('consent modal smoke (Success Criterion "shown once, survives rest
           'Attaching to another running program is the technique behavior-based detection looks for',
         );
         await expect(body).toContainText('only after you confirm each run');
+        await expect(body).toContainText('burning items for Forge Essence');
 
         await page1.getByTestId('consent-accept').click();
         await expect(modal).toBeHidden({ timeout: 15_000 });

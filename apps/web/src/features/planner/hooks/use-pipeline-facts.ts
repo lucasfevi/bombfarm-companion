@@ -34,6 +34,7 @@ export function usePipelineFacts(): PipelineFacts {
     speedMult,
     teamCritFlat,
     teamPenFlat,
+    teamCritDmgFlat,
     packMult,
     entryPulse,
     rest,
@@ -57,6 +58,7 @@ export function usePipelineFacts(): PipelineFacts {
     speedMult,
     teamCritFlat,
     teamPenFlat,
+    teamCritDmgFlat,
     packMult,
     entryPulseMult: entryPulse.expectedMult,
     treeSpeed,
@@ -73,5 +75,6 @@ export function usePipelineFacts(): PipelineFacts {
     uptime,
     rest,
     runes,
+    collection: treeSheet.collection,
   };
 }

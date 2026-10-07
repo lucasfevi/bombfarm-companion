@@ -11,15 +11,17 @@
 import { useCallback, useState } from 'react';
 import type { AccountSource } from '@bombfarm/contracts';
 import { Button, ConfirmDialog, cn } from '@bombfarm/ui';
-import { sub, subNodes, useCopy } from '../../lib/copy';
+import { sub, useCopy } from '../../lib/copy';
+import { isBurning } from '../../lib/deconstruct/deconstruct-run-reducer';
+import { useDeconstructRun } from '../../lib/deconstruct/deconstruct-run-store';
 import type { ForgeQueueState } from '../../lib/forge/forge-queue-reducer';
 import { cancelForgeQueue, clearForgeQueue, startForgeQueue } from '../../lib/forge/forge-queue-store';
-import { forgeQueueExpectedGold, type ForgeQueueRow } from '../../lib/forge/forge-queue-view';
+import type { ForgeQueueSettings } from '../../lib/forge/forge-queue-settings';
+import type { ForgeQueuePricing, ForgeQueueRow } from '../../lib/forge/forge-queue-view';
 import { dispatchForgeRun, useForgeRun } from '../../lib/forge/forge-run-store';
-import { ForgeGold } from './forge-gold';
+import { ForgeQueueConfirmBody } from './forge-queue-confirm-body';
 import {
   forgeButtonReason,
-  forgeLevel,
   forgeReasonText,
   forgeStartRefusalText,
   forgeStopText,
@@ -29,6 +31,8 @@ import {
 export function ForgeQueueActions({
   queue,
   rows,
+  pricing,
+  settings,
   labels,
   forgeWritesEnabled,
   accountSource,
@@ -36,6 +40,8 @@ export function ForgeQueueActions({
 }: {
   queue: ForgeQueueState;
   rows: readonly ForgeQueueRow[];
+  pricing: ForgeQueuePricing;
+  settings: ForgeQueueSettings;
   labels: ForgeLabels;
   forgeWritesEnabled: boolean;
   accountSource: AccountSource | null;
@@ -45,6 +51,7 @@ export function ForgeQueueActions({
 }) {
   const t = useCopy();
   const run = useForgeRun();
+  const burning = isBurning(useDeconstructRun());
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const queueRunId = queue.active?.runId ?? null;
@@ -63,7 +70,7 @@ export function ForgeQueueActions({
   // write gate.
   const holds = running || queue.status === 'paused';
   const reason = forgeButtonReason({ upgrade: 0, accountSource, forgeWritesEnabled, running: false, cancelRequested: false });
-  const canStart = reason === 'ready' && !holds && queue.pieces.length > 0;
+  const canStart = reason === 'ready' && !holds && !burning && queue.pieces.length > 0;
 
   const haltText =
     queue.halt === null
@@ -71,25 +78,6 @@ export function ForgeQueueActions({
       : queue.halt.kind === 'stop'
         ? forgeStopText(queue.halt.stop, t)
         : forgeStartRefusalText(queue.halt.reason, t);
-
-  const expectedGold = forgeQueueExpectedGold(rows);
-  const head = rows[0] ?? null;
-  const gold =
-    expectedGold === null ? null : (
-      <strong className="font-semibold text-ink">
-        <ForgeGold>{labels.gold(Math.round(expectedGold))}</ForgeGold>
-      </strong>
-    );
-  const confirmBody =
-    gold === null || head === null
-      ? t.forgeQueueConfirmNoEstimate
-      : rows.length === 1
-        ? subNodes(t.forgeQueueConfirmOne, {
-            item: head.item === null ? head.piece.itemId : labels.itemName(head.item),
-            target: forgeLevel(head.piece.target),
-            gold,
-          })
-        : subNodes(t.forgeQueueConfirmMany, { count: rows.length, gold });
 
   const stacked = layout === 'stacked';
   const buttonClass = cn(stacked && 'w-full');
@@ -108,6 +96,11 @@ export function ForgeQueueActions({
       {!holds && reason !== 'ready' ? (
         <span data-testid="forge-queue-reason" className="text-[11px] text-muted">
           {forgeReasonText(reason, t)}
+        </span>
+      ) : null}
+      {!holds && reason === 'ready' && burning ? (
+        <span data-testid="forge-queue-reason" className="text-[11px] text-muted">
+          {t.deconstructReasonRunning}
         </span>
       ) : null}
       {holds ? (
@@ -134,7 +127,7 @@ export function ForgeQueueActions({
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title={t.forgeQueueConfirmTitle}
-        description={confirmBody}
+        description={<ForgeQueueConfirmBody rows={rows} pricing={pricing} settings={settings} labels={labels} />}
         confirmLabel={t.forgeQueueConfirm}
         cancelLabel={t.forgeQueueConfirmCancel}
         closeLabel={t.confirmDialogClose}

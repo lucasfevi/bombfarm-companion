@@ -1,4 +1,4 @@
-import { Panel } from '@bombfarm/ui';
+import { Panel, cn } from '@bombfarm/ui';
 import type { Lang } from '@/shared/i18n';
 import { liveLabel } from '../../model/live-replica-copy';
 import type { ReplicaDensity, ReplicaFrame } from '../../model/live-replica-data';
@@ -11,11 +11,13 @@ export function HeroesCard({
   summary,
   heroes,
   density = 'full',
+  className,
 }: {
   lang: Lang;
   summary: ReplicaFrame['summary'];
   heroes: ReplicaFrame['heroes'];
   density?: ReplicaDensity;
+  className?: string;
 }) {
   const counts = (
     <>
@@ -40,7 +42,7 @@ export function HeroesCard({
   }
 
   return (
-    <Panel className="p-3">
+    <Panel data-testid="replica-live-heroes" className={cn('min-w-0 p-3', className)}>
       <ReplicaCardHead title={liveLabel('liveHeroesTitle', lang)} />
       <div className="mb-2 flex flex-wrap gap-4 font-mono text-[10px] text-muted">{counts}</div>
       <ul className="m-0 flex list-none flex-col gap-1 p-0">{rows}</ul>

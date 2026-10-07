@@ -5,6 +5,7 @@ import { composeSheetFromBirth, nakedFromBirth } from '../birth-sheet';
 import { SHEET_KEYS, ZERO_PTS } from '../planner-constants';
 import { SLOTS } from '../gear/catalog';
 import { TEAM_BUFF_ABILITY_IDS } from '../team-buffs';
+import { critPointCeilingOf } from '../team-aura-layer';
 import type { FarmContext, HeroPlanContext, HeroScore, ScoreMemo } from './types';
 import type { Loadout, PointAlloc, Slot } from '../gear/types';
 import type { TeamBuffId } from '../team-buffs';
@@ -71,7 +72,7 @@ function auraSignature(auras: Record<TeamBuffId, number>): string {
  * one pass is served the other's sheet.
  */
 function farmSignature(farm: FarmContext): string {
-  return `${farm.houseIdx}:${farm.houseLevel}:${farm.phase}:${farm.mitigationPct}:${farm.cycleSecs ?? ''}:${farm.cycleSecsHouseIdx ?? ''}:${farm.cycleSecsLevel ?? ''}:${farm.windowSecs ?? ''}`;
+  return `${farm.houseIdx}:${farm.houseLevel}:${farm.phase}:${farm.mitigationPct}:${farm.cycleSecs ?? ''}:${farm.cycleSecsHouseIdx ?? ''}:${farm.cycleSecsLevel ?? ''}:${farm.windowSecs ?? ''}:${farm.critFlatAtFullPresence ?? ''}`;
 }
 
 /**
@@ -167,8 +168,12 @@ export function scoreHeroLoadout(
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
     teamCritFlat: mults.teamCritFlat,
+    ...(farm.critFlatAtFullPresence !== undefined
+      ? { critCeiling: critPointCeilingOf(farm.critFlatAtFullPresence, mults.teamCritFlat) }
+      : {}),
     treeSheet: ctx.treeSheet,
     penetrationPp: mults.teamPenFlat,
+    critDmgPp: mults.teamCritDmgFlat,
     context,
     hitMult: mults.hitMult,
     dmgMult: mults.dmgMult,

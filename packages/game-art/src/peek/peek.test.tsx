@@ -56,13 +56,13 @@ describe('ItemPeekCard', () => {
     expect(html).toContain('+8');
     expect(html).toContain('text-rar-4">Legendary<');
     expect(html).toContain('Lv 100');
-    // Five rolls for a Legendary, each scaled to level 100 and forged ×1.64.
+    // Five rolls for a Legendary, each scaled to level 100 and forged ×1.4.
     expect(statLabels(html)).toHaveLength(5);
     expect(html).toContain('Energy');
-    expect(html).toContain('+57.40%');
+    expect(html).toContain('+49.00%');
     expect(html).toContain('Damage');
-    expect(html).toContain('+947.1');
-    expect(html).toContain('Forge ×1.64');
+    expect(html).toContain('+808.5');
+    expect(html).toContain('Forge ×1.40');
   });
 
   it('prints every one of a Mythic’s six rolls', () => {
@@ -81,11 +81,17 @@ describe('ItemPeekCard', () => {
   it('the forge multiplier rides the tier line, in place of the slot and set the name already says', () => {
     const html = visible(render(createElement(ItemPeekCard, { item: helmet, lang: 'en' })));
     const sub = /leading-snug">(.*?)<\/div><\/div><\/div>/.exec(html)?.[1] ?? '';
-    expect(sub.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()).toBe('Legendary · Lv 100 · Forge ×1.64');
+    expect(sub.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()).toBe('Legendary · Lv 100 · Forge ×1.40');
     expect(html).not.toContain('Helm · Forest');
 
     const unforged = visible(render(createElement(ItemPeekCard, { item: { ...helmet, upgrade: 0 }, lang: 'en' })));
     expect(unforged).not.toContain('Forge');
+  });
+
+  it('says which rolls forge on the gentler ladder once the two ladders part', () => {
+    const forged = visible(render(createElement(ItemPeekCard, { item: { ...helmet, rarityIdx: 5, upgrade: 13 }, lang: 'en' })));
+    expect(forged).toContain('Forge ×2.10');
+    expect(forged).toContain('Crit, Cooldown ×1.95');
   });
 
   it('says what the item is worth — gold, and the market’s quote when the host has one', () => {
@@ -111,7 +117,33 @@ describe('ItemPeekCard', () => {
       }),
     );
     expect(html).toContain('+19.3');
-    expect(html).not.toContain('+947.1');
+    expect(html).not.toContain('+808.5');
+  });
+
+  it('a map key, a skill stone and a chance stone say their name with the tier on the line below, like a gem', () => {
+    for (const kind of ['key', 'stone', 'chanceStone'] as const) {
+      const html = visible(
+        render(
+          createElement(ItemPeekCard, {
+            item: { defId: 'x', rarityIdx: 4, level: 0, upgrade: 0, kind, count: 3 },
+            lang: 'en',
+            name: 'Thing',
+          }),
+        ),
+      );
+      expect(html).toContain('truncate text-ink">Thing<');
+      expect(html).toMatch(/font-semibold text-rar-4">Legendary<.*×3/);
+    }
+  });
+
+  it('a chance stone prints how many points it adds to a forge attempt', () => {
+    const stone = (rarityIdx: number) =>
+      render(
+        createElement(ItemPeekCard, { item: { defId: 'forja_pedra_epico', rarityIdx, level: 0, upgrade: 0, kind: 'chanceStone' }, lang: 'en', name: 'Chance Stone' }),
+      );
+    expect(stone(3)).toMatch(/data-slot="item-peek-stone-chance".*Forge chance.*\+40%/);
+    expect(stone(0)).toContain('+10%');
+    expect(stone(9)).not.toContain('item-peek-stone-chance');
   });
 
   it('a stack says its name and count, and neither a level nor a slot', () => {
@@ -132,8 +164,8 @@ describe('ItemPeekCard', () => {
     const html = render(createElement(ItemPeekCard, { item: helmet, lang: 'pt' }));
     expect(html).toContain('Elmo');
     expect(html).toContain('Lendária');
-    expect(html).toContain('+947,1');
-    expect(html).toContain('Forja ×1,64');
+    expect(html).toContain('+808,5');
+    expect(html).toContain('Forja ×1,40');
   });
 
   /** An inventory rune carries no stats on the wire, so its hover card used to show the name alone. */

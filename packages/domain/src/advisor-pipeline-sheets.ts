@@ -5,6 +5,7 @@ import {
 } from './birth-sheet';
 import { projectGearedOntoLoadout, type Loadout, type SheetOtherPct, type SheetStats } from './gear';
 import type { HeroRune } from './runes';
+import { collectionSheetPct, type Collection } from './collection';
 
 export type ResolveDeriveSheetsInput = {
   naked: SheetStats;
@@ -20,6 +21,8 @@ export type ResolveDeriveSheetsInput = {
   treeEnergy: number;
   /** `skills.totals.luck_add × 100` — flat Luck percentage points. */
   treeLuckFlatPct: number;
+  /** `skills.totals.colecao`; absent reads as no Collections bonus. */
+  treeCollection?: Collection | undefined;
   /**
    * When set, naked/geared for derive are recomposed from birth (tree-inclusive zero-pts
    * geared) so Points After / DPS stay aligned with Stats Total after level/stars/tree edits.
@@ -55,6 +58,7 @@ export function resolveDeriveSheets(input: ResolveDeriveSheetsInput): ResolvedDe
     treeSpeed,
     treeEnergy,
     treeLuckFlatPct,
+    treeCollection,
     birth,
     runes,
   } = input;
@@ -66,6 +70,7 @@ export function resolveDeriveSheets(input: ResolveDeriveSheetsInput): ResolvedDe
     critChancePct: treeCritChance,
     critDmgPct: treeCritDmg,
     luckFlatPct: treeLuckFlatPct,
+    collection: collectionSheetPct(treeCollection),
   };
 
   // Birth-backed heroes: ignore stored naked/gearedOverride for math — residual level/stars

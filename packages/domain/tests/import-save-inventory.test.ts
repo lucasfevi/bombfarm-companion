@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { parseSaveFile } from '@bombfarm/domain/import-save';
+import { skipUnlessInRegime } from './helpers/capture-regime';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import { minimalHero } from './helpers/minimal-save-hero';
+
+const SEVEN_HEROES = 'save-20260819-11882-7heroes.json';
 
 /**
  * The minimal `skills` shape that satisfies `parseSaveFile`'s positive discriminator
@@ -36,7 +39,7 @@ describe('parseSaveFile inventory pass', () => {
     expect(inventory).toHaveLength(27);
     expect(inventory.filter((item) => item.equipped)).toHaveLength(23);
     expect(inventory.filter((item) => !item.equipped)).toHaveLength(4);
-    expect(categoryHistogram(raw)).toEqual({ 0: 27, 4: 3 });
+    expect(categoryHistogram(raw)).toEqual({ 0: 27, 4: 3, 8: 1 });
     expect(account.slots).toBe(3);
   });
 
@@ -107,12 +110,20 @@ describe('parseSaveFile inventory pass', () => {
   // Re-pointed off `save-20260813-5heroes.json` (issue #206): that capture is behind the
   // stat-point budget refusal, so 2 of its 5 heroes come through blocked and the "nothing is
   // blocked" half of this claim describes a roster the importer no longer produces. The 2026-08-19
-  // capture parses 7 of 7 clean, which is what makes the claim assertable again rather than
-  // merely re-recorded.
-  it('does not change hero candidate count on the real fixture', () => {
-    const raw = loadFixtureJson('save-20260819-11882-7heroes.json');
+  // capture parsed 7 of 7 clean until the forge table changed, and holds again once a capture
+  // taken under that table replaces it.
+  it('does not change hero candidate count on the real fixture', (context) => {
+    skipUnlessInRegime(context, `sheet-math/${SEVEN_HEROES}`, 'itemForge');
+    const raw = loadFixtureJson(SEVEN_HEROES);
     const withoutInventory = parseSaveFile(raw, []);
     expect(withoutInventory.candidates.length).toBe(7);
+    expect(withoutInventory.candidates.every((candidate) => !candidate.blocked)).toBe(true);
+  });
+
+  it('does not change hero candidate count on the fresh-account fixture, where every item is +0', () => {
+    const raw = loadFixtureJson('save-20260828-4heroes-postpatch.json');
+    const withoutInventory = parseSaveFile(raw, []);
+    expect(withoutInventory.candidates.length).toBe(4);
     expect(withoutInventory.candidates.every((candidate) => !candidate.blocked)).toBe(true);
   });
 

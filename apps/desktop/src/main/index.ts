@@ -16,10 +16,16 @@ import { createAccountNotifier, resolveAccountView, resolveCachedAccountView } f
 import { createApplyInjector, type ApplyInjector } from './apply/apply-inject.js';
 import { createApplyService, type ApplyService } from './apply/apply-service.js';
 import { createWriterLock, type WriterLock } from './apply/writer-lock.js';
+import { patchAccountAfterDeconstruct } from './deconstruct/deconstruct-account-patch.js';
+import { createDeconstructInjector, type DeconstructInjector } from './deconstruct/deconstruct-inject.js';
+import { createDeconstructService, type DeconstructService } from './deconstruct/deconstruct-service.js';
 import { patchAccountAfterForge } from './forge/forge-account-patch.js';
 import { createForgeHistory, type ForgeHistory } from './forge/forge-history.js';
 import { createForgeInjector, shouldHonourForgeInject, type ForgeInjector } from './forge/forge-inject.js';
 import { createForgeService, type ForgeService } from './forge/forge-service.js';
+import { createCollectionsReader, type CollectionsReader } from './collections/collections-reader.js';
+import { createCollectionsRecorder, type CollectionsRecorder } from './collections/collections-recorder.js';
+import { createCollectionsStore, type CollectionsStore } from './collections/collections-store.js';
 import { createPvpHistory, type PvpHistory } from './pvp/pvp-history.js';
 import { createPvpReader, type PvpReader } from './pvp/pvp-reader.js';
 import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
@@ -64,6 +70,7 @@ import {
   createReplayTapFactory,
   isReplayLiveSourceEnabled,
   resolveReplayCapturePath,
+  resolveReplayCollectionsFixturePath,
   resolveReplayPvpFixturePath,
 } from './live-source/replay-tap.js';
 import { configureLogging, log } from './logging.js';
@@ -75,6 +82,9 @@ import {
 import { marketCachePath } from './market/market-cache.js';
 import { createMarketService, type MarketService } from './market/market-service.js';
 import { marketHttpGet } from './market/market-transport.js';
+import { offlineOnlinePlayersGet } from './online-players/online-players-offline.js';
+import { createOnlinePlayersService, type OnlinePlayersService } from './online-players/online-players-service.js';
+import { onlinePlayersHttpGet } from './online-players/online-players-transport.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 import {
@@ -133,13 +143,19 @@ let observationMarkWatch: MarkWatch | null = null;
 let liveFastPublisher: LiveFastPublisher | null = null;
 let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
+let onlinePlayersService: OnlinePlayersService | null = null;
 let forgeService: ForgeService | null = null;
 let forgeHistory: ForgeHistory | null = null;
 let applyService: ApplyService | null = null;
 let applyInjector: ApplyInjector | null = null;
+let deconstructService: DeconstructService | null = null;
+let deconstructInjector: DeconstructInjector | null = null;
 let pvpHistory: PvpHistory | null = null;
 let pvpRecorder: PvpRecorder | null = null;
 let pvpReader: PvpReader | null = null;
+let collectionsStore: CollectionsStore | null = null;
+let collectionsRecorder: CollectionsRecorder | null = null;
+let collectionsReader: CollectionsReader | null = null;
 let forgeInjector: ForgeInjector | null = null;
 /** Fixture mode only — see `gameReader.onAccountCommitted` for why a re-ingest of an unchanged
  *  rotation is not free. */
@@ -322,13 +338,18 @@ function registerIpcHandlers(): void {
       getLiveSource: () => liveSource,
       getUpdateService: () => updateService,
       getMarketService: () => marketService,
+      getOnlinePlayersService: () => onlinePlayersService,
       getForgeService: () => forgeService,
       getForgeHistory: () => forgeHistory,
       getForgeInjector: () => forgeInjector,
       getApplyService: () => applyService,
       getApplyInjector: () => applyInjector,
+      getDeconstructService: () => deconstructService,
+      getDeconstructInjector: () => deconstructInjector,
       getPvpHistory: () => pvpHistory,
       getPvpReader: () => pvpReader,
+      getCollectionsStore: () => collectionsStore,
+      getCollectionsReader: () => collectionsReader,
       getMainWindow: () => mainWindow,
       getMiniLiveController: () => miniLiveController,
       getWindowLayoutStore: () => windowLayoutStore,
@@ -781,6 +802,15 @@ async function bootstrap(): Promise<void> {
     log,
   });
 
+  collectionsStore = createCollectionsStore({ db: accountOpen.db, accountId: boundAccountId, accountSource: currentAccountSource, log });
+  collectionsRecorder = createCollectionsRecorder({
+    store: collectionsStore,
+    emit: (view) => {
+      emitEvent('collections:changed', view);
+    },
+    log,
+  });
+
   liveSource = new LiveSource({
     consent: liveConsent,
     userDataDir,
@@ -790,12 +820,16 @@ async function bootstrap(): Promise<void> {
     onObservedPvpBody: (observation) => {
       pvpRecorder?.observe(observation);
     },
+    onObservedCollectionsBody: (observation) => {
+      collectionsRecorder?.observe(observation);
+    },
     log,
     ...(replayLive
       ? {
           createTap: createReplayTapFactory({
             capturePath: resolveReplayCapturePath(process.env, __dirname),
             pvpFixturePath: resolveReplayPvpFixturePath(process.env, __dirname),
+            collectionsFixturePath: resolveReplayCollectionsFixturePath(process.env, __dirname),
             consent: liveConsent,
             log,
             onObservedFrame: (wire, atMs) => {
@@ -939,6 +973,11 @@ async function bootstrap(): Promise<void> {
     const parsed = typeof gold === 'string' ? Number(gold) : gold;
     return typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : null;
   };
+  const currentEssence = (): number | null => {
+    const account = cachedAccount()?.payload.account;
+    const raw = account?.essence;
+    return typeof raw === 'number' && Number.isFinite(raw) ? raw : null;
+  };
   pvpReader = createPvpReader({
     consentStore: { read: () => consentStore?.read() ?? initialConsent() },
     accountSource: currentAccountSource,
@@ -947,6 +986,16 @@ async function bootstrap(): Promise<void> {
     transport: gameApiTransport,
     gate,
     recorder: pvpRecorder,
+    log,
+  });
+  collectionsReader = createCollectionsReader({
+    consentStore: { read: () => consentStore?.read() ?? initialConsent() },
+    accountSource: currentAccountSource,
+    isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
+    readToken,
+    transport: gameApiTransport,
+    gate,
+    recorder: collectionsRecorder,
     log,
   });
 
@@ -961,6 +1010,7 @@ async function bootstrap(): Promise<void> {
     isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
     currentItems,
     currentGold,
+    currentEssence,
     applyResult: (patch) => {
       accountRefresh?.applyPatch((payload) => patchAccountAfterForge(payload, patch, new Date().toISOString()));
     },
@@ -1006,6 +1056,33 @@ async function bootstrap(): Promise<void> {
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   });
 
+  deconstructService = createDeconstructService({
+    consentStore,
+    readToken,
+    settings: () => currentSettings,
+    transport: gameApiTransport,
+    gate,
+    accountSource: currentAccountSource,
+    isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
+    currentItems,
+    applyResult: (patch) => {
+      accountRefresh?.applyPatch((payload) => patchAccountAfterDeconstruct(payload, patch, new Date().toISOString()));
+    },
+    writerLock,
+    requestReadNow: requestAccountReadNow,
+    emit: (event) => {
+      emitEvent('deconstruct:event', event);
+    },
+    log,
+    now: () => Date.now(),
+  });
+  deconstructInjector = createDeconstructInjector({
+    honoured: () => shouldHonourForgeInject(process.env, resolveAppEnv().isPackaged),
+    emit: (event) => {
+      emitEvent('deconstruct:event', event);
+    },
+  });
+
   // Fixture mode's ~20×/s ticker is the second producer that can
   // commit an account; wired the same way, ignoring its own payload argument for the same
   // reason. Production's live-tap-backed reader never commits (GameReaderService.tickLive() has
@@ -1045,6 +1122,17 @@ async function bootstrap(): Promise<void> {
     },
   });
 
+  // Public and player-free like the price list: it asks the project's own relay for one number
+  // and sends nothing about the account. Offline mode reads a fixed count instead of the network.
+  onlinePlayersService = createOnlinePlayersService({
+    httpGet: currentAccountSource() === 'fixture' ? offlineOnlinePlayersGet(() => Date.now()) : onlinePlayersHttpGet,
+    log,
+    now: () => Date.now(),
+    onChanged: (view) => {
+      emitEvent('onlinePlayers:changed', view);
+    },
+  });
+
   registerIpcHandlers();
   registerRendererProtocol(path.join(__dirname, '../../renderer/out'));
   await createMainWindow();
@@ -1081,6 +1169,7 @@ async function bootstrap(): Promise<void> {
   // that could not start is no reason to open the app without them.
   marketService.start();
   log.info({ scope: 'main', event: 'market.started' });
+  onlinePlayersService.start();
 }
 
 function resolveBootEnv(): AppEnv {
@@ -1190,6 +1279,10 @@ if (!gotLock) {
           marketService?.stop();
           marketService = null;
         },
+        stopOnlinePlayersService: () => {
+          onlinePlayersService?.stop();
+          onlinePlayersService = null;
+        },
         releaseForgeService: () => {
           forgeService = null;
         },
@@ -1201,6 +1294,12 @@ if (!gotLock) {
         },
         releaseApplyInjector: () => {
           applyInjector = null;
+        },
+        releaseDeconstructService: () => {
+          deconstructService = null;
+        },
+        releaseDeconstructInjector: () => {
+          deconstructInjector = null;
         },
         // forgeHistory borrows accountOpen.db the way settingsStore does; accountStore.close()
         // below owns the handle, so it gains no close() of its own.
@@ -1215,6 +1314,15 @@ if (!gotLock) {
         },
         releasePvpHistory: () => {
           pvpHistory = null;
+        },
+        releaseCollectionsReader: () => {
+          collectionsReader = null;
+        },
+        releaseCollectionsRecorder: () => {
+          collectionsRecorder = null;
+        },
+        releaseCollectionsStore: () => {
+          collectionsStore = null;
         },
         releaseTriggeredRefresh: () => {
           triggeredRefresh = null;

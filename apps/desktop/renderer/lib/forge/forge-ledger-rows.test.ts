@@ -29,6 +29,10 @@ function row(overrides: Partial<ForgeHistoryRow> & { id: number }): ForgeHistory
     spent: 8_000,
     walletAfter: null,
     durationMs: 12_000,
+    stonesSpent: [0, 0, 0, 0, 0, 0],
+    stoneRarity: null,
+    scrollEssence: 0,
+    essence: 0,
     ...overrides,
   };
 }
@@ -66,6 +70,14 @@ describe('sortForgeLedgerRows', () => {
     expect(ids({ key: 'spent', direction: 'desc' })).toEqual([2, 3, 1]);
     expect(ids({ key: 'climb', direction: 'desc' })).toEqual([2, 1, 3]);
     expect(ids({ key: 'rolls', direction: 'asc' })).toEqual([3, 2, 1]);
+  });
+
+  it('sorts by essence, a run that never recorded it below every recorded one', () => {
+    const rows = [row({ id: 1, essence: null }), row({ id: 2, essence: 90 }), row({ id: 3, essence: 10 })];
+    const order = (direction: 'asc' | 'desc') =>
+      sortForgeLedgerRows(rows, { key: 'essence', direction }, () => '', () => '').map((r) => r.id);
+    expect(order('desc')).toEqual([2, 3, 1]);
+    expect(order('asc')).toEqual([1, 3, 2]);
   });
 
   it('breaks a tie on the row id descending, so equal rows stay newest-first whichever way the column points', () => {

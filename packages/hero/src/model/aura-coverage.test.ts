@@ -12,7 +12,7 @@ function tile(tiles: readonly AuraCoverageTile[], auraId: string): AuraCoverageT
 }
 
 describe('auraCoverageFor', () => {
-  it('lists the seven team auras in the domain order, Fortune last', () => {
+  it('lists the nine team auras in the domain order', () => {
     const coverage = auraCoverageFor([], 'en', en);
     expect(coverage.tiles.map((entry) => entry.auraId)).toEqual([...TEAM_ABILITY_IDS]);
     expect(coverage.tiles.map((entry) => entry.auraId)).toEqual([
@@ -21,10 +21,12 @@ describe('auraCoverageFor', () => {
       'marcha_acelerada',
       'folego_mineiro',
       'brecha',
+      'carnificina',
       'passagem_bastao',
       'fortuna',
+      'aprendiz',
     ]);
-    expect(coverage.total).toBe(7);
+    expect(coverage.total).toBe(9);
   });
 
   it('prints each covered aura at its carrier level with the domain readout', () => {

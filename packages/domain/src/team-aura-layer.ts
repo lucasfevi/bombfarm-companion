@@ -1,4 +1,15 @@
+import { STAT_CAPS } from './model/rarity-constants';
 import { TEAM_BUFF_CAP, type TeamBuffId } from './team-buffs';
+
+/**
+ * The most crit chance a plan credits a hero with, on the scale of a sheet that already carries
+ * the rotation-average Presságio: the cap less the aura's full-field total, plus the average it
+ * is priced at. Past it, crit chance only pays in the stretch of the rotation where the carrier
+ * is off the field, so a plan that priced it at the average would send a hero past the cap.
+ */
+export function critPointCeilingOf(critFlatAtFullPresence: number, critFlatInRotation: number): number {
+  return STAT_CAPS.critChance - critFlatAtFullPresence + critFlatInRotation;
+}
 
 /**
  * Team auras are a property of the FIELD (confirmed 2026-08-19): every deployed hero — carrier
@@ -28,8 +39,8 @@ export function teamDrainMultFromTeamBuffs(teamBuffs: Record<TeamBuffId, number>
 
 /**
  * What a roster's standing aura totals do to any one hero's sheet — the whole of the team layer,
- * in the five operations `derive` applies last: attack × Grito, speed × Marcha, crit + Presságio's
- * flat points, penetration + Brecha's flat points, and Fôlego's drain multiplier combined with the
+ * in the six operations `derive` applies last: attack × Grito, speed × Marcha, crit + Presságio's
+ * flat points, crit damage + Carnificina's flat points, penetration + Brecha's flat points, and Fôlego's drain multiplier combined with the
  * hero's own. A pure function of the totals: the same totals give every hero the same layer.
  */
 export type TeamAuraLayer = {
@@ -41,6 +52,9 @@ export type TeamAuraLayer = {
   /** The roster-wide Brecha total in FLAT penetration points, already clamped at
    *  `TEAM_BUFF_CAP.brecha` — added to the sheet the same way. */
   teamPenFlat: number;
+  /** The roster-wide Carnificina total in FLAT crit-damage points, already clamped at
+   *  `TEAM_BUFF_CAP.carnificina` — added to the sheet's crit damage. */
+  teamCritDmgFlat: number;
   teamDrainMult: number;
 };
 
@@ -49,11 +63,13 @@ export function teamAuraLayer(teamBuffs: Record<TeamBuffId, number>): TeamAuraLa
   const marchaPct = combineTeamAuraPct(0, teamBuffs.marcha_acelerada || 0, TEAM_BUFF_CAP.marcha_acelerada);
   const teamCritFlat = combineTeamAuraPct(0, teamBuffs.pressagio_mortal || 0, TEAM_BUFF_CAP.pressagio_mortal);
   const teamPenFlat = combineTeamAuraPct(0, teamBuffs.brecha || 0, TEAM_BUFF_CAP.brecha);
+  const teamCritDmgFlat = combineTeamAuraPct(0, teamBuffs.carnificina || 0, TEAM_BUFF_CAP.carnificina);
   return {
     attackMult: 1 + gritoPct / 100,
     speedMult: 1 + marchaPct / 100,
     teamCritFlat,
     teamPenFlat,
+    teamCritDmgFlat,
     teamDrainMult: teamDrainMultFromTeamBuffs(teamBuffs),
   };
 }

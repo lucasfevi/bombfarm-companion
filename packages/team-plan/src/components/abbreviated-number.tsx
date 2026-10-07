@@ -1,8 +1,9 @@
 'use client';
 
-import { Tooltip, cn, formatCompactNumber, formatNumber } from '@bombfarm/ui';
+import { Tooltip, cn } from '@bombfarm/ui';
 import { rosterIconTooltipTriggerClass } from '@bombfarm/game-art';
 import type { Lang } from '@bombfarm/hero/copy';
+import { formatObjectiveFigure, type ObjectiveFigurePrecision } from '../model/objective-figure';
 
 /**
  * A `formatCompactNumber` value whose exact figure shows in a themed tooltip on hover/focus.
@@ -14,6 +15,7 @@ export function AbbreviatedNumber({
   lang,
   decimals = 1,
   signed = false,
+  precision = 'compact',
   disableFocus = false,
   className,
 }: {
@@ -21,10 +23,11 @@ export function AbbreviatedNumber({
   lang: Lang;
   decimals?: number;
   signed?: boolean;
+  precision?: ObjectiveFigurePrecision;
   disableFocus?: boolean;
   className?: string;
 }) {
-  const sign = signed && value >= 0 ? '+' : '';
+  const { shown, exact } = formatObjectiveFigure(value, lang, precision, { signed, decimals });
   return (
     <Tooltip.Root>
       <Tooltip.Trigger
@@ -32,16 +35,12 @@ export function AbbreviatedNumber({
         tabIndex={disableFocus ? -1 : undefined}
         className={cn(rosterIconTooltipTriggerClass, className)}
       >
-        {sign}
-        {formatCompactNumber(value, lang, decimals)}
+        {shown}
       </Tooltip.Trigger>
       <Tooltip.Portal>
         <Tooltip.Positioner sideOffset={6}>
           <Tooltip.Popup>
-            <p className="m-0 font-mono">
-              {sign}
-              {formatNumber(value, lang, 0)}
-            </p>
+            <p className="m-0 font-mono">{exact}</p>
           </Tooltip.Popup>
         </Tooltip.Positioner>
       </Tooltip.Portal>

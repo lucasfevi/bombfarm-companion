@@ -1,20 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { createElement } from 'react';
+import { Fragment, createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { EMPTY_FORGE_HISTORY, type ForgeHistoryResult, type ForgeHistoryRow, type ForgeStepEvent } from '@bombfarm/contracts';
 import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { CopyProvider } from '../../lib/copy';
 import { en } from '../../lib/copy/en';
+import { resolveStoneRanges } from '../../lib/forge/forge-stones';
 import { forgeRunReducer, IDLE_FORGE_RUN, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
 import { forgeLabels } from './forge-labels';
 import { ForgeLedger } from './forge-ledger';
-import { ForgePlanPanel } from './forge-plan-panel';
+import { ForgeForecastPanel, ForgePlanPanel } from './forge-plan-panel';
 import { ForgeRail, forgeRailState } from './forge-rail';
 
 const labels = forgeLabels(en, 'en', 'en');
 
 function step(attempt: number, from: number, to: number, outcome: ForgeStepEvent['outcome'] = 'success'): ForgeStepEvent {
-  return { runId: 'r1', itemId: 'g1', attempt, kind: 'roll', target: outcome === 'fail' ? from + 1 : to, from, to, outcome, cost: 100, spent: 100 * attempt, wallet: 5_000 };
+  return { runId: 'r1', itemId: 'g1', attempt, kind: 'roll', target: outcome === 'fail' ? from + 1 : to, from, to, outcome, cost: 100, spent: 100 * attempt, wallet: 5_000, essence: 10 };
 }
 
 function running(): ForgeRunState {
@@ -24,7 +25,7 @@ function running(): ForgeRunState {
     itemId: 'g1',
     target: 12,
     from: 8,
-    plan: { forecast: { rolls: 6.5, safeJumps: 0, gold: 650, badRunGold: 1_200 } },
+    plan: { forecast: { rolls: 6.5, gold: 650, essence: 0, stones: [0, 0, 0, 0, 0, 0], scroll: false, other: null, badRunGold: 1_200, badRunEssence: 0 } },
   });
   const path: [number, number, ForgeStepEvent['outcome']][] = [
     [8, 9, 'success'],
@@ -48,7 +49,7 @@ function finished(spent = 800): ForgeRunState {
     kind: 'done',
     event: {
       runId: 'r1',
-      result: { itemId: 'g1', from: 8, to: 12, target: 12, stop: 'target', reached: true, rolls: 8, fails: 1, crits: 0, safeJumps: 0, spent, walletAfter: 5_000, durationMs: 12_000 },
+      result: { itemId: 'g1', from: 8, to: 12, target: 12, stop: 'target', reached: true, rolls: 8, fails: 1, crits: 0, safeJumps: 0, spent, walletAfter: 5_000, durationMs: 12_000, essence: 80 },
     },
   });
 }
@@ -309,6 +310,10 @@ function historyRow(overrides: Partial<ForgeHistoryRow> & { id: number }): Forge
     spent: 8_000,
     walletAfter: 214_054_630,
     durationMs: 14_000,
+    stonesSpent: [0, 0, 0, 0, 0, 0],
+    stoneRarity: null,
+    scrollEssence: 0,
+    essence: 640,
     ...overrides,
   };
 }
@@ -318,7 +323,7 @@ const HISTORY: ForgeHistoryResult = {
     historyRow({ id: 2, finishedAt: '2026-09-05T12:00:00.000Z' }),
     historyRow({ id: 1, finishedAt: '2026-09-05T10:00:00.000Z', defId: 'steel_bota', stop: 'budget', toUpgrade: 10, spent: 2_400 }),
   ],
-  totals: { runs: 2, spent: 10_400, rolls: 13, fails: 2 },
+  totals: { runs: 2, spent: 10_400, essence: 1_000, rolls: 13, fails: 2 },
 };
 
 function renderLedger(history: ForgeHistoryResult, defaultOpen = true): string {
@@ -396,23 +401,42 @@ function renderPanel(
   reason: 'ready' | 'running' | 'cancelling' | 'switch-off',
   startRefusal: 'busy' | null = null,
 ): string {
+  const plan = { itemId: 'g1', target: 13, maxGold: null, attempts: null, stones: [], scroll: false };
+  const stoneRanges = resolveStoneRanges([], 12, 13);
   return renderToStaticMarkup(
     createElement(CopyProvider, {
       locale: 'en',
-      children: createElement(ForgePlanPanel, {
-        item: item(),
-        plan: { itemId: 'g1', target: 13, maxGold: null, attempts: null },
-        forecast: null,
-        walletGold: null,
-        reason,
-        startRefusal,
-        labels,
-        onStepTarget: () => {},
-        onMaxGoldChange: () => {},
-        onAttemptsChange: () => {},
-        onForge: () => {},
-        onCancel: () => {},
-      }),
+      children: createElement(
+        Fragment,
+        null,
+        createElement(ForgePlanPanel, {
+          item: item(),
+          plan,
+          stoneRanges,
+          ownedStones: [0, 0, 0, 0, 0, 0],
+          running: reason === 'running' || reason === 'cancelling',
+          labels,
+          onStepTarget: () => {},
+          onStoneEdit: () => undefined,
+          onMaxGoldChange: () => {},
+          onAttemptsChange: () => {},
+          onScrollChange: () => {},
+        }),
+        createElement(ForgeForecastPanel, {
+          item: item(),
+          plan,
+          forecast: null,
+          stoneRanges,
+          ownedStones: [0, 0, 0, 0, 0, 0],
+          walletGold: null,
+          walletEssence: null,
+          reason,
+          startRefusal,
+          labels,
+          onForge: () => {},
+          onCancel: () => {},
+        }),
+      ),
     }),
   );
 }
@@ -455,5 +479,124 @@ describe('ForgePlanPanel — the button', () => {
     const html = renderPanel('ready');
     expect(html).toContain(en.forgeFactWallet);
     expect(html).not.toContain('data-testid="forge-fact-buys"');
+  });
+});
+
+describe('Chance Stones in the rail, the result and the ledger', () => {
+  function withStones(): ForgeRunState {
+    let state = forgeRunReducer(IDLE_FORGE_RUN, { kind: 'start', runId: 'r1', itemId: 'g1', target: 11, from: 8, plan: null });
+    const path: [number, number, number | null][] = [
+      [8, 9, 0],
+      [9, 8, 0],
+      [8, 9, 2],
+      [9, 10, null],
+    ];
+    path.forEach(([from, to, stone], index) => {
+      state = forgeRunReducer(state, {
+        kind: 'step',
+        event: { ...step(index + 1, from, to, to < from ? 'fail' : 'success'), stone },
+        adopt: null,
+      });
+    });
+    return state;
+  }
+
+  it('shows the stones used so far while the run is live, an icon and a count for each kind', () => {
+    const html = renderRail(withStones());
+    const kinds = [...html.matchAll(/data-testid="forge-stones-used-kind"[^>]*data-rarity="(\d)"[^>]*>.*?<span class="font-mono">([^<]+)</gs)];
+    expect(kinds.map((match) => [match[1], match[2]])).toEqual([
+      ['0', '×2'],
+      ['2', '×1'],
+    ]);
+  });
+
+  it('shows nothing about stones for a run that used none', () => {
+    expect(renderRail(running())).not.toContain('data-testid="forge-stones-used"');
+  });
+
+  it('keeps them on the finished result, from the result itself when it carries them', () => {
+    const done = forgeRunReducer(withStones(), {
+      kind: 'done',
+      event: {
+        runId: 'r1',
+        result: { itemId: 'g1', from: 8, to: 10, target: 11, stop: 'stones', reached: false, rolls: 4, fails: 1, crits: 0, safeJumps: 0, spent: 400, walletAfter: null, durationMs: 1_000, stonesSpent: [3, 0, 0, 0, 0, 0], stoneRarity: 0 },
+      },
+    });
+    const html = renderRail(done);
+    expect(html).toMatch(/data-testid="forge-result-heading"[^>]*>Out of Common Chance Stones at \+10</);
+    expect(html).toContain('data-testid="forge-stones-used"');
+    expect(html.match(/data-testid="forge-stones-used-kind"/g)).toHaveLength(1);
+    expect(html).toContain('×3');
+  });
+
+  it('falls back to the steps for a result that predates the field', () => {
+    expect(renderRail(finished())).not.toContain('data-testid="forge-stones-used"');
+    const done = forgeRunReducer(withStones(), {
+      kind: 'done',
+      event: { runId: 'r1', result: { itemId: 'g1', from: 8, to: 10, target: 11, stop: 'cancelled', reached: false, rolls: 4, fails: 1, crits: 0, safeJumps: 0, spent: 400, walletAfter: null, durationMs: 1_000 } },
+    });
+    expect(renderRail(done).match(/data-testid="forge-stones-used-kind"/g)).toHaveLength(2);
+  });
+
+  it('adds a Stones column to the ledger, blank for a run that used none', () => {
+    const html = renderLedger({
+      rows: [
+        historyRow({ id: 2, stonesSpent: [0, 0, 4, 0, 1, 0] }),
+        historyRow({ id: 1 }),
+      ],
+      totals: { runs: 2, spent: 16_000, essence: 1_280, rolls: 16, fails: 2 },
+    });
+    expect(html).toContain(en.forgeLedgerColumnStones);
+    const cells = [...html.matchAll(/data-testid="forge-ledger-stones"[^>]*>(.*?)<\/td>/gs)].map((match) => match[1] ?? '');
+    expect(cells).toHaveLength(2);
+    expect(cells[0]).toContain('×4');
+    expect(cells[0]).toContain('×1');
+    expect(cells[1]).not.toContain('forge-stones-used');
+  });
+});
+
+describe('essence beside gold', () => {
+  const textOf = (html: string, testId: string): string => {
+    const start = html.indexOf(`data-testid="${testId}"`);
+    const end = html.indexOf('data-testid=', start + 1);
+    const slice = html.slice(html.indexOf('>', start) + 1, end === -1 ? undefined : end);
+    return slice.replace(/<[^>]*$/, '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  };
+
+  it('prints the essence a live run has been charged beside its gold', () => {
+    expect(textOf(renderRail(running()), 'forge-rail-spent')).toBe('800 gold · 80 essence');
+  });
+
+  it('prints the essence in the finished result\'s Spent fact, and leaves it off for a result that did not record it', () => {
+    expect(textOf(renderRail(finished()), 'forge-result-spent')).toMatch(/^800 · 80 essence/);
+    const bare = forgeRunReducer(running(), {
+      kind: 'done',
+      event: { runId: 'r1', result: { itemId: 'g1', from: 8, to: 12, target: 12, stop: 'target', reached: true, rolls: 8, fails: 1, crits: 0, safeJumps: 0, spent: 800, walletAfter: null, durationMs: 1_000 } },
+    });
+    expect(textOf(renderRail(bare), 'forge-result-spent')).not.toContain('essence');
+  });
+
+  it('adds an Essence column to the rung table, one figure per row', () => {
+    const html = renderRail(finished());
+    expect(html).toContain(en.forgeRailTallyEssence);
+    const cells = [...html.matchAll(/data-testid="forge-tally-essence"[^>]*>(.*?)<\/td>/gs)].map((match) => match[1]);
+    expect(cells.length).toBeGreaterThan(0);
+    expect(cells.reduce((sum, cell) => sum + Number(cell), 0)).toBe(80);
+  });
+
+  it('adds an Essence column to the ledger, a dash for a run recorded before essence was tracked', () => {
+    const html = renderLedger({
+      rows: [historyRow({ id: 2, essence: 1_280 }), historyRow({ id: 1, essence: null })],
+      totals: { runs: 2, spent: 16_000, essence: 1_280, rolls: 16, fails: 2 },
+    });
+    expect(html).toContain(en.forgeLedgerColumnEssence);
+    const cells = [...html.matchAll(/data-testid="forge-ledger-essence"[^>]*>(.*?)<\/td>/gs)].map((match) => match[1]);
+    expect(cells).toEqual(['1,280', '—']);
+  });
+
+  it('prints the essence total in the ledger header and its footer', () => {
+    const html = renderLedger(HISTORY);
+    expect(textOf(html, 'forge-ledger-summary-gold')).toMatch(/^10,400 gold · 1,000 essence/);
+    expect(textOf(html, 'forge-ledger-totals-gold')).toMatch(/^10,400 gold · 1,000 essence/);
   });
 });

@@ -45,6 +45,7 @@ function renderRow(props: {
       planRunId: 'run-1',
       queue: props.queue ?? EMPTY_FORGE_QUEUE,
       gear: props.gear ?? [],
+      ownedStones: [],
       labels,
       gate: props.gate ?? null,
       record: props.record ?? IDLE_RECORD,

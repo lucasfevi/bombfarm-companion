@@ -15,6 +15,24 @@ export interface LiveTickHero {
   readonly energyFraction?: number;
   readonly x?: number;
   readonly y?: number;
+  /** Map cell index the hero stands on, in the same index space as `hits[].cell`. */
+  readonly cell?: number;
+  /** The wire's action-state code; only `5` (walking) has a known meaning. */
+  readonly actionState?: number;
+}
+
+export interface LiveBomb {
+  readonly cell: number;
+  readonly radius: number;
+  readonly fuseRemainingSeconds: number;
+  readonly fuseTotalSeconds: number;
+}
+
+export interface LiveExplosion {
+  readonly cell: number;
+  readonly radius: number;
+  /** Present only when the wire marks this as the repeat blast of a bomb that exploded twice. */
+  readonly secondBlast?: true;
 }
 
 export interface LiveLootPop {
@@ -28,6 +46,10 @@ export interface LiveHit {
   /** The wire's own name for this value. */
   readonly damage: number;
   readonly critical?: boolean;
+  /** Present only when the wire marks this hit as dealt by a repeat blast. */
+  readonly secondBlast?: true;
+  /** Cell of the shattered prop a shard hit originates from; absent on every other hit. */
+  readonly shardOrigin?: number;
 }
 
 export interface LiveTick {
@@ -57,6 +79,35 @@ export interface LiveTick {
    *  prop on its last sliver, so occupancy must be read from {@link kinds} and never from a
    *  `!== -1` test here. */
   readonly hps?: readonly number[];
+  /** Every bomb burning on THIS tick. */
+  readonly bombs?: readonly LiveBomb[];
+  /** Every bomb that exploded on THIS tick. */
+  readonly explosions?: readonly LiveExplosion[];
+}
+
+export type UnattributedReason =
+  | 'noOwnerAtBirth'
+  | 'explosionWithoutBomb'
+  | 'streamDiscontinuity'
+  | 'unresolvedOverlap'
+  | 'explosionlessWithoutFantasma'
+  | 'sharedOrUnattributedKill'
+  | 'noHitOnLootCell';
+
+export const UNATTRIBUTED_REASONS = [
+  'noOwnerAtBirth',
+  'explosionWithoutBomb',
+  'streamDiscontinuity',
+  'unresolvedOverlap',
+  'explosionlessWithoutFantasma',
+  'sharedOrUnattributedKill',
+  'noHitOnLootCell',
+] as const satisfies readonly UnattributedReason[];
+
+export interface CreditAmounts {
+  readonly damage: number;
+  readonly props: number;
+  readonly gold: number;
 }
 
 /**
@@ -68,7 +119,9 @@ export interface LiveTick {
 export interface LiveFrame {
   /** ISO 8601. */
   readonly at: string;
-  /** Monotonic, from the first frame of the process. Lets a consumer detect a miss. */
+  /** The emitting tap's own count, restarting at 1 whenever a tap is rebuilt. A consumer that
+   *  needs an ordering across rebuilds must not use it: the main-process folds are handed a
+   *  process-level counter by the live source instead. */
   readonly sequence: number;
   readonly tick: LiveTick;
 }
@@ -120,6 +173,7 @@ export type LiveEvent =
       readonly onFieldHeroIds: readonly string[];
       readonly earnings: LiveEarnings | null;
       readonly map: LiveMap | null;
+      readonly damage: LiveDamage | null;
     };
 
 /**
@@ -347,6 +401,95 @@ export interface LiveMapEconomy {
   readonly averageGoldPerClear: number;
 }
 
+export interface LiveDamageHeroRow {
+  readonly heroId: string;
+  /** Session attributed damage over the seconds the hero stood on the field; `null` when it has
+   *  credit but no field time. */
+  readonly dps: number | null;
+  readonly damage: number;
+  readonly props: number;
+  readonly gold: number;
+  /** Streamed seconds this session the hero stood on the field. */
+  readonly fieldSeconds: number;
+  /** {@link fieldSeconds} over {@link LiveDamage.sessionSeconds}, a fraction from 0 to 1; `null`
+   *  with no streamed time. */
+  readonly uptime: number | null;
+  /** In the latest frame's hero list. */
+  readonly onField: boolean;
+}
+
+export interface LiveDamageUnattributed extends CreditAmounts {
+  /** Session Unattributed damage over the session's streamed seconds, the clock
+   *  {@link LiveDamage.teamDpsSession} divides by; `null` with no streamed time. */
+  readonly dps: number | null;
+}
+
+/**
+ * Damage folded in the main process from the live tick stream — the renderer receives finished
+ * figures and only draws them, the same split {@link LiveEarnings} follows. Per-hero figures plus
+ * {@link unattributed} always add up to {@link team}, component for component.
+ */
+export interface LiveDamage {
+  /** Team damage per streamed second over the last 10 minutes; `null` with no streamed time. */
+  readonly teamDps10: number | null;
+  readonly teamDpsSession: number | null;
+  /** Span of the 10-minute window's samples, as {@link LiveEarnings.coverageSeconds}. */
+  readonly coverageSeconds: number;
+  readonly sessionSeconds: number;
+  /** Sorted by session damage descending, then hero id. */
+  readonly heroes: readonly LiveDamageHeroRow[];
+  /** `null` until the session has any team damage. */
+  readonly unattributed: LiveDamageUnattributed | null;
+  /** Damage, props and gold that went unattributed, split by why. Diagnostic; not drawn. */
+  readonly unattributedReasons: Readonly<Record<UnattributedReason, CreditAmounts>>;
+  /** Session totals. */
+  readonly team: CreditAmounts;
+}
+
+function sameCreditAmounts(a: CreditAmounts, b: CreditAmounts): boolean {
+  return a.damage === b.damage && a.props === b.props && a.gold === b.gold;
+}
+
+function sameDamageReasons(
+  a: Readonly<Record<UnattributedReason, CreditAmounts>>,
+  b: Readonly<Record<UnattributedReason, CreditAmounts>>,
+): boolean {
+  const reasons = Object.keys(a) as UnattributedReason[];
+  return reasons.length === Object.keys(b).length && reasons.every((reason) => reason in b && sameCreditAmounts(a[reason], b[reason]));
+}
+
+function sameDamageHeroRow(a: LiveDamageHeroRow, b: LiveDamageHeroRow): boolean {
+  return (
+    a.heroId === b.heroId &&
+    a.dps === b.dps &&
+    a.damage === b.damage &&
+    a.props === b.props &&
+    a.gold === b.gold &&
+    a.fieldSeconds === b.fieldSeconds &&
+    a.uptime === b.uptime &&
+    a.onField === b.onField
+  );
+}
+
+/** Value equality for the damage slice, so the main process and the renderer both keep an
+ *  unchanged slice by reference and a changed one is never mistaken for it. */
+export function sameLiveDamage(a: LiveDamage | null, b: LiveDamage | null): boolean {
+  if (a === null || b === null) return a === b;
+  return (
+    a.teamDps10 === b.teamDps10 &&
+    a.teamDpsSession === b.teamDpsSession &&
+    a.coverageSeconds === b.coverageSeconds &&
+    a.sessionSeconds === b.sessionSeconds &&
+    a.heroes.length === b.heroes.length &&
+    a.heroes.every((row, index) => sameDamageHeroRow(row, b.heroes[index] as LiveDamageHeroRow)) &&
+    (a.unattributed === null || b.unattributed === null
+      ? a.unattributed === b.unattributed
+      : a.unattributed.dps === b.unattributed.dps && sameCreditAmounts(a.unattributed, b.unattributed)) &&
+    sameDamageReasons(a.unattributedReasons, b.unattributedReasons) &&
+    sameCreditAmounts(a.team, b.team)
+  );
+}
+
 export interface LiveView {
   readonly currency: LiveCurrency;
   readonly field: readonly FieldCountdown[];
@@ -367,6 +510,8 @@ export interface LiveView {
    *  told the player is on, and a stored account reading is not a substitute: it says where the
    *  account last was, not what is on screen now. */
   readonly map: LiveMap | null;
+  /** `null` before the first tap frame of the session has arrived. */
+  readonly damage: LiveDamage | null;
   readonly updatedAt: string;
 }
 

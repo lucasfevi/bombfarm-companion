@@ -1,5 +1,98 @@
 # @bombfarm/hero
 
+## 0.5.5
+
+### Patch Changes
+
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [5de6480]
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/domain@1.9.0
+  - @bombfarm/ui@0.18.0
+  - @bombfarm/game-art@0.8.0
+
+## 0.5.4
+
+### Patch Changes
+
+- b7e061c: Boss Slayer now multiplies its carrier's damage against the gate boss (up to +100% at rank 20) in the
+  Farm board's gate phases and the advisor's boss figures. It never applies to rocks, the cage or PVP.
+- b7e061c: Short Fuse now adds its cooldown reduction to the carrier's sheet (half a point per level, up to the
+  80% cap), and Carnage is priced as a team crit-damage aura, capped at one carrier's +100%. DPS, the
+  Farm board and the Optimizer value both, and Carnage joins the team-aura switches. Boss Slayer and
+  Apprentice remain unpriced.
+- Updated dependencies [b7e061c]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [b7e061c]
+  - @bombfarm/domain@1.8.1
+  - @bombfarm/game-art@0.7.7
+
+## 0.5.3
+
+### Patch Changes
+
+- 41c8786: Four more abilities from the 2026-09-30 game patch are recognised: Short Fuse (Pavio Curto), Carnage (Carnificina), Boss Slayer (Matador de Chefes) and Apprentice (Aprendiz). Heroes carrying them used to import with an "Unknown ability" warning and lost them. They now import cleanly and show each ability with its icon, name and per-level value, and Carnage and Apprentice appear among the team auras a squad covers. Their effects are not priced yet, so the Farm board, active DPS and the Optimizer treat them as no bonus until they are modelled.
+- 034b719: The app reads the Collections bonuses the game added on 2026-09-30
+
+  Burning a full equipment set now unlocks an account-wide bonus, and the game started folding those
+  bonuses into every hero's stats. The app did not know about them, so working a hero's spent points
+  back out of its stats came out too high for every hero on an account with any collection unlocked —
+  and every one of those heroes was left out. On the desktop the Optimizer showed no heroes at all and
+  the Farm board left the whole roster out; an imported save on the web planner did the same.
+
+  Each bonus is now read and applied where the game applies it:
+
+  - Energy, Critical chance and Cooldown multiply the hero's stat; Critical damage multiplies the part
+    of it the skill tree does not add. Hero stats, DPS and the stat breakdown (which gains a
+    "Collection" step) include them.
+  - Damage and Experience are already inside the skill-tree totals the game reports, so they are not
+    applied a second time. Pricing a skill-tree node no longer drops the Damage bonus from the total.
+  - Gold multiplies gold per prop on top of the skill tree's Team Coin bonus — measured: every prop
+    the game paid out reproduces to the coin that way. Luck adds to the squad's drop luck; how it
+    combines with the skill tree is not measured yet.
+  - Cage and boss and Forge are read but not applied until their effect is known.
+
+  The game's own skill-tree read is recognised again (it carries the new Collections field), so the
+  desktop no longer discards the stored skill tree each time it starts.
+
+- Updated dependencies [b0719ac]
+- Updated dependencies [d05770f]
+- Updated dependencies [804572b]
+- Updated dependencies [41c8786]
+- Updated dependencies [034b719]
+  - @bombfarm/domain@1.8.0
+  - @bombfarm/game-art@0.7.6
+
+## 0.5.2
+
+### Patch Changes
+
+- c99325d: The Gear compare scoreboard now scores the clone the same way it scores your current gear. On a
+  hero whose own entry pulse is up — the ability that lifts damage for a stint — the two columns were
+  read off different bases, so a clone copied straight from current gear printed a Sustained DPS and
+  a Hit well below the figures right beside it while the delta under them still said +0.0%. Copy your
+  gear now and both columns read the same numbers. The percentage deltas are unchanged, and the
+  hits-to-kill rows still count a hit at the level the field sits at rather than an average.
+- c99325d: Controls that a screen reader announced twice, or that two controls answered to at once, now carry
+  one correct name each. A confirmation's corner close is announced as Close rather than repeating
+  the name of the Cancel button beside it; the two editable gear grids on the Items panel say which
+  loadout they edit, so the item level, rarity and forge pickers are no longer twenty-four controls
+  with eight names between them; and the panel switches — the compact-window controls on the download
+  page, the roster board's filters and the share card's — announce their panel once instead of twice.
+  Nothing moves on screen and every visible word is unchanged.
+- Updated dependencies [c99325d]
+- Updated dependencies [2c54735]
+- Updated dependencies [47d106f]
+- Updated dependencies [47d106f]
+  - @bombfarm/ui@0.17.0
+  - @bombfarm/domain@1.7.1
+  - @bombfarm/game-art@0.7.5
+
 ## 0.5.1
 
 ### Patch Changes

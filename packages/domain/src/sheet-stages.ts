@@ -17,7 +17,7 @@ import { levelPowerMult } from './model/combat';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
 import { capSheetValue } from './sheet-view';
 import type { SheetStats } from './gear/types';
-import { applyRuneMultipliers, runeSheetMultipliers } from './runes';
+import { applyRuneMultipliers, flatAddsOutsideRune, runeSheetMultipliers } from './runes';
 
 /**
  * One sheet key's birth absolute + seven marginal Δs + composed Total, plus the game's display
@@ -122,7 +122,7 @@ export function peelSheetStages(input: PeelSheetStagesInput): SheetStageTable {
   const afterGear = applyGear(afterAbility, loadout, sheetOther);
   const afterPoints = applyPoints(afterAbility, loadout, pts, sheetOther, level, stars);
   const afterTree = applySkillTree(afterPoints, afterAbility, sheetOther, tree);
-  const total = runes.length === 0 ? afterTree : applyRuneMultipliers(afterTree, tree, runeSheetMultipliers(runes));
+  const total = runes.length === 0 ? afterTree : applyRuneMultipliers(afterTree, flatAddsOutsideRune(tree, sheetOther), runeSheetMultipliers(runes));
 
   const out = {} as SheetStageTable;
   for (const key of SHEET_KEYS) {

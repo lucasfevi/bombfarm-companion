@@ -1,13 +1,12 @@
 import path from 'node:path';
 import { test, expect, type Page } from '@playwright/test';
 import { formatCompactNumber } from '@bombfarm/ui/format-number';
+import { holdSpecUntilInRegime } from './fixtures/hold-spec';
 import { seedLocalStorage } from './fixtures/seed';
 
 /** The committed 13-hero capture: 221 item rows, phase 51, a max phase, no player name or id. */
-const thirteenHeroSave = path.join(
-  process.cwd(),
-  '../../packages/domain/tests/fixtures/sheet-math/save-20260823-13heroes-crit-points.json',
-);
+const THIRTEEN_HEROES = 'save-20260823-13heroes-crit-points.json';
+const thirteenHeroSave = path.join(process.cwd(), '../../packages/domain/tests/fixtures/sheet-math', THIRTEEN_HEROES);
 
 /** One quote for a gear key the save holds eight tradable copies of, so the total is priced. */
 const MARKET_SNAPSHOT = {
@@ -66,6 +65,7 @@ async function openEmptyHome(page: Page): Promise<void> {
 }
 
 async function importThirteenHeroes(page: Page): Promise<void> {
+  holdSpecUntilInRegime(`sheet-math/${THIRTEEN_HEROES}`, 'itemForge');
   await page.getByRole('button', { name: 'Import', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.locator('input[type="file"]').setInputFiles(thirteenHeroSave);

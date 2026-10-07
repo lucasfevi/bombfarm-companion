@@ -9,6 +9,7 @@ import {
   mapInventoryHeroes,
   mapInventoryViewItem,
   resolveItemKind,
+  ownedChanceStones,
   filterInventoryView,
   isStackableKind,
   kindsInView,
@@ -36,22 +37,22 @@ function loadPayloadItems(): unknown[] {
 }
 
 describe('buildInventoryView over the calibration capture', () => {
-  it('keeps every one of the 30 captured rows, where the optimizer model keeps only the 27 gear ones', () => {
+  it('keeps every one of the 31 captured rows, where the optimizer model keeps only the 27 gear ones', () => {
     const raw = loadPayloadItems();
     const view = buildInventoryView(raw);
 
-    expect(raw.length).toBe(30);
-    expect(view.items.length).toBe(30);
+    expect(raw.length).toBe(31);
+    expect(view.items.length).toBe(31);
     expect(view.skipped).toBe(0);
 
     const keptByOptimizer = raw.filter((item) => mapInventoryItem(item as Record<string, unknown>) !== null);
     expect(keptByOptimizer.length).toBe(27);
   });
 
-  it('files the capture as 27 equipment and 3 keys, and nothing else', () => {
+  it('files the capture as 27 equipment, 3 keys and a chance stone, and nothing else', () => {
     const view = buildInventoryView(loadPayloadItems());
     const counts = Object.fromEntries(view.groups.map((group) => [group.kind, group.count]));
-    expect(counts).toEqual({ equipment: 27, key: 3 });
+    expect(counts).toEqual({ equipment: 27, key: 3, chanceStone: 1 });
   });
 
   it('carries the fields the optimizer model drops, so the tab can show them', () => {
@@ -128,6 +129,13 @@ describe('mapInventoryViewItem', () => {
     expect(item!.categoryCode).toBe(9);
   });
 
+  it('reads the misses in a row from forge_fails, and none when it is absent or negative', () => {
+    expect(mapInventoryViewItem({ id: '1', def_id: 'x', forge_fails: 3 })!.forgeFails).toBe(3);
+    expect(mapInventoryViewItem({ id: '1', def_id: 'x' })!.forgeFails).toBe(0);
+    expect(mapInventoryViewItem({ id: '1', def_id: 'x', forge_fails: -2 })!.forgeFails).toBe(0);
+    expect(mapInventoryItem({ id: '1', def_id: 'x', category: 0, forge_fails: 2 })?.forgeFails).toBe(2);
+  });
+
   it('keeps the raw category code so an other-bucket row can be identified after a patch', () => {
     expect(mapInventoryViewItem({ id: '1', def_id: 'x', category: 12 })!.categoryCode).toBe(12);
     expect(mapInventoryViewItem({ id: '1', def_id: 'x' })!.categoryCode).toBeNull();
@@ -163,7 +171,7 @@ describe('groupInventoryByKind', () => {
 
   it('returns no groups for an empty inventory rather than one empty group per kind', () => {
     expect(groupInventoryByKind([])).toEqual([]);
-    expect(ITEM_KINDS.length).toBe(9);
+    expect(ITEM_KINDS.length).toBe(10);
   });
 });
 
@@ -306,6 +314,7 @@ describe('resolveItemKind reads the wire category as the total classifier', () =
     [5, 'skill_stone_comum', 'stone'],
     [6, 'skin_6', 'skin'],
     [7, 'rune_critdmg_comum', 'rune'],
+    [8, 'forja_pedra_incomum', 'chanceStone'],
   ];
 
   it.each(CODES)('files category %i (%s) as %s', (code, defId, kind) => {
@@ -317,6 +326,144 @@ describe('resolveItemKind reads the wire category as the total classifier', () =
     expect(resolveItemKind(null, 'skill_stone_mitico')).toBe('stone');
     expect(resolveItemKind(null, 'skin_8')).toBe('skin');
     expect(resolveItemKind(null, 'rune_attack_raro')).toBe('rune');
+    expect(resolveItemKind(null, 'forja_pedra_raro')).toBe('chanceStone');
+  });
+
+  it('puts the chance stones between the skill stones and the chests', () => {
+    const order = ITEM_KINDS.slice(ITEM_KINDS.indexOf('stone'), ITEM_KINDS.indexOf('chest') + 1);
+    expect(order).toEqual(['stone', 'chanceStone', 'chest']);
+  });
+});
+
+describe('the fields the deconstruct screen reads', () => {
+  const row = {
+    id: '9001',
+    def_id: 'glacier_calca',
+    set: 'glacier',
+    rarity: 4,
+    category: 0,
+    level: 60,
+    essence_value: 4860,
+    upgrade: 13,
+    locked: false,
+    market_state: 0,
+    equipped_on: null,
+  };
+
+  it('reads the essence value the server sent', () => {
+    expect(mapInventoryViewItem(row)!.essenceValue).toBe(4860);
+  });
+
+  it('keeps a stated zero apart from a row that never sent the field', () => {
+    expect(mapInventoryViewItem({ ...row, essence_value: 0 })!.essenceValue).toBe(0);
+    const { essence_value: _unsent, ...withoutWorth } = row;
+    expect(mapInventoryViewItem(withoutWorth)!.essenceValue).toBeNull();
+    expect(mapInventoryViewItem({ ...row, essence_value: null })!.essenceValue).toBeNull();
+    expect(mapInventoryViewItem({ ...row, essence_value: 'many' })!.essenceValue).toBeNull();
+  });
+
+  it('defaults the optional flags to off on a row that carries none of them', () => {
+    const item = mapInventoryViewItem(row)!;
+    expect(item.soulbound).toBe(false);
+    expect(item.hasGems).toBe(false);
+    expect(item.exportLocked).toBe(false);
+    expect(item.burnRefusal).toBeNull();
+  });
+
+  it('reads soulbound only when it is literally true', () => {
+    expect(mapInventoryViewItem({ ...row, soulbound: true })!.soulbound).toBe(true);
+    expect(mapInventoryViewItem({ ...row, soulbound: 'yes' })!.soulbound).toBe(false);
+  });
+
+  it('reads socketed gems from a non-empty jewels list', () => {
+    expect(mapInventoryViewItem({ ...row, jewels: [{ def_id: 'gem_ruby' }] })!.hasGems).toBe(true);
+    expect(mapInventoryViewItem({ ...row, jewels: [] })!.hasGems).toBe(false);
+  });
+
+  it('reads an import lock only while its countdown is positive', () => {
+    expect(mapInventoryViewItem({ ...row, export_lock_secs: 90 })!.exportLocked).toBe(true);
+    expect(mapInventoryViewItem({ ...row, export_lock_secs: 0 })!.exportLocked).toBe(false);
+  });
+
+  it('reads the server verdict only when it says the item cannot be deconstructed', () => {
+    const refused = mapInventoryViewItem({ ...row, ritual: { desconstruir: false, desconstruir_reason: 'ITEM_LOCKED' } })!;
+    expect(refused.burnRefusal).toEqual({ reason: 'ITEM_LOCKED' });
+    expect(mapInventoryViewItem({ ...row, ritual: { desconstruir: false } })!.burnRefusal).toEqual({ reason: '' });
+    expect(mapInventoryViewItem({ ...row, ritual: { desconstruir: true } })!.burnRefusal).toBeNull();
+  });
+
+  it('survives being fed back through the mapper, so a stored row keeps every one of them', () => {
+    const original = mapInventoryViewItem({
+      ...row,
+      soulbound: true,
+      jewels: [{}],
+      export_lock_secs: 30,
+      ritual: { desconstruir: false, desconstruir_reason: 'ITEM_HAS_GEMS' },
+    })!;
+    expect(mapInventoryViewItem(JSON.parse(JSON.stringify(original)))).toEqual(original);
+  });
+
+  it('files a chance stone from the wire the way the live read sends it', () => {
+    const stone = mapInventoryViewItem({
+      id: '9100',
+      def_id: 'forja_pedra_incomum',
+      set: '',
+      rarity: 1,
+      category: 8,
+      level: 0,
+      essence_value: 30,
+    })!;
+    expect(stone.kind).toBe('chanceStone');
+    expect(stone.rarityCode).toBe('incomum');
+    expect(stone.essenceValue).toBe(30);
+    });
+});
+
+describe('Chance Stones', () => {
+  const stone = (defId: string, wire = 0, extra: Record<string, unknown> = {}) =>
+    mapInventoryViewItem({ id: defId + String(wire) + JSON.stringify(extra), def_id: defId, category: 8, rarity: wire, ...extra })!;
+
+  it.each([
+    ['forja_pedra_comum', 0],
+    ['forja_pedra_incomum', 1],
+    ['forja_pedra_raro', 2],
+    ['forja_pedra_epico', 3],
+    ['forja_pedra_lendario', 4],
+    ['forja_pedra_mitico', 5],
+  ])('reads the tier of %s as %i, not the 0 the wire may send', (defId, expected) => {
+    expect(stone(defId).rarityIdx).toBe(expected);
+  });
+
+  it.each([
+    ['forja_pedra_epic', 3],
+    ['forja_pedra_superraro', 3],
+    ['forja_pedra_4', 4],
+  ])('does not guess at %s: the wire rarity stays', (defId, wire) => {
+    expect(stone(defId, wire).rarityIdx).toBe(wire);
+  });
+
+  it('keeps the wire rarity when the tail names no tier', () => {
+    expect(stone('forja_pedra_x', 2).rarityIdx).toBe(2);
+  });
+
+  it('counts the stones held per rarity, one per row, and nothing else', () => {
+    const rows = [
+      stone('forja_pedra_raro'),
+      stone('forja_pedra_raro', 0, { in_stash: true }),
+      stone('forja_pedra_mitico'),
+      mapInventoryViewItem({ id: 'k', def_id: 'skill_stone_raro', category: 5, rarity: 2 })!,
+    ];
+    expect(ownedChanceStones(rows)).toEqual([0, 0, 2, 0, 0, 1]);
+  });
+
+  it('leaves out the stones the game would not offer a roll: locked, on the market or worn', () => {
+    const rows = [
+      stone('forja_pedra_comum'),
+      stone('forja_pedra_comum', 0, { locked: true }),
+      stone('forja_pedra_comum', 0, { market_state: 1 }),
+      stone('forja_pedra_comum', 0, { equipped_on: 'h1' }),
+    ];
+    expect(ownedChanceStones(rows)).toEqual([1, 0, 0, 0, 0, 0]);
   });
 });
 
@@ -445,7 +592,7 @@ describe('item stats', () => {
       level: 20,
       upgrade: 10,
     })!;
-    expect(forged.stats[0].effective).toBeCloseTo(plain.stats[0].effective * 1.8, 6);
+    expect(forged.stats[0].effective).toBeCloseTo(plain.stats[0].effective * 1.5, 6);
   });
 });
 
@@ -740,6 +887,7 @@ describe('chest tiers from the def_id tail', () => {
     ['chest_key_3', 3],
     ['chest_key_5', 5],
     ['chest_hero_3', 3],
+    ['chest_forja_3', 3],
   ])('reads %s as rarity %i, not the 0 the wire sends', (defId, expected) => {
     expect(rarityOf(defId)).toBe(expected);
   });

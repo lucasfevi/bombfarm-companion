@@ -1,5 +1,5 @@
 /**
- * The four things this app keeps asking for on the player's behalf, and the clock each one runs
+ * The five things this app keeps asking for on the player's behalf, and the clock each one runs
  * on. Feeds are not tabs: Farm, Heroes, Forge and Optimizer all read the same account, and it is
  * the account read that has an age. The live tap is not here either — it is a stream, with
  * nothing to ask for, and the connection chip already says how it is doing.
@@ -7,14 +7,16 @@
 import { MARKET_SNAPSHOT_CHECK_MS, UPDATE_CHECK_INTERVAL_MS } from '@bombfarm/contracts';
 import { READ_PACING } from '@bombfarm/game-api';
 
-export const FEED_IDS = ['account', 'pvp', 'market', 'updates'] as const;
+export const FEED_IDS = ['account', 'pvp', 'collections', 'market', 'updates'] as const;
 export type FeedId = (typeof FEED_IDS)[number];
 
 /** How often the feed refreshes itself when nobody presses anything; `null` for a feed that only
- *  moves when asked (the PVP standing is read when its tab opens, and by duel results). */
+ *  moves when asked (the PVP standing is read when its tab opens, and by duel results; the
+ *  collections when theirs opens, and when the account's totals move). */
 export const FEED_CYCLE_MS: Record<FeedId, number | null> = {
   account: READ_PACING.cycleForegroundMs,
   pvp: null,
+  collections: null,
   market: MARKET_SNAPSHOT_CHECK_MS,
   updates: UPDATE_CHECK_INTERVAL_MS,
 };
@@ -22,7 +24,8 @@ export const FEED_CYCLE_MS: Record<FeedId, number | null> = {
 /**
  * Which feeds a tab actually reads. The rest are drawn muted while that tab is showing — still
  * there, still pressable, but not what the screen's numbers came from. A tab not listed here reads
- * the account, which is what every screen but PVP and Settings does.
+ * the account, which is what every screen but PVP and Settings does. Collections reads both its
+ * own state and the account: its "ready in your bag" column is worked out from the account's items.
  */
 const FEEDS_BY_TAB: Record<string, readonly FeedId[]> = {
   live: ['account'],
@@ -33,6 +36,7 @@ const FEEDS_BY_TAB: Record<string, readonly FeedId[]> = {
   optimizer: ['account'],
   pvp: ['pvp'],
   skills: ['account', 'pvp'],
+  collections: ['collections', 'account'],
   account: ['account'],
   settings: ['updates'],
 };

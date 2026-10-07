@@ -1,5 +1,6 @@
 import { mitigationFactor, critFactor } from './model';
 import { propHp, weightedAvgPropHp, hitsToKill, PROPS } from './phases';
+import { collectionGoldMult } from './collection';
 import {
   wikiPhaseLine,
   WIKI_PROPS,
@@ -29,7 +30,7 @@ export type PropSpawnRow = WikiProp & {
 
 /** One drop-rate row: wiki base fraction, the luck-scaled actual fraction, and whether it rolls
  *  on this phase (gate vs. non-gate — see {@link dropAppliesOnPhase}). Emitted in a fixed order
- *  (chest, key, time, gem, stone) regardless of `applies`, so the UI owns presentation/filtering. */
+ *  (chest, key, time, gem, stone, chance) regardless of `applies`, so the UI owns presentation/filtering. */
 export type DropChanceRow = {
   id: DropRateId;
   wiki: number;
@@ -43,6 +44,8 @@ export type PhaseIntelGlobalOptions = {
   teamCoinPct?: number;
   /** `skills.totals.xp_mult`, e.g. `1.56`. Default 1 (no XP boost). */
   xpMult?: number;
+  /** The Collections gold bonus, percent — on top of {@link teamCoinPct}. Default 0. */
+  collectionGoldPct?: number;
   /** Average of on-field heroes' final `luck` stat, e.g. `0.1723005`. Default 0 (no luck boost).
    *  Stays the SOLE input to `dropChances[].actual` — {@link treeLuckFlatPct} and
    *  {@link squadLuckPct} below are display-only echoes and never feed this math, so a caller
@@ -142,7 +145,7 @@ export function weightedAvgGold(
   return rows.reduce((sum, row) => sum + row[field] * row.weightShare, 0);
 }
 
-const DROP_CHANCE_ORDER: DropRateId[] = ['chest', 'key', 'time', 'gem', 'stone'];
+const DROP_CHANCE_ORDER: DropRateId[] = ['chest', 'key', 'time', 'gem', 'stone', 'chance'];
 
 function computeDropChances(gate: boolean, luckFraction: number): DropChanceRow[] {
   const luckMult = 1 + Math.max(0, luckFraction);
@@ -164,6 +167,7 @@ export function computePhaseIntelGlobal(
   const {
     teamCoinPct = 0,
     xpMult = 1,
+    collectionGoldPct = 0,
     luckFraction = 0,
     treeLuckFlatPct = 0,
     squadLuckPct = 0,
@@ -173,7 +177,7 @@ export function computePhaseIntelGlobal(
 
   const stoneHp = line.hp;
   const mitigationPct = line.mitig * 100;
-  const teamCoinMult = 1 + Math.max(0, teamCoinPct) / 100;
+  const teamCoinMult = (1 + Math.max(0, teamCoinPct) / 100) * collectionGoldMult({ goldPct: collectionGoldPct });
   const goldComumWiki = line.goldComum;
   const goldComumActual = goldComumWiki * teamCoinMult;
   const propCount = propCountForAto(line.ato);

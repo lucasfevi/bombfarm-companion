@@ -3,7 +3,9 @@ import type { InventoryItem } from '../inventory';
 import { mayMoveGear } from './allowed-changes';
 import { resolveCombatWindow } from './combat-window';
 import { loadoutForScoring } from './evaluate';
-import { buildFarmObjective, exhaustiveFarmObjective, isSquadScope } from './farm-objective';
+import { buildFarmObjective, clearSecsAt, exhaustiveFarmObjective, isSquadScope } from './farm-objective';
+import { SET_FARM_SETS, setFarmBand, type SetFarmBand } from './set-farm';
+import { isFarmSearchObjective } from './types';
 import { buildHeroPlanContexts } from './hero-context';
 import { buildPool } from './pool';
 import { createScoreMemo } from './score';
@@ -68,7 +70,8 @@ function farmObjectiveFor(
   input: TeamPlanInput,
   contexts: HeroPlanContext[],
 ): TeamPlanFarmObjective | undefined {
-  if (input.objective !== 'farm') return undefined;
+  if (!isFarmSearchObjective(input.objective)) return undefined;
+  const setBand = input.objective === 'setFarm' ? requireSetBand(input.farmSet) : null;
   const squadContexts = contexts.filter((ctx) => isSquadScope(ctx.scope));
   if (squadContexts.length === 0) return undefined;
   const loadoutByHeroId: Record<string, Loadout> = {};
@@ -80,7 +83,19 @@ function farmObjectiveFor(
     input.targetPhase,
     input.ignoreFieldCrowding,
     input.aurasAtCap,
+    setBand,
   );
+}
+
+function requireSetBand(farmSet: string | null | undefined): SetFarmBand {
+  const band = setFarmBand(farmSet);
+  if (band === null) {
+    throw new Error(
+      `team-plan: objective 'setFarm' needs farmSet to name an equipment set; got ` +
+        `${JSON.stringify(farmSet ?? null)}. Known sets: ${SET_FARM_SETS.join(', ')}.`,
+    );
+  }
+  return band;
 }
 
 /**
@@ -89,12 +104,23 @@ function farmObjectiveFor(
  * The chosen phase is reported as chosen even when the squad cannot clear it — the answer to
  * "what would I earn at phase 400" is allowed to be "nothing", and silently reporting some other
  * phase instead would be a different plan wearing this one's number.
+ *
+ * A set is searched, never chosen, whatever `targetPhase` says; when no phase of its band is
+ * both unlocked and clearable the plan still names the band's first phase rather than none.
  */
 function scoredPhaseReport(
   input: TeamPlanInput,
   farmObjective: TeamPlanFarmObjective | undefined,
   finalEvaluation: RosterEvaluation,
 ): Pick<TeamPlan, 'scoredPhase' | 'scoredPhaseSource' | 'scoredPhaseInfeasible'> {
+  if (input.objective === 'setFarm' && farmObjective) {
+    const searched = finalEvaluation.farmPhase ?? null;
+    return {
+      scoredPhase: searched ?? farmObjective.phaseOptions.phaseRange?.min ?? null,
+      scoredPhaseSource: 'searched',
+      scoredPhaseInfeasible: searched === null,
+    };
+  }
   const chosen = input.targetPhase;
   // A gate clear fights the gate the window resolved to, which is the chosen phase only when
   // that phase was a gate; anything else fell through to the account's next one.
@@ -126,6 +152,15 @@ function scoredPhaseReport(
     scoredPhaseSource: 'account',
     scoredPhaseInfeasible: false,
   };
+}
+
+function scoredPhaseClearSecs(
+  report: Pick<TeamPlan, 'scoredPhase' | 'scoredPhaseInfeasible'>,
+  farmObjective: TeamPlanFarmObjective | undefined,
+  finalEvaluation: RosterEvaluation,
+): number | null {
+  if (!farmObjective || report.scoredPhase === null || report.scoredPhaseInfeasible) return null;
+  return clearSecsAt(farmObjective, finalEvaluation.farmFacts ?? [], report.scoredPhase);
 }
 
 /**
@@ -235,14 +270,15 @@ export function runTeamPlan(
     farmObjective: reportedObjective,
   });
 
-  // The waterfall is the decision point (AC-RGO monotonicity fix) — it may reject the search's
-  // assignment/points in favor of the baseline, so `regime`/`sumDuty`/`slots`/`proposedLoadouts`
-  // must describe the winning state, not `best.evaluation` / `best.assignment` directly.
+  // The waterfall is the decision point — it may reject the search's assignment/points in favor of
+  // the baseline, so `regime`/`sumDuty`/`slots`/`proposedLoadouts` must describe the winning state,
+  // not `best.evaluation` / `best.assignment` directly.
   const proposedLoadouts: Record<string, Loadout> = loadoutsFromAssignment(
     waterfall.assignment,
     itemById,
   );
 
+  const phaseReport = scoredPhaseReport(input, reportedObjective, waterfall.finalEvaluation);
   const plan: TeamPlan = {
     steps: waterfall.steps,
     forgeList: waterfall.forgeList,
@@ -257,7 +293,8 @@ export function runTeamPlan(
     planDps: waterfall.steps[2]?.objective ?? 0,
     forgeFloorApplied: waterfall.forgeFloorApplied,
     allowedChanges,
-    ...scoredPhaseReport(input, reportedObjective, waterfall.finalEvaluation),
+    ...phaseReport,
+    scoredPhaseClearSecs: scoredPhaseClearSecs(phaseReport, reportedObjective, waterfall.finalEvaluation),
     gearBreakdown: waterfall.gearBreakdown,
     requiresFullPlan: waterfall.requiresFullPlan,
     gearDipDps: waterfall.gearDipDps,

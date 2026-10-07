@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
-import type { LiveEarnings, LiveMap } from '@bombfarm/contracts';
+import { UNATTRIBUTED_REASONS } from '@bombfarm/contracts';
+import type { CreditAmounts, LiveDamage, LiveEarnings, LiveMap, UnattributedReason } from '@bombfarm/contracts';
 import { STRINGS } from '../../lib/copy';
 import type { LiveFastModel, LiveSlowModel } from '../../lib/live/live-model';
 import { LivePanel } from './live-panel';
@@ -42,7 +43,7 @@ describe('LivePanel — composition', () => {
     expect(html).toContain('data-testid="live-freshness"');
   });
 
-  it('puts the earnings panel in the first column of a page-level two-column grid, with the heroes panel spanning full width outside it', () => {
+  it('puts the earnings panel in the first column of a page-level two-column grid, with the heroes panel after it', () => {
     const html = renderToStaticMarkup(
       createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel(), fast: emptyFast }),
     );
@@ -432,5 +433,140 @@ describe('LivePanel — the measured gold-per-prop against the map it is being m
       map({ xpPerProp: 90.9, averageGoldPerProp: 183.3, averageGoldPerClear: 9_200 }),
     );
     expect(html).not.toContain('live-earnings-gold-per-prop-delta');
+  });
+});
+
+function liveDamage(heroIds: readonly string[], overrides: Partial<LiveDamage> = {}): LiveDamage {
+  const none = { damage: 0, props: 0, gold: 0 };
+  return {
+    teamDps10: 2_400,
+    teamDpsSession: 1_900,
+    coverageSeconds: 120,
+    sessionSeconds: 600,
+    heroes: heroIds.map((heroId) => ({ heroId, dps: 1_500, damage: 900_000, props: 120, gold: 45_000, fieldSeconds: 450, uptime: 0.75, onField: true })),
+    unattributed: { damage: 50_000, props: 9, gold: 3_000, dps: 80 },
+    unattributedReasons: Object.fromEntries(UNATTRIBUTED_REASONS.map((reason) => [reason, none])) as Record<
+      UnattributedReason,
+      CreditAmounts
+    >,
+    team: { damage: 1_350_000, props: 189, gold: 68_000 },
+    ...overrides,
+  };
+}
+
+/** The index just past the `</div>` that closes the div opened at `start`. */
+function endOfDiv(markup: string, start: number): number {
+  const tags = /<div[\s>]|<\/div>/g;
+  tags.lastIndex = start;
+  let depth = 0;
+  let match: RegExpExecArray | null;
+  while ((match = tags.exec(markup))) {
+    depth += match[0] === '</div>' ? -1 : 1;
+    if (depth === 0) return match.index + match[0].length;
+  }
+  throw new Error('unterminated div');
+}
+
+function reservedPx(markup: string, property: 'min-height' | 'max-height'): number {
+  const expression = new RegExp(`${property}:calc\\(calc\\(([\\d.]+)px \\+ ([\\d.]+)px / (\\d+)\\) \\* (\\d+)\\)`).exec(markup);
+  if (expression === null) throw new Error(`no ${property} in the Damage scroller`);
+  const [, row, head, slots, rows] = expression.map(Number);
+  return ((row ?? 0) + (head ?? 0) / (slots ?? 1)) * (rows ?? 0);
+}
+
+function renderWithDamage(damage: LiveDamage | null, slow: LiveSlowModel = slowModel()) {
+  return renderToStaticMarkup(
+    createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast: emptyFast, damage }),
+  );
+}
+
+describe('LivePanel — the Damage panel', () => {
+  it('comes after the earnings and map panels and before the heroes panel', () => {
+    const html = renderWithDamage(liveDamage([]));
+    const mapAt = html.indexOf('data-testid="live-map"');
+    const damageAt = html.indexOf('data-testid="live-damage"');
+    const heroesAt = html.indexOf('data-testid="live-heroes"');
+
+    expect(mapAt).toBeGreaterThan(-1);
+    expect(damageAt).toBeGreaterThan(mapAt);
+    expect(heroesAt).toBeGreaterThan(damageAt);
+  });
+
+  it('holds the earnings, map, Damage and Heroes panels in the one grid, in that order', () => {
+    const html = renderWithDamage(liveDamage([]));
+    const gridStart = html.search(/<div class="[^"]*grid-cols-\[max-content_minmax\(0,1fr\)\]/);
+    const gridEnd = endOfDiv(html, gridStart);
+    const at = (id: string) => html.indexOf(`data-testid="${id}"`);
+
+    expect(gridStart).toBeGreaterThan(-1);
+    expect([at('live-earnings'), at('live-map'), at('live-damage'), at('live-heroes')]).toEqual(
+      [at('live-earnings'), at('live-map'), at('live-damage'), at('live-heroes')].sort((a, b) => a - b),
+    );
+    expect(at('live-earnings')).toBeGreaterThan(gridStart);
+    expect(at('live-heroes')).toBeLessThan(gridEnd);
+  });
+
+  it.each(['live-damage', 'live-heroes'])(
+    'gives %s both columns below the lg breakpoint and one column from it, stretched to its neighbour\'s height',
+    (testId) => {
+      const tag = new RegExp(`<section[^>]*data-testid="${testId}"[^>]*>`).exec(renderWithDamage(liveDamage([])))?.[0] ?? '';
+
+      expect(tag).toMatch(/class="[^"]*\bcol-span-2\b[^"]*"/);
+      expect(tag).toMatch(/class="[^"]*\blg:col-span-1\b[^"]*"/);
+      expect(tag).not.toMatch(/\b(?:self-start|w-fit|max-w-full)\b/);
+    },
+  );
+
+  it('keeps its table from widening the earnings column: the panel contributes no intrinsic width', () => {
+    const damageTag = /<section[^>]*data-testid="live-damage"[^>]*>/.exec(renderWithDamage(liveDamage([])))?.[0] ?? '';
+
+    expect(damageTag).toContain('[contain:inline-size]');
+  });
+
+  it('names a hero from every one of the four rotation lists by the name the roster join resolved', () => {
+    const slow = slowModel({
+      onField: [{ id: 'f1', name: 'Fieldhero' }],
+      recovering: [{ id: 'r1', name: 'Restinghero' }],
+      queued: [{ id: 'q1', name: 'Idlehero' }],
+      benched: [{ id: 'b1', name: 'Benchedhero' }],
+    });
+    const html = renderWithDamage(liveDamage(['f1', 'r1', 'q1', 'b1']), slow);
+
+    const expected = [
+      ['f1', 'Fieldhero'],
+      ['r1', 'Restinghero'],
+      ['q1', 'Idlehero'],
+      ['b1', 'Benchedhero'],
+    ] as const;
+    for (const [id, name] of expected) {
+      expect(html).toMatch(new RegExp(`data-testid="live-damage-row-${id}-name"[^>]*>${name}<`));
+    }
+  });
+
+  it('falls back to the hero id for a damage row no rotation list names', () => {
+    const html = renderWithDamage(liveDamage(['stranger']), slowModel({ onField: [{ id: 'f1', name: 'Fieldhero' }] }));
+
+    expect(html).toMatch(/data-testid="live-damage-row-stranger-name"[^>]*>stranger</);
+  });
+
+  it('passes the field size through as the number of rows the table reserves', () => {
+    const html = renderWithDamage(liveDamage([]), slowModel({ occupancy: { occupied: 0, fieldSize: 6 } }));
+
+    expect(reservedPx(html, 'max-height')).toBeCloseTo(32 + 40 * 6, 6);
+    expect(reservedPx(html, 'min-height')).toBeCloseTo(32 + 40 * 6, 6);
+  });
+
+  it('reserves the maximum field while the field size is still unknown', () => {
+    const html = renderWithDamage(liveDamage([]), slowModel({ occupancy: { occupied: 0 } }));
+
+    expect(reservedPx(html, 'max-height')).toBeCloseTo(32 + 40 * FIELD_SLOTS_MAX, 6);
+  });
+
+  it('draws the slice it is handed, and draws dashes for it when there is none yet', () => {
+    const drawn = renderWithDamage(liveDamage([], { teamDpsSession: 1_900 }));
+    const empty = renderWithDamage(null);
+
+    expect(drawn).toMatch(/data-testid="live-damage-team-dps-session"[^>]*>1\.9k</);
+    expect(empty).toMatch(/data-testid="live-damage-team-dps-session"[^>]*>—</);
   });
 });

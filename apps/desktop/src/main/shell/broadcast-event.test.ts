@@ -19,6 +19,7 @@ const EMPTY_FAST_UPDATE: LiveEvent = {
   onFieldHeroIds: [],
   earnings: null,
   map: null,
+  damage: null,
 };
 
 describe('broadcastEventToWindows', () => {

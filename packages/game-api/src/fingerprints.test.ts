@@ -11,8 +11,14 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import type { AccountSection } from '@bombfarm/contracts';
-import { checkSchema, SCHEMA_LEVELS, type SchemaLevel } from '@bombfarm/domain/save-schema';
-import { checkSectionShape, ROUTE_FINGERPRINTS, SECTION_FINGERPRINTS, STATE_SELL_GATE_KEYS } from './fingerprints.js';
+import { checkSchema, ITEM_ESSENCE_KEYS, SCHEMA_LEVELS, type SchemaLevel } from '@bombfarm/domain/save-schema';
+import {
+  checkSectionShape,
+  ROUTE_FINGERPRINTS,
+  SECTION_FINGERPRINTS,
+  STATE_ESSENCE_KEYS,
+  STATE_SELL_GATE_KEYS,
+} from './fingerprints.js';
 import { ROUTES } from './routes.js';
 import { fixturePath, loadFixtureJson, required, requireFixture } from './test-fixtures.js';
 
@@ -102,15 +108,80 @@ describe('ROUTE_FINGERPRINTS', () => {
       });
     });
 
-    it('the account fingerprint alone is anchored on the later observations; the other four keep the 2026-08-12 anchor', () => {
-      expect(ROUTE_FINGERPRINTS.account.capturedAt).toBe('2026-09-22T12:00:00.000Z');
+    it('the account and items fingerprints are anchored on the later observations; the other three keep the 2026-08-12 anchor', () => {
+      expect(ROUTE_FINGERPRINTS.account.capturedAt).toBe('2026-10-05T12:00:00.000Z');
       expect(ROUTE_FINGERPRINTS.account.sourceArtifact).toContain('2026-09-10');
       expect(ROUTE_FINGERPRINTS.account.sourceArtifact).toContain('2026-09-22');
-      for (const section of ['heroes', 'skills', 'casa', 'items'] as const) {
+      expect(ROUTE_FINGERPRINTS.account.sourceArtifact).toContain('2026-10-05');
+      expect(ROUTE_FINGERPRINTS.account.gameBuild).toContain('25733721');
+      expect(ROUTE_FINGERPRINTS.items.capturedAt).toBe('2026-10-05T12:00:00.000Z');
+      expect(ROUTE_FINGERPRINTS.items.sourceArtifact).toContain('2026-10-05');
+      expect(ROUTE_FINGERPRINTS.items.gameBuild).toContain('25733721');
+      for (const section of ['heroes', 'skills', 'casa'] as const) {
         expect(ROUTE_FINGERPRINTS[section].capturedAt).toBe('2026-08-12T13:15:38.000Z');
         expect(ROUTE_FINGERPRINTS[section].sourceArtifact).not.toContain('2026-09-10');
-        expect(ROUTE_FINGERPRINTS[section].sourceArtifact).not.toContain('2026-09-22');
+        expect(ROUTE_FINGERPRINTS[section].sourceArtifact).not.toContain('2026-10-05');
       }
+    });
+  });
+
+  describe('the essence keys — required, because the live read carries them on every body', () => {
+    it('essence and fusion_pity are declared /state keys, and /state still declares no optional escape', () => {
+      expect([...STATE_ESSENCE_KEYS]).toEqual(['essence', 'fusion_pity']);
+      for (const key of STATE_ESSENCE_KEYS) expect(ROUTE_FINGERPRINTS.account.level.keys).toContain(key);
+      expect(ROUTE_FINGERPRINTS.account.level.optional).toBeUndefined();
+    });
+
+    it('the /state fixture carries essence as a number, unlike gold, and fusion_pity as item and hero counters', () => {
+      if (!bodies) return;
+      const stateBody = required(bodies['/state'], 'missing /state body');
+      expect(typeof stateBody.essence).toBe('number');
+      expect(typeof stateBody.gold).toBe('string');
+      expect(Object.keys(stateBody.fusion_pity as object)).toEqual(['item', 'hero']);
+    });
+
+    it('RED: a /state body from before the deconstruct screen reports exactly the two keys missing, path-qualified', () => {
+      if (!bodies) return;
+      const { essence, fusion_pity, ...preEssence } = required(bodies['/state'], 'missing /state body');
+      expect([essence, fusion_pity].every((value) => value !== undefined)).toBe(true);
+      expect(checkSchema(preEssence, ROUTE_FINGERPRINTS.account)).toEqual({
+        ok: false,
+        missingKeys: ['account.essence', 'account.fusion_pity'],
+        addedKeys: [],
+      });
+    });
+
+    it('RED: an /inventory item from before the deconstruct screen reports exactly the four keys missing, path-qualified', () => {
+      if (!bodies) return;
+      const inventory = deepClone(required(bodies['/inventory'], 'missing /inventory body'));
+      const items = inventory.items as Record<string, unknown>[];
+      for (const key of ITEM_ESSENCE_KEYS) delete items[0]?.[key];
+      expect(checkSchema(inventory, ROUTE_FINGERPRINTS.items)).toEqual({
+        ok: false,
+        missingKeys: ITEM_ESSENCE_KEYS.map((key) => `items.items[0].${key}`),
+        addedKeys: [],
+      });
+    });
+
+    it('every /inventory fixture item carries all four, with the observed value kinds, and one is a chance stone', () => {
+      if (!bodies) return;
+      const items = required(bodies['/inventory'], 'missing /inventory body').items as Record<string, unknown>[];
+      for (const item of items) {
+        expect(typeof item.essence_value, `item ${String(item.id)} essence_value`).toBe('number');
+        expect(typeof item.forge_fails).toBe('number');
+        expect(typeof item.forge_chance).toBe('number');
+        expect(typeof item.pergaminho_custo).toBe('number');
+      }
+      expect(items.some((item) => item.category === 8)).toBe(true);
+    });
+
+    it('jewels and ritual are optional on an item: a row carrying either is not drift, and the fixture carries neither', () => {
+      if (!bodies) return;
+      const inventory = deepClone(required(bodies['/inventory'], 'missing /inventory body'));
+      const items = inventory.items as Record<string, unknown>[];
+      expect(items.some((item) => 'jewels' in item || 'ritual' in item)).toBe(false);
+      Object.assign(items[0] ?? {}, { jewels: [], ritual: { desconstruir: false, desconstruir_reason: 'ITEM_HAS_GEMS' } });
+      expect(checkSchema(inventory, ROUTE_FINGERPRINTS.items)).toEqual({ ok: true });
     });
   });
 
@@ -189,6 +260,38 @@ describe('ROUTE_FINGERPRINTS', () => {
     expect(withoutSlot.length, 'items WITHOUT slot').toBeGreaterThan(0);
   });
 
+  describe('the forge-patch item fields', () => {
+    const forgeFields = { essence_value: 420, forge_fails: 0, forge_chance: 0.15, pergaminho_custo: 12320 };
+    const prePatchItem = () => Object.fromEntries(SCHEMA_LEVELS.item.keys.map((key) => [key, 0]));
+    const inventoryBody = (item: Record<string, unknown>) => ({
+      items: [item],
+      chests: [],
+      bag_tabs: 1,
+      bag_capacity: 100,
+      items_count: 1,
+    });
+
+    it('an item carrying all four reports no drift, on the route and on the section', () => {
+      const item = { ...prePatchItem(), ...forgeFields };
+      expect(checkSchema(inventoryBody(item), ROUTE_FINGERPRINTS.items)).toEqual({ ok: true });
+      expect(checkSectionShape([item], SECTION_FINGERPRINTS.items)).toEqual({ ok: true });
+    });
+
+    it('an item from before the patch is tolerated on the shared level the save exports use, and reported by the API fingerprints', () => {
+      const item = prePatchItem();
+      const shared = { ...SECTION_FINGERPRINTS.items, element: SCHEMA_LEVELS.item };
+      expect(checkSectionShape([item], shared)).toEqual({ ok: true });
+      expect(checkSectionShape([{ ...item, ...forgeFields }], shared)).toEqual({ ok: true });
+      expect(checkSectionShape([item], SECTION_FINGERPRINTS.items)).toMatchObject({ ok: false });
+      expect(checkSchema(inventoryBody(item), ROUTE_FINGERPRINTS.items)).toMatchObject({ ok: false });
+    });
+
+    it('an unrelated new key is still reported', () => {
+      const item = { ...prePatchItem(), ...forgeFields, brand_new_key: 1 };
+      expect(checkSectionShape([item], SECTION_FINGERPRINTS.items)).toMatchObject({ ok: false });
+    });
+  });
+
   it('no runtime override exists — no env var and no refresh function name the fingerprint', () => {
     // Mirrors the literal verification command (`git grep -nE
     // 'process\.env\.[A-Z_]*FINGERPRINT|refreshFingerprint' packages/game-api/src`) as an
@@ -253,7 +356,7 @@ describe('SECTION_FINGERPRINTS — the projected shapes derive from ROUTE_FINGER
     if (routeItemsChild?.kind === 'array') {
       expect((SECTION_FINGERPRINTS.items as { element: SchemaLevel }).element).toEqual(routeItemsChild.element);
     }
-    expect((SECTION_FINGERPRINTS.items as { element: SchemaLevel }).element).toEqual(SCHEMA_LEVELS.item);
+    expect((SECTION_FINGERPRINTS.items as { element: SchemaLevel }).element).toEqual(SCHEMA_LEVELS.apiItem);
   });
 
   it('checkSectionShape accepts the real committed corpus once projected, for every section', () => {

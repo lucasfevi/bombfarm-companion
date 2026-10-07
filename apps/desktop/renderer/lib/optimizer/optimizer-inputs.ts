@@ -86,6 +86,7 @@ export function buildOptimizerInputs(
     treeCritChance: tree.critChance,
     treeCritDmg: tree.critDmg,
     treeLuckFlatPct: tree.luckFlatPct,
+    treeCollection: tree.collection,
     treeTeamCoinPct: tree.teamCoinPct ?? 0,
     treeXpMult: tree.xpMult ?? 1,
     houseIdx,

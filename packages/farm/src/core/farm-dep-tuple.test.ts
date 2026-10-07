@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { createFarmRankingMemo } from './farm-memo';
 import { readFarmDepTuple } from './farm-compute';
 import type { FarmInputs } from './farm-inputs';
+import { NO_COLLECTION } from '@bombfarm/domain/model';
 
 /**
  * The dependency tuple is the whole recompute contract, and its failure mode is silent: a field
  * left out of it is a planner edit that does not recompute the board, with no error anywhere and
  * a stale table that still looks like a real answer. Nothing else in this package catches that,
- * so the table below names all 19 members by the POSITION they occupy and proves, per member,
+ * so the table below names all 20 members by the POSITION they occupy and proves, per member,
  * that it is the only position a change to it moves — and that a change to it forces a fresh
  * compute while an equal-valued input object does not.
  */
@@ -64,33 +65,39 @@ const TUPLE_MEMBERS: readonly TupleMember[] = [
   { index: 5, name: 'treeEnergy', change: (i) => ({ ...i, treeEnergy: 5 }) },
   { index: 6, name: 'treeTeamCoinPct', change: (i) => ({ ...i, treeTeamCoinPct: 5 }) },
   { index: 7, name: 'treeLuckFlatPct', change: (i) => ({ ...i, treeLuckFlatPct: 5 }) },
-  { index: 8, name: 'houseIdx', change: (i) => ({ ...i, houseIdx: 2 }) },
-  { index: 9, name: 'houseLevel', change: (i) => ({ ...i, houseLevel: 4 }) },
-  { index: 10, name: 'slots', change: (i) => ({ ...i, slots: 5 }) },
-  { index: 11, name: 'fieldSlots', change: (i) => ({ ...i, fieldSlots: 6 }) },
-  { index: 12, name: 'houseCycleSecs', change: (i) => ({ ...i, houseCycleSecs: 120 }) },
+  // By value: an equal Collections bonus rebuilt is not a change, a different one is.
   {
-    index: 13,
+    index: 8,
+    name: 'treeCollection',
+    change: (i) => ({ ...i, treeCollection: { ...NO_COLLECTION, energyPct: 13.03 } }),
+  },
+  { index: 9, name: 'houseIdx', change: (i) => ({ ...i, houseIdx: 2 }) },
+  { index: 10, name: 'houseLevel', change: (i) => ({ ...i, houseLevel: 4 }) },
+  { index: 11, name: 'slots', change: (i) => ({ ...i, slots: 5 }) },
+  { index: 12, name: 'fieldSlots', change: (i) => ({ ...i, fieldSlots: 6 }) },
+  { index: 13, name: 'houseCycleSecs', change: (i) => ({ ...i, houseCycleSecs: 120 }) },
+  {
+    index: 14,
     name: 'houseCycleSecsHouseIdx',
     change: (i) => ({ ...i, houseCycleSecsHouseIdx: 1 }),
   },
-  { index: 14, name: 'houseCycleSecsLevel', change: (i) => ({ ...i, houseCycleSecsLevel: 2 }) },
-  { index: 15, name: 'maxPhase', change: (i) => ({ ...i, maxPhase: 42 }) },
+  { index: 15, name: 'houseCycleSecsLevel', change: (i) => ({ ...i, houseCycleSecsLevel: 2 }) },
+  { index: 16, name: 'maxPhase', change: (i) => ({ ...i, maxPhase: 42 }) },
   {
-    index: 16,
+    index: 17,
     name: 'farmPoolOverrides',
     change: (i) => ({ ...i, farmPoolOverrides: { a: false } }),
   },
-  { index: 17, name: 'farmReturnBonus', change: (i) => ({ ...i, farmReturnBonus: 'vip' }) },
+  { index: 18, name: 'farmReturnBonus', change: (i) => ({ ...i, farmReturnBonus: 'vip' }) },
   // A reference compare, like the two above: a host must hand the same list back when nothing
   // changed, and the domain's frozen empty list when it offers no control at all.
-  { index: 18, name: 'aurasAtCap', change: (i) => ({ ...i, aurasAtCap: ['grito_guerra'] }) },
+  { index: 19, name: 'aurasAtCap', change: (i) => ({ ...i, aurasAtCap: ['grito_guerra'] }) },
 ];
 
 describe('readFarmDepTuple', () => {
-  it('has exactly 19 members, one per named member of the table below', () => {
-    expect(readFarmDepTuple(baseInputs())).toHaveLength(19);
-    expect(TUPLE_MEMBERS).toHaveLength(19);
+  it('has exactly 20 members, one per named member of the table below', () => {
+    expect(readFarmDepTuple(baseInputs())).toHaveLength(20);
+    expect(TUPLE_MEMBERS).toHaveLength(20);
     expect(TUPLE_MEMBERS.map((member) => member.index)).toEqual(
       TUPLE_MEMBERS.map((_, position) => position),
     );

@@ -65,6 +65,7 @@ function toFarmInputs(state: PlannerStore): FarmInputs {
     treeEnergy: state.treeEnergy,
     treeTeamCoinPct: state.treeTeamCoinPct,
     treeLuckFlatPct: state.treeLuckFlatPct,
+    treeCollection: state.treeCollection ?? undefined,
     houseIdx: state.houseIdx,
     houseLevel: state.houseLevel,
     slots: state.slots,

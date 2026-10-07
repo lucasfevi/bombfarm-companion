@@ -20,6 +20,7 @@ import {
 import { FARM_RESPEC_MIN_GAIN_PCT } from '@bombfarm/domain/farm-optimize';
 import type { AccountShared } from '@bombfarm/domain/shims/storage';
 import type { FarmInputs } from './farm-inputs';
+import { collectionKey } from '@bombfarm/domain/model';
 
 export type FarmRankingReason = 'no-roster' | 'no-heroes-enabled' | 'compute-failed';
 
@@ -66,6 +67,7 @@ export function readFarmDepTuple(inputs: FarmInputs) {
     inputs.treeEnergy,
     inputs.treeTeamCoinPct,
     inputs.treeLuckFlatPct,
+    collectionKey(inputs.treeCollection),
     inputs.houseIdx,
     inputs.houseLevel,
     inputs.slots,
@@ -114,6 +116,7 @@ export function buildAccount(inputs: FarmInputs): FarmAccount {
       energy: inputs.treeEnergy,
       teamCoinPct: inputs.treeTeamCoinPct,
       luckFlatPct: inputs.treeLuckFlatPct,
+      ...(inputs.treeCollection != null ? { collection: inputs.treeCollection } : {}),
     },
     context: {
       houseIdx: inputs.houseIdx,

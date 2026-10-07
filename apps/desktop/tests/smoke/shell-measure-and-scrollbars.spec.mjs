@@ -194,9 +194,9 @@ test.describe('shell measure — one scrollbar, two columns, capped and centred 
 
   test('stops growing the content at the measure and centres it, leaving the background to widen', async () => {
     await resize(app, page, 2560, 900);
-    const measured = await boxes(page, ['live-heroes', 'live-earnings']);
+    const measured = await boxes(page, ['live-panel', 'live-earnings']);
 
-    expect(measured['live-heroes'].width).toBeLessThanOrEqual(MAX_CONTENT);
+    expect(measured['live-panel'].width).toBeLessThanOrEqual(MAX_CONTENT);
     // Centred: equal gaps either side. Measured against `<main>`'s client box rather than the
     // window, because the scroll region's own scrollbar takes real width off the right-hand side —
     // comparing to `innerWidth` would read that scrollbar as the content being off-centre.
@@ -205,8 +205,8 @@ test.describe('shell measure — one scrollbar, two columns, capped and centred 
       const rect = main.getBoundingClientRect();
       return { left: Math.round(rect.left), right: Math.round(rect.left + main.clientWidth) };
     });
-    const leftGap = measured['live-heroes'].left - region.left;
-    const rightGap = region.right - measured['live-heroes'].right;
+    const leftGap = measured['live-panel'].left - region.left;
+    const rightGap = region.right - measured['live-panel'].right;
     expect(Math.abs(leftGap - rightGap)).toBeLessThanOrEqual(1);
     expect(leftGap, 'a window wider than the measure must leave background either side').toBeGreaterThan(0);
     expect(measured['live-earnings'].top).toBe((await boxes(page, ['live-map']))['live-map'].top);

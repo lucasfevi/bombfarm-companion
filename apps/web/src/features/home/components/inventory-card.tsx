@@ -9,9 +9,9 @@ import { formatMoney, sub, type Strings } from '@/shared/i18n';
 import { hasInventoryRows, useInventoryViewSnapshot } from '../model/use-inventory-view-snapshot';
 import { HomeSectionCard } from './home-section-card';
 
-/** The six kinds every account holds a spread of. Runes and skins are listed on the Inventory page
- *  itself, not here: most accounts hold none, and a tile reading 0 says nothing. */
-type CountedKind = Exclude<ItemKind, 'other' | 'rune' | 'skin'>;
+/** The six kinds every account holds a spread of. Runes, skins and Chance Stones are listed on the
+ *  Inventory page itself, not here: most accounts hold none, and a tile reading 0 says nothing. */
+type CountedKind = Exclude<ItemKind, 'other' | 'rune' | 'skin' | 'chanceStone'>;
 
 const GROUP_LABEL_KEY = {
   equipment: 'inventoryGroupEquipment',

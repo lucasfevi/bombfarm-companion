@@ -8,7 +8,7 @@ import { ApplyLedgerStrip } from './apply-ledger-strip';
 
 const BASE_LEDGER: ApplyLedger = {
   equip: { calls: 3, estimatedMs: 7_500 },
-  forge: { pieces: 2, goldExpected: 4_000 },
+  forge: { pieces: 2, goldExpected: 4_000, essenceExpected: 1_250 },
   points: { heroes: 2, respecs: 1, calls: 3, estimatedMs: 7_500, goldExact: 1_200 },
   totalGold: 5_200,
   walletBefore: 10_000,
@@ -38,11 +38,18 @@ describe('ApplyLedgerStrip', () => {
     expect(priced).toContain(en.applyLedgerForge);
     expect(priced).toContain(en.applyLedgerForgeExpected);
     expect(priced).not.toContain(en.applyLedgerForgeNone);
-    const unpriced: ApplyLedger = { ...BASE_LEDGER, forge: { pieces: 2, goldExpected: null } };
+    const unpriced: ApplyLedger = { ...BASE_LEDGER, forge: { pieces: 2, goldExpected: null, essenceExpected: null } };
     const html = render(unpriced);
     expect(html).toContain(en.applyLedgerForge);
     expect(html).toContain(en.applyLedgerForgeNone);
     expect(html).not.toContain(en.applyLedgerForgeExpected);
+  });
+
+  it('prints the forge essence beside its gold, and no essence when nothing is priced', () => {
+    const forgeFigure = (html: string) => html.slice(html.indexOf('data-testid="apply-ledger-forge"'), html.indexOf('data-testid="apply-ledger-wallet"'));
+    expect(forgeFigure(render(BASE_LEDGER))).toContain('1,250 essence');
+    const unpriced: ApplyLedger = { ...BASE_LEDGER, forge: { pieces: 2, goldExpected: null, essenceExpected: null } };
+    expect(forgeFigure(render(unpriced))).not.toContain('essence');
   });
 
   it('prints the wallet before then after', () => {

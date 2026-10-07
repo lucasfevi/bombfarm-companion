@@ -37,7 +37,7 @@ export const en = {
   accountFieldSlots: "Field slots",
   accountFieldSlotsTip: "The game's summary shows what the tree adds; the total after the one slot every account starts with is what actually caps your field.",
   accountBonusOfTotal: "{bonus} ({total} total)",
-  accountBagTabs: "Bag tabs",
+  accountBagTabs: "Inventory tabs",
 
   accountMissingFieldsTitle: "Your imported save is missing account data",
   accountMissingFieldsBody: "Export a fresh save from the game and import it again. Until you do, the planner has to guess these, and what it recommends can be wrong — including phases you cannot enter yet.",
@@ -105,7 +105,7 @@ export const pt: typeof en = {
   accountFieldSlots: "Vagas no campo",
   accountFieldSlotsTip: "O resumo do jogo mostra o que a árvore adiciona; o total, somando a vaga que toda conta já tem, é o que realmente limita seu campo.",
   accountBonusOfTotal: "{bonus} ({total} no total)",
-  accountBagTabs: "Abas da bolsa",
+  accountBagTabs: "Abas do inventário",
 
   accountMissingFieldsTitle: "O save importado está sem dados da conta",
   accountMissingFieldsBody: "Exporte um save novo do jogo e importe de novo. Até lá o planejador precisa adivinhar esses valores, e o que ele recomenda pode estar errado — inclusive fases que você ainda não consegue entrar.",

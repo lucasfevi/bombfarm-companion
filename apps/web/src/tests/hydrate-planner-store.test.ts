@@ -112,6 +112,7 @@ function envelopeFor(signature: string, overrides: Partial<TeamPlanEnvelope> = {
     allowedChanges: 'both',
     ignoreFieldCrowding: false,
     targetPhase: null,
+    farmSet: null,
     plan: samplePlan(),
     ...overrides,
   };

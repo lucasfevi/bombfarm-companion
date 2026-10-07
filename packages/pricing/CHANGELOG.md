@@ -1,5 +1,28 @@
 # @bombfarm/pricing
 
+## 0.4.3
+
+### Patch Changes
+
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/contracts@0.13.0
+
+## 0.4.2
+
+### Patch Changes
+
+- c13d140: Chance Stone chests now show up properly. In the inventory they are named "Chance Stone chest" with
+  their act and tier colour, and they are priced from the Steam Market. The Drops panel gains a
+  Chance Stone chest row: 0.01% per block broken on any phase, boosted by your Luck.
+
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [7cf247e]
+  - @bombfarm/contracts@0.12.0
+
 ## 0.4.0
 
 ### Minor Changes

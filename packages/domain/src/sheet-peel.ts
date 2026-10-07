@@ -25,6 +25,7 @@ import { attackPointGain, levelPowerMult } from './model/combat';
 import { POINT_GAIN } from './model/rarity-constants';
 import { starsMult, sumGearBonuses } from './gear/catalog';
 import type { ComposeSheetFromBirthInput } from './birth-sheet';
+import { collectionSheetPct } from './collection';
 import { type SheetKey } from './planner-constants';
 
 /** The game's four tooltip lines for one sheet key, in tooltip order. */
@@ -130,12 +131,35 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
     ...pooledLines(birth.penetration, star, 0, bonuses.penPct, POINT_GAIN.penetrationPctOfBase, pts.penetration, 0),
     ability: Math.max(0, sheetOther.penetration),
   };
-  const cdr = pooledLines(birth.cdr, star, sheetOther.cdr, bonuses.cdrPct, POINT_GAIN.cdrPctOfBase, pts.cdr, 0);
+  const cdr: SourceLines = {
+    ...pooledLines(birth.cdr, star, 0, bonuses.cdrPct, POINT_GAIN.cdrPctOfBase, pts.cdr, 0),
+    ability: Math.max(0, sheetOther.cdr),
+  };
   // Luck's tree term is a flat percentage-point addend, not base × pct.
   const luck: SourceLines = {
     ...pooledLines(birth.luck, star, 0, bonuses.luckPct, POINT_GAIN.luckPctOfBase, pts.luck, 0),
     skillTree: tree.luckFlatPct,
   };
 
-  return { attack, energy, speed, critChance, critDmg, penetration, cdr, luck };
+  const collection = collectionSheetPct(tree.collection);
+  return {
+    attack,
+    energy: withCollectionShare(energy, collection.energyPct, 0),
+    speed,
+    critChance: withCollectionShare(critChance, collection.critChancePct, 0),
+    critDmg: withCollectionShare(critDmg, collection.critDmgPct, tree.critDmgPct),
+    penetration,
+    cdr: withCollectionShare(cdr, collection.cdrPct, 0),
+    luck,
+  };
+}
+
+/**
+ * The Collections bonus has no line of its own here; it rides the skill-tree line, which keeps
+ * the four lines summing to the composed value. `unscaled` is the part of the total it does not
+ * multiply — the tree's flat crit-damage add.
+ */
+function withCollectionShare(lines: SourceLines, collectionPct: number, unscaled: number): SourceLines {
+  const total = lines.hero + lines.gear + lines.ability + lines.skillTree;
+  return { ...lines, skillTree: lines.skillTree + (total - unscaled) * (collectionPct / 100) };
 }

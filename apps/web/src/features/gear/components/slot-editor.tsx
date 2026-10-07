@@ -6,12 +6,13 @@ import {
   ITEM_RARITIES,
   FORJA_LEVELS,
   upgradeMult,
+  itemStatUpgradeMult,
   defsForSlot,
   setsForLevel,
   EquippedItem,
 } from '@bombfarm/domain/gear';
 import { sub, type Lang, type Strings } from '@/shared/i18n';
-import { itemRarityLabel, setName } from '@bombfarm/domain/game-labels';
+import { itemRarityLabel, itemStatLabel, setName } from '@bombfarm/domain/game-labels';
 import { GearSlotCard } from '@bombfarm/hero/components';
 
 import { Button, Select, numberFormatterFor } from '@bombfarm/ui';
@@ -108,11 +109,19 @@ export const SlotEditor = memo(function SlotEditor({
           })
         }
       >
-        {FORJA_LEVELS.map((forgeLevel) => (
-          <option key={forgeLevel} value={forgeLevel}>
-            +{forgeLevel} ×{upgradeMult(forgeLevel).toFixed(2)}
-          </option>
-        ))}
+        {FORJA_LEVELS.map((forgeLevel) => {
+          const cappedMult = itemStatUpgradeMult('crit', forgeLevel);
+          const cappedNote =
+            cappedMult === upgradeMult(forgeLevel)
+              ? ''
+              : ` (${itemStatLabel('crit', lang)}, ${itemStatLabel('cooldown', lang)} ×${cappedMult.toFixed(2)})`;
+          return (
+            <option key={forgeLevel} value={forgeLevel}>
+              +{forgeLevel} ×{upgradeMult(forgeLevel).toFixed(2)}
+              {cappedNote}
+            </option>
+          );
+        })}
       </Select>
     </GearSlotCard>
   );

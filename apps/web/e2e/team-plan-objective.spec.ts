@@ -41,9 +41,9 @@ test.describe('Team plan objective', () => {
     await expect(await openFieldHelp(page, SETUP_HELP)).toContainText(/scored for the gold per hour/i);
   });
 
-  test('offers gold and a gate clear, and no rotation DPS — a save carries no PVP squad, so no duel either', async ({ page }) => {
+  test('offers gold, a set farm and a gate clear, and no rotation DPS — a save carries no PVP squad, so no duel either', async ({ page }) => {
     await objectiveCombobox(page).click();
-    await expect(page.getByRole('option')).toHaveText([/^Gold \/ hr$/i, /^Gate clear$/i]);
+    await expect(page.getByRole('option')).toHaveText([/^Gold \/ hr$/i, /^Set farm$/i, /^Gate clear$/i]);
     await page.keyboard.press('Escape');
   });
 
@@ -53,6 +53,23 @@ test.describe('Team plan objective', () => {
     await expect(await openFieldHelp(page, SETUP_HELP)).toContainText(/damage they land inside the gate timer/i);
     await expect(page.getByRole('combobox', { name: /^Which gate this search plans for$/i })).toBeVisible();
     await expect(page.getByRole('combobox', { name: /^Which phase this search plans for$/i })).toHaveCount(0);
+  });
+
+  test('Set farm swaps the phase control for a set picker, and will not run until a set is picked', async ({ page }) => {
+    await pickObjective(page, /^Set farm$/i);
+    await expect(await openFieldHelp(page, SETUP_HELP)).toContainText(/item chests of the set you pick/i);
+    await expect(page.getByRole('combobox', { name: /^Which phase this search plans for$/i })).toHaveCount(0);
+    await expect(page.getByText(/^Pick a set to farm before building this plan\.$/)).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Build a team plan of /i })).toBeDisabled();
+
+    const setPicker = page.getByRole('combobox', { name: /^Which equipment set this search farms$/i });
+    await setPicker.click();
+    const sets = page.getByRole('option', { name: / · phases \d+–\d+/ });
+    await expect(sets).toHaveCount(30);
+    await sets.first().click();
+    await expect(setPicker).toHaveText(/ · phases \d+–\d+$/);
+    await expect(page.getByText(/^Pick a set to farm before building this plan\.$/)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Build a team plan of /i })).toBeEnabled();
   });
 
   test('the gate picker lists gates only, and a pick sticks', async ({ page }) => {

@@ -181,6 +181,14 @@ function apiErrorCode(body: string): string | null {
   return typeof code === 'string' && code.length > 0 ? code : null;
 }
 
+/** The game's item-rule refusals all start `ITEM_`. One that mentions a cooldown
+ *  (`ITEM_IMPORT_COOLDOWN`: an item just imported from Steam cannot be burned yet) is about that
+ *  item, not a request to slow down — reading it as a rate limit starts a backoff that blocks every
+ *  other account read and write. */
+function isItemRuleCode(code: string | null): boolean {
+  return code !== null && code.startsWith('ITEM_');
+}
+
 /** Maps a raw response into a `RequestOutcome` — every branch names a distinct, closed reason.
  *  Order matters: size, then auth (status OR named code), then cooldown (status OR shape), then a
  *  named refusal at any status, then generic error, then success. Shared with
@@ -201,7 +209,7 @@ export function classifyResponse(status: number, body: string): RequestOutcome {
     return { kind: 'unauthorized', status, code };
   }
 
-  const cooldownShaped = COOLDOWN_BODY_PATTERN.test(body);
+  const cooldownShaped = COOLDOWN_BODY_PATTERN.test(body) && !isItemRuleCode(code);
   if (status === 429 || status === 503 || cooldownShaped) {
     return { kind: 'cooldown', status, retryHint: extractRetryHint(body) };
   }

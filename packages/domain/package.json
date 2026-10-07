@@ -1,6 +1,6 @@
 {
   "name": "@bombfarm/domain",
-  "version": "1.7.0",
+  "version": "1.9.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -53,6 +53,7 @@
     "@bombfarm/contracts": "workspace:*"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "3.2.7",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   }

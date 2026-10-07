@@ -1,5 +1,86 @@
 # @bombfarm/farm
 
+## 1.2.13
+
+### Patch Changes
+
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [5de6480]
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/domain@1.9.0
+  - @bombfarm/ui@0.18.0
+  - @bombfarm/game-art@0.8.0
+  - @bombfarm/hero@0.5.5
+
+## 1.2.12
+
+### Patch Changes
+
+- c13d140: Chance Stone chests now show up properly. In the inventory they are named "Chance Stone chest" with
+  their act and tier colour, and they are priced from the Steam Market. The Drops panel gains a
+  Chance Stone chest row: 0.01% per block broken on any phase, boosted by your Luck.
+- Updated dependencies [b7e061c]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [b7e061c]
+  - @bombfarm/domain@1.8.1
+  - @bombfarm/hero@0.5.4
+  - @bombfarm/game-art@0.7.7
+
+## 1.2.11
+
+### Patch Changes
+
+- 034b719: The app reads the Collections bonuses the game added on 2026-09-30
+
+  Burning a full equipment set now unlocks an account-wide bonus, and the game started folding those
+  bonuses into every hero's stats. The app did not know about them, so working a hero's spent points
+  back out of its stats came out too high for every hero on an account with any collection unlocked —
+  and every one of those heroes was left out. On the desktop the Optimizer showed no heroes at all and
+  the Farm board left the whole roster out; an imported save on the web planner did the same.
+
+  Each bonus is now read and applied where the game applies it:
+
+  - Energy, Critical chance and Cooldown multiply the hero's stat; Critical damage multiplies the part
+    of it the skill tree does not add. Hero stats, DPS and the stat breakdown (which gains a
+    "Collection" step) include them.
+  - Damage and Experience are already inside the skill-tree totals the game reports, so they are not
+    applied a second time. Pricing a skill-tree node no longer drops the Damage bonus from the total.
+  - Gold multiplies gold per prop on top of the skill tree's Team Coin bonus — measured: every prop
+    the game paid out reproduces to the coin that way. Luck adds to the squad's drop luck; how it
+    combines with the skill tree is not measured yet.
+  - Cage and boss and Forge are read but not applied until their effect is known.
+
+  The game's own skill-tree read is recognised again (it carries the new Collections field), so the
+  desktop no longer discards the stored skill tree each time it starts.
+
+- Updated dependencies [b0719ac]
+- Updated dependencies [d05770f]
+- Updated dependencies [804572b]
+- Updated dependencies [41c8786]
+- Updated dependencies [034b719]
+  - @bombfarm/domain@1.8.0
+  - @bombfarm/hero@0.5.3
+  - @bombfarm/game-art@0.7.6
+
+## 1.2.10
+
+### Patch Changes
+
+- Updated dependencies [c99325d]
+- Updated dependencies [c99325d]
+- Updated dependencies [2c54735]
+- Updated dependencies [47d106f]
+- Updated dependencies [47d106f]
+  - @bombfarm/hero@0.5.2
+  - @bombfarm/ui@0.17.0
+  - @bombfarm/domain@1.7.1
+  - @bombfarm/game-art@0.7.5
+
 ## 1.2.9
 
 ### Patch Changes

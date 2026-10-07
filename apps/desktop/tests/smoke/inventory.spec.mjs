@@ -15,9 +15,9 @@ const desktopRoot = path.join(__dirname, '..', '..');
  * draws the card, and this shell supplies the words and the roster. Each layer has unit tests; only
  * a launched app proves they were wired to each other.
  *
- * Uses the offline fixture (221 items, 13 heroes) rather than `account-full.json`, because it is
- * the only committed fixture carrying every item kind — the classifier's six `category` codes are
- * all represented, and a screen that only ever saw gear would not have exercised the interesting
+ * Uses the offline fixture (228 items, 13 heroes) rather than `account-full.json`, because it is
+ * the only committed fixture carrying every item kind — the classifier's seven `category` codes
+ * (the six it started with, and the chance stone) are all represented, and a screen that only ever saw gear would not have exercised the interesting
  * half.
  *
  * `BFC_FIXTURE_ACCOUNT_FILE` must be an OS-native absolute path (`path.join` gives one on every
@@ -137,17 +137,17 @@ test.describe('inventory smoke', () => {
     await withInventory(async (page) => {
       const view = page.getByTestId('inventory-view');
 
-      // The fixture carries all six wire `category` codes, so every kind heading must appear.
+      // The fixture carries all seven wire `category` codes, so every kind heading must appear.
       // A regression in the classifier shows up here as a missing heading, or as items piling
       // into "Other" — which is exactly what happened before `category` was read as total.
-      for (const heading of ['Gear', 'Gems', 'Keys', 'House parts', 'Skill stones', 'Chests']) {
+      for (const heading of ['Gear', 'Gems', 'Keys', 'House parts', 'Skill stones', 'Chance Stones', 'Chests']) {
         await expect(view.getByRole('heading', { name: heading, exact: true })).toBeVisible();
       }
 
       // Stacking: fewer cards than rows, because only gear is one-card-per-row.
       const cardCount = await cards(page).count();
       expect(cardCount).toBeGreaterThan(0);
-      expect(cardCount).toBeLessThan(221);
+      expect(cardCount).toBeLessThan(228);
 
       // A stacked card states its count in the footer slot a gear card gives its hero; gear never
       // does, because a forge level makes two swords different objects.
@@ -167,7 +167,7 @@ test.describe('inventory smoke', () => {
    */
   test('gives every kind it can name a solid tier border, and only the unknown one a dashed', async () => {
     await withInventory(async (page) => {
-      for (const kind of ['equipment', 'gem', 'key', 'time', 'stone', 'chest']) {
+      for (const kind of ['equipment', 'gem', 'key', 'time', 'stone', 'chanceStone', 'chest']) {
         const card = page
           .locator(`[data-testid="inventory-group"][data-kind="${kind}"]`)
           .getByTestId('inventory-card')

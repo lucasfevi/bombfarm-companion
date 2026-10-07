@@ -13,6 +13,7 @@ export interface HeroSheet {
   // measure in-game by spending a point and reading the sheet delta.
   attackPerPoint: number;
   energyPerPoint: number;
+  critCeiling?: number;
 }
 
 export interface Context {

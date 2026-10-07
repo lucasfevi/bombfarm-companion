@@ -1,6 +1,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import { formatCompactNumber } from '@bombfarm/ui';
 import { LiveReplica } from '@/features/download/components/live/live-replica';
 import { InstallSteps } from '@/features/download/components/install-steps';
 import { InstallCounts } from '@/features/download/components/install-counts';
@@ -145,22 +146,132 @@ describe('Live replica', () => {
     for (const className of readings) expect(className).toContain('font-mono');
   });
 
-  it('shows the roster it was drawn from, with an avatar each', () => {
+  it('shows the roster it was drawn from, with an avatar each in the heroes card and in the damage card', () => {
     const markup = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
+    const frame = replicaFrameAt(0);
     for (const name of ['Bellatrix', 'Jon', 'Minato']) expect(markup).toContain(name);
-    expect(markup.match(/<img/g) ?? []).toHaveLength(replicaFrameAt(0).heroes.length);
+    expect(markup.match(/<img/g) ?? []).toHaveLength(frame.heroes.length + frame.damage.heroes.length);
   });
 
   it('draws each identity the way the desktop Live row does: name in ink, level under it, no rarity word', () => {
     const markup = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
     const names = [...markup.matchAll(/<span class="([^"]*)">(Bellatrix|Jon|Minato)<\/span>/g)];
-    expect(names).toHaveLength(3);
+    expect(names).toHaveLength(6);
     for (const [, className] of names) {
       expect(className).toContain('text-ink');
       expect(className).not.toContain('text-rar-');
     }
     for (const word of ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary']) expect(markup).not.toContain(word);
-    expect(markup.match(/Lv \d+/g) ?? []).toHaveLength(replicaFrameAt(0).heroes.length);
+    const frame = replicaFrameAt(0);
+    expect(markup.match(/Lv \d+/g) ?? []).toHaveLength(frame.heroes.length + frame.damage.heroes.length);
+  });
+
+  describe('the Damage card', () => {
+    const cardOf = (lang: Lang) => {
+      const markup = renderToStaticMarkup(createElement(LiveReplica, { lang }));
+      const start = markup.indexOf('data-testid="replica-live-damage"');
+      const end = markup.indexOf('data-testid="replica-live-heroes"');
+      return { markup, card: markup.slice(start, end) };
+    };
+
+    it('follows the earnings and map cards and precedes the heroes card', () => {
+      const { markup } = cardOf('en');
+      const damageAt = markup.indexOf('data-testid="replica-live-damage"');
+
+      expect(markup.indexOf(liveLabel('liveMapTitle', 'en'))).toBeLessThan(damageAt);
+      expect(damageAt).toBeLessThan(markup.indexOf('data-testid="replica-live-heroes"'));
+    });
+
+    it('shares one grid with the earnings and map cards, and so does the heroes card', () => {
+      const { markup } = cardOf('en');
+      const sectionTag = (testId: string) =>
+        new RegExp(`<section[^>]*data-testid="${testId}"[^>]*>`).exec(markup)?.[0] ?? '';
+      const gridStart = markup.search(/<div class="grid grid-cols-1 gap-3 md:grid-cols-2"/);
+      const at = (testId: string) => markup.indexOf(`data-testid="${testId}"`);
+
+      expect(gridStart).toBeGreaterThan(-1);
+      expect(at('replica-live-damage')).toBeGreaterThan(gridStart);
+      expect(at('replica-live-heroes')).toBeGreaterThan(at('replica-live-damage'));
+      const beforeDamage = markup.slice(gridStart, markup.lastIndexOf('<section', at('replica-live-damage')));
+      expect(beforeDamage.match(/<section/g)).toHaveLength(2);
+      for (const testId of ['replica-live-damage', 'replica-live-heroes']) {
+        expect(sectionTag(testId)).toContain(' col-span-full ');
+        expect(sectionTag(testId)).toContain(' @min-[880px]:col-span-1"');
+        expect(sectionTag(testId)).not.toMatch(/\b(?:self-start|max-w-140)\b/);
+      }
+    });
+
+    for (const lang of LANGS) {
+      it(`reads title, team line, column heads, hero rows and Unattributed last in ${lang}`, () => {
+        const { card } = cardOf(lang);
+        const frame = replicaFrameAt(0);
+        const order = [
+          liveLabel('liveDamageTitle', lang),
+          liveLabel('liveDamageTeamDpsLabel', lang),
+          liveLabel('liveDamageSessionWindowLabel', lang),
+          liveLabel('liveDamageHeroColumn', lang),
+          liveLabel('liveDamageDpsColumn', lang),
+          liveLabel('liveDamageUptimeColumn', lang),
+          liveLabel('liveDamagePropsColumn', lang),
+          liveLabel('liveDamageGoldColumn', lang),
+          ...frame.damage.heroes.map((hero) => hero.name),
+          liveLabel('liveDamageUnattributedLabel', lang),
+        ];
+        const notFoundInOrder: string[] = [];
+        let from = 0;
+        for (const text of order) {
+          const found = card.indexOf(text, from);
+          if (found < 0) notFoundInOrder.push(text);
+          else from = found + text.length;
+        }
+
+        expect(notFoundInOrder).toEqual([]);
+      });
+    }
+
+    it('prints the Unattributed rate, then its props and gold, on the row after the heroes', () => {
+      const { card } = cardOf('en');
+      const { unattributed } = replicaFrameAt(0).damage;
+      const row = card.slice(card.indexOf('Unattributed'));
+      const figures = [...row.matchAll(/tabular-nums[^"]*">([^<]+)</g)].map((match) => match[1]);
+
+      expect(figures.slice(0, 3)).toEqual(
+        [unattributed.dps, unattributed.props, unattributed.gold].map((value) => formatCompactNumber(value, 'en')),
+      );
+    });
+
+    it('prints each hero\'s Uptime as a whole percentage after its DPS, and leaves the Unattributed row\'s cell empty', () => {
+      const { card } = cardOf('en');
+      const { heroes } = replicaFrameAt(0).damage;
+      const row = (name: string) => {
+        const from = card.indexOf(`>${name}</span>`);
+        return card.slice(from, card.indexOf('</li>', from));
+      };
+
+      for (const hero of heroes) {
+        const figures = [...row(hero.name).matchAll(/tabular-nums[^"]*">([^<]+)</g)].map((match) => match[1]);
+        expect(figures[1]).toBe(`${String(Math.round(hero.uptime * 100))}%`);
+      }
+      const unattributed = card.slice(card.indexOf('Unattributed'));
+      expect(unattributed.match(/%</g)).toBeNull();
+    });
+
+    it('lists the heroes in the sample order, by damage', () => {
+      const { card } = cardOf('en');
+      const names = replicaFrameAt(0).damage.heroes.map((hero) => hero.name);
+
+      expect(names.map((name) => card.indexOf(`>${name}</span>`))).toEqual(
+        [...names.map((name) => card.indexOf(`>${name}</span>`))].sort((first, second) => first - second),
+      );
+    });
+
+    it('is drawn inside the region hidden from assistive technology', () => {
+      const { markup } = cardOf('en');
+      const hiddenFrom = markup.indexOf('aria-hidden="true"');
+
+      expect(hiddenFrom).toBeGreaterThanOrEqual(0);
+      expect(hiddenFrom).toBeLessThan(markup.indexOf('data-testid="replica-live-damage"'));
+    });
   });
 });
 
@@ -720,5 +831,89 @@ describe('install count strip', () => {
     );
     expect(pt).toContain('4.182');
     expect(en).toContain('4,182');
+  });
+});
+
+describe('replica sample damage', () => {
+  const instants = Array.from({ length: LOOP_SECONDS * 2 + 1 }, (_unused, index) => index / 2);
+
+  it('adds up exactly at every instant: heroes plus Unattributed make the team damage, props and gold', () => {
+    for (const t of instants) {
+      const { heroes, unattributed, team } = replicaFrameAt(t).damage;
+      const sum = (pick: (row: { damage: number; props: number; gold: number }) => number) =>
+        heroes.reduce((total, hero) => total + pick(hero), pick(unattributed));
+
+      expect(sum((row) => row.damage)).toBe(team.damage);
+      expect(sum((row) => row.props)).toBe(team.props);
+      expect(sum((row) => row.gold)).toBe(team.gold);
+    }
+  });
+
+  it('names only heroes the heroes card draws, each once', () => {
+    for (const t of instants) {
+      const frame = replicaFrameAt(t);
+      const cardIds = frame.heroes.map((hero) => hero.id);
+      const ids = frame.damage.heroes.map((hero) => hero.id);
+
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(ids.filter((id) => !cardIds.includes(id))).toEqual([]);
+    }
+  });
+
+  it('prints each DPS as its damage over its seconds, for the team in both windows and for every hero', () => {
+    for (const t of instants) {
+      const { teamDps10, teamDpsSession, window10, sessionSeconds, team, heroes } = replicaFrameAt(t).damage;
+
+      expect(teamDpsSession).toBe(team.damage / sessionSeconds);
+      expect(teamDps10).toBe(window10.damage / window10.seconds);
+      for (const hero of heroes) expect(hero.dps).toBe(hero.damage / hero.fieldSeconds);
+    }
+  });
+
+  it('gives every hero an uptime that is its field seconds over the session seconds, never above 1', () => {
+    for (const t of instants) {
+      const { heroes, sessionSeconds } = replicaFrameAt(t).damage;
+
+      for (const hero of heroes) {
+        expect(hero.uptime).toBe(hero.fieldSeconds / sessionSeconds);
+        expect(hero.fieldSeconds).toBeLessThanOrEqual(sessionSeconds);
+        expect(hero.uptime).toBeGreaterThan(0);
+        expect(hero.uptime).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  it('lists the heroes by damage, largest first', () => {
+    for (const t of instants) {
+      const damages = replicaFrameAt(t).damage.heroes.map((hero) => hero.damage);
+      expect(damages).toEqual([...damages].sort((a, b) => b - a));
+    }
+  });
+
+  it('counts the same props and gold the earnings card counts for the session', () => {
+    for (const t of instants) {
+      const frame = replicaFrameAt(t);
+      expect(frame.damage.team.props).toBe(frame.measured.propsSession);
+      expect(frame.damage.team.gold).toBe(frame.earnings.goldSessionTotal);
+    }
+  });
+
+  it('rates the Unattributed damage over the session seconds, so it plus each hero share of the session adds up to the team rate', () => {
+    for (const t of instants) {
+      const { unattributed, heroes, sessionSeconds, teamDpsSession } = replicaFrameAt(t).damage;
+      const heroRates = heroes.reduce((total, hero) => total + hero.damage / sessionSeconds, 0);
+
+      expect(unattributed.dps).toBe(unattributed.damage / sessionSeconds);
+      expect(unattributed.dps + heroRates).toBeCloseTo(teamDpsSession, 6);
+    }
+  });
+
+  it('keeps an Unattributed share that is real but a minority of every figure', () => {
+    const { team, unattributed } = replicaFrameAt(0).damage;
+
+    for (const key of ['damage', 'props', 'gold'] as const) {
+      expect(unattributed[key]).toBeGreaterThan(0);
+      expect(unattributed[key]).toBeLessThan(team[key] / 2);
+    }
   });
 });

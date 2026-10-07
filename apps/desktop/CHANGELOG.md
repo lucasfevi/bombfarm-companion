@@ -1,5 +1,263 @@
 # @bombfarm/desktop
 
+## 0.26.0
+
+### Minor Changes
+
+- 5de6480: A new Collections tab shows what the game's collections give your account
+
+  Each of the ten collection bonuses is drawn against its cap, with how many books grant it and what all of them complete would add up to. Every book lists what it grants now, what it grants at most and what is left to earn, with its six pages shown piece by piece. Open a book to see each page's worth and which pieces of the set are sacrificed at which rarity, and which pieces in your inventory are ready to sacrifice. Sacrificing stays in the game; the app only reads.
+
+  The tab sits between Skill Tree and Account, and the status strip gains a Collections ring beside the PVP one that reads it again on a press. An open-book glyph stands in for the tab's word when the window is narrow, and the top bar's tab words sit 2px closer to their edges so all eleven tabs fit.
+
+- 7ab7d0e: The Forge tab can burn items for Forge Essence
+
+  The Forge tab has a second page, Deconstruct, that mirrors the game's new Deconstruct screen and adds
+  what the game's own screen lacks: filters. Search by name and narrow every burnable item in your bag
+  and stash by kind, rarity, set, slot, level range, whether it has been forged, and where it is kept.
+  Tick up to 100 items, press Burn, and confirm to receive Forge Essence, the currency the forge
+  spends. The confirm always appears. It puts the item count and the Essence you receive in large
+  figures, with your balance before and after, says in a red callout that a burn cannot be undone,
+  lists what burns by kind and rarity, and warns when the batch holds forged items or anything Epic
+  or rarer.
+
+  The page keeps the game's rules. Equipped, locked, on-the-market, gem-socketed and recently imported
+  items cannot be burned, and each says why. A Fill button tops the batch up with Common and Uncommon
+  items, the way the game's own does, from the rows your filter shows, and never with a chest or a
+  cage: those burn only when you tick them yourself, and they are listed whenever the game gives
+  them a value. The page never works out how much essence you will get: it adds up what the game says
+  each item is worth, and your balance after a burn is the one the game reports.
+
+  Burning is a write, so it follows the same rules as forging: it works only when the Settings switch
+  "Let the app forge, equip and reset points" is on, only after you confirm, and it is sent once and
+  never resent. Because the app can now burn items when told to, it asks for your consent again once
+  the first time you open it after updating, with the new wording. Nothing burns until you agree and
+  confirm. Burn waits while the forge is working, and the forge queue's Start waits while a burn is in
+  flight.
+
+  Items you ticked but your filters now hide are counted under the batch and named in the confirm.
+  Pressing Burn first checks the batch against your latest account read and drops anything that can no
+  longer be burned, such as an item you have since equipped in the game, saying how many left.
+  Switching to another game account empties the batch.
+
+### Patch Changes
+
+- 93a69c6: The Optimizer's aura chips wrap onto their own line when the setup bar is too narrow for them, instead of running underneath the Build team plan button.
+- 7ab7d0e: Chance Stones show up in the Inventory
+
+  The game's new Chance Stones used to land in "Other". They are now their own kind, Chance Stones, in
+  the Inventory on the desktop app and on the web.
+
+- 7ab7d0e: The app reads your account cleanly again after the game added Forge Essence
+
+  The game added a Forge Essence balance, fusion pity counters and per-item essence values to its
+  account and inventory replies, and the app flagged both reads as having drifted. They are now recognised: the
+  account and inventory read as complete again, and the essence balance and each item's essence value
+  are kept for the Deconstruct page instead of being discarded.
+
+- 169ab81: The item hover card no longer runs its forge line off the edge: the Crit and Cooldown forge multiplier now sits on its own line under the tier and level.
+- Updated dependencies [93a69c6]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [5de6480]
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/team-plan@0.6.2
+  - @bombfarm/domain@1.9.0
+  - @bombfarm/ui@0.18.0
+  - @bombfarm/game-art@0.8.0
+  - @bombfarm/contracts@0.13.0
+  - @bombfarm/game-api@0.7.0
+  - @bombfarm/account@0.3.11
+  - @bombfarm/farm@1.2.13
+  - @bombfarm/hero@0.5.5
+  - @bombfarm/game-data@0.0.21
+  - @bombfarm/pricing@0.4.3
+
+## 0.25.1
+
+### Patch Changes
+
+- b7e061c: Boss Slayer now multiplies its carrier's damage against the gate boss (up to +100% at rank 20) in the
+  Farm board's gate phases and the advisor's boss figures. It never applies to rocks, the cage or PVP.
+- c13d140: Chance Stone chests now show up properly. In the inventory they are named "Chance Stone chest" with
+  their act and tier colour, and they are priced from the Steam Market. The Drops panel gains a
+  Chance Stone chest row: 0.01% per block broken on any phase, boosted by your Luck.
+- c13d140: The Forge tab, the forge queue and the expected-cost figures follow the game's reworked Forge. Only
+  +1 to +4 always land now; from the roll for +12 up a miss drops the piece one level, never under +10,
+  and each miss in a row adds 5 points to the next roll. The old safe jump to +8 is gone, so every rung
+  is rolled one at a time, and the expected gold now comes with the expected essence, which follows
+  the game's lower essence and Protection Scroll prices. The desktop Forge tab lets you pick a Chance Stone for the whole climb or for up to four stretches of
+  targets, each shown with its art, its chance bonus and how many you own. Every rung of the odds ladder
+  shows the stone it uses and how the chance adds up, and the stones you will use are listed against the
+  ones you own. The app now uses your Chance Stones when it forges: it says before the start which kinds
+  it may spend and how many you hold, uses one on each roll that can miss, shows the stones used as the run
+  goes and on its result and ledger row, and stops when a kind runs out or the game does not take a stone
+  as asked. Stones that are locked, on the market or worn are not counted as yours to spend. Chance Stones
+  now show in the inventory under their own heading.
+  The bad-run gold figure is now read off the exact distribution instead of a sampled one, so it no longer
+  shifts by a percent or so between runs and stepping the target to +13 through +15 is instant.
+  The desktop Forge tab has a Protection Scroll switch for any climb that reaches +12 or higher: with it on, the
+  plan shows what the climb costs with the scroll, the price of the scroll on each level it covers, which rungs it
+  protects ("miss keeps the level"), and a one-line comparison with going without. When you forge, the app asks for
+  the scroll only on the rolls where the game offers it, stops if you do not have the essence or the game does not
+  charge it as asked, and counts the essence it cost on the result and in the run ledger. The queue and the Optimizer
+  never use the scroll. The Forge tab is also laid out in three columns on a wide window, with the bag narrowed to its
+  contents, so the item, the plan and the forecast fit on one screen; on a narrower window they stack beside the bag
+  as before. A run that stops for lack of essence now says "Out of gold or essence".
+  The Forge tab's forecast now shows a bad run (p90) for essence next to gold, the "Without the scroll" comparison carries the gold coin, and every forge confirmation says it spends gold and essence, with the queue's expected essence beside its expected gold.
+  Everywhere the desktop Forge tab shows the gold a run spent, it now shows the essence beside it: the live run line, the result's Spent figure, a new Essence column in the rung table and the run ledger (a dash for runs recorded before this version), the ledger totals, the queue's progress line and the Optimizer's expected forge cost.
+- c13d140: Forged gear now follows the game's rebalanced upgrade values. An item's stats grow by a fixed step
+  per level up to +10 (×1.50), then faster: Damage, Energy, Speed, Luck and Penetration reach ×2.10
+  at +13, ×2.60 at +14 and ×3.50 at +15, while Crit chance and Cooldown reduction scale more gently
+  (×1.95 at +13, ×2.20 at +14). The slot editor and the item card show both factors once they
+  differ. Heroes wearing forged gear import with the right stat points again instead of reading as
+  overspent, so they are no longer left out of the optimizer.
+
+  A Collection's cooldown bonus now also scales the flat cooldown reduction from Short Fuse, as the
+  game does.
+
+  The app no longer treats the item list as changed shape after the forge patch, so every refresh stops
+  logging the new per-item forge fields as drift.
+
+- c13d140: The player's item storage is now called the inventory everywhere in the app's words, in English and Portuguese — "bag" and "bolsa" are gone from the skill tree, the account panel, the plan-changes list and the download page.
+- b7e061c: Short Fuse now adds its cooldown reduction to the carrier's sheet (half a point per level, up to the
+  80% cap), and Carnage is priced as a team crit-damage aura, capped at one carrier's +100%. DPS, the
+  Farm board and the Optimizer value both, and Carnage joins the team-aura switches. Boss Slayer and
+  Apprentice remain unpriced.
+- Updated dependencies [b7e061c]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [b7e061c]
+  - @bombfarm/domain@1.8.1
+  - @bombfarm/hero@0.5.4
+  - @bombfarm/farm@1.2.12
+  - @bombfarm/pricing@0.4.2
+  - @bombfarm/team-plan@0.6.1
+  - @bombfarm/account@0.3.10
+  - @bombfarm/game-api@0.6.6
+  - @bombfarm/game-art@0.7.7
+
+## 0.25.0
+
+### Minor Changes
+
+- 804572b: The Optimizer can plan for farming one equipment set
+
+  A new objective, Set farm, sits beside Gold / hr and Gate clear. Pick the set you are collecting
+  and the Optimizer searches only the phases where that set drops and re-spends stat points with
+  Luck on the table — it multiplies every chest roll, but it is weighed against clear speed, since a
+  slower clear drops fewer chests. The plan's figures are that set's item chests per hour, printed to
+  two decimals rather than abbreviated the way gold is. Rarity cannot be steered: Luck changes how
+  many chests drop, not which rarity they roll.
+
+  The phase card says roughly how long a clear takes at the phase the plan picked, and warns when it
+  takes a minute or more: those phases are hard for the squad, and the estimate is least certain at
+  slow clears.
+
+  The set picker lists all thirty sets with the phases each drops on, and marks the ones whose phases
+  your account has not reached yet. Until a set is picked the plan does not run, and the setup panel
+  says why.
+
+### Patch Changes
+
+- 41c8786: Four more abilities from the 2026-09-30 game patch are recognised: Short Fuse (Pavio Curto), Carnage (Carnificina), Boss Slayer (Matador de Chefes) and Apprentice (Aprendiz). Heroes carrying them used to import with an "Unknown ability" warning and lost them. They now import cleanly and show each ability with its icon, name and per-level value, and Carnage and Apprentice appear among the team auras a squad covers. Their effects are not priced yet, so the Farm board, active DPS and the Optimizer treat them as no bonus until they are modelled.
+- 034b719: The app reads the Collections bonuses the game added on 2026-09-30
+
+  Burning a full equipment set now unlocks an account-wide bonus, and the game started folding those
+  bonuses into every hero's stats. The app did not know about them, so working a hero's spent points
+  back out of its stats came out too high for every hero on an account with any collection unlocked —
+  and every one of those heroes was left out. On the desktop the Optimizer showed no heroes at all and
+  the Farm board left the whole roster out; an imported save on the web planner did the same.
+
+  Each bonus is now read and applied where the game applies it:
+
+  - Energy, Critical chance and Cooldown multiply the hero's stat; Critical damage multiplies the part
+    of it the skill tree does not add. Hero stats, DPS and the stat breakdown (which gains a
+    "Collection" step) include them.
+  - Damage and Experience are already inside the skill-tree totals the game reports, so they are not
+    applied a second time. Pricing a skill-tree node no longer drops the Damage bonus from the total.
+  - Gold multiplies gold per prop on top of the skill tree's Team Coin bonus — measured: every prop
+    the game paid out reproduces to the coin that way. Luck adds to the squad's drop luck; how it
+    combines with the skill tree is not measured yet.
+  - Cage and boss and Forge are read but not applied until their effect is known.
+
+  The game's own skill-tree read is recognised again (it carries the new Collections field), so the
+  desktop no longer discards the stored skill tree each time it starts.
+
+- Updated dependencies [b0719ac]
+- Updated dependencies [d05770f]
+- Updated dependencies [804572b]
+- Updated dependencies [41c8786]
+- Updated dependencies [804572b]
+- Updated dependencies [034b719]
+  - @bombfarm/domain@1.8.0
+  - @bombfarm/hero@0.5.3
+  - @bombfarm/game-art@0.7.6
+  - @bombfarm/team-plan@0.6.0
+  - @bombfarm/farm@1.2.11
+  - @bombfarm/account@0.3.9
+  - @bombfarm/game-api@0.6.5
+
+## 0.24.0
+
+### Minor Changes
+
+- 7cf247e: The status strip now shows how many players are online in the game right now, beside the game
+  connection, on every tab. It is the count the game's server records, refreshed every few minutes;
+  the cell stays empty rather than showing a zero when no fresh number is available. The app reads
+  it from the project's own server, once every five minutes, and the request carries nothing about
+  you. The privacy policy now lists that request.
+- 2c54735: The PVP tab's Rivals table can now be searched by name and sorted by any column. A search box
+  above the table narrows it to the opponents whose name contains what you type — ignoring case and
+  accents — with a count of how many are shown; pressing a column header sorts by it, and pressing
+  it again flips the order. It still opens worst record first. The columns of both the Rivals and
+  the Duel History tables also keep their width while you scroll: they used to be sized from
+  whichever rows happened to be drawn, so they shifted as new rows scrolled in. The design system's
+  sortable table header gains an `aside` slot for an info tip beside the sort button.
+
+### Patch Changes
+
+- c99325d: The Gear compare scoreboard now scores the clone the same way it scores your current gear. On a
+  hero whose own entry pulse is up — the ability that lifts damage for a stint — the two columns were
+  read off different bases, so a clone copied straight from current gear printed a Sustained DPS and
+  a Hit well below the figures right beside it while the delta under them still said +0.0%. Copy your
+  gear now and both columns read the same numbers. The percentage deltas are unchanged, and the
+  hits-to-kill rows still count a hit at the level the field sits at rather than an average.
+- c99325d: Controls that a screen reader announced twice, or that two controls answered to at once, now carry
+  one correct name each. A confirmation's corner close is announced as Close rather than repeating
+  the name of the Cancel button beside it; the two editable gear grids on the Items panel say which
+  loadout they edit, so the item level, rarity and forge pickers are no longer twenty-four controls
+  with eight names between them; and the panel switches — the compact-window controls on the download
+  page, the roster board's filters and the share card's — announce their panel once instead of twice.
+  Nothing moves on screen and every visible word is unchanged.
+- d0d924a: Quitting the app now always closes its database and writes out its log, even when something goes
+  wrong on the way down. The shutdown was a single unguarded sequence, so one failing step — a
+  service that threw while stopping — abandoned every step after it, leaving the database open and
+  the last of the log unwritten. That log is often the only evidence of whatever caused the failure,
+  and it was the part most reliably lost. Each step is now contained: a step that fails is recorded
+  by name and the rest still run, so the database closes and the log reaches disk either way.
+- Updated dependencies [c99325d]
+- Updated dependencies [c99325d]
+- Updated dependencies [7cf247e]
+- Updated dependencies [2c54735]
+- Updated dependencies [47d106f]
+- Updated dependencies [47d106f]
+  - @bombfarm/hero@0.5.2
+  - @bombfarm/ui@0.17.0
+  - @bombfarm/contracts@0.12.0
+  - @bombfarm/domain@1.7.1
+  - @bombfarm/farm@1.2.10
+  - @bombfarm/team-plan@0.5.2
+  - @bombfarm/account@0.3.8
+  - @bombfarm/game-art@0.7.5
+  - @bombfarm/game-api@0.6.4
+  - @bombfarm/game-data@0.0.20
+  - @bombfarm/pricing@0.4.1
+
 ## 0.23.1
 
 ### Patch Changes

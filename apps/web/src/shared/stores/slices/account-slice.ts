@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { RankMode } from '@bombfarm/domain/model';
+import type { Collection, RankMode } from '@bombfarm/domain/model';
 import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import { effectiveFarmPhase } from '@bombfarm/domain/farm-context';
 import type { AccountImportData } from '@bombfarm/domain/import-save';
@@ -30,6 +30,8 @@ export type AccountSlice = {
   /** `vagas_campo` / `bag_tabs_bonus` — counts the tree grants, shown on the Account page. */
   treeFieldSlotsBonus: number;
   treeBagTabsBonus: number;
+  /** `skills.totals.colecao`; `null` when the last import carried none. */
+  treeCollection: Collection | null;
   houseIdx: number;
   houseLevel: number;
   phase: number | null;
@@ -111,6 +113,7 @@ export const createAccountSlice: StateCreator<
   treeGeoMult: defaultTree.geoMult ?? 1,
   treeFieldSlotsBonus: defaultTree.fieldSlotsBonus ?? 0,
   treeBagTabsBonus: defaultTree.bagTabsBonus ?? 0,
+  treeCollection: null,
   houseIdx: defaultCtx.houseIdx,
   houseLevel: defaultCtx.houseLevel,
   phase: defaultCtx.phase,
@@ -174,6 +177,7 @@ export const createAccountSlice: StateCreator<
       treeGeoMult: shared.tree.geoMult ?? 1,
       treeFieldSlotsBonus: shared.tree.fieldSlotsBonus ?? 0,
       treeBagTabsBonus: shared.tree.bagTabsBonus ?? 0,
+      treeCollection: shared.tree.collection ?? null,
       houseIdx: shared.context.houseIdx,
       houseLevel: shared.context.houseLevel,
       phase: shared.context.phase,
@@ -209,6 +213,7 @@ export const createAccountSlice: StateCreator<
       patch.treeGeoMult = data.tree.geoMult ?? 1;
       patch.treeFieldSlotsBonus = data.tree.fieldSlotsBonus ?? 0;
       patch.treeBagTabsBonus = data.tree.bagTabsBonus ?? 0;
+      patch.treeCollection = data.tree.collection ?? null;
     }
     if (data.houseIdx != null) {
       patch.houseIdx = data.houseIdx;

@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { DECONSTRUCT_BATCH_MAX as CONTRACT_BATCH_MAX } from '@bombfarm/contracts';
+import { DECONSTRUCT_BATCH_MAX as DOMAIN_BATCH_MAX } from '@bombfarm/domain/deconstruct';
 import {
   InvalidWriteCallError,
   WRITE_ROUTES,
@@ -33,11 +35,11 @@ function fakeTransport(response: HttpResponse): HttpTransport & ReturnType<typeo
 describe('buildWriteRequest/requestPost — reject a write session forged through an unsafe cast', () => {
   const calls: readonly [string, WriteCall][] = [
     ['forge', { route: WRITE_ROUTES.forge, item: 'item-1' }],
-    ['forgeToSafe', { route: WRITE_ROUTES.forgeToSafe, item: 'item-1' }],
     ['equip', { route: WRITE_ROUTES.equip, item: 'item-1', hero: 'hero-1' }],
     ['unequip', { route: WRITE_ROUTES.unequip, item: 'item-1' }],
     ['respec', { route: WRITE_ROUTES.respec, hero: 'hero-1' }],
     ['commit', { route: WRITE_ROUTES.commit, hero: 'hero-1', points: [1, 2, 3, 4, 5, 6, 7, 8] }],
+    ['deconstruct', { route: WRITE_ROUTES.deconstruct, items: ['11', '12'] }],
   ];
 
   it.each(calls)('buildWriteRequest throws WriteSessionRequiredError for a forged session — %s', (_name, call) => {
@@ -59,9 +61,19 @@ describe('buildWriteRequest — one pinned path per route', () => {
   const cases: readonly [string, WriteCall, string][] = [
     ['forge', { route: WRITE_ROUTES.forge, item: 'g1' }, '/item/forge?account_id=486&item=g1&request_id=c1-1-1'],
     [
-      'forgeToSafe',
-      { route: WRITE_ROUTES.forgeToSafe, item: 'g1' },
-      '/item/forge_to_safe?account_id=486&item=g1&request_id=c1-1-1',
+      'forge with a stone',
+      { route: WRITE_ROUTES.forge, item: 'g1', stone: 0 },
+      '/item/forge?account_id=486&item=g1&pedra=0&request_id=c1-1-1',
+    ],
+    [
+      'forge with the top stone and the scroll',
+      { route: WRITE_ROUTES.forge, item: 'g1', stone: 5, scroll: true },
+      '/item/forge?account_id=486&item=g1&pedra=5&pergaminho=1&request_id=c1-1-1',
+    ],
+    [
+      'forge with the scroll alone',
+      { route: WRITE_ROUTES.forge, item: 'g1', scroll: true },
+      '/item/forge?account_id=486&item=g1&pergaminho=1&request_id=c1-1-1',
     ],
     [
       'equip',
@@ -74,6 +86,11 @@ describe('buildWriteRequest — one pinned path per route', () => {
       'commit',
       { route: WRITE_ROUTES.commit, hero: 'h7', points: [44, 0, 0, 0, 0, 56, 0, 0] },
       '/hero/stat/commit?account_id=486&hero=h7&points=44%2C0%2C0%2C0%2C0%2C56%2C0%2C0&request_id=c1-1-1',
+    ],
+    [
+      'deconstruct',
+      { route: WRITE_ROUTES.deconstruct, items: ['9001', '9002', '9003'] },
+      '/item/desconstruir?account_id=486&items=9001,9002,9003&request_id=c1-1-1',
     ],
   ];
 
@@ -110,10 +127,19 @@ describe('buildWriteRequest — one pinned path per route', () => {
   });
 
   it('a piece needing encoding round-trips through encodeURIComponent, and the token never appears in the path', () => {
-    const req = buildWriteRequest(write, { route: WRITE_ROUTES.forgeToSafe, item: 'item 7/ä' }, 'c1-1-1');
-    expect(req.path).toBe('/item/forge_to_safe?account_id=486&item=item%207%2F%C3%A4&request_id=c1-1-1');
+    const req = buildWriteRequest(write, { route: WRITE_ROUTES.forge, item: 'item 7/ä' }, 'c1-1-1');
+    expect(req.path).toBe('/item/forge?account_id=486&item=item%207%2F%C3%A4&request_id=c1-1-1');
     const rawToken = consented.token[RAW]();
     expect(req.path).not.toContain(rawToken);
+  });
+
+  it('never sends pedra=-1 or pergaminho=0 for a roll that uses neither', () => {
+    const plain = buildWriteRequest(write, { route: WRITE_ROUTES.forge, item: 'g1' }, 'c1-1-1').path;
+    expect(plain).not.toMatch(/pedra|pergaminho/);
+  });
+
+  it.each([-1, 6, 1.5, Number.NaN])('refuses the stone rarity %s before any header is built', (stone) => {
+    expect(() => buildWriteRequest(write, { route: WRITE_ROUTES.forge, item: 'g1', stone }, 'c1-1-1')).toThrow(InvalidWriteCallError);
   });
 });
 
@@ -134,16 +160,58 @@ describe('buildWriteRequest — commit vector validation', () => {
   });
 });
 
+describe('buildWriteRequest — deconstruct batch validation', () => {
+  const build = (items: readonly string[]) =>
+    buildWriteRequest(write, { route: WRITE_ROUTES.deconstruct, items }, 'c1-1-1');
+  const ids = (count: number): string[] => Array.from({ length: count }, (_, index) => String(5000 + index));
+
+  it('sends the ids comma-joined in one literal items parameter, ahead of request_id', () => {
+    expect(build(['7', '8']).path).toBe('/item/desconstruir?account_id=486&items=7,8&request_id=c1-1-1');
+  });
+
+  it('accepts a single id and a full batch of one hundred', () => {
+    expect(build(['7']).path).toContain('&items=7&');
+    expect(build(ids(100)).path).toContain(`&items=${ids(100).join(',')}&`);
+  });
+
+  it('throws InvalidWriteCallError for an empty batch and for a hundred-and-first id', () => {
+    expect(() => build([])).toThrow(InvalidWriteCallError);
+    expect(() => build(ids(101))).toThrow(InvalidWriteCallError);
+  });
+
+  it('throws InvalidWriteCallError for a repeated id', () => {
+    expect(() => build(['7', '8', '7'])).toThrow(InvalidWriteCallError);
+  });
+
+  it.each([['a comma'], ['1,2'], [' 7'], ['-7'], ['7.5'], ['0x1f'], ['7&hero=1'], ['']])(
+    'throws InvalidWriteCallError for the id %j, which would change the query',
+    (id) => {
+      expect(() => build(['5', id])).toThrow(InvalidWriteCallError);
+    },
+  );
+
+  it('shares its batch cap with the domain rules, which cannot import it from the contracts at runtime', () => {
+    expect(DOMAIN_BATCH_MAX).toBe(CONTRACT_BATCH_MAX);
+    expect(CONTRACT_BATCH_MAX).toBe(100);
+  });
+
+  it('refuses an unconsented write session before it looks at the ids', () => {
+    expect(() =>
+      buildWriteRequest(forgeWriteSession(), { route: WRITE_ROUTES.deconstruct, items: [] }, 'c1-1-1'),
+    ).toThrow(WriteSessionRequiredError);
+  });
+});
+
 describe('isTrustedWriteRequest / sendPost — refuses anything but the six writes before invoking the transport', () => {
   it('is true for all six real routes', () => {
     expect(isTrustedWriteRequest(buildWriteRequest(write, { route: WRITE_ROUTES.forge, item: 'a' }, 'c1-1-1'))).toBe(true);
-    expect(isTrustedWriteRequest(buildWriteRequest(write, { route: WRITE_ROUTES.forgeToSafe, item: 'a' }, 'c1-1-1'))).toBe(true);
     expect(isTrustedWriteRequest(buildWriteRequest(write, { route: WRITE_ROUTES.equip, item: 'a', hero: 'h' }, 'c1-1-1'))).toBe(true);
     expect(isTrustedWriteRequest(buildWriteRequest(write, { route: WRITE_ROUTES.unequip, item: 'a' }, 'c1-1-1'))).toBe(true);
     expect(isTrustedWriteRequest(buildWriteRequest(write, { route: WRITE_ROUTES.respec, hero: 'h' }, 'c1-1-1'))).toBe(true);
     expect(
       isTrustedWriteRequest(buildWriteRequest(write, { route: WRITE_ROUTES.commit, hero: 'h', points: [0, 0, 0, 0, 0, 0, 0, 0] }, 'c1-1-1')),
     ).toBe(true);
+    expect(isTrustedWriteRequest(buildWriteRequest(write, { route: WRITE_ROUTES.deconstruct, items: ['1'] }, 'c1-1-1'))).toBe(true);
   });
 
   it('is false for /item/sell, /hero/auto-equip and /hero/ability/spend', () => {
@@ -164,7 +232,7 @@ describe('isTrustedWriteRequest / sendPost — refuses anything but the six writ
     expect(isTrustedWriteRequest({ ...req, path: '/item/sell?item=/item/forge' })).toBe(false);
   });
 
-  it('sendPost refuses a hand-built request for a seventh path — transport_error naming the path, zero transport calls, no throw', async () => {
+  it('sendPost refuses a hand-built request for an unlisted path — transport_error naming the path, zero transport calls, no throw', async () => {
     const transport = vi.fn();
     const req = buildWriteRequest(write, { route: WRITE_ROUTES.forge, item: 'a' }, 'c1-1-1');
     const corrupted = { ...req, path: '/item/sell?item=a' } as unknown as HttpWriteRequest;
