@@ -192,6 +192,7 @@ describe('Live replica', () => {
           liveLabel('liveDamageSessionWindowLabel', lang),
           liveLabel('liveDamageHeroColumn', lang),
           liveLabel('liveDamageDpsColumn', lang),
+          liveLabel('liveDamageUptimeColumn', lang),
           liveLabel('liveDamagePropsColumn', lang),
           liveLabel('liveDamageGoldColumn', lang),
           ...frame.damage.heroes.map((hero) => hero.name),
@@ -218,6 +219,22 @@ describe('Live replica', () => {
       expect(figures.slice(0, 3)).toEqual(
         [unattributed.dps, unattributed.props, unattributed.gold].map((value) => formatCompactNumber(value, 'en')),
       );
+    });
+
+    it('prints each hero\'s Uptime as a whole percentage after its DPS, and leaves the Unattributed row\'s cell empty', () => {
+      const { card } = cardOf('en');
+      const { heroes } = replicaFrameAt(0).damage;
+      const row = (name: string) => {
+        const from = card.indexOf(`>${name}</span>`);
+        return card.slice(from, card.indexOf('</li>', from));
+      };
+
+      for (const hero of heroes) {
+        const figures = [...row(hero.name).matchAll(/tabular-nums[^"]*">([^<]+)</g)].map((match) => match[1]);
+        expect(figures[1]).toBe(`${String(Math.round(hero.uptime * 100))}%`);
+      }
+      const unattributed = card.slice(card.indexOf('Unattributed'));
+      expect(unattributed.match(/%</g)).toBeNull();
     });
 
     it('lists the heroes in the sample order, by damage', () => {
@@ -831,6 +848,19 @@ describe('replica sample damage', () => {
       expect(teamDpsSession).toBe(team.damage / sessionSeconds);
       expect(teamDps10).toBe(window10.damage / window10.seconds);
       for (const hero of heroes) expect(hero.dps).toBe(hero.damage / hero.fieldSeconds);
+    }
+  });
+
+  it('gives every hero an uptime that is its field seconds over the session seconds, never above 1', () => {
+    for (const t of instants) {
+      const { heroes, sessionSeconds } = replicaFrameAt(t).damage;
+
+      for (const hero of heroes) {
+        expect(hero.uptime).toBe(hero.fieldSeconds / sessionSeconds);
+        expect(hero.fieldSeconds).toBeLessThanOrEqual(sessionSeconds);
+        expect(hero.uptime).toBeGreaterThan(0);
+        expect(hero.uptime).toBeLessThanOrEqual(1);
+      }
     }
   });
 

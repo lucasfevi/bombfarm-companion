@@ -10,6 +10,7 @@ export function DamageUnattributedRow({ lang, amounts }: { lang: Lang; amounts: 
     <div className={`${DAMAGE_ROW_COLUMNS} h-10 border-t border-line/55 text-muted`}>
       <span className="truncate text-[12px] font-bold">{liveLabel('liveDamageUnattributedLabel', lang)}</span>
       <span className={`${DAMAGE_FIGURE_CLASS} text-muted`}>{compact(amounts.dps)}</span>
+      <span />
       <span className={`${DAMAGE_FIGURE_CLASS} text-muted`}>{compact(amounts.props)}</span>
       <span className={`${DAMAGE_FIGURE_CLASS} text-muted`}>{compact(amounts.gold)}</span>
     </div>

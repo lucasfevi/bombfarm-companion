@@ -62,6 +62,8 @@ export interface ReplicaDamageHero
     ReplicaDamageAmounts {
   readonly fieldSeconds: number;
   readonly dps: number;
+  /** A fraction from 0 to 1: field seconds over the session's seconds. */
+  readonly uptime: number;
 }
 
 export interface ReplicaDamage {
@@ -201,6 +203,7 @@ function damageAt(whole: number, teamProps: number, teamGold: number): ReplicaDa
       gold: shareOf(teamGold, share.goldShare),
       fieldSeconds,
       dps: damage / fieldSeconds,
+      uptime: fieldSeconds / sessionSeconds,
     };
   });
 

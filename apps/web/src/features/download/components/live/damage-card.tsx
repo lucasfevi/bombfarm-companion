@@ -38,6 +38,7 @@ export function DamageCard({ lang, damage }: { lang: Lang; damage: ReplicaDamage
         >
           <span>{liveLabel('liveDamageHeroColumn', lang)}</span>
           <span className="text-right">{liveLabel('liveDamageDpsColumn', lang)}</span>
+          <span className="text-right">{liveLabel('liveDamageUptimeColumn', lang)}</span>
           <span className="text-right">{liveLabel('liveDamagePropsColumn', lang)}</span>
           <span className="text-right">{liveLabel('liveDamageGoldColumn', lang)}</span>
         </div>

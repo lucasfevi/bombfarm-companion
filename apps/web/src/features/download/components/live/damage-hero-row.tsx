@@ -20,6 +20,7 @@ export function DamageHeroRow({ hero, lang }: { hero: ReplicaDamageHero; lang: L
         showRarity={false}
       />
       <span className={DAMAGE_FIGURE_CLASS}>{compact(hero.dps)}</span>
+      <span className={DAMAGE_FIGURE_CLASS}>{`${String(Math.round(hero.uptime * 100))}%`}</span>
       <span className={DAMAGE_FIGURE_CLASS}>{compact(hero.props)}</span>
       <span className={`${DAMAGE_FIGURE_CLASS} text-gold`}>{compact(hero.gold)}</span>
     </li>

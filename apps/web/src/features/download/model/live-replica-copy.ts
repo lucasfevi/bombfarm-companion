@@ -39,6 +39,7 @@ const MIRRORED = {
   liveDamageSessionWindowLabel: { en: 'session', pt: 'sessão' },
   liveDamageHeroColumn: { en: 'Hero', pt: 'Herói' },
   liveDamageDpsColumn: { en: 'DPS', pt: 'DPS' },
+  liveDamageUptimeColumn: { en: 'Uptime', pt: 'Em campo' },
   liveDamagePropsColumn: { en: 'Props', pt: 'Props' },
   liveDamageGoldColumn: { en: 'Gold', pt: 'Ouro' },
   liveDamageUnattributedLabel: { en: 'Unattributed', pt: 'Não atribuído' },
