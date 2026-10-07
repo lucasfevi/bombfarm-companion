@@ -220,7 +220,7 @@ describe('optimizer scope map', () => {
       { kind: 'scope', heroId: 'a', scope: 'leaveAlone' },
       { heroes: before, farmChosenPhase: null, phase: null },
     );
-    saveOptimizerView(moved!.controls);
+    saveOptimizerView(moved?.controls ?? DEFAULT_OPTIMIZER_VIEW);
     const reloaded = loadOptimizerView();
     expect(reloaded.scopeByHeroId).toEqual({ a: 'leaveAlone' });
     expect(resolveHeroScope({ id: 'b', battleAllowed: true }, reloaded.scopeByHeroId)).toBe('optimize');
@@ -233,7 +233,7 @@ describe('optimizer scope map', () => {
       { kind: 'scope', heroId: 'a', scope: 'donate' },
       { heroes, farmChosenPhase: null, phase: null },
     );
-    saveOptimizerView(moved!.controls);
+    saveOptimizerView(moved?.controls ?? DEFAULT_OPTIMIZER_VIEW);
     const reloaded = loadOptimizerView();
     expect(reloaded.scopeByHeroId).toEqual({ a: 'donate' });
     expect(resolveHeroScope({ id: 'a', battleAllowed: true }, reloaded.scopeByHeroId)).toBe('donate');

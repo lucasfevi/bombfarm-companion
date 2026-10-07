@@ -224,8 +224,8 @@ describe('team-plan slice', () => {
     usePlannerStore.getState().setScope('a', 'leaveAlone');
     usePlannerStore.getState().setHeroes([hero('a'), hero('b', true)]);
     const state = usePlannerStore.getState();
-    const b = state.heroes.find((candidate) => candidate.id === 'b')!;
-    expect(resolveHeroScope(b, state.scopeByHeroId)).toBe('optimize');
+    expect(resolveHeroScope({ id: 'b', battleAllowed: true }, state.scopeByHeroId)).toBe('optimize');
+    expect(state.heroes.find((candidate) => candidate.id === 'b')?.battleAllowed).toBe(true);
   });
 
   it('a drag to the hero default column is stored and survives a later battle toggle', () => {
