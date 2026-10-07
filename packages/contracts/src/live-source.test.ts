@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { isIpcChannel, isIpcEventChannel, IPC_CHANNELS, IPC_EVENT_CHANNELS } from './index.js';
-import { energyDisplayPercent, isActionableGap, liveGap, LIVE_DISPLAY_REFRESH_MS, type LiveEvent, type LiveGapReason } from './live-source.js';
+import {
+  energyDisplayPercent,
+  isActionableGap,
+  liveGap,
+  LIVE_DISPLAY_REFRESH_MS,
+  sameLiveDamage,
+  type LiveDamage,
+  type LiveDamageHeroRow,
+  type LiveEvent,
+  type LiveGapReason,
+  type UnattributedReason,
+} from './live-source.js';
 
 /** Exhaustive over `LiveGapReason` via a `satisfies` record: adding a reason without adding it
  *  here is a compile error, not a silently-actionable gap. */
@@ -126,5 +137,96 @@ describe('LiveEvent — the fastUpdate variant', () => {
   it('carries field, recovery, per-hero energy, the live on-field id set, earnings, and the map, and nothing else', () => {
     const event: LiveEvent = { type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: null, map: null };
     expect(Object.keys(event).sort()).toEqual(['earnings', 'energies', 'field', 'map', 'onFieldHeroIds', 'recovery', 'type']);
+  });
+});
+
+describe('sameLiveDamage', () => {
+  const REASONS: readonly UnattributedReason[] = [
+    'noOwnerAtBirth',
+    'explosionWithoutBomb',
+    'streamDiscontinuity',
+    'unresolvedOverlap',
+    'explosionlessWithoutFantasma',
+    'sharedOrUnattributedKill',
+    'noHitOnLootCell',
+  ];
+
+  const damage = (overrides: Partial<LiveDamage> = {}): LiveDamage => ({
+    teamDps10: 120,
+    teamDpsSession: 100,
+    coverageSeconds: 300,
+    sessionSeconds: 900,
+    heroes: [
+      { heroId: 'a', dps: 80, damage: 800, props: 4, gold: 400, onField: true },
+      { heroId: 'b', dps: null, damage: 100, props: 1, gold: 50, onField: false },
+    ],
+    unattributed: { damage: 50, props: 2, gold: 90 },
+    unattributedReasons: Object.fromEntries(REASONS.map((reason) => [reason, { damage: 0, props: 0, gold: 0 }])) as LiveDamage['unattributedReasons'],
+    team: { damage: 950, props: 7, gold: 540 },
+    ...overrides,
+  });
+
+  const withRow = (index: number, change: Partial<LiveDamageHeroRow>): LiveDamage => {
+    const base = damage();
+    return damage({ heroes: base.heroes.map((row, at) => (at === index ? { ...row, ...change } : row)) });
+  };
+
+  it('treats two absent slices as equal', () => {
+    expect(sameLiveDamage(null, null)).toBe(true);
+  });
+
+  it('treats an absent slice and a present one as different, either way round', () => {
+    expect(sameLiveDamage(null, damage())).toBe(false);
+    expect(sameLiveDamage(damage(), null)).toBe(false);
+  });
+
+  it('treats equal content in distinct objects as equal', () => {
+    expect(sameLiveDamage(damage(), damage())).toBe(true);
+  });
+
+  it.each([
+    ['teamDps10', damage({ teamDps10: 121 })],
+    ['teamDps10 going absent', damage({ teamDps10: null })],
+    ['teamDpsSession', damage({ teamDpsSession: 101 })],
+    ['teamDpsSession going absent', damage({ teamDpsSession: null })],
+    ['coverageSeconds', damage({ coverageSeconds: 301 })],
+    ['sessionSeconds', damage({ sessionSeconds: 901 })],
+    ['team damage', damage({ team: { damage: 951, props: 7, gold: 540 } })],
+    ['team props', damage({ team: { damage: 950, props: 8, gold: 540 } })],
+    ['team gold', damage({ team: { damage: 950, props: 7, gold: 541 } })],
+    ['unattributed going absent', damage({ unattributed: null })],
+    ['unattributed damage', damage({ unattributed: { damage: 51, props: 2, gold: 90 } })],
+    ['unattributed props', damage({ unattributed: { damage: 50, props: 3, gold: 90 } })],
+    ['unattributed gold', damage({ unattributed: { damage: 50, props: 2, gold: 91 } })],
+    ['a hero id', withRow(0, { heroId: 'z' })],
+    ['a hero dps', withRow(0, { dps: 81 })],
+    ['a hero dps going absent', withRow(0, { dps: null })],
+    ['a hero dps appearing', withRow(1, { dps: 5 })],
+    ['a hero damage', withRow(1, { damage: 101 })],
+    ['a hero props', withRow(1, { props: 2 })],
+    ['a hero gold', withRow(1, { gold: 51 })],
+    ['a hero onField flag', withRow(1, { onField: true })],
+    ['hero order', damage({ heroes: [...damage().heroes].reverse() })],
+    ['a hero row removed', damage({ heroes: damage().heroes.slice(0, 1) })],
+    ['a hero row added', damage({ heroes: [...damage().heroes, { heroId: 'c', dps: 1, damage: 1, props: 0, gold: 0, onField: true }] })],
+  ])('reports a difference in %s', (_field, changed) => {
+    expect(sameLiveDamage(damage(), changed)).toBe(false);
+    expect(sameLiveDamage(changed, damage())).toBe(false);
+  });
+
+  it.each(REASONS.flatMap((reason) => (['damage', 'props', 'gold'] as const).map((amount) => [reason, amount] as const)))(
+    'reports a difference in the %s %s amount',
+    (reason, amount) => {
+      const base = damage();
+      const changed = damage({
+        unattributedReasons: { ...base.unattributedReasons, [reason]: { damage: 0, props: 0, gold: 0, [amount]: 1 } },
+      });
+      expect(sameLiveDamage(base, changed)).toBe(false);
+    },
+  );
+
+  it('reports a reason missing from one side', () => {
+    const { noHitOnLootCell: _dropped, ...rest } = damage().unattributedReasons;
+    expect(sameLiveDamage(damage(), damage({ unattributedReasons: rest as LiveDamage['unattributedReasons'] }))).toBe(false);
   });
 });

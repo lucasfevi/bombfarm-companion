@@ -388,6 +388,82 @@ export interface LiveMapEconomy {
   readonly averageGoldPerClear: number;
 }
 
+export interface LiveDamageHeroRow {
+  readonly heroId: string;
+  /** Session attributed damage over the seconds the hero stood on the field; `null` when it has
+   *  credit but no field time. */
+  readonly dps: number | null;
+  readonly damage: number;
+  readonly props: number;
+  readonly gold: number;
+  /** In the latest frame's hero list. */
+  readonly onField: boolean;
+}
+
+/**
+ * Damage folded in the main process from the live tick stream — the renderer receives finished
+ * figures and only draws them, the same split {@link LiveEarnings} follows. Per-hero figures plus
+ * {@link unattributed} always add up to {@link team}, component for component.
+ */
+export interface LiveDamage {
+  /** Team damage per streamed second over the last 10 minutes; `null` with no streamed time. */
+  readonly teamDps10: number | null;
+  readonly teamDpsSession: number | null;
+  /** Span of the 10-minute window's samples, as {@link LiveEarnings.coverageSeconds}. */
+  readonly coverageSeconds: number;
+  readonly sessionSeconds: number;
+  /** Sorted by session damage descending, then hero id. */
+  readonly heroes: readonly LiveDamageHeroRow[];
+  /** `null` until the session has any team damage. */
+  readonly unattributed: CreditAmounts | null;
+  /** Damage, props and gold that went unattributed, split by why. Diagnostic; not drawn. */
+  readonly unattributedReasons: Readonly<Record<UnattributedReason, CreditAmounts>>;
+  /** Session totals. */
+  readonly team: CreditAmounts;
+}
+
+function sameCreditAmounts(a: CreditAmounts, b: CreditAmounts): boolean {
+  return a.damage === b.damage && a.props === b.props && a.gold === b.gold;
+}
+
+function sameDamageReasons(
+  a: Readonly<Record<UnattributedReason, CreditAmounts>>,
+  b: Readonly<Record<UnattributedReason, CreditAmounts>>,
+): boolean {
+  const reasons = Object.keys(a) as UnattributedReason[];
+  return reasons.length === Object.keys(b).length && reasons.every((reason) => reason in b && sameCreditAmounts(a[reason], b[reason]));
+}
+
+function sameDamageHeroRow(a: LiveDamageHeroRow, b: LiveDamageHeroRow): boolean {
+  return (
+    a.heroId === b.heroId &&
+    a.dps === b.dps &&
+    a.damage === b.damage &&
+    a.props === b.props &&
+    a.gold === b.gold &&
+    a.onField === b.onField
+  );
+}
+
+/** Value equality for the damage slice, so the main process and the renderer both keep an
+ *  unchanged slice by reference and a changed one is never mistaken for it. */
+export function sameLiveDamage(a: LiveDamage | null, b: LiveDamage | null): boolean {
+  if (a === null || b === null) return a === b;
+  return (
+    a.teamDps10 === b.teamDps10 &&
+    a.teamDpsSession === b.teamDpsSession &&
+    a.coverageSeconds === b.coverageSeconds &&
+    a.sessionSeconds === b.sessionSeconds &&
+    a.heroes.length === b.heroes.length &&
+    a.heroes.every((row, index) => sameDamageHeroRow(row, b.heroes[index] as LiveDamageHeroRow)) &&
+    (a.unattributed === null || b.unattributed === null
+      ? a.unattributed === b.unattributed
+      : sameCreditAmounts(a.unattributed, b.unattributed)) &&
+    sameDamageReasons(a.unattributedReasons, b.unattributedReasons) &&
+    sameCreditAmounts(a.team, b.team)
+  );
+}
+
 export interface LiveView {
   readonly currency: LiveCurrency;
   readonly field: readonly FieldCountdown[];

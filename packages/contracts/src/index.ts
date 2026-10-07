@@ -148,6 +148,8 @@ export type {
   LiveFrame,
   LiveGapExtra,
   LiveGapReason,
+  LiveDamage,
+  LiveDamageHeroRow,
   LiveHeroEnergy,
   LiveHit,
   LiveLootPop,
@@ -159,7 +161,7 @@ export type {
   RecoveryCountdown,
   UnattributedReason,
 } from './live-source.js';
-export { energyDisplayPercent, isActionableGap, isConnectedCurrency, isLiveCurrency, liveGap, LIVE_DISPLAY_REFRESH_MS } from './live-source.js';
+export { energyDisplayPercent, isActionableGap, isConnectedCurrency, isLiveCurrency, liveGap, LIVE_DISPLAY_REFRESH_MS, sameLiveDamage } from './live-source.js';
 export type {
   MarketQuoteCurrency,
   MarketQuoteFailureReason,
