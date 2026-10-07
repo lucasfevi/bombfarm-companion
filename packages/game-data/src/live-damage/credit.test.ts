@@ -415,12 +415,10 @@ describe('signature book', () => {
 });
 
 describe('creditLoot', () => {
-  const credited = (cell: number, heroId: string | null, damage = 10): HitCredit => ({
-    cell,
-    damage,
-    credited: heroId,
-    reason: heroId === null ? 'unresolvedOverlap' : null,
-  });
+  const credited = (cell: number, heroId: string | null, damage = 10): HitCredit =>
+    heroId === null
+      ? { cell, damage, credited: null, reason: 'unresolvedOverlap' }
+      : { cell, damage, credited: heroId, reason: null };
 
   it('gives the prop and its gold to the hero every hit on the cell was credited to', () => {
     expect(creditLoot([{ cell: 7, gold: 120 }], [credited(7, 'A'), credited(7, 'A', 30)])).toEqual([

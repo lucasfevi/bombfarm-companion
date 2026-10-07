@@ -33,12 +33,14 @@ export function createSignatureBook(): SignatureBook {
   };
 }
 
-export interface HitCredit {
+export type Attribution =
+  | { readonly credited: string; readonly reason: null }
+  | { readonly credited: null; readonly reason: UnattributedReason };
+
+export type HitCredit = Attribution & {
   readonly cell: number;
   readonly damage: number;
-  readonly credited: string | null;
-  readonly reason: UnattributedReason | null;
-}
+};
 
 export interface CreditHitsInput {
   readonly hits: readonly LiveHit[];
@@ -150,11 +152,7 @@ export function creditHits({
   });
 }
 
-export interface LootCredit {
-  readonly gold: number;
-  readonly credited: string | null;
-  readonly reason: UnattributedReason | null;
-}
+export type LootCredit = Attribution & { readonly gold: number };
 
 export function creditLoot(loot: readonly LiveLootPop[], credited: readonly HitCredit[]): LootCredit[] {
   const credits: LootCredit[] = [];
