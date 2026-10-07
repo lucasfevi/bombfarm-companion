@@ -8,6 +8,7 @@ import {
   MIN_BASELINE_FILES,
   TEST_RUN_KIND,
   TOLERANCE_PP,
+  WAIVER,
   allowlistOffenders,
   baselineIntegrityFindings,
   canonicalBaselineText,
@@ -30,6 +31,7 @@ import {
   planUpdate,
   renameReview,
 } from './domain-coverage-core.mjs';
+import { SOLVER_TEST_FILES } from '../vitest.solver-files.mjs';
 
 const NEVER_RUN = 'src/never-run.ts';
 const TYPES_ONLY = 'src/types-only.ts';
@@ -980,5 +982,75 @@ describe('allowlistOffenders keeps the instrumentation-sensitive list honest', (
     expect(offenders).toHaveLength(2);
     expect(offenders[0]).toContain('packages/domain/tests/gone.test.ts: does not exist');
     expect(offenders[1]).toContain('packages/domain/tests/plain.test.ts: does not time anything');
+  });
+});
+
+describe('judgeTestRun: instrumentation timeouts in the solver files', () => {
+  const ROOT = 'C:/work/repo';
+  const SOLVER = `packages/domain/${SOLVER_TEST_FILES[1]}`;
+  const NOT_SOLVER = 'packages/domain/tests/team-plan-farm-points-reproducible-lookalike.test.ts';
+  const TIMEOUT = 'Error: Test timed out in 900000ms.\nIf this is a long-running test, pass a timeout value as the last argument.';
+
+  function failing(file, fullName, failureMessages) {
+    return {
+      name: `${ROOT}/${file}`,
+      status: 'failed',
+      message: '',
+      assertionResults: [{ fullName, title: fullName, status: 'failed', failureMessages }],
+    };
+  }
+
+  function judge(suites) {
+    return judgeTestRun({ resultsText: JSON.stringify({ testResults: suites }), root: ROOT, exitCode: 1 });
+  }
+
+  it('tolerates a per-test timeout in a solver file and labels it an instrumentation timeout', () => {
+    const verdict = judge([failing(SOLVER, 'two runs propose the same points', ['Error: STACK_TRACE_ERROR\n    at x', TIMEOUT])]);
+    expect(verdict.accepted).toBe(true);
+    expect(verdict.tolerated.map((item) => [item.waiver, item.file, item.name])).toEqual([
+      [WAIVER.timeout, SOLVER, 'two runs propose the same points'],
+    ]);
+    expect(formatToleratedFailures(verdict.tolerated)).toContain(`[instrumentation timeout] ${SOLVER} > two runs propose the same points: Error: Test timed out in 900000ms.`);
+  });
+
+  it('does not tolerate an assertion failure in a solver file, and names it', () => {
+    const verdict = judge([failing(SOLVER, 'two runs propose the same points', ['AssertionError: expected 1 to be 2\n    at x'])]);
+    expect(verdict.accepted).toBe(false);
+    expect(verdict.offenders.map((item) => [item.kind, item.file, item.name])).toEqual([
+      [TEST_RUN_KIND.failedTest, SOLVER, 'two runs propose the same points'],
+    ]);
+  });
+
+  it('does not tolerate a timeout in an ordinary test file', () => {
+    const verdict = judge([failing('packages/domain/tests/ordinary.test.ts', 'sums', [TIMEOUT])]);
+    expect(verdict.accepted).toBe(false);
+    expect(verdict.offenders.map((item) => item.file)).toEqual(['packages/domain/tests/ordinary.test.ts']);
+  });
+
+  it('does not tolerate a timeout in a file whose name merely resembles a solver file', () => {
+    const verdict = judge([failing(NOT_SOLVER, 'sums', [TIMEOUT])]);
+    expect(verdict.accepted).toBe(false);
+    expect(verdict.offenders.map((item) => item.file)).toEqual([NOT_SOLVER]);
+  });
+
+  it('keeps tolerating wall-clock files as before, labelled a wall-clock assertion', () => {
+    const verdict = judge([failing(INSTRUMENTATION_SENSITIVE_TEST_FILES[0], 'is fast', ['AssertionError: took 9ms'])]);
+    expect(verdict.tolerated.map((item) => item.waiver)).toEqual([WAIVER.wallClock]);
+  });
+
+  it('reports the first line that carries the reason, skipping stack markers and blank lines', () => {
+    const verdict = judge([failing('packages/domain/tests/ordinary.test.ts', 'sums', ['Error: STACK_TRACE_ERROR\n\n    at somewhere', '\n  Error: the real reason\n    at x'])]);
+    expect(verdict.offenders[0].message).toBe('packages/domain/tests/ordinary.test.ts > sums: Error: the real reason');
+  });
+
+  it('reads the solver list from the repository rather than copying it', () => {
+    expect(SOLVER_TEST_FILES.length).toBeGreaterThan(0);
+    const verdict = judgeTestRun({
+      resultsText: JSON.stringify({ testResults: [failing(SOLVER, 'x', [TIMEOUT])] }),
+      root: ROOT,
+      exitCode: 1,
+      solverFiles: [],
+    });
+    expect(verdict.accepted).toBe(false);
   });
 });

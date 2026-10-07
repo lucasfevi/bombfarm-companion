@@ -1,3 +1,5 @@
+import { SOLVER_TEST_FILES } from '../vitest.solver-files.mjs';
+
 export const METRICS = ['statements', 'branches', 'functions', 'lines'];
 
 export const TOLERANCE_PP = 0;
@@ -690,11 +692,34 @@ function relativeToRoot(name, root) {
   return forward.toLowerCase().startsWith(prefix.toLowerCase()) ? forward.slice(prefix.length) : forward;
 }
 
-function firstLine(text) {
-  return String(text ?? '').split('\n')[0].trim();
+const STACK_MARKER = /STACK_TRACE_ERROR|^at\s/;
+
+function reasonOf(failureMessages) {
+  for (const message of failureMessages ?? []) {
+    const line = String(message ?? '')
+      .split('\n')
+      .map((candidate) => candidate.trim())
+      .find((candidate) => candidate !== '' && !STACK_MARKER.test(candidate));
+    if (line !== undefined) return line;
+  }
+  return '';
 }
 
-export function judgeTestRun({ resultsText, root, exitCode, allowlist = INSTRUMENTATION_SENSITIVE_TEST_FILES }) {
+const INSTRUMENTATION_TIMEOUT = /Test timed out in \d+ms/;
+
+export const WAIVER = { wallClock: 'wall-clock assertion', timeout: 'instrumentation timeout' };
+
+function solverTestPaths() {
+  return SOLVER_TEST_FILES.map((file) => `packages/domain/${file}`);
+}
+
+export function judgeTestRun({
+  resultsText,
+  root,
+  exitCode,
+  allowlist = INSTRUMENTATION_SENSITIVE_TEST_FILES,
+  solverFiles = solverTestPaths(),
+}) {
   const refuse = (kind, message, extra = {}) => ({
     accepted: false,
     tolerated: [],
@@ -714,6 +739,7 @@ export function judgeTestRun({ resultsText, root, exitCode, allowlist = INSTRUME
   }
 
   const allowed = new Set(allowlist);
+  const solverSet = new Set(solverFiles);
   const tolerated = [];
   const offenders = [];
   for (const suite of results.testResults) {
@@ -724,14 +750,17 @@ export function judgeTestRun({ resultsText, root, exitCode, allowlist = INSTRUME
         kind: TEST_RUN_KIND.failedSuite,
         file,
         name: null,
-        message: `${file}: the suite failed before or outside its tests (${firstLine(suite.message) || 'no message'})`,
+        message: `${file}: the suite failed before or outside its tests (${reasonOf([suite.message]) || 'no message'})`,
       });
     }
     for (const test of failedTests) {
       const name = test.fullName ?? test.title ?? '(unnamed test)';
-      const entry = { file, name, message: firstLine(test.failureMessages?.[0]) };
+      const entry = { file, name, message: reasonOf(test.failureMessages) };
+      const timedOut = (test.failureMessages ?? []).some((message) => INSTRUMENTATION_TIMEOUT.test(String(message)));
       if (allowed.has(file)) {
-        tolerated.push({ kind: 'tolerated', ...entry });
+        tolerated.push({ kind: 'tolerated', waiver: WAIVER.wallClock, ...entry });
+      } else if (solverSet.has(file) && timedOut) {
+        tolerated.push({ kind: 'tolerated', waiver: WAIVER.timeout, ...entry });
       } else {
         offenders.push({
           kind: TEST_RUN_KIND.failedTest,
@@ -754,13 +783,13 @@ export function judgeTestRun({ resultsText, root, exitCode, allowlist = INSTRUME
 
 export function formatToleratedFailures(tolerated) {
   const lines = [`tolerated failures in instrumentation-sensitive tests (${tolerated.length}); the regular jobs still gate them:`];
-  for (const item of tolerated) lines.push(`  ${item.file} > ${item.name}: ${item.message}`);
+  for (const item of tolerated) lines.push(`  [${item.waiver}] ${item.file} > ${item.name}: ${item.message}`);
   return `${lines.join('\n')}\n`;
 }
 
 export function formatToleratedFailuresMarkdown(tolerated) {
   const lines = ['### Tolerated failures (instrumentation-sensitive tests)', ''];
-  for (const item of tolerated) lines.push(`- \`${item.file}\` > ${item.name}: ${item.message}`);
+  for (const item of tolerated) lines.push(`- ${item.waiver}: \`${item.file}\` > ${item.name}: ${item.message}`);
   return `${lines.join('\n')}\n`;
 }
 

@@ -191,7 +191,7 @@ function uploadsReportEvenOnFailure(text) {
 function jobTimeoutLeavesRoomForTheInstrumentedRun(text) {
   const block = coverageJob(text);
   if (block === null) return false;
-  return Number(jobLevelValue(block, 'timeout-minutes')) >= 50;
+  return Number(jobLevelValue(block, 'timeout-minutes')) >= 60;
 }
 
 function aggregatorNeedsCoverageJob(text) {
@@ -320,7 +320,7 @@ describe('ci-web.yml domain-coverage shape guard — each predicate is true agai
   });
 });
 
-const JOB_IF = "    if: github.event_name != 'pull_request' || needs.changes.outputs.domain == 'true'\n    runs-on: ubuntu-latest\n    timeout-minutes: 50";
+const JOB_IF = "    if: github.event_name != 'pull_request' || needs.changes.outputs.domain == 'true'\n    runs-on: ubuntu-latest\n    timeout-minutes: 60";
 const CHECK_STEP = 'run: pnpm coverage:domain\n';
 const ENFORCING_IF = "        if: needs.changes.outputs.domain == 'true' && needs.domain-coverage.result != 'success'";
 const TOLERANT_IF = "        if: needs.domain-coverage.result == 'failure' || needs.domain-coverage.result == 'cancelled'";
@@ -405,8 +405,9 @@ describe('ci-web.yml domain-coverage shape guard — mutations, each turning its
     expect(uploadsReportEvenOnFailure(mutate(realText, '          retention-days: 7\n', ''))).toBe(false);
   });
 
-  it('(15b) the job timeout cut back to 40 minutes ⇒ jobTimeoutLeavesRoomForTheInstrumentedRun is false', () => {
-    expect(jobTimeoutLeavesRoomForTheInstrumentedRun(mutate(realText, 'timeout-minutes: 50', 'timeout-minutes: 40'))).toBe(false);
+  it('(15b) the job timeout cut back to 50 or 40 minutes ⇒ jobTimeoutLeavesRoomForTheInstrumentedRun is false', () => {
+    expect(jobTimeoutLeavesRoomForTheInstrumentedRun(mutate(realText, 'timeout-minutes: 60', 'timeout-minutes: 50'))).toBe(false);
+    expect(jobTimeoutLeavesRoomForTheInstrumentedRun(mutate(realText, 'timeout-minutes: 60', 'timeout-minutes: 40'))).toBe(false);
   });
 
   it('(15) the artifact upload no longer runs on failure ⇒ uploadsReportEvenOnFailure is false', () => {
