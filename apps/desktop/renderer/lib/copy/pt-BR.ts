@@ -117,7 +117,7 @@ export const ptBR: Copy = {
   settingsForgeSectionTitle: 'Alterações na sua conta',
   settingsForgeWritesLabel: 'Deixar o app forjar, equipar e redistribuir pontos',
   settingsForgeWritesHelp:
-    'Desligado: o app planeja e nunca altera sua conta. Ligado: o botão Forjar, a fila de forja, a página Desconstruir e as etapas de Aplicar do Otimizador podem gastar ouro e essência, mover itens e queimar itens — uma execução confirmada por vez, e as forjas podem ser paradas entre chamadas.',
+    'Desligado: o app planeja e nunca altera sua conta. Ligado: o botão Forjar, a fila de forja, a página Desconstruir e as etapas de Aplicar do Otimizador podem gastar ouro, essência e Pedras de Chance, mover itens e queimar itens — uma execução confirmada por vez, e as forjas podem ser paradas entre chamadas.',
   settingsForgeWritesNotSavedTitle: 'Configuração da Forja alterada, mas não salva',
 
   // settingsGame*/settingsRestartGameOnExit* — o único interruptor que deixa a Steam trazer o
@@ -475,12 +475,12 @@ export const ptBR: Copy = {
   forgeScrollOtherOn: 'Sem o pergaminho',
   forgeLadderScrollTip: 'Pergaminho de Proteção: uma falha mantém o nível e custa {essence} de essência',
   forgeScrollTip:
-    'Em cada rolagem que cobre, o pergaminho custa essência, acerte ou erre, e uma falha mantém o nível. Só vale na forja avulsa, nunca na fila, e a execução para se a essência acabar.',
+    'Em cada rolagem que cobre, o pergaminho custa essência, acerte ou erre, e uma falha mantém o nível. A execução para se a essência acabar.',
   forgeStopScrollMismatch: 'Pergaminho não usado',
   forgeResultScrollMismatch: 'Parou em {level}: o jogo não cobrou o Pergaminho de Proteção como o app pediu',
   forgeResultScrollEssence: 'Essência em pergaminhos',
   forgeStoneNote:
-    'Uma Pedra de Chance é gasta em toda rolagem em que é usada, acerte ou erre, e só vale na forja avulsa, nunca na fila nem nas execuções automáticas. O jogo guarda a pedra quando a rolagem já é certa. A execução usa uma pedra por rolagem que pode falhar e para quando elas acabam.',
+    'Uma Pedra de Chance é gasta em toda rolagem em que é usada, acerte ou erre, mas o jogo guarda a pedra quando a rolagem já é certa. A execução usa uma pedra por rolagem que pode falhar e para quando elas acabam.',
   forgeStonesTitle: 'Pedras de Chance',
   forgeStonesTip:
     'Escolha a Pedra de Chance que cada rolagem usa. "{join}" põe um só tipo em todas as rolagens. "{split}" deixa níveis diferentes usarem pedras diferentes, e os botões de menos e de mais movem o fim de cada faixa. O X remove uma faixa, e "{none}" não gasta pedra nela. Uma rolagem que já é certa guarda a pedra.',
@@ -508,6 +508,7 @@ export const ptBR: Copy = {
     'Nenhuma Pedra de Chance {rarity} no inventário: a execução para na primeira rolagem que precisar de uma',
   forgeFactBadRun: 'Uma maré ruim (p90)',
   forgeFactWallet: 'Carteira',
+  forgeFactWalletEssence: 'Essência',
   forgeWarnRisky:
     'Uma rolagem falha em {from}…{to} soma 5 pontos à chance da próxima rolagem e o ouro é cobrado de qualquer jeito. A partir de {high}, ela também derruba a peça um nível.',
   forgeButton: 'Forjar até {target}',
@@ -634,6 +635,18 @@ export const ptBR: Copy = {
   forgeQueueConfirm: 'Iniciar — gasta ouro e essência',
   forgeQueueConfirmCancel: 'Agora não',
   forgeQueuePanelCaption: 'Forjadas em sequência, de cima para baixo; uma peça que já chegou ao alvo sai sozinha.',
+  forgeQueueSettingsTitle: 'Para todas as peças',
+  forgeQueueSettingsTip:
+    'Valem para todas as peças da fila. As faixas de pedra seguem o nível que a rolagem mira, então uma faixa dos níveis 10 a 13 é usada em toda rolagem que mira esses níveis, seja qual for a peça. A mudança vale a partir da próxima peça a começar, e os ajustes ficam travados enquanto a fila roda.',
+  forgeQueueStopLabel: 'Parar quando as Pedras de Chance acabarem',
+  forgeQueueStopTip:
+    'Ligado, a fila para na primeira rolagem que pede uma Pedra de Chance que você não tem mais. Desligado, ela segue sem a pedra, com a chance menor.',
+  forgeQueueScrollLabel: 'Pergaminho de Proteção em toda rolagem que cobre',
+  forgeQueueScrollTip:
+    'Cada peça é forjada com o Pergaminho de Proteção nas rolagens que o oferecem: uma falha mantém o nível e custa essência. Uma peça para se a essência acabar.',
+  forgeQueueStonesStop: 'As Pedras de Chance devem acabar em {item} — a fila para ali',
+  forgeQueueStonesRoll: 'As Pedras de Chance devem acabar em {item} — ela e as peças seguintes rolam sem elas',
+  forgeQueueConfirmStones: 'Pedras de Chance usadas: cerca de {stones}.',
   forgeQueuePausedForApply: 'Pausada para o Otimizador',
   forgeQueuePausedForBurn: 'Pausada enquanto os itens são queimados',
 

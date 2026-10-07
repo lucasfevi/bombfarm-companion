@@ -11,17 +11,17 @@
 import { useCallback, useState } from 'react';
 import type { AccountSource } from '@bombfarm/contracts';
 import { Button, ConfirmDialog, cn } from '@bombfarm/ui';
-import { sub, subNodes, useCopy } from '../../lib/copy';
+import { sub, useCopy } from '../../lib/copy';
 import { isBurning } from '../../lib/deconstruct/deconstruct-run-reducer';
 import { useDeconstructRun } from '../../lib/deconstruct/deconstruct-run-store';
 import type { ForgeQueueState } from '../../lib/forge/forge-queue-reducer';
 import { cancelForgeQueue, clearForgeQueue, startForgeQueue } from '../../lib/forge/forge-queue-store';
-import { forgeQueueExpectedEssence, forgeQueueExpectedGold, type ForgeQueueRow } from '../../lib/forge/forge-queue-view';
+import type { ForgeQueueSettings } from '../../lib/forge/forge-queue-settings';
+import type { ForgeQueuePricing, ForgeQueueRow } from '../../lib/forge/forge-queue-view';
 import { dispatchForgeRun, useForgeRun } from '../../lib/forge/forge-run-store';
-import { ForgeGold } from './forge-gold';
+import { ForgeQueueConfirmBody } from './forge-queue-confirm-body';
 import {
   forgeButtonReason,
-  forgeLevel,
   forgeReasonText,
   forgeStartRefusalText,
   forgeStopText,
@@ -31,6 +31,8 @@ import {
 export function ForgeQueueActions({
   queue,
   rows,
+  pricing,
+  settings,
   labels,
   forgeWritesEnabled,
   accountSource,
@@ -38,6 +40,8 @@ export function ForgeQueueActions({
 }: {
   queue: ForgeQueueState;
   rows: readonly ForgeQueueRow[];
+  pricing: ForgeQueuePricing;
+  settings: ForgeQueueSettings;
   labels: ForgeLabels;
   forgeWritesEnabled: boolean;
   accountSource: AccountSource | null;
@@ -74,29 +78,6 @@ export function ForgeQueueActions({
       : queue.halt.kind === 'stop'
         ? forgeStopText(queue.halt.stop, t)
         : forgeStartRefusalText(queue.halt.reason, t);
-
-  const expectedGold = forgeQueueExpectedGold(rows);
-  const expectedEssence = forgeQueueExpectedEssence(rows);
-  const head = rows[0] ?? null;
-  const essence =
-    expectedEssence === null ? null : <strong className="font-semibold text-ink">{labels.count(Math.round(expectedEssence))}</strong>;
-  const gold =
-    expectedGold === null ? null : (
-      <strong className="font-semibold text-ink">
-        <ForgeGold>{labels.gold(Math.round(expectedGold))}</ForgeGold>
-      </strong>
-    );
-  const confirmBody =
-    gold === null || essence === null || head === null
-      ? t.forgeQueueConfirmNoEstimate
-      : rows.length === 1
-        ? subNodes(t.forgeQueueConfirmOne, {
-            item: head.item === null ? head.piece.itemId : labels.itemName(head.item),
-            target: forgeLevel(head.piece.target),
-            gold,
-            essence,
-          })
-        : subNodes(t.forgeQueueConfirmMany, { count: rows.length, gold, essence });
 
   const stacked = layout === 'stacked';
   const buttonClass = cn(stacked && 'w-full');
@@ -146,7 +127,7 @@ export function ForgeQueueActions({
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title={t.forgeQueueConfirmTitle}
-        description={confirmBody}
+        description={<ForgeQueueConfirmBody rows={rows} pricing={pricing} settings={settings} labels={labels} />}
         confirmLabel={t.forgeQueueConfirm}
         cancelLabel={t.forgeQueueConfirmCancel}
         closeLabel={t.confirmDialogClose}
