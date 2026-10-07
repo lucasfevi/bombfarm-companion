@@ -1279,6 +1279,58 @@ describe('LiveSource: earnings', () => {
     expect(after?.goldSession).toBe(before?.goldSession);
     expect(after?.gold10).toBe(before?.gold10);
   });
+
+  it('keeps accruing after a tap rebuild whose frames are numbered from 1 again', async () => {
+    const { source, taps, clock, goLive } = createHarness();
+    source.start();
+    goLive();
+
+    function emitFrame(tapIndex: number, sequence: number, tick: LiveTick): void {
+      clock.ms += 100;
+      const tap = taps[tapIndex];
+      if (!tap) throw new Error('harness: expected the tap to exist');
+      tap.emit({ type: 'frame', frame: { at: new Date(clock.ms).toISOString(), sequence, tick } });
+    }
+
+    for (let sequence = 1; sequence <= 5; sequence += 1) {
+      emitFrame(0, sequence, { heroes: [], phase: 1, loot: [{ cell: 0, gold: 100 }] });
+    }
+    const before = source.getView().earnings;
+    expect(before?.goldSessionTotal).toBe(500);
+
+    await source.forceDetach();
+    for (let sequence = 1; sequence <= 3; sequence += 1) {
+      emitFrame(1, sequence, { heroes: [], phase: 1, loot: [{ cell: 0, gold: 100 }] });
+    }
+
+    const after = source.getView().earnings;
+    expect(after?.goldSessionTotal).toBe(800);
+    expect(after?.sessionSeconds).toBeCloseTo((before?.sessionSeconds ?? 0) + 0.3, 6);
+  });
+
+  it('keeps the map reading current after a tap rebuild whose frames are numbered from 1 again', async () => {
+    const { source, taps, clock, goLive } = createHarness();
+    source.start();
+    goLive();
+
+    function emitFrame(tapIndex: number, sequence: number, tick: LiveTick): void {
+      clock.ms += 100;
+      const tap = taps[tapIndex];
+      if (!tap) throw new Error('harness: expected the tap to exist');
+      tap.emit({ type: 'frame', frame: { at: new Date(clock.ms).toISOString(), sequence, tick } });
+    }
+
+    for (let sequence = 1; sequence <= 5; sequence += 1) {
+      emitFrame(0, sequence, { heroes: [], phase: 61, kinds: [1, 1, 1, 1] });
+    }
+    expect(source.getView().map?.propsAlive).toBe(4);
+
+    await source.forceDetach();
+    emitFrame(1, 1, { heroes: [], phase: 62, kinds: [1, 1, -1, -1] });
+
+    expect(source.getView().map?.phase).toBe(62);
+    expect(source.getView().map?.propsAlive).toBe(2);
+  });
 });
 
 describe('LiveSource: current gold falls back to the stored account reading', () => {

@@ -87,9 +87,10 @@ export class EarningsFold {
   }
 
   /**
-   * `sequence` is the frame's own monotonic counter, not derived from `now()` — a tick whose
-   * sequence does not advance past the last one consumed is ignored outright, which is the real
-   * defence against the offline replay loop restarting the capture from its first record.
+   * `sequence` is the process-level frame counter the caller stamps on every frame it hands over,
+   * never one tap's own count and not derived from `now()` — a tick whose counter does not advance
+   * past the last one consumed is ignored outright, so a repeated or older frame is never folded
+   * twice.
    */
   consumeTick(tick: LiveTick, sequence: number, xpMult: number | undefined): void {
     if (sequence <= this.#lastSequence) return;

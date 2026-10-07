@@ -588,6 +588,10 @@ export class LiveSource {
 
   readonly #earningsFold: EarningsFold;
   readonly #mapFold: MapFold;
+  /** Every tap numbers its own frames from 1, so a tap rebuilt by {@link forceDetach} restarts at 1
+   *  while the folds still remember the previous tap's last number and would drop its frames. The
+   *  folds are handed this process-level count instead, which only ever grows. */
+  #frameCounter = 0;
   /** `null` until the first tap frame of the session has been folded — {@link LiveView.earnings}
    *  stays `null` until then too, rather than reporting a rate computed over zero real ticks. */
   #goldBalance: number | null = null;
@@ -931,8 +935,9 @@ export class LiveSource {
       this.#currency = event.currency;
       this.#touch();
     } else if (event.type === 'frame') {
-      this.#earningsFold.consumeTick(event.frame.tick, event.frame.sequence, this.#xpMult);
-      this.#mapFold.consumeTick(event.frame.tick, event.frame.sequence);
+      this.#frameCounter += 1;
+      this.#earningsFold.consumeTick(event.frame.tick, this.#frameCounter, this.#xpMult);
+      this.#mapFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#earningsStarted = true;
       if (event.frame.tick.gold !== undefined) this.#goldBalance = event.frame.tick.gold;
       this.#ingestTick(event.frame.tick, Date.parse(event.frame.at));
