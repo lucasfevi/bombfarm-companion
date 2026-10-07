@@ -123,7 +123,20 @@ describe('live-capture.bfcc drives the real decode path: records -> TlsConnectio
     expect([...hitKeys].sort()).toEqual(['cell', 'critical', 'damage']);
 
     const tickKeys = new Set(ticks.flatMap((tick) => Object.keys(tick)));
-    expect([...tickKeys].sort()).toEqual(['gold', 'heroes', 'hits', 'hps', 'idle', 'kinds', 'loot', 'phase', 'roomHp', 'wave']);
+    expect([...tickKeys].sort()).toEqual([
+      'bombs',
+      'explosions',
+      'gold',
+      'heroes',
+      'hits',
+      'hps',
+      'idle',
+      'kinds',
+      'loot',
+      'phase',
+      'roomHp',
+      'wave',
+    ]);
   });
 
   it('carries a 304-slot kinds array on every one of the 58 ticks', () => {

@@ -8,9 +8,8 @@
  * through {@link wireKey} below, never as an inline string literal.
  *
  * This lexicon is a dictionary of the wire protocol as observed, not a manifest of what the
- * decoder currently reads — several entries below (`bombs`, `explosions`, `rot_events`, `auras`,
- * `kinds`/`hps`, and a few per-hero fields) are declared for documentation but not yet consumed by
- * `toLiveTick`. Where a field's meaning was not established from the capture this lexicon is built
+ * decoder currently reads — several entries below (`rot_events`, `auras`, and a few per-hero
+ * fields) are declared for documentation but not yet consumed by `toLiveTick`. Where a field's meaning was not established from the capture this lexicon is built
  * from, its description says so plainly instead of guessing — see `heroFieldZ`, `heroSkillState`,
  * the `aura*` fields, `boss`, `gate`, `swapSeconds`, and the `cage*`/`droughtSeconds` group.
  */
