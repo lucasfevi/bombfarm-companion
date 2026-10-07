@@ -1,40 +1,15 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildScriptSource, serializeScriptSource } from '../src/script-source-build.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 const src = path.join(root, 'src');
 const dist = path.join(root, 'dist');
 
-const AGENT_MARKER = '/* __AGENT_SOURCE__ */';
-const HOST_BRIDGE_MARKER = '/* __HOST_BRIDGE_SOURCE__ */';
-
-function readSource(name) {
-  return readFileSync(path.join(src, name), 'utf8');
-}
-
-function splice(template, marker, replacement) {
-  if (!template.includes(marker)) {
-    throw new Error(`tap-runtime: bootstrap-template.js is missing the ${marker} marker`);
-  }
-  // Replacer function, not a string: `$&`, `$'` and friends in the spliced source would otherwise
-  // be expanded as replacement patterns, corrupting the injected script with nothing to catch it
-  // until it throws inside the target process.
-  return template.replace(marker, () => replacement);
-}
-
-const template = readSource('bootstrap-template.js');
-const agentSource = readSource('agent.js');
-const hostBridgeSource = readSource('host-bridge.js');
-
-const scriptSource = splice(
-  splice(template, AGENT_MARKER, agentSource),
-  HOST_BRIDGE_MARKER,
-  hostBridgeSource,
-);
-
-const generated = `export const TAP_SCRIPT_SOURCE = ${JSON.stringify(scriptSource)};\n`;
+const scriptSource = buildScriptSource();
+const generated = serializeScriptSource(scriptSource);
 
 mkdirSync(dist, { recursive: true });
 writeFileSync(path.join(dist, 'script-source.js'), generated);

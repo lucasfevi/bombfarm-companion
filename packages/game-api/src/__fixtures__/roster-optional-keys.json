@@ -1,0 +1,323 @@
+{
+  "_provenance": {
+    "authored": "hand-authored, not captured from the wire",
+    "note": "Hero shapes are copies of the committed 2026-08-12 calibration roster bodies; the runas / soulbound / export_lock_secs values on them are written by hand. No capture date is claimed for this file and nothing in it was scrubbed from a real account. It exists so a roster body carries the hero level's optional keys both present and absent, which no captured body in this directory does."
+  },
+  "/roster": {
+    "heroes": [
+      {
+        "id": "555",
+        "rarity": 1,
+        "rank": "A",
+        "skin": 5,
+        "skin_birth": 1,
+        "name": "Nyx",
+        "level": 25,
+        "xp": "1575",
+        "stars": 0,
+        "in_field": false,
+        "battle_allowed": true,
+        "slots": [
+          "40548",
+          "6630",
+          "32764",
+          "5978",
+          "5704",
+          "1591",
+          "38147",
+          "42963"
+        ],
+        "stats": {
+          "dmg": 657.6648800104572,
+          "energia": 238.63487669725936,
+          "speed": 50.08630071299917,
+          "luck": 0.08277995692356399,
+          "crit_chance": 0.08912442131625976,
+          "crit_dmg": 1.5652197924066917,
+          "penetration": 1.4385782588552551,
+          "cooldown_reduction": 0.014522472789746468,
+          "power": 4563.430969244694
+        },
+        "birth_stats": {
+          "dmg": 74.17790128777712,
+          "energia": 150.88777732632798,
+          "speed": 50.0092864119248,
+          "luck": 0.06171068580089638,
+          "crit_chance": 0.08395292136045568,
+          "crit_dmg": 1.5652197924066917,
+          "penetration": 1.4385782588552551,
+          "cooldown_reduction": 0.014522472789746468
+        },
+        "ability_points_total": 25,
+        "ability_points_spent": 25,
+        "stat_points_available": 0,
+        "stat_ranges": {
+          "dmg": {
+            "min": 65,
+            "max": 110
+          },
+          "energia": {
+            "min": 120,
+            "max": 160
+          },
+          "speed": {
+            "min": 47,
+            "max": 51.5
+          },
+          "luck": {
+            "min": 0.01,
+            "max": 0.07
+          },
+          "crit_chance": {
+            "min": 0.03,
+            "max": 0.09
+          },
+          "crit_dmg": {
+            "min": 1.45,
+            "max": 1.7
+          },
+          "penetration": {
+            "min": 0.5,
+            "max": 2.5
+          },
+          "cooldown_reduction": {
+            "min": 0.005,
+            "max": 0.03
+          }
+        },
+        "abilities": [
+          {
+            "code": "contra_relogio",
+            "slot": 9,
+            "level": 18,
+            "max": 20
+          },
+          {
+            "code": "passagem_bastao",
+            "slot": 13,
+            "level": 7,
+            "max": 20
+          }
+        ],
+        "marketable": false,
+        "in_market": false,
+        "ability_reroll_cost": "50000",
+        "ability_reroll_stone": "skill_stone_incomum",
+        "runas": [
+          {
+            "e": "critdmg",
+            "p": 0.05,
+            "s": 51840,
+            "r": 0
+          },
+          {
+            "e": "speed",
+            "p": 0.09,
+            "s": 7215,
+            "r": 1
+          }
+        ],
+        "soulbound": true
+      },
+      {
+        "id": "584",
+        "rarity": 1,
+        "rank": "D",
+        "skin": 5,
+        "skin_birth": 2,
+        "name": "Bellatrix",
+        "level": 27,
+        "xp": "4855",
+        "stars": 0,
+        "in_field": true,
+        "battle_allowed": true,
+        "slots": [
+          "46384",
+          "7146",
+          "2582",
+          "39949",
+          "4135",
+          "2024",
+          "4484",
+          "4716"
+        ],
+        "stats": {
+          "dmg": 677.7310599920825,
+          "energia": 263.14808999960667,
+          "speed": 50.07117586629187,
+          "luck": 0.07167685070431666,
+          "crit_chance": 0.07805736139925513,
+          "crit_dmg": 1.4505366076806723,
+          "penetration": 1.6084909005721955,
+          "cooldown_reduction": 0.009844165266024104,
+          "power": 4661.272310427329
+        },
+        "birth_stats": {
+          "dmg": 82.03910407956567,
+          "energia": 133.57107055087096,
+          "speed": 49.994184821666494,
+          "luck": 0.04946144376819579,
+          "crit_chance": 0.0694955140662884,
+          "crit_dmg": 1.4505366076806723,
+          "penetration": 1.410956930326487,
+          "cooldown_reduction": 0.009844165266024104
+        },
+        "ability_points_total": 27,
+        "ability_points_spent": 27,
+        "stat_points_available": 0,
+        "stat_ranges": {
+          "dmg": {
+            "min": 65,
+            "max": 110
+          },
+          "energia": {
+            "min": 120,
+            "max": 160
+          },
+          "speed": {
+            "min": 47,
+            "max": 51.5
+          },
+          "luck": {
+            "min": 0.01,
+            "max": 0.07
+          },
+          "crit_chance": {
+            "min": 0.03,
+            "max": 0.09
+          },
+          "crit_dmg": {
+            "min": 1.45,
+            "max": 1.7
+          },
+          "penetration": {
+            "min": 0.5,
+            "max": 2.5
+          },
+          "cooldown_reduction": {
+            "min": 0.005,
+            "max": 0.03
+          }
+        },
+        "abilities": [
+          {
+            "code": "bateria_extra",
+            "slot": 1,
+            "level": 20,
+            "max": 20
+          },
+          {
+            "code": "folego_mineiro",
+            "slot": 12,
+            "level": 7,
+            "max": 20
+          }
+        ],
+        "marketable": false,
+        "in_market": false,
+        "ability_reroll_cost": "54000",
+        "ability_reroll_stone": "skill_stone_incomum",
+        "export_lock_secs": 1800
+      },
+      {
+        "id": "5217",
+        "rarity": 1,
+        "rank": "E",
+        "skin": 5,
+        "skin_birth": 2,
+        "name": "Cora",
+        "level": 22,
+        "xp": "21702",
+        "stars": 0,
+        "in_field": false,
+        "battle_allowed": true,
+        "slots": [
+          null,
+          "21999",
+          "43745",
+          null,
+          "6310",
+          "7716",
+          null,
+          null
+        ],
+        "stats": {
+          "dmg": 560.9579122739639,
+          "energia": 222.06621658232618,
+          "speed": 48.61777443894191,
+          "luck": 0.04107241151344712,
+          "crit_chance": 0.04386418309823714,
+          "crit_dmg": 1.4517677729378284,
+          "penetration": 3.2130014120100467,
+          "cooldown_reduction": 0.016416374426543933,
+          "power": 3648.0587820391365
+        },
+        "birth_stats": {
+          "dmg": 96.49814031160241,
+          "energia": 129.63424646617898,
+          "speed": 48.58036755592385,
+          "luck": 0.021903829513447125,
+          "crit_chance": 0.04386418309823714,
+          "crit_dmg": 1.4517677729378284,
+          "penetration": 0.5355002353350078,
+          "cooldown_reduction": 0.016416374426543933
+        },
+        "ability_points_total": 22,
+        "ability_points_spent": 22,
+        "stat_points_available": 0,
+        "stat_ranges": {
+          "dmg": {
+            "min": 65,
+            "max": 110
+          },
+          "energia": {
+            "min": 120,
+            "max": 160
+          },
+          "speed": {
+            "min": 47,
+            "max": 51.5
+          },
+          "luck": {
+            "min": 0.01,
+            "max": 0.07
+          },
+          "crit_chance": {
+            "min": 0.03,
+            "max": 0.09
+          },
+          "crit_dmg": {
+            "min": 1.45,
+            "max": 1.7
+          },
+          "penetration": {
+            "min": 0.5,
+            "max": 2.5
+          },
+          "cooldown_reduction": {
+            "min": 0.005,
+            "max": 0.03
+          }
+        },
+        "abilities": [
+          {
+            "code": "fantasma",
+            "slot": 5,
+            "level": 17,
+            "max": 20
+          },
+          {
+            "code": "ponta_diamante",
+            "slot": 6,
+            "level": 5,
+            "max": 20
+          }
+        ],
+        "marketable": false,
+        "in_market": false,
+        "ability_reroll_cost": "44000",
+        "ability_reroll_stone": "skill_stone_incomum"
+      }
+    ]
+  }
+}

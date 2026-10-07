@@ -39,6 +39,7 @@ describe('the committed fixtures are scrubbed (D19 — the repo is public)', () 
       'api-bodies-after.json',
       'api-bodies.json',
       'collections-state.json',
+      'roster-optional-keys.json',
       'rotation-ready.json',
     ]);
   });

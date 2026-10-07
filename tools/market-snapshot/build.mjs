@@ -161,7 +161,7 @@ async function fetchSearchPage(url) {
   }
 }
 
-async function fetchPriceOverview(url) {
+async function fetchPriceOverview(url, currency) {
   let res;
   try {
     res = await fetch(url, {
@@ -176,7 +176,7 @@ async function fetchPriceOverview(url) {
   }
   if (!res.ok) return { ok: false, rateLimited: false };
   try {
-    return { ok: true, quote: parsePriceOverview(await res.json()) };
+    return { ok: true, quote: parsePriceOverview(await res.json(), currency) };
   } catch {
     return { ok: false, rateLimited: false };
   }
