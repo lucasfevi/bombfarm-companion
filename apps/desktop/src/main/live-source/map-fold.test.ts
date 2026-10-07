@@ -4,6 +4,7 @@ import type { LiveTick } from '@bombfarm/contracts';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { describe, expect, it } from 'vitest';
 import { readCaptureRecords, type CaptureRecord } from './capture-format.js';
+import { wikiFactsFor as realWikiFactsFor } from './live-source.js';
 import { MapFold, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
 import { TlsConnections, type TapEvent } from './tls-stream.js';
 
@@ -13,23 +14,8 @@ function baseTick(overrides: Partial<LiveTick> = {}): LiveTick {
 
 const STUB_ECONOMY = { xpPerProp: 10, averageGoldPerProp: 100, averageGoldPerClear: 5_000 };
 
-/** The production adapter, duplicated here rather than imported: `live-source.ts` keeps it
- *  private, and the capture cases below need the real wiki numbers, not a stub. */
-function realWikiFactsFor(phase: number, boosts: MapAccountBoosts): MapWikiFacts | null {
-  const intel = computePhaseIntelGlobal(phase, { teamCoinPct: boosts.teamCoinPct, xpMult: boosts.xpMult });
-  if (!intel) return null;
-  return {
-    propsTotal: intel.propCount,
-    economy: {
-      xpPerProp: intel.xpPerPropActual,
-      averageGoldPerProp: intel.weightedAvgGoldActual,
-      averageGoldPerClear: intel.totalMapGoldActual,
-    },
-  };
-}
-
 function makeFold(
-  wikiFactsFor: (phase: number, boosts: MapAccountBoosts) => MapWikiFacts | null = () => ({
+  wikiFactsFor: (phase: number, boosts: MapAccountBoosts, returnWindow: boolean) => MapWikiFacts | null = () => ({
     propsTotal: 50,
     economy: STUB_ECONOMY,
   }),
@@ -188,7 +174,7 @@ describe('MapFold: the map economy', () => {
     unboosted.consumeTick(baseTick({ phase: 61 }), 1);
 
     const boosted = makeFold(realWikiFactsFor);
-    boosted.setAccountBoosts({ xpMult: 1.5821538462, teamCoinPct: 196.7708333, collectionGoldPct: 0 });
+    boosted.setAccountBoosts({ xpMult: 1.5821538462, teamCoinPct: 196.7708333, collectionGoldPct: 0, pass: false });
     boosted.consumeTick(baseTick({ phase: 61 }), 1);
 
     const plain = unboosted.current?.economy;
@@ -203,7 +189,7 @@ describe('MapFold: the map economy', () => {
     fold.consumeTick(baseTick({ phase: 61 }), 1);
     const before = fold.current?.economy?.xpPerProp ?? 0;
 
-    fold.setAccountBoosts({ xpMult: 2, teamCoinPct: 0, collectionGoldPct: 0 });
+    fold.setAccountBoosts({ xpMult: 2, teamCoinPct: 0, collectionGoldPct: 0, pass: false });
     const after = fold.current?.economy?.xpPerProp ?? 0;
 
     expect(after).toBeCloseTo(before * 2, 6);
@@ -222,7 +208,7 @@ describe('MapFold: the map economy', () => {
     let calls = 0;
     const fold = makeFold((phase, boosts) => {
       calls += 1;
-      return realWikiFactsFor(phase, boosts);
+      return realWikiFactsFor(phase, boosts, false);
     });
     for (let sequence = 1; sequence <= 50; sequence += 1) {
       fold.consumeTick(baseTick({ phase: 61, roomHp: 255 - sequence }), sequence);
@@ -233,7 +219,7 @@ describe('MapFold: the map economy', () => {
 
   it('keeps the account boosts across a reset — a reset drops what the stream said, not what the account said', () => {
     const fold = makeFold(realWikiFactsFor);
-    fold.setAccountBoosts({ xpMult: 2, teamCoinPct: 0, collectionGoldPct: 0 });
+    fold.setAccountBoosts({ xpMult: 2, teamCoinPct: 0, collectionGoldPct: 0, pass: false });
     fold.consumeTick(baseTick({ phase: 61 }), 1);
     const boosted = fold.current?.economy?.xpPerProp ?? 0;
 
@@ -244,7 +230,7 @@ describe('MapFold: the map economy', () => {
   });
 
   it('matches the planner’s own figures for the same phase and boosts, so the two surfaces cannot drift', () => {
-    const boosts: MapAccountBoosts = { xpMult: 1.5821538462, teamCoinPct: 196.7708333, collectionGoldPct: 0 };
+    const boosts: MapAccountBoosts = { xpMult: 1.5821538462, teamCoinPct: 196.7708333, collectionGoldPct: 0, pass: false };
     const fold = makeFold(realWikiFactsFor);
     fold.setAccountBoosts(boosts);
     fold.consumeTick(baseTick({ phase: 61 }), 1);
@@ -265,6 +251,51 @@ describe('MapFold: the map economy', () => {
       (map?.economy?.averageGoldPerProp ?? 0) * (map?.propsTotal ?? 0),
       6,
     );
+  });
+});
+
+describe('MapFold: the Pass and the Return Bonus window', () => {
+  const NO_WINDOW = baseTick({ phase: 61 });
+  const IN_WINDOW = baseTick({ phase: 61, bonusSeconds: 30, bonusMultiplier: 2 });
+  const BOOSTS = { xpMult: 1.5821538462, teamCoinPct: 196.7708333, collectionGoldPct: 0 };
+
+  function economyOf(boosts: MapAccountBoosts, tick: LiveTick) {
+    const fold = makeFold(realWikiFactsFor);
+    fold.setAccountBoosts(boosts);
+    fold.consumeTick(tick, 1);
+    const economy = fold.current?.economy;
+    if (!economy) throw new Error('expected an economy');
+    return economy;
+  }
+
+  const bare = economyOf({ ...BOOSTS, pass: false }, NO_WINDOW);
+
+  it('adds the Pass to XP and gold on every map, window or not: 1.30 and 1.15 bare, 2.30 and 2.15 inside a window', () => {
+    const outside = economyOf({ ...BOOSTS, pass: true }, NO_WINDOW);
+    const inside = economyOf({ ...BOOSTS, pass: true }, IN_WINDOW);
+    expect(outside.xpPerProp / bare.xpPerProp).toBeCloseTo(1.3, 10);
+    expect(inside.xpPerProp / bare.xpPerProp).toBeCloseTo(2.3, 10);
+    expect(outside.averageGoldPerProp / bare.averageGoldPerProp).toBeCloseTo(1.15, 10);
+    expect(inside.averageGoldPerProp / bare.averageGoldPerProp).toBeCloseTo(2.15, 10);
+    expect(inside.averageGoldPerClear / bare.averageGoldPerClear).toBeCloseTo(2.15, 10);
+  });
+
+  it('without the Pass a window adds only the standard +50%', () => {
+    const inside = economyOf({ ...BOOSTS, pass: false }, IN_WINDOW);
+    expect(inside.xpPerProp / bare.xpPerProp).toBeCloseTo(1.5, 10);
+    expect(inside.averageGoldPerProp / bare.averageGoldPerProp).toBeCloseTo(1.5, 10);
+  });
+
+  it('follows the window as ticks open and close it, and re-prices when the Pass is gained', () => {
+    const fold = makeFold(realWikiFactsFor);
+    fold.setAccountBoosts({ ...BOOSTS, pass: false });
+    fold.consumeTick(IN_WINDOW, 1);
+    const opened = fold.current?.economy?.xpPerProp ?? 0;
+    fold.consumeTick(NO_WINDOW, 2);
+    expect(fold.current?.economy?.xpPerProp).toBeCloseTo(bare.xpPerProp, 10);
+    expect(opened).toBeGreaterThan(bare.xpPerProp);
+    fold.setAccountBoosts({ ...BOOSTS, pass: true });
+    expect(fold.current?.economy?.xpPerProp).toBeCloseTo(bare.xpPerProp * 1.3, 10);
   });
 });
 

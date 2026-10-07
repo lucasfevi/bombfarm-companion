@@ -20,7 +20,7 @@ import { farmPtBR } from './pt-BR';
  * `colHits` ('Hits'): the loanword the pt-BR copy already uses for a hit elsewhere in this table.
  * `phasesColNormalHit` ('Normal'): a real Portuguese word with the identical spelling — the
  * full-length `phasesNormalHit` next to it IS translated ('Hit normal').
- * `farmRankingReturnBonusVip` ('VIP') / `phasesJaulaWindowVip` ('VIP {dur}'): 'VIP' is the same
+ * `phasesJaulaWindowVip` ('VIP {dur}'): 'VIP' is the same
  * initialism in both, and `{dur}` arrives already localised.
  */
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof farmEn)[] = [
@@ -30,7 +30,6 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof farmEn)[] = [
   'mitPct',
   'farmRankingColXp',
   'phasesColNormalHit',
-  'farmRankingReturnBonusVip',
   'phasesJaulaWindowVip',
 ];
 

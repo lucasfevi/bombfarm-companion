@@ -46,6 +46,8 @@ export type FarmInputs = {
   maxPhase: number | null;
   farmPoolOverrides: Record<string, boolean>;
   farmReturnBonus: ReturnBonusMode;
+  /** The account owns the Pass. Absent reads as not owned. */
+  farmPass?: boolean;
   /**
    * The team auras to price at their cap the whole time (`FarmAccount.aurasAtCap`). Compared by
    * REFERENCE in the dep tuple like `farmPoolOverrides`, so a host that offers no control passes

@@ -40,6 +40,8 @@ import {
   type RosterHeroAbilities,
 } from '@bombfarm/domain/live';
 import { collectionFromSave } from '@bombfarm/domain/model';
+import { economyMultipliers } from '@bombfarm/domain/farm-rate';
+import { passActive } from '@bombfarm/domain/import-save';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { xpPerProp } from '@bombfarm/domain/phase-wiki';
 import { gameProcessQuery, runPowerShellAsync, runPowerShellSync } from '../game-reader/process.js';
@@ -489,19 +491,20 @@ function fieldHeroesFromRotation(rotation: RotationSnapshot): readonly LiveTickH
  * `xpPerPropActual` and `weightedAvgGoldActual` are the boost-applied variants; their `*Wiki`
  * siblings are the unboosted base and are deliberately not what a player-facing panel shows.
  */
-function wikiFactsFor(phase: number, boosts: MapAccountBoosts): MapWikiFacts | null {
+export function wikiFactsFor(phase: number, boosts: MapAccountBoosts, returnWindow: boolean): MapWikiFacts | null {
   const intel = computePhaseIntelGlobal(phase, {
     teamCoinPct: boosts.teamCoinPct,
     xpMult: boosts.xpMult,
     collectionGoldPct: boosts.collectionGoldPct,
   });
   if (!intel) return null;
+  const economy = economyMultipliers({ returnBonus: returnWindow ? 'on' : 'off', pass: boosts.pass });
   return {
     propsTotal: intel.propCount,
     economy: {
-      xpPerProp: intel.xpPerPropActual,
-      averageGoldPerProp: intel.weightedAvgGoldActual,
-      averageGoldPerClear: intel.totalMapGoldActual,
+      xpPerProp: intel.xpPerPropActual * economy.xp,
+      averageGoldPerProp: intel.weightedAvgGoldActual * economy.gold,
+      averageGoldPerClear: intel.totalMapGoldActual * economy.gold,
     },
   };
 }
@@ -538,6 +541,13 @@ function readXpMult(skills: Record<string, unknown> | undefined): number | undef
 
 /** `/state`'s gold, the same digit-string wire encoding `tls-stream.ts`'s `readWireMoney` parses —
  *  a non-numeric value is ignored rather than becoming `NaN`. */
+/** `account.vip_until`, unix seconds. */
+function readVipUntil(account: Record<string, unknown> | undefined): number | undefined {
+  if (!isPlainObject(account)) return undefined;
+  const value = account.vip_until;
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
 function readAccountGold(account: Record<string, unknown> | undefined): number | undefined {
   if (!isPlainObject(account)) return undefined;
   const value = account.gold;
@@ -614,6 +624,7 @@ export class LiveSource {
    *  {@link #xpMult} is. */
   #teamCoinPct: number | undefined;
   #collectionGoldPct: number | undefined;
+  #vipUntil: number | undefined;
   /** `undefined` means no binding has been observed yet, the state a `null` read from the store
    *  must never be mistaken for — see {@link #trackAccountBinding}. */
   #lastBinding: string | undefined;
@@ -749,10 +760,12 @@ export class LiveSource {
     this.#xpMult = readXpMult(view.payload.skills) ?? this.#xpMult;
     this.#teamCoinPct = readTeamCoinPct(view.payload.skills) ?? this.#teamCoinPct;
     this.#collectionGoldPct = readCollectionGoldPct(view.payload.skills) ?? this.#collectionGoldPct;
+    this.#vipUntil = readVipUntil(view.payload.account) ?? this.#vipUntil;
     this.#mapFold.setAccountBoosts({
       xpMult: this.#xpMult ?? 1,
       teamCoinPct: this.#teamCoinPct ?? 0,
       collectionGoldPct: this.#collectionGoldPct ?? 0,
+      pass: passActive(this.#vipUntil, this.#now()),
     });
     this.#trackAccountBinding(view.store.binding);
     if (Array.isArray(view.payload.heroes)) this.#damageFold.setRoster(view.payload.heroes);

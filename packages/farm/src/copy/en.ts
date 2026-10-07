@@ -135,9 +135,12 @@ export const farmEn = {
   farmRankingContentionDescMaxSlots:
     "{pct} of the time a rested hero waits on the bench because all {slots} of your field slots are taken. {slots} is the maximum, so this one is structural — there are no more slots to buy. The gold/hr estimate already charges this wait: it costs about {cost} of the rate you would get with room for everyone. Turning heroes off above lowers the waiting too, but usually lowers the total as well: a hero that only sometimes gets a slot still earns while it has one.",
   farmRankingReturnBonusLabel: "Return Bonus",
-  farmRankingReturnBonusOff: "Off",
-  farmRankingReturnBonusOn: "On",
-  farmRankingReturnBonusVip: "VIP",
+  farmRankingPassLabel: "Pass",
+  farmRankingPassOn: "On",
+  farmRankingPassOff: "Off",
+  farmRankingPassTip:
+    "+15% gold, +30% XP and +30% drop chance, always on. With the Pass the Return Bonus is +100% instead of +50%.",
+  farmRankingPassTipDetected: "Read from your account.",
   farmRankingGateBadge: "Gate",
   farmRankingOneShotYes: "Yes",
   farmRankingOneShotNo: "No",

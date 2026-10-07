@@ -26,6 +26,9 @@ export const en = {
   // onlinePlayers* — the count beside the game connection at the status strip's left.
   onlinePlayersLabel: 'Players',
   onlinePlayersTip: 'Players online in the game right now, as its server counts them. Refreshed every few minutes.',
+  // passFeed* — the time left on the Pass, beside the players count.
+  passFeedLabel: 'Pass',
+  passFeedTip: 'Time left on your Pass.',
   shellUpdateAvailable: 'Update available',
   shellUpdateDownloading: 'Updating… {percent}%',
   shellUpdateReady: 'Restart to update',

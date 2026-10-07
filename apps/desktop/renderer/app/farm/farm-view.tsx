@@ -314,6 +314,7 @@ function FarmScreen({
       heroes,
       poolEntries,
       returnBonus: inputs.farmReturnBonus,
+      pass: inputs.farmPass ?? false,
       maxPhase: inputs.maxPhase,
       fieldSlots: inputs.fieldSlots,
       currentPhase: view.phase,
