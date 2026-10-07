@@ -161,6 +161,7 @@ export type LiveEvent =
       readonly onFieldHeroIds: readonly string[];
       readonly earnings: LiveEarnings | null;
       readonly map: LiveMap | null;
+      readonly damage: LiveDamage | null;
     };
 
 /**
