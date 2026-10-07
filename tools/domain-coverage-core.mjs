@@ -1,0 +1,593 @@
+export const METRICS = ['statements', 'branches', 'functions', 'lines'];
+
+export const TOLERANCE_PP = 0;
+
+export const MIN_BASELINE_FILES = 108;
+
+export const KIND = {
+  regression: 'regression',
+  unrecordedFile: 'unrecorded-file',
+  unallowedZeroCoverage: 'unallowed-zero-coverage',
+  staleAllowance: 'stale-allowance',
+  invalidAllowance: 'invalid-allowance',
+  staleBaselineEntry: 'stale-baseline-entry',
+  baselineBelowFloor: 'baseline-below-floor',
+  measurementBelowFloor: 'measurement-below-floor',
+  sourceNotAccounted: 'source-not-accounted',
+  unmeasuredNowMeasured: 'unmeasured-now-measured',
+  staleUnmeasuredEntry: 'stale-unmeasured-entry',
+  listedTwice: 'listed-twice',
+  invalidBaseline: 'invalid-baseline',
+  staleWaiver: 'stale-waiver',
+  invalidWaiver: 'invalid-waiver',
+  loweredWithoutWaiver: 'lowered-without-waiver',
+  removedWhileOnDisk: 'removed-while-on-disk',
+  runtimeInUnmeasured: 'runtime-in-unmeasured',
+  allowanceForRuntimeFreeFile: 'allowance-for-runtime-free-file',
+};
+
+export const INITIAL_ZERO_COVERAGE_REASON = 'recorded at baseline; no test exercises it yet';
+
+export const NEVER_LOADED_REASON = 'never loaded by a domain test; the coverage report has no entry for it';
+
+function requireRuntimeFiles(runtimeFiles) {
+  if (!Array.isArray(runtimeFiles)) {
+    throw new Error('runtimeFiles is required: the source files with runtime code, from tools/domain-coverage-runtime.mjs');
+  }
+  return new Set(runtimeFiles);
+}
+
+export function emptyBaseline() {
+  return { files: {}, unmeasured: [], zeroCoverageAllowed: {}, waivers: {} };
+}
+
+export function percent(covered, total) {
+  if (total === 0) return 100;
+  return Math.round((covered * 10000) / total) / 100;
+}
+
+function hundredths(value) {
+  return Math.round(value * 100);
+}
+
+function deltaPp(from, to) {
+  return (hundredths(to) - hundredths(from)) / 100;
+}
+
+function sortedUnique(items) {
+  return [...new Set(items)].sort(compareCodeUnits);
+}
+
+function compareCodeUnits(a, b) {
+  if (a < b) return -1;
+  return a > b ? 1 : 0;
+}
+
+function finding(kind, file, message, extra = {}) {
+  return { kind, file, metric: null, baseline: null, measured: null, deltaPp: null, message, ...extra };
+}
+
+function metricsOf(entry) {
+  return Object.fromEntries(METRICS.map((metric) => [metric, entry[metric]]));
+}
+
+function formatPp(value) {
+  return `${value > 0 ? '+' : ''}${value}`;
+}
+
+export function normalizeSummary(summary, packageDirectory) {
+  const packagePrefix = `${toForwardSlashes(packageDirectory).replace(/\/+$/, '')}/`.toLowerCase();
+  const files = {};
+  const outsideSource = [];
+  for (const [key, entry] of Object.entries(summary)) {
+    if (key === 'total') continue;
+    const forward = toForwardSlashes(key);
+    const relative = forward.toLowerCase().startsWith(packagePrefix)
+      ? forward.slice(packagePrefix.length)
+      : forward;
+    if (!relative.startsWith('src/')) {
+      outsideSource.push(key);
+      continue;
+    }
+    files[relative] = {
+      ...Object.fromEntries(METRICS.map((metric) => [metric, percent(entry[metric].covered, entry[metric].total)])),
+      statementsCovered: entry.statements.covered,
+      statementsTotal: entry.statements.total,
+    };
+  }
+  if (outsideSource.length > 0) {
+    throw new Error(
+      `the coverage summary names files outside ${packageDirectory}/src: ${outsideSource.sort(compareCodeUnits).join(', ')}`,
+    );
+  }
+  return files;
+}
+
+function toForwardSlashes(value) {
+  return value.replaceAll('\\', '/');
+}
+
+export function overallOf(summary) {
+  const total = summary.total;
+  return Object.fromEntries(METRICS.map((metric) => [metric, percent(total[metric].covered, total[metric].total)]));
+}
+
+export function canonicalBaselineText(baseline) {
+  const lines = ['{'];
+  const sections = [
+    ['files', sortedEntries(baseline.files).map(([file, entry]) => `    ${JSON.stringify(file)}: ${metricsLine(entry)}`), '{', '}'],
+    ['unmeasured', sortedUnique(baseline.unmeasured).map((file) => `    ${JSON.stringify(file)}`), '[', ']'],
+    [
+      'zeroCoverageAllowed',
+      sortedEntries(baseline.zeroCoverageAllowed).map(([file, reason]) => `    ${JSON.stringify(file)}: ${JSON.stringify(reason)}`),
+      '{',
+      '}',
+    ],
+    [
+      'waivers',
+      sortedEntries(baseline.waivers).map(([file, waiver]) => `    ${JSON.stringify(file)}: ${waiverLine(waiver)}`),
+      '{',
+      '}',
+    ],
+  ];
+  sections.forEach(([name, entries, open, close], index) => {
+    const separator = index === sections.length - 1 ? '' : ',';
+    if (entries.length === 0) {
+      lines.push(`  ${JSON.stringify(name)}: ${open}${close}${separator}`);
+      return;
+    }
+    lines.push(`  ${JSON.stringify(name)}: ${open}`);
+    entries.forEach((entry, entryIndex) => lines.push(entryIndex === entries.length - 1 ? entry : `${entry},`));
+    lines.push(`  ${close}${separator}`);
+  });
+  lines.push('}');
+  return `${lines.join('\n')}\n`;
+}
+
+function sortedEntries(record) {
+  return Object.entries(record).sort(([a], [b]) => compareCodeUnits(a, b));
+}
+
+function metricsLine(entry) {
+  const parts = METRICS.map((metric) => `${JSON.stringify(metric)}: ${JSON.stringify(entry[metric])}`);
+  return `{ ${parts.join(', ')} }`;
+}
+
+function waiverLine(waiver) {
+  const parts = [
+    `"reason": ${JSON.stringify(waiver.reason)}`,
+    ...METRICS.map((metric) => `${JSON.stringify(metric)}: ${JSON.stringify(waiver[metric])}`),
+  ];
+  return `{ ${parts.join(', ')} }`;
+}
+
+function isPlainRecord(value) {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isPercentage(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100;
+}
+
+function nonEmptyText(value) {
+  return typeof value === 'string' && value.trim() !== '';
+}
+
+function shapeFindings(baseline) {
+  if (!isPlainRecord(baseline)) {
+    return [finding(KIND.invalidBaseline, null, 'the baseline is not a JSON object')];
+  }
+  const findings = [];
+  const section = (name, ok) => {
+    if (!ok(baseline[name])) {
+      findings.push(finding(KIND.invalidBaseline, null, `baseline.${name} is missing or has the wrong type`));
+      return false;
+    }
+    return true;
+  };
+  const filesOk = section('files', isPlainRecord);
+  const unmeasuredOk = section('unmeasured', (value) => Array.isArray(value) && value.every((item) => typeof item === 'string'));
+  const allowedOk = section('zeroCoverageAllowed', isPlainRecord);
+  const waiversOk = section('waivers', isPlainRecord);
+
+  if (filesOk) {
+    for (const [file, entry] of Object.entries(baseline.files)) {
+      for (const metric of METRICS) {
+        if (!isPlainRecord(entry) || !isPercentage(entry[metric])) {
+          findings.push(
+            finding(KIND.invalidBaseline, file, `${file}: ${metric} is not a number between 0 and 100`, { metric }),
+          );
+        }
+      }
+    }
+  }
+  if (unmeasuredOk) {
+    const duplicates = baseline.unmeasured.filter((file, index) => baseline.unmeasured.indexOf(file) !== index);
+    for (const file of sortedUnique(duplicates)) {
+      findings.push(finding(KIND.invalidBaseline, file, `${file} is listed more than once in unmeasured`));
+    }
+  }
+  if (allowedOk) {
+    for (const [file, reason] of Object.entries(baseline.zeroCoverageAllowed)) {
+      if (!nonEmptyText(reason)) {
+        findings.push(finding(KIND.invalidAllowance, file, `${file}: the zero-coverage allowance has no reason`));
+      }
+    }
+  }
+  if (waiversOk) {
+    for (const [file, waiver] of Object.entries(baseline.waivers)) {
+      if (!isPlainRecord(waiver) || !nonEmptyText(waiver.reason)) {
+        findings.push(finding(KIND.invalidWaiver, file, `${file}: the waiver has no reason`));
+        continue;
+      }
+      for (const metric of METRICS) {
+        if (!isPercentage(waiver[metric])) {
+          findings.push(
+            finding(KIND.invalidWaiver, file, `${file}: the waiver's ${metric} is not a number between 0 and 100`, { metric }),
+          );
+        }
+      }
+    }
+  }
+  return findings;
+}
+
+export function baselineIntegrityFindings({ baseline, sourceFiles, runtimeFiles }) {
+  const runtime = requireRuntimeFiles(runtimeFiles);
+  const shape = shapeFindings(baseline);
+  if (shape.some((item) => item.kind === KIND.invalidBaseline && item.file === null)) return shape;
+
+  const onDisk = new Set(sourceFiles);
+  const recorded = Object.keys(baseline.files);
+  const unmeasured = new Set(baseline.unmeasured);
+  const allowed = baseline.zeroCoverageAllowed;
+  const findings = [...shape];
+
+  if (recorded.length < MIN_BASELINE_FILES) {
+    findings.push(
+      finding(
+        KIND.baselineBelowFloor,
+        null,
+        `the baseline records ${recorded.length} files, below the floor of ${MIN_BASELINE_FILES} — a truncated baseline must fail, not pass`,
+      ),
+    );
+  }
+  for (const file of sortedUnique(recorded.filter((candidate) => !onDisk.has(candidate)))) {
+    findings.push(
+      finding(KIND.staleBaselineEntry, file, `${file} is in the baseline but no longer exists on disk — run the update command to remove it`),
+    );
+  }
+  for (const file of sortedUnique(baseline.unmeasured.filter((candidate) => !onDisk.has(candidate)))) {
+    findings.push(
+      finding(KIND.staleUnmeasuredEntry, file, `${file} is in the unmeasured list but no longer exists on disk — run the update command to remove it`),
+    );
+  }
+  for (const file of sortedUnique(recorded.filter((candidate) => unmeasured.has(candidate)))) {
+    findings.push(finding(KIND.listedTwice, file, `${file} is both in the baseline and in the unmeasured list`));
+  }
+  for (const file of sortedUnique(baseline.unmeasured.filter((candidate) => candidate in allowed))) {
+    findings.push(finding(KIND.listedTwice, file, `${file} is both in the unmeasured list and in zeroCoverageAllowed`));
+  }
+  for (const file of sortedUnique(baseline.unmeasured.filter((candidate) => onDisk.has(candidate) && runtime.has(candidate)))) {
+    findings.push(
+      finding(
+        KIND.runtimeInUnmeasured,
+        file,
+        `${file} is in the unmeasured list but has runtime code; a file no test loads belongs in zeroCoverageAllowed with a reason`,
+      ),
+    );
+  }
+  const accounted = (candidate) => candidate in baseline.files || unmeasured.has(candidate) || candidate in allowed;
+  for (const file of sortedUnique(sourceFiles.filter((candidate) => !accounted(candidate)))) {
+    findings.push(
+      finding(
+        KIND.sourceNotAccounted,
+        file,
+        `${file} exists under src but is in none of the baseline, the unmeasured list and zeroCoverageAllowed — run the update command`,
+      ),
+    );
+  }
+  for (const file of sortedUnique(recorded.filter((candidate) => baseline.files[candidate].statements === 0 && !(candidate in allowed)))) {
+    findings.push(
+      finding(
+        KIND.unallowedZeroCoverage,
+        file,
+        `${file} has 0% statement coverage and no zeroCoverageAllowed entry; a source file nothing exercises needs an explicit reviewed reason`,
+        { baseline: 0 },
+      ),
+    );
+  }
+  for (const file of Object.keys(allowed).sort(compareCodeUnits)) {
+    if (!onDisk.has(file)) {
+      findings.push(finding(KIND.staleAllowance, file, `${file} has a zeroCoverageAllowed entry but no longer exists on disk — remove the entry`));
+    } else if (file in baseline.files && baseline.files[file].statements !== 0) {
+      findings.push(
+        finding(
+          KIND.staleAllowance,
+          file,
+          `${file} has a zeroCoverageAllowed entry but the baseline records ${baseline.files[file].statements}% statements — remove the entry`,
+          { baseline: baseline.files[file].statements },
+        ),
+      );
+    } else if (!(file in baseline.files) && !runtime.has(file)) {
+      findings.push(
+        finding(
+          KIND.allowanceForRuntimeFreeFile,
+          file,
+          `${file} has a zeroCoverageAllowed entry but no coverage row and no runtime code; a runtime-free file belongs in the unmeasured list`,
+        ),
+      );
+    }
+  }
+  for (const file of Object.keys(baseline.waivers).sort(compareCodeUnits)) {
+    if (!onDisk.has(file)) {
+      findings.push(finding(KIND.staleWaiver, file, `${file} has a waiver but no longer exists on disk — remove the waiver`));
+    }
+  }
+  return findings;
+}
+
+export function measurementFindings(measured) {
+  const count = Object.keys(measured).length;
+  if (count >= MIN_BASELINE_FILES) return [];
+  return [
+    finding(
+      KIND.measurementBelowFloor,
+      null,
+      `the measurement covers ${count} files, below the floor of ${MIN_BASELINE_FILES} — a run that measured almost nothing must fail, not compare against an empty set`,
+    ),
+  ];
+}
+
+function regressionsAgainst(baseline, measured, sourceFiles) {
+  const onDisk = new Set(sourceFiles);
+  const findings = [];
+  for (const file of Object.keys(baseline.files).sort(compareCodeUnits)) {
+    if (!onDisk.has(file)) continue;
+    const now = measured[file];
+    if (now === undefined) {
+      findings.push(
+        finding(
+          KIND.regression,
+          file,
+          `${file} is in the baseline but produced no coverage in this measurement — it has regressed to nothing`,
+          { metric: 'all', baseline: metricsOf(baseline.files[file]), measured: null },
+        ),
+      );
+      continue;
+    }
+    for (const metric of METRICS) {
+      const recorded = baseline.files[file][metric];
+      if (hundredths(now[metric]) < hundredths(recorded) - hundredths(TOLERANCE_PP)) {
+        const delta = deltaPp(recorded, now[metric]);
+        findings.push(
+          finding(
+            KIND.regression,
+            file,
+            `${file}: ${metric} fell from ${recorded}% to ${now[metric]}% (${formatPp(delta)} pp)`,
+            { metric, baseline: recorded, measured: now[metric], deltaPp: delta },
+          ),
+        );
+      }
+    }
+  }
+  return findings;
+}
+
+export function evaluateAgainstBaseline({ baseline, measured, sourceFiles, runtimeFiles }) {
+  const integrity = baselineIntegrityFindings({ baseline, sourceFiles, runtimeFiles });
+  if (integrity.some((item) => item.kind === KIND.invalidBaseline && item.file === null)) return integrity;
+
+  const findings = [...integrity, ...measurementFindings(measured)];
+  findings.push(...regressionsAgainst(baseline, measured, sourceFiles));
+
+  const unmeasured = new Set(baseline.unmeasured);
+  const allowed = baseline.zeroCoverageAllowed;
+
+  for (const file of Object.keys(measured).sort(compareCodeUnits)) {
+    const entry = measured[file];
+    if (!(file in baseline.files) && !unmeasured.has(file)) {
+      findings.push(
+        finding(KIND.unrecordedFile, file, `${file} is measured but has no baseline row — run the update command`, {
+          measured: metricsOf(entry),
+        }),
+      );
+    }
+    if (unmeasured.has(file)) {
+      findings.push(
+        finding(KIND.unmeasuredNowMeasured, file, `${file} is in the unmeasured list but the measurement now reports it — move it to the baseline with the update command`),
+      );
+    }
+    if (entry.statementsTotal > 0 && entry.statementsCovered === 0 && !(file in allowed) && !(file in baseline.files && baseline.files[file].statements === 0)) {
+      findings.push(
+        finding(
+          KIND.unallowedZeroCoverage,
+          file,
+          `${file} has 0 of ${entry.statementsTotal} statements covered and no zeroCoverageAllowed entry; a source file nothing exercises needs an explicit reviewed reason`,
+          { measured: 0 },
+        ),
+      );
+    }
+  }
+  for (const file of Object.keys(allowed).sort(compareCodeUnits)) {
+    const entry = measured[file];
+    const recordedStatements = baseline.files[file]?.statements;
+    if (entry !== undefined && entry.statementsCovered > 0 && (recordedStatements === undefined || recordedStatements === 0)) {
+      findings.push(
+        finding(
+          KIND.staleAllowance,
+          file,
+          `${file} has a zeroCoverageAllowed entry but is now at ${entry.statements}% statements — remove the entry`,
+          { measured: entry.statements },
+        ),
+      );
+    }
+  }
+  return dedupe(findings);
+}
+
+function dedupe(findings) {
+  const seen = new Set();
+  return findings.filter((item) => {
+    const key = JSON.stringify([item.kind, item.file, item.metric, item.message]);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+export function planUpdate({ baseline, measured, sourceFiles, runtimeFiles, waivers = [], bootstrap = false }) {
+  const runtime = requireRuntimeFiles(runtimeFiles);
+  const refusals = [...measurementFindings(measured)];
+  const onDisk = new Set(sourceFiles);
+  const waiverByFile = new Map(waivers.map((waiver) => [waiver.file, waiver.reason]));
+
+  for (const [file, reason] of waiverByFile) {
+    if (!nonEmptyText(reason)) {
+      refusals.push(finding(KIND.invalidWaiver, file, `${file}: a waiver needs a non-empty reason`));
+    }
+  }
+
+  const regressions = regressionsAgainst(baseline, measured, sourceFiles);
+  const regressedFiles = new Set(regressions.map((item) => item.file));
+  const vanished = new Set(regressions.filter((item) => item.measured === null).map((item) => item.file));
+
+  for (const file of waiverByFile.keys()) {
+    if (!regressedFiles.has(file)) {
+      refusals.push(finding(KIND.invalidWaiver, file, `${file}: nothing to waive — it has not regressed against the baseline`));
+    } else if (vanished.has(file)) {
+      refusals.push(finding(KIND.invalidWaiver, file, `${file}: cannot be waived — it produced no coverage at all`));
+    }
+  }
+  refusals.push(...regressions.filter((item) => !waiverByFile.has(item.file) || vanished.has(item.file)));
+
+  const files = {};
+  for (const file of Object.keys(measured).sort(compareCodeUnits)) {
+    const now = measured[file];
+    const recorded = baseline.files[file];
+    if (recorded === undefined || waiverByFile.has(file)) {
+      files[file] = metricsOf(now);
+    } else {
+      files[file] = Object.fromEntries(METRICS.map((metric) => [metric, Math.max(recorded[metric], now[metric])]));
+    }
+  }
+
+  const neverLoaded = sourceFiles.filter((file) => !(file in measured) && runtime.has(file));
+  const unmeasured = bootstrap
+    ? sortedUnique(sourceFiles.filter((file) => !(file in measured) && !runtime.has(file)))
+    : sortedUnique(baseline.unmeasured.filter((file) => onDisk.has(file) && !(file in measured)));
+
+  const zeroCoverageAllowed = {};
+  for (const [file, reason] of Object.entries(baseline.zeroCoverageAllowed)) {
+    const now = measured[file];
+    const stillZero = now === undefined ? runtime.has(file) : now.statementsTotal > 0 && now.statementsCovered === 0;
+    if (onDisk.has(file) && stillZero) zeroCoverageAllowed[file] = reason;
+  }
+  if (bootstrap) {
+    for (const [file, now] of Object.entries(measured)) {
+      if (now.statementsTotal > 0 && now.statementsCovered === 0) zeroCoverageAllowed[file] = INITIAL_ZERO_COVERAGE_REASON;
+    }
+    for (const file of neverLoaded) zeroCoverageAllowed[file] = NEVER_LOADED_REASON;
+  }
+
+  const nextWaivers = {};
+  for (const [file, waiver] of Object.entries(baseline.waivers)) {
+    if (onDisk.has(file)) nextWaivers[file] = waiver;
+  }
+  for (const [file, reason] of waiverByFile) {
+    if (file in measured && !vanished.has(file)) nextWaivers[file] = { reason, ...metricsOf(measured[file]) };
+  }
+
+  const next = { files, unmeasured, zeroCoverageAllowed, waivers: nextWaivers };
+  const afterwards = baselineIntegrityFindings({ baseline: next, sourceFiles, runtimeFiles });
+  const needsReview = (item) => item.kind === KIND.unallowedZeroCoverage || item.kind === KIND.sourceNotAccounted;
+  const pendingReview = afterwards.filter(needsReview);
+  refusals.push(...afterwards.filter((item) => !needsReview(item)));
+
+  return {
+    refusals: dedupe(refusals),
+    pendingReview,
+    next,
+    changed: canonicalBaselineText(next) !== canonicalBaselineText(baseline),
+  };
+}
+
+export function guardBaseFindings({ base, head, sourceFiles }) {
+  if (base === null) return [];
+  const onDisk = new Set(sourceFiles);
+  const findings = [];
+  for (const file of Object.keys(base.files).sort(compareCodeUnits)) {
+    const before = base.files[file];
+    const after = head.files[file];
+    if (after === undefined) {
+      if (onDisk.has(file)) {
+        findings.push(
+          finding(KIND.removedWhileOnDisk, file, `${file} is recorded in the base baseline and still exists on disk, but head's baseline dropped it`),
+        );
+      }
+      continue;
+    }
+    const waivedAtHead = file in (head.waivers ?? {}) && !(file in (base.waivers ?? {}));
+    if (waivedAtHead) continue;
+    for (const metric of METRICS) {
+      if (hundredths(after[metric]) < hundredths(before[metric])) {
+        const delta = deltaPp(before[metric], after[metric]);
+        findings.push(
+          finding(
+            KIND.loweredWithoutWaiver,
+            file,
+            `${file}: recorded ${metric} was lowered from ${before[metric]}% to ${after[metric]}% (${formatPp(delta)} pp) with no new waiver`,
+            { metric, baseline: before[metric], measured: after[metric], deltaPp: delta },
+          ),
+        );
+      }
+    }
+  }
+  return findings;
+}
+
+export function leastCovered(measured, count = 10) {
+  return Object.entries(measured)
+    .map(([file, entry]) => ({ file, ...metricsOf(entry) }))
+    .sort((a, b) => a.statements - b.statements || compareCodeUnits(a.file, b.file))
+    .slice(0, count);
+}
+
+function overallLine(overall) {
+  return METRICS.map((metric) => `${metric} ${overall[metric]}%`).join(', ');
+}
+
+export function formatReport({ overall, measured, findings }) {
+  const lines = [`domain coverage: ${overallLine(overall)} (${Object.keys(measured).length} files)`, '', 'least covered files (statements):'];
+  for (const row of leastCovered(measured)) {
+    lines.push(`  ${String(row.statements).padStart(6)}%  ${row.file}`);
+  }
+  lines.push('');
+  if (findings.length === 0) {
+    lines.push('ratchet: no findings');
+  } else {
+    lines.push(`ratchet: ${findings.length} finding(s)`);
+    for (const item of findings) lines.push(`  [${item.kind}] ${item.message}`);
+  }
+  return `${lines.join('\n')}\n`;
+}
+
+export function formatMarkdownSummary({ title, overall, measured, findings }) {
+  const lines = [`## ${title}`, ''];
+  if (overall !== null) {
+    lines.push('| statements | branches | functions | lines |', '| ---: | ---: | ---: | ---: |');
+    lines.push(`| ${METRICS.map((metric) => `${overall[metric]}%`).join(' | ')} |`, '');
+  }
+  if (measured !== null) {
+    lines.push('Least covered files (statements):', '');
+    for (const row of leastCovered(measured)) lines.push(`- \`${row.file}\` ${row.statements}%`);
+    lines.push('');
+  }
+  if (findings.length === 0) {
+    lines.push('No findings.');
+  } else {
+    lines.push(`${findings.length} finding(s):`, '');
+    for (const item of findings) lines.push(`- \`${item.kind}\` ${item.message}`);
+  }
+  return `${lines.join('\n')}\n`;
+}
