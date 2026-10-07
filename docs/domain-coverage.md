@@ -30,12 +30,19 @@ so they contribute nothing to it.
   verified, not trusted: each entry is transpiled with the repository's `typescript` and must emit
   nothing but imports and re-exports, so a file with a function, constant or class cannot hide
   there.
-- A file with runtime code that the report has no entry for is a **never-loaded** file. Vitest adds
-  a never-loaded file at 0% by parsing its TypeScript source with a JavaScript parser and drops it
-  when that fails, so a never-loaded file with any TypeScript-only syntax (types, annotations) has no
-  report entry, while one written in plain JavaScript syntax shows up at 0%. That is why never-loaded
-  files are tracked as allowances: each is recorded in `zeroCoverageAllowed` with a reason and no
-  `files` row, so it is visible. Those entries are the work queue.
+- A file with runtime code that no domain test loads is a **never-loaded** file, and whether the
+  report lists it depends on the platform. Observed: the report from a Windows run (path containing
+  a space, Node 24) left such files out entirely, while the Linux CI run (Node 22) listed them at 0%.
+  The cause is not established. So never-loaded files are tracked as allowances: each is recorded in
+  `zeroCoverageAllowed` with a reason and no `files` row, so it is visible whichever report is used.
+  Those entries are the work queue.
+- The ratchet is deliberately neutral to the files whose presence depends on the platform. An
+  allowed never-loaded file that the report shows at 0% statements, and an `unmeasured` file that the
+  report happens to list, are both ignored; a never-loaded file shown above 0% fails as a stale
+  allowance and an unrecorded file, and an `unmeasured` file with runtime code still fails. `update`
+  writes the same baseline from either report. Consequently the overall percentages the tool prints
+  differ by platform (94.98% statements over 120 files from the Windows report, 94.33% over 129 files
+  from CI), while the per-file numbers of the 120 files both report are identical at tolerance 0.
 - Each pass's untested-file sweep prints a stack trace for every file it cannot parse — hundreds of
   lines of log noise, harmless. It must **not** be switched off with `--coverage.all=false`:
   measured on 2026-10-06, that dropped a recorded 0%-file from the merged report and failed the
@@ -64,9 +71,11 @@ project and 105 s for the solver pass, about 5.3 minutes (318 s) in all. Instrum
 take 345 s and 407 s, and about 740-760 s end to end (two runs: 757 s and 741 s), including the merge:
 roughly 2.4 times the plain run. Instrumented timing varies by up to about 2x: local end-to-end runs on
 an idle machine ranged from 741 s to 1072 s (main pass 324-653 s, solver pass 407-515 s). On
-`ubuntu-latest` the instrumented main pass took about 876 s and the solver pass about 1016 s: roughly
-32 minutes end to end, against about 2-3.5 minutes for each plain domain job. That is why this is its
-own CI job and not part of the test shards, and why its timeout is 60 minutes. If the wall time
+`ubuntu-latest` a run that completed took 21.5 minutes for the whole job (the measure step 21 minutes;
+per-pass blobs 596 s for the main pass and 660 s for the solver pass), against about 2 minutes for each
+plain domain job. An earlier CI run took longer, about 32 minutes, when a solver test reached its own
+900 s timeout, which the instrumentation-timeout rule tolerates. That is why this is its own CI job
+and not part of the test shards, and why its timeout stays at 60 minutes. If the wall time
 becomes a problem, the lever is to run the two passes in parallel jobs and merge their blobs in a
 third; that is not done here.
 
@@ -106,7 +115,7 @@ the long run.
 | Unaccounted source | a `.ts` file under `src` is in none of the baseline, the `unmeasured` list and `zeroCoverageAllowed` |
 | Runtime in unmeasured | an `unmeasured` file transpiles to anything but imports and re-exports |
 | Allowance without a row | an allowance has no `files` row and no runtime code (it belongs in `unmeasured`) |
-| Unmeasured now reported | a file in `unmeasured` appears in the measurement, or is also in the baseline |
+| Listed twice | a file is in `unmeasured` and also in the baseline or `zeroCoverageAllowed` |
 | Floor | the baseline records fewer than `MIN_BASELINE_FILES` files, or the measurement has fewer |
 
 Every finding names the file, the metric, the recorded and the measured value, and the difference in
@@ -202,5 +211,5 @@ does not resolve fails rather than passes.
 - A move that also changes the basename is shown in the removed-and-added table but not blocked.
 - The domain path filter does not cover fixtures that domain tests read from other packages' trees. A pull request touching only those skips the ratchet, the same pattern as the existing web filter.
 - `guard-base` passes when the base has no baseline file. It cannot tell a change that introduces the baseline from a base that has lost it, so it is right only while every protected base branch already carries the file.
-- Numbers were recorded on Windows with Node 24; CI is Ubuntu with Node 22. A first CI run may expose platform differences, and `TOLERANCE_PP` is the lever.
+- Numbers were recorded on Windows with Node 24; CI is Ubuntu with Node 22. One CI run showed the covered counts of the 120 files both report to be identical, so the tolerance stays at 0; `TOLERANCE_PP` remains the lever if a later platform difference appears. Which never-loaded files a report lists does differ by platform, and the ratchet is neutral to that.
 - Never-loaded files are visible only as allowances, and the per-pass untested-file sweep keeps printing its stack traces, as described above.

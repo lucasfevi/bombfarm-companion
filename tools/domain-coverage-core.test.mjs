@@ -338,10 +338,17 @@ describe('unmeasured list integrity', () => {
     expect(summaryOfFindings(evaluate(scenario))).toEqual([`${KIND.sourceNotAccounted} | src/new-types.ts | null`]);
   });
 
-  it('an unmeasured file that the measurement now reports must be moved', () => {
+  it('a runtime-free unmeasured file that the measurement happens to report is neutral', () => {
     const scenario = world();
+    scenario.measured['src/types-only.ts'] = observed(recorded(100, 100, 100, 100), 0);
+    expect(evaluate(scenario)).toEqual([]);
+  });
+
+  it('an unmeasured file with a function that the measurement reports above zero fails as runtime in unmeasured', () => {
+    const scenario = world();
+    scenario.runtimeFiles.push('src/types-only.ts');
     scenario.measured['src/types-only.ts'] = observed(recorded(50));
-    expect(summaryOfFindings(evaluate(scenario))).toEqual([`${KIND.unmeasuredNowMeasured} | src/types-only.ts | null`]);
+    expect(summaryOfFindings(evaluate(scenario))).toEqual([`${KIND.runtimeInUnmeasured} | src/types-only.ts | null`]);
   });
 
   it('an unmeasured entry for a deleted file is stale', () => {
@@ -356,7 +363,6 @@ describe('unmeasured list integrity', () => {
     expect(summaryOfFindings(evaluate(scenario))).toEqual([
       `${KIND.listedTwice} | ${sourceName(2)} | null`,
       `${KIND.runtimeInUnmeasured} | ${sourceName(2)} | null`,
-      `${KIND.unmeasuredNowMeasured} | ${sourceName(2)} | null`,
     ]);
   });
 });
@@ -608,13 +614,13 @@ describe('planUpdate', () => {
     expect(summaryOfFindings(plan.pendingReview)).toEqual([`${KIND.sourceNotAccounted} | src/loaded-by-nothing.ts | null`]);
   });
 
-  it('drops an unmeasured entry once the measurement reports the file', () => {
+  it('keeps an unmeasured entry whether or not the measurement reports the file, and adds no row for it', () => {
     const scenario = world();
-    scenario.measured['src/types-only.ts'] = observed(recorded(70));
+    scenario.measured['src/types-only.ts'] = observed(recorded(100, 100, 100, 100), 0);
     const plan = planUpdate(scenario);
     expect(plan.refusals).toEqual([]);
-    expect(plan.next.unmeasured).toEqual([]);
-    expect(plan.next.files['src/types-only.ts']).toEqual(recorded(70));
+    expect(plan.next.unmeasured).toEqual(['src/types-only.ts']);
+    expect(plan.next.files['src/types-only.ts']).toBeUndefined();
   });
 
   it('never records a number lower than the existing one for a file it did not waive', () => {
@@ -1052,5 +1058,85 @@ describe('judgeTestRun: instrumentation timeouts in the solver files', () => {
       solverFiles: [],
     });
     expect(verdict.accepted).toBe(false);
+  });
+});
+
+describe('the baseline holds under both a Windows-shaped and a Linux-shaped report', () => {
+  const REASON = 'never loaded by a domain test; the coverage report has no entry for it';
+
+  function shapes() {
+    const windows = world();
+    windows.sourceFiles.push(NEVER_LOADED);
+    windows.runtimeFiles.push(NEVER_LOADED);
+    windows.baseline.zeroCoverageAllowed[NEVER_LOADED] = REASON;
+    const linux = clone(windows);
+    linux.measured[NEVER_LOADED] = observed(recorded(0, 0, 0, 0), 3);
+    linux.measured[TYPES_ONLY] = observed(recorded(100, 100, 100, 100), 0);
+    return { windows, linux };
+  }
+
+  it('check is green on both shapes', () => {
+    const { windows, linux } = shapes();
+    expect(evaluate(windows)).toEqual([]);
+    expect(evaluate(linux)).toEqual([]);
+  });
+
+  it('update writes a byte-identical baseline from both shapes, and nothing at all when the baseline already matches', () => {
+    const { windows, linux } = shapes();
+    const fromWindows = planUpdate(windows);
+    const fromLinux = planUpdate(linux);
+    expect(fromWindows.refusals).toEqual([]);
+    expect(fromLinux.refusals).toEqual([]);
+    expect(canonicalBaselineText(fromLinux.next)).toBe(canonicalBaselineText(fromWindows.next));
+    expect(canonicalBaselineText(fromLinux.next)).toBe(canonicalBaselineText(windows.baseline));
+    expect(fromWindows.changed).toBe(false);
+    expect(fromLinux.changed).toBe(false);
+  });
+
+  it('a never-loaded runtime file with no allowance fails on both shapes', () => {
+    const { windows, linux } = shapes();
+    delete windows.baseline.zeroCoverageAllowed[NEVER_LOADED];
+    delete linux.baseline.zeroCoverageAllowed[NEVER_LOADED];
+    expect(summaryOfFindings(evaluate(windows))).toEqual([`${KIND.sourceNotAccounted} | ${NEVER_LOADED} | null`]);
+    expect(summaryOfFindings(evaluate(linux))).toEqual([
+      `${KIND.sourceNotAccounted} | ${NEVER_LOADED} | null`,
+      `${KIND.unallowedZeroCoverage} | ${NEVER_LOADED} | null`,
+      `${KIND.unrecordedFile} | ${NEVER_LOADED} | null`,
+    ]);
+  });
+
+  it('an allowed file without a row that the report shows above zero is a stale allowance and an unrecorded file', () => {
+    const { linux } = shapes();
+    linux.measured[NEVER_LOADED] = observed(recorded(40, 20, 20, 20));
+    expect(summaryOfFindings(evaluate(linux))).toEqual([
+      `${KIND.staleAllowance} | ${NEVER_LOADED} | null`,
+      `${KIND.unrecordedFile} | ${NEVER_LOADED} | null`,
+    ]);
+  });
+
+  it('an allowed file that has a row at zero stays neutral when the report shows it at zero', () => {
+    const { linux } = shapes();
+    linux.baseline.files[NEVER_LOADED] = recorded(0, 0, 0, 0);
+    expect(evaluate(linux)).toEqual([]);
+  });
+
+  it('update records a newly reported file above zero for an allowed never-loaded file and drops the allowance', () => {
+    const { linux } = shapes();
+    linux.measured[NEVER_LOADED] = observed(recorded(40, 20, 20, 20));
+    const plan = planUpdate(linux);
+    expect(plan.refusals).toEqual([]);
+    expect(plan.next.files[NEVER_LOADED]).toEqual(recorded(40, 20, 20, 20));
+    expect(plan.next.zeroCoverageAllowed[NEVER_LOADED]).toBeUndefined();
+  });
+
+  it('update never adds a row for a platform-dependent file, whichever shape reports it', () => {
+    const { windows, linux } = shapes();
+    for (const scenario of [windows, linux]) {
+      const { next } = planUpdate(scenario);
+      expect(Object.keys(next.files)).not.toContain(NEVER_LOADED);
+      expect(Object.keys(next.files)).not.toContain(TYPES_ONLY);
+      expect(next.unmeasured).toEqual([TYPES_ONLY]);
+      expect(Object.keys(next.zeroCoverageAllowed).sort()).toEqual([NEVER_LOADED, NEVER_RUN]);
+    }
   });
 });

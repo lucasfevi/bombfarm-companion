@@ -16,7 +16,6 @@ export const KIND = {
   baselineBelowFloor: 'baseline-below-floor',
   measurementBelowFloor: 'measurement-below-floor',
   sourceNotAccounted: 'source-not-accounted',
-  unmeasuredNowMeasured: 'unmeasured-now-measured',
   staleUnmeasuredEntry: 'stale-unmeasured-entry',
   listedTwice: 'listed-twice',
   invalidBaseline: 'invalid-baseline',
@@ -389,16 +388,11 @@ export function evaluateAgainstBaseline({ baseline, measured, sourceFiles, runti
 
   for (const file of Object.keys(measured).sort(compareCodeUnits)) {
     const entry = measured[file];
-    if (!(file in baseline.files) && !unmeasured.has(file)) {
+    if (!(file in baseline.files) && !unmeasured.has(file) && !(file in allowed && entry.statementsCovered === 0)) {
       findings.push(
         finding(KIND.unrecordedFile, file, `${file} is measured but has no baseline row — run the update command`, {
           measured: metricsOf(entry),
         }),
-      );
-    }
-    if (unmeasured.has(file)) {
-      findings.push(
-        finding(KIND.unmeasuredNowMeasured, file, `${file} is in the unmeasured list but the measurement now reports it — move it to the baseline with the update command`),
       );
     }
     if (entry.statementsTotal > 0 && entry.statementsCovered === 0 && !(file in allowed) && !(file in baseline.files && baseline.files[file].statements === 0)) {
@@ -468,6 +462,11 @@ export function planUpdate({ baseline, measured, sourceFiles, runtimeFiles, waiv
   for (const file of Object.keys(measured).sort(compareCodeUnits)) {
     const now = measured[file];
     const recorded = baseline.files[file];
+    const platformDependent =
+      recorded === undefined &&
+      !bootstrap &&
+      (baseline.unmeasured.includes(file) || (file in baseline.zeroCoverageAllowed && now.statementsCovered === 0));
+    if (platformDependent) continue;
     if (recorded === undefined || waiverByFile.has(file)) {
       files[file] = metricsOf(now);
     } else {
@@ -478,12 +477,13 @@ export function planUpdate({ baseline, measured, sourceFiles, runtimeFiles, waiv
   const neverLoaded = sourceFiles.filter((file) => !(file in measured) && runtime.has(file));
   const unmeasured = bootstrap
     ? sortedUnique(sourceFiles.filter((file) => !(file in measured) && !runtime.has(file)))
-    : sortedUnique(baseline.unmeasured.filter((file) => onDisk.has(file) && !(file in measured)));
+    : sortedUnique(baseline.unmeasured.filter((file) => onDisk.has(file)));
 
   const zeroCoverageAllowed = {};
   for (const [file, reason] of Object.entries(baseline.zeroCoverageAllowed)) {
     const now = measured[file];
-    const stillZero = now === undefined ? runtime.has(file) : now.statementsTotal > 0 && now.statementsCovered === 0;
+    const stillZero =
+      now === undefined ? runtime.has(file) : now.statementsCovered === 0 && (now.statementsTotal > 0 || runtime.has(file));
     if (onDisk.has(file) && stillZero) zeroCoverageAllowed[file] = reason;
   }
   if (bootstrap) {

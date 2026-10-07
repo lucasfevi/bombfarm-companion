@@ -15,6 +15,7 @@ import { MIN_BASELINE_FILES, canonicalBaselineText } from './domain-coverage-cor
 const CLI = resolve(dirname(fileURLToPath(import.meta.url)), 'domain-coverage.mjs');
 const FILE_COUNT = MIN_BASELINE_FILES + 2;
 const TYPES_ONLY = 'src/types.ts';
+const NEVER_LOADED = 'src/never-loaded.ts';
 const BASELINE = 'packages/domain/coverage-baseline.json';
 const SLOW = 60_000;
 
@@ -31,13 +32,19 @@ function writeSource(dir, name, body) {
 function writeFixtureSources(dir) {
   for (let index = 0; index < FILE_COUNT; index += 1) writeSource(dir, sourceName(index), `export const value${index} = ${index};\n`);
   writeSource(dir, TYPES_ONLY, 'export type Id = string;\n');
+  writeSource(dir, NEVER_LOADED, 'export function neverCalled() {\n  return 1;\n}\n');
 }
 
 function metric(covered) {
   return { total: 10, covered, skipped: 0, pct: covered * 10 };
 }
 
-function writeSummary(dir, name, { covered = {}, extraFiles = [] } = {}) {
+function zeroEntry(total) {
+  const zero = { total, covered: 0, skipped: 0, pct: total === 0 ? 100 : 0 };
+  return { lines: zero, statements: zero, functions: zero, branches: zero };
+}
+
+function writeSummary(dir, name, { covered = {}, extraFiles = [], linuxShaped = false } = {}) {
   const entries = {};
   const names = [...Array.from({ length: FILE_COUNT }, (_, index) => sourceName(index)), ...extraFiles];
   for (const file of names) {
@@ -48,6 +55,10 @@ function writeSummary(dir, name, { covered = {}, extraFiles = [] } = {}) {
       functions: metric(count),
       branches: metric(count),
     };
+  }
+  if (linuxShaped) {
+    entries[join(dir, 'packages/domain', NEVER_LOADED)] = zeroEntry(3);
+    entries[join(dir, 'packages/domain', TYPES_ONLY)] = zeroEntry(0);
   }
   writeFileSync(join(dir, name), JSON.stringify({ total: { lines: metric(8), statements: metric(8), functions: metric(8), branches: metric(8) }, ...entries }));
 }
@@ -318,5 +329,51 @@ describe('guard-base refuses a malformed head baseline', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('the head baseline is malformed');
     expect(result.stderr, 'a clean refusal, not a crash').not.toContain('TypeError');
+  }, SLOW);
+});
+
+describe('the same code is judged identically from a Windows-shaped and a Linux-shaped report', () => {
+  it('records the never-loaded file as an allowance and the type-only file as unmeasured, with no rows for either', () => {
+    const baseline = readBaselineJson(freshCopy());
+    expect(Object.keys(baseline.zeroCoverageAllowed)).toEqual([NEVER_LOADED]);
+    expect(baseline.unmeasured).toEqual([TYPES_ONLY]);
+    expect(Object.keys(baseline.files)).not.toContain(NEVER_LOADED);
+    expect(Object.keys(baseline.files)).not.toContain(TYPES_ONLY);
+  }, SLOW);
+
+  it('check is green on both shapes', () => {
+    const dir = freshCopy();
+    writeSummary(dir, 'summary-linux.json', { linuxShaped: true });
+    const windows = cli(dir, ['check', '--summary', 'summary-base.json']);
+    const linux = cli(dir, ['check', '--summary', 'summary-linux.json']);
+    expect(windows.status, windows.stdout).toBe(0);
+    expect(linux.status, linux.stdout).toBe(0);
+  }, SLOW);
+
+  it('update writes the same baseline from both shapes: nothing, byte-identical', () => {
+    const dir = freshCopy();
+    const before = readFileSync(join(dir, BASELINE), 'utf8');
+    writeSummary(dir, 'summary-linux.json', { linuxShaped: true });
+    const fromLinux = cli(dir, ['update', '--summary', 'summary-linux.json']);
+    expect(fromLinux.status, fromLinux.stderr).toBe(0);
+    expect(readFileSync(join(dir, BASELINE), 'utf8')).toBe(before);
+    const fromWindows = cli(dir, ['update', '--summary', 'summary-base.json']);
+    expect(fromWindows.status, fromWindows.stderr).toBe(0);
+    expect(readFileSync(join(dir, BASELINE), 'utf8')).toBe(before);
+  }, SLOW);
+
+  it('a never-loaded runtime file with no allowance fails on both shapes', () => {
+    const dir = freshCopy();
+    const baseline = readBaselineJson(dir);
+    delete baseline.zeroCoverageAllowed[NEVER_LOADED];
+    writeBaselineJson(dir, baseline);
+    writeSummary(dir, 'summary-linux.json', { linuxShaped: true });
+    const windows = cli(dir, ['check', '--summary', 'summary-base.json']);
+    const linux = cli(dir, ['check', '--summary', 'summary-linux.json']);
+    expect(windows.status).toBe(1);
+    expect(windows.stdout).toContain(`[source-not-accounted] ${NEVER_LOADED}`);
+    expect(linux.status).toBe(1);
+    expect(linux.stdout).toContain(`[source-not-accounted] ${NEVER_LOADED}`);
+    expect(linux.stdout).toContain(`[unallowed-zero-coverage] ${NEVER_LOADED}`);
   }, SLOW);
 });
