@@ -808,15 +808,16 @@ describe('createLiveStore — damage passes straight through, never folded or de
     const { bridge, emitAccountChanged, resolveNextGet } = fakeBridge();
     const store = createLiveStore({ bridge });
     const notifications: LiveModel[] = [];
+    const rotation = rotationSnapshot();
 
     store.start();
-    resolveNextGet(liveView({ damage: liveDamage() }));
+    resolveNextGet(liveView({ rotation, damage: liveDamage() }));
     await flushMicrotasks();
     store.subscribe((model) => notifications.push(model));
 
     const moved = liveDamage({ teamDpsSession: 1_100 });
     emitAccountChanged();
-    resolveNextGet(liveView({ damage: moved }));
+    resolveNextGet(liveView({ rotation, damage: moved }));
     await flushMicrotasks();
 
     expect(store.getModel().damage).toBe(moved);

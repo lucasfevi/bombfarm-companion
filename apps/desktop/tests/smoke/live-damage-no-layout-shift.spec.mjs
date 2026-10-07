@@ -321,6 +321,17 @@ test.describe('live damage panel: no layout shift smoke', () => {
       expect(damage.top).toBeGreaterThanOrEqual(Math.max(earnings.bottom, map.bottom) - 0.5);
       expect(damage.bottom).toBeLessThanOrEqual(heroes.top + 0.5);
       expect(damage.left).toBeCloseTo(earnings.left, 0);
+
+      const parents = await page.evaluate(() => {
+        const livePanel = document.querySelector('[data-testid="live-panel"]');
+        const parentOf = (id) => document.querySelector(`[data-testid="${id}"]`)?.parentElement ?? null;
+        return {
+          damageIsDirectChild: parentOf('live-damage') === livePanel,
+          earningsAndMapShareAGrid: parentOf('live-earnings') === parentOf('live-map'),
+          damageSharesTheirParent: parentOf('live-damage') === parentOf('live-earnings'),
+        };
+      });
+      expect(parents).toEqual({ damageIsDirectChild: true, earningsAndMapShareAGrid: true, damageSharesTheirParent: false });
     } finally {
       await closeApp(app, userDataDir);
     }
