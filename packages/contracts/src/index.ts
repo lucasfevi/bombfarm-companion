@@ -136,12 +136,15 @@ export type {
 } from './rotation-snapshot.js';
 export type {
   CountdownBasis,
+  CreditAmounts,
   FieldCountdown,
+  LiveBomb,
   LiveCurrency,
   LiveDiagnosticsDumpOutcome,
   LiveDiagnosticsDumpReason,
   LiveEarnings,
   LiveEvent,
+  LiveExplosion,
   LiveFrame,
   LiveGapExtra,
   LiveGapReason,
@@ -154,6 +157,7 @@ export type {
   LiveTickHero,
   LiveView,
   RecoveryCountdown,
+  UnattributedReason,
 } from './live-source.js';
 export { energyDisplayPercent, isActionableGap, isConnectedCurrency, isLiveCurrency, liveGap, LIVE_DISPLAY_REFRESH_MS } from './live-source.js';
 export type {

@@ -15,6 +15,25 @@ export interface LiveTickHero {
   readonly energyFraction?: number;
   readonly x?: number;
   readonly y?: number;
+  /** Map cell index the hero stands on, in the same index space as `hits[].cell`. */
+  readonly cell?: number;
+  /** The wire's action-state code; only `5` (walking) has a known meaning. */
+  readonly actionState?: number;
+}
+
+export interface LiveBomb {
+  readonly cell: number;
+  /** Blast radius in cells. */
+  readonly radius: number;
+  readonly fuseRemainingSeconds: number;
+  readonly fuseTotalSeconds: number;
+}
+
+export interface LiveExplosion {
+  readonly cell: number;
+  readonly radius: number;
+  /** Present only when the wire marks this as the repeat blast of a bomb that exploded twice. */
+  readonly secondBlast?: true;
 }
 
 export interface LiveLootPop {
@@ -28,6 +47,10 @@ export interface LiveHit {
   /** The wire's own name for this value. */
   readonly damage: number;
   readonly critical?: boolean;
+  /** Present only when the wire marks this hit as dealt by a repeat blast. */
+  readonly secondBlast?: true;
+  /** Cell of the shattered prop a shard hit originates from; absent on every other hit. */
+  readonly shardOrigin?: number;
 }
 
 export interface LiveTick {
@@ -57,6 +80,25 @@ export interface LiveTick {
    *  prop on its last sliver, so occupancy must be read from {@link kinds} and never from a
    *  `!== -1` test here. */
   readonly hps?: readonly number[];
+  /** Every bomb burning on THIS tick. */
+  readonly bombs?: readonly LiveBomb[];
+  /** Every bomb that exploded on THIS tick. */
+  readonly explosions?: readonly LiveExplosion[];
+}
+
+export type UnattributedReason =
+  | 'noOwnerAtBirth'
+  | 'explosionWithoutBomb'
+  | 'streamDiscontinuity'
+  | 'unresolvedOverlap'
+  | 'explosionlessWithoutFantasma'
+  | 'sharedOrUnattributedKill'
+  | 'noHitOnLootCell';
+
+export interface CreditAmounts {
+  readonly damage: number;
+  readonly props: number;
+  readonly gold: number;
 }
 
 /**
