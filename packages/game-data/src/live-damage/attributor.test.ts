@@ -549,3 +549,39 @@ describe('createLiveDamageAttributor — reconciliation on a seeded stress strea
     expect([...reasons].sort()).toEqual([...ALL_REASONS].sort());
   });
 });
+
+describe('createLiveDamageAttributor — edges the engine must keep', () => {
+  it('forgets a burning owned bomb on clear, so its blast has no tracked bomb rather than the old owner', () => {
+    const attributor = createLiveDamageAttributor();
+    feed(attributor, { heroes: [hero('A', 100)], bombs: [freshBomb(100)] });
+    attributor.clear();
+    const credit = feed(attributor, { heroes: [hero('A', 100)], explosions: [blast(100)], hits: [hit(101, 40)] });
+    expect(credit.perHero.size).toBe(0);
+    expect(credit.unattributed.explosionWithoutBomb.damage).toBe(40);
+  });
+
+  it('bounds a blast by the grid height the tick reports through its kinds array', () => {
+    const attributor = createLiveDamageAttributor();
+    const kinds = new Array<number>(19 * 17).fill(-1);
+    const planted = 15 * 19 + 3;
+    const onLastRow = 16 * 19 + 3;
+    feed(attributor, { heroes: [hero('A', planted)], bombs: [freshBomb(planted)], kinds });
+    const credit = feed(attributor, {
+      heroes: [hero('A', planted)],
+      explosions: [blast(planted)],
+      hits: [hit(onLastRow, 40)],
+      kinds,
+    });
+    expect(credit.perHero.get('A')?.damage).toBe(40);
+  });
+
+  it('counts an empty roster as unknown, so a hero on a cross-covered plain-hit cell makes the hit unattributed', () => {
+    const attributor = createLiveDamageAttributor();
+    attributor.setRoster([]);
+    const heroes = [hero('A', 100), hero('B', 101)];
+    feed(attributor, { heroes, bombs: [freshBomb(100)] });
+    const credit = feed(attributor, { heroes, explosions: [blast(100)], hits: [hit(101, 40)] });
+    expect(credit.perHero.size).toBe(0);
+    expect(credit.unattributed.unresolvedOverlap.damage).toBe(40);
+  });
+});

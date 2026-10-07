@@ -349,3 +349,19 @@ describe('bomb ledger — discontinuous frames', () => {
     expect(advance([]).retiredLastFrame.get(5)).toEqual({ owner: null, radius: 2, reason: 'streamDiscontinuity' });
   });
 });
+
+describe('bomb ledger — the fresh-age edge', () => {
+  it('counts a bomb 0.209 s into its fuse as a Birth', () => {
+    const { advance } = setup();
+    const step = advance([bomb(5, FUSE - 0.209)]);
+    expect(step.births).toBe(1);
+    expect(step.adopted).toBe(0);
+  });
+
+  it('counts a bomb 0.211 s into its fuse as adopted', () => {
+    const { advance } = setup();
+    const step = advance([bomb(5, FUSE - 0.211)]);
+    expect(step.births).toBe(0);
+    expect(step.adopted).toBe(1);
+  });
+});
