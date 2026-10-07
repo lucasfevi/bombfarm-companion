@@ -1,7 +1,9 @@
 import {
   energyDisplayPercent,
   LIVE_DISPLAY_REFRESH_MS,
+  sameLiveDamage,
   type FieldCountdown,
+  type LiveDamage,
   type LiveEarnings,
   type LiveEvent,
   type LiveHeroEnergy,
@@ -17,7 +19,7 @@ export interface LiveFastPublisherScheduler {
 }
 
 export interface LiveFastPublisherDeps {
-  readonly getView: () => Pick<LiveView, 'field' | 'recovery' | 'energies' | 'onFieldHeroIds' | 'rotation' | 'earnings' | 'map'>;
+  readonly getView: () => Pick<LiveView, 'field' | 'recovery' | 'energies' | 'onFieldHeroIds' | 'rotation' | 'earnings' | 'map' | 'damage'>;
   readonly emit: (event: LiveEvent) => void;
   readonly scheduler: LiveFastPublisherScheduler;
   readonly intervalMs?: number;
@@ -39,6 +41,7 @@ interface FastSnapshot {
   readonly onFieldHeroIds: readonly string[];
   readonly earnings: LiveEarnings | null;
   readonly map: LiveMap | null;
+  readonly damage: LiveDamage | null;
 }
 
 function sameFieldCountdowns(a: readonly FieldCountdown[], b: readonly FieldCountdown[]): boolean {
@@ -140,7 +143,8 @@ function sameFastSnapshot(a: FastSnapshot, b: FastSnapshot): boolean {
     sameHeroEnergies(a.energies, b.energies) &&
     sameIdList(a.onFieldHeroIds, b.onFieldHeroIds) &&
     sameEarnings(a.earnings, b.earnings) &&
-    sameMap(a.map, b.map)
+    sameMap(a.map, b.map) &&
+    sameLiveDamage(a.damage, b.damage)
   );
 }
 
@@ -193,7 +197,7 @@ export function createRotationOnFieldIdsCache(): (rotation: RotationSnapshot | n
 
 /**
  * Polls the already-folded {@link LiveView} on a fixed schedule and republishes the fast channel
- * (`field`, `recovery`, `energies`, `onFieldHeroIds`, `earnings`, `map`) only when its content actually changed since the last
+ * (`field`, `recovery`, `energies`, `onFieldHeroIds`, `earnings`, `map`, `damage`) only when its content actually changed since the last
  * publish — the throttle the main process owes the renderer per the fast/slow split, so an idle
  * account with nothing changing publishes nothing at all rather than one identical event every
  * tick. `getView()` itself is cheap: it returns state the live source already maintains — its
@@ -220,6 +224,7 @@ export function createLiveFastPublisher(deps: LiveFastPublisherDeps): LiveFastPu
       onFieldHeroIds: view.onFieldHeroIds,
       earnings: view.earnings,
       map: view.map,
+      damage: view.damage,
     };
     if (lastPublished && sameFastSnapshot(lastPublished, next)) return;
     lastPublished = next;
@@ -231,6 +236,7 @@ export function createLiveFastPublisher(deps: LiveFastPublisherDeps): LiveFastPu
       onFieldHeroIds: next.onFieldHeroIds,
       earnings: next.earnings,
       map: next.map,
+      damage: next.damage,
     });
   }
 

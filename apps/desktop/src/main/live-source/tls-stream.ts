@@ -1,4 +1,4 @@
-import type { LiveHit, LiveLootPop, LiveTick, LiveTickHero } from '@bombfarm/contracts';
+import type { LiveBomb, LiveExplosion, LiveHit, LiveLootPop, LiveTick, LiveTickHero } from '@bombfarm/contracts';
 import { isPlainObject, liveFrameWireKey as wireKey } from '@bombfarm/game-api';
 import { brotliDecompressSync, gunzipSync, inflateRawSync, inflateSync } from 'node:zlib';
 import type { FrameDumpReason } from './frame-ring.js';
@@ -152,13 +152,39 @@ function mapHero(raw: unknown): LiveTickHero | undefined {
   const energyFraction = readNumber(raw, wireKey('heroEnergyFraction'));
   const x = readNumber(raw, wireKey('heroX'));
   const y = readNumber(raw, wireKey('heroY'));
+  const cell = readNumber(raw, wireKey('heroCell'));
+  const actionState = readNumber(raw, wireKey('heroActionState'));
 
   return {
     id,
     ...(energyFraction !== undefined ? { energyFraction } : {}),
     ...(x !== undefined ? { x } : {}),
     ...(y !== undefined ? { y } : {}),
+    ...(cell !== undefined ? { cell } : {}),
+    ...(actionState !== undefined ? { actionState } : {}),
   };
+}
+
+function mapBomb(raw: unknown): LiveBomb | undefined {
+  if (!isPlainObject(raw)) return undefined;
+  const cell = readNumber(raw, wireKey('bombCell'));
+  const radius = readNumber(raw, wireKey('bombRadius'));
+  const fuseRemainingSeconds = readNumber(raw, wireKey('bombFuseRemainingSeconds'));
+  const fuseTotalSeconds = readNumber(raw, wireKey('bombFuseTotalSeconds'));
+  if (cell === undefined || radius === undefined || fuseRemainingSeconds === undefined || fuseTotalSeconds === undefined) {
+    return undefined;
+  }
+  return { cell, radius, fuseRemainingSeconds, fuseTotalSeconds };
+}
+
+function mapExplosion(raw: unknown): LiveExplosion | undefined {
+  if (!isPlainObject(raw)) return undefined;
+  const cell = readNumber(raw, wireKey('explosionCell'));
+  const radius = readNumber(raw, wireKey('explosionRadius'));
+  if (cell === undefined || radius === undefined) return undefined;
+
+  const secondBlast = readBoolean(raw, wireKey('explosionSecondBlast')) === true;
+  return { cell, radius, ...(secondBlast ? { secondBlast: true as const } : {}) };
 }
 
 function mapLoot(raw: unknown): LiveLootPop | undefined {
@@ -177,7 +203,15 @@ function mapHit(raw: unknown): LiveHit | undefined {
   if (cell === undefined || damage === undefined) return undefined;
 
   const critical = readBoolean(raw, wireKey('hitCritical'));
-  return { cell, damage, ...(critical !== undefined ? { critical } : {}) };
+  const secondBlast = readBoolean(raw, wireKey('hitSecondBlast')) === true;
+  const shardOrigin = readNumber(raw, wireKey('hitShardOrigin'));
+  return {
+    cell,
+    damage,
+    ...(critical !== undefined ? { critical } : {}),
+    ...(secondBlast ? { secondBlast: true as const } : {}),
+    ...(shardOrigin !== undefined ? { shardOrigin } : {}),
+  };
 }
 
 export function toLiveTick(raw: Record<string, unknown>): LiveTick {
@@ -192,6 +226,8 @@ export function toLiveTick(raw: Record<string, unknown>): LiveTick {
   const bonusMultiplier = readNumber(raw, wireKey('bonusMultiplier'));
   const kindsRaw = readOptionalArray(raw, wireKey('kindsList'));
   const hpsRaw = readOptionalArray(raw, wireKey('hpsList'));
+  const bombsRaw = readOptionalArray(raw, wireKey('bombsList'));
+  const explosionsRaw = readOptionalArray(raw, wireKey('explosionsList'));
 
   return {
     heroes: readArray(raw, wireKey('heroesList')).map(mapHero).filter(isDefined),
@@ -206,6 +242,8 @@ export function toLiveTick(raw: Record<string, unknown>): LiveTick {
     ...(bonusMultiplier !== undefined ? { bonusMultiplier } : {}),
     ...(kindsRaw !== undefined ? { kinds: kindsRaw.filter((value): value is number => typeof value === 'number') } : {}),
     ...(hpsRaw !== undefined ? { hps: hpsRaw.filter((value): value is number => typeof value === 'number') } : {}),
+    ...(bombsRaw !== undefined ? { bombs: bombsRaw.map(mapBomb).filter(isDefined) } : {}),
+    ...(explosionsRaw !== undefined ? { explosions: explosionsRaw.map(mapExplosion).filter(isDefined) } : {}),
   };
 }
 

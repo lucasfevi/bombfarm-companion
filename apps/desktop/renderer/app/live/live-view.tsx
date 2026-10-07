@@ -14,7 +14,7 @@ function getBridge(): NonNullable<Window['bfc']> | null {
 
 export function LiveView({ onReopenConsent }: { onReopenConsent?: (() => void) | undefined }) {
   const t = useCopy();
-  const { freshness, slow, fast, earnings, map } = useLiveModel();
+  const { freshness, slow, fast, earnings, map, damage } = useLiveModel();
 
   const onResetEarnings = () => {
     const bridge = getBridge();
@@ -54,6 +54,7 @@ export function LiveView({ onReopenConsent }: { onReopenConsent?: (() => void) |
         fast={fast}
         earnings={earnings}
         map={map}
+        damage={damage}
         onResetEarnings={onResetEarnings}
         onReopenConsent={onReopenConsent}
       />

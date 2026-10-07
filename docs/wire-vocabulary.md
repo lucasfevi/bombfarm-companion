@@ -94,12 +94,15 @@ The combat websocket packs its payload into single-letter and abbreviated keys b
 | `c` | `cell` | Index of the map cell the hit landed in. | English |
 | `d` | `damage` | Damage dealt (179–107101 observed). | English |
 | `cr` | `critical` | Whether the hit was a critical. | English |
+| `dd` | `secondBlast` | Marks a hit dealt by the repeat blast of a bomb that exploded twice in the same tick. Observed only as `true`; omitted from ordinary hits. | English |
+| `es` | `shardOrigin` | Map cell index of the prop a shard hit originates from, when a shattered prop sends damage elsewhere. Not observed in any committed capture: its presence and numeric shape are unconfirmed. | English |
 | `c` | `cell` | Index of the map cell the bomb sits in. | English |
 | `f` | `fuseRemainingSeconds` | Fuse remaining, seconds (0.02–1.93 observed). | English |
 | `ft` | `fuseTotalSeconds` | Fuse total, seconds (1.92–1.99 observed). | English |
 | `r` | `radius` | Blast radius in cells (1–3 observed). | English |
 | `c` | `cell` | Index of the map cell the explosion is centred on. | English |
 | `r` | `radius` | Blast radius in cells. | English |
+| `x2` | `secondBlast` | Marks the repeat blast of a bomb that exploded twice in the same tick; it arrives beside an ordinary explosion with the same cell and radius. Observed only as `true`; omitted from ordinary explosions. | English |
 | `ev` | `event` | Rotation-event name. | English |
 | `hero` | `heroId` | Hero id the event concerns. | English |
 | `secs` | `seconds` | Seconds value carried by the event (20–840 observed). | English |

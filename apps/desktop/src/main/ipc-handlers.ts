@@ -220,6 +220,7 @@ export function defaultLiveView(nowIso: string): LiveView {
     onFieldHeroIds: [],
     earnings: null,
     map: null,
+    damage: null,
     updatedAt: nowIso,
   };
 }

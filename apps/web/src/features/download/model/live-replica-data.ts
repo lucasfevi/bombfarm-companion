@@ -51,6 +51,32 @@ export interface ReplicaHero extends Omit<ReplicaHeroSeed, 'energyRate'> {
   readonly countdown?: string;
 }
 
+export interface ReplicaDamageAmounts {
+  readonly damage: number;
+  readonly props: number;
+  readonly gold: number;
+}
+
+export interface ReplicaDamageHero
+  extends Pick<ReplicaHeroSeed, 'id' | 'name' | 'skin' | 'rarity' | 'grade' | 'stars' | 'level'>,
+    ReplicaDamageAmounts {
+  readonly fieldSeconds: number;
+  readonly dps: number;
+  /** A fraction from 0 to 1: field seconds over the session's seconds. */
+  readonly uptime: number;
+}
+
+export interface ReplicaDamage {
+  readonly teamDps10: number;
+  readonly teamDpsSession: number;
+  readonly window10: { readonly damage: number; readonly seconds: number };
+  readonly sessionSeconds: number;
+  readonly coverageMinutes: number;
+  readonly team: ReplicaDamageAmounts;
+  readonly heroes: readonly ReplicaDamageHero[];
+  readonly unattributed: ReplicaDamageAmounts & { readonly dps: number };
+}
+
 /**
  * Numbers, not strings — the components format them with the reader's own separator convention,
  * the way every other figure on the site is written.
@@ -96,6 +122,7 @@ export interface ReplicaFrame {
     readonly benched: string;
   };
   readonly heroes: readonly ReplicaHero[];
+  readonly damage: ReplicaDamage;
 }
 
 const BASE_SESSION_SECONDS = 12_005;
@@ -124,6 +151,87 @@ const GOLD_SERIES_BASE: readonly number[] = [
   318, 331, 342, 336, 351, 364, 358, 372, 381, 375, 389, 396, 384, 371, 366, 379, 392, 401, 394,
   386, 377, 368, 359, 364, 373, 385, 397, 405, 398, 388, 376, 369, 361, 355, 367, 380, 391, 399,
 ];
+
+const BASE_TEAM_DPS = 150_000;
+const TEAM_DAMAGE_PER_SECOND = 152_000;
+const WINDOW_SECONDS = 600;
+const WINDOW_DAMAGE_BASE = 94_800_000;
+const SHARE_DENOMINATOR = 10_000;
+
+interface DamageShare {
+  readonly id: string;
+  /** Basis points of the team figure: an integer split with an exact remainder. */
+  readonly damageShare: number;
+  readonly propsShare: number;
+  readonly goldShare: number;
+  readonly fieldSecondsBase: number;
+}
+
+/** What the shares leave of each team figure is the Unattributed row, so the table always adds up. */
+const DAMAGE_SHARES: readonly DamageShare[] = [
+  { id: 'bellatrix', damageShare: 3800, propsShare: 3600, goldShare: 3700, fieldSecondsBase: 11_400 },
+  { id: 'jon', damageShare: 2900, propsShare: 2800, goldShare: 2700, fieldSecondsBase: 9_800 },
+  { id: 'minato', damageShare: 1700, propsShare: 1500, goldShare: 1600, fieldSecondsBase: 6_200 },
+  { id: 'buff-s-1', damageShare: 900, propsShare: 900, goldShare: 850, fieldSecondsBase: 3_000 },
+  { id: 'wb-1', damageShare: 500, propsShare: 450, goldShare: 400, fieldSecondsBase: 1_700 },
+];
+
+function shareOf(total: number, basisPoints: number): number {
+  return Math.floor((total * basisPoints) / SHARE_DENOMINATOR);
+}
+
+function damageAt(whole: number, teamProps: number, teamGold: number): ReplicaDamage {
+  const sessionSeconds = BASE_SESSION_SECONDS + whole;
+  const teamDamage = BASE_TEAM_DPS * BASE_SESSION_SECONDS + TEAM_DAMAGE_PER_SECOND * whole;
+  const window10Damage = WINDOW_DAMAGE_BASE + TEAM_DAMAGE_PER_SECOND * whole;
+
+  const heroes = DAMAGE_SHARES.map((share): ReplicaDamageHero => {
+    const seed = HERO_SEEDS.find((candidate) => candidate.id === share.id);
+    if (seed === undefined) throw new Error(`damage share names an unknown hero: ${share.id}`);
+    const damage = shareOf(teamDamage, share.damageShare);
+    const fieldSeconds = share.fieldSecondsBase + (seed.state === 'on-field' ? whole : 0);
+    return {
+      id: seed.id,
+      name: seed.name,
+      skin: seed.skin,
+      rarity: seed.rarity,
+      grade: seed.grade,
+      stars: seed.stars,
+      level: seed.level,
+      damage,
+      props: shareOf(teamProps, share.propsShare),
+      gold: shareOf(teamGold, share.goldShare),
+      fieldSeconds,
+      dps: damage / fieldSeconds,
+      uptime: fieldSeconds / sessionSeconds,
+    };
+  });
+
+  const attributed = heroes.reduce(
+    (sum, hero) => ({
+      damage: sum.damage + hero.damage,
+      props: sum.props + hero.props,
+      gold: sum.gold + hero.gold,
+    }),
+    { damage: 0, props: 0, gold: 0 },
+  );
+
+  return {
+    teamDps10: window10Damage / WINDOW_SECONDS,
+    teamDpsSession: teamDamage / sessionSeconds,
+    window10: { damage: window10Damage, seconds: WINDOW_SECONDS },
+    sessionSeconds,
+    coverageMinutes: SERIES_MINUTES,
+    team: { damage: teamDamage, props: teamProps, gold: teamGold },
+    heroes: [...heroes].sort((left, right) => right.damage - left.damage || left.id.localeCompare(right.id)),
+    unattributed: {
+      damage: teamDamage - attributed.damage,
+      props: teamProps - attributed.props,
+      gold: teamGold - attributed.gold,
+      dps: (teamDamage - attributed.damage) / sessionSeconds,
+    },
+  };
+}
 
 /** At least a point a second, so the bar visibly empties inside one pass of the loop. */
 const HEALTH_DROP_PER_SECOND = 1.2;
@@ -207,5 +315,6 @@ export function replicaFrameAt(elapsedSeconds: number): ReplicaFrame {
     },
     summary: { onField: '2/4', resting: '1/3', idle: '2', benched: '1' },
     heroes,
+    damage: damageAt(whole, BASE_PROPS_SESSION + propsDestroyed, BASE_GOLD_TOTAL + goldEarned),
   };
 }

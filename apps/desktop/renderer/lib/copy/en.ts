@@ -333,6 +333,26 @@ export const en = {
   liveEarningsGoldPerPropOver: '{percent}% over estimate',
   liveEarningsGoldPerPropOnEstimate: 'on estimate',
 
+  // liveDamage* — the Damage panel: team and per-hero damage folded in the main process, only ever
+  // formatted here, never recomputed.
+  liveDamageTitle: 'Damage',
+  liveDamageTableAria: 'Damage by hero',
+  liveDamageTeamDpsLabel: 'Team DPS',
+  liveDamageSessionWindowLabel: 'session',
+  liveDamageHeroColumn: 'Hero',
+  liveDamageDpsColumn: 'DPS',
+  liveDamageUptimeColumn: 'Uptime',
+  liveDamageUptimeTip: 'On the field for {field} of the session’s {session}',
+  liveDurationUnderMinute: '<1 min',
+  liveDurationMinutes: '{n} min',
+  liveDurationHoursMinutes: '{h} h {mm} min',
+  liveDamagePropsColumn: 'Props',
+  liveDamageGoldColumn: 'Gold',
+  liveDamageUnattributedLabel: 'Unattributed',
+  liveDamageInfoLabel: 'About these figures',
+  liveDamageInfoBody:
+    'Damage is tied to a hero only when the game’s own feed proves which hero planted the bomb. Anything that could belong to more than one hero, or to none, is shown as Unattributed instead of guessed. Team DPS counts all of it; a hero’s DPS is its attributed damage over the time it spent on the field.',
+
   // liveMap* — the Map panel: which map is being played, and how far through it the run is.
   liveMapTitle: 'Map',
   liveMapHealthLabel: 'Map health',

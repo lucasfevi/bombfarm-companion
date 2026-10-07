@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import type { LiveEarnings, LiveEvent, LiveHeroEnergy, LiveMap, LiveView, RotationSnapshot } from '@bombfarm/contracts';
+import type {
+  CreditAmounts,
+  LiveDamage,
+  LiveEarnings,
+  LiveEvent,
+  LiveHeroEnergy,
+  LiveMap,
+  LiveView,
+  RotationSnapshot,
+  UnattributedReason,
+} from '@bombfarm/contracts';
+import { UNATTRIBUTED_REASONS } from '@bombfarm/contracts';
 import type { LiveModel } from './live-model';
 import {
   applyLiveArrival,
@@ -33,6 +44,7 @@ function liveView(overrides: Partial<LiveView> = {}): LiveView {
     onFieldHeroIds: ['on-field'],
     earnings: null,
     map: null,
+    damage: null,
     updatedAt: 't0',
     ...overrides,
   };
@@ -53,6 +65,7 @@ function fastUpdateEvent(
     onFieldHeroIds,
     earnings,
     map,
+    damage: null,
   };
 }
 
@@ -192,7 +205,7 @@ describe('createLiveStore — applies each arrival as it lands, with no display 
     store.subscribe((model) => notifications.push(model));
 
     for (let i = 0; i < 20; i += 1) {
-      emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: null, map: null });
+      emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: null, map: null, damage: null });
     }
 
     expect(notifications).toHaveLength(0);
@@ -519,7 +532,7 @@ describe('createLiveStore — earnings pass straight through, never folded or de
     await flushMicrotasks();
     store.subscribe((model) => notifications.push(model));
 
-    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: earnings({ goldBalance: 2 }), map: null });
+    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: earnings({ goldBalance: 2 }), map: null, damage: null });
 
     expect(notifications).toHaveLength(1);
     expect(notifications[0]?.earnings).toEqual(earnings({ goldBalance: 2 }));
@@ -538,7 +551,7 @@ describe('createLiveStore — earnings pass straight through, never folded or de
     store.subscribe((model) => notifications.push(model));
 
     const moved = earnings({ gold10Series: [100, 200, 300] });
-    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: moved, map: null });
+    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: moved, map: null, damage: null });
 
     expect(notifications).toHaveLength(1);
     expect(store.getModel().earnings?.gold10Series).toEqual([100, 200, 300]);
@@ -557,7 +570,7 @@ describe('createLiveStore — earnings pass straight through, never folded or de
     store.subscribe((model) => notifications.push(model));
 
     const moved = earnings({ propsSessionTotal: 412 });
-    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: moved, map: null });
+    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: moved, map: null, damage: null });
 
     expect(notifications).toHaveLength(1);
     expect(store.getModel().earnings?.propsSessionTotal).toBe(412);
@@ -574,7 +587,7 @@ describe('createLiveStore — earnings pass straight through, never folded or de
     await flushMicrotasks();
     store.subscribe((model) => notifications.push(model));
 
-    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: earnings(), map: null });
+    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: earnings(), map: null, damage: null });
 
     expect(notifications).toHaveLength(0);
     expect(store.getModel().earnings).toEqual(figures);
@@ -591,7 +604,7 @@ describe('createLiveStore — a fastUpdate carries on-field membership live, app
     await flushMicrotasks();
     expect(store.getModel().slow?.onField.map((hero) => hero.id)).toEqual(['on-field']);
 
-    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: null, map: null });
+    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: null, map: null, damage: null });
 
     const model = store.getModel();
     expect(model.slow?.onField).toEqual([]);
@@ -637,5 +650,177 @@ describe('createLiveStore — per-hero energy rides the fast channel', () => {
     emit(fastUpdateEvent(90, ['on-field'], null, null, [{ heroId: 'on-field', energyFraction: 0.5 }]));
 
     expect(models.length).toBe(afterFirst);
+  });
+});
+
+function liveDamage(overrides: Partial<LiveDamage> = {}): LiveDamage {
+  const none: CreditAmounts = { damage: 0, props: 0, gold: 0 };
+  return {
+    teamDps10: 1_200,
+    teamDpsSession: 1_000,
+    coverageSeconds: 120,
+    sessionSeconds: 300,
+    heroes: [{ heroId: 'on-field', dps: 800, damage: 240_000, props: 40, gold: 9_000, fieldSeconds: 300, uptime: 0.5, onField: true }],
+    unattributed: { damage: 60_000, props: 10, gold: 2_000, dps: 200 },
+    unattributedReasons: Object.fromEntries(UNATTRIBUTED_REASONS.map((reason) => [reason, none])) as Record<
+      UnattributedReason,
+      CreditAmounts
+    >,
+    team: { damage: 300_000, props: 50, gold: 11_000 },
+    ...overrides,
+  };
+}
+
+function damageEvent(damage: LiveDamage | null): LiveEvent {
+  return { type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: null, map: null, damage };
+}
+
+describe('createLiveStore — damage passes straight through, never folded or defaulted', () => {
+  it('null before the first tick, exactly as the bootstrap view reports it', async () => {
+    const { bridge, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+
+    store.start();
+    resolveNextGet(liveView({ damage: null }));
+    await flushMicrotasks();
+
+    expect(store.getModel().damage).toBeNull();
+  });
+
+  it('a bootstrap view carrying damage publishes that exact object', async () => {
+    const { bridge, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const figures = liveDamage();
+
+    store.start();
+    resolveNextGet(liveView({ damage: figures }));
+    await flushMicrotasks();
+
+    expect(store.getModel().damage).toBe(figures);
+  });
+
+  it('a fastUpdate with changed damage replaces the previous figures the moment it lands', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+
+    store.start();
+    resolveNextGet(liveView({ damage: liveDamage() }));
+    await flushMicrotasks();
+
+    const moved = liveDamage({ teamDpsSession: 1_100 });
+    emit(damageEvent(moved));
+
+    expect(store.getModel().damage).toBe(moved);
+  });
+
+  it('a fastUpdate with equal damage leaves the same object in the published model', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const held = liveDamage();
+
+    store.start();
+    resolveNextGet(liveView({ damage: held }));
+    await flushMicrotasks();
+
+    emit(damageEvent(liveDamage()));
+
+    expect(store.getModel().damage).toBe(held);
+  });
+
+  it('a fastUpdate that changes only one hero row still replaces the damage', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+
+    store.start();
+    resolveNextGet(liveView({ damage: liveDamage() }));
+    await flushMicrotasks();
+
+    const moved = liveDamage({ heroes: [{ heroId: 'on-field', dps: 800, damage: 240_000, props: 41, gold: 9_000, fieldSeconds: 300, uptime: 0.5, onField: true }] });
+    emit(damageEvent(moved));
+
+    expect(store.getModel().damage?.heroes[0]?.props).toBe(41);
+  });
+
+  it('a fastUpdate carrying damage where there was none publishes it, and null clears it again', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+
+    store.start();
+    resolveNextGet(liveView({ damage: null }));
+    await flushMicrotasks();
+
+    const figures = liveDamage();
+    emit(damageEvent(figures));
+    expect(store.getModel().damage).toBe(figures);
+
+    emit(damageEvent(null));
+    expect(store.getModel().damage).toBeNull();
+  });
+
+  it('a fastUpdate identical in damage too produces zero notifications', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const notifications: LiveModel[] = [];
+
+    store.start();
+    resolveNextGet(liveView({ field: [], recovery: [], onFieldHeroIds: [], damage: liveDamage() }));
+    await flushMicrotasks();
+    store.subscribe((model) => notifications.push(model));
+
+    emit(damageEvent(liveDamage()));
+
+    expect(notifications).toHaveLength(0);
+  });
+
+  it('a fastUpdate that changes only damage still produces a notification', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const notifications: LiveModel[] = [];
+
+    store.start();
+    resolveNextGet(liveView({ field: [], recovery: [], onFieldHeroIds: [], damage: liveDamage() }));
+    await flushMicrotasks();
+    store.subscribe((model) => notifications.push(model));
+
+    emit(damageEvent(liveDamage({ sessionSeconds: 301 })));
+
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0]?.damage?.sessionSeconds).toBe(301);
+  });
+
+  it('a re-fetch that agrees with the held damage keeps the held object', async () => {
+    const { bridge, emitAccountChanged, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const held = liveDamage();
+
+    store.start();
+    resolveNextGet(liveView({ damage: held }));
+    await flushMicrotasks();
+
+    emitAccountChanged();
+    resolveNextGet(liveView({ damage: liveDamage() }));
+    await flushMicrotasks();
+
+    expect(store.getModel().damage).toBe(held);
+  });
+
+  it('a re-fetch whose only difference is the damage replaces it, and tells the listeners', async () => {
+    const { bridge, emitAccountChanged, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const notifications: LiveModel[] = [];
+    const rotation = rotationSnapshot();
+
+    store.start();
+    resolveNextGet(liveView({ rotation, damage: liveDamage() }));
+    await flushMicrotasks();
+    store.subscribe((model) => notifications.push(model));
+
+    const moved = liveDamage({ teamDpsSession: 1_100 });
+    emitAccountChanged();
+    resolveNextGet(liveView({ rotation, damage: moved }));
+    await flushMicrotasks();
+
+    expect(store.getModel().damage).toBe(moved);
+    expect(notifications).toHaveLength(1);
   });
 });
