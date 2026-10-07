@@ -67,9 +67,9 @@ export const MARKET_SLOT_WORD: Readonly<Record<string, string>> = {
 };
 
 /**
- * The word the market spells each catalog rarity with. `Uncommon`, `Rare`, `Epic` and `Legendary`
- * are confirmed against live listings; `Common` and `Mythic` follow the same series and are
- * unconfirmed only because nothing in those rarities has been listed yet. A word that turns out
+ * The word the market spells each catalog rarity with. `Common` through `Legendary` are confirmed
+ * against live listings (`Common` by `Chance Stone (Common)`); `Mythic` follows the same series and
+ * is unconfirmed only because nothing in that rarity has been listed yet. A word that turns out
  * wrong leaves its rows unmatched rather than mismatched.
  */
 export const MARKET_RARITY_WORD: Readonly<Record<number, string>> = {
@@ -82,17 +82,44 @@ export const MARKET_RARITY_WORD: Readonly<Record<number, string>> = {
 };
 
 /**
+ * The id tails a Chance Stone spells its rarity with: an unaccented masculine word, where the
+ * catalog's rarity label gives the feminine `lendaria` at index 4. `comum` through `epico` are
+ * witnessed on a live account; `lendario` and `mitico` follow the pattern unseen. Mirrors the
+ * domain's own stone-id table, and a web test fails if the two drift.
+ */
+const CHANCE_STONE_DEF_TAILS: Readonly<Record<number, string>> = {
+  0: 'comum',
+  1: 'incomum',
+  2: 'raro',
+  3: 'epico',
+  4: 'lendario',
+  5: 'mitico',
+};
+
+/**
  * The categories whose whole identity is a fixed name plus the rarity, each with the `def_id`
  * prefix an owned copy carries. Witnessed in the account fixtures as `map_key_raro`,
- * `time_part_epico` and `skill_stone_comum` — the same prefixes the inventory parser's `inferKind`
- * keys off — and on the market as `Gate Key (Rare)`, `Time Part (Epic)`, `Skill Stone (Common)`.
+ * `time_part_epico`, `skill_stone_comum` and `forja_pedra_raro` — the same prefixes the inventory
+ * parser keys its kinds off — and on the market as `Gate Key (Rare)`, `Time Part (Epic)`,
+ * `Skill Stone (Common)`, `Chance Stone (Rare)`.
+ *
+ * The tail after the prefix is the catalog's rarity token unless a family spells its own, as the
+ * Chance Stone does.
  */
 export const RARITY_SUFFIXED_CATEGORIES: Readonly<
-  Record<string, { marketPrefix: string; defPrefix: string }>
+  Record<
+    string,
+    { marketPrefix: string; defPrefix: string; defTails?: Readonly<Record<number, string>> }
+  >
 > = {
   key: { marketPrefix: 'Gate Key', defPrefix: 'map_key' },
   time: { marketPrefix: 'Time Part', defPrefix: 'time_part' },
   stone: { marketPrefix: 'Skill Stone', defPrefix: 'skill_stone' },
+  chanceStone: {
+    marketPrefix: 'Chance Stone',
+    defPrefix: 'forja_pedra',
+    defTails: CHANCE_STONE_DEF_TAILS,
+  },
 };
 
 /** The market name an item chest is listed under, which carries a level where the others carry a rarity. */
@@ -197,10 +224,12 @@ export function generateMarketNames(catalog: CatalogView): Map<string, MarketNam
     });
   }
 
-  for (const [category, { marketPrefix, defPrefix }] of Object.entries(RARITY_SUFFIXED_CATEGORIES)) {
+  for (const [category, { marketPrefix, defPrefix, defTails }] of Object.entries(
+    RARITY_SUFFIXED_CATEGORIES,
+  )) {
     for (const rarityIdx of catalog.rarityIdxs) {
       const rarityWord = MARKET_RARITY_WORD[rarityIdx];
-      const token = catalog.rarityTokens[rarityIdx];
+      const token = (defTails ?? catalog.rarityTokens)[rarityIdx];
       if (rarityWord == null || token == null) continue;
       add(`${marketPrefix} (${rarityWord})`, {
         category,
