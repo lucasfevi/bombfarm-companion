@@ -539,8 +539,6 @@ function readXpMult(skills: Record<string, unknown> | undefined): number | undef
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
-/** `/state`'s gold, the same digit-string wire encoding `tls-stream.ts`'s `readWireMoney` parses —
- *  a non-numeric value is ignored rather than becoming `NaN`. */
 /** `account.vip_until`, unix seconds. */
 function readVipUntil(account: Record<string, unknown> | undefined): number | undefined {
   if (!isPlainObject(account)) return undefined;
@@ -548,6 +546,8 @@ function readVipUntil(account: Record<string, unknown> | undefined): number | un
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
+/** `/state`'s gold, the same digit-string wire encoding `tls-stream.ts`'s `readWireMoney` parses —
+ *  a non-numeric value is ignored rather than becoming `NaN`. */
 function readAccountGold(account: Record<string, unknown> | undefined): number | undefined {
   if (!isPlainObject(account)) return undefined;
   const value = account.gold;
