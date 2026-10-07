@@ -334,6 +334,15 @@ describe('bomb ledger — discontinuous frames', () => {
     expect(leave().retiredThisFrame.get(5)).toEqual({ owner: null, radius: 2, reason: 'streamDiscontinuity' });
   });
 
+  it('drops a carried bomb owner when its fuse did not move at all', () => {
+    const { advance, leave } = setup();
+    advance([freshBomb(5)], [hero('a', 5)]);
+    const step = advance([bomb(5, FUSE - 0.1)], [hero('a', 5)]);
+    expect(step.discontinuous).toBe(true);
+    expect(step.births + step.adopted).toBe(0);
+    expect(leave().retiredThisFrame.get(5)).toEqual({ owner: null, radius: 2, reason: 'streamDiscontinuity' });
+  });
+
   it('keeps an owner on a frame flagged discontinuous by the input alone when the step was clean', () => {
     const { advance, leave } = setup();
     advance([freshBomb(5)], [hero('a', 5)]);
