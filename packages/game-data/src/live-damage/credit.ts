@@ -1,4 +1,4 @@
-import type { LiveExplosion, LiveHit, LiveTickHero, UnattributedReason } from '@bombfarm/contracts';
+import type { LiveExplosion, LiveHit, LiveLootPop, LiveTickHero, UnattributedReason } from '@bombfarm/contracts';
 import type { LedgerStep, RetiredBomb } from './bomb-ledger.js';
 import { crossCells } from './geometry.js';
 
@@ -148,4 +148,27 @@ export function creditHits({
     const decided = signatures.decisive(hit.damage, critical, owners);
     return decided === null ? unattributed('unresolvedOverlap') : credit(decided);
   });
+}
+
+export interface LootCredit {
+  readonly gold: number;
+  readonly credited: string | null;
+  readonly reason: UnattributedReason | null;
+}
+
+export function creditLoot(loot: readonly LiveLootPop[], credited: readonly HitCredit[]): LootCredit[] {
+  const credits: LootCredit[] = [];
+  for (const pop of loot) {
+    if (pop.gold === undefined || !Number.isFinite(pop.gold)) continue;
+    const onCell = credited.filter((hit) => hit.cell === pop.cell);
+    const [first] = onCell;
+    if (first === undefined) {
+      credits.push({ gold: pop.gold, credited: null, reason: 'noHitOnLootCell' });
+    } else if (first.credited !== null && onCell.every((hit) => hit.credited === first.credited)) {
+      credits.push({ gold: pop.gold, credited: first.credited, reason: null });
+    } else {
+      credits.push({ gold: pop.gold, credited: null, reason: 'sharedOrUnattributedKill' });
+    }
+  }
+  return credits;
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { LiveExplosion, LiveHit, LiveTickHero, UnattributedReason } from '@bombfarm/contracts';
 import type { LedgerStep, RetiredBomb } from './bomb-ledger.js';
-import { creditHits, createSignatureBook, type CreditHitsInput, type HitCredit } from './credit.js';
+import { creditHits, creditLoot, createSignatureBook, type CreditHitsInput, type HitCredit } from './credit.js';
 
 const retired = (owner: string | null, radius = 2, reason?: UnattributedReason): RetiredBomb =>
   reason === undefined ? { owner, radius } : { owner, radius, reason };
@@ -411,5 +411,86 @@ describe('signature book', () => {
     book.record(10, false, 'A');
     book.clear();
     expect(book.decisive(10, false, ['A'])).toBeNull();
+  });
+});
+
+describe('creditLoot', () => {
+  const credited = (cell: number, heroId: string | null, damage = 10): HitCredit => ({
+    cell,
+    damage,
+    credited: heroId,
+    reason: heroId === null ? 'unresolvedOverlap' : null,
+  });
+
+  it('gives the prop and its gold to the hero every hit on the cell was credited to', () => {
+    expect(creditLoot([{ cell: 7, gold: 120 }], [credited(7, 'A'), credited(7, 'A', 30)])).toEqual([
+      { gold: 120, credited: 'A', reason: null },
+    ]);
+  });
+
+  it('sends a kill shared by two heroes to the shared-kill reason', () => {
+    expect(creditLoot([{ cell: 7, gold: 120 }], [credited(7, 'A'), credited(7, 'B')])).toEqual([
+      { gold: 120, credited: null, reason: 'sharedOrUnattributedKill' },
+    ]);
+  });
+
+  it('sends a kill with any unattributed hit on its cell to the shared-kill reason', () => {
+    expect(creditLoot([{ cell: 7, gold: 120 }], [credited(7, 'A'), credited(7, null)])).toEqual([
+      { gold: 120, credited: null, reason: 'sharedOrUnattributedKill' },
+    ]);
+    expect(creditLoot([{ cell: 7, gold: 120 }], [credited(7, null)])).toEqual([
+      { gold: 120, credited: null, reason: 'sharedOrUnattributedKill' },
+    ]);
+  });
+
+  it('sends a loot entry with no hit on its cell to the no-hit reason', () => {
+    expect(creditLoot([{ cell: 7, gold: 120 }], [credited(8, 'A')])).toEqual([
+      { gold: 120, credited: null, reason: 'noHitOnLootCell' },
+    ]);
+    expect(creditLoot([{ cell: 7, gold: 120 }], [])).toEqual([{ gold: 120, credited: null, reason: 'noHitOnLootCell' }]);
+  });
+
+  it('skips an entry with no gold, with non-finite gold, entirely', () => {
+    const loot = [{ cell: 7 }, { cell: 7, gold: Number.NaN }, { cell: 7, gold: Number.POSITIVE_INFINITY }, { cell: 7, gold: 5 }];
+    expect(creditLoot(loot, [credited(7, 'A')])).toEqual([{ gold: 5, credited: 'A', reason: null }]);
+  });
+
+  it('returns nothing for a frame without loot', () => {
+    expect(creditLoot([], [credited(7, 'A')])).toEqual([]);
+  });
+
+  it('matches loot to the hit landing cell, not the shard origin cell', () => {
+    const hits = run({
+      hits: [hit(300, 50, { shardOrigin: 101 })],
+      explosions: [blast(100)],
+      ledger: ledgerStep({ 100: retired('A') }),
+    });
+    expect(creditLoot([{ cell: 101, gold: 9 }], hits)).toEqual([{ gold: 9, credited: null, reason: 'noHitOnLootCell' }]);
+    expect(creditLoot([{ cell: 300, gold: 9 }], hits)).toEqual([{ gold: 9, credited: 'A', reason: null }]);
+  });
+
+  it('keeps each hit damage with whoever it was credited to', () => {
+    const hits = [credited(7, 'A', 10), credited(7, 'B', 20)];
+    creditLoot([{ cell: 7, gold: 1 }], hits);
+    expect(hits.map((entry) => [entry.credited, entry.damage])).toEqual([
+      ['A', 10],
+      ['B', 20],
+    ]);
+  });
+
+  it('credits each loot entry on its own cell, in order, carrying its own gold', () => {
+    const credits = creditLoot(
+      [
+        { cell: 7, gold: 100 },
+        { cell: 9, gold: 250 },
+        { cell: 11, gold: 40 },
+      ],
+      [credited(7, 'A'), credited(9, 'B')],
+    );
+    expect(credits).toEqual([
+      { gold: 100, credited: 'A', reason: null },
+      { gold: 250, credited: 'B', reason: null },
+      { gold: 40, credited: null, reason: 'noHitOnLootCell' },
+    ]);
   });
 });
