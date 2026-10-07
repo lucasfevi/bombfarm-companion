@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FORJA_MAX } from '@bombfarm/domain/gear';
+import { applyTeamPlanControlChange, resolveHeroScope } from '@bombfarm/team-plan/core';
 import { DEFAULT_TEAM_PLAN_RESULT_SORT } from '@bombfarm/team-plan/model';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import {
   DEFAULT_OPTIMIZER_VIEW,
   loadOptimizerResultSort,
   loadOptimizerView,
+  migrateOptimizerScopeOnce,
   saveOptimizerResultSort,
   saveOptimizerView,
   type OptimizerView,
@@ -194,5 +197,86 @@ describe('optimizer result order', () => {
     expect(loadOptimizerResultSort()).toEqual(DEFAULT_TEAM_PLAN_RESULT_SORT);
     entries.set('bfc-optimizer-result-sort', '{not json');
     expect(loadOptimizerResultSort()).toEqual(DEFAULT_TEAM_PLAN_RESULT_SORT);
+  });
+});
+
+function roster(...heroes: { id: string; battleAllowed: boolean }[]): HeroRecord[] {
+  return heroes as unknown as HeroRecord[];
+}
+
+describe('optimizer scope map', () => {
+  beforeEach(() => {
+    installStorage();
+  });
+
+  afterEach(() => {
+    delete (globalThis as unknown as { window?: FakeWindow }).window;
+  });
+
+  it('a hero whose battle is turned back on resolves to optimize after another hero was dragged', () => {
+    const before = roster({ id: 'a', battleAllowed: true }, { id: 'b', battleAllowed: false });
+    const moved = applyTeamPlanControlChange(
+      DEFAULT_OPTIMIZER_VIEW,
+      { kind: 'scope', heroId: 'a', scope: 'leaveAlone' },
+      { heroes: before, farmChosenPhase: null, phase: null },
+    );
+    saveOptimizerView(moved!.controls);
+    const reloaded = loadOptimizerView();
+    expect(reloaded.scopeByHeroId).toEqual({ a: 'leaveAlone' });
+    expect(resolveHeroScope({ id: 'b', battleAllowed: true }, reloaded.scopeByHeroId)).toBe('optimize');
+  });
+
+  it('a drag to the hero default column is stored and survives a later battle toggle', () => {
+    const heroes = roster({ id: 'a', battleAllowed: false });
+    const moved = applyTeamPlanControlChange(
+      DEFAULT_OPTIMIZER_VIEW,
+      { kind: 'scope', heroId: 'a', scope: 'donate' },
+      { heroes, farmChosenPhase: null, phase: null },
+    );
+    saveOptimizerView(moved!.controls);
+    const reloaded = loadOptimizerView();
+    expect(reloaded.scopeByHeroId).toEqual({ a: 'donate' });
+    expect(resolveHeroScope({ id: 'a', battleAllowed: true }, reloaded.scopeByHeroId)).toBe('donate');
+  });
+
+  it('explicit Donate and Leave alone choices survive a save and reload', () => {
+    saveOptimizerView({ ...DEFAULT_OPTIMIZER_VIEW, scopeByHeroId: { a: 'donate', b: 'leaveAlone' } });
+    expect(loadOptimizerView().scopeByHeroId).toEqual({ a: 'donate', b: 'leaveAlone' });
+  });
+
+  describe('one-off cleanup of a materialised map', () => {
+    const heroes = roster(
+      { id: 'a', battleAllowed: true },
+      { id: 'b', battleAllowed: true },
+      { id: 'c', battleAllowed: false },
+      { id: 'd', battleAllowed: false },
+    );
+    const materialised: OptimizerView = {
+      ...DEFAULT_OPTIMIZER_VIEW,
+      scopeByHeroId: { a: 'optimize', b: 'donate', c: 'donate', d: 'optimize' },
+    };
+
+    it('drops entries equal to the default and Donate on a battle-enabled hero, and writes the cleaned view', () => {
+      const migrated = migrateOptimizerScopeOnce(heroes, materialised);
+      expect(migrated?.scopeByHeroId).toEqual({ d: 'optimize' });
+      expect(loadOptimizerView().scopeByHeroId).toEqual({ d: 'optimize' });
+    });
+
+    it('runs once: a later call with another materialised map leaves it alone', () => {
+      migrateOptimizerScopeOnce(heroes, materialised);
+      expect(migrateOptimizerScopeOnce(heroes, materialised)).toBeNull();
+    });
+
+    it('waits for a roster and is not spent by an empty one', () => {
+      expect(migrateOptimizerScopeOnce([], materialised)).toBeNull();
+      expect(migrateOptimizerScopeOnce(heroes, materialised)?.scopeByHeroId).toEqual({ d: 'optimize' });
+    });
+
+    it('leaves a choice made after the cleanup alone, even one equal to the default', () => {
+      migrateOptimizerScopeOnce(heroes, materialised);
+      const later: OptimizerView = { ...DEFAULT_OPTIMIZER_VIEW, scopeByHeroId: { a: 'optimize' } };
+      expect(migrateOptimizerScopeOnce(heroes, later)).toBeNull();
+      expect(loadOptimizerView().scopeByHeroId).toEqual({ d: 'optimize' });
+    });
   });
 });

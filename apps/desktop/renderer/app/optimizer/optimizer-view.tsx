@@ -33,6 +33,7 @@ import {
   DEFAULT_OPTIMIZER_VIEW,
   loadOptimizerResultSort,
   loadOptimizerView,
+  migrateOptimizerScopeOnce,
   saveOptimizerResultSort,
   saveOptimizerView,
   type OptimizerView,
@@ -128,6 +129,12 @@ export function OptimizerView({
   const { state: readState, request: onRefresh } = useAccountReadRequest(adoptLive);
 
   const settled = settledSnapshot(state);
+  const settledHeroes = settled?.inputs.heroes;
+  useEffect(() => {
+    if (!storageReady || !settledHeroes) return;
+    const migrated = migrateOptimizerScopeOnce(settledHeroes, controls);
+    if (migrated) setControls(migrated);
+  }, [storageReady, settledHeroes, controls]);
   const busy = state.status === 'computing';
   useScreenRefreshRegistration('optimizer', { capturedAt: settled?.capturedAt ?? null, stale, busy, readState, onRefresh });
 
