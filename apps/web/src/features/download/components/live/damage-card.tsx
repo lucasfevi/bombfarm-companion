@@ -1,4 +1,4 @@
-import { Icon, Panel, formatCompactNumber } from '@bombfarm/ui';
+import { Icon, Panel, cn, formatCompactNumber } from '@bombfarm/ui';
 import { sub, type Lang } from '@/shared/i18n';
 import { liveLabel } from '../../model/live-replica-copy';
 import type { ReplicaDamage } from '../../model/live-replica-data';
@@ -8,16 +8,12 @@ import { DAMAGE_ROW_COLUMNS } from './damage-table';
 import { DamageUnattributedRow } from './damage-unattributed-row';
 import { ReplicaCardHead } from './replica-card-head';
 
-/** Sized to its table, not stretched across the row, as the desktop's panel is. */
-export function DamageCard({ lang, damage }: { lang: Lang; damage: ReplicaDamage }) {
+export function DamageCard({ lang, damage, className }: { lang: Lang; damage: ReplicaDamage; className?: string }) {
   const compact = (value: number) => formatCompactNumber(value, lang);
   const teamDps = liveLabel('liveDamageTeamDpsLabel', lang);
 
   return (
-    <Panel
-      data-testid="replica-live-damage"
-      className="flex w-full max-w-140 flex-col gap-3 self-start p-3"
-    >
+    <Panel data-testid="replica-live-damage" className={cn('flex min-w-0 flex-col gap-3 p-3', className)}>
       <ReplicaCardHead
         title={liveLabel('liveDamageTitle', lang)}
         info={<Icon name="information-circle" size="xs" className="text-muted" />}

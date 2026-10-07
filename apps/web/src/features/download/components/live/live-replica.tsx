@@ -34,13 +34,21 @@ export function LiveReplica({ lang }: { lang: Lang }) {
     <div className="w-full overflow-hidden rounded-xl border border-line bg-bg-2 shadow-[0_40px_90px_-44px_rgba(0,0,0,1)]">
       <div aria-hidden="true">
         <ReplicaChrome />
-        <div className="flex flex-col gap-3 p-3 sm:p-4">
+        <div className="@container p-3 sm:p-4">
+          {/* Damage and Heroes pair up under earnings and map once the drawing itself is 880px wide,
+              the width at which the damage card's hero names stop truncating. Measured on the drawing
+              rather than the viewport: the download hero narrows it again at `xl`. */}
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <EarningsCard lang={lang} earnings={frame.earnings} measured={frame.measured} />
             <MapCard lang={lang} map={frame.map} />
+            <DamageCard lang={lang} damage={frame.damage} className="col-span-full @min-[880px]:col-span-1" />
+            <HeroesCard
+              lang={lang}
+              summary={frame.summary}
+              heroes={frame.heroes}
+              className="col-span-full @min-[880px]:col-span-1"
+            />
           </div>
-          <DamageCard lang={lang} damage={frame.damage} />
-          <HeroesCard lang={lang} summary={frame.summary} heroes={frame.heroes} />
         </div>
       </div>
     </div>

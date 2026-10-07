@@ -174,12 +174,31 @@ describe('Live replica', () => {
       return { markup, card: markup.slice(start, end) };
     };
 
-    it('sits in its own row between the earnings and map row and the heroes card', () => {
+    it('follows the earnings and map cards and precedes the heroes card', () => {
       const { markup } = cardOf('en');
       const damageAt = markup.indexOf('data-testid="replica-live-damage"');
 
       expect(markup.indexOf(liveLabel('liveMapTitle', 'en'))).toBeLessThan(damageAt);
       expect(damageAt).toBeLessThan(markup.indexOf('data-testid="replica-live-heroes"'));
+    });
+
+    it('shares one grid with the earnings and map cards, and so does the heroes card', () => {
+      const { markup } = cardOf('en');
+      const sectionTag = (testId: string) =>
+        new RegExp(`<section[^>]*data-testid="${testId}"[^>]*>`).exec(markup)?.[0] ?? '';
+      const gridStart = markup.search(/<div class="grid grid-cols-1 gap-3 md:grid-cols-2"/);
+      const at = (testId: string) => markup.indexOf(`data-testid="${testId}"`);
+
+      expect(gridStart).toBeGreaterThan(-1);
+      expect(at('replica-live-damage')).toBeGreaterThan(gridStart);
+      expect(at('replica-live-heroes')).toBeGreaterThan(at('replica-live-damage'));
+      const beforeDamage = markup.slice(gridStart, markup.lastIndexOf('<section', at('replica-live-damage')));
+      expect(beforeDamage.match(/<section/g)).toHaveLength(2);
+      for (const testId of ['replica-live-damage', 'replica-live-heroes']) {
+        expect(sectionTag(testId)).toContain(' col-span-full ');
+        expect(sectionTag(testId)).toContain(' @min-[880px]:col-span-1"');
+        expect(sectionTag(testId)).not.toMatch(/\b(?:self-start|max-w-140)\b/);
+      }
     });
 
     for (const lang of LANGS) {

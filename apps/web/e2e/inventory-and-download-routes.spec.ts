@@ -132,6 +132,53 @@ test.describe('the Download route', () => {
     expect(rows).toEqual([...DAMAGE_HEROES, 'Unattributed']);
   });
 
+  test("the Live replica pairs Damage under earnings and Heroes under map when the drawing is wide, and stacks them full width when it is not", async ({
+    page,
+  }) => {
+    const rects = () =>
+      page.evaluate(() => {
+        const box = (testId: string) => {
+          const el = document.querySelector(`[data-testid="${testId}"]`);
+          const rect = el === null ? null : el.getBoundingClientRect();
+          if (rect === null) throw new Error(`missing ${testId}`);
+          return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, height: rect.height };
+        };
+        const damage = document.querySelector('[data-testid="replica-live-damage"]');
+        const cells = [...(damage?.parentElement?.children ?? [])] as HTMLElement[];
+        const [earnings, map] = cells.slice(0, 2).map((cell) => cell.getBoundingClientRect());
+        const truncated = [...(damage?.querySelectorAll('li *') ?? [])].filter(
+          (el) => el.scrollWidth > el.clientWidth + 1,
+        ).length;
+        return {
+          earnings: earnings && { left: earnings.left, right: earnings.right, bottom: earnings.bottom },
+          map: map && { left: map.left, right: map.right, bottom: map.bottom },
+          damage: box('replica-live-damage'),
+          heroes: box('replica-live-heroes'),
+          truncated,
+        };
+      });
+
+    await page.setViewportSize({ width: 1000, height: 1000 });
+    const wide = await rects();
+    expect(wide.damage.left).toBeCloseTo(wide.earnings.left, 0);
+    expect(wide.damage.right).toBeCloseTo(wide.earnings.right, 0);
+    expect(wide.heroes.left).toBeCloseTo(wide.map.left, 0);
+    expect(wide.heroes.right).toBeCloseTo(wide.map.right, 0);
+    expect(wide.damage.top).toBeGreaterThanOrEqual(Math.max(wide.earnings.bottom, wide.map.bottom) - 0.5);
+    expect(wide.heroes.top).toBeCloseTo(wide.damage.top, 0);
+    expect(wide.heroes.height).toBeCloseTo(wide.damage.height, 0);
+    expect(wide.truncated, 'a hero name or figure is clipped in the Damage card').toBe(0);
+
+    await page.setViewportSize({ width: 800, height: 1000 });
+    const narrow = await rects();
+    expect(narrow.damage.left).toBeCloseTo(narrow.earnings.left, 0);
+    expect(narrow.damage.right).toBeCloseTo(narrow.map.right, 0);
+    expect(narrow.heroes.left).toBeCloseTo(narrow.earnings.left, 0);
+    expect(narrow.heroes.right).toBeCloseTo(narrow.map.right, 0);
+    expect(narrow.damage.top).toBeGreaterThanOrEqual(Math.max(narrow.earnings.bottom, narrow.map.bottom) - 0.5);
+    expect(narrow.heroes.top).toBeGreaterThanOrEqual(narrow.damage.bottom - 0.5);
+  });
+
   test('switching the Heroes panel on redraws the compact window with the same roster', async ({
     page,
   }) => {
