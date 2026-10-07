@@ -1,6 +1,7 @@
-import { energyDisplayPercent } from '@bombfarm/contracts';
+import { energyDisplayPercent, sameLiveDamage } from '@bombfarm/contracts';
 import type {
   FieldCountdown,
+  LiveDamage,
   LiveEarnings,
   LiveEvent,
   LiveHeroEnergy,
@@ -45,6 +46,8 @@ export interface LiveInternalState {
   readonly earnings: LiveEarnings | null;
   /** Same rule as `earnings`: carried through from the arrival, never derived here. */
   readonly map: LiveMap | null;
+  /** Same rule as `earnings`: carried through from the arrival, never derived here. */
+  readonly damage: LiveDamage | null;
   /** Set once any real data — the first `live:get` bootstrap or a `live:event` — has been
    *  applied. Guards only the FIRST bootstrap: subscription happens before that read resolves,
    *  so an event can legitimately arrive first, and the bootstrap resolving afterward must not
@@ -72,6 +75,7 @@ export const initialLiveInternalState: LiveInternalState = {
   onFieldHeroIds: [],
   earnings: null,
   map: null,
+  damage: null,
   hasAppliedArrival: false,
   hasBootstrapped: false,
   revision: 0,
@@ -210,6 +214,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
       const nextOnFieldHeroIds = keep(view.onFieldHeroIds, state.onFieldHeroIds, sameIdList);
       const nextEarnings = keep(view.earnings, state.earnings, sameEarnings);
       const nextMap = keep(view.map, state.map, sameMap);
+      const nextDamage = keep(view.damage, state.damage, sameLiveDamage);
       const unchanged =
         state.hasBootstrapped &&
         view.rotation === state.rotation &&
@@ -219,7 +224,8 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
         nextEnergies === state.energies &&
         nextOnFieldHeroIds === state.onFieldHeroIds &&
         nextEarnings === state.earnings &&
-        nextMap === state.map;
+        nextMap === state.map &&
+        nextDamage === state.damage;
       if (unchanged) return state;
       return {
         ...state,
@@ -231,6 +237,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
         onFieldHeroIds: nextOnFieldHeroIds,
         earnings: nextEarnings,
         map: nextMap,
+        damage: nextDamage,
         hasAppliedArrival: true,
         hasBootstrapped: true,
         revision: state.revision + 1,
@@ -260,6 +267,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
           applied && sameIdList(state.onFieldHeroIds, event.onFieldHeroIds) ? state.onFieldHeroIds : event.onFieldHeroIds;
         const earnings = applied && sameEarnings(state.earnings, event.earnings) ? state.earnings : event.earnings;
         const map = applied && sameMap(state.map, event.map) ? state.map : event.map;
+        const damage = applied && sameLiveDamage(state.damage, event.damage) ? state.damage : event.damage;
         const unchanged =
           applied &&
           field === state.field &&
@@ -267,7 +275,8 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
           energies === state.energies &&
           onFieldHeroIds === state.onFieldHeroIds &&
           earnings === state.earnings &&
-          map === state.map;
+          map === state.map &&
+          damage === state.damage;
         if (unchanged) return state;
         return {
           ...state,
@@ -277,6 +286,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
           onFieldHeroIds,
           earnings,
           map,
+          damage,
           hasAppliedArrival: true,
           revision: state.revision + 1,
         };
@@ -367,6 +377,7 @@ export function deriveLiveModel(state: LiveInternalState, caches: LiveModelCache
     fast: deriveFastModel(state, caches),
     earnings: state.earnings,
     map: state.map,
+    damage: state.damage,
   };
 }
 
