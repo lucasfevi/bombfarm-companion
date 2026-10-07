@@ -17,8 +17,8 @@ const MS_PER_HOUR = 3_600_000;
  *  never the whole gap, so a rate computed across it does not collapse toward zero. */
 export const MAX_TICK_GAP_MS = 2_000;
 
-const BUCKET_SPAN_MS = 1_000;
-const TEN_MINUTES_MS = 10 * 60 * 1000;
+export const BUCKET_SPAN_MS = 1_000;
+export const TEN_MINUTES_MS = 10 * 60 * 1000;
 const MS_PER_MINUTE = 60_000;
 
 /** How many slices the rolling window is reported as. Chosen for what a trend line can actually
