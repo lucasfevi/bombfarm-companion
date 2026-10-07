@@ -106,9 +106,8 @@ export class DamageFold {
     const bucket = this.#bucketFor(now);
     bucket.streamedMs += streamedDelta;
 
-    const presentIds = tick.heroes.map((hero) => hero.id);
-    this.#present = new Set(presentIds);
-    for (const heroId of presentIds) this.#ledger(heroId).fieldMs += streamedDelta;
+    this.#present = new Set(tick.heroes.map((hero) => hero.id));
+    for (const heroId of this.#present) this.#ledger(heroId).fieldMs += streamedDelta;
 
     if (credit === null) return;
     add(this.#team, credit.team);

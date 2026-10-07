@@ -405,6 +405,17 @@ describe('DamageFold: field seconds and hero rows', () => {
     }
   });
 
+  it('credits a hero listed twice in one frame its field seconds once, so uptime stays at most 1', () => {
+    const { fold, step } = makeHarness();
+    step({ heroes: [hero('A'), hero('A')] });
+    step({ heroes: [hero('A'), hero('B'), hero('A')] });
+
+    const view = requireView(fold);
+    expect(rowFor(view, 'A')?.fieldSeconds).toBeCloseTo(0.2, 9);
+    expect(rowFor(view, 'A')?.uptime).toBe(1);
+    expect(rowFor(view, 'B')?.fieldSeconds).toBeCloseTo(0.2, 9);
+  });
+
   it('has no uptime for a hero with credit when the session has streamed no seconds', () => {
     const { attributor } = fakeAttributor(() =>
       creditOf({
