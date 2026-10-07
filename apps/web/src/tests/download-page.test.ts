@@ -1,6 +1,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import { formatCompactNumber } from '@bombfarm/ui';
 import { LiveReplica } from '@/features/download/components/live/live-replica';
 import { InstallSteps } from '@/features/download/components/install-steps';
 import { InstallCounts } from '@/features/download/components/install-counts';
@@ -207,6 +208,17 @@ describe('Live replica', () => {
         expect(notFoundInOrder).toEqual([]);
       });
     }
+
+    it('prints the Unattributed rate, then its props and gold, on the row after the heroes', () => {
+      const { card } = cardOf('en');
+      const { unattributed } = replicaFrameAt(0).damage;
+      const row = card.slice(card.indexOf('Unattributed'));
+      const figures = [...row.matchAll(/tabular-nums[^"]*">([^<]+)</g)].map((match) => match[1]);
+
+      expect(figures.slice(0, 3)).toEqual(
+        [unattributed.dps, unattributed.props, unattributed.gold].map((value) => formatCompactNumber(value, 'en')),
+      );
+    });
 
     it('lists the heroes in the sample order, by damage', () => {
       const { card } = cardOf('en');
@@ -834,6 +846,16 @@ describe('replica sample damage', () => {
       const frame = replicaFrameAt(t);
       expect(frame.damage.team.props).toBe(frame.measured.propsSession);
       expect(frame.damage.team.gold).toBe(frame.earnings.goldSessionTotal);
+    }
+  });
+
+  it('rates the Unattributed damage over the session seconds, so it plus each hero share of the session adds up to the team rate', () => {
+    for (const t of instants) {
+      const { unattributed, heroes, sessionSeconds, teamDpsSession } = replicaFrameAt(t).damage;
+      const heroRates = heroes.reduce((total, hero) => total + hero.damage / sessionSeconds, 0);
+
+      expect(unattributed.dps).toBe(unattributed.damage / sessionSeconds);
+      expect(unattributed.dps + heroRates).toBeCloseTo(teamDpsSession, 6);
     }
   });
 

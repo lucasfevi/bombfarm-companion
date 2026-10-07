@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
-import type { CreditAmounts, LiveDamage, LiveDamageHeroRow } from '@bombfarm/contracts';
+import type { LiveDamage, LiveDamageHeroRow, LiveDamageUnattributed } from '@bombfarm/contracts';
 import { HeroIdentity } from '@bombfarm/game-art';
 import { DataTable, formatCompactNumber, InfoTip, Panel, PanelHeader, type Lang } from '@bombfarm/ui';
 import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
@@ -97,7 +97,7 @@ const DamageHeroRowView = memo(function DamageHeroRowView({
  * and always the same height: until there is damage to account for it draws nothing, and a row
  * that appeared with the first hit would shift everything under the panel.
  */
-function UnattributedRow({ amounts, t, lang }: { amounts: CreditAmounts | null; t: Copy; lang: Lang }) {
+function UnattributedRow({ amounts, t, lang }: { amounts: LiveDamageUnattributed | null; t: Copy; lang: Lang }) {
   return (
     <DataTable.Root className="overflow-y-auto border-t border-line [scrollbar-gutter:stable]">
       <DataTable.Table className="w-[32rem] table-fixed [&_td]:py-1" aria-label={t.liveDamageUnattributedLabel}>
@@ -107,7 +107,9 @@ function UnattributedRow({ amounts, t, lang }: { amounts: CreditAmounts | null; 
             <DataTable.Cell className="h-10 py-1 font-bold text-muted">
               {amounts === null ? null : t.liveDamageUnattributedLabel}
             </DataTable.Cell>
-            <DataTable.Cell align="right" numeric className={CELL_CLASS} />
+            <DataTable.Cell align="right" numeric className={MUTED_CELL_CLASS}>
+              {amounts === null ? null : numberText(amounts.dps, lang)}
+            </DataTable.Cell>
             <DataTable.Cell align="right" numeric className={MUTED_CELL_CLASS}>
               {amounts === null ? null : numberText(amounts.props, lang)}
             </DataTable.Cell>

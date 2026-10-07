@@ -79,7 +79,10 @@ function expectReconciled(view: LiveDamage | null): void {
   if (view === null) return;
   const accounted = sumAmounts([...view.heroes, ...Object.values(view.unattributedReasons)]);
   expect(accounted).toEqual(view.team);
-  if (view.unattributed !== null) expect(view.unattributed).toEqual(sumAmounts(Object.values(view.unattributedReasons)));
+  if (view.unattributed !== null) {
+    const { dps: _dps, ...amounts } = view.unattributed;
+    expect(amounts).toEqual(sumAmounts(Object.values(view.unattributedReasons)));
+  }
 }
 
 function requireView(fold: DamageFold): LiveDamage {
@@ -400,7 +403,7 @@ describe('DamageFold: the Unattributed row', () => {
 
     const view = requireView(fold);
     expect(view.team.damage).toBe(40);
-    expect(view.unattributed).toEqual({ damage: 0, props: 0, gold: 0 });
+    expect(view.unattributed).toEqual({ damage: 0, props: 0, gold: 0, dps: 0 });
   });
 
   it('carries unattributed damage, props and gold in total and by reason', () => {
@@ -408,9 +411,57 @@ describe('DamageFold: the Unattributed row', () => {
     step({ hits: [hit(10, 30)], loot: [{ cell: 10, gold: 9 }] });
 
     const view = requireView(fold);
-    expect(view.unattributed).toEqual({ damage: 30, props: 1, gold: 9 });
+    expect(view.unattributed).toEqual({ damage: 30, props: 1, gold: 9, dps: null });
     expect(view.unattributedReasons.explosionlessWithoutFantasma).toEqual({ damage: 30, props: 0, gold: 0 });
     expect(view.unattributedReasons.sharedOrUnattributedKill).toEqual({ damage: 0, props: 1, gold: 9 });
+  });
+
+  it('rates Unattributed damage over the session streamed seconds, the clock Team DPS session divides by', () => {
+    const { fold, step } = makeHarness();
+    step({ hits: [hit(10, 30)] });
+    step({ hits: [hit(10, 30)] });
+    step({});
+
+    const view = requireView(fold);
+    expect(view.sessionSeconds).toBeCloseTo(0.4, 9);
+    expect(view.unattributed?.damage).toBe(60);
+    expect(view.unattributed?.dps).toBeCloseTo(150, 6);
+    expect(view.unattributed?.dps).toBeCloseTo(requireNumber(view.teamDpsSession), 6);
+  });
+
+  it('has no Unattributed rate on the first frame, which streams no seconds, and has one from the second', () => {
+    const { fold, step } = makeHarness();
+    step({ hits: [hit(10, 30)] });
+    expect(requireView(fold).unattributed?.dps).toBeNull();
+
+    step({});
+    expect(requireView(fold).unattributed?.dps).toBeCloseTo(150, 6);
+  });
+
+  it('rates only the damage Unattributed alongside the hero damage that is attributed, not the team total', () => {
+    const { fold, step } = makeHarness();
+    step({ heroes: [hero('A', 100)], bombs: [freshBomb(100)] });
+    step({ heroes: [hero('A', 100)], explosions: [blast(100)], hits: [hit(101, 40), hit(10, 20)] });
+    step({ heroes: [hero('A', 100)] });
+
+    const view = requireView(fold);
+    expect(view.team.damage).toBe(60);
+    expect(view.unattributed?.damage).toBe(20);
+    expect(view.unattributed?.dps).toBeCloseTo(20 / 0.4, 6);
+    expect(requireNumber(view.teamDpsSession)).toBeCloseTo(60 / 0.4, 6);
+  });
+
+  it('restarts the Unattributed rate on a reset: absent at once, then over only the seconds streamed since', () => {
+    const { fold, step } = makeHarness();
+    step({ hits: [hit(10, 30)] });
+    step({});
+    fold.reset('reset');
+    expect(requireView(fold).unattributed).toBeNull();
+
+    step({ hits: [hit(10, 50)] });
+    expect(requireView(fold).unattributed?.dps).toBeCloseTo(50 / 0.2, 6);
+    step({});
+    expect(requireView(fold).unattributed?.dps).toBeCloseTo(50 / 0.4, 6);
   });
 });
 
@@ -577,7 +628,7 @@ describe('DamageFold: reset and account change', () => {
     const view = learnFingerprintThenLoseSight('reset');
 
     expect(rowFor(view, 'A')?.damage).toBe(25);
-    expect(view.unattributed).toEqual({ damage: 0, props: 0, gold: 0 });
+    expect(view.unattributed).toEqual({ damage: 0, props: 0, gold: 0, dps: 0 });
   });
 
   it('forgets learned fingerprints on an account change: the same later bomb has no owner', () => {
@@ -831,7 +882,9 @@ describe('DamageFold: replaying the combat capture', () => {
       noHitOnLootCell: { damage: 0, props: 0, gold: 0 },
     };
     expect(view.unattributedReasons).toEqual(expected);
-    expect(view.unattributed).toEqual({ damage: 2_373_305, props: 6, gold: 129_662 });
+    expect(view.sessionSeconds).toBeCloseTo(120, 6);
+    expect(view.unattributed).toMatchObject({ damage: 2_373_305, props: 6, gold: 129_662 });
+    expect(view.unattributed?.dps).toBeCloseTo(2_373_305 / 120, 6);
   });
 
   it('gives twelve distinct heroes a row, and their figures plus Unattributed add up to the team', () => {

@@ -661,7 +661,7 @@ function liveDamage(overrides: Partial<LiveDamage> = {}): LiveDamage {
     coverageSeconds: 120,
     sessionSeconds: 300,
     heroes: [{ heroId: 'on-field', dps: 800, damage: 240_000, props: 40, gold: 9_000, onField: true }],
-    unattributed: { damage: 60_000, props: 10, gold: 2_000 },
+    unattributed: { damage: 60_000, props: 10, gold: 2_000, dps: 200 },
     unattributedReasons: Object.fromEntries(UNATTRIBUTED_REASONS.map((reason) => [reason, none])) as Record<
       UnattributedReason,
       CreditAmounts

@@ -150,6 +150,7 @@ export type {
   LiveGapReason,
   LiveDamage,
   LiveDamageHeroRow,
+  LiveDamageUnattributed,
   LiveHeroEnergy,
   LiveHit,
   LiveLootPop,

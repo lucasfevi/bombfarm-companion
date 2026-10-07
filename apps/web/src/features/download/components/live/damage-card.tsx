@@ -2,11 +2,7 @@ import { Icon, Panel, formatCompactNumber } from '@bombfarm/ui';
 import { HeroIdentity } from '@/shared/game-art';
 import { sub, type Lang } from '@/shared/i18n';
 import { liveLabel } from '../../model/live-replica-copy';
-import type {
-  ReplicaDamage,
-  ReplicaDamageAmounts,
-  ReplicaDamageHero,
-} from '../../model/live-replica-data';
+import type { ReplicaDamage, ReplicaDamageHero } from '../../model/live-replica-data';
 import { ReplicaCardHead } from './replica-card-head';
 
 const ROW_COLUMNS = 'grid grid-cols-[minmax(0,1fr)_6rem_5rem_6rem] items-center gap-2 px-2';
@@ -43,24 +39,19 @@ function HeroRow({ hero, lang }: { hero: ReplicaDamageHero; lang: Lang }) {
   );
 }
 
-function UnattributedRow({ lang, amounts }: { lang: Lang; amounts: ReplicaDamageAmounts }) {
+function UnattributedRow({ lang, amounts }: { lang: Lang; amounts: ReplicaDamage['unattributed'] }) {
   const compact = (value: number) => formatCompactNumber(value, lang);
   return (
     <div className={`${ROW_COLUMNS} h-10 border-t border-line/55 text-muted`}>
       <span className="truncate text-[12px] font-bold">{liveLabel('liveDamageUnattributedLabel', lang)}</span>
-      <span aria-hidden="true" />
+      <span className={`${FIGURE_CLASS} text-muted`}>{compact(amounts.dps)}</span>
       <span className={`${FIGURE_CLASS} text-muted`}>{compact(amounts.props)}</span>
       <span className={`${FIGURE_CLASS} text-muted`}>{compact(amounts.gold)}</span>
     </div>
   );
 }
 
-/**
- * The desktop's Damage panel: a team line over a table of heroes, with the damage no hero can be
- * credited with printed last on its own row. It sits in its own row of the Live screen, sized to
- * its table rather than stretched across the window, so it is no wider here than it is there.
- * The hero rows read session figures only; the team line carries both windows.
- */
+/** Sized to its table, not stretched across the row, as the desktop's panel is. */
 export function DamageCard({ lang, damage }: { lang: Lang; damage: ReplicaDamage }) {
   const compact = (value: number) => formatCompactNumber(value, lang);
   const teamDps = liveLabel('liveDamageTeamDpsLabel', lang);

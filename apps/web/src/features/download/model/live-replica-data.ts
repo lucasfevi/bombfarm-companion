@@ -76,7 +76,10 @@ export interface ReplicaDamage {
   /** Sorted by damage, largest first. */
   readonly heroes: readonly ReplicaDamageHero[];
   /** What could not be tied to one hero: heroes plus this always add up to the team figures. */
-  readonly unattributed: ReplicaDamageAmounts;
+  readonly unattributed: ReplicaDamageAmounts & {
+    /** Its damage over the session seconds, the clock the session Team DPS divides by. */
+    readonly dps: number;
+  };
 }
 
 /**
@@ -233,6 +236,7 @@ function damageAt(whole: number, teamProps: number, teamGold: number): ReplicaDa
       damage: teamDamage - attributed.damage,
       props: teamProps - attributed.props,
       gold: teamGold - attributed.gold,
+      dps: (teamDamage - attributed.damage) / sessionSeconds,
     },
   };
 }

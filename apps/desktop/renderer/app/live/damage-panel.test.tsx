@@ -23,7 +23,7 @@ function damage(overrides: Partial<LiveDamage> = {}): LiveDamage {
     coverageSeconds: 120,
     sessionSeconds: 600,
     heroes: [heroRow({ heroId: 'astra' }), heroRow({ heroId: 'borealis', dps: 800, damage: 400_000, props: 60, gold: 20_000 })],
-    unattributed: { damage: 50_000, props: 9, gold: 3_000 },
+    unattributed: { damage: 50_000, props: 9, gold: 3_000, dps: 80 },
     unattributedReasons: Object.fromEntries(UNATTRIBUTED_REASONS.map((reason) => [reason, NO_CREDIT])) as Record<
       UnattributedReason,
       CreditAmounts
@@ -232,11 +232,27 @@ describe('DamagePanel', () => {
 
   it.each(LOCALES)('shows the Unattributed row with its figures, zeros included, in %s', (locale) => {
     const t = STRINGS[locale];
-    const zeros = cellsOf(html(damage({ unattributed: NO_CREDIT }), { locale }), 'live-damage-unattributed');
-    const some = cellsOf(html(damage({ unattributed: { damage: 1, props: 1_500, gold: 2_500_000 } }), { locale }), 'live-damage-unattributed');
+    const zeros = cellsOf(html(damage({ unattributed: { ...NO_CREDIT, dps: 0 } }), { locale }), 'live-damage-unattributed');
+    const some = cellsOf(
+      html(damage({ unattributed: { damage: 1, props: 1_500, gold: 2_500_000, dps: 3_400 } }), { locale }),
+      'live-damage-unattributed',
+    );
 
-    expect(zeros).toEqual([t.liveDamageUnattributedLabel, '', '0', '0']);
-    expect(some).toEqual([t.liveDamageUnattributedLabel, '', locale === 'en' ? '1.5k' : '1,5k', locale === 'en' ? '2.5m' : '2,5m']);
+    expect(zeros).toEqual([t.liveDamageUnattributedLabel, '0', '0', '0']);
+    expect(some).toEqual([
+      t.liveDamageUnattributedLabel,
+      locale === 'en' ? '3.4k' : '3,4k',
+      locale === 'en' ? '1.5k' : '1,5k',
+      locale === 'en' ? '2.5m' : '2,5m',
+    ]);
+  });
+
+  it.each(LOCALES)('prints its rate, and an em dash when the slice has none yet, in %s', (locale) => {
+    const withRate = cellsOf(html(damage({ unattributed: { damage: 7, props: 1, gold: 2, dps: 1_234_567 } }), { locale }), 'live-damage-unattributed');
+    const noRate = cellsOf(html(damage({ unattributed: { damage: 7, props: 1, gold: 2, dps: null } }), { locale }), 'live-damage-unattributed');
+
+    expect(withRate[1]).toBe(locale === 'en' ? '1.2m' : '1,2m');
+    expect(noRate[1]).toBe('—');
   });
 
   it('keeps the Unattributed row outside the scroller, on the same four columns', () => {

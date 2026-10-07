@@ -413,6 +413,12 @@ export interface LiveDamageHeroRow {
   readonly onField: boolean;
 }
 
+export interface LiveDamageUnattributed extends CreditAmounts {
+  /** Session Unattributed damage over the session's streamed seconds, the clock
+   *  {@link LiveDamage.teamDpsSession} divides by; `null` with no streamed time. */
+  readonly dps: number | null;
+}
+
 /**
  * Damage folded in the main process from the live tick stream — the renderer receives finished
  * figures and only draws them, the same split {@link LiveEarnings} follows. Per-hero figures plus
@@ -428,7 +434,7 @@ export interface LiveDamage {
   /** Sorted by session damage descending, then hero id. */
   readonly heroes: readonly LiveDamageHeroRow[];
   /** `null` until the session has any team damage. */
-  readonly unattributed: CreditAmounts | null;
+  readonly unattributed: LiveDamageUnattributed | null;
   /** Damage, props and gold that went unattributed, split by why. Diagnostic; not drawn. */
   readonly unattributedReasons: Readonly<Record<UnattributedReason, CreditAmounts>>;
   /** Session totals. */
@@ -471,7 +477,7 @@ export function sameLiveDamage(a: LiveDamage | null, b: LiveDamage | null): bool
     a.heroes.every((row, index) => sameDamageHeroRow(row, b.heroes[index] as LiveDamageHeroRow)) &&
     (a.unattributed === null || b.unattributed === null
       ? a.unattributed === b.unattributed
-      : sameCreditAmounts(a.unattributed, b.unattributed)) &&
+      : a.unattributed.dps === b.unattributed.dps && sameCreditAmounts(a.unattributed, b.unattributed)) &&
     sameDamageReasons(a.unattributedReasons, b.unattributedReasons) &&
     sameCreditAmounts(a.team, b.team)
   );

@@ -152,7 +152,13 @@ export class DamageFold {
       coverageSeconds: this.#coverageSeconds(),
       sessionSeconds: this.#streamedMs / MS_PER_SECOND,
       heroes,
-      unattributed: this.#team.damage > 0 ? unattributedTotal : null,
+      unattributed:
+        this.#team.damage > 0
+          ? {
+              ...unattributedTotal,
+              dps: this.#streamedMs === 0 ? null : unattributedTotal.damage / (this.#streamedMs / MS_PER_SECOND),
+            }
+          : null,
       unattributedReasons: structuredClone(this.#unattributed),
       team: { ...this.#team },
     };
