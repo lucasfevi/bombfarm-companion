@@ -34,7 +34,7 @@
     "src/gear/naked-rescale.ts": { "statements": 88.33, "branches": 90, "functions": 75, "lines": 90.2 },
     "src/hero-abilities.ts": { "statements": 100, "branches": 50, "functions": 100, "lines": 100 },
     "src/import-save.ts": { "statements": 94.83, "branches": 91.5, "functions": 100, "lines": 96.12 },
-    "src/inventory-view.ts": { "statements": 96.71, "branches": 92.15, "functions": 98.04, "lines": 97.34 },
+    "src/inventory-view.ts": { "statements": 96.27, "branches": 91.63, "functions": 98.04, "lines": 97.31 },
     "src/inventory.ts": { "statements": 100, "branches": 85.11, "functions": 100, "lines": 100 },
     "src/item-forge-ladder.ts": { "statements": 100, "branches": 75, "functions": 100, "lines": 100 },
     "src/live/drain-checker.ts": { "statements": 100, "branches": 100, "functions": 100, "lines": 100 },
@@ -135,5 +135,7 @@
     "src/sheet-normalize.ts": "never loaded by a domain test; the coverage report has no entry for it",
     "src/shims/hero-identity.ts": "never loaded by a domain test; the coverage report has no entry for it"
   },
-  "waivers": {}
+  "waivers": {
+    "src/inventory-view.ts": { "reason": "sell-for-gold fields and Value sort removed with their tests after the game removed selling", "statements": 96.27, "branches": 91.63, "functions": 98.04, "lines": 97.31 }
+  }
 }
