@@ -338,8 +338,8 @@ describe('DamagePanel', () => {
   });
 
   it.each([
-    ['en', 'On the field for 7:30 of the session’s 10:00'],
-    ['pt-BR', 'Em campo por 7:30 dos 10:00 da sessão'],
+    ['en', 'On the field for 7 min of the session’s 10 min'],
+    ['pt-BR', 'Em campo por 7 min dos 10 min da sessão'],
   ] as const)('gives each Uptime figure a keyboard-focusable tooltip trigger naming the field and session time in %s', (locale, tip) => {
     const out = html(damage({ sessionSeconds: 600, heroes: [heroRow({ heroId: 'astra', fieldSeconds: 450, uptime: 0.75 })] }), { locale });
     const trigger = out.match(/<button[^>]*data-testid="live-damage-row-astra-uptime"[^>]*>/)?.[0] ?? '';
@@ -364,12 +364,22 @@ describe('DamagePanel', () => {
     expect(cellsOf(out, 'live-damage-row-astra')[2]).toBe(text);
   });
 
-  it('formats the field and session times the way the Live screen formats every other duration', () => {
+  it.each([
+    ['en', 'On the field for 45 min of the session’s 1 h 02 min'],
+    ['pt-BR', 'Em campo por 45 min dos 1 h 02 min da sessão'],
+  ] as const)('writes the field and session times in whole human minutes, hours split off from the hour, in %s', (locale, tip) => {
     const out = html(
       damage({ sessionSeconds: 3_725, heroes: [heroRow({ heroId: 'astra', fieldSeconds: 2_700, uptime: 0.72 })] }),
+      { locale },
     );
 
-    expect(out).toContain('aria-label="72%: On the field for 45:00 of the session’s 1:02:05"');
+    expect(out).toContain(`aria-label="72%: ${tip}"`);
+  });
+
+  it('writes a field time under a minute as <1 min', () => {
+    const out = html(damage({ sessionSeconds: 600, heroes: [heroRow({ heroId: 'astra', fieldSeconds: 30, uptime: 0.05 })] }));
+
+    expect(out).toContain('aria-label="5%: On the field for &lt;1 min of the session’s 10 min"');
   });
 
   it('renders nothing but the title and empty slots before the first slice arrives', () => {

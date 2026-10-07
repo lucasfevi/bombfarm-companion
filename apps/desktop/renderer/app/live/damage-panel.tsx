@@ -5,7 +5,7 @@ import { HeroIdentity } from '@bombfarm/game-art';
 import { cn, DataTable, formatCompactNumber, InfoTip, Panel, PanelHeader, Tooltip, type Lang } from '@bombfarm/ui';
 import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
 import type { LiveHeroFact } from '../../lib/live/live-model';
-import { coverageMinutesLabel, formatLiveDurationSeconds } from './format-live-duration';
+import { coverageMinutesLabel, formatLiveDurationMinutes } from './format-live-duration';
 
 const EM_DASH = '—';
 const ROW_PX = 40;
@@ -118,8 +118,8 @@ const DamageHeroRowView = memo(function DamageHeroRowView({
             testId={`live-damage-row-${row.heroId}-uptime`}
             percent={uptimeText(row.uptime)}
             tip={sub(t.liveDamageUptimeTip, {
-              field: formatLiveDurationSeconds(row.fieldSeconds),
-              session: formatLiveDurationSeconds(sessionSeconds),
+              field: formatLiveDurationMinutes(row.fieldSeconds, t),
+              session: formatLiveDurationMinutes(sessionSeconds, t),
             })}
           />
         )}

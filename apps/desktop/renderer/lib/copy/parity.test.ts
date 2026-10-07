@@ -61,6 +61,8 @@ import { ptBR } from './pt-BR';
 // collectionsCountOf / collectionsPieceAria / collectionsAxisProgress: placeholders around a slash, a comma
 // and a dash — no words of their own, the inventoryDetailSetSlot precedent. collectionsReadyUnknownMark
 // is a lone question mark, the pvpSquadUnknownMark precedent.
+// liveDurationUnderMinute / liveDurationMinutes / liveDurationHoursMinutes: "min" and "h" abbreviate
+// the same words in both languages, around placeholders and a less-than sign — no words of their own.
 // heroesSortRoll: "Roll" is the owner's chosen pt-BR word for the birth roll too.
 // applyModalCallEquip: three placeholders around two arrows — no words, the same
 // inventoryDetailSetSlot precedent.
@@ -81,6 +83,9 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'modeDps',
   'liveDamageDpsColumn',
   'liveDamagePropsColumn',
+  'liveDurationUnderMinute',
+  'liveDurationMinutes',
+  'liveDurationHoursMinutes',
   'rosterColStatus',
   'forgeItemTitle',
   'pvpNavLabel',
