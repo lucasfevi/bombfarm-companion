@@ -199,6 +199,8 @@ export class DamageFold {
         damage: ledger.damage,
         props: ledger.props,
         gold: ledger.gold,
+        fieldSeconds: ledger.fieldMs / MS_PER_SECOND,
+        uptime: this.#streamedMs === 0 ? null : ledger.fieldMs / this.#streamedMs,
         onField: this.#present.has(heroId),
       });
     }

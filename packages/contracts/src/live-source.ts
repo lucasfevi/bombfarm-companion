@@ -409,6 +409,11 @@ export interface LiveDamageHeroRow {
   readonly damage: number;
   readonly props: number;
   readonly gold: number;
+  /** Streamed seconds this session the hero stood on the field. */
+  readonly fieldSeconds: number;
+  /** {@link fieldSeconds} over {@link LiveDamage.sessionSeconds}, a fraction from 0 to 1; `null`
+   *  with no streamed time. */
+  readonly uptime: number | null;
   /** In the latest frame's hero list. */
   readonly onField: boolean;
 }
@@ -460,6 +465,8 @@ function sameDamageHeroRow(a: LiveDamageHeroRow, b: LiveDamageHeroRow): boolean 
     a.damage === b.damage &&
     a.props === b.props &&
     a.gold === b.gold &&
+    a.fieldSeconds === b.fieldSeconds &&
+    a.uptime === b.uptime &&
     a.onField === b.onField
   );
 }

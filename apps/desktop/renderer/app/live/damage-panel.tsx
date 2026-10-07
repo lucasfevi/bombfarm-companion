@@ -2,10 +2,10 @@ import { memo } from 'react';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import type { LiveDamage, LiveDamageHeroRow, LiveDamageUnattributed } from '@bombfarm/contracts';
 import { HeroIdentity } from '@bombfarm/game-art';
-import { DataTable, formatCompactNumber, InfoTip, Panel, PanelHeader, type Lang } from '@bombfarm/ui';
+import { DataTable, formatCompactNumber, InfoTip, Panel, PanelHeader, Tooltip, type Lang } from '@bombfarm/ui';
 import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
 import type { LiveHeroFact } from '../../lib/live/live-model';
-import { coverageMinutesLabel } from './format-live-duration';
+import { coverageMinutesLabel, formatLiveDurationSeconds } from './format-live-duration';
 
 const EM_DASH = '—';
 const ROW_PX = 40;
@@ -15,12 +15,17 @@ function numberText(value: number | null, lang: Lang): string {
   return value === null ? EM_DASH : formatCompactNumber(value, lang, 1);
 }
 
+function uptimeText(uptime: number): string {
+  return `${String(Math.round(uptime * 100))}%`;
+}
+
 /** The scrolling table and the Unattributed row are separate tables; these fixed widths keep their columns aligned. */
 function Columns() {
   return (
     <colgroup>
       <col className="w-60" />
       <col className="w-24" />
+      <col className="w-20" />
       <col className="w-20" />
       <col className="w-24" />
     </colgroup>
@@ -48,14 +53,42 @@ function TeamFigure({ testId, caption, value }: { testId: string; caption: strin
   );
 }
 
+/** The trigger is a button so keyboard focus reaches the tooltip; its name carries the figure as
+ *  well as the sentence, since a label would otherwise replace the percentage a screen reader reads. */
+const UptimeFigure = memo(function UptimeFigure({ percent, tip, testId }: { percent: string; tip: string; testId: string }) {
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger
+        type="button"
+        data-testid={testId}
+        aria-label={`${percent}: ${tip}`}
+        className="cursor-help border-0 bg-transparent p-0 font-[inherit] text-[inherit] underline decoration-dotted underline-offset-2 hover:text-ink focus-visible:rounded-sm focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        {percent}
+      </Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Positioner sideOffset={6}>
+          <Tooltip.Popup>
+            <p className="m-0">{tip}</p>
+          </Tooltip.Popup>
+        </Tooltip.Positioner>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  );
+});
+
 const DamageHeroRowView = memo(function DamageHeroRowView({
   row,
   fact,
   lang,
+  t,
+  sessionSeconds,
 }: {
   row: LiveDamageHeroRow;
   fact: LiveHeroFact | undefined;
   lang: Lang;
+  t: Copy;
+  sessionSeconds: number;
 }) {
   const rank = fact?.name !== undefined ? fact.grade?.trim() : undefined;
   return (
@@ -78,6 +111,20 @@ const DamageHeroRowView = memo(function DamageHeroRowView({
         {numberText(row.dps, lang)}
       </DataTable.Cell>
       <DataTable.Cell align="right" numeric className={CELL_CLASS}>
+        {row.uptime === null ? (
+          EM_DASH
+        ) : (
+          <UptimeFigure
+            testId={`live-damage-row-${row.heroId}-uptime`}
+            percent={uptimeText(row.uptime)}
+            tip={sub(t.liveDamageUptimeTip, {
+              field: formatLiveDurationSeconds(row.fieldSeconds),
+              session: formatLiveDurationSeconds(sessionSeconds),
+            })}
+          />
+        )}
+      </DataTable.Cell>
+      <DataTable.Cell align="right" numeric className={CELL_CLASS}>
         {numberText(row.props, lang)}
       </DataTable.Cell>
       <DataTable.Cell align="right" numeric className={GOLD_CELL_CLASS}>
@@ -91,7 +138,7 @@ const DamageHeroRowView = memo(function DamageHeroRowView({
 function UnattributedRow({ amounts, t, lang }: { amounts: LiveDamageUnattributed | null; t: Copy; lang: Lang }) {
   return (
     <DataTable.Root className="overflow-y-auto border-t border-line [scrollbar-gutter:stable]">
-      <DataTable.Table className="w-[32rem] table-fixed [&_td]:py-1" aria-label={t.liveDamageUnattributedLabel}>
+      <DataTable.Table className="w-[37rem] table-fixed [&_td]:py-1" aria-label={t.liveDamageUnattributedLabel}>
         <Columns />
         <DataTable.Body>
           <DataTable.Row data-testid="live-damage-unattributed">
@@ -101,6 +148,7 @@ function UnattributedRow({ amounts, t, lang }: { amounts: LiveDamageUnattributed
             <DataTable.Cell align="right" numeric className={MUTED_CELL_CLASS}>
               {amounts === null ? null : numberText(amounts.dps, lang)}
             </DataTable.Cell>
+            <DataTable.Cell align="right" numeric className={MUTED_CELL_CLASS} />
             <DataTable.Cell align="right" numeric className={MUTED_CELL_CLASS}>
               {amounts === null ? null : numberText(amounts.props, lang)}
             </DataTable.Cell>
@@ -121,6 +169,9 @@ function Head({ t }: { t: Copy }) {
         <DataTable.Header className="h-8">{t.liveDamageHeroColumn}</DataTable.Header>
         <DataTable.Header align="right" className="h-8">
           {t.liveDamageDpsColumn}
+        </DataTable.Header>
+        <DataTable.Header align="right" className="h-8">
+          {t.liveDamageUptimeColumn}
         </DataTable.Header>
         <DataTable.Header align="right" className="h-8">
           {t.liveDamagePropsColumn}
@@ -150,43 +201,52 @@ export function DamagePanel({
   });
 
   return (
-    <Panel data-testid="live-damage" className="w-fit max-w-full self-start">
-      <PanelHeader title={t.liveDamageTitle} info={<DamageInfo t={t} />} />
-      <div className="flex flex-col gap-3">
-        <div data-testid="live-damage-team" className="flex gap-8">
-          <TeamFigure
-            testId="live-damage-team-dps-10"
-            caption={`${t.liveDamageTeamDpsLabel} ${recentWindowText}`}
-            value={numberText(damage?.teamDps10 ?? null, lang)}
-          />
-          <TeamFigure
-            testId="live-damage-team-dps-session"
-            caption={`${t.liveDamageTeamDpsLabel} ${t.liveDamageSessionWindowLabel}`}
-            value={numberText(damage?.teamDpsSession ?? null, lang)}
-          />
+    <Tooltip.Provider delay={180} closeDelay={80}>
+      <Panel data-testid="live-damage" className="w-fit max-w-full self-start">
+        <PanelHeader title={t.liveDamageTitle} info={<DamageInfo t={t} />} />
+        <div className="flex flex-col gap-3">
+          <div data-testid="live-damage-team" className="flex gap-8">
+            <TeamFigure
+              testId="live-damage-team-dps-10"
+              caption={`${t.liveDamageTeamDpsLabel} ${recentWindowText}`}
+              value={numberText(damage?.teamDps10 ?? null, lang)}
+            />
+            <TeamFigure
+              testId="live-damage-team-dps-session"
+              caption={`${t.liveDamageTeamDpsLabel} ${t.liveDamageSessionWindowLabel}`}
+              value={numberText(damage?.teamDpsSession ?? null, lang)}
+            />
+          </div>
+          <div className="flex flex-col">
+            <DataTable.Root
+              scrollable
+              minRows={slots}
+              maxRows={slots}
+              rowHeight={`calc(${String(ROW_PX)}px + ${String(HEAD_PX)}px / ${String(slots)})`}
+              className={GUTTER_CLASS}
+              data-testid="live-damage-scroller"
+            >
+              <DataTable.Table className="w-[37rem] table-fixed [&_td]:py-1" aria-label={t.liveDamageTableAria}>
+                <Columns />
+                <Head t={t} />
+                <DataTable.Body>
+                  {(damage?.heroes ?? []).map((row) => (
+                    <DamageHeroRowView
+                      key={row.heroId}
+                      row={row}
+                      fact={heroFacts.get(row.heroId)}
+                      lang={lang}
+                      t={t}
+                      sessionSeconds={damage?.sessionSeconds ?? 0}
+                    />
+                  ))}
+                </DataTable.Body>
+              </DataTable.Table>
+            </DataTable.Root>
+            <UnattributedRow amounts={damage?.unattributed ?? null} t={t} lang={lang} />
+          </div>
         </div>
-        <div className="flex flex-col">
-          <DataTable.Root
-            scrollable
-            minRows={slots}
-            maxRows={slots}
-            rowHeight={`calc(${String(ROW_PX)}px + ${String(HEAD_PX)}px / ${String(slots)})`}
-            className={GUTTER_CLASS}
-            data-testid="live-damage-scroller"
-          >
-            <DataTable.Table className="w-[32rem] table-fixed [&_td]:py-1" aria-label={t.liveDamageTableAria}>
-              <Columns />
-              <Head t={t} />
-              <DataTable.Body>
-                {(damage?.heroes ?? []).map((row) => (
-                  <DamageHeroRowView key={row.heroId} row={row} fact={heroFacts.get(row.heroId)} lang={lang} />
-                ))}
-              </DataTable.Body>
-            </DataTable.Table>
-          </DataTable.Root>
-          <UnattributedRow amounts={damage?.unattributed ?? null} t={t} lang={lang} />
-        </div>
-      </div>
-    </Panel>
+      </Panel>
+    </Tooltip.Provider>
   );
 }

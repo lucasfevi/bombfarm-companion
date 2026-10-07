@@ -20,7 +20,7 @@ function damage(overrides: Partial<LiveDamage> = {}): LiveDamage {
     teamDpsSession: 100,
     coverageSeconds: 300,
     sessionSeconds: 900,
-    heroes: [{ heroId: 'a', dps: 80, damage: 800, props: 4, gold: 400, onField: true }],
+    heroes: [{ heroId: 'a', dps: 80, damage: 800, props: 4, gold: 400, fieldSeconds: 450, uptime: 0.5, onField: true }],
     unattributed: { damage: 50, props: 2, gold: 90, dps: 0.05 },
     unattributedReasons: {
       noOwnerAtBirth: none,

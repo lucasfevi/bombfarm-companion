@@ -660,7 +660,7 @@ function liveDamage(overrides: Partial<LiveDamage> = {}): LiveDamage {
     teamDpsSession: 1_000,
     coverageSeconds: 120,
     sessionSeconds: 300,
-    heroes: [{ heroId: 'on-field', dps: 800, damage: 240_000, props: 40, gold: 9_000, onField: true }],
+    heroes: [{ heroId: 'on-field', dps: 800, damage: 240_000, props: 40, gold: 9_000, fieldSeconds: 300, uptime: 0.5, onField: true }],
     unattributed: { damage: 60_000, props: 10, gold: 2_000, dps: 200 },
     unattributedReasons: Object.fromEntries(UNATTRIBUTED_REASONS.map((reason) => [reason, none])) as Record<
       UnattributedReason,
@@ -735,7 +735,7 @@ describe('createLiveStore — damage passes straight through, never folded or de
     resolveNextGet(liveView({ damage: liveDamage() }));
     await flushMicrotasks();
 
-    const moved = liveDamage({ heroes: [{ heroId: 'on-field', dps: 800, damage: 240_000, props: 41, gold: 9_000, onField: true }] });
+    const moved = liveDamage({ heroes: [{ heroId: 'on-field', dps: 800, damage: 240_000, props: 41, gold: 9_000, fieldSeconds: 300, uptime: 0.5, onField: true }] });
     emit(damageEvent(moved));
 
     expect(store.getModel().damage?.heroes[0]?.props).toBe(41);

@@ -184,8 +184,8 @@ describe('sameLiveDamage', () => {
     coverageSeconds: 300,
     sessionSeconds: 900,
     heroes: [
-      { heroId: 'a', dps: 80, damage: 800, props: 4, gold: 400, onField: true },
-      { heroId: 'b', dps: null, damage: 100, props: 1, gold: 50, onField: false },
+      { heroId: 'a', dps: 80, damage: 800, props: 4, gold: 400, fieldSeconds: 450, uptime: 0.5, onField: true },
+      { heroId: 'b', dps: null, damage: 100, props: 1, gold: 50, fieldSeconds: 0, uptime: 0, onField: false },
     ],
     unattributed: { damage: 50, props: 2, gold: 90, dps: 0.05 },
     unattributedReasons: Object.fromEntries(REASONS.map((reason) => [reason, { damage: 0, props: 0, gold: 0 }])) as LiveDamage['unattributedReasons'],
@@ -234,10 +234,14 @@ describe('sameLiveDamage', () => {
     ['a hero damage', withRow(1, { damage: 101 })],
     ['a hero props', withRow(1, { props: 2 })],
     ['a hero gold', withRow(1, { gold: 51 })],
+    ['a hero field time', withRow(0, { fieldSeconds: 451 })],
+    ['a hero uptime', withRow(0, { uptime: 0.51 })],
+    ['a hero uptime going absent', withRow(0, { uptime: null })],
+    ['a hero uptime appearing', withRow(1, { uptime: 0.1 })],
     ['a hero onField flag', withRow(1, { onField: true })],
     ['hero order', damage({ heroes: [...damage().heroes].reverse() })],
     ['a hero row removed', damage({ heroes: damage().heroes.slice(0, 1) })],
-    ['a hero row added', damage({ heroes: [...damage().heroes, { heroId: 'c', dps: 1, damage: 1, props: 0, gold: 0, onField: true }] })],
+    ['a hero row added', damage({ heroes: [...damage().heroes, { heroId: 'c', dps: 1, damage: 1, props: 0, gold: 0, fieldSeconds: 1, uptime: 0, onField: true }] })],
   ])('reports a difference in %s', (_field, changed) => {
     expect(sameLiveDamage(damage(), changed)).toBe(false);
     expect(sameLiveDamage(changed, damage())).toBe(false);

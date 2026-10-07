@@ -355,7 +355,70 @@ describe('DamageFold: field seconds and hero rows', () => {
     step({ heroes: [], explosions: [blast(100)], hits: [hit(101, 40), hit(101, 5)], loot: [{ cell: 101, gold: 7 }] });
 
     const row = rowFor(requireView(fold), 'A');
-    expect(row).toEqual({ heroId: 'A', dps: null, damage: 45, props: 1, gold: 7, onField: false });
+    expect(row).toEqual({
+      heroId: 'A',
+      dps: null,
+      damage: 45,
+      props: 1,
+      gold: 7,
+      fieldSeconds: 0,
+      uptime: 0,
+      onField: false,
+    });
+  });
+
+  it('gives each hero its field seconds and the share of the session streamed seconds it stood there', () => {
+    const { fold, step } = makeHarness();
+    step({ heroes: [hero('A'), hero('B')] });
+    step({ heroes: [hero('A'), hero('B')] });
+    step({ heroes: [hero('A')] });
+    step({ heroes: [hero('A')] });
+
+    const view = requireView(fold);
+    expect(view.sessionSeconds).toBeCloseTo(0.6, 9);
+    expect(rowFor(view, 'A')?.fieldSeconds).toBeCloseTo(0.6, 9);
+    expect(rowFor(view, 'A')?.uptime).toBe(1);
+    expect(rowFor(view, 'B')?.fieldSeconds).toBeCloseTo(0.2, 9);
+    expect(rowFor(view, 'B')?.uptime).toBeCloseTo(0.2 / 0.6, 9);
+  });
+
+  it('reads a hero on the field in every frame as exactly 1 from the first frame that streams a second', () => {
+    const { fold, step } = makeHarness();
+    step({ heroes: [hero('A')] });
+    step({ heroes: [hero('A')] });
+    expect(rowFor(requireView(fold), 'A')?.uptime).toBe(1);
+
+    for (let frame = 0; frame < 50; frame += 1) step({ heroes: [hero('A')] });
+    expect(rowFor(requireView(fold), 'A')?.uptime).toBe(1);
+  });
+
+  it('never reads above 1 for any hero, whatever the gaps between frames', () => {
+    const { fold, step } = makeHarness();
+    step({ heroes: [hero('A'), hero('B')] });
+    step({ heroes: [hero('A')] }, 90_000);
+    step({ heroes: [hero('A'), hero('B')] }, 150);
+    step({ heroes: [hero('B')] }, 3_000);
+
+    for (const row of requireView(fold).heroes) {
+      expect(row.uptime).toBeLessThanOrEqual(1);
+      expect(row.fieldSeconds).toBeLessThanOrEqual(requireView(fold).sessionSeconds);
+    }
+  });
+
+  it('has no uptime for a hero with credit when the session has streamed no seconds', () => {
+    const { attributor } = fakeAttributor(() =>
+      creditOf({
+        team: { damage: 10, props: 0, gold: 0 },
+        perHero: new Map([['A', { damage: 10, props: 0, gold: 0 }]]),
+        present: ['A'],
+      }),
+    );
+    const { fold, step } = makeHarness({ attributor });
+    step({ heroes: [hero('A')] });
+
+    const view = requireView(fold);
+    expect(view.sessionSeconds).toBe(0);
+    expect(rowFor(view, 'A')).toMatchObject({ fieldSeconds: 0, uptime: null });
   });
 
   it('gives a hero with neither field time nor credit no row', () => {
@@ -612,6 +675,22 @@ describe('DamageFold: reset and account change', () => {
     for (const reason of ALL_REASONS) expect(after.unattributedReasons[reason]).toEqual({ damage: 0, props: 0, gold: 0 });
     expect(after.teamDps10).toBe(before.teamDps10);
     expect(after.coverageSeconds).toBe(before.coverageSeconds);
+  });
+
+  it('restarts field seconds and uptime on a reset: a hero present throughout reads 1 over only the seconds since', () => {
+    const { fold, step } = makeHarness();
+    step({ heroes: [hero('A'), hero('B')] });
+    step({ heroes: [hero('A'), hero('B')] });
+    step({ heroes: [hero('A')] });
+    expect(rowFor(requireView(fold), 'B')?.uptime).toBeCloseTo(0.5, 9);
+
+    fold.reset('reset');
+    expect(requireView(fold).heroes).toEqual([]);
+
+    step({ heroes: [hero('A')] });
+    const row = rowFor(requireView(fold), 'A');
+    expect(row?.fieldSeconds).toBeCloseTo(0.2, 9);
+    expect(row?.uptime).toBe(1);
   });
 
   function learnFingerprintThenLoseSight(trigger: 'reset' | 'accountChange') {

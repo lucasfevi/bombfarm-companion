@@ -12,7 +12,7 @@ const DAMAGE: LiveDamage = {
   teamDpsSession: 1_900,
   coverageSeconds: 120,
   sessionSeconds: 600,
-  heroes: [{ heroId: 'astra', dps: 1_500, damage: 900_000, props: 120, gold: 45_000, onField: true }],
+  heroes: [{ heroId: 'astra', dps: 1_500, damage: 900_000, props: 120, gold: 45_000, fieldSeconds: 450, uptime: 0.75, onField: true }],
   unattributed: { damage: 50_000, props: 9, gold: 3_000, dps: 80 },
   unattributedReasons: Object.fromEntries(UNATTRIBUTED_REASONS.map((reason) => [reason, none])) as Record<
     UnattributedReason,

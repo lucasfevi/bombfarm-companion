@@ -332,6 +332,8 @@ export const ptBR: Copy = {
   liveDamageSessionWindowLabel: 'sessão',
   liveDamageHeroColumn: 'Herói',
   liveDamageDpsColumn: 'DPS',
+  liveDamageUptimeColumn: 'Em campo',
+  liveDamageUptimeTip: 'Em campo por {field} dos {session} da sessão',
   liveDamagePropsColumn: 'Props',
   liveDamageGoldColumn: 'Ouro',
   liveDamageUnattributedLabel: 'Não atribuído',

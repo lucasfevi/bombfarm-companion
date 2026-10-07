@@ -13,7 +13,7 @@ const LOCALES: readonly AppLocale[] = ['en', 'pt-BR'];
 const NO_CREDIT: CreditAmounts = { damage: 0, props: 0, gold: 0 };
 
 function heroRow(overrides: Partial<LiveDamageHeroRow> & { heroId: string }): LiveDamageHeroRow {
-  return { dps: 1_500, damage: 900_000, props: 120, gold: 45_000, onField: true, ...overrides };
+  return { dps: 1_500, damage: 900_000, props: 120, gold: 45_000, fieldSeconds: 450, uptime: 0.75, onField: true, ...overrides };
 }
 
 function damage(overrides: Partial<LiveDamage> = {}): LiveDamage {
@@ -155,6 +155,13 @@ describe('DamagePanel', () => {
     expect(cellsOf(out, 'live-damage-row-astra')[1]).toBe('—');
   });
 
+  it.each(LOCALES)('prints an em dash and no tooltip trigger for an Uptime the slice has none of in %s', (locale) => {
+    const out = html(damage({ heroes: [heroRow({ heroId: 'astra', uptime: null, fieldSeconds: 0 })] }), { locale });
+
+    expect(cellsOf(out, 'live-damage-row-astra')[2]).toBe('—');
+    expect(out).not.toContain('live-damage-row-astra-uptime');
+  });
+
   it('prints em dashes for both team figures before any damage has arrived', () => {
     const out = html(null);
 
@@ -171,7 +178,7 @@ describe('DamagePanel', () => {
       { locale },
     );
 
-    expect(cellsOf(out, 'live-damage-row-astra').slice(1)).toEqual([millions, thousands, millions]);
+    expect(cellsOf(out, 'live-damage-row-astra').slice(1)).toEqual([millions, '75%', thousands, millions]);
   });
 
   it('lists the rows in the order the slice gives them, without sorting or recomputing anything', () => {
@@ -185,15 +192,15 @@ describe('DamagePanel', () => {
     );
 
     expect(out.indexOf('live-damage-row-borealis"')).toBeLessThan(out.indexOf('live-damage-row-astra"'));
-    expect(cellsOf(out, 'live-damage-row-astra').slice(1)).toEqual(['7', '2', '2']);
-    expect(cellsOf(out, 'live-damage-row-borealis').slice(1)).toEqual(['5', '1', '1']);
+    expect(cellsOf(out, 'live-damage-row-astra').slice(1)).toEqual(['7', '75%', '2', '2']);
+    expect(cellsOf(out, 'live-damage-row-borealis').slice(1)).toEqual(['5', '75%', '1', '1']);
   });
 
-  it('draws each row as identity, Hero DPS, props and gold', () => {
+  it('draws each row as identity, Hero DPS, Uptime, props and gold', () => {
     const out = html(damage());
 
     expect(cellsOf(out, 'live-damage-row-astra')[0]).toContain('Astra');
-    expect(cellsOf(out, 'live-damage-row-astra').slice(1)).toEqual(['1.5k', '120', '45k']);
+    expect(cellsOf(out, 'live-damage-row-astra').slice(1)).toEqual(['1.5k', '75%', '120', '45k']);
     expect(textOf(innerOf(out, 'live-damage-row-astra-name'))).toBe('Astra');
   });
 
@@ -204,16 +211,18 @@ describe('DamagePanel', () => {
     expect(cellsOf(out, 'live-damage-row-hero-404')[0]).toContain('—');
   });
 
-  it.each(LOCALES)('heads the columns hero, DPS, props and gold in %s', (locale) => {
+  it.each(LOCALES)('heads the columns hero, DPS, uptime, props and gold in %s', (locale) => {
     const t = STRINGS[locale];
     const head = textOf(innerOf(html(damage(), { locale }), 'live-damage-scroller').match(/<thead[\s\S]*?<\/thead>/)?.[0] ?? '');
 
-    expect(head).toBe([t.liveDamageHeroColumn, t.liveDamageDpsColumn, t.liveDamagePropsColumn, t.liveDamageGoldColumn].join(' '));
+    expect(head).toBe(
+      [t.liveDamageHeroColumn, t.liveDamageDpsColumn, t.liveDamageUptimeColumn, t.liveDamagePropsColumn, t.liveDamageGoldColumn].join(' '),
+    );
   });
 
   it.each([
-    ['en', ['Hero', 'DPS', 'Props', 'Gold'], 'Unattributed'],
-    ['pt-BR', ['Herói', 'DPS', 'Props', 'Ouro'], 'Não atribuído'],
+    ['en', ['Hero', 'DPS', 'Uptime', 'Props', 'Gold'], 'Unattributed'],
+    ['pt-BR', ['Herói', 'DPS', 'Em campo', 'Props', 'Ouro'], 'Não atribuído'],
   ] as const)('prints these exact column heads and Unattributed label in %s', (locale, heads, unattributed) => {
     const out = html(damage(), { locale });
     const head = textOf(innerOf(out, 'live-damage-scroller').match(/<thead[\s\S]*?<\/thead>/)?.[0] ?? '');
@@ -226,7 +235,7 @@ describe('DamagePanel', () => {
     const out = html(damage({ unattributed: null }));
     const cells = cellsOf(out, 'live-damage-unattributed');
 
-    expect(cells).toEqual(['', '', '', '']);
+    expect(cells).toEqual(['', '', '', '', '']);
     expect(textOf(innerOf(out, 'live-damage-unattributed'))).not.toContain('—');
   });
 
@@ -238,10 +247,11 @@ describe('DamagePanel', () => {
       'live-damage-unattributed',
     );
 
-    expect(zeros).toEqual([t.liveDamageUnattributedLabel, '0', '0', '0']);
+    expect(zeros).toEqual([t.liveDamageUnattributedLabel, '0', '', '0', '0']);
     expect(some).toEqual([
       t.liveDamageUnattributedLabel,
       locale === 'en' ? '3.4k' : '3,4k',
+      '',
       locale === 'en' ? '1.5k' : '1,5k',
       locale === 'en' ? '2.5m' : '2,5m',
     ]);
@@ -255,14 +265,14 @@ describe('DamagePanel', () => {
     expect(noRate[1]).toBe('—');
   });
 
-  it('keeps the Unattributed row outside the scroller, on the same four columns', () => {
+  it('keeps the Unattributed row outside the scroller, on the same five columns', () => {
     const out = html(damage());
     const scroller = innerOf(out, 'live-damage-scroller');
     const columns = (markup: string) => [...markup.matchAll(/<col class="([^"]*)"\/>/g)].map((match) => match[1]);
 
     expect(scroller).not.toContain('live-damage-unattributed');
     expect(out).toContain('live-damage-unattributed');
-    expect(columns(scroller)).toHaveLength(4);
+    expect(columns(scroller)).toHaveLength(5);
     expect(columns(out.slice(out.indexOf('live-damage-scroller')))).toEqual([...columns(scroller), ...columns(scroller)]);
   });
 
@@ -294,7 +304,7 @@ describe('DamagePanel', () => {
     const cellTags = [...innerOf(out, 'live-damage-row-astra').matchAll(/<td[^>]*>/g)].map((match) => match[0]);
     const tableTags = [...out.matchAll(/<table[^>]*>/g)].map((match) => match[0]);
 
-    expect(cellTags).toHaveLength(4);
+    expect(cellTags).toHaveLength(5);
     for (const tag of cellTags) expect(tag).toMatch(/class="[^"]*\bh-10\b/);
     expect(tableTags).toHaveLength(2);
     for (const tag of tableTags) expect(tag).toContain('[&amp;_td]:py-1');
@@ -322,8 +332,44 @@ describe('DamagePanel', () => {
     expect(textOf(out)).not.toContain(t.liveDamageInfoBody);
   });
 
-  it('has no control but the information trigger: nothing here can be dismissed', () => {
-    expect(html(damage()).match(/<button/g)).toHaveLength(1);
+  it('has no control but the information trigger and one Uptime trigger per hero: nothing here can be dismissed', () => {
+    expect(html(damage()).match(/<button/g)).toHaveLength(3);
+    expect(html(damage({ heroes: [] })).match(/<button/g)).toHaveLength(1);
+  });
+
+  it.each([
+    ['en', 'On the field for 7:30 of the session’s 10:00'],
+    ['pt-BR', 'Em campo por 7:30 dos 10:00 da sessão'],
+  ] as const)('gives each Uptime figure a keyboard-focusable tooltip trigger naming the field and session time in %s', (locale, tip) => {
+    const out = html(damage({ sessionSeconds: 600, heroes: [heroRow({ heroId: 'astra', fieldSeconds: 450, uptime: 0.75 })] }), { locale });
+    const trigger = out.match(/<button[^>]*data-testid="live-damage-row-astra-uptime"[^>]*>/)?.[0] ?? '';
+
+    expect(trigger).toContain(`aria-label="75%: ${tip}"`);
+    expect(trigger).toContain('type="button"');
+    expect(trigger).not.toContain('tabindex="-1"');
+    expect(trigger).not.toMatch(/\stitle="/);
+    expect(textOf(innerOf(out, 'live-damage-row-astra-uptime'))).toBe('75%');
+  });
+
+  it.each([
+    [0, '0%'],
+    [0.004, '0%'],
+    [0.005, '1%'],
+    [0.754, '75%'],
+    [0.996, '100%'],
+    [1, '100%'],
+  ])('writes an uptime of %s as the whole percentage %s', (uptime, text) => {
+    const out = html(damage({ heroes: [heroRow({ heroId: 'astra', uptime })] }));
+
+    expect(cellsOf(out, 'live-damage-row-astra')[2]).toBe(text);
+  });
+
+  it('formats the field and session times the way the Live screen formats every other duration', () => {
+    const out = html(
+      damage({ sessionSeconds: 3_725, heroes: [heroRow({ heroId: 'astra', fieldSeconds: 2_700, uptime: 0.72 })] }),
+    );
+
+    expect(out).toContain('aria-label="72%: On the field for 45:00 of the session’s 1:02:05"');
   });
 
   it('renders nothing but the title and empty slots before the first slice arrives', () => {
@@ -331,6 +377,13 @@ describe('DamagePanel', () => {
 
     expect(out).toContain('live-damage-scroller');
     expect(innerOf(out, 'live-damage-scroller')).not.toContain('<td');
-    expect(cellsOf(out, 'live-damage-unattributed')).toEqual(['', '', '', '']);
+    expect(cellsOf(out, 'live-damage-unattributed')).toEqual(['', '', '', '', '']);
+  });
+
+  it('leaves the Unattributed row\'s Uptime cell empty even when it has figures: it is no hero', () => {
+    const out = html(damage({ unattributed: { damage: 50_000, props: 9, gold: 3_000, dps: 80 } }));
+
+    expect(cellsOf(out, 'live-damage-unattributed')[2]).toBe('');
+    expect(innerOf(out, 'live-damage-unattributed')).not.toContain('<button');
   });
 });

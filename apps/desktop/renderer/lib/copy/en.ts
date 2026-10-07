@@ -341,6 +341,8 @@ export const en = {
   liveDamageSessionWindowLabel: 'session',
   liveDamageHeroColumn: 'Hero',
   liveDamageDpsColumn: 'DPS',
+  liveDamageUptimeColumn: 'Uptime',
+  liveDamageUptimeTip: 'On the field for {field} of the session’s {session}',
   liveDamagePropsColumn: 'Props',
   liveDamageGoldColumn: 'Gold',
   liveDamageUnattributedLabel: 'Unattributed',
