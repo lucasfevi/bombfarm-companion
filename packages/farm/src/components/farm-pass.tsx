@@ -1,5 +1,7 @@
 'use client';
 
+import { PASS_ADDS, RETURN_BONUS_ADD, RETURN_BONUS_ADD_VIP } from '@bombfarm/domain/phase-wiki';
+import { sub } from '@bombfarm/hero/copy';
 import { InfoTip, Switch, cn } from '@bombfarm/ui';
 import type { FarmCopy } from '../copy';
 import { farmFieldClass, farmFieldControlClass, farmFieldLabelClass } from './farm-ranking-filters';
@@ -11,9 +13,22 @@ type Props = {
   t: FarmCopy;
 };
 
+const percent = (fraction: number): string => String(Math.round(fraction * 100));
+const passGain = (adds: readonly [number, number]): string => percent(adds[1] - adds[0]);
+
+export function passTipText(template: string): string {
+  return sub(template, {
+    gold: passGain(PASS_ADDS.gold),
+    xp: passGain(PASS_ADDS.xp),
+    drop: passGain(PASS_ADDS.drop),
+    returnBase: percent(RETURN_BONUS_ADD),
+    returnPass: percent(RETURN_BONUS_ADD_VIP),
+  });
+}
+
 export function FarmPass({ pass, onPassChange, t }: Props) {
-  const tip =
-    onPassChange === undefined ? `${t.farmRankingPassTip} ${t.farmRankingPassTipDetected}` : t.farmRankingPassTip;
+  const effects = passTipText(t.farmRankingPassTip);
+  const tip = onPassChange === undefined ? `${effects} ${t.farmRankingPassTipDetected}` : effects;
   return (
     <div className={farmFieldClass} data-testid="farm-pass">
       <span className={farmFieldLabelClass}>

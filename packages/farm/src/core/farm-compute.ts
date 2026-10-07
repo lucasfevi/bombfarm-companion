@@ -15,6 +15,7 @@ import {
   type FarmAccount,
   type FarmRateRow,
 } from '@bombfarm/domain/farm-rate';
+export { normalizeStoredReturnBonus } from '@bombfarm/domain/farm-rate';
 // resolveFarmObjective, farmObjectiveValue and bestFarmPhase are deliberately NOT imported —
 // that surface belongs to the next-point ranking mode, not to this board.
 import { FARM_RESPEC_MIN_GAIN_PCT } from '@bombfarm/domain/farm-optimize';

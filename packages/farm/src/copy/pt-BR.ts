@@ -144,7 +144,7 @@ export const farmPtBR: FarmCopy = {
   farmRankingPassOn: "Ligado",
   farmRankingPassOff: "Desligado",
   farmRankingPassTip:
-    "+15% de ouro, +30% de XP e +30% de chance de drop, sempre ativos. Com o Passe, o Bônus de Retorno é +100% em vez de +50%.",
+    "+{gold}% de ouro, +{xp}% de XP e +{drop}% de chance de drop, sempre ativos. Com o Passe, o Bônus de Retorno é +{returnPass}% em vez de +{returnBase}%.",
   farmRankingPassTipDetected: "Lido da sua conta.",
   farmRankingGateBadge: "Portão",
   farmRankingOneShotYes: "Sim",

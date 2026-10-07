@@ -139,7 +139,7 @@ export const farmEn = {
   farmRankingPassOn: "On",
   farmRankingPassOff: "Off",
   farmRankingPassTip:
-    "+15% gold, +30% XP and +30% drop chance, always on. With the Pass the Return Bonus is +100% instead of +50%.",
+    "+{gold}% gold, +{xp}% XP and +{drop}% drop chance, always on. With the Pass the Return Bonus is +{returnPass}% instead of +{returnBase}%.",
   farmRankingPassTipDetected: "Read from your account.",
   farmRankingGateBadge: "Gate",
   farmRankingOneShotYes: "Yes",
