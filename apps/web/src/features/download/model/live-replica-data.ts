@@ -61,25 +61,18 @@ export interface ReplicaDamageHero
   extends Pick<ReplicaHeroSeed, 'id' | 'name' | 'skin' | 'rarity' | 'grade' | 'stars' | 'level'>,
     ReplicaDamageAmounts {
   readonly fieldSeconds: number;
-  /** Damage over the seconds the hero stood on the field. */
   readonly dps: number;
 }
 
 export interface ReplicaDamage {
   readonly teamDps10: number;
   readonly teamDpsSession: number;
-  /** The damage the ten-minute figure divides, and the seconds it divides it by. */
   readonly window10: { readonly damage: number; readonly seconds: number };
   readonly sessionSeconds: number;
   readonly coverageMinutes: number;
   readonly team: ReplicaDamageAmounts;
-  /** Sorted by damage, largest first. */
   readonly heroes: readonly ReplicaDamageHero[];
-  /** What could not be tied to one hero: heroes plus this always add up to the team figures. */
-  readonly unattributed: ReplicaDamageAmounts & {
-    /** Its damage over the session seconds, the clock the session Team DPS divides by. */
-    readonly dps: number;
-  };
+  readonly unattributed: ReplicaDamageAmounts & { readonly dps: number };
 }
 
 /**
@@ -165,18 +158,14 @@ const SHARE_DENOMINATOR = 10_000;
 
 interface DamageShare {
   readonly id: string;
-  /** In basis points of the team figure, so the split is integer and the remainder is exact. */
+  /** Basis points of the team figure: an integer split with an exact remainder. */
   readonly damageShare: number;
   readonly propsShare: number;
   readonly goldShare: number;
   readonly fieldSecondsBase: number;
 }
 
-/**
- * Who carried the farm, from the roster above. Each share is a slice of the team figure; what the
- * shares leave over is the Unattributed row, so the table always adds up to the team line the way
- * the app's own does.
- */
+/** What the shares leave of each team figure is the Unattributed row, so the table always adds up. */
 const DAMAGE_SHARES: readonly DamageShare[] = [
   { id: 'bellatrix', damageShare: 3800, propsShare: 3600, goldShare: 3700, fieldSecondsBase: 11_400 },
   { id: 'jon', damageShare: 2900, propsShare: 2800, goldShare: 2700, fieldSecondsBase: 9_800 },

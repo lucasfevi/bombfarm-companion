@@ -15,9 +15,7 @@ function numberText(value: number | null, lang: Lang): string {
   return value === null ? EM_DASH : formatCompactNumber(value, lang, 1);
 }
 
-/** One fixed column template, drawn twice: the scrolling table and the Unattributed row under
- *  it are separate tables, and a fixed layout with these widths is what keeps their columns on
- *  the same lines. */
+/** The scrolling table and the Unattributed row are separate tables; these fixed widths keep their columns aligned. */
 function Columns() {
   return (
     <colgroup>
@@ -34,9 +32,7 @@ const GUTTER_CLASS = '[scrollbar-gutter:stable]';
 const GOLD_CELL_CLASS = 'h-10 py-1 text-gold';
 const MUTED_CELL_CLASS = 'h-10 py-1 text-muted';
 
-/** Names what the figures mean once, behind the title. Nothing here depends on a figure, so it is
- *  memoised: the panel around it re-renders as the damage moves, and a Base UI tooltip rebuilt
- *  that often to draw the same glyph is work with no reading in it. */
+/** Memoised: the panel re-renders as damage moves, and this tooltip depends on no figure. */
 const DamageInfo = memo(function DamageInfo({ t }: { t: Copy }) {
   return <InfoTip label={t.liveDamageInfoLabel} tip={t.liveDamageInfoBody} />;
 });
@@ -91,12 +87,7 @@ const DamageHeroRowView = memo(function DamageHeroRowView({
   );
 });
 
-/**
- * What no hero could be credited with, on the same columns as the table above it but outside its
- * scroller, so it stays in view however many heroes the table holds. The row is always mounted
- * and always the same height: until there is damage to account for it draws nothing, and a row
- * that appeared with the first hit would shift everything under the panel.
- */
+/** Always mounted at full height and empty until there is damage: a row that appeared with the first hit would shift the panels below. */
 function UnattributedRow({ amounts, t, lang }: { amounts: LiveDamageUnattributed | null; t: Copy; lang: Lang }) {
   return (
     <DataTable.Root className="overflow-y-auto border-t border-line [scrollbar-gutter:stable]">

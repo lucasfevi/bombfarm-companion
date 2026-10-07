@@ -58,8 +58,6 @@ function buildRows(slow: LiveSlowModel, fast: LiveFastModel): readonly LiveRow[]
   ];
 }
 
-/** Every hero the rotation lists name, by id, for the panels that identify heroes by id alone. A
- *  hero is in at most one list; the first sighting wins should that ever stop holding. */
 function buildHeroFacts(slow: LiveSlowModel): ReadonlyMap<string, LiveHeroFact> {
   const facts = new Map<string, LiveHeroFact>();
   for (const hero of [...slow.onField, ...slow.recovering, ...slow.queued, ...slow.benched]) {
