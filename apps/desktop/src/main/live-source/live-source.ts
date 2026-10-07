@@ -43,6 +43,7 @@ import { collectionFromSave } from '@bombfarm/domain/model';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { xpPerProp } from '@bombfarm/domain/phase-wiki';
 import { gameProcessQuery, runPowerShellAsync, runPowerShellSync } from '../game-reader/process.js';
+import { DamageFold } from './damage-fold.js';
 import { EarningsFold } from './earnings-fold.js';
 import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
 import { FrameRing } from './frame-ring.js';
@@ -588,6 +589,7 @@ export class LiveSource {
 
   readonly #earningsFold: EarningsFold;
   readonly #mapFold: MapFold;
+  readonly #damageFold: DamageFold;
   /** Every tap numbers its own frames from 1, so a tap rebuilt by {@link forceDetach} restarts at 1
    *  while the folds still remember the previous tap's last number and would drop its frames. The
    *  folds are handed this process-level count instead, which only ever grows. */
@@ -624,6 +626,7 @@ export class LiveSource {
     this.#now = deps.now ?? Date.now;
     this.#earningsFold = new EarningsFold({ now: this.#now, xpPerProp, log: this.#log });
     this.#mapFold = new MapFold({ wikiFactsFor });
+    this.#damageFold = new DamageFold({ now: this.#now, log: this.#log });
     if (deps.createTap) {
       this.#createTap = deps.createTap;
       this.#ring = null;
@@ -703,6 +706,7 @@ export class LiveSource {
       onFieldHeroIds: this.#fieldState.onFieldHeroIdsSorted,
       earnings: this.#buildEarnings(),
       map: this.#mapFold.current,
+      damage: this.#damageFold.view,
       updatedAt: this.#updatedAt,
     };
   }
@@ -732,6 +736,7 @@ export class LiveSource {
    *  window is untouched: see {@link EarningsFold.reset}. */
   resetEarnings(): void {
     this.#earningsFold.reset('reset');
+    this.#damageFold.reset('reset');
   }
 
   /** The REST rotation projection: the base view every countdown falls back to when no live tap
@@ -750,6 +755,7 @@ export class LiveSource {
       collectionGoldPct: this.#collectionGoldPct ?? 0,
     });
     this.#trackAccountBinding(view.store.binding);
+    if (Array.isArray(view.payload.heroes)) this.#damageFold.setRoster(view.payload.heroes);
     const accountGold = readAccountGold(view.payload.account);
     if (accountGold !== undefined) {
       this.#accountGoldBalance = accountGold;
@@ -767,6 +773,7 @@ export class LiveSource {
     if (binding === null) return;
     if (this.#lastBinding !== undefined && binding !== this.#lastBinding) {
       this.#earningsFold.reset('accountChange');
+      this.#damageFold.reset('accountChange');
       // Only the stream-derived half is dropped. The boosts were read from THIS call's payload,
       // a few lines above — they already belong to the new account, and clearing them here would
       // report the map's economy at no boost at all until the next rotation read landed. Same
@@ -938,6 +945,7 @@ export class LiveSource {
       this.#frameCounter += 1;
       this.#earningsFold.consumeTick(event.frame.tick, this.#frameCounter, this.#xpMult);
       this.#mapFold.consumeTick(event.frame.tick, this.#frameCounter);
+      this.#damageFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#earningsStarted = true;
       if (event.frame.tick.gold !== undefined) this.#goldBalance = event.frame.tick.gold;
       this.#ingestTick(event.frame.tick, Date.parse(event.frame.at));

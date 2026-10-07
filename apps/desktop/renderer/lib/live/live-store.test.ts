@@ -33,6 +33,7 @@ function liveView(overrides: Partial<LiveView> = {}): LiveView {
     onFieldHeroIds: ['on-field'],
     earnings: null,
     map: null,
+    damage: null,
     updatedAt: 't0',
     ...overrides,
   };

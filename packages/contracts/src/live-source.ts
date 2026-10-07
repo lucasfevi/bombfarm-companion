@@ -484,6 +484,8 @@ export interface LiveView {
    *  told the player is on, and a stored account reading is not a substitute: it says where the
    *  account last was, not what is on screen now. */
   readonly map: LiveMap | null;
+  /** `null` before the first tap frame of the session has arrived. */
+  readonly damage: LiveDamage | null;
   readonly updatedAt: string;
 }
 

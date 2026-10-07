@@ -150,15 +150,45 @@ describe('offline mode produces a Live view with something in it', () => {
     source.start();
     vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 30);
     const before = source.getView().earnings;
+    const damageBefore = source.getView().damage;
     expect(before?.sessionSeconds).toBeGreaterThan(0);
+    expect(damageBefore?.sessionSeconds).toBeGreaterThan(0);
 
     await source.forceDetach();
     vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 30);
 
     const after = source.getView().earnings;
+    const damageAfter = source.getView().damage;
     expect(after?.sessionSeconds).toBeGreaterThan(before?.sessionSeconds as number);
     expect(after?.goldSessionTotal).toBeGreaterThan(before?.goldSessionTotal as number);
     expect(after?.xpSessionTotal).toBeGreaterThan(before?.xpSessionTotal as number);
+    expect(damageAfter?.sessionSeconds).toBeGreaterThan(damageBefore?.sessionSeconds as number);
+    expect(damageAfter?.team.damage).toBeGreaterThan(damageBefore?.team.damage as number);
+    await source.teardown();
+  });
+
+  it('is null in the damage view before any frame is replayed', () => {
+    expect(offlineLiveSource().getView().damage).toBeNull();
+  });
+
+  it('produces a damage view with team damage that reconciles against its heroes and Unattributed', async () => {
+    const source = offlineLiveSource();
+    source.ingestRotation(offlineAccountView());
+    source.start();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 60);
+
+    const damage = source.getView().damage;
+    expect(damage).not.toBeNull();
+    expect(damage?.team.damage).toBeGreaterThan(0);
+    const accounted = [...(damage?.heroes ?? []), ...Object.values(damage?.unattributedReasons ?? {})].reduce(
+      (total, entry) => ({
+        damage: total.damage + entry.damage,
+        props: total.props + entry.props,
+        gold: total.gold + entry.gold,
+      }),
+      { damage: 0, props: 0, gold: 0 },
+    );
+    expect(accounted).toEqual(damage?.team);
     await source.teardown();
   });
 });

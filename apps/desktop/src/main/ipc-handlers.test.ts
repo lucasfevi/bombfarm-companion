@@ -565,6 +565,7 @@ describe('the live view', () => {
       onFieldHeroIds: [],
       earnings: null,
       map: null,
+      damage: null,
       updatedAt: NOW_ISO,
     });
   });
