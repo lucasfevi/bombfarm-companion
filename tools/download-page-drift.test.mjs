@@ -47,6 +47,7 @@ const MINI_LIVE_DIR = 'apps/desktop/renderer/app/mini-live';
  */
 const LIVE_COMPONENTS = [
   'countdown-value.tsx',
+  'damage-panel.tsx',
   'earnings-panel.tsx',
   'energy-bar.tsx',
   'field-countdown.tsx',

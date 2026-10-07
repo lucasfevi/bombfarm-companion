@@ -9,8 +9,8 @@ import type {
 } from '../../model/live-replica-data';
 import { ReplicaCardHead } from './replica-card-head';
 
-const ROW_COLUMNS = 'grid grid-cols-[minmax(0,1fr)_4.5rem_3.75rem_4.5rem] items-center gap-2 px-2';
-const FIGURE_CLASS = 'text-right font-mono text-[11px] text-ink tabular-nums';
+const ROW_COLUMNS = 'grid grid-cols-[minmax(0,1fr)_6rem_5rem_6rem] items-center gap-2 px-2';
+const FIGURE_CLASS = 'text-right font-mono text-xs text-ink tabular-nums';
 
 function TeamFigure({ caption, value }: { caption: string; value: string }) {
   return (
@@ -24,7 +24,7 @@ function TeamFigure({ caption, value }: { caption: string; value: string }) {
 function HeroRow({ hero, lang }: { hero: ReplicaDamageHero; lang: Lang }) {
   const compact = (value: number) => formatCompactNumber(value, lang);
   return (
-    <li className={`${ROW_COLUMNS} h-9 rounded-sm odd:bg-[color-mix(in_oklch,var(--ink)_5%,transparent)]`}>
+    <li className={`${ROW_COLUMNS} h-10`}>
       <HeroIdentity
         name={hero.name}
         rank={hero.grade}
@@ -46,7 +46,7 @@ function HeroRow({ hero, lang }: { hero: ReplicaDamageHero; lang: Lang }) {
 function UnattributedRow({ lang, amounts }: { lang: Lang; amounts: ReplicaDamageAmounts }) {
   const compact = (value: number) => formatCompactNumber(value, lang);
   return (
-    <div className={`${ROW_COLUMNS} mt-1 h-9 border-t border-line/55 text-muted`}>
+    <div className={`${ROW_COLUMNS} h-10 border-t border-line/55 text-muted`}>
       <span className="truncate text-[12px] font-bold">{liveLabel('liveDamageUnattributedLabel', lang)}</span>
       <span aria-hidden="true" />
       <span className={`${FIGURE_CLASS} text-muted`}>{compact(amounts.props)}</span>
@@ -68,7 +68,7 @@ export function DamageCard({ lang, damage }: { lang: Lang; damage: ReplicaDamage
   return (
     <Panel
       data-testid="replica-live-damage"
-      className="flex w-full max-w-xl flex-col gap-3 self-start p-3"
+      className="flex w-full max-w-140 flex-col gap-3 self-start p-3"
     >
       <ReplicaCardHead
         title={liveLabel('liveDamageTitle', lang)}
@@ -86,7 +86,7 @@ export function DamageCard({ lang, damage }: { lang: Lang; damage: ReplicaDamage
       </div>
       <div className="flex flex-col">
         <div
-          className={`${ROW_COLUMNS} h-7 border-b border-line text-[10px] font-semibold tracking-[0.02em] text-muted uppercase`}
+          className={`${ROW_COLUMNS} h-8 border-b border-line text-[10px] font-semibold tracking-[0.02em] text-muted uppercase`}
         >
           <span>{liveLabel('liveDamageHeroColumn', lang)}</span>
           <span className="text-right">{liveLabel('liveDamageDpsColumn', lang)}</span>

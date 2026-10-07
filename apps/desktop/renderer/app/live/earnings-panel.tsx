@@ -4,21 +4,14 @@ import { formatCompactNumber, Icon, Panel, Sparkline, Tooltip, type Lang } from 
 import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
 import { formatCapturedAt, formatCount } from '../../lib/format';
 import type { ReachedLiveFreshness } from './freshness-line';
-import { formatLiveDurationSeconds } from './format-live-duration';
+import { coverageMinutesLabel, formatLiveDurationSeconds } from './format-live-duration';
 
 const EM_DASH = '—';
-const MAX_COVERAGE_MINUTES = 10;
 
 /** Below this age a reading is not meaningfully stale — "just now" tells the player nothing they
  *  don't already assume, so the age suffix stays suppressed until the underlying gap actually
  *  means something. Thresholded on the raw millisecond age, never on the formatted string. */
 const FRESH_BALANCE_AGE_MS = 60_000;
-
-/** The rolling window is capped at 600s (10 real minutes) and starts shorter — floored, not
- *  rounded up, so the label never claims more coverage than the figures actually rest on. */
-function coverageMinutesLabel(coverageSeconds: number): number {
-  return Math.min(MAX_COVERAGE_MINUTES, Math.max(1, Math.floor(coverageSeconds / 60)));
-}
 
 function numberText(value: number | null | undefined, lang: Lang): ReactNode {
   return value == null ? EM_DASH : formatCompactNumber(value, lang, 1);
