@@ -20,6 +20,8 @@
     "lint:tools": "eslint tools/",
     "test": "node tools/with-heavy-slot.mjs vitest run && node tools/with-heavy-slot.mjs vitest run --config vitest.solver.config.ts",
     "check:changed": "node tools/check-changed.mjs",
+    "coverage:domain": "node tools/domain-coverage.mjs check",
+    "coverage:domain:update": "node tools/domain-coverage.mjs update",
     "test:watch": "vitest",
     "test:smoke": "pnpm --filter @bombfarm/desktop test:smoke",
     "test:smoke:hidden": "pnpm --filter @bombfarm/desktop test:smoke:hidden",

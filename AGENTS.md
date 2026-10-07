@@ -94,6 +94,10 @@ Vitest's 60 s worker RPC window, held out of the domain project because such a b
 with every test passing). `pnpm vitest run --project …` never reaches those files; run
 `pnpm vitest run --config vitest.solver.config.ts` for them.
 
+### Coverage ratchet — CI-run
+
+`packages/domain` has a per-file coverage baseline that CI enforces in its own `domain-coverage` job; no PR may take a file below its recorded number. Locally `pnpm coverage:domain` takes ten minutes or more and holds the heavy slot; `pnpm coverage:domain:update` records improvements and refuses regressions. See [`docs/domain-coverage.md`](docs/domain-coverage.md).
+
 ### The two suites neither tier includes
 
 **The Playwright line is owed whenever the change reaches the web planner — and `pnpm test` does
