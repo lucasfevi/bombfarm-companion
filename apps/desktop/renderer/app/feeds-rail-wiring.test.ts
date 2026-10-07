@@ -26,7 +26,7 @@ describe('the shell draws the press once, in its status strip', () => {
   });
 
   it('no screen draws a refresh control of its own any more', () => {
-    for (const screen of ['farm/farm-view.tsx', 'forge/forge-view.tsx', 'optimizer/optimizer-view.tsx', 'optimizer/optimizer-screen.tsx', 'pvp/pvp-view.tsx', 'pvp/standing-panel.tsx']) {
+    for (const screen of ['farm/farm-view.tsx', 'forge/forge-view.tsx', 'optimizer/optimizer-view.tsx', 'optimizer/optimizer-screen.tsx', 'pvp/pvp-view.tsx', 'pvp/standing-panel.tsx', 'collections/collections-view.tsx']) {
       expect(stripped(screen), screen).not.toContain('AccountRefreshControl');
       expect(stripped(screen), screen).not.toContain('account-refresh');
     }
@@ -127,5 +127,36 @@ describe("the PVP screen hands the bar the standing's own read, dated by the sta
   it('asks main for the standing, never the account', () => {
     expect(source).toContain('usePvpRefresh()');
     expect(source).not.toContain('useAccountReadRequest');
+  });
+});
+
+describe("the Collections tab has a feed of its own, dated by the collections' snapshot", () => {
+  const source = stripped('collections/collections-view.tsx');
+  const feeds = stripped('../lib/feeds/use-feeds.ts');
+
+  it('the scans read real files', () => {
+    expect(source).toMatch(/export function CollectionsView/);
+    expect(feeds).toMatch(/export function useFeeds/);
+  });
+
+  it("the rail's collections feed is the collections' own read, dated by the snapshot", () => {
+    expect(feeds).toContain("id: 'collections'");
+    expect(feeds).toContain('capturedAt: collections.view.capturedAt');
+    expect(feeds).toContain('request: collectionsRefresh.request');
+  });
+
+  it("the screen registers nothing, so the account feed stays the live account's on this tab", () => {
+    expect(source).not.toContain('useScreenRefreshRegistration');
+  });
+
+  it('asks main for the collections, never the account', () => {
+    expect(source).toContain('useCollectionsRefresh()');
+    expect(source).not.toContain('useAccountReadRequest');
+  });
+
+  it('asks for a read when the screen opens, and again only through the freshness decision', () => {
+    expect(source).toMatch(/useEffect\(\(\) => \{\s*refreshCollections\(\);\s*\}, \[\]\);/);
+    expect(source.match(/refreshCollections\(\)/g)).toHaveLength(2);
+    expect(source).toContain('collectionFreshnessDecision(');
   });
 });

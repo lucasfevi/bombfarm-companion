@@ -1,6 +1,6 @@
 /**
- * One writer, ever. The forge run and an apply run both spend the player's gold through the
- * account's one write session, and neither may start while the other holds this.
+ * One writer, ever. The forge run, an apply run and a deconstruct run all write through the
+ * account's one write session, and none may start while another holds this.
  */
 export interface WriterLock {
   readonly holder: string | null;

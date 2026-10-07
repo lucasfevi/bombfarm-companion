@@ -93,6 +93,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'Banner',
   'BrandMark',
   'Button',
+  'Checkbox',
   'Chip',
   'Collapsible',
   'CornerDismiss',
@@ -178,6 +179,8 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'barRowClass',
   'breakpoints',
   'buttonRecipe',
+  'checkboxIndicatorClass',
+  'checkboxRootClass',
   'chipRecipe',
   'cn',
   'colClass',
@@ -407,6 +410,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'slotChromeClassName',
   'slotStatRowClass',
   'slotsGridClass',
+  'sortInventoryViewByValue',
 ].sort();
 
 describe('game-art barrel surface (frozen)', () => {

@@ -1,7 +1,7 @@
 import type { SearchRow } from '../types.js';
 
 /**
- * Every row the Steam market carried for this app on 2026-08-29, plus five rows the market gained
+ * Every row the Steam market carried for this app on 2026-08-29, plus ten rows the market gained
  * afterwards. Transcribed from a flat `search/render` walk — the one pass the sweep makes — so these
  * are the hashes and the prices Steam answered with, not an interpretation of them.
  *
@@ -71,4 +71,12 @@ export const LIVE_MARKET_ROWS: SearchRow[] = [
   row('Skill Stone Chest (Act 3)', 3, 487),
   row('Time Chest (Act 3)', 1, 1500),
   row('Topaz Gem', 1, 1772),
+
+  // Listed after the game's 2026-10-05 forge patch, read off the 2026-10-06 sweep. Priced and
+  // unreachable from an inventory until the generator learned the stone's own id tails.
+  row('Chance Stone (Common)', 82, 3),
+  row('Chance Stone (Uncommon)', 53, 3),
+  row('Chance Stone (Rare)', 55, 3),
+  row('Chance Stone (Epic)', 25, 7),
+  row('Chance Stone (Legendary)', 6, 40),
 ];

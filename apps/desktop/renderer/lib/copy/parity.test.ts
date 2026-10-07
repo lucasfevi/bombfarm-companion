@@ -57,6 +57,9 @@ import { ptBR } from './pt-BR';
 // slash — no words in either.
 // applySkipCounted: "{n} {reason}" — two placeholders and a space, joining a count with an
 // already-localised reason phrase; no words of its own, the inventoryDetailSetSlot precedent.
+// collectionsCountOf / collectionsPieceAria / collectionsAxisProgress: placeholders around a slash, a comma
+// and a dash — no words of their own, the inventoryDetailSetSlot precedent. collectionsReadyUnknownMark
+// is a lone question mark, the pvpSquadUnknownMark precedent.
 // heroesSortRoll: "Roll" is the owner's chosen pt-BR word for the birth roll too.
 // applyModalCallEquip: three placeholders around two arrows — no words, the same
 // inventoryDetailSetSlot precedent.
@@ -92,6 +95,10 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'skillsPerMillionDps',
   'skillsObjectivePvp',
   'skillsCountOf',
+  'collectionsCountOf',
+  'collectionsPieceAria',
+  'collectionsAxisProgress',
+  'collectionsReadyUnknownMark',
   // feedsPvp: the game mode's acronym; feedsRefreshAllStep '{step}/{total}' and the cycle unit
   // '{n} min' are figures with unit marks, not words, in either language.
   'feedsPvp',

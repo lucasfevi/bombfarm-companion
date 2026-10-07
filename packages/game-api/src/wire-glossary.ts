@@ -1,11 +1,12 @@
 /**
- * Combines every declared wire lexicon — `/rotation`, the live combat websocket and the PVP duel
- * bodies — into one `PORTUGUESE_WIRE_TOKENS` list and one `docs/wire-vocabulary.md` document.
+ * Combines every declared wire lexicon — `/rotation`, the live combat websocket, the PVP duel
+ * bodies and the Collections state — into one `PORTUGUESE_WIRE_TOKENS` list and one `docs/wire-vocabulary.md` document.
  * Adding another wire boundary means declaring its own lexicon on `./wire-lexicon.js`'s machinery
  * and adding one line in each list below; nothing else here changes.
  */
 
 import { LIVE_FRAME_WIRE_LEXICON } from './live-frame/lexicon.js';
+import { COLLECTIONS_WIRE_LEXICON } from './collections/lexicon.js';
 import { PVP_WIRE_LEXICON } from './pvp/lexicon.js';
 import { ROTATION_WIRE_LEXICON } from './rotation/lexicon.js';
 import { glossaryTable, portugueseWireTokens, type WireLexiconEntry } from './wire-lexicon.js';
@@ -18,6 +19,7 @@ export const PORTUGUESE_WIRE_TOKENS: readonly string[] = [
   ...portugueseWireTokens(ROTATION_WIRE_LEXICON),
   ...portugueseWireTokens(LIVE_FRAME_WIRE_LEXICON),
   ...portugueseWireTokens(PVP_WIRE_LEXICON),
+  ...portugueseWireTokens(COLLECTIONS_WIRE_LEXICON),
 ];
 
 function boundarySection(
@@ -85,5 +87,15 @@ export function renderWireGlossary(): string {
     '`premio` values',
   );
 
-  return [...header, ...rotation, '', ...liveFrame, '', ...pvp].join('\n').trimEnd() + '\n';
+  const collections = boundarySection(
+    'Collections state',
+    'The Collections state the client requests for its panel carries the catalog of set books and ' +
+      'the account’s progress in them, under Portuguese keys (`tetos`, `por_pagina`, `alavanca`) ' +
+      'beside a few English ones (`sets`, `def_id`, `mask`) — see ' +
+      '`packages/game-api/src/collections/lexicon.ts`. Percentages are in percent.',
+    COLLECTIONS_WIRE_LEXICON,
+    'Values',
+  );
+
+  return [...header, ...rotation, '', ...liveFrame, '', ...pvp, '', ...collections].join('\n').trimEnd() + '\n';
 }

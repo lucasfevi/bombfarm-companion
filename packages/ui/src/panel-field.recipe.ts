@@ -193,16 +193,18 @@ export const adviceStickyClass =
 
 const setupBannerWarnClass =
   'mx-auto mt-2.5 max-w-app rounded-sm border border-[color-mix(in_oklch,var(--warn)_45%,var(--line))] bg-[color-mix(in_oklch,var(--warn)_12%,var(--surface))] px-3.5 py-2.5 [&_h2]:mb-1.5 [&_h2]:m-0 [&_h2]:text-[13px] [&_h2]:font-bold [&_ul]:m-0 [&_ul]:list-disc [&_ul]:py-0 [&_ul]:pl-[18px] [&_ul]:text-xs [&_ul]:leading-[1.45] [&_ul]:text-ink [&_ul]:marker:text-warn [&_p]:m-0 [&_p]:text-xs [&_p]:leading-[1.45] [&_p]:text-ink';
+const setupBannerDangerClass =
+  'mx-auto mt-2.5 max-w-app rounded-sm border border-[color-mix(in_oklch,var(--down)_55%,var(--line))] bg-[color-mix(in_oklch,var(--down)_14%,var(--surface))] px-3.5 py-2.5 [&_h2]:mb-1 [&_h2]:m-0 [&_h2]:text-[13px] [&_h2]:font-bold [&_h2]:text-down [&_p]:m-0 [&_p]:text-xs [&_p]:leading-[1.45] [&_p]:text-ink';
 const setupBannerOkVariantClass =
   'mx-auto mt-2.5 max-w-app rounded-sm border border-[color-mix(in_oklch,var(--up)_40%,var(--line))] bg-[color-mix(in_oklch,var(--up)_10%,var(--surface))] px-3.5 py-2.5 [&_h2]:m-0 [&_h2]:text-[13px] [&_h2]:font-bold [&_h2]:text-up';
 
 /** In-tab status banner — full width of the stage, no page-level max-width centering. */
 export const setupBannerEmbeddedClass = 'mx-0 mt-0 mb-2.5 max-w-none w-full';
 
-/** Setup banner chrome — warn (issues) vs ok (ready) tone. */
+/** Setup banner chrome — warn (issues), ok (ready) and danger (cannot be undone) tone. */
 export const setupBannerRecipe = cva('', {
   variants: {
-    tone: { warn: setupBannerWarnClass, ok: setupBannerOkVariantClass },
+    tone: { warn: setupBannerWarnClass, ok: setupBannerOkVariantClass, danger: setupBannerDangerClass },
   },
   defaultVariants: { tone: 'warn' },
 });
@@ -211,6 +213,7 @@ export type SetupBannerVariant = VariantProps<typeof setupBannerRecipe>;
 
 export const setupBannerTitleClass = 'mb-1.5 m-0 text-[13px] font-bold';
 export const setupBannerOkTitleClass = 'm-0 text-[13px] font-bold text-up';
+export const setupBannerDangerTitleClass = 'mb-1 m-0 text-[13px] font-bold text-down';
 export const setupBannerListClass =
   'm-0 list-disc py-0 pl-[18px] text-xs leading-[1.45] text-ink marker:text-warn';
 export const setupBannerPClass = 'm-0 text-xs leading-[1.45] text-ink';

@@ -3,17 +3,7 @@ import { emptyLoadout } from '@bombfarm/domain/gear';
 import { HERO_MAX_LEVEL } from '@bombfarm/domain/model';
 import { normalizeHero, patchHeroInList } from '@/shared/lib/storage';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
-
-const sheet = () => ({
-  attack: 11,
-  energy: 12,
-  speed: 13,
-  critChance: 1,
-  critDmg: 2,
-  penetration: 0,
-  cdr: 0,
-  luck: 0,
-});
+import { populatedHeroRecord } from './helpers/populated-hero-record';
 
 describe('hero-draft slice', () => {
   beforeEach(() => {
@@ -154,27 +144,7 @@ describe('hero-draft slice', () => {
    * purpose — it fails for whichever field is dropped next, not only for `marketable`.
    */
   it('applyHero then buildHeroRecord round-trips every stored field, so a no-op autosave is a no-op', () => {
-    const hero = normalizeHero({
-      id: 'h1',
-      name: 'Bound',
-      sourceId: 'src-1',
-      updatedAt: 1,
-      rarity: 'Épico',
-      level: 42,
-      stars: 2,
-      naked: sheet(),
-      gearedOverride: sheet(),
-      loadout: emptyLoadout(),
-      abilities: { fireball: 3 },
-      pts: sheet(),
-      rank: 'A',
-      power: 999,
-      deployed: true,
-      battleAllowed: false,
-      marketable: false,
-      skin: 2,
-      statPointsAvailable: 7,
-    });
+    const hero = populatedHeroRecord();
 
     usePlannerStore.getState().applyHero(hero);
     const restaged = normalizeHero({
@@ -184,7 +154,7 @@ describe('hero-draft slice', () => {
     });
 
     const roster = [hero];
-    expect(restaged).toEqual(hero);
+    expect(restaged).toStrictEqual(hero);
     expect(patchHeroInList(roster, restaged)).toBe(roster);
   });
 });

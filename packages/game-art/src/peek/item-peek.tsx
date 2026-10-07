@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { FORGE_STONE_RARITIES, forgeStonePp } from '@bombfarm/domain/forge';
 import { itemStatUpgradeMult, itemValores, statUsesCappedLadder, upgradeMult } from '@bombfarm/domain/gear';
 import { itemName, itemRarityLabel, itemStatLabel, levelLabel, peekLabel, runeAxisLabel } from '@bombfarm/domain/game-labels';
 import { runeFromDefId } from '@bombfarm/domain/runes';
@@ -89,6 +90,13 @@ export type ItemPeekProps = {
   stopRowActivation?: boolean | undefined;
 };
 
+/** Kinds whose name is a noun and whose tier is a separate line below it, the way a gem reads. */
+const TIER_LINE_KINDS: ReadonlySet<string> = new Set(['gem', 'key', 'stone', 'chanceStone']);
+
+function hasTierLine(item: ItemPeekItem): boolean {
+  return item.kind !== undefined && TIER_LINE_KINDS.has(item.kind);
+}
+
 function isGear(item: ItemPeekItem): boolean {
   return item.kind === undefined || item.kind === 'equipment';
 }
@@ -109,7 +117,7 @@ function cappedStatsNote(stats: readonly ItemPeekStat[], upgrade: number, lang: 
   const mult = itemStatUpgradeMult(first.stat, upgrade);
   if (mult === upgradeMult(upgrade)) return '';
   const names = capped.map((roll) => itemStatLabel(roll.stat, lang)).join(', ');
-  return ` (${names} ×${formatNumber(mult, lang, 2)})`;
+  return `${names} ×${formatNumber(mult, lang, 2)}`;
 }
 
 /** The line a rune prints: the statistic it raises and by how much, the way a gear roll reads. */
@@ -118,6 +126,14 @@ function runeEffect(item: ItemPeekItem, lang: Lang): { label: string; value: str
   const rune = runeFromDefId(item.defId, item.rarityIdx);
   if (!rune || rune.strengthPct === null) return null;
   return { label: runeAxisLabel(rune.axis, lang), value: `+${formatNumber(rune.strengthPct, lang, 0)}%` };
+}
+
+/** The points a Chance Stone adds to one forge attempt, as the whole percent the Forge tab prints. */
+function stoneChanceBonus(item: ItemPeekItem, lang: Lang): string | null {
+  if (item.kind !== 'chanceStone') return null;
+  const rarity = Math.round(item.rarityIdx);
+  const points = Number.isInteger(rarity) && rarity >= 0 && rarity < FORGE_STONE_RARITIES ? forgeStonePp(rarity) : null;
+  return points === null ? null : `+${formatNumber(points * 100, lang, 0)}%`;
 }
 
 /** The card an item opens: name and forge, tier, level and forge multiplier, every stat it rolls, and what it is worth. */
@@ -130,6 +146,9 @@ export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'i
   const count = item.count ?? 1;
   const gold = item.sellValueGold ?? 0;
   const rune = runeEffect(item, lang);
+  const stoneChance = stoneChanceBonus(item, lang);
+  const tierLine = hasTierLine(item);
+  const cappedNote = cappedStatsNote(stats, upgrade, lang);
 
   return (
     <div data-slot="item-peek">
@@ -137,7 +156,7 @@ export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'i
         <ItemIcon item={item} size="lg" className="shrink-0" />
         <div className="min-w-0">
           <div className={peekNameClass}>
-            <span className={cn(peekNameTextClass, gear ? 'text-ink' : tier)}>{title}</span>
+            <span className={cn(peekNameTextClass, gear || tierLine ? 'text-ink' : tier)}>{title}</span>
             {upgrade > 0 ? <span className="shrink-0 text-xs font-semibold text-accent">+{upgrade}</span> : null}
           </div>
           <div className={peekSubClass}>
@@ -151,17 +170,25 @@ export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'i
                     <Dot />
                     <span className="text-muted">
                       {peekLabel('forge', lang)} ×{formatNumber(upgradeMult(upgrade), lang, 2)}
-                      {cappedStatsNote(stats, upgrade, lang)}
                     </span>
                   </>
                 ) : null}
               </>
-            ) : rune ? (
-              <span className={cn('font-semibold', tier)}>{itemRarityLabel(item.rarityIdx, lang)}</span>
+            ) : rune || tierLine ? (
+              <>
+                <span className={cn('font-semibold', tier)}>{itemRarityLabel(item.rarityIdx, lang)}</span>
+                {tierLine && count > 1 ? (
+                  <>
+                    <Dot />
+                    <span className="text-muted">×{formatNumber(count, lang, 0)}</span>
+                  </>
+                ) : null}
+              </>
             ) : count > 1 ? (
               <span className="text-muted">×{formatNumber(count, lang, 0)}</span>
             ) : null}
           </div>
+          {gear && upgrade > 0 && cappedNote ? <div className="mt-0.5 text-[11px] text-muted">{cappedNote}</div> : null}
         </div>
       </div>
       {stats.length > 0 ? (
@@ -188,6 +215,18 @@ export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'i
               <span className={inventoryStatLabelClass}>{rune.label}</span>
               <span className={inventoryStatLeaderClass} aria-hidden="true" />
               <span className={inventoryStatValueClass}>{rune.value}</span>
+            </span>
+          </div>
+        </>
+      ) : null}
+      {stoneChance ? (
+        <>
+          <div className={peekRuleClass} />
+          <div className={peekRowsClass}>
+            <span data-slot="item-peek-stone-chance" className={cn(inventoryStatRowClass, 'text-[11px]')}>
+              <span className={inventoryStatLabelClass}>{peekLabel('forgeChance', lang)}</span>
+              <span className={inventoryStatLeaderClass} aria-hidden="true" />
+              <span className={inventoryStatValueClass}>{stoneChance}</span>
             </span>
           </div>
         </>
@@ -220,7 +259,8 @@ export function itemPeekLabel(item: ItemPeekItem, lang: Lang, name?: string): st
   const gear = isGear(item);
   const title = name ?? (gear ? itemName(item, lang) : itemRarityLabel(item.rarityIdx, lang));
   const upgrade = gear && item.upgrade > 0 ? ` +${Math.round(item.upgrade)}` : '';
-  return gear ? `${title}${upgrade}. ${levelLabel(item.level, lang)} ${itemRarityLabel(item.rarityIdx, lang)}` : title;
+  if (gear) return `${title}${upgrade}. ${levelLabel(item.level, lang)} ${itemRarityLabel(item.rarityIdx, lang)}`;
+  return hasTierLine(item) ? `${title}. ${itemRarityLabel(item.rarityIdx, lang)}` : title;
 }
 
 export function itemPeekSpec(item: ItemPeekItem, { lang, name, price, className, stopRowActivation }: ItemIconPeek): PeekSpec {

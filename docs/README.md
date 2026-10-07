@@ -30,11 +30,13 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [fixture-corpus.md](fixture-corpus.md) | The post-2026-08-13-patch fixture corpus — provenance, what the deletion cost, and the round-trip invariant |
 | [wiki-drift-check.md](wiki-drift-check.md) | The scheduled wiki drift detector — the narrowed no-wiki-client rule, the four outcomes, accepting a drift, and the recurring cost |
 | [market-prices.md](market-prices.md) | The continuously produced Steam Community Market snapshot: one enumeration walk, identity by generated name, catalog reconciliation, what the published JSON says, and why the price is a floor |
-| [wire-vocabulary.md](wire-vocabulary.md) | Generated — the wire-to-domain vocabulary tables for the `/rotation` route and the live combat frame; regenerate with `pnpm generate:wire-vocabulary` |
+| [wire-vocabulary.md](wire-vocabulary.md) | Generated — the wire-to-domain vocabulary tables for the `/rotation` route, the live combat frame, the PVP duel result and film, and the Collections state; regenerate with `pnpm generate:wire-vocabulary` |
 | [live-logging.md](live-logging.md) | The shared log's dedup/redaction guarantees, the frame ring, and the two dev-gated captures — raw bytes for replay fixtures, and observed bodies and frames for finding out what the game actually sends |
 | [offline-dev-mode.md](offline-dev-mode.md) | `pnpm dev:offline` — the desktop app with no game and no server: fixture account, replayed live capture, and why it is not a mock server |
 | [pvp-duel-history.md](pvp-duel-history.md) | The PVP tab: how a duel result and its film are told apart on the tap, why the film has to be kept the moment it passes, the two-table store and what a skipped battle leaves behind |
+| [collections.md](collections.md) | The Collections state: the one `/colecao` body, the partial-page rule, how the tap tells it apart from a drifted body, the reader/recorder/store that keep the last good read per account, and what offline mode serves |
 | [skill-tree.md](skill-tree.md) | The Skill Tree tab: what it draws, where the catalog and layout bundles come from, the rules it applies, how a node is priced against the Farm board's inputs, what is not priced, and why it never buys |
+| [deconstruct.md](deconstruct.md) | The Forge tab's Deconstruct page: the one batch burn route and its comma-joined `items`, all-or-nothing refusals, why essence is the server's number and never computed, the 100 cap, one attempt then a re-read, the writer lock shared with forge and apply, and where the eligibility rules live |
 | [hero-runes.md](hero-runes.md) | Hero runes: the timed stat buff on the account read — where it enters the sheet arithmetic (fitted, per axis), how every figure treats a buff that expires, and the two axes nothing prices yet |
 
 ## Web-only

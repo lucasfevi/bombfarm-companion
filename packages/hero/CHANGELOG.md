@@ -1,5 +1,37 @@
 # @bombfarm/hero
 
+## 0.5.5
+
+### Patch Changes
+
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [5de6480]
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/domain@1.9.0
+  - @bombfarm/ui@0.18.0
+  - @bombfarm/game-art@0.8.0
+
+## 0.5.4
+
+### Patch Changes
+
+- b7e061c: Boss Slayer now multiplies its carrier's damage against the gate boss (up to +100% at rank 20) in the
+  Farm board's gate phases and the advisor's boss figures. It never applies to rocks, the cage or PVP.
+- b7e061c: Short Fuse now adds its cooldown reduction to the carrier's sheet (half a point per level, up to the
+  80% cap), and Carnage is priced as a team crit-damage aura, capped at one carrier's +100%. DPS, the
+  Farm board and the Optimizer value both, and Carnage joins the team-aura switches. Boss Slayer and
+  Apprentice remain unpriced.
+- Updated dependencies [b7e061c]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [b7e061c]
+  - @bombfarm/domain@1.8.1
+  - @bombfarm/game-art@0.7.7
+
 ## 0.5.3
 
 ### Patch Changes

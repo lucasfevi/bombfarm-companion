@@ -90,7 +90,8 @@ describe('ItemPeekCard', () => {
 
   it('says which rolls forge on the gentler ladder once the two ladders part', () => {
     const forged = visible(render(createElement(ItemPeekCard, { item: { ...helmet, rarityIdx: 5, upgrade: 13 }, lang: 'en' })));
-    expect(forged).toContain('Forge ×2.10 (Crit, Cooldown ×1.95)');
+    expect(forged).toContain('Forge ×2.10');
+    expect(forged).toContain('Crit, Cooldown ×1.95');
   });
 
   it('says what the item is worth — gold, and the market’s quote when the host has one', () => {
@@ -117,6 +118,32 @@ describe('ItemPeekCard', () => {
     );
     expect(html).toContain('+19.3');
     expect(html).not.toContain('+808.5');
+  });
+
+  it('a map key, a skill stone and a chance stone say their name with the tier on the line below, like a gem', () => {
+    for (const kind of ['key', 'stone', 'chanceStone'] as const) {
+      const html = visible(
+        render(
+          createElement(ItemPeekCard, {
+            item: { defId: 'x', rarityIdx: 4, level: 0, upgrade: 0, kind, count: 3 },
+            lang: 'en',
+            name: 'Thing',
+          }),
+        ),
+      );
+      expect(html).toContain('truncate text-ink">Thing<');
+      expect(html).toMatch(/font-semibold text-rar-4">Legendary<.*×3/);
+    }
+  });
+
+  it('a chance stone prints how many points it adds to a forge attempt', () => {
+    const stone = (rarityIdx: number) =>
+      render(
+        createElement(ItemPeekCard, { item: { defId: 'forja_pedra_epico', rarityIdx, level: 0, upgrade: 0, kind: 'chanceStone' }, lang: 'en', name: 'Chance Stone' }),
+      );
+    expect(stone(3)).toMatch(/data-slot="item-peek-stone-chance".*Forge chance.*\+40%/);
+    expect(stone(0)).toContain('+10%');
+    expect(stone(9)).not.toContain('item-peek-stone-chance');
   });
 
   it('a stack says its name and count, and neither a level nor a slot', () => {

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { cn } from './cn';
-import { factTileLabelRecipe, factTileRecipe, factTileValueRecipe, type FactTileSize } from './fact-tile.recipe';
+import { factTileDetailClass, factTileLabelRecipe, factTileRecipe, factTileValueRecipe, type FactTileSize } from './fact-tile.recipe';
 import { Tooltip } from './tooltip';
 
 export type FactTileProps = {
@@ -10,11 +10,15 @@ export type FactTileProps = {
   /** Rendered inside the value line; a string prints as-is, an element (a link, a glyph and a
    *  figure) is placed there unchanged. */
   value: ReactNode;
+  /** A small muted line under the figure — what the figure is measured against, never a second
+   *  headline figure. */
+  detail?: ReactNode;
   /** Shown as a tooltip over the whole tile — the place for what the figure was read from or
    *  what it leaves out, never for a second figure. Needs a `Tooltip.Provider` above. */
   note?: string;
   /** `default` is the bordered cell of a facts grid; `headline` drops the box and enlarges the
-   *  figure, for a row of a screen's few headline figures. */
+   *  figure, for a row of a screen's few headline figures; `display` enlarges it again for a
+   *  dialog's one or two. */
   size?: FactTileSize;
   /** Tone for the value line; defaults to ink. */
   valueClassName?: string;
@@ -27,11 +31,12 @@ export type FactTileProps = {
  * headline figures side by side (a hero's rarity, grade, level and power; an account's standing).
  * The grid is the caller's: this draws one cell.
  */
-export function FactTile({ label, value, note, size = 'default', valueClassName, className, 'data-testid': testId }: FactTileProps) {
+export function FactTile({ label, value, detail, note, size = 'default', valueClassName, className, 'data-testid': testId }: FactTileProps) {
   const tile = (
     <div className={cn(factTileRecipe({ size }), className)} data-testid={testId}>
       <p className={factTileLabelRecipe({ size })}>{label}</p>
       <p className={cn(factTileValueRecipe({ size }), valueClassName ?? 'text-ink')}>{value}</p>
+      {detail === undefined ? null : <p className={factTileDetailClass}>{detail}</p>}
     </div>
   );
   if (note === undefined) return tile;

@@ -6,6 +6,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_SETTINGS,
+  EMPTY_COLLECTIONS_VIEW,
   EMPTY_FORGE_HISTORY,
   EMPTY_PVP_HISTORY,
   emptyMarketSnapshotView,
@@ -18,6 +19,7 @@ import {
   type AccountSource,
   type AppSettings,
   type ApplyStartRequest,
+  type CollectionsView,
   type ForgeHistoryResult,
   type ForgeStartRequest,
   type GameStatusInfo,
@@ -177,11 +179,17 @@ function fakes() {
       stop: vi.fn(() => true),
     },
     applyInjector: { arm: vi.fn(() => ({ ok: true })) },
+    deconstructService: {
+      start: vi.fn(() => ({ ok: true as const, runId: 'burn-5' })),
+    },
+    deconstructInjector: { inject: vi.fn(() => ({ ok: true })) },
     pvpHistory: {
       list: vi.fn(() => EMPTY_PVP_HISTORY),
       readFilm: vi.fn((): string | null => null),
     },
     pvpReader: { refresh: vi.fn(() => ({ ok: true as const })) },
+    collectionsStore: { view: vi.fn(() => COLLECTIONS_VIEW) },
+    collectionsReader: { refresh: vi.fn(() => ({ ok: true as const })) },
     mainWindow: {
       isDestroyed: vi.fn(() => false),
       isMaximized: vi.fn(() => false),
@@ -244,8 +252,12 @@ function wired(env: AppEnv = BETA_ENV) {
     getForgeInjector: () => f.forgeInjector,
     getApplyService: () => f.applyService,
     getApplyInjector: () => f.applyInjector,
+    getDeconstructService: () => f.deconstructService,
+    getDeconstructInjector: () => f.deconstructInjector,
     getPvpHistory: () => f.pvpHistory,
     getPvpReader: () => f.pvpReader,
+    getCollectionsStore: () => f.collectionsStore,
+    getCollectionsReader: () => f.collectionsReader,
     getMainWindow: () => f.mainWindow,
     getMiniLiveController: () => f.miniLiveController,
     getWindowLayoutStore: () => f.windowLayoutStore,
@@ -286,8 +298,12 @@ function bare(env: AppEnv = BETA_ENV) {
     getForgeInjector: () => null,
     getApplyService: () => null,
     getApplyInjector: () => null,
+    getDeconstructService: () => null,
+    getDeconstructInjector: () => null,
     getPvpHistory: () => null,
     getPvpReader: () => null,
+    getCollectionsStore: () => null,
+    getCollectionsReader: () => null,
     getMainWindow: () => null,
     getMiniLiveController: () => null,
     getWindowLayoutStore: () => null,
@@ -605,6 +621,8 @@ describe('updates', () => {
   });
 });
 
+const COLLECTIONS_VIEW: CollectionsView = { snapshot: null, capturedAt: '2026-10-02T12:00:00.000Z' };
+
 const ONLINE_PLAYERS_VIEW = { reading: { at: 1_790_727_000, players: 2537 } };
 
 describe('the online-players count', () => {
@@ -762,6 +780,27 @@ describe('applying a plan', () => {
   });
 });
 
+describe('deconstructing', () => {
+  it('starts a run through the service with the request as sent', () => {
+    const { handlers, f } = wired();
+    const request = { itemIds: ['90017', '90018'] };
+    expect(handlers['deconstruct:start'](request)).toEqual({ ok: true, runId: 'burn-5' });
+    expect(f.deconstructService.start).toHaveBeenCalledWith(request);
+  });
+
+  it('refuses a start as unavailable before the deconstruct service is built', () => {
+    expect(bare().handlers['deconstruct:start']({ itemIds: ['90017'] })).toEqual({ ok: false, reason: 'unavailable' });
+  });
+
+  it('passes a scripted result to the injector when one exists, and refuses when none does', () => {
+    const { handlers, f } = wired();
+    const script = { events: [] };
+    expect(handlers['deconstruct:inject'](script)).toEqual({ ok: true });
+    expect(f.deconstructInjector.inject).toHaveBeenCalledWith(script);
+    expect(bare().handlers['deconstruct:inject'](script)).toEqual({ ok: false });
+  });
+});
+
 describe('duels', () => {
   it('serves every duel the tap has seen settle', () => {
     const { handlers, f } = wired();
@@ -808,6 +847,28 @@ describe('duels', () => {
 
   it('answers with nothing before the store is built', () => {
     expect(bare().handlers['pvp:film'](47)).toBeNull();
+  });
+});
+
+describe('collections', () => {
+  it('serves the last good Collections read', () => {
+    const { handlers, f } = wired();
+    expect(handlers['collections:get']()).toBe(COLLECTIONS_VIEW);
+    expect(f.collectionsStore.view).toHaveBeenCalledTimes(1);
+  });
+
+  it('serves an empty view before the store is built', () => {
+    expect(bare().handlers['collections:get']()).toBe(EMPTY_COLLECTIONS_VIEW);
+  });
+
+  it('starts the read through the reader', () => {
+    const { handlers, f } = wired();
+    expect(handlers['collections:refresh']()).toEqual({ ok: true });
+    expect(f.collectionsReader.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses a refresh as unavailable before the reader is built', () => {
+    expect(bare().handlers['collections:refresh']()).toEqual({ ok: false, reason: 'unavailable' });
   });
 });
 

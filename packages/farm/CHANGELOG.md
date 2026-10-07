@@ -1,5 +1,36 @@
 # @bombfarm/farm
 
+## 1.2.13
+
+### Patch Changes
+
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [5de6480]
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/domain@1.9.0
+  - @bombfarm/ui@0.18.0
+  - @bombfarm/game-art@0.8.0
+  - @bombfarm/hero@0.5.5
+
+## 1.2.12
+
+### Patch Changes
+
+- c13d140: Chance Stone chests now show up properly. In the inventory they are named "Chance Stone chest" with
+  their act and tier colour, and they are priced from the Steam Market. The Drops panel gains a
+  Chance Stone chest row: 0.01% per block broken on any phase, boosted by your Luck.
+- Updated dependencies [b7e061c]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [b7e061c]
+  - @bombfarm/domain@1.8.1
+  - @bombfarm/hero@0.5.4
+  - @bombfarm/game-art@0.7.7
+
 ## 1.2.11
 
 ### Patch Changes

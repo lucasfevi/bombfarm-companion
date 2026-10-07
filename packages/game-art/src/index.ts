@@ -41,6 +41,7 @@ export {
   DEFAULT_INVENTORY_TABLE_COLUMNS,
   InventoryTable,
   nextInventorySort,
+  sortInventoryViewByValue,
 } from './inventory-table';
 export type {
   InventoryTableColumnId,

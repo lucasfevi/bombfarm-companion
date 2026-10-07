@@ -139,6 +139,26 @@ describe('RequestOutcome classification — every response class maps to its own
       expectKind: 'cooldown',
     },
     {
+      label: 'an item-rule refusal that mentions a cooldown, on a 200',
+      response: { status: 200, body: '{"error":"ITEM_IMPORT_COOLDOWN"}' },
+      expectKind: 'api_error',
+    },
+    {
+      label: 'an item-rule refusal that mentions a cooldown, on a 400',
+      response: { status: 400, body: '{"error":"ITEM_IMPORT_COOLDOWN"}' },
+      expectKind: 'api_error',
+    },
+    {
+      label: 'a 429 stays a rate limit whatever the body names',
+      response: { status: 429, body: '{"error":"ITEM_IMPORT_COOLDOWN"}' },
+      expectKind: 'cooldown',
+    },
+    {
+      label: 'a cooldown named by a non-item code on a 400',
+      response: { status: 400, body: '{"error":"ACTION_COOLDOWN"}' },
+      expectKind: 'cooldown',
+    },
+    {
       label: 'a 4xx naming a code (404)',
       response: { status: 404, body: '{"error":"NO_SUCH_ITEM"}' },
       expectKind: 'api_error',

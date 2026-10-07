@@ -1,5 +1,39 @@
 # @bombfarm/game-art
 
+## 0.8.0
+
+### Minor Changes
+
+- 7ab7d0e: A checkbox and a checklist mode for the inventory table
+
+  The design system gains a Checkbox for lists where rows are picked one by one. The inventory table
+  can now draw itself as a checklist: a tick column in front, a click anywhere on a row toggling it,
+  rows that cannot be picked dimmed with the reason beside the checkbox and read aloud to screen
+  readers, and room for one extra column of the host's own. That column's sort order can be held by the
+  host, so a screen that acts on the rows as listed acts on the order the reader sees.
+
+### Patch Changes
+
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [5de6480]
+- Updated dependencies [5de6480]
+- Updated dependencies [7ab7d0e]
+- Updated dependencies [7ab7d0e]
+  - @bombfarm/domain@1.9.0
+  - @bombfarm/ui@0.18.0
+
+## 0.7.7
+
+### Patch Changes
+
+- Updated dependencies [b7e061c]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [c13d140]
+- Updated dependencies [b7e061c]
+  - @bombfarm/domain@1.8.1
+
 ## 0.7.6
 
 ### Patch Changes
