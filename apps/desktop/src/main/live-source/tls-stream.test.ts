@@ -970,6 +970,17 @@ describe('toLiveTick: bombs and explosions', () => {
     expect(tick.explosions?.[0] && 'secondBlast' in tick.explosions[0]).toBe(false);
   });
 
+  it('leaves secondBlast off an explosion whose second-blast marker is the number 1', () => {
+    const tick = toLiveTick({
+      [wireKey('phase')]: 9,
+      [wireKey('explosionsList')]: [wireExplosion({ [wireKey('explosionSecondBlast')]: 1 })],
+    });
+
+    expect(tick.phase).toBe(9);
+    expect(tick.explosions).toEqual([{ cell: 7, radius: 3 }]);
+    expect(tick.explosions?.[0] && 'secondBlast' in tick.explosions[0]).toBe(false);
+  });
+
   it('carries empty bombs and explosions arrays as empty arrays when the wire sends them empty', () => {
     const tick = toLiveTick({ [wireKey('bombsList')]: [], [wireKey('explosionsList')]: [] });
 
@@ -1006,6 +1017,17 @@ describe('toLiveTick: hit markers', () => {
   it('leaves secondBlast off a hit that carries no second-blast flag', () => {
     const tick = toLiveTick({ [wireKey('hitsList')]: [wireHit()] });
 
+    expect(tick.hits?.[0] && 'secondBlast' in tick.hits[0]).toBe(false);
+  });
+
+  it.each([1, 'true'])('leaves secondBlast off a hit whose second-blast marker is %j, not a boolean', (marker) => {
+    const tick = toLiveTick({
+      [wireKey('phase')]: 9,
+      [wireKey('hitsList')]: [wireHit({ [wireKey('hitSecondBlast')]: marker })],
+    });
+
+    expect(tick.phase).toBe(9);
+    expect(tick.hits).toEqual([{ cell: 10, damage: 500, critical: false }]);
     expect(tick.hits?.[0] && 'secondBlast' in tick.hits[0]).toBe(false);
   });
 
