@@ -35,7 +35,12 @@ describe('the committed fixtures are scrubbed (D19 — the repo is public)', () 
   const fixtureFiles = readdirSync(fixturesDir).filter((f) => f.endsWith('.json'));
 
   it('finds every committed fixture file, so a new one cannot skip the scrub checks below', () => {
-    expect(fixtureFiles.sort()).toEqual(['api-bodies-after.json', 'api-bodies.json', 'rotation-ready.json']);
+    expect(fixtureFiles.sort()).toEqual([
+      'api-bodies-after.json',
+      'api-bodies.json',
+      'roster-optional-keys.json',
+      'rotation-ready.json',
+    ]);
   });
 
   for (const file of fixtureFiles) {
