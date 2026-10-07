@@ -39,6 +39,17 @@ describe('STEAM_CURRENCIES', () => {
     for (const currency of STEAM_CURRENCIES) expect(currency.label.length).toBeGreaterThan(0);
   });
 
+  it('carries the ISO-4217 minor-unit count of every row', () => {
+    const codesWith = (minorUnits: number) =>
+      STEAM_CURRENCIES.filter((currency) => currency.minorUnits === minorUnits)
+        .map((currency) => currency.code)
+        .sort();
+
+    expect(codesWith(0)).toEqual(['CLP', 'JPY', 'KRW', 'VND']);
+    expect(codesWith(3)).toEqual(['KWD']);
+    expect(codesWith(2).length).toBe(STEAM_CURRENCIES.length - 5);
+  });
+
   it('finds a row by code in either case, and none for a code Steam retired', () => {
     expect(steamCurrencyFor('brl')).toMatchObject({ id: 7, label: 'Brazilian Real' });
     expect(steamCurrencyFor('SEK')).toBeNull();

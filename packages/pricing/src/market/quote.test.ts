@@ -42,6 +42,40 @@ describe('parseMoneyAmount', () => {
   });
 });
 
+describe('parseMoneyAmount, told which currency the amount is in', () => {
+  it('reads a trailing group of three digits as the fraction of a three-decimal currency', () => {
+    expect(parseMoneyAmount('1.234 KD', 'KWD')).toBe(1.234);
+    expect(parseMoneyAmount('1,234 KD', 'KWD')).toBe(1.234);
+  });
+
+  it('still groups the thousands of a three-decimal currency', () => {
+    expect(parseMoneyAmount('1.234.567 KD', 'KWD')).toBe(1234.567);
+    expect(parseMoneyAmount('1,234,567 KD', 'KWD')).toBe(1234.567);
+  });
+
+  it('keeps a grouped amount whole in a currency with no minor unit', () => {
+    expect(parseMoneyAmount('¥1,234', 'JPY')).toBe(1234);
+    expect(parseMoneyAmount('₩1,234,567', 'KRW')).toBe(1234567);
+    expect(parseMoneyAmount('$1.234.567', 'CLP')).toBe(1234567);
+  });
+
+  it('lets no separator introduce a fraction in a currency with no minor unit', () => {
+    expect(parseMoneyAmount('¥1,23', 'JPY')).toBe(123);
+    expect(parseMoneyAmount('₫1.2', 'VND')).toBe(12);
+  });
+
+  it('reads a trailing group of three digits as grouping in a two-decimal currency', () => {
+    expect(parseMoneyAmount('R$ 1.234', 'BRL')).toBe(1234);
+    expect(parseMoneyAmount('R$ 1.234,56', 'BRL')).toBe(1234.56);
+    expect(parseMoneyAmount('R$ 0,17', 'BRL')).toBe(0.17);
+  });
+
+  it('falls back to the three-digit heuristic for a code it does not know', () => {
+    expect(parseMoneyAmount('1.234', 'SEK')).toBe(1234);
+    expect(parseMoneyAmount('1.234')).toBe(1234);
+  });
+});
+
 describe('parsePriceOverview', () => {
   it('reads the lowest listing, the median and the 24h volume from one answer', () => {
     expect(
@@ -78,6 +112,15 @@ describe('parsePriceOverview', () => {
   it('is null overall when Steam did not answer', () => {
     expect(parsePriceOverview({ success: false, lowest_price: 'R$ 25,00' })).toBeNull();
   });
+
+  it('reads both prices under the currency the quote was asked for', () => {
+    expect(
+      parsePriceOverview(
+        { success: true, lowest_price: '1.234 KD', median_price: '1.250 KD', volume: '1,234' },
+        'KWD',
+      ),
+    ).toEqual({ lowest: 1.234, median: 1.25, volume: 1234 });
+  });
 });
 
 describe('quoteNative', () => {
@@ -107,6 +150,20 @@ describe('quoteNative', () => {
 
     expect(calls).toEqual([priceOverviewUrl(APP_ID, 'Gold Ring Lv 20 (Rare)', 'BRL')]);
     expect(calls[0]).toContain('currency=7');
+  });
+
+  it('tells the fetcher which currency it asked for, so the answer can be parsed in it', async () => {
+    const seen: { url: string; currency: string }[] = [];
+    const fetchPriceOverview = vi.fn((url: string, currency: string) => {
+      seen.push({ url, currency });
+      return Promise.resolve<QuoteFetchResult>({ ok: true, quote: quote(1.234) });
+    });
+
+    await quoteNative(APP_ID, ['Topaz Gem'], ['KWD'], { fetchPriceOverview, sleep: noSleep });
+
+    expect(seen).toEqual([
+      { url: priceOverviewUrl(APP_ID, 'Topaz Gem', 'KWD'), currency: 'KWD' },
+    ]);
   });
 
   it('leaves an unquoted hash absent rather than recording it as zero or null', async () => {
@@ -209,6 +266,62 @@ describe('quoteNative', () => {
 
     expect(waits[0]).toBe(200);
     expect(result.quotes.get('Ember Ring Lv 10 (Rare)')).toEqual({ BRL: quote(12) });
+    expect(result.complete).toBe(true);
+  });
+
+  it('doubles the backoff on each rate limit but never past the cap', async () => {
+    const waits: number[] = [];
+    let limitsLeft = 3;
+    const fetchPriceOverview = vi.fn(() => {
+      if (limitsLeft > 0) {
+        limitsLeft -= 1;
+        return Promise.resolve<QuoteFetchResult>({ ok: false, rateLimited: true });
+      }
+      return Promise.resolve<QuoteFetchResult>({ ok: true, quote: quote(12) });
+    });
+
+    const result = await quoteNative(APP_ID, ['Ember Ring Lv 10 (Rare)'], ['BRL'], {
+      fetchPriceOverview,
+      sleep: (ms) => {
+        waits.push(ms);
+        return Promise.resolve();
+      },
+      baseDelayMs: 100,
+      maxDelayMs: 250,
+      maxConsecutiveRateLimits: 5,
+    });
+
+    expect(waits).toEqual([200, 250, 250, 100]);
+    expect(result.complete).toBe(true);
+  });
+
+  it('resets the backoff to the base delay after a fetch succeeds', async () => {
+    const waits: number[] = [];
+    const answers: QuoteFetchResult[] = [
+      { ok: false, rateLimited: true },
+      { ok: true, quote: quote(12) },
+      { ok: false, rateLimited: true },
+      { ok: true, quote: quote(13) },
+    ];
+    const fetchPriceOverview = vi.fn(
+      () => Promise.resolve<QuoteFetchResult>(answers.shift() ?? { ok: true, quote: null }),
+    );
+
+    const result = await quoteNative(
+      APP_ID,
+      ['Ember Ring Lv 10 (Rare)', 'Coal Boots Lv 30 (Rare)'],
+      ['BRL'],
+      {
+        fetchPriceOverview,
+        sleep: (ms) => {
+          waits.push(ms);
+          return Promise.resolve();
+        },
+        baseDelayMs: 100,
+      },
+    );
+
+    expect(waits).toEqual([200, 100, 200, 100]);
     expect(result.complete).toBe(true);
   });
 
