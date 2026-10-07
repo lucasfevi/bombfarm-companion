@@ -705,7 +705,24 @@ function reasonOf(failureMessages) {
   return '';
 }
 
-const INSTRUMENTATION_TIMEOUT = /Test timed out in \d+ms/;
+const VITEST_TIMEOUT_MARKER = 'Error: STACK_TRACE_ERROR';
+const MIN_TIMEOUT_DURATION_MS = 60_000;
+
+function isBareTimeoutMarker(failureMessages) {
+  return (
+    Array.isArray(failureMessages) &&
+    failureMessages.length > 0 &&
+    failureMessages.every((message) => String(message).split('\n')[0].trim() === VITEST_TIMEOUT_MARKER)
+  );
+}
+
+function isInstrumentationTimeout(test) {
+  return isBareTimeoutMarker(test.failureMessages) && Number(test.duration) >= MIN_TIMEOUT_DURATION_MS;
+}
+
+function secondsOf(durationMs) {
+  return Math.round(Number(durationMs) / 1000);
+}
 
 export const WAIVER = { wallClock: 'wall-clock assertion', timeout: 'instrumentation timeout' };
 
@@ -755,8 +772,17 @@ export function judgeTestRun({
     }
     for (const test of failedTests) {
       const name = test.fullName ?? test.title ?? '(unnamed test)';
-      const entry = { file, name, message: reasonOf(test.failureMessages) };
-      const timedOut = (test.failureMessages ?? []).some((message) => INSTRUMENTATION_TIMEOUT.test(String(message)));
+      const bareMarker = isBareTimeoutMarker(test.failureMessages);
+      const entry = {
+        file,
+        name,
+        message: !bareMarker
+          ? reasonOf(test.failureMessages)
+          : Number(test.duration) >= MIN_TIMEOUT_DURATION_MS
+            ? `timed out after ${secondsOf(test.duration)} s (explicit per-test timeout; instrumented body ran long)`
+            : `only vitest's timeout marker, after ${Math.round(Number(test.duration))} ms: too short to be an instrumentation timeout`,
+      };
+      const timedOut = isInstrumentationTimeout(test);
       if (allowed.has(file)) {
         tolerated.push({ kind: 'tolerated', waiver: WAIVER.wallClock, ...entry });
       } else if (solverSet.has(file) && timedOut) {

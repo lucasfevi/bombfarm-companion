@@ -991,68 +991,109 @@ describe('allowlistOffenders keeps the instrumentation-sensitive list honest', (
   });
 });
 
-describe('judgeTestRun: instrumentation timeouts in the solver files', () => {
-  const ROOT = 'C:/work/repo';
+describe('judgeTestRun: instrumentation timeouts in the solver files, in the shape vitest really writes', () => {
+  const ROOT = '/home/runner/work/repo/repo';
   const SOLVER = `packages/domain/${SOLVER_TEST_FILES[1]}`;
   const NOT_SOLVER = 'packages/domain/tests/team-plan-farm-points-reproducible-lookalike.test.ts';
-  const TIMEOUT = 'Error: Test timed out in 900000ms.\nIf this is a long-running test, pass a timeout value as the last argument.';
+  const MARKER = [
+    'Error: STACK_TRACE_ERROR\n    at task (file:///home/runner/work/repo/repo/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:638:27)\n    at Object.<anonymous> (file:///home/runner/work/repo/repo/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:662:16)',
+  ];
+  const TIMED_OUT_MS = 1001772.756931;
 
-  function failing(file, fullName, failureMessages) {
+  function failedTest(fullName, failureMessages, duration) {
+    return { ancestorTitles: ['the pass is reproducible'], fullName, status: 'failed', title: fullName, duration, meta: {}, failureMessages };
+  }
+
+  function suite(file, assertionResults) {
+    const failed = assertionResults.some((test) => test.status === 'failed');
     return {
-      name: `${ROOT}/${file}`,
-      status: 'failed',
+      assertionResults,
+      startTime: 0,
+      endTime: 1,
+      status: failed ? 'failed' : 'passed',
       message: '',
-      assertionResults: [{ fullName, title: fullName, status: 'failed', failureMessages }],
+      name: `${ROOT}/${file}`,
     };
   }
 
-  function judge(suites) {
-    return judgeTestRun({ resultsText: JSON.stringify({ testResults: suites }), root: ROOT, exitCode: 1 });
+  function judge(suites, root = ROOT) {
+    return judgeTestRun({ resultsText: JSON.stringify({ success: false, testResults: suites }), root, exitCode: 1 });
   }
 
-  it('tolerates a per-test timeout in a solver file and labels it an instrumentation timeout', () => {
-    const verdict = judge([failing(SOLVER, 'two runs propose the same points', ['Error: STACK_TRACE_ERROR\n    at x', TIMEOUT])]);
+  const passedTest = { ancestorTitles: [], fullName: 'adds', status: 'passed', title: 'adds', duration: 3, meta: {}, failureMessages: [] };
+  const timedOutTest = failedTest('the pass is reproducible two runs propose the same points', MARKER, TIMED_OUT_MS);
+
+  it('tolerates the bare timeout marker with a long duration in a solver file, and the failed suite entry does not count against it', () => {
+    const verdict = judge([suite(SOLVER, [passedTest, timedOutTest])]);
     expect(verdict.accepted).toBe(true);
+    expect(verdict.offenders).toEqual([]);
     expect(verdict.tolerated.map((item) => [item.waiver, item.file, item.name])).toEqual([
-      [WAIVER.timeout, SOLVER, 'two runs propose the same points'],
-    ]);
-    expect(formatToleratedFailures(verdict.tolerated)).toContain(`[instrumentation timeout] ${SOLVER} > two runs propose the same points: Error: Test timed out in 900000ms.`);
-  });
-
-  it('does not tolerate an assertion failure in a solver file, and names it', () => {
-    const verdict = judge([failing(SOLVER, 'two runs propose the same points', ['AssertionError: expected 1 to be 2\n    at x'])]);
-    expect(verdict.accepted).toBe(false);
-    expect(verdict.offenders.map((item) => [item.kind, item.file, item.name])).toEqual([
-      [TEST_RUN_KIND.failedTest, SOLVER, 'two runs propose the same points'],
+      [WAIVER.timeout, SOLVER, 'the pass is reproducible two runs propose the same points'],
     ]);
   });
 
-  it('does not tolerate a timeout in an ordinary test file', () => {
-    const verdict = judge([failing('packages/domain/tests/ordinary.test.ts', 'sums', [TIMEOUT])]);
-    expect(verdict.accepted).toBe(false);
-    expect(verdict.offenders.map((item) => item.file)).toEqual(['packages/domain/tests/ordinary.test.ts']);
+  it('prints a useful reason from the duration, not the marker', () => {
+    const { tolerated } = judge([suite(SOLVER, [timedOutTest])]);
+    expect(tolerated[0].message).toBe('timed out after 1002 s (explicit per-test timeout; instrumented body ran long)');
+    expect(formatToleratedFailures(tolerated)).toContain(`[instrumentation timeout] ${SOLVER} > the pass is reproducible two runs propose the same points: timed out after 1002 s`);
   });
 
-  it('does not tolerate a timeout in a file whose name merely resembles a solver file', () => {
-    const verdict = judge([failing(NOT_SOLVER, 'sums', [TIMEOUT])]);
+  it('does not tolerate a bare marker with a short duration, and says why', () => {
+    const verdict = judge([suite(SOLVER, [failedTest('quick failure', MARKER, 1200)])]);
     expect(verdict.accepted).toBe(false);
-    expect(verdict.offenders.map((item) => item.file)).toEqual([NOT_SOLVER]);
+    expect(verdict.offenders.map((item) => [item.kind, item.file, item.name])).toEqual([[TEST_RUN_KIND.failedTest, SOLVER, 'quick failure']]);
+    expect(verdict.offenders[0].message).toContain('too short to be an instrumentation timeout');
   });
 
-  it('keeps tolerating wall-clock files as before, labelled a wall-clock assertion', () => {
-    const verdict = judge([failing(INSTRUMENTATION_SENSITIVE_TEST_FILES[0], 'is fast', ['AssertionError: took 9ms'])]);
+  it('does not tolerate the bare marker with a long duration in a file outside the solver list', () => {
+    for (const file of ['packages/domain/tests/ordinary.test.ts', NOT_SOLVER]) {
+      const verdict = judge([suite(file, [timedOutTest])]);
+      expect(verdict.accepted, file).toBe(false);
+      expect(verdict.offenders.map((item) => item.file)).toEqual([file]);
+    }
+  });
+
+  it('does not tolerate an assertion failure in a solver file, however long it took, and names it', () => {
+    const verdict = judge([suite(SOLVER, [failedTest('two runs propose the same points', ['AssertionError: expected 1 to be 2\n    at x'], TIMED_OUT_MS)])]);
+    expect(verdict.accepted).toBe(false);
+    expect(verdict.offenders.map((item) => [item.kind, item.name])).toEqual([[TEST_RUN_KIND.failedTest, 'two runs propose the same points']]);
+    expect(verdict.offenders[0].message).toContain('AssertionError: expected 1 to be 2');
+  });
+
+  it('does not tolerate a failure that carries the marker plus a real message', () => {
+    const verdict = judge([suite(SOLVER, [failedTest('mixed', [MARKER[0], 'AssertionError: also wrong'], TIMED_OUT_MS)])]);
+    expect(verdict.accepted).toBe(false);
+  });
+
+  it('still tolerates a wall-clock file, labelled a wall-clock assertion', () => {
+    const verdict = judge([suite(INSTRUMENTATION_SENSITIVE_TEST_FILES[0], [failedTest('is fast', ['AssertionError: took 9ms'], 12)])]);
     expect(verdict.tolerated.map((item) => item.waiver)).toEqual([WAIVER.wallClock]);
   });
 
   it('reports the first line that carries the reason, skipping stack markers and blank lines', () => {
-    const verdict = judge([failing('packages/domain/tests/ordinary.test.ts', 'sums', ['Error: STACK_TRACE_ERROR\n\n    at somewhere', '\n  Error: the real reason\n    at x'])]);
+    const verdict = judge([suite('packages/domain/tests/ordinary.test.ts', [failedTest('sums', ['Error: STACK_TRACE_ERROR\n\n    at somewhere', '\n  Error: the real reason\n    at x'], 5)])]);
     expect(verdict.offenders[0].message).toBe('packages/domain/tests/ordinary.test.ts > sums: Error: the real reason');
+  });
+
+  it('judges the real-shape solver result and main result together: one timeout and two wall-clock failures, all tolerated', () => {
+    const solver = judge([suite(SOLVER, [passedTest, timedOutTest])]);
+    const main = judge([
+      suite('packages/domain/tests/farm-optimize-perf.test.ts', [
+        failedTest('a full Tier 2 solve stays inside its wall-time ceiling the fastest of 3', ['AssertionError: full solve took 4750ms (baseline ~224ms, ceiling 2500ms): expected 4749.9 to be less than 2500\n    at /home/runner/x.ts:1:1'], 14453.27),
+      ]),
+      suite('packages/domain/tests/forge-forecast.test.ts', [
+        failedTest('forgeGoldQuantile stays cheap at the top of the ladder', ['AssertionError: expected 539.9 to be less than 250\n    at /home/runner/y.ts:1:1'], 552.88),
+      ]),
+    ]);
+    expect(solver.accepted).toBe(true);
+    expect(main.accepted).toBe(true);
+    expect([...solver.tolerated, ...main.tolerated].map((item) => item.waiver)).toEqual([WAIVER.timeout, WAIVER.wallClock, WAIVER.wallClock]);
   });
 
   it('reads the solver list from the repository rather than copying it', () => {
     expect(SOLVER_TEST_FILES.length).toBeGreaterThan(0);
     const verdict = judgeTestRun({
-      resultsText: JSON.stringify({ testResults: [failing(SOLVER, 'x', [TIMEOUT])] }),
+      resultsText: JSON.stringify({ testResults: [suite(SOLVER, [timedOutTest])] }),
       root: ROOT,
       exitCode: 1,
       solverFiles: [],
