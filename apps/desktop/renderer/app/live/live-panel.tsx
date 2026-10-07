@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import { Panel, PanelHeader } from '@bombfarm/ui';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
-import type { LiveEarnings, LiveMap } from '@bombfarm/contracts';
+import type { LiveDamage, LiveEarnings, LiveMap } from '@bombfarm/contracts';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import type { LiveFastModel, LiveHeroFact, LiveSlowModel } from '../../lib/live/live-model';
 import { useLiveHeroPeeks } from '../../lib/live/use-live-hero-peeks';
+import { DamagePanel } from './damage-panel';
 import { EarningsPanel } from './earnings-panel';
 import { FieldCountdown } from './field-countdown';
 import { FreshnessLine, type ReachedLiveFreshness } from './freshness-line';
@@ -57,12 +58,23 @@ function buildRows(slow: LiveSlowModel, fast: LiveFastModel): readonly LiveRow[]
   ];
 }
 
+/** Every hero the rotation lists name, by id, for the panels that identify heroes by id alone. A
+ *  hero is in at most one list; the first sighting wins should that ever stop holding. */
+function buildHeroFacts(slow: LiveSlowModel): ReadonlyMap<string, LiveHeroFact> {
+  const facts = new Map<string, LiveHeroFact>();
+  for (const hero of [...slow.onField, ...slow.recovering, ...slow.queued, ...slow.benched]) {
+    if (!facts.has(hero.id)) facts.set(hero.id, hero);
+  }
+  return facts;
+}
+
 export function LivePanel({
   freshness,
   slow,
   fast,
   earnings = null,
   map = null,
+  damage = null,
   onResetEarnings = () => undefined,
   onReopenConsent,
 }: {
@@ -71,6 +83,7 @@ export function LivePanel({
   fast: LiveFastModel;
   earnings?: LiveEarnings | null;
   map?: LiveMap | null;
+  damage?: LiveDamage | null;
   onResetEarnings?: (() => void) | undefined;
   onReopenConsent?: (() => void) | undefined;
 }) {
@@ -87,6 +100,7 @@ export function LivePanel({
   const fieldSlotsHint = fieldSize !== undefined && fieldSize < FIELD_SLOTS_MAX ? t.liveFieldSlotsHint : undefined;
 
   const rows = useMemo(() => buildRows(slow, fast), [slow, fast]);
+  const heroFacts = useMemo(() => buildHeroFacts(slow), [slow]);
   const peekFor = useLiveHeroPeeks();
 
   return (
@@ -109,6 +123,7 @@ export function LivePanel({
         />
         <MapPanel map={map} />
       </div>
+      <DamagePanel damage={damage} heroFacts={heroFacts} fieldSize={fieldSize} />
       <Panel data-testid="live-heroes">
         <PanelHeader title={t.liveHeroesTitle} />
         <div className="flex flex-col gap-3">
