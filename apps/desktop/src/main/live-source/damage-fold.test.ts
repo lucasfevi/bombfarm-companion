@@ -19,7 +19,7 @@ import {
 } from '@bombfarm/game-data';
 import { describe, expect, it, vi } from 'vitest';
 import { readCaptureRecords } from './capture-format.js';
-import { DamageFold, DISCONTINUITY_WALL_MS } from './damage-fold.js';
+import { DamageFold } from './damage-fold.js';
 import { EarningsFold, MAX_TICK_GAP_MS, TEN_MINUTES_MS } from './earnings-fold.js';
 import type { LogPort } from './log-port.js';
 import { TlsConnections, type TapEvent } from './tls-stream.js';
@@ -226,6 +226,18 @@ describe('DamageFold: team damage per second', () => {
     expect(view.teamDpsSession).toBe(50);
   });
 
+  it('divides the 10-minute window by the capped streamed seconds across a long gap, not by the gap', () => {
+    const { fold, step } = makeHarness();
+    step({});
+    step({});
+    step({ hits: [hit(10, 100)] }, 60_000);
+
+    const view = requireView(fold);
+    expect(view.sessionSeconds).toBeCloseTo(0.2 + 2, 9);
+    expect(view.teamDps10).toBeCloseTo(100 / 2.2, 9);
+    expect(view.teamDpsSession).toBeCloseTo(100 / 2.2, 9);
+  });
+
   it('reports coverageSeconds exactly as the earnings fold does on the same frames', () => {
     const clock = makeClock();
     const damage = new DamageFold({ now: clock.now, log: NOOP_LOG });
@@ -295,14 +307,16 @@ describe('DamageFold: the process-level counter', () => {
 describe('DamageFold: field seconds and hero rows', () => {
   it('gives every hero in the frame list that frame\'s streamed seconds and nobody else', () => {
     const { fold, step } = makeHarness();
-    step({ heroes: [hero('A'), hero('B')], hits: [hit(1, 10)] });
-    step({ heroes: [hero('A'), hero('B')], hits: [hit(1, 10)] });
-    step({ heroes: [hero('A')], hits: [hit(1, 10)] });
+    const both = [hero('A', 100), hero('B', 110)];
+    step({ heroes: both, bombs: [freshBomb(100, 1.6), freshBomb(110, 1.5)] });
+    step({ heroes: both, explosions: [blast(100), blast(110)], hits: [hit(101, 50), hit(111, 50)] });
+    step({ heroes: [hero('A', 100)] });
 
     const view = requireView(fold);
-    expect(rowFor(view, 'A')?.dps).toBe(0);
-    expect(rowFor(view, 'B')?.dps).toBe(0);
-    expect(view.heroes.map((row) => row.heroId)).toEqual(['A', 'B']);
+    expect(rowFor(view, 'A')).toMatchObject({ damage: 50, onField: true });
+    expect(rowFor(view, 'B')).toMatchObject({ damage: 50, onField: false });
+    expect(rowFor(view, 'A')?.dps).toBeCloseTo(50 / 0.4, 6);
+    expect(rowFor(view, 'B')?.dps).toBeCloseTo(50 / 0.2, 6);
   });
 
   it('divides a hero\'s session damage by its field seconds', () => {
@@ -439,12 +453,12 @@ describe('DamageFold: continuity flag passed to the engine', () => {
   });
 
   it('marks a frame discontinuous only when the wall gap since the previous frame exceeds the limit', () => {
-    expect(discontinuousFlags([FRAME_MS, DISCONTINUITY_WALL_MS, DISCONTINUITY_WALL_MS + 1, FRAME_MS])).toEqual([
-      false,
-      false,
-      true,
-      false,
-    ]);
+    expect(discontinuousFlags([200, 400, 401, 200])).toEqual([false, false, true, false]);
+  });
+
+  it('a 400 ms wall gap is not discontinuous and a 401 ms gap is, whatever the exported limit says', () => {
+    expect(discontinuousFlags([200, 400])).toEqual([false, false]);
+    expect(discontinuousFlags([200, 401])).toEqual([false, true]);
   });
 });
 
@@ -473,6 +487,30 @@ describe('DamageFold: an engine failure', () => {
     expect(after.team).toEqual(before.team);
     expect(rowFor(after, 'A')?.damage).toBe(rowFor(before, 'A')?.damage);
     expect(after.sessionSeconds).toBeCloseTo(before.sessionSeconds + 0.2, 9);
+  });
+
+  it('counts none of the failed frame\'s own hits and loot, in the team, the hero rows or Unattributed', () => {
+    const { fold, step } = failingSecondFrame();
+    step({ heroes: [hero('A')] });
+    const before = requireView(fold);
+    step({ heroes: [hero('A')], hits: [hit(1, 999)], loot: [{ cell: 1, gold: 77 }] });
+    const after = requireView(fold);
+
+    expect(after.team).toEqual(before.team);
+    expect(after.heroes.map((row) => [row.heroId, row.damage, row.props, row.gold])).toEqual(
+      before.heroes.map((row) => [row.heroId, row.damage, row.props, row.gold]),
+    );
+    expect(after.unattributedReasons).toEqual(before.unattributedReasons);
+  });
+
+  it('still gives the heroes in the failed frame\'s list that frame\'s streamed seconds', () => {
+    const { fold, step } = failingSecondFrame();
+    step({ heroes: [hero('A')] });
+    expect(rowFor(requireView(fold), 'A')?.dps).toBeNull();
+
+    step({ heroes: [hero('A')], hits: [hit(1, 999)] });
+
+    expect(rowFor(requireView(fold), 'A')?.dps).toBeCloseTo(10 / 0.2, 6);
   });
 
   it('forgets the live bombs and marks the next frame discontinuous, then recovers', () => {

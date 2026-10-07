@@ -1419,13 +1419,18 @@ describe('LiveSource: damage', () => {
   it('keeps the seeds when a tap-observed rotation body arrives, which carries no roster', () => {
     const { source, pushFrame, goLive } = createHarness();
     source.start();
-    source.ingestRotation(rosterOnlyAccountView([rosterHero('A', 0.2)]));
+    source.ingestRotation(
+      rosterOnlyAccountView([rosterHero('A', 0.2), rosterHero('G', 0.1, [{ code: 'fantasma', level: 1 }])]),
+    );
     source.ingestObservedRotation(bodyWithHeroes([completeHero('A')]), Date.now());
     goLive();
 
     bombBurstFromAbsentPlanter(pushFrame, 'A', 25);
+    pushFrame({ heroes: [{ id: 'G', cell: 7 }], hits: [{ cell: 7, damage: 60 }] });
 
-    expect(source.getView().damage?.heroes.find((row) => row.heroId === 'A')?.damage).toBe(25);
+    const heroes = source.getView().damage?.heroes;
+    expect(heroes?.find((row) => row.heroId === 'A')?.damage).toBe(25);
+    expect(heroes?.find((row) => row.heroId === 'G')?.damage).toBe(60);
   });
 
   it('resetEarnings zeroes the damage session and keeps the 10-minute team figure', () => {
