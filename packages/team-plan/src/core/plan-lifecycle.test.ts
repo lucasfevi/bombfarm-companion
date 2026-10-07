@@ -8,6 +8,7 @@ import {
   isTeamPlanStale,
   resolveTeamPlanTargetPhase,
 } from './plan-lifecycle';
+import { resolveHeroScope } from './hero-scope';
 import { PVP_TOP_HOUSE_SQUAD_SLOTS, pvpSquadExcess, resolveTeamPlanGatePhase, teamPlanPvpSquadSlots } from './combat-window';
 import { clampForgeFloor, clampTargetPhase, DEFAULT_TEAM_PLAN_CONTROLS } from './team-plan-controls';
 import type { TeamPlanControls } from './team-plan-controls';
@@ -166,6 +167,20 @@ describe('computeTeamPlanInputSignature', () => {
     );
   });
 
+  it('is the same for a sparse stored map and its fully materialised equivalent', () => {
+    const roster = [
+      minimalHero({ id: 'a', updatedAt: 1, battleAllowed: true }),
+      minimalHero({ id: 'b', updatedAt: 1, battleAllowed: false }),
+      minimalHero({ id: 'c', updatedAt: 1, battleAllowed: true }),
+    ];
+    const withRoster = inputs({ heroes: roster });
+    const sparse = controls({ scopeByHeroId: { c: 'leaveAlone' } });
+    const materialised = controls({ scopeByHeroId: { a: 'optimize', b: 'donate', c: 'leaveAlone' } });
+    expect(computeTeamPlanInputSignature(withRoster, sparse)).toBe(
+      computeTeamPlanInputSignature(withRoster, materialised),
+    );
+  });
+
   it('differs when the forge floor changes', () => {
     expect(computeTeamPlanInputSignature(base, baseControls)).not.toBe(
       computeTeamPlanInputSignature(base, controls({ ...baseControls, forgeFloor: 11 })),
@@ -269,17 +284,37 @@ describe('applyTeamPlanControlChange', () => {
     expect(applyTeamPlanControlChange(control, { kind: 'scope', heroId: 'a', scope: 'optimize' }, context)).toBeNull();
   });
 
-  it('scope: a partial map with an unchanged hero writes the full map and does not clear', () => {
-    const control = controls({ scopeByHeroId: { a: 'optimize' } });
-    const result = applyTeamPlanControlChange(
-      control,
-      { kind: 'scope', heroId: 'a', scope: 'optimize' },
-      context,
+  it('scope: dragging a hero to its own default column stores that choice and does not clear', () => {
+    const control = controls({ scopeByHeroId: {} });
+    const result = applyTeamPlanControlChange(control, { kind: 'scope', heroId: 'a', scope: 'optimize' }, context);
+    expect(result).toEqual({ controls: { ...control, scopeByHeroId: { a: 'optimize' } }, clearsPlan: false });
+  });
+
+  it('scope: a move stores only that hero and leaves every other default unwritten', () => {
+    const control = controls({ scopeByHeroId: {} });
+    const result = applyTeamPlanControlChange(control, { kind: 'scope', heroId: 'a', scope: 'donate' }, context);
+    expect(result).toEqual({ controls: { ...control, scopeByHeroId: { a: 'donate' } }, clearsPlan: true });
+  });
+
+  it('scope: a move keeps the stored choices of other heroes', () => {
+    const control = controls({ scopeByHeroId: { b: 'leaveAlone' } });
+    const result = applyTeamPlanControlChange(control, { kind: 'scope', heroId: 'a', scope: 'donate' }, context);
+    expect(result?.controls.scopeByHeroId).toEqual({ a: 'donate', b: 'leaveAlone' });
+  });
+
+  it('scope: after dragging another hero, a hero whose battle turns on resolves to optimize', () => {
+    const battleOff = [
+      { id: 'a', battleAllowed: true },
+      { id: 'b', battleAllowed: false },
+    ];
+    const moved = applyTeamPlanControlChange(
+      controls({ scopeByHeroId: {} }),
+      { kind: 'scope', heroId: 'a', scope: 'leaveAlone' },
+      { ...context, heroes: battleOff },
     );
-    expect(result).toEqual({
-      controls: { ...control, scopeByHeroId: { a: 'optimize', b: 'donate' } },
-      clearsPlan: false,
-    });
+    const stored = moved?.controls.scopeByHeroId ?? {};
+    expect(resolveHeroScope(battleOff[1]!, stored)).toBe('donate');
+    expect(resolveHeroScope({ id: 'b', battleAllowed: true }, stored)).toBe('optimize');
   });
 
   it('scope: a move that changes the resolved value clears the plan', () => {

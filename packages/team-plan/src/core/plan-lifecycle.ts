@@ -4,7 +4,7 @@ import type { ScopeState } from './hero-scope';
 import { clampForgeFloor, clampTargetPhase, normalizeFarmSet, normalizeGatePhase, withAuraAtCap } from './team-plan-controls';
 import type { TeamAuraId } from '@bombfarm/domain/team-buffs';
 import { pvpSquadExcess, resolveTeamPlanGatePhase } from './combat-window';
-import { mergeScopeForRoster } from './hero-scope';
+import { resolveHeroScope } from './hero-scope';
 import { planBasisSignature } from './plan-changes';
 
 import { resolveTeamPlanTargetPhase } from './target-phase';
@@ -72,13 +72,6 @@ export type TeamPlanControlChange =
   | { kind: 'gatePhase'; value: number | null }
   | { kind: 'farmSet'; value: string | null };
 
-function scopeMapsEqual(left: Record<string, ScopeState>, right: Record<string, ScopeState>): boolean {
-  const leftKeys = Object.keys(left);
-  const rightKeys = Object.keys(right);
-  if (leftKeys.length !== rightKeys.length) return false;
-  return leftKeys.every((key) => left[key] === right[key]);
-}
-
 export function applyTeamPlanControlChange(
   controls: TeamPlanControls,
   change: TeamPlanControlChange,
@@ -89,16 +82,15 @@ export function applyTeamPlanControlChange(
   },
 ): { controls: TeamPlanControls; clearsPlan: boolean } | null {
   switch (change.kind) {
-    // Always rewrite the *full* roster map (defaults + prior choices + this move). A partial
-    // map left Donate-looking heroes (UI default) as Optimize in the solver input.
+    // The stored map holds only what the player set by hand; every other hero resolves through
+    // its battleAllowed default at read time, so a move writes this one entry and nothing else.
     case 'scope': {
-      const previousResolved = mergeScopeForRoster([...context.heroes], controls.scopeByHeroId);
-      const next = { ...previousResolved, [change.heroId]: change.scope };
-      if (scopeMapsEqual(controls.scopeByHeroId, next)) return null;
-      const assignmentChanged = previousResolved[change.heroId] !== change.scope;
+      if (controls.scopeByHeroId[change.heroId] === change.scope) return null;
+      const hero = context.heroes.find((candidate) => candidate.id === change.heroId);
+      const previous = hero ? resolveHeroScope(hero, controls.scopeByHeroId) : undefined;
       return {
-        controls: { ...controls, scopeByHeroId: next },
-        clearsPlan: assignmentChanged,
+        controls: { ...controls, scopeByHeroId: { ...controls.scopeByHeroId, [change.heroId]: change.scope } },
+        clearsPlan: previous !== change.scope,
       };
     }
 
