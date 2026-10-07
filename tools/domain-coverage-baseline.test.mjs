@@ -9,7 +9,15 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { KIND, MIN_BASELINE_FILES, METRICS, baselineIntegrityFindings, canonicalBaselineText } from './domain-coverage-core.mjs';
+import {
+  KIND,
+  MIN_BASELINE_FILES,
+  METRICS,
+  baselineIntegrityFindings,
+  canonicalBaselineText,
+  coverageIgnoreHints,
+  filesTheRatchetCannotSee,
+} from './domain-coverage-core.mjs';
 import { runtimeBearingFiles } from './domain-coverage-runtime.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -25,6 +33,19 @@ function sourceFilesOnDisk() {
       else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.d.ts')) {
         found.push(relative(PACKAGE_DIRECTORY, full).replaceAll('\\', '/'));
       }
+    }
+  };
+  walk(join(PACKAGE_DIRECTORY, 'src'));
+  return found.sort();
+}
+
+function everyFileUnderSource() {
+  const found = [];
+  const walk = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const full = join(directory, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else found.push(relative(PACKAGE_DIRECTORY, full).replaceAll('\\', '/'));
     }
   };
   walk(join(PACKAGE_DIRECTORY, 'src'));
@@ -117,5 +138,16 @@ describe('packages/domain/coverage-baseline.json', () => {
 
   it('has no integrity finding of any kind', () => {
     expect(findings.map((item) => item.message)).toEqual([]);
+  });
+});
+
+describe('nothing under packages/domain/src can hide from the ratchet', () => {
+  it('has no v8, istanbul or c8 ignore hint, which would silently raise every metric', () => {
+    const offenders = sourceFiles.flatMap((file) => coverageIgnoreHints(file, readFileSync(join(PACKAGE_DIRECTORY, file), 'utf8')));
+    expect(offenders, 'coverage-ignore hints (file:line)').toEqual([]);
+  });
+
+  it('holds only .ts and .json files: a .mts, .js or upper-case .TS file is invisible to the ratchet and the compiler', () => {
+    expect(filesTheRatchetCannotSee(everyFileUnderSource()), 'neither .ts nor .json').toEqual([]);
   });
 });

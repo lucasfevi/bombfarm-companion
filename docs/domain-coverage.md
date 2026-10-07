@@ -64,6 +64,8 @@ project and 105 s for the solver pass, about 5.3 minutes (318 s) in all. Instrum
 take 345 s and 407 s, and about 740-760 s end to end (two runs: 757 s and 741 s), including the merge:
 roughly 2.4 times the plain run. That is why this is its own CI job and not part of the test shards.
 
+**The measuring passes only measure.** Both run with unhandled errors ignored and a ten-minute per-test timeout, because the regular jobs are what gate correctness and this run only reads coverage out of the same tests. A failing test still fails the run, and the dot reporter names it in the log. The reason is the worker RPC window: under instrumentation a single file, the two-stage phase optimiser test, takes about 276 s, far past the 60 s window, and the first CI run on 2026-10-07 failed on that alone with every test passing and nothing printed, because the blob reporter that records the raw data prints nothing. The merge step needs the same unhandled-errors flag, since it replays what the solver pass recorded. The CI job uploads the whole `coverage` directory, blobs included, so a red run can be examined.
+
 ```powershell
 pnpm coverage:domain:update
 ```
@@ -161,7 +163,10 @@ It reads the committed baseline from the base ref with `git show` and compares i
 baseline entry by entry. Any file whose recorded number is lower at head than at base fails, naming
 file, metric, from and to, **unless head has a `waivers` entry for that file that base does not
 have** — so a hand-edit of the JSON cannot lower a number, and an old waiver cannot be reused. A
-file dropped from the head baseline passes only if it no longer exists on disk. If the base has no
+file dropped from the head baseline passes only if it no longer exists on disk. The guard always
+prints the baseline files removed and added since the base (and appends the same table to the CI step
+summary), so a moved file is in front of the reviewer. A move that keeps the basename and records a
+lower number on any metric fails unless head carries a new waiver naming the added file. If the base has no
 baseline file at all (the change that introduced it) the guard says so and passes. A base ref that
 does not resolve fails rather than passes.
 
@@ -172,6 +177,20 @@ does not resolve fails rather than passes.
   request.
 - `tools/domain-coverage-core.test.mjs` proves every finding kind red and green on in-memory
   fixtures.
+- `tools/domain-coverage-cli.test.mjs` runs the CLI as a child process against a throwaway package
+  tree (`--root`) and a throwaway git repository, and pins the exit codes: findings, a malformed or
+  missing baseline, a refused update, and every guard-base outcome.
+- The baseline guard also fails on any `v8`, `istanbul` or `c8` ignore hint under `packages/domain/src`
+  (they silently raise every metric) and on any source file that is not `.ts` or `.json` (a `.mts`,
+  `.js` or upper-case `.TS` file is invisible to the ratchet and to the compiler).
 - `tools/domain-coverage-workflow.test.mjs` pins the CI job: no escape hatch, the base-branch
   comparison on pull requests, membership in the required-check aggregator with skipped and
   cancelled counting as failure, and the path filter that triggers it.
+
+## Known limits
+
+- A move that also changes the basename is shown in the removed-and-added table but not blocked.
+- The domain path filter does not cover fixtures that domain tests read from other packages' trees. A pull request touching only those skips the ratchet, the same pattern as the existing web filter.
+- `guard-base` passes when the base has no baseline file. It cannot tell a change that introduces the baseline from a base that has lost it, so it is right only while every protected base branch already carries the file.
+- Numbers were recorded on Windows with Node 24; CI is Ubuntu with Node 22. A first CI run may expose platform differences, and `TOLERANCE_PP` is the lever.
+- Never-loaded files are visible only as allowances, and the per-pass untested-file sweep keeps printing its stack traces, as described above.

@@ -8,8 +8,12 @@ import {
   TOLERANCE_PP,
   baselineIntegrityFindings,
   canonicalBaselineText,
+  coverageIgnoreHints,
   emptyBaseline,
   evaluateAgainstBaseline,
+  filesTheRatchetCannotSee,
+  formatRenameReview,
+  formatRenameReviewMarkdown,
   formatReport,
   guardBaseFindings,
   leastCovered,
@@ -18,6 +22,7 @@ import {
   overallOf,
   percent,
   planUpdate,
+  renameReview,
 } from './domain-coverage-core.mjs';
 
 const NEVER_RUN = 'src/never-run.ts';
@@ -776,5 +781,90 @@ describe('report formatting', () => {
     const text = formatReport({ overall: overallOf({ total: Object.fromEntries(METRICS.map((metric) => [metric, { covered: 1, total: 2 }])) }), measured, findings });
     expect(text).toContain('statements 50%');
     expect(text).toContain(`[regression] ${sourceName(3)}: lines fell from 70% to 1%`);
+  });
+});
+
+describe('a moved file cannot launder its numbers', () => {
+  const OLD_PATH = 'src/farm/farm-rate.ts';
+  const NEW_PATH = 'src/economy/farm-rate.ts';
+
+  function moved({ numbers, newBasename = 'farm-rate.ts' } = {}) {
+    const { baseline, sourceFiles, runtimeFiles } = world();
+    const base = clone(baseline);
+    base.files[OLD_PATH] = recorded(90, 80, 70, 95);
+    const head = clone(baseline);
+    const newPath = `src/economy/${newBasename}`;
+    head.files[newPath] = numbers ?? recorded(90, 80, 70, 95);
+    return { base, head, sourceFiles: [...sourceFiles, newPath], runtimeFiles, newPath };
+  }
+
+  it('a same-basename file added with a lower number on any metric fails and names the added file and metric', () => {
+    const scenario = moved({ numbers: recorded(90, 40, 70, 95) });
+    expect(summaryOfFindings(guardBaseFindings(scenario))).toEqual([`${KIND.renamedWithLowerNumbers} | ${NEW_PATH} | branches`]);
+    expect(guardBaseFindings(scenario)[0]).toMatchObject({ baseline: 80, measured: 40, deltaPp: -40 });
+  });
+
+  it('the same move with equal or higher numbers passes', () => {
+    expect(guardBaseFindings(moved())).toEqual([]);
+    expect(guardBaseFindings(moved({ numbers: recorded(99, 99, 99, 99) }))).toEqual([]);
+  });
+
+  it('a new waiver naming the added file allows the lower numbers', () => {
+    const scenario = moved({ numbers: recorded(10, 10, 10, 10) });
+    scenario.head.waivers[NEW_PATH] = { reason: 'rewritten when it moved', ...recorded(10, 10, 10, 10) };
+    expect(guardBaseFindings(scenario)).toEqual([]);
+  });
+
+  it('a move that also changes the basename is shown in the review but not blocked', () => {
+    const scenario = moved({ numbers: recorded(1, 1, 1, 1), newBasename: 'rate.ts' });
+    expect(guardBaseFindings(scenario)).toEqual([]);
+    const review = renameReview(scenario);
+    expect(review.removed.map((row) => row.file)).toEqual([OLD_PATH]);
+    expect(review.added.map((row) => row.file)).toEqual(['src/economy/rate.ts']);
+  });
+
+  it('a removed file that is still on disk is the removed-while-on-disk finding, not a rename', () => {
+    const scenario = moved({ numbers: recorded(10, 10, 10, 10) });
+    scenario.sourceFiles.push(OLD_PATH);
+    expect(summaryOfFindings(guardBaseFindings(scenario))).toEqual([`${KIND.removedWhileOnDisk} | ${OLD_PATH} | null`]);
+  });
+
+  it('the review lists removed and added entries with their numbers, as text and as a markdown table', () => {
+    const scenario = moved({ numbers: recorded(10, 20, 30, 40) });
+    const review = renameReview(scenario);
+    const text = formatRenameReview(review);
+    expect(text).toContain('baseline files removed since the base: 1');
+    expect(text).toContain(`${OLD_PATH}  statements 90%, branches 80%, functions 70%, lines 95%`);
+    expect(text).toContain(`${NEW_PATH}  statements 10%, branches 20%, functions 30%, lines 40%`);
+    const markdown = formatRenameReviewMarkdown(review);
+    expect(markdown).toContain(`| removed | \`${OLD_PATH}\` | 90% | 80% | 70% | 95% |`);
+    expect(markdown).toContain(`| added | \`${NEW_PATH}\` | 10% | 20% | 30% | 40% |`);
+  });
+
+  it('with nothing removed or added the review says none', () => {
+    const { baseline } = world();
+    const review = renameReview({ base: baseline, head: clone(baseline) });
+    expect(formatRenameReview(review)).toBe('baseline files removed since the base: none\nbaseline files added since the base: none\n');
+    expect(formatRenameReviewMarkdown(review)).toContain('None.');
+  });
+});
+
+describe('coverage-ignore hints and files the ratchet cannot see', () => {
+  it('names file and line for every v8, istanbul and c8 ignore hint', () => {
+    const text = ['const a = 1;', '/* v8 ignore next */', 'if (a) {}', '  // istanbul ignore else', '/* c8 ignore start -- @preserve */', 'const v8ignore = 2;'].join('\n');
+    expect(coverageIgnoreHints('src/x.ts', text)).toEqual(['src/x.ts:2', 'src/x.ts:4', 'src/x.ts:5']);
+  });
+
+  it('finds nothing in a source file that merely mentions coverage', () => {
+    expect(coverageIgnoreHints('src/x.ts', '// we measure coverage elsewhere\nconst ignore = true;\n')).toEqual([]);
+  });
+
+  it('names every file that is neither .ts nor .json, including .mts, .js, .tsx and an upper-case extension', () => {
+    expect(filesTheRatchetCannotSee(['src/a.ts', 'src/b.mts', 'src/c.js', 'src/d.TS', 'src/e.json', 'src/f.d.ts', 'src/g.tsx'])).toEqual([
+      'src/b.mts',
+      'src/c.js',
+      'src/d.TS',
+      'src/g.tsx',
+    ]);
   });
 });

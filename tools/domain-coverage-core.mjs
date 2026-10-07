@@ -22,6 +22,7 @@ export const KIND = {
   invalidWaiver: 'invalid-waiver',
   loweredWithoutWaiver: 'lowered-without-waiver',
   removedWhileOnDisk: 'removed-while-on-disk',
+  renamedWithLowerNumbers: 'renamed-with-lower-numbers',
   runtimeInUnmeasured: 'runtime-in-unmeasured',
   allowanceForRuntimeFreeFile: 'allowance-for-runtime-free-file',
 };
@@ -543,7 +544,82 @@ export function guardBaseFindings({ base, head, sourceFiles }) {
       }
     }
   }
+  findings.push(...renameFindings({ base, head, onDisk }));
   return findings;
+}
+
+function basenameOf(file) {
+  return file.slice(file.lastIndexOf('/') + 1);
+}
+
+export function renameReview({ base, head }) {
+  const rows = (names, source) => names.sort(compareCodeUnits).map((file) => ({ file, ...metricsOf(source[file]) }));
+  return {
+    removed: rows(Object.keys(base.files).filter((file) => !(file in head.files)), base.files),
+    added: rows(Object.keys(head.files).filter((file) => !(file in base.files)), head.files),
+  };
+}
+
+function renameFindings({ base, head, onDisk }) {
+  const { removed, added } = renameReview({ base, head });
+  const findings = [];
+  for (const gone of removed.filter((row) => !onDisk.has(row.file))) {
+    for (const now of added.filter((row) => basenameOf(row.file) === basenameOf(gone.file))) {
+      if (now.file in (head.waivers ?? {})) continue;
+      for (const metric of METRICS) {
+        if (hundredths(now[metric]) < hundredths(gone[metric])) {
+          const delta = deltaPp(gone[metric], now[metric]);
+          findings.push(
+            finding(
+              KIND.renamedWithLowerNumbers,
+              now.file,
+              `${now.file} looks like ${gone.file} moved: ${metric} is ${now[metric]}% where ${gone.file} recorded ${gone[metric]}% (${formatPp(delta)} pp) and there is no waiver for it`,
+              { metric, baseline: gone[metric], measured: now[metric], deltaPp: delta },
+            ),
+          );
+        }
+      }
+    }
+  }
+  return findings;
+}
+
+function metricsText(row) {
+  return METRICS.map((metric) => `${metric} ${row[metric]}%`).join(', ');
+}
+
+export function formatRenameReview(review) {
+  const lines = [];
+  const section = (heading, rows) => {
+    lines.push(`${heading}: ${rows.length === 0 ? 'none' : rows.length}`);
+    for (const row of rows) lines.push(`  ${row.file}  ${metricsText(row)}`);
+  };
+  section('baseline files removed since the base', review.removed);
+  section('baseline files added since the base', review.added);
+  return `${lines.join('\n')}\n`;
+}
+
+export function formatRenameReviewMarkdown(review) {
+  const lines = ['### Baseline files removed and added', ''];
+  if (review.removed.length === 0 && review.added.length === 0) return `${lines.join('\n')}None.\n`;
+  lines.push('| change | file | statements | branches | functions | lines |', '| --- | --- | ---: | ---: | ---: | ---: |');
+  for (const [label, rows] of [
+    ['removed', review.removed],
+    ['added', review.added],
+  ]) {
+    for (const row of rows) lines.push(`| ${label} | \`${row.file}\` | ${METRICS.map((metric) => `${row[metric]}%`).join(' | ')} |`);
+  }
+  return `${lines.join('\n')}\n`;
+}
+
+const COVERAGE_IGNORE_HINT = /(?:\/\*|\/\/)\s*(?:v8|istanbul|c8)\s+ignore\b/i;
+
+export function coverageIgnoreHints(file, text) {
+  return text.split('\n').flatMap((line, index) => (COVERAGE_IGNORE_HINT.test(line) ? [`${file}:${index + 1}`] : []));
+}
+
+export function filesTheRatchetCannotSee(files) {
+  return files.filter((file) => !file.endsWith('.ts') && !file.endsWith('.json')).sort(compareCodeUnits);
 }
 
 export function leastCovered(measured, count = 10) {

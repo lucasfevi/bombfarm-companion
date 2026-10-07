@@ -11,16 +11,26 @@ import {
   emptyBaseline,
   evaluateAgainstBaseline,
   formatMarkdownSummary,
+  formatRenameReview,
+  formatRenameReviewMarkdown,
   formatReport,
   guardBaseFindings,
   measurementFindings,
   normalizeSummary,
   overallOf,
   planUpdate,
+  renameReview,
 } from './domain-coverage-core.mjs';
 import { runtimeBearingFiles } from './domain-coverage-runtime.mjs';
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const DEFAULT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+function rootFromArguments(argv) {
+  const index = argv.indexOf('--root');
+  return index === -1 ? undefined : argv[index + 1];
+}
+
+const REPO_ROOT = path.resolve(rootFromArguments(process.argv.slice(2)) ?? DEFAULT_ROOT);
 const PACKAGE_DIRECTORY = path.join(REPO_ROOT, 'packages/domain');
 const BASELINE_PATH = path.join(PACKAGE_DIRECTORY, 'coverage-baseline.json');
 const COVERAGE_DIRECTORY = path.join(REPO_ROOT, 'coverage');
@@ -28,13 +38,13 @@ const BLOB_DIRECTORY = path.join(COVERAGE_DIRECTORY, 'domain-blobs');
 const MERGED_SUMMARY_PATH = path.join(COVERAGE_DIRECTORY, 'domain', 'coverage-summary.json');
 const HEARTBEAT_MS = 60_000;
 
-// The merge replays the errors the solver pass recorded, and that pass runs with unhandled errors ignored; the merge has no tests of its own, so it needs the same flag or it exits 1 after writing a good summary.
+// The measuring passes only measure; the regular jobs gate test correctness. Unhandled errors are ignored because instrumented runs cross the 60 s worker RPC window (one file alone takes minutes), and a failing test still fails the run. The merge replays those recorded errors, so it needs the flag too. The per-test timeout is sized for plain runs, not instrumented ones. The dot reporter names any failing test; the blob reporter prints nothing.
 const MERGE_COMMAND =
   'pnpm exec vitest run --merge-reports=coverage/domain-blobs --dangerouslyIgnoreUnhandledErrors --coverage --coverage.reportsDirectory=coverage/domain --coverage.reporter=text-summary --coverage.reporter=json-summary';
 
 const MEASUREMENT_COMMANDS = [
-  'pnpm exec vitest run --project @bombfarm/domain --coverage --coverage.reporter=json-summary --coverage.reportsDirectory=coverage/domain-main --reporter=blob --outputFile=coverage/domain-blobs/main.json',
-  'pnpm exec vitest run --config vitest.solver.config.ts --coverage --coverage.reporter=json-summary --coverage.reportsDirectory=coverage/domain-solver --reporter=blob --outputFile=coverage/domain-blobs/solver.json',
+  'pnpm exec vitest run --project @bombfarm/domain --dangerouslyIgnoreUnhandledErrors --testTimeout=600000 --coverage --coverage.reporter=json-summary --coverage.reportsDirectory=coverage/domain-main --reporter=blob --reporter=dot --outputFile.blob=coverage/domain-blobs/main.json',
+  'pnpm exec vitest run --config vitest.solver.config.ts --dangerouslyIgnoreUnhandledErrors --testTimeout=600000 --coverage --coverage.reporter=json-summary --coverage.reportsDirectory=coverage/domain-solver --reporter=blob --reporter=dot --outputFile.blob=coverage/domain-blobs/solver.json',
   MERGE_COMMAND,
 ];
 const EXPECTED_BLOBS = ['main.json', 'solver.json'];
@@ -49,6 +59,7 @@ function usage() {
     'options:',
     '  --summary <path>     read an existing coverage-summary.json instead of measuring',
     '  --baseline <path>    baseline file (default packages/domain/coverage-baseline.json)',
+    '  --root <dir>         repository root for the baseline, the source scan and git (default: this repository)',
     '  --waive <src/file.ts> --reason "<text>"   (update only, repeatable) record a reviewed decline',
   ].join('\n');
 }
@@ -74,6 +85,7 @@ function parseArguments(argv) {
     if (flag === '--summary') options.summary = path.resolve(takeValue(flag));
     else if (flag === '--baseline') options.baseline = path.resolve(takeValue(flag));
     else if (flag === '--base') options.base = takeValue(flag);
+    else if (flag === '--root') takeValue(flag);
     else if (flag === '--waive') options.waivers.push({ file: takeValue(flag), reason: null });
     else if (flag === '--reason') {
       const latest = options.waivers.at(-1);
@@ -144,7 +156,9 @@ async function measure() {
   }
   for (const command of MEASUREMENT_COMMANDS) {
     const code = await runStreaming(command);
-    if (code !== 0) fail(`"${command.slice(0, 60)}…" exited ${code}; a coverage measurement needs both passes green`);
+    if (code !== 0) {
+      fail(`"${command.slice(0, 60)}…" exited ${code}. The cause is in the vitest output above: the dot reporter names every failing test, and a worker or collection error prints there too. No comparison with the baseline was attempted.`);
+    }
   }
   const missingBlobs = EXPECTED_BLOBS.filter((blob) => !existsSync(path.join(BLOB_DIRECTORY, blob)));
   if (missingBlobs.length > 0) fail(`the measurement left no ${missingBlobs.join(', ')} under coverage/domain-blobs`);
@@ -246,14 +260,20 @@ function guardBase(options) {
     printFindings(malformed);
     process.exit(1);
   }
-  const findings = guardBaseFindings({ base: JSON.parse(shown.stdout), head, sourceFiles });
+  const base = JSON.parse(shown.stdout);
+  const findings = guardBaseFindings({ base, head, sourceFiles });
+  const review = renameReview({ base, head });
 
-  appendStepSummary(formatMarkdownSummary({ title: `Domain coverage baseline vs ${options.base}`, overall: null, measured: null, findings }));
+  process.stdout.write(formatRenameReview(review));
+  appendStepSummary(
+    formatMarkdownSummary({ title: `Domain coverage baseline vs ${options.base}`, overall: null, measured: null, findings }) +
+      formatRenameReviewMarkdown(review),
+  );
   if (findings.length === 0) {
     process.stdout.write(`domain-coverage guard-base: no recorded number is lower than at ${options.base}.\n`);
     return;
   }
-  process.stderr.write(`domain-coverage guard-base: ${findings.length} recorded number(s) lower than at ${options.base}:\n`);
+  process.stderr.write(`domain-coverage guard-base: ${findings.length} recorded number(s) lower than at ${options.base}, or moved to a new path with lower numbers:\n`);
   printFindings(findings);
   process.stderr.write(`A lowered number needs a new \`waivers\` entry for that file (\`pnpm coverage:domain:update --waive <file> --reason "<why>"\`).\n`);
   process.exit(1);

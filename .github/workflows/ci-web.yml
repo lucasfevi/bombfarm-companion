@@ -226,7 +226,7 @@ jobs:
     needs: changes
     if: github.event_name != 'pull_request' || needs.changes.outputs.domain == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
 
@@ -259,7 +259,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: domain-coverage
-          path: coverage/domain
+          path: coverage
+          retention-days: 7
           if-no-files-found: ignore
 
   design-system:

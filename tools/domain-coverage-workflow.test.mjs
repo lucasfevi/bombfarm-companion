@@ -179,7 +179,19 @@ function uploadsReportEvenOnFailure(text) {
   const block = coverageJob(text);
   if (block === null) return false;
   const step = extractSteps(block).find((candidate) => /uses:\s*actions\/upload-artifact@/.test(candidate));
-  return step !== undefined && stepIf(step) === 'always()' && /path:\s*coverage\/domain\s*$/m.test(step);
+  return (
+    step !== undefined &&
+    stepIf(step) === 'always()' &&
+    /name:\s*domain-coverage\s*$/m.test(step) &&
+    /path:\s*coverage\s*$/m.test(step) &&
+    /retention-days:\s*7\s*$/m.test(step)
+  );
+}
+
+function jobTimeoutLeavesRoomForTheInstrumentedRun(text) {
+  const block = coverageJob(text);
+  if (block === null) return false;
+  return Number(jobLevelValue(block, 'timeout-minutes')) >= 50;
 }
 
 function aggregatorNeedsCoverageJob(text) {
@@ -274,6 +286,7 @@ const PREDICATES = {
   buildPrecedesMeasurement,
   guardsAgainstBaseBranchOnPullRequests,
   uploadsReportEvenOnFailure,
+  jobTimeoutLeavesRoomForTheInstrumentedRun,
   aggregatorNeedsCoverageJob,
   aggregatorFailsOnAnyNonSuccess,
   aggregatorToleratesNothing,
@@ -307,7 +320,7 @@ describe('ci-web.yml domain-coverage shape guard — each predicate is true agai
   });
 });
 
-const JOB_IF = "    if: github.event_name != 'pull_request' || needs.changes.outputs.domain == 'true'\n    runs-on: ubuntu-latest\n    timeout-minutes: 40";
+const JOB_IF = "    if: github.event_name != 'pull_request' || needs.changes.outputs.domain == 'true'\n    runs-on: ubuntu-latest\n    timeout-minutes: 50";
 const CHECK_STEP = 'run: pnpm coverage:domain\n';
 const ENFORCING_IF = "        if: needs.changes.outputs.domain == 'true' && needs.domain-coverage.result != 'success'";
 const TOLERANT_IF = "        if: needs.domain-coverage.result == 'failure' || needs.domain-coverage.result == 'cancelled'";
@@ -387,6 +400,15 @@ describe('ci-web.yml domain-coverage shape guard — mutations, each turning its
     expect(noEscapeHatchInJob(mutated)).toBe(false);
   });
 
+  it('(15a) the artifact narrowed back to the merged report only, or its retention dropped ⇒ uploadsReportEvenOnFailure is false', () => {
+    expect(uploadsReportEvenOnFailure(mutate(realText, '          path: coverage\n', '          path: coverage/domain\n'))).toBe(false);
+    expect(uploadsReportEvenOnFailure(mutate(realText, '          retention-days: 7\n', ''))).toBe(false);
+  });
+
+  it('(15b) the job timeout cut back to 40 minutes ⇒ jobTimeoutLeavesRoomForTheInstrumentedRun is false', () => {
+    expect(jobTimeoutLeavesRoomForTheInstrumentedRun(mutate(realText, 'timeout-minutes: 50', 'timeout-minutes: 40'))).toBe(false);
+  });
+
   it('(15) the artifact upload no longer runs on failure ⇒ uploadsReportEvenOnFailure is false', () => {
     expect(uploadsReportEvenOnFailure(mutate(realText, "if: always()\n        uses: actions/upload-artifact@", 'uses: actions/upload-artifact@'))).toBe(false);
   });
@@ -458,45 +480,109 @@ function measurementCommands(source) {
   return [...source.matchAll(/'(pnpm exec vitest run [^']+)'/g)].map((match) => match[1]);
 }
 
-function measuresBothPassesAndMerges(source) {
+function commandsOf(source) {
   const commands = measurementCommands(source);
-  const main = commands.find((command) => command.includes('--project @bombfarm/domain'));
-  const solver = commands.find((command) => command.includes('--config vitest.solver.config.ts'));
-  const merge = commands.find((command) => command.includes('--merge-reports=coverage/domain-blobs'));
-  return (
-    main !== undefined &&
-    solver !== undefined &&
-    merge !== undefined &&
-    [main, solver].every((command) => command.includes('--coverage') && command.includes('--reporter=blob')) &&
-    main.includes('--outputFile=coverage/domain-blobs/main.json') &&
-    solver.includes('--outputFile=coverage/domain-blobs/solver.json') &&
-    merge.includes('--dangerouslyIgnoreUnhandledErrors') &&
-    [main, solver, merge].every((command) => !command.includes('--coverage.all=false')) &&
-    !main.includes('--dangerouslyIgnoreUnhandledErrors') &&
-    !solver.includes('--dangerouslyIgnoreUnhandledErrors')
+  return {
+    main: commands.find((command) => command.includes('--project @bombfarm/domain')),
+    solver: commands.find((command) => command.includes('--config vitest.solver.config.ts')),
+    merge: commands.find((command) => command.includes('--merge-reports=coverage/domain-blobs')),
+  };
+}
+
+function measuringPassesAreTolerantAndNamed(source) {
+  const { main, solver } = commandsOf(source);
+  if (main === undefined || solver === undefined) return false;
+  return [
+    ['main', main],
+    ['solver', solver],
+  ].every(
+    ([name, command]) =>
+      command.includes('--coverage ') &&
+      command.includes('--dangerouslyIgnoreUnhandledErrors') &&
+      command.includes('--testTimeout=600000') &&
+      command.includes('--reporter=blob') &&
+      command.includes('--reporter=dot') &&
+      command.includes(`--outputFile.blob=coverage/domain-blobs/${name}.json`) &&
+      !/--outputFile=/.test(command),
   );
 }
 
+function mergeReplaysUnhandledErrors(source) {
+  const { merge } = commandsOf(source);
+  return merge !== undefined && merge.includes('--dangerouslyIgnoreUnhandledErrors') && merge.includes('--coverage ');
+}
+
+function nothingSwitchesTheUntestedFileSweepOff(source) {
+  const { main, solver, merge } = commandsOf(source);
+  return [main, solver, merge].every((command) => command !== undefined && !command.includes('--coverage.all=false'));
+}
+
+function nonZeroPassPointsAtTheOutput(source) {
+  return /exited \$\{code\}\. The cause is in the vitest output above/.test(source);
+}
+
 describe('tools/domain-coverage.mjs measures both Vitest passes and merges them', () => {
-  it('runs the domain project and the solver pass instrumented, then merges their blobs ignoring replayed unhandled errors', () => {
-    expect(measuresBothPassesAndMerges(cliText)).toBe(true);
+  it('both measuring passes are tolerant, long-timeout, blob-plus-dot instrumented runs writing their blob', () => {
+    expect(measuringPassesAreTolerantAndNamed(cliText)).toBe(true);
   });
 
-  it('is false once the merge loses the flag that lets it replay the solver pass', () => {
-    expect(measuresBothPassesAndMerges(mutate(cliText, '--merge-reports=coverage/domain-blobs --dangerouslyIgnoreUnhandledErrors', '--merge-reports=coverage/domain-blobs'))).toBe(false);
+  it('the merge replays the solver pass with unhandled errors ignored', () => {
+    expect(mergeReplaysUnhandledErrors(cliText)).toBe(true);
   });
 
-  it('is false once the solver pass is dropped', () => {
-    expect(measuresBothPassesAndMerges(mutate(cliText, '--config vitest.solver.config.ts', '--config vitest.other.config.ts'))).toBe(false);
+  it('nothing passes --coverage.all=false: the sweep it disables is what puts never-loaded files in the report', () => {
+    expect(nothingSwitchesTheUntestedFileSweepOff(cliText)).toBe(true);
   });
 
-  it('is false once --coverage.all=false is added to a pass or the merge: it drops never-loaded files that the merge cannot restore', () => {
-    expect(measuresBothPassesAndMerges(mutate(cliText, '--project @bombfarm/domain --coverage', '--project @bombfarm/domain --coverage --coverage.all=false'))).toBe(false);
-    expect(measuresBothPassesAndMerges(mutate(cliText, '--config vitest.solver.config.ts --coverage', '--config vitest.solver.config.ts --coverage --coverage.all=false'))).toBe(false);
-    expect(measuresBothPassesAndMerges(mutate(cliText, '--dangerouslyIgnoreUnhandledErrors --coverage ', '--dangerouslyIgnoreUnhandledErrors --coverage --coverage.all=false '))).toBe(false);
+  it('a failing pass prints a line pointing at the output above', () => {
+    expect(nonZeroPassPointsAtTheOutput(cliText)).toBe(true);
   });
 
-  it('is false once the flag leaks onto a measuring pass', () => {
-    expect(measuresBothPassesAndMerges(mutate(cliText, '--project @bombfarm/domain --coverage', '--project @bombfarm/domain --dangerouslyIgnoreUnhandledErrors --coverage'))).toBe(false);
+  describe.each([
+    ['--project @bombfarm/domain', 'main'],
+    ['--config vitest.solver.config.ts', 'solver'],
+  ])('mutations of the %s pass', (selector, name) => {
+    it('losing --dangerouslyIgnoreUnhandledErrors turns the predicate false', () => {
+      const mutated = mutate(cliText, `${selector} --dangerouslyIgnoreUnhandledErrors`, selector);
+      expect(measuringPassesAreTolerantAndNamed(mutated)).toBe(false);
+    });
+
+    it('losing --testTimeout=600000 turns the predicate false', () => {
+      const mutated = mutate(cliText, `${selector} --dangerouslyIgnoreUnhandledErrors --testTimeout=600000`, `${selector} --dangerouslyIgnoreUnhandledErrors`);
+      expect(measuringPassesAreTolerantAndNamed(mutated)).toBe(false);
+    });
+
+    it('losing --reporter=dot turns the predicate false', () => {
+      const mutated = mutate(cliText, `--reporter=blob --reporter=dot --outputFile.blob=coverage/domain-blobs/${name}.json`, `--reporter=blob --outputFile.blob=coverage/domain-blobs/${name}.json`);
+      expect(measuringPassesAreTolerantAndNamed(mutated)).toBe(false);
+    });
+
+    it('the single-reporter output syntax turns the predicate false', () => {
+      const mutated = mutate(cliText, `--outputFile.blob=coverage/domain-blobs/${name}.json`, `--outputFile=coverage/domain-blobs/${name}.json`);
+      expect(measuringPassesAreTolerantAndNamed(mutated)).toBe(false);
+    });
+
+    it('adding --coverage.all=false turns nothingSwitchesTheUntestedFileSweepOff false', () => {
+      const mutated = mutate(cliText, `${selector} --dangerouslyIgnoreUnhandledErrors`, `${selector} --coverage.all=false --dangerouslyIgnoreUnhandledErrors`);
+      expect(nothingSwitchesTheUntestedFileSweepOff(mutated)).toBe(false);
+    });
+  });
+
+  it('the merge losing --dangerouslyIgnoreUnhandledErrors turns mergeReplaysUnhandledErrors false', () => {
+    const mutated = mutate(cliText, '--merge-reports=coverage/domain-blobs --dangerouslyIgnoreUnhandledErrors', '--merge-reports=coverage/domain-blobs');
+    expect(mergeReplaysUnhandledErrors(mutated)).toBe(false);
+  });
+
+  it('adding --coverage.all=false to the merge turns nothingSwitchesTheUntestedFileSweepOff false', () => {
+    const mutated = mutate(cliText, '--dangerouslyIgnoreUnhandledErrors --coverage --coverage.reportsDirectory=coverage/domain ', '--dangerouslyIgnoreUnhandledErrors --coverage --coverage.all=false --coverage.reportsDirectory=coverage/domain ');
+    expect(nothingSwitchesTheUntestedFileSweepOff(mutated)).toBe(false);
+  });
+
+  it('dropping the solver pass turns the pass predicate false', () => {
+    expect(measuringPassesAreTolerantAndNamed(mutate(cliText, '--config vitest.solver.config.ts', '--config vitest.other.config.ts'))).toBe(false);
+  });
+
+  it('losing the failure pointer turns nonZeroPassPointsAtTheOutput false', () => {
+    expect(nonZeroPassPointsAtTheOutput(mutate(cliText, 'The cause is in the vitest output above', 'It failed'))).toBe(false);
   });
 });
