@@ -3,6 +3,7 @@
 import type { Lang } from '@/shared/i18n';
 import { LOOP_SECONDS, replicaFrameAt } from '../../model/live-replica-data';
 import { useLoopClock } from '../../model/use-loop-clock';
+import { DamageCard } from './damage-card';
 import { EarningsCard } from './earnings-card';
 import { HeroesCard } from './heroes-card';
 import { MapCard } from './map-card';
@@ -38,6 +39,7 @@ export function LiveReplica({ lang }: { lang: Lang }) {
             <EarningsCard lang={lang} earnings={frame.earnings} measured={frame.measured} />
             <MapCard lang={lang} map={frame.map} />
           </div>
+          <DamageCard lang={lang} damage={frame.damage} />
           <HeroesCard lang={lang} summary={frame.summary} heroes={frame.heroes} />
         </div>
       </div>

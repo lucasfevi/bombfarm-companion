@@ -27,7 +27,8 @@ claim about the product.
 
 The two drawings share their panels: `earnings-card.tsx`, `map-card.tsx` and `heroes-card.tsx` each
 take a `density` prop, and the compact figure set lives in the same file as the full-size one on
-purpose — so whoever edits one has the other in front of them.
+purpose — so whoever edits one has the other in front of them. `damage-card.tsx` is full-size
+only: the compact window carries no damage.
 
 Four things hold it together. Three are mechanical, one is you:
 

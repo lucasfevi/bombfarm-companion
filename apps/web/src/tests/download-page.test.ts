@@ -145,22 +145,85 @@ describe('Live replica', () => {
     for (const className of readings) expect(className).toContain('font-mono');
   });
 
-  it('shows the roster it was drawn from, with an avatar each', () => {
+  it('shows the roster it was drawn from, with an avatar each in the heroes card and in the damage card', () => {
     const markup = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
+    const frame = replicaFrameAt(0);
     for (const name of ['Bellatrix', 'Jon', 'Minato']) expect(markup).toContain(name);
-    expect(markup.match(/<img/g) ?? []).toHaveLength(replicaFrameAt(0).heroes.length);
+    expect(markup.match(/<img/g) ?? []).toHaveLength(frame.heroes.length + frame.damage.heroes.length);
   });
 
   it('draws each identity the way the desktop Live row does: name in ink, level under it, no rarity word', () => {
     const markup = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
     const names = [...markup.matchAll(/<span class="([^"]*)">(Bellatrix|Jon|Minato)<\/span>/g)];
-    expect(names).toHaveLength(3);
+    expect(names).toHaveLength(6);
     for (const [, className] of names) {
       expect(className).toContain('text-ink');
       expect(className).not.toContain('text-rar-');
     }
     for (const word of ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary']) expect(markup).not.toContain(word);
-    expect(markup.match(/Lv \d+/g) ?? []).toHaveLength(replicaFrameAt(0).heroes.length);
+    const frame = replicaFrameAt(0);
+    expect(markup.match(/Lv \d+/g) ?? []).toHaveLength(frame.heroes.length + frame.damage.heroes.length);
+  });
+
+  describe('the Damage card', () => {
+    const cardOf = (lang: Lang) => {
+      const markup = renderToStaticMarkup(createElement(LiveReplica, { lang }));
+      const start = markup.indexOf('data-testid="replica-live-damage"');
+      const end = markup.indexOf('data-testid="replica-live-heroes"');
+      return { markup, card: markup.slice(start, end) };
+    };
+
+    it('sits in its own row between the earnings and map row and the heroes card', () => {
+      const { markup } = cardOf('en');
+      const damageAt = markup.indexOf('data-testid="replica-live-damage"');
+
+      expect(markup.indexOf(liveLabel('liveMapTitle', 'en'))).toBeLessThan(damageAt);
+      expect(damageAt).toBeLessThan(markup.indexOf('data-testid="replica-live-heroes"'));
+    });
+
+    for (const lang of LANGS) {
+      it(`reads title, team line, column heads, hero rows and Unattributed last in ${lang}`, () => {
+        const { card } = cardOf(lang);
+        const frame = replicaFrameAt(0);
+        const order = [
+          liveLabel('liveDamageTitle', lang),
+          liveLabel('liveDamageTeamDpsLabel', lang),
+          liveLabel('liveDamageSessionWindowLabel', lang),
+          liveLabel('liveDamageHeroColumn', lang),
+          liveLabel('liveDamageDpsColumn', lang),
+          liveLabel('liveDamagePropsColumn', lang),
+          liveLabel('liveDamageGoldColumn', lang),
+          ...frame.damage.heroes.map((hero) => hero.name),
+          liveLabel('liveDamageUnattributedLabel', lang),
+        ];
+        const notFoundInOrder: string[] = [];
+        let from = 0;
+        for (const text of order) {
+          const found = card.indexOf(text, from);
+          if (found < 0) notFoundInOrder.push(text);
+          else from = found + text.length;
+        }
+
+        expect(notFoundInOrder).toEqual([]);
+      });
+    }
+
+    it('lists the heroes in the sample order, by damage', () => {
+      const { card } = cardOf('en');
+      const names = replicaFrameAt(0).damage.heroes.map((hero) => hero.name);
+
+      expect(names.map((name) => card.indexOf(`>${name}</span>`))).toEqual(
+        [...names.map((name) => card.indexOf(`>${name}</span>`))].sort((first, second) => first - second),
+      );
+    });
+
+    it('is drawn inside the region hidden from assistive technology', () => {
+      const { markup } = cardOf('en');
+      const hiddenFrom = markup.indexOf('aria-hidden="true"');
+
+      expect(hiddenFrom).toBeGreaterThanOrEqual(0);
+      expect(hiddenFrom).toBeLessThan(markup.indexOf('data-testid="replica-live-damage"'));
+    });
   });
 });
 

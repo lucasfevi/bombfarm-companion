@@ -30,6 +30,7 @@ const KINDS_IN_CAPTURE = ['equipment', 'gem', 'key', 'time', 'stone'];
 
 const REPLICA_HEROES = ['Bellatrix', 'Jon', 'Minato', 'Buff S #1', 'WB #1', 'WB #2'];
 const REPLICA_LEVELS = [106, 96, 95, 85, 84, 77];
+const DAMAGE_HEROES = ['Bellatrix', 'Jon', 'Minato', 'Buff S #1', 'WB #1'];
 
 async function seedInventory(page: Page): Promise<void> {
   await seedLocalStorage(page, {
@@ -105,13 +106,30 @@ test.describe('the Download route', () => {
     const replica = liveReplica(page);
     await expect(replica).toHaveCount(1);
 
+    const heroesCard = replica.getByTestId('replica-live-heroes');
     for (const name of REPLICA_HEROES) {
-      await expect(replica.getByText(name, { exact: true })).toBeVisible();
+      await expect(heroesCard.getByText(name, { exact: true })).toBeVisible();
     }
     for (const level of REPLICA_LEVELS) {
-      await expect(replica.getByText(new RegExp(`^(Lv|Nv) ${String(level)}$`))).toBeVisible();
+      await expect(heroesCard.getByText(new RegExp(`^(Lv|Nv) ${String(level)}$`))).toBeVisible();
     }
     await expect(replica.getByText('#126', { exact: true })).toBeVisible();
+  });
+
+  test("the Live replica's Damage card lists the sample roster's heroes with the Unattributed row last", async ({
+    page,
+  }) => {
+    const card = liveReplica(page).getByTestId('replica-live-damage');
+    await expect(card).toBeVisible();
+    await expect(card.getByText('Damage', { exact: true })).toBeVisible();
+
+    for (const name of DAMAGE_HEROES) {
+      await expect(card.getByText(name, { exact: true })).toBeVisible();
+    }
+    await expect(card.getByText('Unattributed', { exact: true })).toBeVisible();
+
+    const rows = await card.getByText(/^(Bellatrix|Jon|Minato|Buff S #1|WB #1|Unattributed)$/).allTextContents();
+    expect(rows).toEqual([...DAMAGE_HEROES, 'Unattributed']);
   });
 
   test('switching the Heroes panel on redraws the compact window with the same roster', async ({

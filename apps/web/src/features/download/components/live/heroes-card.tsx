@@ -40,7 +40,7 @@ export function HeroesCard({
   }
 
   return (
-    <Panel className="p-3">
+    <Panel data-testid="replica-live-heroes" className="p-3">
       <ReplicaCardHead title={liveLabel('liveHeroesTitle', lang)} />
       <div className="mb-2 flex flex-wrap gap-4 font-mono text-[10px] text-muted">{counts}</div>
       <ul className="m-0 flex list-none flex-col gap-1 p-0">{rows}</ul>
