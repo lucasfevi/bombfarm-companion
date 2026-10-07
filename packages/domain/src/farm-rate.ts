@@ -113,6 +113,7 @@ import type { SheetKey } from './planner-constants';
 import {
   DROP_RATES,
   KEY_GATE_COST,
+  PASS_ADDS,
   RETURN_BONUS_ADD,
   RETURN_BONUS_ADD_VIP,
   LOOT_ABILITY_VALUES,
@@ -172,18 +173,37 @@ export function clearHeadSeconds(heroesOnField: number, meanFuseSecs: number): n
 export const FORTUNA_AURA_CAP: number =
   LOOT_ABILITY_VALUES.fortuna.perLevel * LOOT_ABILITY_VALUES.fortuna.max;
 
-/** Off / standard / VIP Return Bonus. Default `'off'`. */
-export type ReturnBonusMode = 'off' | 'on' | 'vip';
+/** Return Bonus window: `'off'` or `'on'`. Its rate follows Pass ownership, not a mode of its own. */
+export type ReturnBonusMode = 'off' | 'on';
+
+export type EconomyMultipliers = {
+  gold: number;
+  xp: number;
+  /** Additive with Sorte (`1 + sorteFraction + dropAdd`); the Return Bonus never touches it. */
+  dropAdd: number;
+};
 
 /**
- * `1 | 1 + RETURN_BONUS_ADD | 1 + RETURN_BONUS_ADD_VIP`, applied to gold and XP only — the wiki
- * stopped listing drop chances under the bonus on 2026-09-15. Total function — an unrecognized
- * mode (should TypeScript be bypassed at a call site) falls back to `1` rather than throwing.
+ * Gold and XP multipliers are `1 + Σ adds`, one sum: the Return Bonus add (whose rate depends on
+ * the Pass) plus the Pass's always-on add. Measured on a live capture, window/bare gold was
+ * 2.15/1.15 and XP 2.30/1.30 on a Pass account. The drop term is the data value assumed
+ * additive with luck — unmeasured.
  */
-export function returnBonusMultiplier(mode: ReturnBonusMode): number {
-  if (mode === 'on') return 1 + RETURN_BONUS_ADD;
-  if (mode === 'vip') return 1 + RETURN_BONUS_ADD_VIP;
-  return 1;
+export function economyMultipliers(input: { returnBonus: ReturnBonusMode; pass: boolean }): EconomyMultipliers {
+  const side = input.pass ? 1 : 0;
+  const returnAdd = input.returnBonus === 'on' ? (input.pass ? RETURN_BONUS_ADD_VIP : RETURN_BONUS_ADD) : 0;
+  return {
+    gold: 1 + returnAdd + PASS_ADDS.gold[side],
+    xp: 1 + returnAdd + PASS_ADDS.xp[side],
+    dropAdd: PASS_ADDS.drop[side],
+  };
+}
+
+/** Maps a stored pre-split value (`'off' | 'on' | 'vip'`) to the current pair; anything else is off. */
+export function normalizeStoredReturnBonus(stored: unknown): { returnBonus: ReturnBonusMode; pass: boolean } {
+  if (stored === 'vip') return { returnBonus: 'on', pass: true };
+  if (stored === 'on') return { returnBonus: 'on', pass: false };
+  return { returnBonus: 'off', pass: false };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1194,6 +1214,8 @@ const GOLD_SHARE_FACTOR = PROP_SHARES.reduce((sum, prop) => sum + prop.share * p
 export type FarmRateOptions = {
   /** Default `'off'`. */
   returnBonus?: ReturnBonusMode;
+  /** The account owns the Pass. Default `false`. */
+  pass?: boolean;
   /** `account.max_phase`. `null`/omitted ⇒ every row `locked: false`. */
   maxPhase?: number | null;
   /**
@@ -1313,8 +1335,8 @@ function normalizeZero(value: number): number {
 }
 
 function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateOptions): FarmRateRow {
-  const bonus = returnBonusMultiplier(options.returnBonus ?? 'off');
-  const sorteMult = 1 + squad.sorteFraction;
+  const economy = economyMultipliers({ returnBonus: options.returnBonus ?? 'off', pass: options.pass ?? false });
+  const sorteMult = 1 + squad.sorteFraction + economy.dropAdd;
   const pulse = squad.entryPulse;
 
   // Per-hero, per-phase: mitigation is the ONLY phase-dependent damage term.
@@ -1451,16 +1473,16 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const propsPerHour = cyclesPerHour * propCount;
 
   const eGold = line.goldComum * GOLD_SHARE_FACTOR;
-  const goldMult = squad.teamCoinMult * (1 + fortunaAura) * bonus;
+  const goldMult = squad.teamCoinMult * (1 + fortunaAura) * economy.gold;
   const goldPerHour = propsPerHour * eGold * goldMult * goldSelfMix;
 
-  // The Return Bonus reaches gold and XP only; every drop chance answers to Sorte alone.
+  // The Return Bonus reaches gold and XP only; drop chances answer to Sorte and the Pass.
   const chestsPerHour = propsPerHour * DROP_RATES.chest * sorteMult;
   const keysPerHour = line.gate ? -(cyclesPerHour * KEY_GATE_COST) : propsPerHour * DROP_RATES.key * sorteMult;
   const gemsPerHour = line.gate ? propsPerHour * DROP_RATES.gem * sorteMult : 0;
   const timePiecesPerHour = line.gate ? propsPerHour * DROP_RATES.time * sorteMult : 0;
   const stoneChestsPerHour = line.gate ? propsPerHour * DROP_RATES.stone * sorteMult : 0;
-  const xpPerHour = propsPerHour * xpPerProp(line.phase) * squad.xpMult * bonus;
+  const xpPerHour = propsPerHour * xpPerProp(line.phase) * squad.xpMult * economy.xp;
 
   const maxPropHp = line.hp * MAX_PROP_HP_MULT;
   const oneShot = perHero.length > 0 && perHero.every((hero) => hero.floorHit >= maxPropHp);
@@ -1533,6 +1555,6 @@ export function computeFarmRates(
 ): { heroFacts: HeroFarmFacts[]; squad: SquadFarmFacts; rows: FarmRateRow[] } {
   const heroFacts = computeHeroFarmFacts(input);
   const squad = computeSquadFarmFacts(heroFacts, input.account);
-  const rows = computeFarmRateTable(squad, { returnBonus: input.returnBonus, maxPhase: input.maxPhase });
+  const rows = computeFarmRateTable(squad, { returnBonus: input.returnBonus, pass: input.pass, maxPhase: input.maxPhase });
   return { heroFacts, squad, rows };
 }

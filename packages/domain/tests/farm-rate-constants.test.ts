@@ -3,12 +3,17 @@
  *
  * A source scan over `src/farm-rate.ts` for forbidden literals (every wiki-tunable number must
  * come from a named import), the shape of the shared plant cycle, plus value assertions that the
- * derived constants and `returnBonusMultiplier` equal the bundle's own numbers.
+ * derived constants and `economyMultipliers` equal the bundle's own numbers.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { cycleSecondsForHero, FORTUNA_AURA_CAP, returnBonusMultiplier } from '@bombfarm/domain/farm-rate';
+import {
+  cycleSecondsForHero,
+  economyMultipliers,
+  FORTUNA_AURA_CAP,
+  normalizeStoredReturnBonus,
+} from '@bombfarm/domain/farm-rate';
 import {
   FREE_HOP_SHAPE,
   FUSE_CYCLE_OVERHEAD_SEC,
@@ -17,7 +22,7 @@ import {
   meanPlantCycleSeconds,
   plantCycleSeconds,
 } from '@bombfarm/domain/model';
-import { RETURN_BONUS_ADD, RETURN_BONUS_ADD_VIP, LOOT_ABILITY_VALUES } from '@bombfarm/domain/phase-wiki';
+import { PASS_ADDS, RETURN_BONUS_ADD, RETURN_BONUS_ADD_VIP, LOOT_ABILITY_VALUES } from '@bombfarm/domain/phase-wiki';
 import { requireFixture } from './helpers/require-fixture';
 
 const DOMAIN_ROOT = join(__dirname, '..');
@@ -135,10 +140,51 @@ describe('FORTUNA_AURA_CAP — derived from the bundle, not typed', () => {
   });
 });
 
-describe('returnBonusMultiplier — total function over ReturnBonusMode', () => {
-  it("'off' -> 1, 'on' -> 1 + RETURN_BONUS_ADD, 'vip' -> 1 + RETURN_BONUS_ADD_VIP", () => {
-    expect(returnBonusMultiplier('off')).toBe(1);
-    expect(returnBonusMultiplier('on')).toBe(1 + RETURN_BONUS_ADD);
-    expect(returnBonusMultiplier('vip')).toBe(1 + RETURN_BONUS_ADD_VIP);
+describe('economyMultipliers — one additive sum per axis', () => {
+  it('without the Pass: 1 and 1 + RETURN_BONUS_ADD on gold and XP, no drop add', () => {
+    expect(economyMultipliers({ returnBonus: 'off', pass: false })).toEqual({ gold: 1, xp: 1, dropAdd: 0 });
+    expect(economyMultipliers({ returnBonus: 'on', pass: false })).toEqual({
+      gold: 1 + RETURN_BONUS_ADD,
+      xp: 1 + RETURN_BONUS_ADD,
+      dropAdd: 0,
+    });
+  });
+
+  it('with the Pass: the always-on adds stand alone and the Return Bonus rate becomes the Pass rate', () => {
+    const bare = economyMultipliers({ returnBonus: 'off', pass: true });
+    const window = economyMultipliers({ returnBonus: 'on', pass: true });
+    expect(bare).toEqual({ gold: 1 + PASS_ADDS.gold[1], xp: 1 + PASS_ADDS.xp[1], dropAdd: PASS_ADDS.drop[1] });
+    expect(window.gold).toBe(1 + RETURN_BONUS_ADD_VIP + PASS_ADDS.gold[1]);
+    expect(window.xp).toBe(1 + RETURN_BONUS_ADD_VIP + PASS_ADDS.xp[1]);
+    expect(window.dropAdd).toBe(bare.dropAdd);
+  });
+
+  it('golden anchors measured on a live capture: XP 2.30 / 1.30 and gold 2.15 / 1.15 with the Pass', () => {
+    const bare = economyMultipliers({ returnBonus: 'off', pass: true });
+    const window = economyMultipliers({ returnBonus: 'on', pass: true });
+    expect(window.xp).toBeCloseTo(2.3, 12);
+    expect(bare.xp).toBeCloseTo(1.3, 12);
+    expect(window.gold).toBeCloseTo(2.15, 12);
+    expect(bare.gold).toBeCloseTo(1.15, 12);
+    expect(window.gold / bare.gold).toBeCloseTo(2.15 / 1.15, 12);
+  });
+
+  it('golden anchors without the Pass: 1.50 / 1.00 on both axes', () => {
+    const bare = economyMultipliers({ returnBonus: 'off', pass: false });
+    const window = economyMultipliers({ returnBonus: 'on', pass: false });
+    expect([window.gold, window.xp, bare.gold, bare.xp]).toEqual([1.5, 1.5, 1, 1]);
+  });
+});
+
+describe('normalizeStoredReturnBonus — legacy three-way value', () => {
+  it.each([
+    ['vip', { returnBonus: 'on', pass: true }],
+    ['on', { returnBonus: 'on', pass: false }],
+    ['off', { returnBonus: 'off', pass: false }],
+    [undefined, { returnBonus: 'off', pass: false }],
+    [7, { returnBonus: 'off', pass: false }],
+    ['VIP', { returnBonus: 'off', pass: false }],
+  ])('%p -> %j', (stored, expected) => {
+    expect(normalizeStoredReturnBonus(stored)).toEqual(expected);
   });
 });
