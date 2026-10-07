@@ -104,20 +104,8 @@ export function LivePanel({
   return (
     <div data-testid="live-panel" className="flex flex-col gap-4">
       <FreshnessLine freshness={freshness} onReopenConsent={onReopenConsent} />
-      {/* `max-content` on the first track, not an equal split: everything in the earnings panel is
-          fixed-width and `whitespace-nowrap`, so an equal split had to make BOTH columns as wide
-          as that panel's ~566px, and the pair only fitted past 1334px — wider than the window's
-          own default, which is why these two started life stacked on first launch. Sized to its
-          content instead, the pair floors at ~945px in Portuguese (the wider of the two
-          languages), under the 960px minimum window width, so this row is two columns at every
-          size the window can take and needs no breakpoint at all. The map takes the remainder:
-          its health bar and economy figures are the two that read better with the extra width.
-
-          Damage and Heroes sit in the same two tracks, so their edges are the earnings and map
-          panels' own. Side by side, the heroes row's energy bar is the flexible part: it reaches
-          its own reading's width (3rem) at a 1017px window and is nothing at all at 960px, so
-          below `lg` (1024px) each takes both tracks. Damage is `contain-inline-size` so its table
-          never widens the first track past what the earnings panel needs. */}
+      {/* `max-content` first track: the earnings panel is fixed-width, so an equal split only fitted past 1334px.
+          Heroes' energy bar is 3rem at 1017px and nothing at 960px, so below `lg` Damage and Heroes span both. */}
       <div className="grid grid-cols-[max-content_minmax(0,1fr)] gap-4">
         <EarningsPanel
           freshness={freshness}
