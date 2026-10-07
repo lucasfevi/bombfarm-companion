@@ -62,7 +62,9 @@ function itemName(item: InventoryViewItem, strings: Strings, lang: Lang): string
   if (item.kind === 'chest') return chestName(item.defId, strings);
   if (item.kind === 'skin') return skinName(item.defId);
   if (item.kind === 'rune') return runeName(item, lang);
-  if (item.kind === 'chanceStone') return sub(strings.inventoryChanceStone, { rarity: itemRarityLabel(item.rarityIdx, lang) });
+  if (item.kind === 'chanceStone') return strings.inventoryChanceStone;
+  if (item.kind === 'key') return strings.inventoryMapKey;
+  if (item.kind === 'stone') return strings.inventorySkillStone;
   return itemRarityLabel(item.rarityIdx, lang);
 }
 
@@ -133,7 +135,7 @@ function itemForge(item: InventoryViewItem): string {
 }
 
 /** Kinds whose only distinguishing feature is their tier, so the tier IS the name. */
-const NAMED_BY_RARITY = new Set<ItemKind>(['key', 'time', 'stone', 'chanceStone']);
+const NAMED_BY_RARITY = new Set<ItemKind>(['time']);
 
 /**
  * Split rather than joined: the card sets the label and the number at opposite edges of the stat
