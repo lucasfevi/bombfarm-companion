@@ -324,6 +324,21 @@ export const ptBR: Copy = {
   liveEarningsGoldPerPropOver: '{percent}% acima da estimativa',
   liveEarningsGoldPerPropOnEstimate: 'na estimativa',
 
+  // liveDamage* — o painel de Dano: dano do esquadrão e de cada herói, calculado no processo
+  // principal; aqui só é formatado, nunca recalculado.
+  liveDamageTitle: 'Dano',
+  liveDamageTableAria: 'Dano por herói',
+  liveDamageTeamDpsLabel: 'DPS do esquadrão',
+  liveDamageSessionWindowLabel: 'sessão',
+  liveDamageHeroColumn: 'Herói',
+  liveDamageDpsColumn: 'DPS',
+  liveDamagePropsColumn: 'Props',
+  liveDamageGoldColumn: 'Ouro',
+  liveDamageUnattributedLabel: 'Não atribuído',
+  liveDamageInfoLabel: 'Sobre estes números',
+  liveDamageInfoBody:
+    'O dano só é atribuído a um herói quando o próprio fluxo do jogo prova qual herói plantou a bomba. O que poderia ser de mais de um herói, ou de nenhum, aparece como Não atribuído em vez de ser adivinhado. O DPS do esquadrão conta tudo; o DPS de um herói é o dano atribuído a ele dividido pelo tempo que ele ficou em campo.',
+
   // liveMap* — o painel de Mapa: em qual mapa se está jogando e o quanto da run já passou.
   liveMapTitle: 'Mapa',
   liveMapHealthLabel: 'Vida do mapa',

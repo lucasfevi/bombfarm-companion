@@ -37,7 +37,8 @@ import { ptBR } from './pt-BR';
 // in pt-BR, the same case as inventoryViewLabel above.
 // heroRank / importColRank: "Rank" is the game's own untranslated term for a hero's letter grade —
 // the game itself prints it in Portuguese, so translating it here would rename a game concept.
-// modeDps: "DPS" — an acronym, identical in both languages.
+// modeDps / liveDamageDpsColumn: "DPS" — an acronym, identical in both languages.
+// liveDamagePropsColumn: "Props" — the same loanword as liveEarningsPropsTotalLabel above.
 // forgeItemTitle: "Item" is an ordinary Portuguese noun spelled the same way, and it is the word
 // the game's own Portuguese interface uses for a piece of gear.
 // pvpNavLabel / pvpPoints / pvpStandingRankValue / pvpStandingPointsValue: "PVP" is the game's own
@@ -78,6 +79,8 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'heroesSortRoll',
   'importColRank',
   'modeDps',
+  'liveDamageDpsColumn',
+  'liveDamagePropsColumn',
   'rosterColStatus',
   'forgeItemTitle',
   'pvpNavLabel',
