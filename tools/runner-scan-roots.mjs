@@ -123,7 +123,7 @@ export function trackedTestFiles() {
  * approximated: a brace set or an extglob silently mis-translated here would hand the coverage
  * guard a glob that matches too much, and over-matching is the one failure mode that looks green.
  * A recursive wildcard followed by a slash collapses to ZERO or more segments, not one or more:
- * 82 of the repo's test files sit directly in a `src/` whose only include glob is the recursive
+ * 85 of the repo's test files sit directly in a `src/` whose only include glob is the recursive
  * one, and requiring a segment there reports every one of them as an orphan.
  */
 export function globToRegExp(glob) {

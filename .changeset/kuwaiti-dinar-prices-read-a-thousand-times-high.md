@@ -11,5 +11,5 @@ and a bit — was read as 1234, and an inventory valued in it came out roughly 1
 Each currency now carries its own number of decimal places and that is what decides the parse, so
 a three-decimal amount reads as a fraction, a thousands-grouped one still groups, and a currency
 with no decimal places at all — Yen, Won, Dong, Chilean Peso — can never pick up a fraction by
-accident. Kuwaiti Dinar is the only three-decimal currency Steam quotes, and every other
-currency's prices are unchanged.
+accident. Kuwaiti Dinar is the only three-decimal currency Steam quotes, and it is the only one
+whose prices move.

@@ -48,7 +48,7 @@ describe('parseMoneyAmount, told which currency the amount is in', () => {
     expect(parseMoneyAmount('1,234 KD', 'KWD')).toBe(1.234);
   });
 
-  it('still groups the thousands of a three-decimal currency', () => {
+  it('groups on every separator but the last in a three-decimal currency', () => {
     expect(parseMoneyAmount('1.234.567 KD', 'KWD')).toBe(1234.567);
     expect(parseMoneyAmount('1,234,567 KD', 'KWD')).toBe(1234.567);
   });

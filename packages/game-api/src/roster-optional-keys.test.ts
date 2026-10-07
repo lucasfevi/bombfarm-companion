@@ -18,6 +18,7 @@
  * The keys are read off `SCHEMA_LEVELS.hero.optional` rather than retyped, so a fourth optional
  * hero key added later is not quietly exempt — it fails here until this fixture witnesses it too.
  */
+import { RUNE_AXES } from '@bombfarm/domain/runes';
 import { SCHEMA_LEVELS, assertNonEmptyCorpusArray, assertOptionalKeyWitnessedBothWays } from '@bombfarm/domain/save-schema';
 import { describe, expect, it } from 'vitest';
 import { ROUTE_FINGERPRINTS } from './fingerprints.js';
@@ -98,7 +99,7 @@ describe('a roster body carrying the hero level’s optional keys', () => {
         // The wire form `readHeroRunes` parses: axis, strength as a fraction, play-seconds left,
         // rarity index. A rune missing any of these is dropped on its own, so a fixture carrying a
         // malformed one would witness the key while proving nothing about the value.
-        expect(typeof rune.e).toBe('string');
+        expect(RUNE_AXES as readonly string[]).toContain(rune.e);
         expect(typeof rune.p).toBe('number');
         expect(rune.p as number).toBeGreaterThan(0);
         expect(rune.s as number).toBeGreaterThanOrEqual(0);

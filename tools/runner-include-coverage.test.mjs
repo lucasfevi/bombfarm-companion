@@ -28,7 +28,7 @@ import {
 /**
  * Floors, not counts. A count would red on every added test file and be bumped without reading,
  * which is how a non-vacuity assertion becomes a chore; a floor only reds when the derivation has
- * stopped finding things, which is the failure worth catching. 888 tracked `*.test.*` files and 16
+ * stopped finding things, which is the failure worth catching. 891 tracked `*.test.*` files and 16
  * runners today — the file floor sits below that with room for ordinary deletion, the runner floor
  * sits exactly at it because every one of the sixteen is load-bearing and dropping one must red.
  */
