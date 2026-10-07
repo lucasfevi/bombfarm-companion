@@ -225,15 +225,15 @@ describe('creditHits — second blasts', () => {
     expect(outcome(credit)).toBe('explosionlessWithoutFantasma');
   });
 
-  it('does not record a signature from a second-blast hit', () => {
+  it('records the signature of a second-blast hit credited through one second-blast cross and uses it on a second-blast overlap', () => {
     const signatures = createSignatureBook();
-    run({
-      hits: [hit(101, 88, { secondBlast: true })],
-      explosions: [secondBlast(100)],
-      ledger: ledgerStep({ 100: retired('A') }),
-      signatures,
-    });
-    expect(signatures.decisive(88, false, ['A'])).toBeNull();
+    const explosions = [secondBlast(100), secondBlast(102)];
+    const ledger = ledgerStep({ 100: retired('A'), 102: retired('B') });
+    const [solo] = run({ hits: [hit(98, 88, { secondBlast: true })], explosions, ledger, signatures });
+    expect(outcome(solo)).toBe('A');
+    expect(signatures.decisive(88, false, ['A', 'B'])).toBe('A');
+    const [overlap] = run({ hits: [hit(101, 88, { secondBlast: true })], explosions, ledger, signatures });
+    expect(outcome(overlap)).toBe('A');
   });
 
   it('marks every second-blast explosion unowned on a discontinuous frame', () => {

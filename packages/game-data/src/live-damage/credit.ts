@@ -141,8 +141,8 @@ export function creditHits({
     if (candidateCount === 1) {
       const [only] = owners;
       if (only === undefined) return unattributed(unownedReason ?? 'noOwnerAtBirth');
-      const throughOneOrdinaryCross = covering.length === 1 && !secondBlast && ghostOwners.size === 0;
-      if (throughOneOrdinaryCross) signatures.record(hit.damage, critical, only);
+      const throughOneCross = covering.length === 1 && ghostOwners.size === 0;
+      if (throughOneCross) signatures.record(hit.damage, critical, only);
       return credit(only);
     }
 
