@@ -852,7 +852,7 @@ describe('withSortTerm', () => {
 
   it('caps the depth, because a fourth tie-break is not something a reader can hold', () => {
     let sort: InventorySort = [];
-    for (const key of ['name', 'count', 'value', 'level', 'rarity'] as const) {
+    for (const key of ['name', 'count', 'market', 'level', 'rarity'] as const) {
       sort = withSortTerm(sort, { key, direction: 'desc' });
     }
     expect(sort).toHaveLength(3);
