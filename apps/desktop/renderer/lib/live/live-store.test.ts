@@ -803,4 +803,23 @@ describe('createLiveStore — damage passes straight through, never folded or de
 
     expect(store.getModel().damage).toBe(held);
   });
+
+  it('a re-fetch whose only difference is the damage replaces it, and tells the listeners', async () => {
+    const { bridge, emitAccountChanged, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const notifications: LiveModel[] = [];
+
+    store.start();
+    resolveNextGet(liveView({ damage: liveDamage() }));
+    await flushMicrotasks();
+    store.subscribe((model) => notifications.push(model));
+
+    const moved = liveDamage({ teamDpsSession: 1_100 });
+    emitAccountChanged();
+    resolveNextGet(liveView({ damage: moved }));
+    await flushMicrotasks();
+
+    expect(store.getModel().damage).toBe(moved);
+    expect(notifications).toHaveLength(1);
+  });
 });

@@ -211,6 +211,17 @@ describe('DamagePanel', () => {
     expect(head).toBe([t.liveDamageHeroColumn, t.liveDamageDpsColumn, t.liveDamagePropsColumn, t.liveDamageGoldColumn].join(' '));
   });
 
+  it.each([
+    ['en', ['Hero', 'DPS', 'Props', 'Gold'], 'Unattributed'],
+    ['pt-BR', ['Herói', 'DPS', 'Props', 'Ouro'], 'Não atribuído'],
+  ] as const)('prints these exact column heads and Unattributed label in %s', (locale, heads, unattributed) => {
+    const out = html(damage(), { locale });
+    const head = textOf(innerOf(out, 'live-damage-scroller').match(/<thead[\s\S]*?<\/thead>/)?.[0] ?? '');
+
+    expect(head).toBe(heads.join(' '));
+    expect(cellsOf(out, 'live-damage-unattributed')[0]).toBe(unattributed);
+  });
+
   it('reserves the Unattributed row, empty and without em dashes, until the slice has a figure for it', () => {
     const out = html(damage({ unattributed: null }));
     const cells = cellsOf(out, 'live-damage-unattributed');

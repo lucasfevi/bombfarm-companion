@@ -454,6 +454,19 @@ function liveDamage(heroIds: readonly string[], overrides: Partial<LiveDamage> =
   };
 }
 
+/** The index just past the `</div>` that closes the div opened at `start`. */
+function endOfDiv(markup: string, start: number): number {
+  const tags = /<div[\s>]|<\/div>/g;
+  tags.lastIndex = start;
+  let depth = 0;
+  let match: RegExpExecArray | null;
+  while ((match = tags.exec(markup))) {
+    depth += match[0] === '</div>' ? -1 : 1;
+    if (depth === 0) return match.index + match[0].length;
+  }
+  throw new Error('unterminated div');
+}
+
 function reservedPx(markup: string, property: 'min-height' | 'max-height'): number {
   const expression = new RegExp(`${property}:calc\\(calc\\(([\\d.]+)px \\+ ([\\d.]+)px / (\\d+)\\) \\* (\\d+)\\)`).exec(markup);
   if (expression === null) throw new Error(`no ${property} in the Damage scroller`);
@@ -479,15 +492,20 @@ describe('LivePanel — the Damage panel', () => {
     expect(heroesAt).toBeGreaterThan(damageAt);
   });
 
-  it('is not a child of the earnings and map grid: it has a row of its own, at its own content width', () => {
+  it('closes the earnings and map grid before the Damage section opens: it is not a cell of that grid', () => {
     const html = renderWithDamage(liveDamage([]));
-    const grid = /class="[^"]*grid-cols-\[max-content_minmax\(0,1fr\)\][^"]*"/.exec(html);
-    const gridStart = grid?.index ?? -1;
-    const damageTag = /<section[^>]*data-testid="live-damage"[^>]*>/.exec(html)?.[0] ?? '';
+    const gridStart = html.search(/<div class="[^"]*grid-cols-\[max-content_minmax\(0,1fr\)\]/);
+    const gridEnd = endOfDiv(html, gridStart);
 
     expect(gridStart).toBeGreaterThan(-1);
-    expect(html.indexOf('data-testid="live-map"')).toBeGreaterThan(gridStart);
-    expect(html.indexOf('data-testid="live-damage"')).toBeGreaterThan(html.indexOf('data-testid="live-map"'));
+    expect(html.indexOf('data-testid="live-earnings"')).toBeLessThan(gridEnd);
+    expect(html.indexOf('data-testid="live-map"')).toBeLessThan(gridEnd);
+    expect(html.indexOf('data-testid="live-damage"')).toBeGreaterThanOrEqual(gridEnd);
+  });
+
+  it('is sized to its own content, never stretched across the row', () => {
+    const damageTag = /<section[^>]*data-testid="live-damage"[^>]*>/.exec(renderWithDamage(liveDamage([])))?.[0] ?? '';
+
     expect(damageTag).toMatch(/class="[^"]*\bw-fit\b[^"]*"/);
     expect(damageTag).toMatch(/class="[^"]*\bmax-w-full\b[^"]*"/);
   });
