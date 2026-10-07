@@ -922,6 +922,25 @@ describe('toLiveTick: bombs and explosions', () => {
     expect(tick.bombs).toHaveLength(1);
   });
 
+  it.each([
+    { entry: 'bomb', key: 'bombCell' },
+    { entry: 'bomb', key: 'bombRadius' },
+    { entry: 'bomb', key: 'bombFuseRemainingSeconds' },
+    { entry: 'bomb', key: 'bombFuseTotalSeconds' },
+    { entry: 'explosion', key: 'explosionCell' },
+    { entry: 'explosion', key: 'explosionRadius' },
+  ] as const)('drops a $entry missing $key and keeps the frame and its other entries', ({ entry, key }) => {
+    const missing = { [wireKey(key)]: undefined };
+    const list = entry === 'bomb' ? 'bombsList' : 'explosionsList';
+    const broken = entry === 'bomb' ? wireBomb(missing) : wireExplosion(missing);
+    const intact = entry === 'bomb' ? wireBomb() : wireExplosion();
+
+    const tick = toLiveTick({ [wireKey('phase')]: 9, [wireKey(list)]: [broken, intact] });
+
+    expect(tick.phase).toBe(9);
+    expect(entry === 'bomb' ? tick.bombs : tick.explosions).toHaveLength(1);
+  });
+
   it('carries an ordinary explosion with only its cell and radius', () => {
     const tick = toLiveTick({ [wireKey('explosionsList')]: [wireExplosion()] });
 

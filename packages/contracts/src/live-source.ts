@@ -23,7 +23,6 @@ export interface LiveTickHero {
 
 export interface LiveBomb {
   readonly cell: number;
-  /** Blast radius in cells. */
   readonly radius: number;
   readonly fuseRemainingSeconds: number;
   readonly fuseTotalSeconds: number;

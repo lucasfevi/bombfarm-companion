@@ -101,6 +101,10 @@ describe('live-capture-combat.bfcc combat shape', () => {
   const hits = ticks.flatMap((tick) => tick.hits ?? []);
   const explosions = ticks.flatMap((tick) => tick.explosions ?? []);
 
+  it('holds 2770 bomb entries across all ticks, none dropped as malformed by the decoder', () => {
+    expect(ticks.flatMap((tick) => tick.bombs ?? []).length).toBe(2770);
+  });
+
   it('holds 328 fresh Births and 7 adopted bombs', () => {
     expect(countBirths(ticks)).toEqual({ fresh: 328, adopted: 7 });
   });
