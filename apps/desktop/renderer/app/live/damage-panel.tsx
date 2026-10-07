@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import type { LiveDamage, LiveDamageHeroRow, LiveDamageUnattributed } from '@bombfarm/contracts';
 import { HeroIdentity } from '@bombfarm/game-art';
-import { DataTable, formatCompactNumber, InfoTip, Panel, PanelHeader, Tooltip, type Lang } from '@bombfarm/ui';
+import { cn, DataTable, formatCompactNumber, InfoTip, Panel, PanelHeader, Tooltip, type Lang } from '@bombfarm/ui';
 import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
 import type { LiveHeroFact } from '../../lib/live/live-model';
 import { coverageMinutesLabel, formatLiveDurationSeconds } from './format-live-duration';
@@ -23,11 +23,11 @@ function uptimeText(uptime: number): string {
 function Columns() {
   return (
     <colgroup>
-      <col className="w-60" />
-      <col className="w-24" />
+      <col />
       <col className="w-20" />
       <col className="w-20" />
-      <col className="w-24" />
+      <col className="w-16" />
+      <col className="w-20" />
     </colgroup>
   );
 }
@@ -138,7 +138,7 @@ const DamageHeroRowView = memo(function DamageHeroRowView({
 function UnattributedRow({ amounts, t, lang }: { amounts: LiveDamageUnattributed | null; t: Copy; lang: Lang }) {
   return (
     <DataTable.Root className="overflow-y-auto border-t border-line [scrollbar-gutter:stable]">
-      <DataTable.Table className="w-[37rem] table-fixed [&_td]:py-1" aria-label={t.liveDamageUnattributedLabel}>
+      <DataTable.Table className="w-full table-fixed [&_td]:py-1" aria-label={t.liveDamageUnattributedLabel}>
         <Columns />
         <DataTable.Body>
           <DataTable.Row data-testid="live-damage-unattributed">
@@ -188,10 +188,12 @@ export function DamagePanel({
   damage,
   heroFacts,
   fieldSize,
+  className,
 }: {
   damage: LiveDamage | null;
   heroFacts: ReadonlyMap<string, LiveHeroFact>;
   fieldSize: number | undefined;
+  className?: string;
 }) {
   const t = useCopy();
   const { lang } = useLocale();
@@ -202,7 +204,7 @@ export function DamagePanel({
 
   return (
     <Tooltip.Provider delay={180} closeDelay={80}>
-      <Panel data-testid="live-damage" className="w-fit max-w-full self-start">
+      <Panel data-testid="live-damage" className={cn('[contain:inline-size]', className)}>
         <PanelHeader title={t.liveDamageTitle} info={<DamageInfo t={t} />} />
         <div className="flex flex-col gap-3">
           <div data-testid="live-damage-team" className="flex gap-8">
@@ -226,7 +228,7 @@ export function DamagePanel({
               className={GUTTER_CLASS}
               data-testid="live-damage-scroller"
             >
-              <DataTable.Table className="w-[37rem] table-fixed [&_td]:py-1" aria-label={t.liveDamageTableAria}>
+              <DataTable.Table className="w-full table-fixed [&_td]:py-1" aria-label={t.liveDamageTableAria}>
                 <Columns />
                 <Head t={t} />
                 <DataTable.Body>

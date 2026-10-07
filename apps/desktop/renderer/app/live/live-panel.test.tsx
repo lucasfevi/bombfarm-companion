@@ -43,7 +43,7 @@ describe('LivePanel — composition', () => {
     expect(html).toContain('data-testid="live-freshness"');
   });
 
-  it('puts the earnings panel in the first column of a page-level two-column grid, with the heroes panel spanning full width outside it', () => {
+  it('puts the earnings panel in the first column of a page-level two-column grid, with the heroes panel after it', () => {
     const html = renderToStaticMarkup(
       createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel(), fast: emptyFast }),
     );
@@ -481,7 +481,7 @@ function renderWithDamage(damage: LiveDamage | null, slow: LiveSlowModel = slowM
 }
 
 describe('LivePanel — the Damage panel', () => {
-  it('sits in its own row under the earnings and map row and above the heroes panel', () => {
+  it('comes after the earnings and map panels and before the heroes panel', () => {
     const html = renderWithDamage(liveDamage([]));
     const mapAt = html.indexOf('data-testid="live-map"');
     const damageAt = html.indexOf('data-testid="live-damage"');
@@ -492,22 +492,35 @@ describe('LivePanel — the Damage panel', () => {
     expect(heroesAt).toBeGreaterThan(damageAt);
   });
 
-  it('closes the earnings and map grid before the Damage section opens: it is not a cell of that grid', () => {
+  it('holds the earnings, map, Damage and Heroes panels in the one grid, in that order', () => {
     const html = renderWithDamage(liveDamage([]));
     const gridStart = html.search(/<div class="[^"]*grid-cols-\[max-content_minmax\(0,1fr\)\]/);
     const gridEnd = endOfDiv(html, gridStart);
+    const at = (id: string) => html.indexOf(`data-testid="${id}"`);
 
     expect(gridStart).toBeGreaterThan(-1);
-    expect(html.indexOf('data-testid="live-earnings"')).toBeLessThan(gridEnd);
-    expect(html.indexOf('data-testid="live-map"')).toBeLessThan(gridEnd);
-    expect(html.indexOf('data-testid="live-damage"')).toBeGreaterThanOrEqual(gridEnd);
+    expect([at('live-earnings'), at('live-map'), at('live-damage'), at('live-heroes')]).toEqual(
+      [at('live-earnings'), at('live-map'), at('live-damage'), at('live-heroes')].sort((a, b) => a - b),
+    );
+    expect(at('live-earnings')).toBeGreaterThan(gridStart);
+    expect(at('live-heroes')).toBeLessThan(gridEnd);
   });
 
-  it('is sized to its own content, never stretched across the row', () => {
+  it.each(['live-damage', 'live-heroes'])(
+    'gives %s both columns below the lg breakpoint and one column from it, stretched to its neighbour\'s height',
+    (testId) => {
+      const tag = new RegExp(`<section[^>]*data-testid="${testId}"[^>]*>`).exec(renderWithDamage(liveDamage([])))?.[0] ?? '';
+
+      expect(tag).toMatch(/class="[^"]*\bcol-span-2\b[^"]*"/);
+      expect(tag).toMatch(/class="[^"]*\blg:col-span-1\b[^"]*"/);
+      expect(tag).not.toMatch(/\b(?:self-start|w-fit|max-w-full)\b/);
+    },
+  );
+
+  it('keeps its table from widening the earnings column: the panel contributes no intrinsic width', () => {
     const damageTag = /<section[^>]*data-testid="live-damage"[^>]*>/.exec(renderWithDamage(liveDamage([])))?.[0] ?? '';
 
-    expect(damageTag).toMatch(/class="[^"]*\bw-fit\b[^"]*"/);
-    expect(damageTag).toMatch(/class="[^"]*\bmax-w-full\b[^"]*"/);
+    expect(damageTag).toContain('[contain:inline-size]');
   });
 
   it('names a hero from every one of the four rotation lists by the name the roster join resolved', () => {

@@ -268,7 +268,7 @@ describe('DamagePanel', () => {
   it('keeps the Unattributed row outside the scroller, on the same five columns', () => {
     const out = html(damage());
     const scroller = innerOf(out, 'live-damage-scroller');
-    const columns = (markup: string) => [...markup.matchAll(/<col class="([^"]*)"\/>/g)].map((match) => match[1]);
+    const columns = (markup: string) => [...markup.matchAll(/<col(?: class="([^"]*)")?\/>/g)].map((match) => match[1] ?? '');
 
     expect(scroller).not.toContain('live-damage-unattributed');
     expect(out).toContain('live-damage-unattributed');

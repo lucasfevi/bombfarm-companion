@@ -111,7 +111,13 @@ export function LivePanel({
           content instead, the pair floors at ~945px in Portuguese (the wider of the two
           languages), under the 960px minimum window width, so this row is two columns at every
           size the window can take and needs no breakpoint at all. The map takes the remainder:
-          its health bar and economy figures are the two that read better with the extra width. */}
+          its health bar and economy figures are the two that read better with the extra width.
+
+          Damage and Heroes sit in the same two tracks, so their edges are the earnings and map
+          panels' own. Side by side, the heroes row's energy bar is the flexible part: it reaches
+          its own reading's width (3rem) at a 1017px window and is nothing at all at 960px, so
+          below `lg` (1024px) each takes both tracks. Damage is `contain-inline-size` so its table
+          never widens the first track past what the earnings panel needs. */}
       <div className="grid grid-cols-[max-content_minmax(0,1fr)] gap-4">
         <EarningsPanel
           freshness={freshness}
@@ -120,53 +126,53 @@ export function LivePanel({
           onReset={onResetEarnings}
         />
         <MapPanel map={map} />
+        <DamagePanel damage={damage} heroFacts={heroFacts} fieldSize={fieldSize} className="col-span-2 lg:col-span-1" />
+        <Panel data-testid="live-heroes" className="col-span-2 lg:col-span-1">
+          <PanelHeader title={t.liveHeroesTitle} />
+          <div className="flex flex-col gap-3">
+            <StateSummaryBar
+              onFieldCount={onFieldCount}
+              onFieldHint={fieldSlotsHint}
+              recoveringCount={restingSlotsCount(slow.recovering.length, slow.house, locale)}
+              recoveringHint={restingSlotsHint(slow.house, t)}
+              recoveringFacts={restingFacts(slow.house, t, locale)}
+              queuedCount={formatCount(slow.queued.length, locale)}
+              benchedCount={formatCount(slow.benched.length, locale)}
+            />
+            {rows.length === 0 ? (
+              <p data-testid="live-hero-list-empty" className="m-0 text-sm text-muted">
+                {t.liveListEmptyLine}
+              </p>
+            ) : (
+              <ul data-testid="live-hero-list" className="m-0 flex list-none flex-col gap-1 p-0">
+                {rows.map((row) => (
+                  <HeroRow
+                    key={row.id}
+                    state={row.state}
+                    hero={row.hero}
+                    energyFraction={row.energyFraction}
+                    peek={peekFor(row.hero.id)}
+                    muted={row.state === 'benched'}
+                    trailing={
+                      row.state === 'on-field' ? (
+                        <>
+                          <span className="sr-only">{t.liveFieldCountdownLabel}</span>
+                          <FieldCountdown testId={`live-countdown-field-${row.hero.id}`} model={fast.field[row.hero.id]} />
+                        </>
+                      ) : row.state === 'recovering' ? (
+                        <>
+                          <span className="sr-only">{t.liveRecoveryCountdownLabel}</span>
+                          <RecoveryCountdown testId={`live-countdown-recovery-${row.hero.id}`} model={fast.recovery[row.hero.id]} />
+                        </>
+                      ) : undefined
+                    }
+                  />
+                ))}
+              </ul>
+            )}
+          </div>
+        </Panel>
       </div>
-      <DamagePanel damage={damage} heroFacts={heroFacts} fieldSize={fieldSize} />
-      <Panel data-testid="live-heroes">
-        <PanelHeader title={t.liveHeroesTitle} />
-        <div className="flex flex-col gap-3">
-          <StateSummaryBar
-            onFieldCount={onFieldCount}
-            onFieldHint={fieldSlotsHint}
-            recoveringCount={restingSlotsCount(slow.recovering.length, slow.house, locale)}
-            recoveringHint={restingSlotsHint(slow.house, t)}
-            recoveringFacts={restingFacts(slow.house, t, locale)}
-            queuedCount={formatCount(slow.queued.length, locale)}
-            benchedCount={formatCount(slow.benched.length, locale)}
-          />
-          {rows.length === 0 ? (
-            <p data-testid="live-hero-list-empty" className="m-0 text-sm text-muted">
-              {t.liveListEmptyLine}
-            </p>
-          ) : (
-            <ul data-testid="live-hero-list" className="m-0 flex list-none flex-col gap-1 p-0">
-              {rows.map((row) => (
-                <HeroRow
-                  key={row.id}
-                  state={row.state}
-                  hero={row.hero}
-                  energyFraction={row.energyFraction}
-                  peek={peekFor(row.hero.id)}
-                  muted={row.state === 'benched'}
-                  trailing={
-                    row.state === 'on-field' ? (
-                      <>
-                        <span className="sr-only">{t.liveFieldCountdownLabel}</span>
-                        <FieldCountdown testId={`live-countdown-field-${row.hero.id}`} model={fast.field[row.hero.id]} />
-                      </>
-                    ) : row.state === 'recovering' ? (
-                      <>
-                        <span className="sr-only">{t.liveRecoveryCountdownLabel}</span>
-                        <RecoveryCountdown testId={`live-countdown-recovery-${row.hero.id}`} model={fast.recovery[row.hero.id]} />
-                      </>
-                    ) : undefined
-                  }
-                />
-              ))}
-            </ul>
-          )}
-        </div>
-      </Panel>
       {slow.unclassifiedCount > 0 ? (
         <p data-testid="live-unclassified-count" className="m-0 text-xs text-muted">
           {sub(t.liveUnclassifiedCount, { n: formatCount(slow.unclassifiedCount, locale) })}
