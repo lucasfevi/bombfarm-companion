@@ -4,7 +4,7 @@
  * cross Vitest's 60 s worker RPC window, with unhandled errors ignored — the config's own comment
  * says why. A file that is merely long in TOTAL is handled differently: the domain project yields
  * to the event loop after every test (`tests/helpers/yield-between-tests.ts`), so the window
- * applies per test body rather than per file. Four ways this silently stops working, each guarded
+ * applies per test body rather than per file. Five ways this silently stops working, each guarded
  * here:
  *
  * 1. The partition drifts — a file listed in both, in neither, or listed but gone from disk.
@@ -13,6 +13,9 @@
  * 3. A runner (`pnpm test`, the domain package script, `check-changed`, CI) runs the first pass
  *    and never the second, so the solver files stop executing while everything stays green.
  * 4. The per-test yield is unwired, or its behavioural guard inside the domain project is deleted.
+ * 5. The two docs that spell the suite count out in words drift from the list. Nothing breaks, but
+ *    a reader is told there are five suites when there are four and goes looking for the fifth —
+ *    which is a task's premise wasted rather than a run gone red, and it has already happened.
  *
  * Deliberately dumb text slicing over the config sources and real `fs` walks, the
  * `tools/vitest-worker-cap.test.mjs` convention.
@@ -29,6 +32,9 @@ const SOLVER_FILES_MODULE = 'vitest.solver-files.mjs';
 const DOMAIN_TESTS_DIR = 'packages/domain/tests';
 const DOMAIN_TEST_FILES_FLOOR = 150;
 const VITEST_CONFIGS_FLOOR = 15;
+const SOLVER_COUNT_PROSE = ['AGENTS.md', 'docs/machine-load.md'];
+const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+const COUNTED_SOLVER_SUITES = /the ([a-z]+) solver suites/g;
 const SKIPPED_DIRS = new Set(['node_modules', '.git', 'dist', '.next', 'out', '.claude']);
 
 function read(relativePath) {
@@ -109,6 +115,30 @@ describe('the domain tests are partitioned between the domain project and the so
       `in a pass but not on disk (a solver entry naming a file that no longer exists): ${onlyInFirst.join(', ')}`,
     ).toEqual([]);
     expect(onlyInSecond, `on disk but in neither pass: ${onlyInSecond.join(', ')}`).toEqual([]);
+  });
+
+  it('the docs that spell the suite count out in words agree with the list', () => {
+    const word = COUNT_WORDS[solverFiles.length];
+    expect(
+      word,
+      `the solver list is ${solverFiles.length} long, past the number words this check spells — extend ` +
+        `COUNT_WORDS rather than dropping the comparison`,
+    ).toBeDefined();
+
+    for (const file of SOLVER_COUNT_PROSE) {
+      const counted = [...read(file).matchAll(COUNTED_SOLVER_SUITES)].map((match) => match[1]);
+      expect(
+        counted.length,
+        `${file} no longer says "the <count> solver suites", so this comparison matched nothing and ` +
+          `would pass whatever the docs claim. Either restore the phrase or drop ${file} from ` +
+          `SOLVER_COUNT_PROSE deliberately.`,
+      ).toBeGreaterThan(0);
+      expect(
+        [...new Set(counted)],
+        `${file} counts the solver suites as {${[...new Set(counted)].join(', ')}} where ` +
+          `${SOLVER_FILES_MODULE} lists ${solverFiles.length}`,
+      ).toEqual([word]);
+    }
   });
 
   it('the wiring is real: the domain project excludes the list and the solver project includes it', () => {
