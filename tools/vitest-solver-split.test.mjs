@@ -15,8 +15,10 @@
  *    web workflow splits the first pass into shards, so a missing shard drops files the same way.
  * 4. The per-test yield is unwired, or its behavioural guard inside the domain project is deleted.
  * 5. The two docs that spell the suite count out in words drift from the list. Nothing breaks, but
- *    a reader is told there are five suites when there are four and goes looking for the fifth —
- *    which is a task's premise wasted rather than a run gone red, and it has already happened.
+ *    a reader is told there are N suites when there are M, and plans work around a file that does
+ *    not exist — a premise wasted rather than a run gone red. The docs and the list have always
+ *    agreed so far, because the one commit that grew the list moved both docs with it; this keeps
+ *    the next one honest without relying on whoever writes it noticing.
  *
  * Deliberately dumb text slicing over the config sources and real `fs` walks, the
  * `tools/vitest-worker-cap.test.mjs` convention.

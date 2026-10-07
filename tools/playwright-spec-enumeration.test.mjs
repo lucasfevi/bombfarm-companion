@@ -15,8 +15,12 @@
  *
  * Deliberately dumb text slicing over the config (the `tools/design-system-gate.test.mjs` /
  * `ci-desktop-paths.test.mjs` convention), not a TypeScript parse — but bracket-matched and
- * comment-aware, and every shape it cannot read throws instead of narrowing. A parse that
- * silently finds no project compares nothing and passes, so floors sit under each derived set.
+ * comment-aware, and the shapes it cannot read throw instead of narrowing. Two it reads loosely
+ * rather than refusing: a double-quoted `testDir` falls through to the inherited one, and a
+ * backtick `testMatch` entry is dropped — both then red on the wrong directory or a missing
+ * filename rather than passing, and prettier's single-quote rule keeps either out of these
+ * configs. A parse that silently finds no project compares nothing and passes, so floors sit
+ * under each derived set.
  *
  * Scope: explicit-filename-list projects only. A project whose `testMatch` is a glob (or which
  * declares none at all and is swept by its `testDir`) has no enumeration to drift out of date —
