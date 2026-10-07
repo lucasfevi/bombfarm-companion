@@ -99,12 +99,14 @@ function itemName(item: InventoryViewItem, t: Copy, lang: 'pt' | 'en'): string {
   if (item.kind === 'chest') return chestName(item.defId, t);
   if (item.kind === 'skin') return skinName(item.defId);
   if (item.kind === 'rune') return runeName(item, lang);
-  if (item.kind === 'chanceStone') return fill(t.inventoryChanceStone, { rarity: itemRarityLabel(item.rarityIdx, lang) });
+  if (item.kind === 'chanceStone') return t.inventoryChanceStone;
+  if (item.kind === 'key') return t.inventoryMapKey;
+  if (item.kind === 'stone') return t.inventorySkillStone;
   return itemRarityLabel(item.rarityIdx, lang);
 }
 
 /** Kinds whose only distinguishing feature is their tier, so the tier IS the name. */
-const NAMED_BY_RARITY = new Set<ItemKind>(['key', 'time', 'stone', 'chanceStone']);
+const NAMED_BY_RARITY = new Set<ItemKind>(['time']);
 
 /**
  * The tier, on its own so the card can colour it. Empty for the kinds whose NAME is already

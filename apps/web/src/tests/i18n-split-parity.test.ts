@@ -754,6 +754,8 @@ const KEYS_ADDED: readonly string[] = [
   'inventoryGroupStone',
   'inventoryGroupChanceStone',
   'inventoryChanceStone',
+  'inventoryMapKey',
+  'inventorySkillStone',
   'inventoryGroupChest',
   'inventoryGroupRune',
   'inventoryGroupSkin',
