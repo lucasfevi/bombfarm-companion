@@ -6,6 +6,7 @@ import {
   liveGap,
   LIVE_DISPLAY_REFRESH_MS,
   sameLiveDamage,
+  UNATTRIBUTED_REASONS,
   type LiveDamage,
   type LiveDamageHeroRow,
   type LiveEvent,
@@ -146,6 +147,23 @@ describe('LiveEvent — the fastUpdate variant', () => {
       damage: null,
     };
     expect(Object.keys(event).sort()).toEqual(['damage', 'earnings', 'energies', 'field', 'map', 'onFieldHeroIds', 'recovery', 'type']);
+  });
+});
+
+describe('UNATTRIBUTED_REASONS', () => {
+  it('lists every reason exactly once', () => {
+    const everyReason: Exclude<UnattributedReason, (typeof UNATTRIBUTED_REASONS)[number]> extends never ? true : never = true;
+    expect(everyReason).toBe(true);
+    expect(new Set(UNATTRIBUTED_REASONS).size).toBe(UNATTRIBUTED_REASONS.length);
+    expect([...UNATTRIBUTED_REASONS].sort()).toEqual([
+      'explosionWithoutBomb',
+      'explosionlessWithoutFantasma',
+      'noHitOnLootCell',
+      'noOwnerAtBirth',
+      'sharedOrUnattributedKill',
+      'streamDiscontinuity',
+      'unresolvedOverlap',
+    ]);
   });
 });
 

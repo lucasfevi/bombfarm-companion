@@ -1,4 +1,4 @@
-import type { CreditAmounts, LiveTick, UnattributedReason } from '@bombfarm/contracts';
+import { UNATTRIBUTED_REASONS, type CreditAmounts, type LiveTick, type UnattributedReason } from '@bombfarm/contracts';
 import { computeHeroFt } from '../attribution/bomb-ownership.js';
 import { createBombLedger } from './bomb-ledger.js';
 import { createSignatureBook, creditHits, creditLoot } from './credit.js';
@@ -31,18 +31,6 @@ export interface LiveDamageAttributor {
   clear(): void;
   forgetLiveBombs(): void;
 }
-
-const REASON_SET = {
-  noOwnerAtBirth: true,
-  explosionWithoutBomb: true,
-  streamDiscontinuity: true,
-  unresolvedOverlap: true,
-  explosionlessWithoutFantasma: true,
-  sharedOrUnattributedKill: true,
-  noHitOnLootCell: true,
-} satisfies Record<UnattributedReason, true>;
-
-const REASONS = Object.keys(REASON_SET) as UnattributedReason[];
 
 interface Amounts {
   damage: number;
@@ -88,7 +76,7 @@ export function createLiveDamageAttributor(): LiveDamageAttributor {
 
       const team = zero();
       const perHero = new Map<string, Amounts>();
-      const unattributed = Object.fromEntries(REASONS.map((reason) => [reason, zero()])) as Record<
+      const unattributed = Object.fromEntries(UNATTRIBUTED_REASONS.map((reason) => [reason, zero()])) as Record<
         UnattributedReason,
         Amounts
       >;

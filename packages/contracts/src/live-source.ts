@@ -94,6 +94,16 @@ export type UnattributedReason =
   | 'sharedOrUnattributedKill'
   | 'noHitOnLootCell';
 
+export const UNATTRIBUTED_REASONS = [
+  'noOwnerAtBirth',
+  'explosionWithoutBomb',
+  'streamDiscontinuity',
+  'unresolvedOverlap',
+  'explosionlessWithoutFantasma',
+  'sharedOrUnattributedKill',
+  'noHitOnLootCell',
+] as const satisfies readonly UnattributedReason[];
+
 export interface CreditAmounts {
   readonly damage: number;
   readonly props: number;
@@ -109,7 +119,9 @@ export interface CreditAmounts {
 export interface LiveFrame {
   /** ISO 8601. */
   readonly at: string;
-  /** Monotonic, from the first frame of the process. Lets a consumer detect a miss. */
+  /** The emitting tap's own count, restarting at 1 whenever a tap is rebuilt. A consumer that
+   *  needs an ordering across rebuilds must not use it: the main-process folds are handed a
+   *  process-level counter by the live source instead. */
   readonly sequence: number;
   readonly tick: LiveTick;
 }

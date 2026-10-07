@@ -1,4 +1,11 @@
-import type { CreditAmounts, LiveDamage, LiveDamageHeroRow, LiveTick, UnattributedReason } from '@bombfarm/contracts';
+import {
+  UNATTRIBUTED_REASONS,
+  type CreditAmounts,
+  type LiveDamage,
+  type LiveDamageHeroRow,
+  type LiveTick,
+  type UnattributedReason,
+} from '@bombfarm/contracts';
 import {
   createLiveDamageAttributor,
   rosterCombatFacts,
@@ -8,31 +15,12 @@ import {
 import { BUCKET_SPAN_MS, MAX_TICK_GAP_MS, TEN_MINUTES_MS } from './earnings-fold.js';
 import type { LogPort } from './log-port.js';
 
-/**
- * Folds the per-frame credit the attribution engine returns into the damage figures the Live tab
- * shows. The engine owns frame-to-frame continuity (live bombs, fingerprints, signatures); this
- * class owns time: the gap-capped streamed clock, the 10-minute team window and the session
- * ledgers. The clock is the earnings fold's, so both panels agree on what a streamed second is.
- */
-
 /** Live frames arrive about every 200 ms and offline replay about every 100 ms, so a wall gap
  *  past this means frames were lost between two that did arrive. */
 export const DISCONTINUITY_WALL_MS = 400;
 
 const MS_PER_SECOND = 1_000;
 const RING_CAPACITY = TEN_MINUTES_MS / BUCKET_SPAN_MS + 1;
-
-const REASON_SET = {
-  noOwnerAtBirth: true,
-  explosionWithoutBomb: true,
-  streamDiscontinuity: true,
-  unresolvedOverlap: true,
-  explosionlessWithoutFantasma: true,
-  sharedOrUnattributedKill: true,
-  noHitOnLootCell: true,
-} satisfies Record<UnattributedReason, true>;
-
-const REASONS = Object.keys(REASON_SET) as UnattributedReason[];
 
 interface Amounts {
   damage: number;
@@ -53,7 +41,7 @@ interface Bucket {
 const zeroAmounts = (): Amounts => ({ damage: 0, props: 0, gold: 0 });
 
 const zeroReasons = (): Record<UnattributedReason, Amounts> =>
-  Object.fromEntries(REASONS.map((reason) => [reason, zeroAmounts()])) as Record<UnattributedReason, Amounts>;
+  Object.fromEntries(UNATTRIBUTED_REASONS.map((reason) => [reason, zeroAmounts()])) as Record<UnattributedReason, Amounts>;
 
 function add(target: Amounts, amounts: CreditAmounts): void {
   target.damage += amounts.damage;
@@ -126,7 +114,7 @@ export class DamageFold {
     add(this.#team, credit.team);
     bucket.teamDamage += credit.team.damage;
     for (const [heroId, amounts] of credit.perHero) add(this.#ledger(heroId), amounts);
-    for (const reason of REASONS) {
+    for (const reason of UNATTRIBUTED_REASONS) {
       const amounts = credit.unattributed[reason];
       add(this.#unattributed[reason], amounts);
       this.#logReasonOnce(reason, amounts);
@@ -157,7 +145,7 @@ export class DamageFold {
     if (this.#lastTickAt === null) return null;
     const heroes = this.#rows();
     const unattributedTotal = zeroAmounts();
-    for (const reason of REASONS) add(unattributedTotal, this.#unattributed[reason]);
+    for (const reason of UNATTRIBUTED_REASONS) add(unattributedTotal, this.#unattributed[reason]);
     return {
       teamDps10: this.#windowDps(),
       teamDpsSession: this.#streamedMs === 0 ? null : this.#team.damage / (this.#streamedMs / MS_PER_SECOND),
