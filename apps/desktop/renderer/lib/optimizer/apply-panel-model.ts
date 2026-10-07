@@ -29,7 +29,7 @@ import {
 import type { ForgeAction, TeamPlan } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { itemName, sheetStatShortLabel } from '@bombfarm/domain/game-labels';
-import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
+import { buildInventoryView, ownedChanceStones, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { forgeLevel, forgeLabels, type ForgeLabels } from '../../app/forge/forge-labels';
 import { gearOf } from '../forge/forge-rows';
 import { finiteNumber } from '../format';
@@ -60,6 +60,7 @@ export type ApplyFacts = {
   readonly forgeRow: {
     readonly forgeList: readonly ForgeAction[];
     readonly gear: readonly InventoryViewItem[];
+    readonly ownedStones: readonly number[];
     readonly labels: ForgeLabels;
   };
 };
@@ -345,6 +346,7 @@ export function buildApplyFacts(input: {
       // The live pool, never the plan's frozen snapshot — a piece the plan named may have moved
       // or already reached its target since.
       gear: gearOf(liveInventoryItems),
+      ownedStones: ownedChanceStones(liveInventoryItems),
       labels: forgeLabels(t, lang, locale),
     },
   };

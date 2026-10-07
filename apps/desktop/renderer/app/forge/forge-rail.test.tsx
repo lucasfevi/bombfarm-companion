@@ -429,6 +429,7 @@ function renderPanel(
           stoneRanges,
           ownedStones: [0, 0, 0, 0, 0, 0],
           walletGold: null,
+          walletEssence: null,
           reason,
           startRefusal,
           labels,

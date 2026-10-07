@@ -50,6 +50,7 @@ import {
 } from '../../lib/forge/forge-rows';
 import { removeFromForgeQueue, useForgeQueue } from '../../lib/forge/forge-queue-store';
 import { resolveForgeQueue } from '../../lib/forge/forge-queue-view';
+import { useForgeQueuePricing } from '../../lib/forge/use-forge-queue-pricing';
 import { shouldAdoptLiveAfter, type ForgeRunPlan, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
 import { dispatchForgeRun, setForgeRunAdoption, useForgeRun } from '../../lib/forge/forge-run-store';
 import {
@@ -204,6 +205,7 @@ export function ForgeView({
 
   const queue = useForgeQueue();
   const queueRows = useMemo(() => resolveForgeQueue(queue.pieces, gear), [queue.pieces, gear]);
+  const { settings: queueSettings, pricing: queuePricing } = useForgeQueuePricing(queueRows, ownedStones);
 
   const { ref: asideRef, height: asideHeight } = useContentHeight();
 
@@ -314,6 +316,7 @@ export function ForgeView({
 
   const account = view?.payload.account;
   const walletGold = finiteNumber(account?.gold);
+  const walletEssence = finiteNumber(account?.essence);
   const capturedAt = view === null ? null : oldestCaptureOf(view.payload);
   useScreenRefreshRegistration('forge', { capturedAt, stale, busy: false, readState: refreshState, onRefresh: refresh });
   const heroHint = filter.heroId === null ? null : sub(t.forgeHeroHint, { hero: heroName(filter.heroId) });
@@ -443,6 +446,7 @@ export function ForgeView({
                   stoneRanges={planControls.stoneRanges}
                   ownedStones={ownedStones}
                   walletGold={walletGold}
+                  walletEssence={walletEssence}
                   reason={reason}
                   startRefusal={startRefusal}
                   labels={labels}
@@ -453,6 +457,9 @@ export function ForgeView({
               <ForgeQueuePanel
                 queue={queue}
                 rows={queueRows}
+                pricing={queuePricing}
+                settings={queueSettings}
+                ownedStones={ownedStones}
                 labels={labels}
                 onRemove={removeFromForgeQueue}
                 forgeWritesEnabled={forgeWritesEnabled}

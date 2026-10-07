@@ -16,6 +16,8 @@ import {
   type ForgeQueuePiece,
   type ForgeQueueState,
 } from './forge-queue-reducer';
+import { currentForgeQueueSettings } from './forge-queue-settings-store';
+import { queueStones, type ForgeQueueSettings } from './forge-queue-settings';
 import { loadForgeQueuePieces, saveForgeQueuePieces } from './forge-queue-storage';
 
 type Bridge = NonNullable<Window['bfc']>;
@@ -24,6 +26,8 @@ export interface ForgeQueueStoreDeps {
   readonly bridge: Bridge | null;
   readonly load: () => readonly ForgeQueuePiece[];
   readonly save: (pieces: readonly ForgeQueuePiece[]) => void;
+  /** Read each time the queue asks main for a piece, so a change applies from the next piece. */
+  readonly settings: () => ForgeQueueSettings;
 }
 
 export interface ForgeQueueStore {
@@ -85,9 +89,19 @@ export function createForgeQueueStore(deps: ForgeQueueStoreDeps): ForgeQueueStor
     const head = forgeQueueHead(state);
     if (state.status !== 'running' || state.active !== null || head === null || !deps.bridge) return;
     const { itemId, target } = head;
+    const settings = deps.settings();
+    const stones = queueStones(settings);
     apply({ kind: 'requested', itemId });
     deps.bridge
-      .invoke('forge:start', { itemId, target, maxGold: null, maxAttempts: null })
+      .invoke('forge:start', {
+        itemId,
+        target,
+        maxGold: null,
+        maxAttempts: null,
+        ...(stones === undefined ? {} : { stones }),
+        scroll: settings.scroll,
+        stopWhenOutOfStones: settings.stopWhenOutOfStones,
+      })
       .then((result) => {
         if (!result.ok) {
           apply({ kind: 'refused', itemId, reason: result.reason });
@@ -144,6 +158,7 @@ const sharedForgeQueueStore = createLazySingleton(() =>
     bridge: typeof window === 'undefined' ? null : ((window as unknown as { bfc?: Bridge }).bfc ?? null),
     load: loadForgeQueuePieces,
     save: saveForgeQueuePieces,
+    settings: currentForgeQueueSettings,
   }),
 );
 

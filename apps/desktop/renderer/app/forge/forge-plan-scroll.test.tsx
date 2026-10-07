@@ -51,6 +51,7 @@ function render(from: number, target: number, scroll: boolean): string {
           stoneRanges,
           ownedStones,
           walletGold: null,
+          walletEssence: null,
           reason: 'ready',
           startRefusal: null,
           labels,

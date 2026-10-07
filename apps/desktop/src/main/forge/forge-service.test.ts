@@ -514,6 +514,34 @@ describe('Chance Stones', () => {
     expect(h.wire.calls).toHaveLength(1);
   });
 
+  it('rolls on without a stone when none is owned and the plan does not stop for stones', async () => {
+    const h = harness({ script: [{ upgrade: 9 }, { upgrade: 10 }], currentItems: items([stoneRow('s1', 'comum')]) });
+    h.service.start({ ...REQUEST, stones: stonesFor(4), stopWhenOutOfStones: false });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls.map((call) => call.pedra)).toEqual([null, null]);
+    expect(done.result).toMatchObject({ stop: 'target', rolls: 2, stonesSpent: [0, 0, 0, 0, 0, 0] });
+  });
+
+  it('resends the roll without the stone when the server says none is left and the plan does not stop for stones', async () => {
+    const h = harness({
+      script: [{ status: 400, body: '{"error":"NO_FORGE_AID"}' }, { upgrade: 9 }, { upgrade: 10 }],
+      currentItems: items(),
+    });
+    h.service.start({ ...REQUEST, stones: stonesFor(2), stopWhenOutOfStones: false });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls.map((call) => call.pedra)).toEqual(['2', null, null]);
+    expect(new Set(h.wire.calls.map((call) => call.requestId)).size).toBe(3);
+    expect(done.result).toMatchObject({ stop: 'target', rolls: 2, stonesSpent: [0, 0, 0, 0, 0, 0] });
+  });
+
+  it('still stops for stones when the plan says so explicitly', async () => {
+    const h = harness({ script: [{ upgrade: 9 }], currentItems: items([stoneRow('s1', 'comum')]) });
+    h.service.start({ ...REQUEST, stones: stonesFor(4), stopWhenOutOfStones: true });
+    const done = await untilDone(h.events);
+    expect(h.wire.calls).toHaveLength(0);
+    expect(done.result).toMatchObject({ stop: 'stones', stoneRarity: 4, rolls: 0 });
+  });
+
   it('retries a roll once without the stone on FORGE_AID_USELESS, under a new request id, and carries on', async () => {
     const h = harness({
       script: [{ status: 400, body: '{"error":"FORGE_AID_USELESS"}' }, { upgrade: 9 }, { upgrade: 10 }],
