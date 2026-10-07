@@ -101,8 +101,8 @@ describe('deconstructBlockReason', () => {
     expect(deconstructBlockReason(viewItem({ jewels: [] }))).toBeNull();
   });
 
-  it('names a piece still inside its import cooldown, and ignores one that has run out', () => {
-    expect(deconstructBlockReason(viewItem({ export_lock_secs: 3600 }))).toBe('import_cooldown');
+  it('lets a freshly imported piece burn at once, whatever its export countdown says', () => {
+    expect(deconstructBlockReason(viewItem({ export_lock_secs: 3600 }))).toBeNull();
     expect(deconstructBlockReason(viewItem({ export_lock_secs: 0 }))).toBeNull();
   });
 
@@ -112,9 +112,9 @@ describe('deconstructBlockReason', () => {
 
   it('reports the first state reason in the client order when several apply', () => {
     expect(deconstructBlockReason(viewItem({ equipped_on: '555', locked: true, market_state: 1 }))).toBe('equipped');
-    expect(deconstructBlockReason(viewItem({ locked: true, market_state: 1, export_lock_secs: 9 }))).toBe('locked');
-    expect(deconstructBlockReason(viewItem({ market_state: 1, jewels: [{}], export_lock_secs: 9 }))).toBe('market');
-    expect(deconstructBlockReason(viewItem({ jewels: [{}], export_lock_secs: 9 }))).toBe('has_gems');
+    expect(deconstructBlockReason(viewItem({ locked: true, market_state: 1 }))).toBe('locked');
+    expect(deconstructBlockReason(viewItem({ market_state: 1, jewels: [{}] }))).toBe('market');
+    expect(deconstructBlockReason(viewItem({ jewels: [{}] }))).toBe('has_gems');
   });
 
   describe('when the server states its own verdict', () => {
@@ -253,11 +253,14 @@ describe('deconstructFillCandidates', () => {
       viewItem({ id: '2', locked: true }),
       viewItem({ id: '3', market_state: 1 }),
       viewItem({ id: '4', jewels: [{}] }),
-      viewItem({ id: '5', export_lock_secs: 60 }),
       viewItem({ id: '6', essence_value: 0 }),
       viewItem({ id: '7' }),
     ];
     expect(deconstructFillCandidates(blocked, [], 100)).toEqual(['7']);
+  });
+
+  it('takes a freshly imported piece, since the game lets it burn at once', () => {
+    expect(deconstructFillCandidates([viewItem({ id: '5', export_lock_secs: 60 })], [], 100)).toEqual(['5']);
   });
 
   it('never picks a chest or a hero cage, though both are burnable and fall below the threshold', () => {
