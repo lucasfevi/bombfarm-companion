@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import type { AccountPayload, AccountView } from '@bombfarm/contracts';
 import { buildAccountRoster, type AccountRoster } from './account-roster';
 import { TEAM_BUFF_CAP, TEAM_BUFF_PER_LEVEL, noTeamAuraSwitches } from '@bombfarm/domain/team-buffs';
+import { NO_COLLECTION, collectionSheetPct, type Collection } from '@bombfarm/domain/collection';
+import { pipelineForHero } from '@bombfarm/domain/roster-dps';
 import { accountAroundHero, buildAccountBlock } from './account-shared';
 
 const OFFLINE_FIXTURE = path.join(__dirname, '..', '..', '..', 'tests', 'fixtures', 'account-offline.json');
@@ -58,6 +60,53 @@ describe('buildAccountBlock', () => {
     const shared = buildAccountBlock({ ...roster, account: { ...roster.account, slots: null } });
     expect(shared).not.toBeNull();
     expect(Object.hasOwn(shared as object, 'slots')).toBe(false);
+  });
+
+  describe('Collections and the XP multiplier', () => {
+    const collection: Collection = { ...NO_COLLECTION, critChancePct: 10, energyPct: 10 };
+
+    function rosterWithTree(extra: { collection?: Collection; xpMult?: number }): AccountRoster {
+      const roster = offlineRoster();
+      const tree = roster.account.tree;
+      if (tree === null) throw new Error('expected the offline account to carry a tree');
+      const { collection: _collection, xpMult: _xpMult, ...base } = tree;
+      return { ...roster, account: { ...roster.account, tree: { ...base, ...extra } } };
+    }
+
+    function blockOf(roster: AccountRoster) {
+      const shared = buildAccountBlock(roster);
+      if (shared === null) throw new Error('expected a block');
+      return shared;
+    }
+
+    it('carries the account Collection through to the block', () => {
+      expect(blockOf(rosterWithTree({ collection })).tree.collection).toEqual(collection);
+    });
+
+    it('omits the Collection key when the account has none', () => {
+      expect(Object.hasOwn(blockOf(rosterWithTree({})).tree, 'collection')).toBe(false);
+    });
+
+    it('carries the XP multiplier through, and omits the key when absent', () => {
+      expect(blockOf(rosterWithTree({ xpMult: 1.25 })).tree.xpMult).toBe(1.25);
+      expect(Object.hasOwn(blockOf(rosterWithTree({})).tree, 'xpMult')).toBe(false);
+    });
+
+    it('prices a hero with the Collection bonus in its figures', () => {
+      const without = rosterWithTree({});
+      const withBonus = rosterWithTree({ collection });
+      const hero = without.heroes[0];
+      if (hero === undefined) throw new Error('expected the offline account to carry a hero');
+      const priced = (roster: AccountRoster) =>
+        pipelineForHero(hero, accountAroundHero(blockOf(roster), hero, noTeamAuraSwitches(), roster.heroes), 10, 1);
+
+      const base = priced(without);
+      const bonus = priced(withBonus);
+      expect(bonus.treeSheet.collection).toEqual(collectionSheetPct(collection));
+      expect(base.treeSheet.collection).toEqual(collectionSheetPct(undefined));
+      expect(bonus.adjusted.energy).toBeCloseTo(base.adjusted.energy * 1.1, 6);
+      expect(bonus.adjusted.critChance).toBeCloseTo(base.adjusted.critChance * 1.1, 6);
+    });
   });
 });
 

@@ -41,6 +41,8 @@ export function buildAccountBlock(roster: AccountRoster): AccountBlock | null {
       energy: tree.energy,
       teamCoinPct: tree.teamCoinPct ?? 0,
       luckFlatPct: tree.luckFlatPct,
+      ...(tree.xpMult == null ? {} : { xpMult: tree.xpMult }),
+      ...(tree.collection == null ? {} : { collection: tree.collection }),
     },
     // `phase` and `mitigationPct` are the caller's, passed per call: this block is shared by every
     // hero on the screen and must not carry one hero's stage.
