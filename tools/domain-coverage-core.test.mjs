@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   INITIAL_ZERO_COVERAGE_REASON,
+  INSTRUMENTATION_SENSITIVE_TEST_FILES,
   NEVER_LOADED_REASON,
   KIND,
   METRICS,
   MIN_BASELINE_FILES,
+  TEST_RUN_KIND,
   TOLERANCE_PP,
+  allowlistOffenders,
   baselineIntegrityFindings,
   canonicalBaselineText,
   coverageIgnoreHints,
@@ -14,8 +17,11 @@ import {
   filesTheRatchetCannotSee,
   formatRenameReview,
   formatRenameReviewMarkdown,
+  formatToleratedFailures,
+  formatToleratedFailuresMarkdown,
   formatReport,
   guardBaseFindings,
+  judgeTestRun,
   leastCovered,
   measurementFindings,
   normalizeSummary,
@@ -866,5 +872,113 @@ describe('coverage-ignore hints and files the ratchet cannot see', () => {
       'src/d.TS',
       'src/g.tsx',
     ]);
+  });
+});
+
+describe('judgeTestRun: which failures of an instrumented run are tolerated', () => {
+  const ROOT = 'C:/work/repo';
+  const TIMED = INSTRUMENTATION_SENSITIVE_TEST_FILES[0];
+  const ORDINARY = 'packages/domain/tests/ordinary.test.ts';
+
+  function suite(file, tests, extra = {}) {
+    const failed = tests.some((test) => test.status === 'failed');
+    return {
+      name: `${ROOT}/${file}`,
+      status: failed ? 'failed' : 'passed',
+      message: '',
+      assertionResults: tests.map((test) => ({
+        fullName: test.fullName,
+        title: test.fullName,
+        status: test.status,
+        failureMessages: test.status === 'failed' ? [`${test.message ?? 'AssertionError: boom'}\n    at somewhere`] : [],
+      })),
+      ...extra,
+    };
+  }
+
+  function run(suites, overrides = {}) {
+    return judgeTestRun({ resultsText: JSON.stringify({ testResults: suites }), root: ROOT, exitCode: 1, ...overrides });
+  }
+
+  const slow = { fullName: 'a full solve stays inside its ceiling', status: 'failed', message: 'AssertionError: took 4845ms, ceiling 2500ms' };
+  const fine = { fullName: 'adds', status: 'passed' };
+
+  it('tolerates failures that are only in allowlisted files, and names each with its first message line', () => {
+    const verdict = run([suite(TIMED, [slow, fine]), suite(INSTRUMENTATION_SENSITIVE_TEST_FILES[1], [slow])]);
+    expect(verdict.accepted).toBe(true);
+    expect(verdict.offenders).toEqual([]);
+    expect(verdict.tolerated.map((item) => [item.file, item.name, item.message])).toEqual([
+      [TIMED, slow.fullName, 'AssertionError: took 4845ms, ceiling 2500ms'],
+      [INSTRUMENTATION_SENSITIVE_TEST_FILES[1], slow.fullName, 'AssertionError: took 4845ms, ceiling 2500ms'],
+    ]);
+  });
+
+  it('fails on a failed test in a file that is not allowlisted, and names exactly that test', () => {
+    const verdict = run([suite(TIMED, [slow]), suite(ORDINARY, [{ fullName: 'group > sums', status: 'failed', message: 'AssertionError: 1 !== 2' }, fine])]);
+    expect(verdict.accepted).toBe(false);
+    expect(verdict.offenders.map((item) => [item.kind, item.file, item.name])).toEqual([[TEST_RUN_KIND.failedTest, ORDINARY, 'group > sums']]);
+    expect(verdict.offenders[0].message).toContain('AssertionError: 1 !== 2');
+    expect(verdict.tolerated.map((item) => item.file)).toEqual([TIMED]);
+  });
+
+  it('names every offender, not a count, when several tests fail outside the list', () => {
+    const verdict = run([suite(ORDINARY, [{ fullName: 'one', status: 'failed' }, { fullName: 'two', status: 'failed' }])]);
+    expect(verdict.offenders.map((item) => item.name)).toEqual(['one', 'two']);
+  });
+
+  it('fails on a suite that failed outside its tests, even in an allowlisted file', () => {
+    const verdict = run([suite(TIMED, [], { status: 'failed', message: 'Error: cannot find module' })]);
+    expect(verdict.accepted).toBe(false);
+    expect(verdict.offenders.map((item) => [item.kind, item.file])).toEqual([[TEST_RUN_KIND.failedSuite, TIMED]]);
+    expect(verdict.offenders[0].message).toContain('cannot find module');
+  });
+
+  it('fails when the results are missing, and when they are not JSON or have no test list', () => {
+    expect(judgeTestRun({ resultsText: null, root: ROOT, exitCode: 1 }).offenders.map((item) => item.kind)).toEqual([TEST_RUN_KIND.resultsMissing]);
+    expect(judgeTestRun({ resultsText: '{ not json', root: ROOT, exitCode: 1 }).offenders.map((item) => item.kind)).toEqual([TEST_RUN_KIND.resultsUnparseable]);
+    expect(judgeTestRun({ resultsText: '{}', root: ROOT, exitCode: 1 }).offenders.map((item) => item.kind)).toEqual([TEST_RUN_KIND.resultsUnparseable]);
+  });
+
+  it('with zero failures it passes when the run exited 0, and fails when it exited non-zero without a listed failure', () => {
+    expect(run([suite(ORDINARY, [fine])], { exitCode: 0 }).accepted).toBe(true);
+    const unexplained = run([suite(ORDINARY, [fine])], { exitCode: 1 });
+    expect(unexplained.accepted).toBe(false);
+    expect(unexplained.offenders.map((item) => item.kind)).toEqual([TEST_RUN_KIND.unexplainedExit]);
+  });
+
+  it('matches a result file name whatever the separators or drive-letter case of the root', () => {
+    const verdict = judgeTestRun({
+      resultsText: JSON.stringify({ testResults: [suite(TIMED, [slow], { name: `c:\\work\\repo\\${TIMED.replaceAll('/', '\\')}` })] }),
+      root: 'C:\\work\\repo',
+      exitCode: 1,
+    });
+    expect(verdict.accepted).toBe(true);
+  });
+
+  it('prints each tolerated failure by file, name and message, and as markdown', () => {
+    const { tolerated } = run([suite(TIMED, [slow])]);
+    expect(formatToleratedFailures(tolerated)).toContain(`${TIMED} > ${slow.fullName}: AssertionError: took 4845ms, ceiling 2500ms`);
+    expect(formatToleratedFailuresMarkdown(tolerated)).toContain(`\`${TIMED}\` > ${slow.fullName}`);
+  });
+
+  it('the allowlist holds repo-relative test files, sorted, without duplicates', () => {
+    expect([...INSTRUMENTATION_SENSITIVE_TEST_FILES]).toEqual([...new Set(INSTRUMENTATION_SENSITIVE_TEST_FILES)].sort());
+    for (const file of INSTRUMENTATION_SENSITIVE_TEST_FILES) expect(file).toMatch(/^packages\/domain\/tests\/[a-z0-9-]+\.test\.ts$/);
+  });
+});
+
+describe('allowlistOffenders keeps the instrumentation-sensitive list honest', () => {
+  const texts = { 'packages/domain/tests/timed.test.ts': 'const t = performance.now();', 'packages/domain/tests/plain.test.ts': 'expect(1).toBe(1);' };
+  const read = (file) => texts[file] ?? null;
+
+  it('passes a file that really times itself', () => {
+    expect(allowlistOffenders(['packages/domain/tests/timed.test.ts'], read)).toEqual([]);
+  });
+
+  it('names a file that does not exist and a file that never calls performance.now', () => {
+    const offenders = allowlistOffenders(['packages/domain/tests/gone.test.ts', 'packages/domain/tests/plain.test.ts'], read);
+    expect(offenders).toHaveLength(2);
+    expect(offenders[0]).toContain('packages/domain/tests/gone.test.ts: does not exist');
+    expect(offenders[1]).toContain('packages/domain/tests/plain.test.ts: does not time anything');
   });
 });

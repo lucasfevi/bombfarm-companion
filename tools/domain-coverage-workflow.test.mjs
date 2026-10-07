@@ -502,19 +502,51 @@ function measuringPassesAreTolerantAndNamed(source) {
       command.includes('--testTimeout=600000') &&
       command.includes('--reporter=blob') &&
       command.includes('--reporter=dot') &&
+      command.includes('--reporter=json') &&
       command.includes(`--outputFile.blob=coverage/domain-blobs/${name}.json`) &&
+      command.includes(`--outputFile.json=coverage/domain-results/${name}.json`) &&
       !/--outputFile=/.test(command),
   );
 }
 
 function mergeReplaysUnhandledErrors(source) {
   const { merge } = commandsOf(source);
-  return merge !== undefined && merge.includes('--dangerouslyIgnoreUnhandledErrors') && merge.includes('--coverage ');
+  return (
+    merge !== undefined &&
+    merge.includes('--dangerouslyIgnoreUnhandledErrors') &&
+    merge.includes('--coverage ') &&
+    merge.includes('--reporter=json') &&
+    merge.includes('--outputFile.json=coverage/domain-results/merge.json')
+  );
+}
+
+function resultsStayOutsideTheBlobDirectory(source) {
+  const { main, solver, merge } = commandsOf(source);
+  return [main, solver, merge].every(
+    (command) => command !== undefined && !/--outputFile\.json=coverage\/domain-blobs/.test(command) && /--outputFile\.json=coverage\/domain-results\//.test(command),
+  );
+}
+
+function measureClearsTheResultsDirectory(source) {
+  const match = /const STALE_OUTPUT_DIRECTORIES = \[([^\]]*)\]/.exec(source);
+  return match !== null && match[1].includes("'domain-results'");
 }
 
 function nothingSwitchesTheUntestedFileSweepOff(source) {
   const { main, solver, merge } = commandsOf(source);
   return [main, solver, merge].every((command) => command !== undefined && !command.includes('--coverage.all=false'));
+}
+
+function nonZeroPassIsJudgedAndAnUntoleratedFailureFails(source) {
+  const accept = /function acceptOrFail\(command, code\) \{[\s\S]*?\n\}\n/.exec(source);
+  return (
+    /if \(code !== 0\) acceptOrFail\(command, code\);/.test(source) &&
+    accept !== null &&
+    /judgeTestRun\(\{ resultsText, root: REPO_ROOT, exitCode: code \}\)/.test(accept[0]) &&
+    /if \(!judgement\.accepted\) \{[\s\S]*?\bfail\(/.test(accept[0]) &&
+    /formatToleratedFailures\(judgement\.tolerated\)/.test(accept[0]) &&
+    /appendStepSummary\(formatToleratedFailuresMarkdown\(judgement\.tolerated\)\)/.test(accept[0])
+  );
 }
 
 function nonZeroPassPointsAtTheOutput(source) {
@@ -532,6 +564,33 @@ describe('tools/domain-coverage.mjs measures both Vitest passes and merges them'
 
   it('nothing passes --coverage.all=false: the sweep it disables is what puts never-loaded files in the report', () => {
     expect(nothingSwitchesTheUntestedFileSweepOff(cliText)).toBe(true);
+  });
+
+  it('the JSON results stay outside the blob directory, and every measure starts by clearing them', () => {
+    expect(resultsStayOutsideTheBlobDirectory(cliText)).toBe(true);
+    expect(measureClearsTheResultsDirectory(cliText)).toBe(true);
+  });
+
+  it('measure no longer clearing the results directory turns measureClearsTheResultsDirectory false', () => {
+    expect(measureClearsTheResultsDirectory(mutate(cliText, "'domain-blobs', 'domain-results', ", "'domain-blobs', "))).toBe(false);
+  });
+
+  it('the merge losing its JSON reporter or output path turns mergeReplaysUnhandledErrors false', () => {
+    expect(mergeReplaysUnhandledErrors(mutate(cliText, ' --reporter=default --reporter=json --outputFile.json=coverage/domain-results/merge.json', ''))).toBe(false);
+    expect(mergeReplaysUnhandledErrors(mutate(cliText, '--outputFile.json=coverage/domain-results/merge.json', '--outputFile.json=coverage/domain-results/other.json'))).toBe(false);
+  });
+
+  it('a non-zero pass is judged from its JSON results, an untolerated failure fails, and tolerated ones are printed and summarised', () => {
+    expect(nonZeroPassIsJudgedAndAnUntoleratedFailureFails(cliText)).toBe(true);
+  });
+
+  it('each way of weakening that judgement turns the predicate false', () => {
+    const weaken = (search, replacement) => nonZeroPassIsJudgedAndAnUntoleratedFailureFails(mutate(cliText, search, replacement));
+    expect(weaken('if (code !== 0) acceptOrFail(command, code);', 'if (code !== 0) fail("x");')).toBe(false);
+    expect(weaken('  if (!judgement.accepted) {', '  if (false) {')).toBe(false);
+    expect(weaken('  process.stdout.write(formatToleratedFailures(judgement.tolerated));\n', '')).toBe(false);
+    expect(weaken('  appendStepSummary(formatToleratedFailuresMarkdown(judgement.tolerated));\n', '')).toBe(false);
+    expect(weaken('exitCode: code });', 'exitCode: 0 });')).toBe(false);
   });
 
   it('a failing pass prints a line pointing at the output above', () => {
@@ -553,8 +612,23 @@ describe('tools/domain-coverage.mjs measures both Vitest passes and merges them'
     });
 
     it('losing --reporter=dot turns the predicate false', () => {
-      const mutated = mutate(cliText, `--reporter=blob --reporter=dot --outputFile.blob=coverage/domain-blobs/${name}.json`, `--reporter=blob --outputFile.blob=coverage/domain-blobs/${name}.json`);
+      const mutated = mutate(cliText, `--reporter=blob --reporter=dot --reporter=json --outputFile.blob=coverage/domain-blobs/${name}.json`, `--reporter=blob --reporter=json --outputFile.blob=coverage/domain-blobs/${name}.json`);
       expect(measuringPassesAreTolerantAndNamed(mutated)).toBe(false);
+    });
+
+    it('losing --reporter=json turns the predicate false', () => {
+      const mutated = mutate(cliText, `--reporter=blob --reporter=dot --reporter=json --outputFile.blob=coverage/domain-blobs/${name}.json`, `--reporter=blob --reporter=dot --outputFile.blob=coverage/domain-blobs/${name}.json`);
+      expect(measuringPassesAreTolerantAndNamed(mutated)).toBe(false);
+    });
+
+    it('losing the JSON output path turns the predicate false', () => {
+      const mutated = mutate(cliText, ` --outputFile.json=coverage/domain-results/${name}.json`, '');
+      expect(measuringPassesAreTolerantAndNamed(mutated)).toBe(false);
+    });
+
+    it('writing the JSON results into the blob directory turns resultsStayOutsideTheBlobDirectory false: the merge would pick them up', () => {
+      const mutated = mutate(cliText, `--outputFile.json=coverage/domain-results/${name}.json`, `--outputFile.json=coverage/domain-blobs/${name}-results.json`);
+      expect(resultsStayOutsideTheBlobDirectory(mutated)).toBe(false);
     });
 
     it('the single-reporter output syntax turns the predicate false', () => {
@@ -574,7 +648,7 @@ describe('tools/domain-coverage.mjs measures both Vitest passes and merges them'
   });
 
   it('adding --coverage.all=false to the merge turns nothingSwitchesTheUntestedFileSweepOff false', () => {
-    const mutated = mutate(cliText, '--dangerouslyIgnoreUnhandledErrors --coverage --coverage.reportsDirectory=coverage/domain ', '--dangerouslyIgnoreUnhandledErrors --coverage --coverage.all=false --coverage.reportsDirectory=coverage/domain ');
+    const mutated = mutate(cliText, '--outputFile.json=coverage/domain-results/merge.json --coverage ', '--outputFile.json=coverage/domain-results/merge.json --coverage --coverage.all=false ');
     expect(nothingSwitchesTheUntestedFileSweepOff(mutated)).toBe(false);
   });
 

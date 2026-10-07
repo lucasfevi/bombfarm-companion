@@ -10,9 +10,11 @@ import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
+  INSTRUMENTATION_SENSITIVE_TEST_FILES,
   KIND,
   MIN_BASELINE_FILES,
   METRICS,
+  allowlistOffenders,
   baselineIntegrityFindings,
   canonicalBaselineText,
   coverageIgnoreHints,
@@ -149,5 +151,18 @@ describe('nothing under packages/domain/src can hide from the ratchet', () => {
 
   it('holds only .ts and .json files: a .mts, .js or upper-case .TS file is invisible to the ratchet and the compiler', () => {
     expect(filesTheRatchetCannotSee(everyFileUnderSource()), 'neither .ts nor .json').toEqual([]);
+  });
+});
+
+describe('the instrumentation-sensitive test list cannot become a hiding place', () => {
+  it('names only test files that exist and call performance.now(', () => {
+    const offenders = allowlistOffenders(INSTRUMENTATION_SENSITIVE_TEST_FILES, (file) =>
+      existsSync(join(root, file)) ? readFileSync(join(root, file), 'utf8') : null,
+    );
+    expect(offenders, 'in the list but absent or not timing anything').toEqual([]);
+  });
+
+  it('is not empty', () => {
+    expect(INSTRUMENTATION_SENSITIVE_TEST_FILES.length).toBeGreaterThan(0);
   });
 });

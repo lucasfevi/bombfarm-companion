@@ -13,8 +13,11 @@ import {
   formatMarkdownSummary,
   formatRenameReview,
   formatRenameReviewMarkdown,
+  formatToleratedFailures,
+  formatToleratedFailuresMarkdown,
   formatReport,
   guardBaseFindings,
+  judgeTestRun,
   measurementFindings,
   normalizeSummary,
   overallOf,
@@ -38,17 +41,17 @@ const BLOB_DIRECTORY = path.join(COVERAGE_DIRECTORY, 'domain-blobs');
 const MERGED_SUMMARY_PATH = path.join(COVERAGE_DIRECTORY, 'domain', 'coverage-summary.json');
 const HEARTBEAT_MS = 60_000;
 
-// The measuring passes only measure; the regular jobs gate test correctness. Unhandled errors are ignored because instrumented runs cross the 60 s worker RPC window (one file alone takes minutes), and a failing test still fails the run. The merge replays those recorded errors, so it needs the flag too. The per-test timeout is sized for plain runs, not instrumented ones. The dot reporter names any failing test; the blob reporter prints nothing.
+// The measuring passes only measure; the regular jobs gate test correctness. Unhandled errors are ignored because instrumented runs cross the 60 s worker RPC window (one file alone takes minutes), and a failing test still fails the run. The merge replays those recorded errors, so it needs the flag too. The per-test timeout is sized for plain runs, not instrumented ones. The dot reporter names any failing test; the blob reporter prints nothing. A non-zero exit is accepted only when every failed test is in the reviewed list of tests that assert on elapsed wall-clock time, which instrumentation makes meaningless; the JSON results are what classify it.
 const MERGE_COMMAND =
-  'pnpm exec vitest run --merge-reports=coverage/domain-blobs --dangerouslyIgnoreUnhandledErrors --coverage --coverage.reportsDirectory=coverage/domain --coverage.reporter=text-summary --coverage.reporter=json-summary';
+  'pnpm exec vitest run --merge-reports=coverage/domain-blobs --dangerouslyIgnoreUnhandledErrors --reporter=default --reporter=json --outputFile.json=coverage/domain-results/merge.json --coverage --coverage.reportsDirectory=coverage/domain --coverage.reporter=text-summary --coverage.reporter=json-summary';
 
 const MEASUREMENT_COMMANDS = [
-  'pnpm exec vitest run --project @bombfarm/domain --dangerouslyIgnoreUnhandledErrors --testTimeout=600000 --coverage --coverage.reporter=json-summary --coverage.reportsDirectory=coverage/domain-main --reporter=blob --reporter=dot --outputFile.blob=coverage/domain-blobs/main.json',
-  'pnpm exec vitest run --config vitest.solver.config.ts --dangerouslyIgnoreUnhandledErrors --testTimeout=600000 --coverage --coverage.reporter=json-summary --coverage.reportsDirectory=coverage/domain-solver --reporter=blob --reporter=dot --outputFile.blob=coverage/domain-blobs/solver.json',
+  'pnpm exec vitest run --project @bombfarm/domain --dangerouslyIgnoreUnhandledErrors --testTimeout=600000 --coverage --coverage.reporter=json-summary --coverage.reportsDirectory=coverage/domain-main --reporter=blob --reporter=dot --reporter=json --outputFile.blob=coverage/domain-blobs/main.json --outputFile.json=coverage/domain-results/main.json',
+  'pnpm exec vitest run --config vitest.solver.config.ts --dangerouslyIgnoreUnhandledErrors --testTimeout=600000 --coverage --coverage.reporter=json-summary --coverage.reportsDirectory=coverage/domain-solver --reporter=blob --reporter=dot --reporter=json --outputFile.blob=coverage/domain-blobs/solver.json --outputFile.json=coverage/domain-results/solver.json',
   MERGE_COMMAND,
 ];
 const EXPECTED_BLOBS = ['main.json', 'solver.json'];
-const STALE_OUTPUT_DIRECTORIES = ['domain-blobs', 'domain-main', 'domain-solver', 'domain'];
+const STALE_OUTPUT_DIRECTORIES = ['domain-blobs', 'domain-results', 'domain-main', 'domain-solver', 'domain'];
 
 function usage() {
   return [
@@ -149,6 +152,24 @@ function runStreaming(command) {
   });
 }
 
+function resultsPathOf(command) {
+  const match = /--outputFile\.json=(\S+)/.exec(command);
+  return match ? path.join(REPO_ROOT, match[1]) : null;
+}
+
+function acceptOrFail(command, code) {
+  const resultsPath = resultsPathOf(command);
+  const resultsText = resultsPath !== null && existsSync(resultsPath) ? readFileSync(resultsPath, 'utf8') : null;
+  const judgement = judgeTestRun({ resultsText, root: REPO_ROOT, exitCode: code });
+  if (!judgement.accepted) {
+    process.stderr.write('domain-coverage: the run failed and the failure is not tolerated:\n');
+    for (const offender of judgement.offenders) process.stderr.write(`  [${offender.kind}] ${offender.message}\n`);
+    fail(`"${command.slice(0, 60)}…" exited ${code}. The cause is in the vitest output above: the dot reporter names every failing test, and a worker or collection error prints there too. No comparison with the baseline was attempted.`);
+  }
+  process.stdout.write(formatToleratedFailures(judgement.tolerated));
+  appendStepSummary(formatToleratedFailuresMarkdown(judgement.tolerated));
+}
+
 async function measure() {
   waitForHeavySlot('domain-coverage');
   for (const directory of STALE_OUTPUT_DIRECTORIES) {
@@ -156,9 +177,7 @@ async function measure() {
   }
   for (const command of MEASUREMENT_COMMANDS) {
     const code = await runStreaming(command);
-    if (code !== 0) {
-      fail(`"${command.slice(0, 60)}…" exited ${code}. The cause is in the vitest output above: the dot reporter names every failing test, and a worker or collection error prints there too. No comparison with the baseline was attempted.`);
-    }
+    if (code !== 0) acceptOrFail(command, code);
   }
   const missingBlobs = EXPECTED_BLOBS.filter((blob) => !existsSync(path.join(BLOB_DIRECTORY, blob)));
   if (missingBlobs.length > 0) fail(`the measurement left no ${missingBlobs.join(', ')} under coverage/domain-blobs`);

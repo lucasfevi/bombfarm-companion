@@ -667,3 +667,108 @@ export function formatMarkdownSummary({ title, overall, measured, findings }) {
   }
   return `${lines.join('\n')}\n`;
 }
+
+export const INSTRUMENTATION_SENSITIVE_TEST_FILES = Object.freeze([
+  'packages/domain/tests/clear-time.test.ts',
+  'packages/domain/tests/farm-optimize-perf.test.ts',
+  'packages/domain/tests/forge-forecast.test.ts',
+  'packages/domain/tests/points-reopt.test.ts',
+  'packages/domain/tests/team-plan-solver.test.ts',
+]);
+
+export const TEST_RUN_KIND = {
+  resultsMissing: 'test-results-missing',
+  resultsUnparseable: 'test-results-unparseable',
+  failedSuite: 'failed-suite',
+  failedTest: 'failed-test-not-tolerated',
+  unexplainedExit: 'exit-not-explained-by-results',
+};
+
+function relativeToRoot(name, root) {
+  const forward = toForwardSlashes(name);
+  const prefix = `${toForwardSlashes(root).replace(/\/+$/, '')}/`;
+  return forward.toLowerCase().startsWith(prefix.toLowerCase()) ? forward.slice(prefix.length) : forward;
+}
+
+function firstLine(text) {
+  return String(text ?? '').split('\n')[0].trim();
+}
+
+export function judgeTestRun({ resultsText, root, exitCode, allowlist = INSTRUMENTATION_SENSITIVE_TEST_FILES }) {
+  const refuse = (kind, message, extra = {}) => ({
+    accepted: false,
+    tolerated: [],
+    offenders: [{ kind, file: null, name: null, message, ...extra }],
+  });
+  if (resultsText === null || resultsText === undefined) {
+    return refuse(TEST_RUN_KIND.resultsMissing, 'the vitest JSON results were not written, so the failure cannot be classified');
+  }
+  let results;
+  try {
+    results = JSON.parse(resultsText);
+  } catch (error) {
+    return refuse(TEST_RUN_KIND.resultsUnparseable, `the vitest JSON results do not parse: ${error.message}`);
+  }
+  if (!isPlainRecord(results) || !Array.isArray(results.testResults)) {
+    return refuse(TEST_RUN_KIND.resultsUnparseable, 'the vitest JSON results have no testResults list');
+  }
+
+  const allowed = new Set(allowlist);
+  const tolerated = [];
+  const offenders = [];
+  for (const suite of results.testResults) {
+    const file = relativeToRoot(String(suite.name ?? ''), root);
+    const failedTests = (suite.assertionResults ?? []).filter((test) => test.status === 'failed');
+    if (suite.status === 'failed' && failedTests.length === 0) {
+      offenders.push({
+        kind: TEST_RUN_KIND.failedSuite,
+        file,
+        name: null,
+        message: `${file}: the suite failed before or outside its tests (${firstLine(suite.message) || 'no message'})`,
+      });
+    }
+    for (const test of failedTests) {
+      const name = test.fullName ?? test.title ?? '(unnamed test)';
+      const entry = { file, name, message: firstLine(test.failureMessages?.[0]) };
+      if (allowed.has(file)) {
+        tolerated.push({ kind: 'tolerated', ...entry });
+      } else {
+        offenders.push({
+          kind: TEST_RUN_KIND.failedTest,
+          ...entry,
+          message: `${file} > ${name}: ${entry.message}`,
+        });
+      }
+    }
+  }
+  if (offenders.length === 0 && tolerated.length === 0 && exitCode !== 0) {
+    offenders.push({
+      kind: TEST_RUN_KIND.unexplainedExit,
+      file: null,
+      name: null,
+      message: `vitest exited ${exitCode} but its results list no failed test or suite`,
+    });
+  }
+  return { accepted: offenders.length === 0, tolerated, offenders };
+}
+
+export function formatToleratedFailures(tolerated) {
+  const lines = [`tolerated failures in instrumentation-sensitive tests (${tolerated.length}); the regular jobs still gate them:`];
+  for (const item of tolerated) lines.push(`  ${item.file} > ${item.name}: ${item.message}`);
+  return `${lines.join('\n')}\n`;
+}
+
+export function formatToleratedFailuresMarkdown(tolerated) {
+  const lines = ['### Tolerated failures (instrumentation-sensitive tests)', ''];
+  for (const item of tolerated) lines.push(`- \`${item.file}\` > ${item.name}: ${item.message}`);
+  return `${lines.join('\n')}\n`;
+}
+
+export function allowlistOffenders(files, readText) {
+  return files.flatMap((file) => {
+    const text = readText(file);
+    if (text === null) return [`${file}: does not exist`];
+    if (!text.includes('performance.now(')) return [`${file}: does not time anything (no performance.now call), so it has no business in the instrumentation-sensitive list`];
+    return [];
+  });
+}
