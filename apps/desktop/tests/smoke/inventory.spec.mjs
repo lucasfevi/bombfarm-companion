@@ -180,19 +180,14 @@ test.describe('inventory smoke', () => {
 
   /** A card with no hero would otherwise collapse its footer to one line of text and sit visibly
    *  shorter than the card beside it. */
-  test('gives every card the same footer height, with the sell value on the bottom edge', async () => {
+  test('gives every card the same footer height', async () => {
     await withInventory(async (page) => {
-      const geometry = await page.getByTestId('inventory-card-footer').evaluateAll((footers) =>
-        footers.map((footer) => {
-          const box = footer.getBoundingClientRect();
-          const gold = footer.lastElementChild.getBoundingClientRect();
-          return { height: Math.round(box.height), bottomGap: Math.round(box.bottom - gold.bottom) };
-        }),
-      );
+      const heights = await page
+        .getByTestId('inventory-card-footer')
+        .evaluateAll((footers) => footers.map((footer) => Math.round(footer.getBoundingClientRect().height)));
 
-      expect(geometry.length).toBeGreaterThan(1);
-      expect(new Set(geometry.map((row) => row.height)).size).toBe(1);
-      expect(new Set(geometry.map((row) => row.bottomGap))).toEqual(new Set([0]));
+      expect(heights.length).toBeGreaterThan(1);
+      expect(new Set(heights).size).toBe(1);
     });
   });
 
@@ -213,14 +208,14 @@ test.describe('inventory smoke', () => {
     });
   });
 
-  test('shows the equipping hero and the sell value in the card footer', async () => {
+  test('shows the equipping hero in the card footer', async () => {
     await withInventory(async (page) => {
       // At least one item in the fixture is worn, and its card names the hero with an avatar.
       const worn = cards(page).filter({ has: page.locator('img[src*="/wiki-assets/hero/"]') });
       expect(await worn.count()).toBeGreaterThan(0);
 
       const footer = worn.first().getByTestId('inventory-card-footer');
-      await expect(footer.locator('img[src*="/wiki-assets/nav/icon_gold.png"]')).toBeVisible();
+      await expect(footer.locator('img[src*="/wiki-assets/hero/"]')).toBeVisible();
       await expect(footer).toHaveText(/\d/);
     });
   });

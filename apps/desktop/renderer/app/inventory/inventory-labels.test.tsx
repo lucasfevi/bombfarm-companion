@@ -16,24 +16,23 @@ const ROWS = [
     rarity: 2,
     level: 20,
     upgrade: 8,
-    sell_value: '360',
     equipped_on: 'h1',
     stats: [
       { stat: 0, value: 55, effective: 90.2 },
       { stat: 5, value: 0.4, effective: 0.656 },
     ],
   },
-  { id: 'c1', def_id: 'chest_item_90', category: 1, rarity: 0, level: 0, sell_value: '100' },
-  { id: 'c3', def_id: 'chest_forja_3', category: 1, rarity: 0, level: 0, sell_value: '180' },
-  { id: 'cs1', def_id: 'forja_pedra_raro', category: 8, rarity: 0, level: 0, sell_value: '0' },
-  { id: 'c2', def_id: 'chest_hero_3', category: 1, rarity: 0, level: 0, sell_value: '0' },
-  { id: 'm1', def_id: 'gem_amethyst', category: 2, rarity: 4, level: 0, sell_value: '260' },
-  { id: 't1', def_id: 'time_part_raro', category: 3, rarity: 2, level: 0, sell_value: '180' },
-  { id: 'k1', def_id: 'map_key_epico', category: 4, rarity: 3, level: 0, sell_value: '220' },
-  { id: 'k2', def_id: 'map_key_epico', category: 4, rarity: 3, level: 0, sell_value: '220' },
-  { id: 's1', def_id: 'skill_stone_mitico', category: 5, rarity: 5, level: 0, sell_value: '300' },
-  { id: 'sk1', def_id: 'skin_6', category: 6, rarity: 0, level: 0, sell_value: '100' },
-  { id: 'r1', def_id: 'rune_critdmg_comum', category: 7, rarity: 0, level: 0, sell_value: '100' },
+  { id: 'c1', def_id: 'chest_item_90', category: 1, rarity: 0, level: 0 },
+  { id: 'c3', def_id: 'chest_forja_3', category: 1, rarity: 0, level: 0 },
+  { id: 'cs1', def_id: 'forja_pedra_raro', category: 8, rarity: 0, level: 0 },
+  { id: 'c2', def_id: 'chest_hero_3', category: 1, rarity: 0, level: 0 },
+  { id: 'm1', def_id: 'gem_amethyst', category: 2, rarity: 4, level: 0 },
+  { id: 't1', def_id: 'time_part_raro', category: 3, rarity: 2, level: 0 },
+  { id: 'k1', def_id: 'map_key_epico', category: 4, rarity: 3, level: 0 },
+  { id: 'k2', def_id: 'map_key_epico', category: 4, rarity: 3, level: 0 },
+  { id: 's1', def_id: 'skill_stone_mitico', category: 5, rarity: 5, level: 0 },
+  { id: 'sk1', def_id: 'skin_6', category: 6, rarity: 0, level: 0 },
+  { id: 'r1', def_id: 'rune_critdmg_comum', category: 7, rarity: 0, level: 0 },
 ];
 
 const HEROES = mapInventoryHeroes([
@@ -251,7 +250,7 @@ describe('desktop inventory labels', () => {
 
 describe('chance stones', () => {
   const [stone] = buildInventoryView([
-    { id: 'f1', def_id: 'forja_pedra_incomum', category: 8, rarity: 1, level: 0, sell_value: '140', essence_value: 30 },
+    { id: 'f1', def_id: 'forja_pedra_incomum', category: 8, rarity: 1, level: 0, essence_value: 30 },
   ]).items;
 
   it('names a chance stone with its tier on a second line, and its group in both languages', () => {

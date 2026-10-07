@@ -95,8 +95,6 @@ export type InventoryViewItem = {
   /** Rolls missed in a row on this piece; each adds to the next roll's chance. */
   forgeFails?: number;
   power: number;
-  sellValueGold: number;
-  sellable: boolean;
   tradable: boolean;
   marketBlocked: boolean;
   locked: boolean;
@@ -130,8 +128,6 @@ export type InventoryEntry = {
   /** The row itself for gear; the first row of the stack otherwise. */
   item: InventoryViewItem;
   count: number;
-  /** Sell value of the whole entry — one item's worth for gear, the stack's total otherwise. */
-  sellValueGold: number;
 };
 
 export type InventoryGroup = {
@@ -376,8 +372,6 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
     upgrade,
     forgeFails,
     power: asNumber(raw.power, 0),
-    sellValueGold: asNumber(raw.sell_value ?? raw.sellValueGold, 0),
-    sellable: raw.sellable !== false,
     tradable: raw.tradable === true,
     marketBlocked: raw.marketBlocked === true || Math.round(asNumber(raw.market_state, 0)) !== 0,
     locked: raw.locked === true,
@@ -460,7 +454,7 @@ export function groupInventoryByKind(items: readonly InventoryViewItem[]): Inven
 
 function entriesFor(kind: ItemKind, rows: readonly InventoryViewItem[]): InventoryEntry[] {
   if (!isStackableKind(kind)) {
-    return rows.map((item) => ({ key: item.id, item, count: 1, sellValueGold: item.sellValueGold }));
+    return rows.map((item) => ({ key: item.id, item, count: 1 }));
   }
 
   const stacks = new Map<string, InventoryEntry>();
@@ -469,9 +463,8 @@ function entriesFor(kind: ItemKind, rows: readonly InventoryViewItem[]): Invento
     const existing = stacks.get(key);
     if (existing) {
       existing.count += 1;
-      existing.sellValueGold += item.sellValueGold;
     } else {
-      stacks.set(key, { key, item, count: 1, sellValueGold: item.sellValueGold });
+      stacks.set(key, { key, item, count: 1 });
     }
   }
   return [...stacks.values()];
@@ -640,7 +633,7 @@ export function heroIdsInView(view: InventoryView): string[] {
 
 /** The orders a sort picker offers over a whole inventory — every kind of item can be ranked by
  *  each of them. */
-export type InventorySortMenuKey = 'rarity' | 'level' | 'value' | 'name' | 'count' | 'market';
+export type InventorySortMenuKey = 'rarity' | 'level' | 'name' | 'count' | 'market';
 
 /** `forge` is gear-only, so it is reachable through a gear column rather than through the picker,
  *  which a bag of keys and gems also has to answer. */
@@ -654,7 +647,6 @@ export type InventorySort = readonly InventorySortTerm[];
 export const INVENTORY_SORT_KEYS: readonly InventorySortMenuKey[] = [
   'rarity',
   'level',
-  'value',
   'name',
   'count',
   'market',
@@ -698,8 +690,6 @@ function sortValue(entry: InventoryEntry, key: InventorySortKey): number {
       return entry.item.rarityIdx;
     case 'level':
       return entry.item.level;
-    case 'value':
-      return entry.sellValueGold;
     case 'count':
       return entry.count;
     case 'forge':

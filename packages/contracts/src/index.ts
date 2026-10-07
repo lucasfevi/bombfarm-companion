@@ -232,7 +232,6 @@ export interface InventoryItem {
   upgrade: number;
   power: number;
   stats: { stat: number; value: number; effective: number }[];
-  sellValueGold: number;
   tradable: boolean;
   marketState: number;
   locked: boolean;
@@ -331,7 +330,6 @@ export interface RawInventoryItem {
   level?: number;
   stats?: { stat: number; value: number; effective: number }[];
   power?: number;
-  sell_value?: string | number | null;
   upgrade?: number;
   tradable?: boolean | null;
   market_state?: number;

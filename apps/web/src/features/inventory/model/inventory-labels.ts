@@ -155,7 +155,6 @@ function itemStat(stat: InventoryViewStat, lang: Lang): InventoryStatText {
 const SORT_KEY: Record<InventorySortMenuKey, keyof Strings> = {
   rarity: 'inventorySortRarity',
   level: 'inventorySortLevel',
-  value: 'inventorySortValue',
   name: 'inventorySortName',
   count: 'inventorySortCount',
   market: 'inventorySortMarket',
@@ -266,7 +265,6 @@ export function inventoryLabels(
     setOption: (group) =>
       sub(strings.inventorySetOption, { level: group.level, set: setName(group.set, lang) }),
     setOptionCount: (group) => formatNumber(group.count, lang, 0),
-    gold: (amount) => formatNumber(amount, lang, 0),
     searchText: (item) => searchText(item, strings, lang),
     toolbar: {
       searchPlaceholder: strings.inventorySearchPlaceholder,
@@ -318,13 +316,11 @@ export function inventoryTableLabels(
     itemLevel: grid.itemLevel,
     itemForge: grid.itemForge,
     equippedBy: grid.equippedBy,
-    gold: grid.gold,
     searchText: grid.searchText,
     column: {
       name: strings.inventorySortName,
       forge: strings.inventoryColumnForge,
       count: strings.inventorySortCount,
-      value: strings.inventorySortValue,
       market: strings.inventorySortMarket,
       hero: strings.inventoryColumnEquippedBy,
       actions: strings.inventoryColumnActions,

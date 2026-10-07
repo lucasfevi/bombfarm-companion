@@ -420,7 +420,6 @@ export const en = {
   inventorySortLabel: 'Sort by',
   inventorySortRarity: 'Rarity',
   inventorySortLevel: 'Level',
-  inventorySortValue: 'Value',
   inventorySortName: 'Name',
   inventorySortCount: 'Quantity',
   inventorySortMarket: 'Market price',

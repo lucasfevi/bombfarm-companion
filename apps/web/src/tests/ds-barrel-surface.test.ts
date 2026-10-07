@@ -393,7 +393,6 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'inventoryStatsPanelClass',
   'inventoryTableActionButtonClass',
   'inventoryTableBlankClass',
-  'inventoryTableGoldClass',
   'inventoryTableGroupCountClass',
   'inventoryTableGroupHeaderClass',
   'inventoryTableHeroClass',

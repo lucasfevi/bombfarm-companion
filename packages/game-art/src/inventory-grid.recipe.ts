@@ -94,7 +94,7 @@ export type InventoryBadgeTone = NonNullable<VariantProps<typeof inventoryBadgeR
  * card with no hero — a stack, or a loose item — would otherwise collapse to one line of text and
  * sit visibly shorter than its neighbours.
  *
- * `items-end` puts the sell value on the card's bottom edge rather than floating it against the
+ * `items-end` puts the market price on the card's bottom edge rather than floating it against the
  * middle of whatever shares the row.
  */
 export const inventoryFooterClass =
@@ -182,10 +182,9 @@ export const inventoryStatLeaderClass =
 export const inventoryStatValueClass = 'shrink-0 font-mono text-[11px] font-medium tabular-nums text-accent';
 
 /**
- * The stack count, in the footer slot a gear card gives its equipping hero. Shaped like the sell
- * value across the row from it — a mark, then a number — so the footer reads as one row of two
- * facts rather than a badge on one side and a value on the other. It was a bordered pill, which
- * made it the only boxed thing on the card and read as something you could press.
+ * The stack count, in the footer slot a gear card gives its equipping hero. A mark, then a number,
+ * rather than a bordered pill, which made it the only boxed thing on the card and read as
+ * something you could press.
  */
 export const inventoryCountClass = 'flex shrink-0 items-center gap-1 text-xs tabular-nums text-muted';
 

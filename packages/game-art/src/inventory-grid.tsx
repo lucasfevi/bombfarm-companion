@@ -16,7 +16,6 @@ import {
 } from "@bombfarm/domain/inventory-view";
 import type { Lang } from "@bombfarm/domain/shims/i18n";
 import { cn } from "@bombfarm/ui";
-import { GoldIcon } from "./gold-icon";
 import { MarketPrice, type MarketPriceLabels, type MarketPriceView } from "./market-price";
 import { HeroAvatar } from "./hero-avatar";
 import type { HeroPeekData } from "./peek";
@@ -94,8 +93,6 @@ export interface InventoryGridLabels extends ItemIdentityLabels<InventoryViewIte
   /** How many gear pieces of that set the account holds, at the row's right edge. Localized by
    *  the caller: it is a number, and a thousands separator is not the same in every locale. */
   setOptionCount: (group: InventorySetGroup) => string;
-  /** Footer right, beside the gold coin. */
-  gold: (amount: number) => string;
   /** What free-text search matches against for one item. */
   searchText: (item: InventoryViewItem) => string;
   toolbar: InventoryToolbarLabels;
@@ -330,24 +327,10 @@ const InventoryCard = memo(function InventoryCard({
         ) : (
           <span />
         )}
-        {/* One right-hand column, market price above gold. The column is what the footer ends
-            with, so the gold value stays on the footer's bottom edge whether or not a price sits
-            over it, and the reserved line keeps every footer the same height — a card that grew
-            only when its item happened to be listed would make the grid jump row to row. */}
-        {entry.sellValueGold > 0 || pricedColumn ? (
-          <span className="flex shrink-0 flex-col items-end gap-0.5">
-            {pricedColumn ? (
-              <span className="flex min-h-4 items-center">
-                {price != null && priceLabels != null ? (
-                  <MarketPrice price={price} labels={priceLabels} action={priceAction} />
-                ) : null}
-              </span>
-            ) : null}
-            {entry.sellValueGold > 0 ? (
-              <span className="flex items-center gap-1 text-xs tabular-nums text-muted">
-                <GoldIcon className="size-3.5" />
-                {labels.gold(entry.sellValueGold)}
-              </span>
+        {pricedColumn ? (
+          <span className="flex min-h-4 shrink-0 items-center">
+            {price != null && priceLabels != null ? (
+              <MarketPrice price={price} labels={priceLabels} action={priceAction} />
             ) : null}
           </span>
         ) : null}
