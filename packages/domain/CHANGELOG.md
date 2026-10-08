@@ -1,5 +1,22 @@
 # @bombfarm/domain
 
+## 1.10.0
+
+### Minor Changes
+
+- bc5f232: The Pass's always-on gold, XP and drop bonuses are now modelled, and the Return Bonus rate follows Pass ownership.
+
+### Patch Changes
+
+- 8951cb5: Inventory, Forge and Deconstruct show your current inventory again after the game update. The game stopped sending the gold sell value when it removed selling items for gold, and the app was treating that as a damaged read and falling back to an old snapshot, so Deconstruct could offer items you no longer had. The gold value on item cards, the Value column and the Value sort are gone with it.
+
+  Items imported from Steam can be burned in Deconstruct right away, as the game now allows.
+
+- Updated dependencies [695bd4a]
+- Updated dependencies [8951cb5]
+- Updated dependencies [5e8088e]
+  - @bombfarm/contracts@0.14.0
+
 ## 1.9.0
 
 ### Minor Changes
