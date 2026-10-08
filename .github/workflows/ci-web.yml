@@ -215,18 +215,28 @@ jobs:
       - name: ${{ matrix.name }}
         run: ${{ matrix.run }}
 
-  # The coverage ratchet is its own job, not part of the shards above: instrumented runs are
-  # several times slower than plain ones, and the two Vitest passes (domain project and solver
-  # pass) have to be measured in one place so vitest itself can merge their raw V8 data into one
-  # per-file picture. A shard sees only part of the files; coverage from one pass alone would
-  # understate everything the solver suite reaches. The dedicated filter keeps pull requests that
-  # cannot move domain coverage from paying for it.
-  domain-coverage:
-    name: Domain coverage ratchet
+  # The coverage ratchet runs apart from the shards above: instrumented runs are several times
+  # slower than plain ones, and the two Vitest passes (domain project and solver pass) have to be
+  # merged so vitest itself can combine their raw V8 data into one per-file picture — coverage from
+  # one pass alone would understate everything the solver suite reaches. Each pass measures in its
+  # own matrix entry and uploads its blob and JSON results; the ratchet job below downloads both and
+  # merges. The blobs carry absolute paths, which match because every runner checks out to the same
+  # directory. The dedicated filter keeps pull requests that cannot move domain coverage from paying.
+  domain-coverage-pass:
+    name: Domain coverage pass (${{ matrix.pass }})
     needs: changes
     if: github.event_name != 'pull_request' || needs.changes.outputs.domain == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pass: domain
+            build: true
+          # The solver pass aliases contracts and domain to source, so it needs no build.
+          - pass: solver
+            build: false
     steps:
       - uses: actions/checkout@v4
 
@@ -241,10 +251,54 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build contracts and domain (the packaging test needs dist)
+        if: matrix.build
         run: pnpm --filter @bombfarm/contracts --filter @bombfarm/domain build
 
-      - name: Measure both passes and compare with the committed baseline
-        run: pnpm coverage:domain
+      # Hosted runners come in two speeds and an instrumented pass takes twice as long on the slow
+      # one; the CPU model is what tells a slow pass's runner from a regression.
+      - name: Print the runner's CPU
+        run: lscpu
+
+      - name: Measure the ${{ matrix.pass }} pass
+        run: node tools/domain-coverage.mjs measure-${{ matrix.pass }}
+
+      - name: Upload the pass's blob and results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: domain-coverage-pass-${{ matrix.pass }}
+          path: coverage
+          retention-days: 7
+          if-no-files-found: ignore
+
+  domain-coverage:
+    name: Domain coverage ratchet
+    needs: [changes, domain-coverage-pass]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.domain == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download both passes' blobs and results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: domain-coverage-pass-*
+          path: coverage
+          merge-multiple: true
+
+      - name: Merge both passes and compare with the committed baseline
+        run: node tools/domain-coverage.mjs merge-and-compare
 
       - name: Compare the baseline with the base branch
         if: github.event_name == 'pull_request' && !cancelled()
@@ -296,7 +350,7 @@ jobs:
 
   ci-web-required:
     name: ci-web-required
-    needs: [changes, quality, domain, domain-coverage]
+    needs: [changes, quality, domain, domain-coverage-pass, domain-coverage]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -316,6 +370,14 @@ jobs:
         if: needs.changes.outputs.web == 'true' && needs.domain.result != 'success'
         run: |
           echo "domain: ${{ needs.domain.result }}"
+          exit 1
+
+      # Same rule: a coverage ratchet that was skipped or cancelled has not guarded anything. A
+      # failed or cancelled pass already skips the ratchet job; this names the pass that did it.
+      - name: Require both domain coverage passes when the filter matched
+        if: needs.changes.outputs.domain == 'true' && needs.domain-coverage-pass.result != 'success'
+        run: |
+          echo "domain-coverage-pass: ${{ needs.domain-coverage-pass.result }}"
           exit 1
 
       # Same rule: a coverage ratchet that was skipped or cancelled has not guarded anything.
