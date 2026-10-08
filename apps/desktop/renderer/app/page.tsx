@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   AppEnvironmentInfo,
   AppLocale,
@@ -26,6 +26,7 @@ import type { ConsentRecord } from '@bombfarm/game-api';
 import { CopyProvider, useCopy, useLocale } from '../lib/copy';
 import { useTabScrollMemory } from '../lib/use-tab-scroll-memory';
 import { navItemsFor } from './nav-items';
+import { createSettingsHandlers, loadStoredSettings, type SettingsSink } from './settings-handlers';
 import { ShellActions } from './shell-actions';
 import { ShellWindowControls } from './shell-window-controls';
 import { ConsentGate, isConsentGateVisible } from './consent-gate';
@@ -86,29 +87,22 @@ export default function HomePage() {
   const [usagePingEnabled, setUsagePingEnabled] = useState(DEFAULT_SETTINGS.usagePingEnabled);
   const [usagePingWarning, setUsagePingWarning] = useState<SettingsWriteReason | null>(null);
 
+  const sink = useMemo<SettingsSink>(
+    () => ({
+      locale: { apply: setLocale, warn: setPersistWarning },
+      alwaysOnTopMain: { apply: setAlwaysOnTopMain, warn: setAlwaysOnTopWarning },
+      alwaysOnTopMini: { apply: setAlwaysOnTopMini, warn: setAlwaysOnTopMiniWarning },
+      forgeWritesEnabled: { apply: setForgeWritesEnabled, warn: setForgeWritesWarning },
+      restartGameOnExit: { apply: setRestartGameOnExit, warn: setRestartGameOnExitWarning },
+      marketQuoteCurrency: { apply: setMarketQuoteCurrency, warn: setMarketQuoteCurrencyWarning },
+      usagePingEnabled: { apply: setUsagePingEnabled, warn: setUsagePingWarning },
+    }),
+    [],
+  );
+
   useEffect(() => {
-    const bridge = getBridge();
-    if (!bridge) {
-      // No bridge ⇒ DEFAULT_SETTINGS.locale — never a blocked window, never a throw (F2's
-      // bridge-unavailable posture, carried to the locale fetch).
-      setLocale(DEFAULT_SETTINGS.locale);
-      return;
-    }
-    void bridge
-      .invoke('settings:get')
-      .then((settings) => {
-        setLocale(settings.locale);
-        setAlwaysOnTopMain(settings.alwaysOnTopMain);
-        setAlwaysOnTopMini(settings.alwaysOnTopMini);
-        setForgeWritesEnabled(settings.forgeWritesEnabled);
-        setRestartGameOnExit(settings.restartGameOnExit);
-        setMarketQuoteCurrency(settings.marketQuoteCurrency);
-        setUsagePingEnabled(settings.usagePingEnabled);
-      })
-      .catch(() => {
-        setLocale(DEFAULT_SETTINGS.locale);
-      });
-  }, []);
+    loadStoredSettings(getBridge, sink);
+  }, [sink]);
 
   useEffect(() => {
     if (!locale) return;
@@ -118,95 +112,31 @@ export default function HomePage() {
     document.documentElement.lang = locale;
   }, [locale]);
 
-  // The shipped Select drives this. Applies first, always (result.settings.locale
-  // is the applied value on every branch), then surfaces whether it persisted.
-  const onLocaleChange = (next: AppLocale) => {
-    const bridge = getBridge();
-    if (!bridge) return;
-    const channel = next === 'pt-BR' ? 'settings:usePortuguese' : 'settings:useEnglish';
-    void bridge.invoke(channel).then((result) => {
-      setLocale(result.settings.locale);
-      setPersistWarning(result.persisted ? null : result.reason);
-    });
-  };
-
-  const onAlwaysOnTopMainChange = (next: boolean) => {
-    const bridge = getBridge();
-    if (!bridge) return;
-    void bridge.invoke('settings:setAlwaysOnTopMain', next).then((result) => {
-      setAlwaysOnTopMain(result.settings.alwaysOnTopMain);
-      setAlwaysOnTopWarning(result.persisted ? null : result.reason);
-    });
-  };
-
-  const onAlwaysOnTopMiniChange = (next: boolean) => {
-    const bridge = getBridge();
-    if (!bridge) return;
-    void bridge.invoke('settings:setAlwaysOnTopMini', next).then((result) => {
-      setAlwaysOnTopMini(result.settings.alwaysOnTopMini);
-      setAlwaysOnTopMiniWarning(result.persisted ? null : result.reason);
-    });
-  };
-
-  const onForgeWritesEnabledChange = (next: boolean) => {
-    const bridge = getBridge();
-    if (!bridge) return;
-    void bridge.invoke('settings:setForgeWritesEnabled', next).then((result) => {
-      setForgeWritesEnabled(result.settings.forgeWritesEnabled);
-      setForgeWritesWarning(result.persisted ? null : result.reason);
-    });
-  };
-
-  const onRestartGameOnExitChange = (next: boolean) => {
-    const bridge = getBridge();
-    if (!bridge) return;
-    void bridge.invoke('settings:setRestartGameOnExit', next).then((result) => {
-      setRestartGameOnExit(result.settings.restartGameOnExit);
-      setRestartGameOnExitWarning(result.persisted ? null : result.reason);
-    });
-  };
-
-  const onUsagePingEnabledChange = (next: boolean) => {
-    const bridge = getBridge();
-    if (!bridge) return;
-    void bridge.invoke('settings:setUsagePingEnabled', next).then((result) => {
-      setUsagePingEnabled(result.settings.usagePingEnabled);
-      setUsagePingWarning(result.persisted ? null : result.reason);
-    });
-  };
-
-  const onMarketQuoteCurrencyChange = (next: MarketQuoteCurrency) => {
-    const bridge = getBridge();
-    if (!bridge) return;
-    void bridge.invoke('settings:setMarketQuoteCurrency', next).then((result) => {
-      setMarketQuoteCurrency(result.settings.marketQuoteCurrency);
-      setMarketQuoteCurrencyWarning(result.persisted ? null : result.reason);
-    });
-  };
+  const handlers = useMemo(() => createSettingsHandlers(getBridge, sink), [sink]);
 
   return (
     <CopyProvider locale={locale ?? DEFAULT_SETTINGS.locale}>
       <HomePageContent
         locale={locale ?? DEFAULT_SETTINGS.locale}
-        onLocaleChange={onLocaleChange}
+        onLocaleChange={handlers.onLocaleChange}
         persistWarning={persistWarning}
         alwaysOnTopMain={alwaysOnTopMain}
-        onAlwaysOnTopMainChange={onAlwaysOnTopMainChange}
+        onAlwaysOnTopMainChange={handlers.onAlwaysOnTopMainChange}
         alwaysOnTopWarning={alwaysOnTopWarning}
         alwaysOnTopMini={alwaysOnTopMini}
-        onAlwaysOnTopMiniChange={onAlwaysOnTopMiniChange}
+        onAlwaysOnTopMiniChange={handlers.onAlwaysOnTopMiniChange}
         alwaysOnTopMiniWarning={alwaysOnTopMiniWarning}
         forgeWritesEnabled={forgeWritesEnabled}
-        onForgeWritesEnabledChange={onForgeWritesEnabledChange}
+        onForgeWritesEnabledChange={handlers.onForgeWritesEnabledChange}
         forgeWritesWarning={forgeWritesWarning}
         restartGameOnExit={restartGameOnExit}
-        onRestartGameOnExitChange={onRestartGameOnExitChange}
+        onRestartGameOnExitChange={handlers.onRestartGameOnExitChange}
         restartGameOnExitWarning={restartGameOnExitWarning}
         marketQuoteCurrency={marketQuoteCurrency}
-        onMarketQuoteCurrencyChange={onMarketQuoteCurrencyChange}
+        onMarketQuoteCurrencyChange={handlers.onMarketQuoteCurrencyChange}
         marketQuoteCurrencyWarning={marketQuoteCurrencyWarning}
         usagePingEnabled={usagePingEnabled}
-        onUsagePingEnabledChange={onUsagePingEnabledChange}
+        onUsagePingEnabledChange={handlers.onUsagePingEnabledChange}
         usagePingWarning={usagePingWarning}
       />
     </CopyProvider>

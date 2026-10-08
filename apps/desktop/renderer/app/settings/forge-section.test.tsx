@@ -66,6 +66,10 @@ describe('ForgeSection renders SettingsSection -> SettingsRow -> Switch, both lo
     expect(html).toContain('aria-checked="false"');
   });
 
+  it("the switch's data-testid reaches the rendered element, not just the call site", () => {
+    expect(render('en')).toContain('data-testid="settings-forge-writes-switch"');
+  });
+
   it('PT-BR: aria-label differs from English, and a true prop renders checked', () => {
     const html = render('pt-BR', { forgeWritesEnabled: true });
     expect(html).toContain(`aria-label="${ptBR.settingsForgeWritesLabel}"`);

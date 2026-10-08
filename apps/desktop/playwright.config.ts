@@ -23,7 +23,10 @@ export default defineConfig({
       testMatch: [
         'app-boot.spec.mjs',
         'account-restart.spec.mjs',
+        'account-view.spec.mjs',
         'consent-modal.spec.mjs',
+        'settings-controls.spec.mjs',
+        'farm-board.spec.mjs',
         'auto-recompute.spec.mjs',
         'i18n.spec.mjs',
         'inventory.spec.mjs',
