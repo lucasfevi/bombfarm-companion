@@ -465,9 +465,9 @@ describe('ci-web.yml domain-coverage shape guard — mutations, each turning its
   });
 
   it('(10) the build step removed, or no longer run for the domain pass ⇒ buildPrecedesMeasurement is false', () => {
-    const mutated = mutate(realText, 'run: pnpm --filter @bombfarm/contracts --filter @bombfarm/domain build\n\n      - name: Measure', 'run: echo no build\n\n      - name: Measure');
-    expect(buildPrecedesMeasurement(mutated)).toBe(false);
-    const unconditional = mutate(realText, '        if: matrix.build\n        run: pnpm --filter @bombfarm/contracts --filter @bombfarm/domain build\n\n      - name: Measure', '        if: false\n        run: pnpm --filter @bombfarm/contracts --filter @bombfarm/domain build\n\n      - name: Measure');
+    const build = '        if: matrix.build\n        run: pnpm --filter @bombfarm/contracts --filter @bombfarm/domain build\n\n      # Hosted runners';
+    expect(buildPrecedesMeasurement(mutate(realText, build, build.replace('run: pnpm --filter @bombfarm/contracts --filter @bombfarm/domain build', 'run: echo no build')))).toBe(false);
+    const unconditional = mutate(realText, build, build.replace('if: matrix.build', 'if: false'));
     expect(buildPrecedesMeasurement(unconditional)).toBe(false);
   });
 
