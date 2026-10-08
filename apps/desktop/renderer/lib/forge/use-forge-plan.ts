@@ -25,6 +25,7 @@ import {
   setStoneRangeEnd,
   setStoneRarity,
   stoneKey,
+  stoneRangeBase,
   stonesByTarget,
   type ForgeStoneRange,
 } from './forge-stones';
@@ -101,7 +102,7 @@ function editStones(
   edit: (stones: readonly ForgeStoneRange[], upgrade: number, target: number) => ForgeStoneRange[],
 ): ForgePlan {
   const current = forgePlanFor(plan, { id: piece.itemId, upgrade: piece.upgrade });
-  return { ...current, stones: edit(current.stones, piece.upgrade, current.target) };
+  return { ...current, stones: edit(current.stones, stoneRangeBase(piece.upgrade), current.target) };
 }
 
 export function forgePlanReducer(plan: ForgePlan, action: ForgePlanAction): ForgePlan {
@@ -257,7 +258,7 @@ export function useForgePlan(
   const rarityIdx = item?.rarityIdx;
   const fails = item?.forgeFails ?? 0;
   const stoneRanges = useMemo(
-    () => (upgrade === undefined ? [] : resolveStoneRanges(plan.stones, upgrade, plan.target)),
+    () => (upgrade === undefined ? [] : resolveStoneRanges(plan.stones, stoneRangeBase(upgrade), plan.target)),
     [upgrade, plan.stones, plan.target],
   );
   const stones = useMemo(() => stonesByTarget(stoneRanges), [stoneRanges]);
