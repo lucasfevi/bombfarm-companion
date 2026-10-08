@@ -26,6 +26,9 @@ export const ptBR: Copy = {
   onlinePlayersLabel: 'Jogadores',
   onlinePlayersTip: 'Jogadores online no jogo agora, como o servidor conta. Atualiza a cada poucos minutos.',
   shellLoadingLabel: 'Carregando…',
+  // passFeed* — o tempo restante do Passe, ao lado da contagem de jogadores.
+  passFeedLabel: 'Passe',
+  passFeedTip: 'Tempo restante do seu Passe.',
   shellUpdateAvailable: 'Atualização disponível',
   shellUpdateDownloading: 'Atualizando… {percent}%',
   shellUpdateReady: 'Reinicie para atualizar',

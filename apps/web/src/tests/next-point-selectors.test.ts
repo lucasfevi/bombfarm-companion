@@ -150,6 +150,7 @@ describe('next-point-selectors', () => {
         objective: { kind: 'gold' },
         maxPhase: state.maxPhase,
         returnBonus: state.farmReturnBonus,
+        pass: state.farmPass,
       });
 
       expect(direct.outcome).toBe('ranked');
@@ -281,6 +282,7 @@ describe('next-point-selectors', () => {
         objective: { kind: 'gold' },
         maxPhase: state.maxPhase,
         returnBonus: state.farmReturnBonus,
+        pass: state.farmPass,
       });
       expect(withoutARank.outcome).toBe('ranked');
       expect(result.rows).not.toEqual(withoutARank.rows);

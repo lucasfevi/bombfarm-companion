@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { PASS_ADDS } from '@bombfarm/domain/phase-wiki';
 import { emptyLoadout } from '@bombfarm/domain/gear';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import { normalizeHero } from '@/shared/lib/storage';
@@ -9,6 +10,7 @@ import {
   selectFarmPoolEntries,
   selectFarmRankingRows,
   selectFarmReturnBonus,
+  selectFarmPass,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
 
@@ -239,7 +241,11 @@ describe('selectFarmRankingRows', () => {
     });
 
     it('farmReturnBonus', () => {
-      expectRecompute(() => usePlannerStore.getState().setFarmReturnBonus('vip'));
+      expectRecompute(() => usePlannerStore.getState().setFarmReturnBonus('on'));
+    });
+
+    it('farmPass', () => {
+      expectRecompute(() => usePlannerStore.getState().setFarmPass(true));
     });
   });
 });
@@ -270,8 +276,32 @@ describe('selectFarmPoolEntries / selectFarmReturnBonus', () => {
     });
   });
 
-  it('defaults to off', () => {
+  it('defaults to off, with no Pass', () => {
     expect(selectFarmReturnBonus(usePlannerStore.getState())).toBe('off');
+    expect(selectFarmPass(usePlannerStore.getState())).toBe(false);
+  });
+});
+
+describe('the Pass reaches the board', () => {
+  beforeEach(() => {
+    resetPlannerStoreForTests();
+  });
+
+  afterEach(() => {
+    resetPlannerStoreForTests();
+  });
+
+  it('multiplies gold per hour by one plus the Pass gold add when the Return Bonus is off', () => {
+    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
+    const phase = 5;
+    const goldPerHour = () =>
+      selectFarmRankingRows(usePlannerStore.getState()).rows.find((row) => row.phase === phase)!
+        .goldPerHour;
+    const bare = goldPerHour();
+    usePlannerStore.getState().setFarmPass(true);
+    const withPass = goldPerHour();
+    expect(bare).toBeGreaterThan(0);
+    expect(withPass / bare).toBeCloseTo(1 + PASS_ADDS.gold[1] - PASS_ADDS.gold[0], 6);
   });
 });
 

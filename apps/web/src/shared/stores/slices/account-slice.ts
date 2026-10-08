@@ -2,7 +2,7 @@ import type { StateCreator } from 'zustand';
 import type { Collection, RankMode } from '@bombfarm/domain/model';
 import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import { effectiveFarmPhase } from '@bombfarm/domain/farm-context';
-import type { AccountImportData } from '@bombfarm/domain/import-save';
+import { passActive, type AccountImportData } from '@bombfarm/domain/import-save';
 import type { RequiredAccountField } from '@bombfarm/domain/account-required-fields';
 import { phaseLine } from '@bombfarm/domain/phases';
 import {
@@ -275,5 +275,6 @@ export const createAccountSlice: StateCreator<
         }
       : null;
     if (Object.keys(patch).length > 0) set(patch);
+    if (typeof data.vipUntil === 'number') get().setFarmPass(passActive(data.vipUntil, Date.now()));
   },
 });

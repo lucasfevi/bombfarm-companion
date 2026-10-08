@@ -275,7 +275,7 @@ describe('the front page farm card', () => {
   it('the footer never states the Return Bonus setting', () => {
     usableAccount();
     viewOverride = farmCardViewFrom([CURRENT, BEST], 10);
-    for (const mode of ['off', 'on', 'vip'] as const) {
+    for (const mode of ['off', 'on'] as const) {
       usePlannerStore.getState().setFarmReturnBonus(mode);
       usePlannerStore.setState({ lang: 'en' });
       expect(textOf(render())).not.toContain(STRINGS.en.farmRankingReturnBonusLabel);

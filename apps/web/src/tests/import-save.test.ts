@@ -366,6 +366,7 @@ describe('parseSaveFile', () => {
       playerName: null,
       accountId: null,
       skillTree: null,
+      vipUntil: null,
     });
   });
 

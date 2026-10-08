@@ -12,9 +12,11 @@ export interface MapAccountBoosts {
   readonly teamCoinPct: number;
   /** The Collections gold bonus, percent — `skills.totals.colecao.ouro`. `0` is the identity. */
   readonly collectionGoldPct: number;
+  /** The account owns the Pass right now — its always-on gold and XP add apply on every map. */
+  readonly pass: boolean;
 }
 
-export const NO_MAP_ACCOUNT_BOOSTS: MapAccountBoosts = { xpMult: 1, teamCoinPct: 0, collectionGoldPct: 0 };
+export const NO_MAP_ACCOUNT_BOOSTS: MapAccountBoosts = { xpMult: 1, teamCoinPct: 0, collectionGoldPct: 0, pass: false };
 
 /** What one phase is worth under one set of boosts. `null` for a phase with no wiki row. */
 export interface MapWikiFacts {
@@ -23,7 +25,7 @@ export interface MapWikiFacts {
 }
 
 export interface MapFoldDeps {
-  readonly wikiFactsFor: (phase: number, boosts: MapAccountBoosts) => MapWikiFacts | null;
+  readonly wikiFactsFor: (phase: number, boosts: MapAccountBoosts, returnWindow: boolean) => MapWikiFacts | null;
 }
 
 /**
@@ -42,6 +44,7 @@ export class MapFold {
   #healthFraction: number | null = null;
   #propsAlive: number | null = null;
   #boosts: MapAccountBoosts = NO_MAP_ACCOUNT_BOOSTS;
+  #returnWindow = false;
   #wikiFacts: { readonly key: string; readonly facts: MapWikiFacts | null } | null = null;
 
   constructor(deps: MapFoldDeps) {
@@ -55,6 +58,7 @@ export class MapFold {
     if (tick.phase !== undefined) this.#phase = tick.phase;
     if (tick.roomHp !== undefined) this.#healthFraction = clampFraction(tick.roomHp / WIRE_HEALTH_FULL);
     if (tick.kinds !== undefined) this.#propsAlive = countPropsAlive(tick.kinds);
+    this.#returnWindow = (tick.bonusMultiplier ?? 1) > 1;
   }
 
   /** The account's own multipliers, from the slow authenticated read. Applying them is what makes
@@ -71,6 +75,7 @@ export class MapFold {
     this.#phase = undefined;
     this.#healthFraction = null;
     this.#propsAlive = null;
+    this.#returnWindow = false;
     this.#wikiFacts = null;
   }
 
@@ -88,13 +93,13 @@ export class MapFold {
     };
   }
 
-  /** Memoized on the phase and both boosts together — this getter is read on every fast-channel
-   *  poll, and the wiki lookup behind it walks the whole prop mix. All three inputs move rarely
-   *  (a map change, an account read), so one cached entry covers the common case. */
+  /** Memoized on the phase, the boosts and the Return Bonus window together — this getter is read on every fast-channel
+   *  poll, and the wiki lookup behind it walks the whole prop mix. All of them move rarely
+   *  (a map change, an account read, a window opening or closing), so one cached entry covers the common case. */
   #factsFor(phase: number): MapWikiFacts | null {
-    const key = `${String(phase)}|${String(this.#boosts.xpMult)}|${String(this.#boosts.teamCoinPct)}|${String(this.#boosts.collectionGoldPct)}`;
+    const key = `${String(phase)}|${String(this.#boosts.xpMult)}|${String(this.#boosts.teamCoinPct)}|${String(this.#boosts.collectionGoldPct)}|${String(this.#boosts.pass)}|${String(this.#returnWindow)}`;
     if (this.#wikiFacts?.key === key) return this.#wikiFacts.facts;
-    const facts = this.#deps.wikiFactsFor(phase, this.#boosts);
+    const facts = this.#deps.wikiFactsFor(phase, this.#boosts, this.#returnWindow);
     this.#wikiFacts = { key, facts };
     return facts;
   }

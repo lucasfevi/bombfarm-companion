@@ -5,13 +5,11 @@
  * Its own key, deliberately not the web planner's. The two apps read different accounts out of
  * different stores, and sharing a key would be a claim that one screen's state is the other's.
  */
-import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import { normalizeStoredReturnBonus, type ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import { normalizeAurasAtCap } from '@bombfarm/team-plan/core';
 import { DEFAULT_FARM_CONTROLS, type FarmControls } from './farm-inputs';
 
 const FARM_VIEW_STORAGE_KEY = 'bfc-farm-view';
-
-const RETURN_BONUS_MODES: readonly ReturnBonusMode[] = ['off', 'on', 'vip'];
 
 export type FarmView = FarmControls & {
   /** The phase whose detail the player had open. Post-compute — it never invalidates a snapshot. */
@@ -21,7 +19,7 @@ export type FarmView = FarmControls & {
 export const DEFAULT_FARM_VIEW: FarmView = { ...DEFAULT_FARM_CONTROLS, selectedPhase: null };
 
 function normalizeReturnBonus(value: unknown): ReturnBonusMode {
-  return RETURN_BONUS_MODES.find((mode) => mode === value) ?? DEFAULT_FARM_VIEW.farmReturnBonus;
+  return normalizeStoredReturnBonus(value).returnBonus;
 }
 
 function normalizePoolOverrides(value: unknown): Record<string, boolean> {

@@ -66,13 +66,15 @@ describe('phases slice', () => {
   it('hydratePhasesView restores farmPool and farmReturnBonus, defaulting absent fields', () => {
     usePlannerStore
       .getState()
-      .hydratePhasesView({ phase: 5, farmPool: { 'hero-1': false }, farmReturnBonus: 'vip' });
+      .hydratePhasesView({ phase: 5, farmPool: { 'hero-1': false }, farmReturnBonus: 'on', farmPass: true });
     expect(usePlannerStore.getState().farmPoolOverrides).toEqual({ 'hero-1': false });
-    expect(usePlannerStore.getState().farmReturnBonus).toBe('vip');
+    expect(usePlannerStore.getState().farmReturnBonus).toBe('on');
+    expect(usePlannerStore.getState().farmPass).toBe(true);
 
     usePlannerStore.getState().hydratePhasesView({ phase: 6 });
     expect(usePlannerStore.getState().farmPoolOverrides).toEqual({});
     expect(usePlannerStore.getState().farmReturnBonus).toBe('off');
+    expect(usePlannerStore.getState().farmPass).toBe(false);
   });
 
   // Whole-state writer — red against the shipped implementation before this feature: the old
@@ -86,10 +88,12 @@ describe('phases slice', () => {
   });
 
   it('the return bonus survives a later setPhasesViewPhase call (whole-state writer)', () => {
-    usePlannerStore.getState().setFarmReturnBonus('vip');
+    usePlannerStore.getState().setFarmReturnBonus('on');
+    usePlannerStore.getState().setFarmPass(true);
     usePlannerStore.getState().setPhasesViewPhase(42);
 
-    expect(loadPhasesView().farmReturnBonus).toBe('vip');
+    expect(loadPhasesView().farmReturnBonus).toBe('on');
+    expect(loadPhasesView().farmPass).toBe(true);
     expect(loadPhasesView().phase).toBe(42);
   });
 
@@ -112,12 +116,22 @@ describe('phases slice', () => {
     expect(usePlannerStore.getState().farmReturnBonus).toBe('on');
   });
 
+  it('setFarmPass persists and is a no-op write when unchanged', () => {
+    usePlannerStore.getState().setFarmPass(true);
+    expect(usePlannerStore.getState().farmPass).toBe(true);
+    expect(loadPhasesView().farmPass).toBe(true);
+
+    localStorage.clear();
+    usePlannerStore.getState().setFarmPass(true);
+    expect(localStorage.getItem('bf-hp-phases-view-v1')).toBeNull();
+  });
+
   it('the persisted payload never carries the ephemeral fields', () => {
     // No setPhasesViewPhase call in this test, so the phase is still unchosen — `phase`
     // itself is correctly omitted here too (see the "omits phase while unchosen" test below).
-    usePlannerStore.getState().setFarmReturnBonus('vip');
+    usePlannerStore.getState().setFarmReturnBonus('on');
     const raw = JSON.parse(localStorage.getItem('bf-hp-phases-view-v1')!) as Record<string, unknown>;
-    expect(Object.keys(raw).sort()).toEqual(['farmPool', 'farmReturnBonus']);
+    expect(Object.keys(raw).sort()).toEqual(['farmPass', 'farmPool', 'farmReturnBonus']);
   });
 
   it('omits phase while unchosen, so a later write cannot freeze the auto-select onto phase 1', () => {

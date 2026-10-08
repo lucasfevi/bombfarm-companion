@@ -49,6 +49,7 @@ export type SkillTreePricingInput = {
   readonly account: FarmAccount;
   readonly enabledHeroIds: readonly string[] | null;
   readonly returnBonus: ReturnBonusMode;
+  readonly pass?: boolean;
   /** The phase the account is farming; a node is worth what it is worth here. */
   readonly phase: number;
   /** The tree as the roster stands. */
@@ -134,10 +135,10 @@ type GoldModel = {
   readonly account: FarmAccount;
 };
 
-function goldPerHourOf(model: GoldModel, phase: number, factor: number, returnBonus: ReturnBonusMode): number {
+function goldPerHourOf(model: GoldModel, phase: number, factor: number, returnBonus: ReturnBonusMode, pass: boolean): number {
   const facts = model.bases.map((basis) => heroFactsFromBasis(scaleAttack(basis, factor), basis.pts));
   const squad = computeSquadFarmFacts(facts, model.account);
-  const row = computeFarmRateRow(phase, squad, { returnBonus, maxPhase: model.account.maxPhase ?? null });
+  const row = computeFarmRateRow(phase, squad, { returnBonus, pass, maxPhase: model.account.maxPhase ?? null });
   return row && Number.isFinite(row.goldPerHour) ? row.goldPerHour : 0;
 }
 
@@ -286,7 +287,7 @@ export function priceSkillTree(input: SkillTreePricingInput): SkillTreePricing {
   const baseAccount = accountForTotals(input.account, input.totals, baseFieldSlots);
 
   const baseGold = goldModelFor(input, baseAccount);
-  const goldAt = (model: GoldModel, factor: number) => goldPerHourOf(model, input.phase, factor, input.returnBonus);
+  const goldAt = (model: GoldModel, factor: number) => goldPerHourOf(model, input.phase, factor, input.returnBonus, input.pass ?? false);
   const baseGoldByFactor = new Map(factors.map((factor) => [factor, goldAt(baseGold, factor)]));
   const baselineGold = goldAt(baseGold, 1);
 

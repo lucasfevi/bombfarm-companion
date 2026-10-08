@@ -76,6 +76,7 @@ function toFarmInputs(state: PlannerStore): FarmInputs {
     maxPhase: state.maxPhase,
     farmPoolOverrides: state.farmPoolOverrides,
     farmReturnBonus: state.farmReturnBonus,
+    farmPass: state.farmPass,
     // This app offers no control for it: the board prices every aura as the pool sustains it.
     aurasAtCap: NO_AURAS_AT_CAP,
   };
@@ -167,3 +168,4 @@ export function selectFarmPoolEntries(state: PlannerStore): FarmPoolEntry[] {
 }
 
 export const selectFarmReturnBonus = (state: PlannerStore) => state.farmReturnBonus;
+export const selectFarmPass = (state: PlannerStore) => state.farmPass;

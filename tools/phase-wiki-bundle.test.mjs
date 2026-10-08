@@ -62,6 +62,7 @@ const TOP_LEVEL_KEYS = [
   'heroChestRarityByAto',
   'chestRarityDist',
   'drops',
+  'vip',
   'timechestRarityByAto',
   'gems',
   'lootAbilities',
@@ -89,6 +90,7 @@ const DROPS_KEYS = [
   'bonusAddVip',
   'bonusCapSecs',
 ];
+const VIP_KEYS = ['goldAdd', 'xpAdd', 'dropAdd'];
 const GEMS_KEYS = ['chestDropRate', 'perRank', 'rankDistByAto', 'list'];
 const GEMS_LIST_ITEM_KEYS = ['defId', 'name', 'rank', 'rarity'];
 const LOOT_ABILITIES_KEYS = ['veia_ouro', 'fortuna', 'olho_lapidador'];
@@ -202,6 +204,11 @@ function validateBundle(bundle) {
 
   if (bundle?.drops) {
     const r = keySetErrors(bundle.drops, DROPS_KEYS, 'drops');
+    addedKeys.push(...r.added);
+    removedKeys.push(...r.removed);
+  }
+  if (bundle?.vip) {
+    const r = keySetErrors(bundle.vip, VIP_KEYS, 'vip');
     addedKeys.push(...r.added);
     removedKeys.push(...r.removed);
   }

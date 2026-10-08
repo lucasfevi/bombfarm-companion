@@ -62,7 +62,8 @@ function baseInputs(overrides: Partial<FarmInputs> = {}): FarmInputs {
     houseCycleSecsLevel: 7,
     maxPhase: 8,
     farmPoolOverrides: {},
-    farmReturnBonus: 'vip',
+    farmReturnBonus: 'on',
+    farmPass: true,
     aurasAtCap: ['grito_guerra'],
     ...overrides,
   };
@@ -83,7 +84,8 @@ describe('computeFarmRanking — what actually reaches the delegate', () => {
     const input = delegate.mock.calls[0][0];
     expect(input.heroes).toBe(inputs.heroes);
     expect(input.enabledHeroIds).toEqual(['unflagged', 'barred']);
-    expect(input.returnBonus).toBe('vip');
+    expect(input.returnBonus).toBe('on');
+    expect(input.pass).toBe(true);
     expect(input.maxPhase).toBe(8);
     expect(result).toEqual({ rows: [ROW], reason: null });
   });

@@ -1,10 +1,11 @@
 // Re-exported from @bombfarm/domain/farm-rate — NOT re-declared here. The domain package's union is
-// 'off' | 'on' | 'vip'; persisting its own literals means this normalizer validates against the
+// 'off' | 'on'; persisting its own literals means this normalizer validates against the
 // domain type instead of a local copy that could drift. Type-only import — the one allowlisted
 // exception to "computeFarmRates' module is imported in exactly one file" (see farm-ranking-guards.test.ts guard (f)).
 // Re-exported below so the slice / components reference the type through this file, not a
 // second direct import site.
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import { normalizeStoredReturnBonus } from '@bombfarm/farm/core';
 
 export type { ReturnBonusMode };
 
@@ -12,8 +13,6 @@ const PHASES_VIEW_KEY = 'bf-hp-phases-view-v1';
 
 /** Bound on a hand-edited `farmPool` map so a read never iterates an attacker-sized object. */
 const MAX_POOL_ENTRIES = 200;
-
-const RETURN_BONUS_MODES: readonly ReturnBonusMode[] = ['off', 'on', 'vip'];
 
 export type PhasesViewState = {
   /**
@@ -30,6 +29,8 @@ export type PhasesViewState = {
   farmPool?: Record<string, boolean>;
   /** Return-bonus estimate. Absent/unrecognized => `'off'`. */
   farmReturnBonus?: ReturnBonusMode;
+  /** Pass ownership. Absent => follows a legacy stored `'vip'` return bonus, else `false`. */
+  farmPass?: boolean;
 };
 
 export function defaultPhasesView(): PhasesViewState {
@@ -63,8 +64,15 @@ function normalizeFarmPool(raw: unknown): Record<string, boolean> {
   return out;
 }
 
-function normalizeReturnBonus(raw: unknown): ReturnBonusMode {
-  return RETURN_BONUS_MODES.includes(raw as ReturnBonusMode) ? (raw as ReturnBonusMode) : 'off';
+function normalizeReturnBonusAndPass(record: Record<string, unknown>): {
+  farmReturnBonus: ReturnBonusMode;
+  farmPass: boolean;
+} {
+  const stored = normalizeStoredReturnBonus(record.farmReturnBonus);
+  return {
+    farmReturnBonus: stored.returnBonus,
+    farmPass: typeof record.farmPass === 'boolean' ? record.farmPass : stored.pass,
+  };
 }
 
 export function loadPhasesView(): PhasesViewState {
@@ -79,7 +87,7 @@ export function loadPhasesView(): PhasesViewState {
     return {
       phase: normalizePhase(record.phase),
       farmPool: normalizeFarmPool(record.farmPool),
-      farmReturnBonus: normalizeReturnBonus(record.farmReturnBonus),
+      ...normalizeReturnBonusAndPass(record),
     };
   } catch {
     return defaultPhasesView();

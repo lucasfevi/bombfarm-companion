@@ -39,6 +39,7 @@ import { ForgeQueueBar, isForgeQueueShown } from './forge/forge-queue-bar';
 import { FeedsRail } from './feeds-rail';
 import { GameFeed, liveTabMark } from './game-feed';
 import { OnlinePlayersFeed } from './online-players-feed';
+import { PassFeed } from './pass-feed';
 import { useFeeds } from '../lib/feeds/use-feeds';
 import { setForgePage } from '../lib/forge/forge-page-store';
 import { useForgeQueue } from '../lib/forge/forge-queue-store';
@@ -416,6 +417,7 @@ function HomePageContent({
           <>
             <GameFeed status={status} />
             <OnlinePlayersFeed />
+            <PassFeed />
           </>
         }
         banner={

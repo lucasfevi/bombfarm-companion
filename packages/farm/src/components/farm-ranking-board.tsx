@@ -22,6 +22,7 @@ import {
 import { formatMitigationPct } from '../model/farm-ranking-format';
 import { FarmRankingFilters } from './farm-ranking-filters';
 import { FarmRotationPool } from './farm-rotation-pool';
+import { FarmPass } from './farm-pass';
 import { FarmReturnBonus } from './farm-return-bonus';
 import { FarmRankingTable } from './farm-ranking-table';
 import { FarmOptimizeButton } from './farm-optimize-button';
@@ -41,6 +42,8 @@ export type FarmRankingBoardData = {
   heroes: readonly HeroRecord[];
   poolEntries: FarmPoolEntry[];
   returnBonus: ReturnBonusMode;
+  /** The account owns the Pass. Omitted, it reads as not owned. */
+  pass?: boolean;
   maxPhase: number | null;
   fieldSlots: number | null;
   currentPhase: number;
@@ -63,6 +66,8 @@ export type FarmRankingBoardActions = {
   syncDefaultPhaseSelection: (phase: number) => void;
   setFarmHeroEnabled: (heroId: string, enabled: boolean) => void;
   setFarmReturnBonus: (mode: ReturnBonusMode) => void;
+  /** Omitted where the Pass is read from the account: the control then shows its state only. */
+  setFarmPass?: (pass: boolean) => void;
   /** The Optimize button — routing to the host's Optimizer screen is the host's. */
   openOptimizer: () => void;
 };
@@ -91,6 +96,7 @@ export function FarmRankingBoardView({
     heroes,
     poolEntries,
     returnBonus,
+    pass = false,
     maxPhase,
     fieldSlots,
     currentPhase,
@@ -102,6 +108,7 @@ export function FarmRankingBoardView({
     syncDefaultPhaseSelection,
     setFarmHeroEnabled,
     setFarmReturnBonus,
+    setFarmPass,
     openOptimizer,
   } = actions;
 
@@ -210,6 +217,7 @@ export function FarmRankingBoardView({
           />
           <div className="flex flex-wrap items-start gap-3">
             <FarmReturnBonus value={returnBonus} onChange={setFarmReturnBonus} t={t} />
+            <FarmPass pass={pass} onPassChange={setFarmPass} t={t} />
             {slots?.controls}
             <FarmOptimizeButton t={t} onOpenOptimizer={openOptimizer} />
           </div>

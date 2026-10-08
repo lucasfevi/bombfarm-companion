@@ -279,7 +279,7 @@ test.describe('Farm Ranking board', () => {
   });
 
   // 7. Return bonus.
-  test("return bonus 'off' -> 'on' -> 'vip' strictly increases gold/hr; the gate row's keys value does not change", async ({
+  test("return bonus 'off' -> 'on' -> with the Pass strictly increases gold/hr; the gate row's keys value does not change on the Return Bonus", async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
@@ -293,7 +293,7 @@ test.describe('Farm Ranking board', () => {
 
     // Pin the SAME row by its stable data-testid for every later read, rather than re-resolving
     // "first row in the DOM" each time — the return-bonus multiplier is uniform across every row
-    // (`returnBonusMultiplier` in `@bombfarm/domain/farm-rate`), so it never reorders the
+    // (`economyMultipliers` in `@bombfarm/domain/farm-rate`), so it never reorders the
     // gold/hr ranking, and pinning survives the row scrolling out of the virtualized window's
     // top position between reads (see the scroll dance below, needed to reach the gate row too).
     const topRowTestId = await rows(page).first().getAttribute('data-testid');
@@ -311,9 +311,7 @@ test.describe('Farm Ranking board', () => {
     // (rank 1 by gold/hr) back into the render window before reading its cell again.
     await setScrollTop(page, 0);
 
-    const select = page.getByTestId('farm-return-bonus').getByLabel(/Return Bonus/i);
-    await select.click();
-    await page.getByRole('option', { name: /^On$/i }).click();
+    await page.getByTestId('farm-return-bonus').getByRole('switch').click();
     const goldOn = parseCompact((await goldCellFor(topRowTestId).textContent()) ?? '0');
     expect(goldOn).toBeGreaterThan(goldOff);
 
@@ -321,13 +319,38 @@ test.describe('Farm Ranking board', () => {
     await expect(gateKeysCellFor(gateRow!.testId)).toHaveText(gateKeysOff);
     await setScrollTop(page, 0);
 
-    await select.click();
-    await page.getByRole('option', { name: /^VIP$/i }).click();
-    const goldVip = parseCompact((await goldCellFor(topRowTestId).textContent()) ?? '0');
-    expect(goldVip).toBeGreaterThan(goldOn);
+    await page.getByTestId('farm-pass').getByRole('switch').click();
+    const goldPass = parseCompact((await goldCellFor(topRowTestId).textContent()) ?? '0');
+    expect(goldPass).toBeGreaterThan(goldOn);
+  });
 
-    await setScrollTop(page, gateRow!.scrollTop);
-    await expect(gateKeysCellFor(gateRow!.testId)).toHaveText(gateKeysOff);
+  test('the Pass switch raises gold/hr and survives a reload', async ({ page }) => {
+    await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
+    await page.goto('/farm');
+
+    const topRowTestId = await rows(page).first().getAttribute('data-testid');
+    const goldCell = () =>
+      table(page)
+        .locator(`[data-testid="${topRowTestId}"]`)
+        .locator('[data-testid^="farm-row-gold-"]');
+    const passSwitch = page.getByTestId('farm-pass').getByRole('switch');
+
+    await expect(passSwitch).toHaveAttribute('aria-checked', 'false');
+    const bare = (await goldCell().textContent()) ?? '';
+
+    await passSwitch.click();
+    await expect(passSwitch).toHaveAttribute('aria-checked', 'true');
+    await expect(goldCell()).not.toHaveText(bare);
+    const withPass = (await goldCell().textContent()) ?? '';
+
+    const stored = await page.evaluate(() => localStorage.getItem('bf-hp-phases-view-v1'));
+    expect(JSON.parse(stored ?? '{}')).toMatchObject({ farmPass: true });
+    // The seed re-writes storage on every navigation; hand the reload what the toggle persisted.
+    await page.addInitScript((value) => localStorage.setItem('bf-hp-phases-view-v1', value), stored!);
+
+    await page.reload();
+    await expect(passSwitch).toHaveAttribute('aria-checked', 'true');
+    await expect(goldCell()).toHaveText(withPass);
   });
 
   // 8. Zero enabled.
