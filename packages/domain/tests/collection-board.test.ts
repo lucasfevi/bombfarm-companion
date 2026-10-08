@@ -512,3 +512,22 @@ describe('buildCollectionBoard: figures the server sends', () => {
     expect(board.sets[0]?.effects[0]).toMatchObject({ now: 0.3, max: 26, remaining: 25.7 });
   });
 });
+
+describe('completedRarity', () => {
+  const rarityFor = (masks: readonly number[]) => buildCollectionBoard(goldSnapshot(masks)).sets[0]?.completedRarity;
+
+  it('is the highest page that is complete with every page below it', () => {
+    expect(rarityFor(GOLD_MASKS)).toBe(1);
+    expect(rarityFor([15, 15, 15, 15, 15, 15, 15, 15])).toBe(3);
+    expect(rarityFor([63, 63, 63, 63, 63, 63, 63, 63])).toBe(5);
+  });
+
+  it('stops at the first unfinished page even when a higher page is full', () => {
+    expect(rarityFor([5, 5, 5, 5, 5, 5, 5, 5])).toBe(0);
+  });
+
+  it('is null while the common page is unfinished', () => {
+    expect(rarityFor([2, 2, 2, 2, 2, 2, 2, 2])).toBeNull();
+    expect(rarityFor([1, 1, 1, 1, 1, 1, 1, 0])).toBeNull();
+  });
+});
