@@ -95,9 +95,13 @@ an idle machine ranged from 741 s to 1072 s (main pass 324-653 s, solver pass 40
 per-pass blobs 596 s for the main pass and 660 s for the solver pass), against about 2 minutes for each
 plain domain job. An earlier CI run took longer, about 32 minutes, when a solver test reached its own
 900 s timeout, which the instrumentation-timeout rule tolerates. That is why the passes are CI jobs of their own and not part of the test shards, and why each
-pass job's timeout stays at 60 minutes. Measured as one job, the measure step took 15.4 to 31.8
-minutes across six runs on 2026-10-07 and 2026-10-08; split, the wall time is the slower pass plus
-the merge job.
+pass job's timeout stays at 60 minutes. Runner speed is bimodal: ten pass samples on 2026-10-08 fell
+into two groups, the slow one taking twice as long on the same code (summed per-file test time about
+600 s against about 1,190 s), and which one a job gets is luck. As one job the measure step paid for both passes on one
+runner: 15.4 to 31.8 minutes across eight runs. Split, the wall time is the slower pass plus about
+half a minute of merge job; three runs on 2026-10-08 took 15.7, 18.6 and 18.0 minutes from the passes
+starting to the ratchet finishing, each with at least one pass on a slow runner. The merge itself
+takes seconds, since it replays the recorded results instead of rerunning the tests.
 
 **The measuring passes only measure.** Both run with unhandled errors ignored and a ten-minute per-test timeout, because the regular jobs are what gate correctness and this run only reads coverage out of the same tests. A failing test still fails the run, and the dot reporter names it in the log. The reason is the worker RPC window: under instrumentation a single file, the two-stage phase optimiser test, takes about 276 s, far past the 60 s window, and the first CI run on 2026-10-07 failed on that alone with every test passing and nothing printed, because the blob reporter that records the raw data prints nothing. The merge step needs the same unhandled-errors flag, since it replays what the solver pass recorded.
 
