@@ -134,6 +134,7 @@ export {
   selectFarmPoolEntries,
   deriveFarmPoolEntries,
   selectFarmReturnBonus,
+  selectFarmPass,
   resetFarmRankingCache,
   getFarmRankingComputeCount,
   resetFarmRankingComputeCount,

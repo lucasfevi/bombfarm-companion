@@ -21,14 +21,13 @@ test.describe('the Farm page’s Optimize button', () => {
     await expect(optimizeButton(page)).toHaveText('Optimize');
     await expect(page.getByTestId('farm-respec-panel')).toHaveCount(0);
 
-    const bonusSelect = returnBonus(page).getByRole('combobox');
-    const [button, select] = await Promise.all([
+    const [button, field] = await Promise.all([
       optimizeButton(page).boundingBox(),
-      bonusSelect.boundingBox(),
+      returnBonus(page).boundingBox(),
     ]);
-    if (!button || !select) throw new Error('button or return-bonus select not laid out');
-    expect(button.x).toBeGreaterThan(select.x + select.width);
-    expect(Math.abs(button.y + button.height - (select.y + select.height))).toBeLessThanOrEqual(1);
+    if (!button || !field) throw new Error('button or return-bonus field not laid out');
+    expect(button.x).toBeGreaterThan(field.x + field.width);
+    expect(Math.abs(button.y + button.height - (field.y + field.height))).toBeLessThanOrEqual(1);
   });
 
   test('a click opens the Optimizer page, and Back returns to the Farm page', async ({ page }) => {

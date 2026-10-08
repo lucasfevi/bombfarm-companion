@@ -1,5 +1,5 @@
 import type { InventoryItem, ItemKind, Rarity, RawInventoryBag, RawInventoryItem, Slot } from '@bombfarm/contracts';
-import { isPlausibleDefId, isPlausibleId, isRecord, parseNumericField } from '../validation.js';
+import { isPlausibleDefId, isPlausibleId, isRecord } from '../validation.js';
 
 export interface InventoryParseResult {
   ok: true;
@@ -49,7 +49,6 @@ function mapItem(raw: RawInventoryItem): InventoryItem | null {
   const level = raw.level ?? 0;
   const upgrade = raw.upgrade ?? 0;
   const power = raw.power ?? 0;
-  const sellValueGold = parseNumericField(raw.sell_value) ?? 0;
   const marketState = raw.market_state ?? (raw.market === false ? 0 : 0);
   const tradable = raw.tradable === true;
   const locked = raw.locked === true;
@@ -73,7 +72,6 @@ function mapItem(raw: RawInventoryItem): InventoryItem | null {
             isRecord(s) && typeof s.stat === 'number' && typeof s.value === 'number' && typeof s.effective === 'number',
           )
       : [],
-    sellValueGold,
     tradable,
     marketState,
     locked,

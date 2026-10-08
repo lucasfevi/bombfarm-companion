@@ -36,7 +36,7 @@ describe('farm view preferences', () => {
   it('round-trips what was written', () => {
     const view = {
       farmPoolOverrides: { h1: false },
-      farmReturnBonus: 'vip' as const,
+      farmReturnBonus: 'on' as const,
       aurasAtCap: ['grito_guerra', 'passagem_bastao'] as const,
       selectedPhase: 7,
     };
@@ -58,7 +58,12 @@ describe('farm view preferences', () => {
     expect(loadFarmView()).toEqual(DEFAULT_FARM_VIEW);
   });
 
-  it('drops a return-bonus mode that is not one of the three', () => {
+  it('reads a return bonus stored as the old VIP mode as on', () => {
+    entries.set(KEY, JSON.stringify({ farmReturnBonus: 'vip' }));
+    expect(loadFarmView().farmReturnBonus).toBe('on');
+  });
+
+  it('drops a return-bonus mode that is not one of the known ones', () => {
     entries.set(KEY, JSON.stringify({ farmReturnBonus: 'quadruple' }));
     expect(loadFarmView().farmReturnBonus).toBe(DEFAULT_FARM_VIEW.farmReturnBonus);
   });

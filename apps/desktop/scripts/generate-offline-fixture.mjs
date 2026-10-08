@@ -130,7 +130,7 @@ export function essenceValue(item) {
 
 function withDeconstructFields(items) {
   let unequippedGear = 0;
-  const decorated = items.map((item) => {
+  const decorated = items.map(({ sell_value: _sellValue, sellable: _sellable, ...item }) => {
     const gear = item.category === 0;
     const locked = gear && !item.equipped_on && unequippedGear++ % LOCK_EVERY_NTH_UNEQUIPPED === 0;
     return {
@@ -150,12 +150,10 @@ function withDeconstructFields(items) {
     level: 0,
     stats: [],
     power: 0,
-    sell_value: '140',
     essence_value: essenceValue({ ...stone, category: 8 }),
     forge_fails: 0,
     forge_chance: 0,
     pergaminho_custo: 0,
-    sellable: true,
     upgrade: 0,
     tradable: true,
     market_state: 0,
@@ -172,12 +170,10 @@ function withDeconstructFields(items) {
     level: 0,
     stats: [],
     power: 0,
-    sell_value: '100',
     essence_value: essenceValue({ ...chest, category: 1 }),
     forge_fails: 0,
     forge_chance: 0,
     pergaminho_custo: 0,
-    sellable: false,
     upgrade: 0,
     tradable: true,
     market_state: 0,

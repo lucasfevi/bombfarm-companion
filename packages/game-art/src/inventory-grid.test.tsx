@@ -25,7 +25,6 @@ const labels: InventoryGridLabels = {
   badges: () => [],
   setOption: (group) => group.set,
   setOptionCount: (group) => String(group.count),
-  gold: (amount) => String(amount),
   searchText: (item) => item.defId,
   toolbar: {
     searchPlaceholder: 'Search',
@@ -52,7 +51,7 @@ const labels: InventoryGridLabels = {
   empty: { title: 'No items' },
 };
 
-const mythicAmulet = { id: 'amulet-1', def_id: 'forest_amuleto', category: 0, rarity: 5, level: 40, upgrade: 12, sell_value: 2500 };
+const mythicAmulet = { id: 'amulet-1', def_id: 'forest_amuleto', category: 0, rarity: 5, level: 40, upgrade: 12 };
 
 /** The card's own stat block, which is the part the hover card must agree with. */
 function cardStatLabels(html: string): string[] {

@@ -211,6 +211,7 @@ function sanitizeRowOptions(options: BestFarmPhaseOptions | undefined): FarmRate
   const sanitizedMaxPhase = maxPhase != null && Number.isFinite(maxPhase) && maxPhase > 0 ? maxPhase : null;
   return {
     returnBonus: options?.returnBonus,
+    pass: options?.pass,
     maxPhase: sanitizedMaxPhase,
     ignoreFieldCrowding: options?.ignoreFieldCrowding,
   };

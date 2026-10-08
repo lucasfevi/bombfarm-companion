@@ -166,7 +166,9 @@ describe('Farm Ranking filter row placement', () => {
     expect(poolIndex).toBeGreaterThan(-1);
     expect(filtersIndex).toBeGreaterThan(poolIndex);
     expect(bonusIndex).toBeGreaterThan(filtersIndex);
-    expect(controlsIndex).toBeGreaterThan(bonusIndex);
+    const passIndex = source.indexOf('<FarmPass');
+    expect(passIndex).toBeGreaterThan(bonusIndex);
+    expect(controlsIndex).toBeGreaterThan(passIndex);
     expect(buttonIndex).toBeGreaterThan(controlsIndex);
     expect(tableIndex).toBeGreaterThan(buttonIndex);
   });
@@ -289,7 +291,7 @@ describe('the components are prop-driven — no store, no host module', () => {
   });
 
   it('the scan reaches every component in this tree, subdirectories included', () => {
-    expect(componentFiles.length).toBe(22);
+    expect(componentFiles.length).toBe(23);
     expect(componentFiles).toContain('farm-ranking-board.tsx');
     expect(componentFiles).toContain('farm-aura-cap-field.tsx');
     expect(componentFiles).toContain('combat-phase-panel.tsx');

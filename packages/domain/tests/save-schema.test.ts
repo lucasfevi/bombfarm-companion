@@ -318,17 +318,21 @@ describe('SCHEMA_LEVELS — the shared catalogue, key sets written as literals',
     expect(SCHEMA_LEVELS.hero.keys).not.toContain('export_lock_secs');
   });
 
-  it('item: the measured 17-key set with the enumerated optional escapes `slot` and `soulbound` (27/3 API split, 17/5 export split)', () => {
-    expect(SCHEMA_LEVELS.item.keys).toHaveLength(17);
+  it('item: the measured 15-key set with the enumerated optional escapes `slot` and `soulbound` (27/3 API split, 17/5 export split)', () => {
+    expect(SCHEMA_LEVELS.item.keys).toHaveLength(15);
     expect(SCHEMA_LEVELS.item.optional).toEqual([
       'slot',
       'soulbound',
       'export_lock_secs',
       'jewels',
       'ritual',
+      'sell_value',
+      'sellable',
       ...ITEM_ESSENCE_KEYS,
     ]);
     expect(SCHEMA_LEVELS.item.keys).not.toContain('soulbound');
+    expect(SCHEMA_LEVELS.item.keys).not.toContain('sell_value');
+    expect(SCHEMA_LEVELS.item.keys).not.toContain('sellable');
     expect(SCHEMA_LEVELS.item.keys).not.toContain('jewels');
     expect(SCHEMA_LEVELS.item.keys).not.toContain('ritual');
   });
@@ -336,7 +340,15 @@ describe('SCHEMA_LEVELS — the shared catalogue, key sets written as literals',
   it('apiItem: the item level plus the four essence keys as required keys, never also optional', () => {
     expect(SCHEMA_LEVELS.apiItem.keys).toEqual([...SCHEMA_LEVELS.item.keys, ...ITEM_ESSENCE_KEYS]);
     expect([...ITEM_ESSENCE_KEYS]).toEqual(['essence_value', 'forge_fails', 'forge_chance', 'pergaminho_custo']);
-    expect(SCHEMA_LEVELS.apiItem.optional).toEqual(['slot', 'soulbound', 'export_lock_secs', 'jewels', 'ritual']);
+    expect(SCHEMA_LEVELS.apiItem.optional).toEqual([
+      'slot',
+      'soulbound',
+      'export_lock_secs',
+      'jewels',
+      'ritual',
+      'sell_value',
+      'sellable',
+    ]);
     for (const key of ITEM_ESSENCE_KEYS) {
       expect(SCHEMA_LEVELS.item.keys).not.toContain(key);
       expect(SCHEMA_LEVELS.apiItem.optional).not.toContain(key);

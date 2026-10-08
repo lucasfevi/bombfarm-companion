@@ -140,9 +140,12 @@ export const farmPtBR: FarmCopy = {
   farmRankingContentionDescMaxSlots:
     "Em {pct} do tempo um herói descansado espera no banco porque suas {slots} vagas de campo estão todas ocupadas. {slots} é o máximo, então essa espera é estrutural — não há mais vagas para comprar. A estimativa de ouro/h já cobra essa espera: ela custa cerca de {cost} da taxa que você teria com vaga para todos. Desligar heróis acima também reduz a espera, mas costuma reduzir o total junto: um herói que só às vezes pega vaga ainda produz enquanto está nela.",
   farmRankingReturnBonusLabel: "Bônus de Retorno",
-  farmRankingReturnBonusOff: "Desligado",
-  farmRankingReturnBonusOn: "Ligado",
-  farmRankingReturnBonusVip: "VIP",
+  farmRankingPassLabel: "Passe",
+  farmRankingPassOn: "Ligado",
+  farmRankingPassOff: "Desligado",
+  farmRankingPassTip:
+    "+{gold}% de ouro, +{xp}% de XP e +{drop}% de chance de drop, sempre ativos. Com o Passe, o Bônus de Retorno é +{returnPass}% em vez de +{returnBase}%.",
+  farmRankingPassTipDetected: "Lido da sua conta.",
   farmRankingGateBadge: "Portão",
   farmRankingOneShotYes: "Sim",
   farmRankingOneShotNo: "Não",

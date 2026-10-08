@@ -132,18 +132,18 @@ describe('the snapshot store computes once and does not follow the live account'
     const opened = viewAtLevel(10);
     open(opened.view, opened.key, CONTROLS);
 
-    setControls({ farmPoolOverrides: {}, farmReturnBonus: 'vip', aurasAtCap: [] });
+    setControls({ farmPoolOverrides: {}, farmReturnBonus: 'on', aurasAtCap: [] });
     const state = store.getState();
     expect(state.status).toBe('ready');
     if (state.status !== 'ready') throw new Error('expected ready');
     expect(state.sourceKey).toBe(opened.key);
-    expect(state.inputs.farmReturnBonus).toBe('vip');
+    expect(state.inputs.farmReturnBonus).toBe('on');
     expect(state.inputs.heroes[0]?.level).toBe(10);
   });
 
   it('setControls before the screen ever opened does nothing — there is no frozen account yet', () => {
     const { store, setControls } = createFarmSnapshotStore();
-    setControls({ farmPoolOverrides: {}, farmReturnBonus: 'vip', aurasAtCap: [] });
+    setControls({ farmPoolOverrides: {}, farmReturnBonus: 'on', aurasAtCap: [] });
     expect(store.getState()).toEqual({ status: 'idle' });
   });
 
@@ -215,7 +215,7 @@ describe('a snapshot is stale when the BOARD would compute differently, not when
 
   it('changing a compute input does not make the live account look stale', () => {
     const { store, setControls } = opened();
-    setControls({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'vip', aurasAtCap: [] });
+    setControls({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'on', aurasAtCap: [] });
     const live = viewOf(payloadWithGold(10, '5000'));
     expect(farmBoardStale(store.getState(), live.view)).toBe(false);
   });

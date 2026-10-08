@@ -15,6 +15,8 @@ export {
   resolveHeroScope,
   buildDefaultScopeMap,
   mergeScopeForRoster,
+  pruneScopeToRoster,
+  dropMaterialisedScopeDefaults,
   computeTeamPlanInputSignature,
 } from '@bombfarm/team-plan/core';
 

@@ -80,6 +80,8 @@ export type FarmPointRankInput = {
   maxPhase?: number | null;
   /** Default `'off'`, matching the estimator and the Farm board. */
   returnBonus?: ReturnBonusMode;
+  /** Default `false`. */
+  pass?: boolean;
 };
 
 function emptyResult(
@@ -100,6 +102,7 @@ export function rankNextPointForFarm(input: FarmPointRankInput): FarmPointRankRe
   const options: BestFarmPhaseOptions = {
     maxPhase: input.maxPhase,
     returnBonus: input.returnBonus,
+    pass: input.pass,
     exhaustive: true,
   };
 

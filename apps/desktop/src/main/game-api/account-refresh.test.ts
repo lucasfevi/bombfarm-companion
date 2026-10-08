@@ -217,12 +217,10 @@ const BODIES: Record<string, Record<string, unknown>> = {
         level: 1,
         stats: [],
         power: 0,
-        sell_value: 0,
         essence_value: 0,
         forge_fails: 0,
         forge_chance: 0,
         pergaminho_custo: 0,
-        sellable: true,
         upgrade: 0,
         tradable: true,
         market_state: 0,
@@ -873,6 +871,43 @@ describe('account-refresh — a failed roster is served as stale with the STORED
 
     expect(fidelityOf(secondView).heroes).toEqual({ status: 'stale', capturedAt: '2026-08-12T00:01:00.000Z' });
     expect(secondView?.payload.heroes).toEqual(BODIES['/roster']?.heroes);
+  });
+});
+
+describe('account-refresh — an inventory with no sell keys, as the game sends it since selling was removed', () => {
+  it('resolves the items section and serves the fresh rows over the older stored ones', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+
+    const postPatchInventory = BODIES['/inventory'] as { items: Record<string, unknown>[] };
+    const preSale = {
+      ...postPatchInventory,
+      items: postPatchInventory.items.map((item) => ({ ...item, id: 'old', sell_value: '10', sellable: true })),
+    };
+    const transportOf = (inventory: unknown): HttpTransport => (req) =>
+      Promise.resolve({
+        status: 200,
+        body: JSON.stringify(routeOf(req.path) === '/inventory' ? inventory : (BODIES[routeOf(req.path)] ?? {})),
+      });
+    const refreshAt = (capturedAt: string, inventory: unknown) =>
+      createAccountRefresh(
+        baseDeps({
+          store,
+          consentStore: fixedConsentStore(GRANTED),
+          transport: transportOf(inventory),
+          readToken,
+          now: () => capturedAt,
+        }),
+      ).refreshNow();
+
+    const first = await refreshAt('2026-08-12T00:01:00.000Z', preSale);
+    expect(fidelityOf(first).items).toEqual({ status: 'resolved', capturedAt: '2026-08-12T00:01:00.000Z' });
+
+    const second = await refreshAt('2026-10-07T00:02:00.000Z', postPatchInventory);
+
+    expect(fidelityOf(second).items).toEqual({ status: 'resolved', capturedAt: '2026-10-07T00:02:00.000Z' });
+    expect(second?.payload.items).toEqual(postPatchInventory.items);
   });
 });
 

@@ -35,6 +35,7 @@ import {
   phaseName,
   phaseSubIndex,
   propCountForAto,
+  PASS_ADDS,
   PROPS_POR_ATO,
   rarityLabel,
   REP_HP_MULT,
@@ -207,6 +208,10 @@ describe('phase-wiki-bundle', () => {
       expect(RETURN_BONUS_CAP_SECS).toBe(28800);
     });
 
+    it('PASS_ADDS holds the [no Pass, Pass] pairs for gold, XP and drop chance', () => {
+      expect(PASS_ADDS).toEqual({ gold: [0, 0.15], xp: [0, 0.3], drop: [0, 0.3] });
+    });
+
     it('TIMECHEST_RARITY_BY_ATO is 5x6, each row in [0,1] summing to 1 within 1e-9', () => {
       expect(TIMECHEST_RARITY_BY_ATO.length).toBe(5);
       for (const row of TIMECHEST_RARITY_BY_ATO) {
@@ -302,6 +307,9 @@ describe('phase-wiki-bundle', () => {
       expect(RETURN_BONUS_ADD).toBe(wiki.drops.bonusAdd);
       expect(RETURN_BONUS_ADD_VIP).toBe(wiki.drops.bonusAddVip);
       expect(RETURN_BONUS_CAP_SECS).toBe(wiki.drops.bonusCapSecs);
+      expect(PASS_ADDS.gold).toEqual(wiki.vip.goldAdd);
+      expect(PASS_ADDS.xp).toEqual(wiki.vip.xpAdd);
+      expect(PASS_ADDS.drop).toEqual(wiki.vip.dropAdd);
     });
 
     it('LOOT_ABILITY_VALUES[code].max equals lootAbilities[code].maxLevel for all three codes', async () => {

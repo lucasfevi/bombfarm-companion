@@ -40,7 +40,7 @@ const DETAIL_TEXT = { sm: 'text-[10px]', xl: 'text-xs' } as const;
  * and the name itself for the kinds whose name IS their tier.
  */
 export function ItemIdentity<
-  TItem extends ItemIconItem & { sellValueGold?: number | undefined; stats?: readonly WireItemStat[] | undefined },
+  TItem extends ItemIconItem & { stats?: readonly WireItemStat[] | undefined },
 >({
   item,
   labels,
@@ -55,7 +55,7 @@ export function ItemIdentity<
   /** `data-testid` on the element carrying the item's own name, for a caller that needs one. */
   nameTestId?: string | undefined;
   className?: string | undefined;
-  /** The market quote the hover card prints beside the sell value; absent, the card shows gold alone. */
+  /** The market quote the hover card prints; absent, the card shows none. */
   price?: ItemPeekPrice | undefined;
 }) {
   const name = labels.itemName(item);

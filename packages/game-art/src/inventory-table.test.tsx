@@ -21,9 +21,9 @@ import {
 import type { MarketPriceLabels, MarketPriceView } from './market-price';
 
 const RAW_ITEMS = [
-  { id: 'boots-3', def_id: 'coal_boots', category: 0, rarity: 3, level: 30, upgrade: 0, sell_value: 500 },
-  { id: 'boots-5', def_id: 'coal_boots', category: 0, rarity: 5, level: 10, upgrade: 0, sell_value: 100 },
-  { id: 'ring-2', def_id: 'iron_ring', category: 0, rarity: 2, level: 40, upgrade: 2, sell_value: 900 },
+  { id: 'boots-3', def_id: 'coal_boots', category: 0, rarity: 3, level: 30, upgrade: 1 },
+  { id: 'boots-5', def_id: 'coal_boots', category: 0, rarity: 5, level: 10, upgrade: 0 },
+  { id: 'ring-2', def_id: 'iron_ring', category: 0, rarity: 2, level: 40, upgrade: 2 },
 ];
 
 const NAMES: Record<string, string> = { coal_boots: 'Coal Boots', iron_ring: 'Iron Ring' };
@@ -39,13 +39,11 @@ const labels: InventoryTableLabels = {
   itemRarity: (item) => RARITIES[item.rarityIdx] ?? '',
   itemLevel: (item) => (item.level > 0 ? `Lv ${item.level}` : ''),
   itemForge: (item) => (item.upgrade > 0 ? `+${item.upgrade}` : ''),
-  gold: (amount) => String(amount),
   searchText: (item) => NAMES[item.defId] ?? item.defId,
   column: {
     name: 'Item',
     forge: 'Forge',
     count: 'Qty',
-    value: 'Gold',
     market: 'Steam',
     hero: 'Hero',
     actions: 'Actions',
@@ -123,8 +121,10 @@ const PRICES: Record<string, MarketPriceView> = {
 
 const priceOf = (entry: InventoryEntry): MarketPriceView | null => PRICES[entry.key] ?? null;
 
+const SORTABLE_COLUMNS = ['name', 'count', 'forge', 'market', 'hero', 'actions'] as const;
+
 function render(props: Partial<InventoryTableProps> = {}) {
-  return renderToStaticMarkup(createElement(InventoryTable, { view, labels, ...props }));
+  return renderToStaticMarkup(createElement(InventoryTable, { view, labels, columns: SORTABLE_COLUMNS, ...props }));
 }
 
 function rowIds(html: string): string[] {
@@ -149,43 +149,43 @@ function cellFor(html: string, label: string): HeadCell {
   return cell;
 }
 
-const byValue = (direction: 'asc' | 'desc'): InventorySort => [{ key: 'value', direction }];
+const byForge = (direction: 'asc' | 'desc'): InventorySort => [{ key: 'forge', direction }];
 
 describe('InventoryTable', () => {
   it('marks the leading sort column ascending or descending and every other one none', () => {
-    const ascending = render({ sort: byValue('asc') });
-    expect(cellFor(ascending, 'Gold').ariaSort).toBe('ascending');
+    const ascending = render({ sort: byForge('asc') });
+    expect(cellFor(ascending, 'Forge').ariaSort).toBe('ascending');
     expect(cellFor(ascending, 'Qty').ariaSort).toBe('none');
     expect(cellFor(ascending, 'Item').ariaSort).toBe('none');
 
-    const descending = render({ sort: byValue('desc') });
-    expect(cellFor(descending, 'Gold').ariaSort).toBe('descending');
+    const descending = render({ sort: byForge('desc') });
+    expect(cellFor(descending, 'Forge').ariaSort).toBe('descending');
   });
 
   it('leaves the columns nothing can be ordered by without an aria-sort', () => {
-    const html = render({ onSelectItem: () => {}, sort: byValue('asc') });
+    const html = render({ onSelectItem: () => {}, sort: byForge('asc') });
     expect(cellFor(html, 'Actions').ariaSort).toBeNull();
   });
 
   it('puts a real button inside every sortable header', () => {
-    const html = render({ sort: byValue('asc') });
-    for (const label of ['Item', 'Qty', 'Gold']) {
+    const html = render({ sort: byForge('asc') });
+    for (const label of ['Item', 'Qty', 'Forge']) {
       expect(cellFor(html, label).hasButton).toBe(true);
     }
   });
 
   it('hides the direction glyph from assistive technology and keeps the column word beside it', () => {
-    const cell = cellFor(render({ sort: byValue('asc') }), 'Gold');
+    const cell = cellFor(render({ sort: byForge('asc') }), 'Forge');
     expect(cell.body).toContain('aria-hidden="true"');
-    expect(cell.body).toContain('Gold');
+    expect(cell.body).toContain('Forge');
   });
 
   it('reverses the rows when the column already leading the sort is picked again', () => {
-    const sort = byValue('desc');
+    const sort = byForge('desc');
     expect(rowIds(render({ sort }))).toEqual(['ring-2', 'boots-3', 'boots-5']);
 
-    const picked = nextInventorySort(sort, 'value');
-    expect(picked[0]).toEqual({ key: 'value', direction: 'asc' });
+    const picked = nextInventorySort(sort, 'forge');
+    expect(picked[0]).toEqual({ key: 'forge', direction: 'asc' });
     expect(rowIds(render({ sort: picked }))).toEqual(['boots-5', 'boots-3', 'ring-2']);
   });
 
@@ -301,7 +301,7 @@ describe('InventoryTable toolbar', () => {
 describe('InventoryTable columns', () => {
   it('says the tier and the level in the name cell instead of in columns of their own', () => {
     const html = render();
-    expect(headCells(html).map((cell) => cell.label)).toEqual(['Item', 'Qty', 'Gold']);
+    expect(headCells(html).map((cell) => cell.label)).toEqual(['Item', 'Qty', 'Forge']);
     expect(html).toContain('Epic');
     expect(html).toContain('Lv 30');
   });
@@ -333,7 +333,6 @@ describe('InventoryTable virtualization', () => {
       rarity: 3,
       level: 30,
       upgrade: 0,
-      sell_value: 100,
     })),
   );
 
@@ -405,7 +404,7 @@ describe('InventoryTable checklist', () => {
   }
 
   function table(props: Partial<InventoryTableProps> = {}) {
-    return createElement(InventoryTable, { view, labels, showToolbar: false, ...props });
+    return createElement(InventoryTable, { view, labels, columns: SORTABLE_COLUMNS, showToolbar: false, ...props });
   }
 
   function rowFor(id: string): HTMLElement {
@@ -459,11 +458,11 @@ describe('InventoryTable checklist', () => {
   it('draws a checkbox column only for a host that supplies onToggleRow', () => {
     const plain = tableMarkup({ onSelectRow: () => {} });
     expect(plain).not.toContain('role="checkbox"');
-    expect(headCells(plain).map((cell) => cell.label)).toEqual(['Item', 'Qty', 'Gold']);
+    expect(headCells(plain).map((cell) => cell.label)).toEqual(['Item', 'Qty', 'Forge']);
 
     const checklist = tableMarkup({ onToggleRow: () => {} });
     expect(checklist.match(/role="checkbox"/g)).toHaveLength(3);
-    expect(headCells(checklist).map((cell) => cell.label)).toEqual(['Picked', 'Item', 'Qty', 'Gold']);
+    expect(headCells(checklist).map((cell) => cell.label)).toEqual(['Picked', 'Item', 'Qty', 'Forge']);
   });
 
   it('leaves the header cell over the checkboxes without a control, named for assistive technology', () => {
@@ -629,7 +628,7 @@ describe('InventoryTable checklist', () => {
 
     it('draws the host header and cell for every row, ahead of the actions column by default', () => {
       const html = tableMarkup({ extraColumn: levelColumn, onSelectItem: () => {} });
-      expect(headCells(html).map((cell) => cell.label)).toEqual(['Item', 'Qty', 'Gold', 'Level', 'Actions']);
+      expect(headCells(html).map((cell) => cell.label)).toEqual(['Item', 'Qty', 'Forge', 'Level', 'Actions']);
       expect(html).toContain('L30');
       expect(html).toContain('L10');
       expect(html).toContain('L40');
@@ -638,7 +637,7 @@ describe('InventoryTable checklist', () => {
 
     it('sits behind the column the host names', () => {
       const html = tableMarkup({ extraColumn: { ...levelColumn, after: 'name' } });
-      expect(headCells(html).map((cell) => cell.label)).toEqual(['Item', 'Level', 'Qty', 'Gold']);
+      expect(headCells(html).map((cell) => cell.label)).toEqual(['Item', 'Level', 'Qty', 'Forge']);
     });
 
     it('draws a plain header when the host gives it nothing to sort by', () => {
@@ -672,10 +671,10 @@ describe('InventoryTable checklist', () => {
       mount(table({ extraColumn: levelColumn }));
       press(headerButton('Level'));
 
-      press(headerButton('Gold'));
+      press(headerButton('Forge'));
 
       expect(sortAttr('Level')).toBe('none');
-      expect(sortAttr('Gold')).toBe('descending');
+      expect(sortAttr('Forge')).toBe('descending');
       expect(renderedIds()).toEqual(['ring-2', 'boots-3', 'boots-5']);
     });
 
@@ -705,16 +704,16 @@ describe('InventoryTable checklist', () => {
       expect(onExtraSortChange).toHaveBeenLastCalledWith('desc');
 
       mount(table({ extraColumn: levelColumn, extraSort: 'desc', onExtraSortChange }));
-      press(headerButton('Gold'));
+      press(headerButton('Forge'));
       expect(onExtraSortChange).toHaveBeenLastCalledWith(null);
     });
 
     it('lets go of its order when the host moves the sort it owns', () => {
-      mount(table({ extraColumn: levelColumn, sort: byValue('desc'), onSortChange: () => {} }));
+      mount(table({ extraColumn: levelColumn, sort: byForge('desc'), onSortChange: () => {} }));
       press(headerButton('Level'));
       expect(sortAttr('Level')).toBe('descending');
 
-      mount(table({ extraColumn: levelColumn, sort: byValue('asc'), onSortChange: () => {} }));
+      mount(table({ extraColumn: levelColumn, sort: byForge('asc'), onSortChange: () => {} }));
 
       expect(sortAttr('Level')).toBe('none');
       expect(renderedIds()).toEqual(['boots-5', 'boots-3', 'ring-2']);

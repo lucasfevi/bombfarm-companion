@@ -88,16 +88,17 @@ const TUPLE_MEMBERS: readonly TupleMember[] = [
     name: 'farmPoolOverrides',
     change: (i) => ({ ...i, farmPoolOverrides: { a: false } }),
   },
-  { index: 18, name: 'farmReturnBonus', change: (i) => ({ ...i, farmReturnBonus: 'vip' }) },
+  { index: 18, name: 'farmReturnBonus', change: (i) => ({ ...i, farmReturnBonus: 'on' }) },
   // A reference compare, like the two above: a host must hand the same list back when nothing
   // changed, and the domain's frozen empty list when it offers no control at all.
   { index: 19, name: 'aurasAtCap', change: (i) => ({ ...i, aurasAtCap: ['grito_guerra'] }) },
+  { index: 20, name: 'farmPass', change: (i) => ({ ...i, farmPass: true }) },
 ];
 
 describe('readFarmDepTuple', () => {
-  it('has exactly 20 members, one per named member of the table below', () => {
-    expect(readFarmDepTuple(baseInputs())).toHaveLength(20);
-    expect(TUPLE_MEMBERS).toHaveLength(20);
+  it('has exactly 21 members, one per named member of the table below', () => {
+    expect(readFarmDepTuple(baseInputs())).toHaveLength(21);
+    expect(TUPLE_MEMBERS).toHaveLength(21);
     expect(TUPLE_MEMBERS.map((member) => member.index)).toEqual(
       TUPLE_MEMBERS.map((_, position) => position),
     );

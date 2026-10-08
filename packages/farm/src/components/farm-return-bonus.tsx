@@ -1,13 +1,9 @@
 'use client';
 
-import { Select } from '@bombfarm/ui';
+import { Switch } from '@bombfarm/ui';
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { FarmCopy } from '../copy';
-import {
-  farmFieldClass,
-  farmFieldControlClass,
-  farmFieldLabelClass,
-} from './farm-ranking-filters';
+import { farmFieldClass, farmFieldControlClass, farmFieldLabelClass } from './farm-ranking-filters';
 
 type Props = {
   value: ReturnBonusMode;
@@ -16,27 +12,20 @@ type Props = {
 };
 
 /**
- * Three-option Select over `@bombfarm/domain`'s `ReturnBonusMode` VERBATIM — option values are the
- * literal `'off' | 'on' | 'vip'`, option labels come from `t.*`. `Select`, not `Switch` +
- * a second VIP `Switch`: three states, and two booleans would make an invalid combination
- * (VIP on, bonus off) representable (`base-ui-first.md` rule 3).
+ * A `Switch` over the two-valued `ReturnBonusMode`, in a `<div>` rather than a `<label>` for the
+ * reason the filter row's switch is: a native label forwards clicks to Base UI's hidden checkbox.
  */
 export function FarmReturnBonus({ value, onChange, t }: Props) {
   return (
-    <label className={farmFieldClass} data-testid="farm-return-bonus">
+    <div className={farmFieldClass} data-testid="farm-return-bonus">
       <span className={farmFieldLabelClass}>{t.farmRankingReturnBonusLabel}</span>
       <div className={farmFieldControlClass}>
-        <Select
-          size="compact"
+        <Switch
+          checked={value === 'on'}
+          onCheckedChange={(checked) => onChange(checked ? 'on' : 'off')}
           aria-label={t.farmRankingReturnBonusLabel}
-          value={value}
-          onChange={(event) => onChange(event.target.value as ReturnBonusMode)}
-        >
-          <option value="off">{t.farmRankingReturnBonusOff}</option>
-          <option value="on">{t.farmRankingReturnBonusOn}</option>
-          <option value="vip">{t.farmRankingReturnBonusVip}</option>
-        </Select>
+        />
       </div>
-    </label>
+    </div>
   );
 }

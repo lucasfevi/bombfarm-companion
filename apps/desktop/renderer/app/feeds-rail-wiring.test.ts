@@ -35,7 +35,8 @@ describe('the shell draws the press once, in its status strip', () => {
   it('the game is the zeroth feed at the strip\'s left, and the Live tab wears its state as a dot', () => {
     expect(page).toContain('<GameFeed status={status} />');
     expect(page.indexOf('<GameFeed')).toBeLessThan(page.indexOf('<OnlinePlayersFeed'));
-    expect(page.indexOf('<OnlinePlayersFeed')).toBeLessThan(page.indexOf('<FeedsRail'));
+    expect(page.indexOf('<OnlinePlayersFeed')).toBeLessThan(page.indexOf('<PassFeed'));
+    expect(page.indexOf('<PassFeed')).toBeLessThan(page.indexOf('<FeedsRail'));
     expect(page).toContain("item.id === 'live' ? { ...item, mark: liveMark } : item");
     expect(page).not.toContain('StatusChip');
   });

@@ -146,14 +146,34 @@ describe('maxPhase reaches the compute', () => {
   });
 });
 
+describe('the Pass is read from the account, never from the controls', () => {
+  const NOW_MS = Date.parse('2026-10-07T12:00:00Z');
+  const secondsFromNow = (seconds: number) => NOW_MS / 1000 + seconds;
+  const passOf = (vipUntil: number | undefined) => {
+    const base = basePayload();
+    const payload = { ...base, account: { ...base.account, ...(vipUntil === undefined ? {} : { vip_until: vipUntil }) } };
+    return required(buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS, NOW_MS), 'expected inputs').farmPass;
+  };
+
+  it('is on while vip_until is in the future', () => {
+    expect(passOf(secondsFromNow(3600))).toBe(true);
+  });
+
+  it('is off once vip_until has passed, was never set, or the field is absent', () => {
+    expect(passOf(secondsFromNow(-1))).toBe(false);
+    expect(passOf(0)).toBe(false);
+    expect(passOf(undefined)).toBe(false);
+  });
+});
+
 describe('the controls are passed through verbatim, by reference', () => {
   it('farmPoolOverrides keeps its identity — the package compares that member with Object.is', () => {
     const overrides = { h1: false };
     const aurasAtCap = ['brecha'] as const;
-    const controls = { farmPoolOverrides: overrides, farmReturnBonus: 'vip' as const, aurasAtCap };
+    const controls = { farmPoolOverrides: overrides, farmReturnBonus: 'on' as const, aurasAtCap };
     const inputs = required(buildFarmInputs(viewOf(basePayload()), controls), 'expected inputs');
     expect(inputs.farmPoolOverrides).toBe(overrides);
-    expect(inputs.farmReturnBonus).toBe('vip');
+    expect(inputs.farmReturnBonus).toBe('on');
     expect(inputs.aurasAtCap).toBe(aurasAtCap);
   });
 });

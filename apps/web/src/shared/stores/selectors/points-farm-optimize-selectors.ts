@@ -41,5 +41,6 @@ export function runHeroFarmOptimize(state: PlannerStore): HeroFarmOptimizeResult
     heroId: composed.heroId,
     maxPhase: state.maxPhase,
     returnBonus: state.farmReturnBonus,
+    pass: state.farmPass,
   });
 }

@@ -134,6 +134,16 @@ export const KEY_GATE_COST: number = wiki.drops.keyGateCost;
 export const RETURN_BONUS_ADD: number = wiki.drops.bonusAdd;
 /** Return Bonus on gold and XP (not drops), VIP. Live 1. ← `drops.bonusAddVip` */
 export const RETURN_BONUS_ADD_VIP: number = wiki.drops.bonusAddVip;
+/** `[no Pass, Pass]` always-on adds to gold, XP and drop chance. ← `vip.goldAdd` / `xpAdd` / `dropAdd` */
+export const PASS_ADDS: {
+  readonly gold: readonly [number, number];
+  readonly xp: readonly [number, number];
+  readonly drop: readonly [number, number];
+} = {
+  gold: [wiki.vip.goldAdd[0], wiki.vip.goldAdd[1]],
+  xp: [wiki.vip.xpAdd[0], wiki.vip.xpAdd[1]],
+  drop: [wiki.vip.dropAdd[0], wiki.vip.dropAdd[1]],
+};
 /** Banked offline seconds cap. Live 28800. ← `drops.bonusCapSecs` */
 export const RETURN_BONUS_CAP_SECS: number = wiki.drops.bonusCapSecs;
 

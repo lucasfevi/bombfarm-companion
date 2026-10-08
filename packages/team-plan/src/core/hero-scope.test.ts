@@ -4,7 +4,9 @@ import {
   countOptimizeScopeHeroes,
   defaultScopeForHero,
   heroScopeKey,
+  dropMaterialisedScopeDefaults,
   mergeScopeForRoster,
+  pruneScopeToRoster,
   resolveHeroScope,
 } from './hero-scope';
 
@@ -59,6 +61,45 @@ describe('mergeScopeForRoster', () => {
   it('does not reset an explicit Optimize on a battle-disabled hero', () => {
     const merged = mergeScopeForRoster([{ id: 'a', battleAllowed: false }], { a: 'optimize' });
     expect(merged).toEqual({ a: 'optimize' });
+  });
+});
+
+describe('pruneScopeToRoster', () => {
+  it('keeps stored choices for roster heroes, adds no defaults and drops heroes gone from the roster', () => {
+    const pruned = pruneScopeToRoster(
+      [
+        { id: 'a', battleAllowed: true },
+        { id: 'b', battleAllowed: false },
+      ],
+      { a: 'leaveAlone', ghost: 'donate' },
+    );
+    expect(pruned).toEqual({ a: 'leaveAlone' });
+  });
+});
+
+describe('dropMaterialisedScopeDefaults', () => {
+  const roster = [
+    { id: 'on', battleAllowed: true },
+    { id: 'off', battleAllowed: false },
+  ];
+
+  it('drops entries equal to the hero current default', () => {
+    expect(dropMaterialisedScopeDefaults(roster, { on: 'optimize', off: 'donate' })).toEqual({});
+  });
+
+  it('drops Donate on a hero whose battle is now on', () => {
+    expect(dropMaterialisedScopeDefaults(roster, { on: 'donate' })).toEqual({});
+  });
+
+  it('keeps Leave alone, and Optimize on a hero whose battle is off', () => {
+    expect(dropMaterialisedScopeDefaults(roster, { on: 'leaveAlone', off: 'optimize' })).toEqual({
+      on: 'leaveAlone',
+      off: 'optimize',
+    });
+  });
+
+  it('keeps entries for heroes outside the roster it was given', () => {
+    expect(dropMaterialisedScopeDefaults(roster, { elsewhere: 'donate' })).toEqual({ elsewhere: 'donate' });
   });
 });
 

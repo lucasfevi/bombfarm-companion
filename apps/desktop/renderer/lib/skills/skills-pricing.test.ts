@@ -73,7 +73,8 @@ describe('skillsPricingKey', () => {
     const base = skillsPricingKey(inputs, state, 51, windows);
     expect(skillsPricingKey(inputs, state, 52, windows)).not.toBe(base);
     expect(skillsPricingKey(inputs, { ...state, levels: { ...state.levels, X99: 1 } }, 51, windows)).not.toBe(base);
-    expect(skillsPricingKey({ ...inputs, farmReturnBonus: 'vip' }, state, 51, windows)).not.toBe(base);
+    expect(skillsPricingKey({ ...inputs, farmReturnBonus: 'on' }, state, 51, windows)).not.toBe(base);
+    expect(skillsPricingKey({ ...inputs, farmPass: true }, state, 51, windows)).not.toBe(base);
     expect(skillsPricingKey(inputs, state, 51, { ...windows, gatePhase: 60 })).not.toBe(base);
     expect(skillsPricingKey(inputs, state, 51, { ...windows, pvp: { windowSecs: PVP_WINDOW_SECS, heroIds: ['a'], phase: 120 } })).not.toBe(base);
   });

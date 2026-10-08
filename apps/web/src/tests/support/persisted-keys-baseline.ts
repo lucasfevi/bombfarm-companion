@@ -29,6 +29,9 @@
  * `bf-hp-team-plan-result-sort-v1` is the order the Optimizer's result rows are read in. A NEW
  * key beside the plan envelope rather than a field on it: the order outlives every plan, and a
  * plan dropped on clear must not take the player's chosen order with it.
+ *
+ * `bf-hp-gear-scope-v2` holds only the Optimizer columns the player set by hand. The v1 key stays
+ * listed because it is still read once, to clean the defaults it saved as if chosen, and then removed.
  */
 export const PERSISTED_KEY_BASELINE = [
   'bf-hp-inventory-v1',
@@ -38,6 +41,7 @@ export const PERSISTED_KEY_BASELINE = [
   'bf-hp-account-v1',
   'bf-hp-active-hero-v1',
   'bf-hp-gear-scope-v1',
+  'bf-hp-gear-scope-v2',
   'bf-hp-team-plan-v1',
   'bf-hp-team-plan-result-sort-v1',
   'bf-hp-critdmg-flat-migrated-v1',

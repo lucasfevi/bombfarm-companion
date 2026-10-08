@@ -223,6 +223,8 @@ export type FarmRespecInput = {
   maxPhase?: number | null;
   /** Default `'off'`, matching the estimator. */
   returnBonus?: ReturnBonusMode;
+  /** Default `false`. */
+  pass?: boolean;
 };
 
 function buildHeroEntries(
@@ -575,7 +577,7 @@ function prepareFarmRespecSolve(input: FarmRespecInput): FarmRespecSetup {
     account: input.account,
     enabledHeroIds: input.enabledHeroIds,
   });
-  const phaseOptions: FarmRateOptions = { maxPhase: input.maxPhase, returnBonus: input.returnBonus };
+  const phaseOptions: FarmRateOptions = { maxPhase: input.maxPhase, returnBonus: input.returnBonus, pass: input.pass };
 
   if (bases.length === 0) {
     return {

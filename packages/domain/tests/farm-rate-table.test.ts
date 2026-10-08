@@ -61,11 +61,15 @@ describe('computeFarmRateTable — non-gate vs gate column rules', () => {
 });
 
 describe('computeFarmRateTable — finite sweep across all three return-bonus modes', () => {
-  const modes: ReturnBonusMode[] = ['off', 'on', 'vip'];
+  const modes: { returnBonus: ReturnBonusMode; pass: boolean }[] = [
+    { returnBonus: 'off', pass: false },
+    { returnBonus: 'on', pass: false },
+    { returnBonus: 'on', pass: true },
+  ];
 
   it('every rate is a finite number; only clearSecs may be Infinity, and only when infeasible', () => {
-    for (const mode of modes) {
-      const rows = computeFarmRateTable(squad, { returnBonus: mode });
+    for (const { returnBonus, pass } of modes) {
+      const rows = computeFarmRateTable(squad, { returnBonus, pass });
       for (const row of rows) {
         expect(Number.isNaN(row.goldPerHour)).toBe(false);
         expect(Number.isNaN(row.chestsPerHour)).toBe(false);
@@ -124,9 +128,9 @@ describe('computeFarmRateTable — jaula window is constant across every row', (
     }
   });
 
-  it('jaulaWindowSecs is unchanged by returnBonus: "vip" (the VIP jaula window is not modeled)', () => {
+  it('jaulaWindowSecs is unchanged by the Pass (the VIP jaula window is not modeled)', () => {
     const offRows = computeFarmRateTable(squad, { returnBonus: 'off' });
-    const vipRows = computeFarmRateTable(squad, { returnBonus: 'vip' });
+    const vipRows = computeFarmRateTable(squad, { returnBonus: 'on', pass: true });
     for (let i = 0; i < offRows.length; i++) {
       expect(vipRows[i].jaulaWindowSecs).toBe(offRows[i].jaulaWindowSecs);
     }

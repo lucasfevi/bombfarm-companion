@@ -104,8 +104,6 @@ function inventoryItem(overrides: Partial<InventoryViewItem> = {}): InventoryVie
     level: 10,
     upgrade: 0,
     power: 1,
-    sellValueGold: 0,
-    sellable: true,
     tradable: true,
     marketBlocked: false,
     locked: false,

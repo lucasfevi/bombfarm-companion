@@ -262,8 +262,6 @@ const ITEM_LEVEL: SchemaLevel = {
     'level',
     'stats',
     'power',
-    'sell_value',
-    'sellable',
     'upgrade',
     'tradable',
     'market_state',
@@ -298,7 +296,11 @@ const ITEM_LEVEL: SchemaLevel = {
   // this level and every export taken before the 2026-10-05 forge patch lacks them, and no
   // post-patch export has been seen to say whether exports carry them. The API item level
   // requires them.
-  optional: ['slot', 'soulbound', 'export_lock_secs', 'jewels', 'ritual', ...ITEM_ESSENCE_KEYS],
+  //
+  // `sell_value` and `sellable` are `optional` for the same both-ways reason: the game removed selling
+  // items for gold on 2026-10-07 and a post-patch live read carries neither on any item, while every
+  // save export and older fixture still does.
+  optional: ['slot', 'soulbound', 'export_lock_secs', 'jewels', 'ritual', 'sell_value', 'sellable', ...ITEM_ESSENCE_KEYS],
 };
 
 const API_ITEM_LEVEL: SchemaLevel = {

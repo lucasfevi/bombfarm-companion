@@ -7,10 +7,10 @@ import { AUTOSAVE_MS } from '@/shared/stores/persistence/debounced-writer';
 import { hydratePlannerStore } from '@/shared/stores/hydrate-planner-store';
 import { selectTeamPlanIsStale } from '@/shared/stores/selectors/team-plan-selectors';
 import { selectLiveTeamPlanInputSignature } from '@/shared/stores/slices/team-plan-slice';
-import { buildDefaultScopeMap } from '@/shared/stores/team-plan/types';
+import { buildDefaultScopeMap, resolveHeroScope } from '@/shared/stores/team-plan/types';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
 import { INVENTORY_KEY } from '@/shared/lib/inventory-storage';
-import { TEAM_PLAN_SCOPE_KEY } from '@/shared/lib/team-plan-scope-storage';
+import { LEGACY_TEAM_PLAN_SCOPE_KEY, TEAM_PLAN_SCOPE_KEY } from '@/shared/lib/team-plan-scope-storage';
 
 function memoryLocalStorage() {
   const store = new Map<string, string>();
@@ -124,7 +124,7 @@ describe('team-plan slice', () => {
     const state = usePlannerStore.getState();
     expect(state.inventory.items).toEqual([sampleItem]);
     expect(state.forgeFloor).toBe(12);
-    expect(state.scopeByHeroId.a).toBe('optimize');
+    expect(state.scopeByHeroId).toEqual({});
   });
 
   it('replaceInventoryFromImport clears plan state', () => {
@@ -141,8 +141,9 @@ describe('team-plan slice', () => {
   it('setScope no-op preserves scope map identity', () => {
     usePlannerStore.getState().hydrateRoster([hero('a')], 'a');
     usePlannerStore.getState().hydrateInventory({ version: 1, importedAt: 0, items: [] }, 10);
+    usePlannerStore.getState().setScope('a', 'leaveAlone');
     const before = usePlannerStore.getState().scopeByHeroId;
-    usePlannerStore.getState().setScope('a', 'optimize');
+    usePlannerStore.getState().setScope('a', 'leaveAlone');
     expect(usePlannerStore.getState().scopeByHeroId).toBe(before);
   });
 
@@ -188,12 +189,11 @@ describe('team-plan slice', () => {
     expect(state.planInputSignature).toBe('sig');
   });
 
-  it('hydrateScope merges persisted choices over the battleAllowed defaults', () => {
+  it('hydrateScope keeps persisted choices as they are and adds no defaults', () => {
     usePlannerStore.getState().hydrateRoster([hero('a'), hero('b'), hero('c', false)], 'a');
     usePlannerStore.getState().hydrateInventory({ version: 1, importedAt: 0, items: [] }, 10);
     usePlannerStore.getState().hydrateScope({ a: 'donate', b: 'leaveAlone' });
-    const state = usePlannerStore.getState();
-    expect(state.scopeByHeroId).toEqual({ a: 'donate', b: 'leaveAlone', c: 'donate' });
+    expect(usePlannerStore.getState().scopeByHeroId).toEqual({ a: 'donate', b: 'leaveAlone' });
   });
 
   it('hydrateScope ignores persisted entries for heroes no longer on the roster', () => {
@@ -203,25 +203,44 @@ describe('team-plan slice', () => {
     expect(usePlannerStore.getState().scopeByHeroId).toEqual({ a: 'leaveAlone' });
   });
 
-  // Dragging one hero must rewrite the whole roster map. A partial map made the board show
-  // battle-disabled heroes in Donate (UI default) while the solver treated missing keys as Optimize.
-  it('setScope rewrites the full roster scope map, not only the moved hero', () => {
-    usePlannerStore.getState().hydrateRoster([hero('a'), hero('b', false), hero('c')], 'a');
-    usePlannerStore.setState({ scopeByHeroId: { a: 'optimize' } });
-    usePlannerStore.getState().setScope('a', 'leaveAlone');
-    expect(usePlannerStore.getState().scopeByHeroId).toEqual({
-      a: 'leaveAlone',
-      b: 'donate',
-      c: 'optimize',
-    });
+  it('hydrateScope can clean a materialised map: defaults and Donate on a battle-enabled hero go, other choices stay', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a'), hero('b'), hero('c', false), hero('d', false)], 'a');
+    usePlannerStore.getState().hydrateScope(
+      { a: 'optimize', b: 'donate', c: 'donate', d: 'optimize' },
+      { dropMaterialisedDefaults: true },
+    );
+    expect(usePlannerStore.getState().scopeByHeroId).toEqual({ d: 'optimize' });
   });
 
-  it('syncScopeForRoster seeds defaults for new heroes without wiping prior choices', () => {
+  it('setScope stores only the moved hero, not the other heroes defaults', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a'), hero('b', false), hero('c')], 'a');
+    usePlannerStore.getState().setScope('a', 'leaveAlone');
+    expect(usePlannerStore.getState().scopeByHeroId).toEqual({ a: 'leaveAlone' });
+  });
+
+  it('a hero whose battle is turned back on resolves to optimize after another hero was dragged', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a'), hero('b', false)], 'a');
+    usePlannerStore.getState().hydrateInventory({ version: 1, importedAt: 0, items: [] }, 10);
+    usePlannerStore.getState().setScope('a', 'leaveAlone');
+    usePlannerStore.getState().setHeroes([hero('a'), hero('b', true)]);
+    const state = usePlannerStore.getState();
+    expect(resolveHeroScope({ id: 'b', battleAllowed: true }, state.scopeByHeroId)).toBe('optimize');
+    expect(state.heroes.find((candidate) => candidate.id === 'b')?.battleAllowed).toBe(true);
+  });
+
+  it('a drag to the hero default column is stored and survives a later battle toggle', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a', false)], 'a');
+    usePlannerStore.getState().setScope('a', 'donate');
+    usePlannerStore.getState().setHeroes([hero('a', true)]);
+    expect(usePlannerStore.getState().scopeByHeroId).toEqual({ a: 'donate' });
+  });
+
+  it('syncScopeForRoster adds no entries for new heroes and keeps prior choices', () => {
     usePlannerStore.getState().hydrateRoster([hero('a')], 'a');
     usePlannerStore.getState().hydrateInventory({ version: 1, importedAt: 0, items: [] }, 10);
     usePlannerStore.getState().setScope('a', 'leaveAlone');
     usePlannerStore.getState().setHeroes([hero('a'), hero('b', false)]);
-    expect(usePlannerStore.getState().scopeByHeroId).toEqual({ a: 'leaveAlone', b: 'donate' });
+    expect(usePlannerStore.getState().scopeByHeroId).toEqual({ a: 'leaveAlone' });
   });
 
   it('syncScopeForRoster does not reset an explicit Optimize on a battle-disabled hero', () => {
@@ -230,6 +249,21 @@ describe('team-plan slice', () => {
     usePlannerStore.getState().setScope('a', 'optimize');
     usePlannerStore.getState().syncScopeForRoster();
     expect(usePlannerStore.getState().scopeByHeroId).toEqual({ a: 'optimize' });
+  });
+
+  it('syncScopeForRoster drops the choice of a hero that left the roster', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a'), hero('b')], 'a');
+    usePlannerStore.getState().setScope('b', 'leaveAlone');
+    usePlannerStore.getState().setHeroes([hero('a')]);
+    expect(usePlannerStore.getState().scopeByHeroId).toEqual({});
+  });
+
+  it('the live plan signature is the same whether the scope map is materialised or sparse', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a'), hero('b', false)], 'a');
+    usePlannerStore.setState({ scopeByHeroId: { a: 'optimize', b: 'donate' } });
+    const materialised = selectLiveTeamPlanInputSignature(usePlannerStore.getState());
+    usePlannerStore.setState({ scopeByHeroId: {} });
+    expect(selectLiveTeamPlanInputSignature(usePlannerStore.getState())).toBe(materialised);
   });
 
   it('setForgeFloor clamps to 0…FORJA_MAX', () => {
@@ -469,6 +503,44 @@ describe('team-plan slice', () => {
     usePlannerStore.getState().setScope('a', 'leaveAlone');
     vi.advanceTimersByTime(AUTOSAVE_MS);
     expect(localStorage.getItem(TEAM_PLAN_SCOPE_KEY)).toBeNull();
+  });
+
+  it('explicit Donate and Leave alone choices survive a persist and reload', () => {
+    const roster = [hero('a'), hero('b'), hero('c')];
+    localStorage.setItem('bf-hp-heroes-v1', JSON.stringify(roster));
+    localStorage.setItem('bf-hp-active-hero-v1', JSON.stringify('a'));
+    usePlannerStore.getState().hydrateRoster(roster, 'a');
+    const detach = attachTeamPlanScopePersistence(usePlannerStore);
+    usePlannerStore.getState().setBooted(true);
+    usePlannerStore.getState().setScope('a', 'donate');
+    usePlannerStore.getState().setScope('b', 'leaveAlone');
+    vi.advanceTimersByTime(AUTOSAVE_MS);
+    detach();
+    expect(JSON.parse(localStorage.getItem(TEAM_PLAN_SCOPE_KEY) ?? '{}')).toEqual({ a: 'donate', b: 'leaveAlone' });
+    resetPlannerStoreForTests();
+    hydratePlannerStore();
+    expect(usePlannerStore.getState().scopeByHeroId).toEqual({ a: 'donate', b: 'leaveAlone' });
+  });
+
+  it('boot cleans a materialised legacy map once and rewrites it under the new key', () => {
+    localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([hero('a'), hero('b'), hero('c', false), hero('d')]));
+    localStorage.setItem('bf-hp-active-hero-v1', JSON.stringify('a'));
+    localStorage.setItem(
+      LEGACY_TEAM_PLAN_SCOPE_KEY,
+      JSON.stringify({ a: 'optimize', b: 'donate', c: 'donate', d: 'leaveAlone' }),
+    );
+    hydratePlannerStore();
+    expect(usePlannerStore.getState().scopeByHeroId).toEqual({ d: 'leaveAlone' });
+    expect(JSON.parse(localStorage.getItem(TEAM_PLAN_SCOPE_KEY) ?? 'null')).toEqual({ d: 'leaveAlone' });
+    expect(localStorage.getItem(LEGACY_TEAM_PLAN_SCOPE_KEY)).toBeNull();
+  });
+
+  it('boot leaves a map under the new key untouched, even one that looks materialised', () => {
+    localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([hero('a'), hero('b')]));
+    localStorage.setItem('bf-hp-active-hero-v1', JSON.stringify('a'));
+    localStorage.setItem(TEAM_PLAN_SCOPE_KEY, JSON.stringify({ a: 'optimize', b: 'donate' }));
+    hydratePlannerStore();
+    expect(usePlannerStore.getState().scopeByHeroId).toEqual({ a: 'optimize', b: 'donate' });
   });
 
   it('a reload restores a scope choice made before the previous reload', () => {

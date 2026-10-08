@@ -1,7 +1,7 @@
 {
-  "syncedAt": "2026-09-26",
-  "sourcePulledAt": "2026-09-26T10:16:49.160Z",
-  "emittedAt": "2026-09-26",
+  "syncedAt": "2026-09-29",
+  "sourcePulledAt": "2026-09-29T23:38:04.522Z",
+  "emittedAt": "2026-10-07",
   "source": "official-wiki-export",
   "props": [
     {
@@ -146,6 +146,20 @@
     "bonusAdd": 0.5,
     "bonusAddVip": 1,
     "bonusCapSecs": 28800
+  },
+  "vip": {
+    "goldAdd": [
+      0,
+      0.15
+    ],
+    "xpAdd": [
+      0,
+      0.3
+    ],
+    "dropAdd": [
+      0,
+      0.3
+    ]
   },
   "timechestRarityByAto": [
     [

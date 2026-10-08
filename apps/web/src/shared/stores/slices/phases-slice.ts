@@ -16,6 +16,8 @@ export type PhasesSlice = {
   farmPoolOverrides: Record<string, boolean>;
   /** Farm Ranking return-bonus estimate — `@bombfarm/domain`'s `ReturnBonusMode` verbatim. */
   farmReturnBonus: ReturnBonusMode;
+  /** Whether the Pass is owned — an input to every farm estimate, persisted with the return bonus. */
+  farmPass: boolean;
   /**
    * EPHEMERAL — the planner's Combat tab asking about a phase other than the one the app would
    * choose on its own (`selectCombatPhase`). `null` while no such pick is in force. Never
@@ -38,6 +40,7 @@ export type PhasesSlice = {
   syncDefaultPhaseSelection: (phase: number) => void;
   setFarmHeroEnabled: (heroId: string, enabled: boolean) => void;
   setFarmReturnBonus: (mode: ReturnBonusMode) => void;
+  setFarmPass: (pass: boolean) => void;
   /** `null` clears the pick and hands the planner back to `selectCombatPhase`'s own answer. */
   setPlannerPhaseOverride: (phase: number | null) => void;
   setTeamAuraSwitch: (buffId: TeamAuraId, enabled: boolean) => void;
@@ -67,6 +70,7 @@ export const createPhasesSlice: StateCreator<
       ...(state.phasesViewPhaseChosen ? { phase: state.phasesViewPhase } : {}),
       farmPool: state.farmPoolOverrides,
       farmReturnBonus: state.farmReturnBonus,
+      farmPass: state.farmPass,
     });
   }
 
@@ -75,6 +79,7 @@ export const createPhasesSlice: StateCreator<
     phasesViewPhaseChosen: false,
     farmPoolOverrides: {},
     farmReturnBonus: 'off',
+    farmPass: false,
     plannerPhaseOverride: null,
     teamAuraSwitches: noTeamAuraSwitches(),
 
@@ -84,6 +89,7 @@ export const createPhasesSlice: StateCreator<
         phasesViewPhaseChosen: view.phase != null,
         farmPoolOverrides: view.farmPool ?? {},
         farmReturnBonus: view.farmReturnBonus ?? 'off',
+        farmPass: view.farmPass ?? false,
       });
     },
 
@@ -123,6 +129,12 @@ export const createPhasesSlice: StateCreator<
     setFarmReturnBonus: (mode) => {
       if (get().farmReturnBonus === mode) return;
       set({ farmReturnBonus: mode });
+      persistPhasesView(get());
+    },
+
+    setFarmPass: (pass) => {
+      if (get().farmPass === pass) return;
+      set({ farmPass: pass });
       persistPhasesView(get());
     },
 

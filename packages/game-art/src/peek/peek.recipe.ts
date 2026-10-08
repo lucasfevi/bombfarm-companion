@@ -36,10 +36,7 @@ export const peekRowsGridClass = 'grid grid-cols-2 gap-x-3.5 gap-y-[3px] text-[1
 export const peekRowClass = 'flex items-baseline justify-between gap-2 text-muted [&>span]:shrink-0 [&_b]:min-w-0 [&_b]:text-right [&_b]:font-semibold [&_b]:text-ink';
 export const peekEffectClass = 'text-[11.5px] leading-[1.4] text-ink';
 export const peekFootClass = 'mt-2 flex items-baseline justify-between gap-2 text-[10.5px] leading-snug text-muted';
-/** What an item is worth, the way the inventory card's footer says it: coin and gold at the left
- *  edge, the market quote at the right. */
-export const peekValueRowClass = 'flex items-center justify-between gap-2 text-[11px] leading-snug tabular-nums text-muted';
-export const peekGoldClass = 'flex items-center gap-1';
+export const peekValueRowClass = 'flex items-center justify-end gap-2 text-[11px] leading-snug tabular-nums text-muted';
 export const peekStripClass = 'flex flex-wrap gap-0.5';
 export const peekTagClass =
   'inline-block rounded-[3px] border border-line px-[5px] py-px font-mono text-[9.5px] uppercase tracking-[0.06em] text-muted';
