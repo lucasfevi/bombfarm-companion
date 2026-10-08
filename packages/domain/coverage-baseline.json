@@ -12,7 +12,7 @@
     "src/collection-board.ts": { "statements": 100, "branches": 90.38, "functions": 100, "lines": 100 },
     "src/collection.ts": { "statements": 100, "branches": 100, "functions": 100, "lines": 100 },
     "src/combat-window.ts": { "statements": 90, "branches": 73.68, "functions": 100, "lines": 100 },
-    "src/deconstruct.ts": { "statements": 97.92, "branches": 95.45, "functions": 100, "lines": 100 },
+    "src/deconstruct.ts": { "statements": 97.83, "branches": 95.24, "functions": 100, "lines": 100 },
     "src/derive.ts": { "statements": 100, "branches": 100, "functions": 100, "lines": 100 },
     "src/drain.ts": { "statements": 100, "branches": 100, "functions": 100, "lines": 100 },
     "src/farm-context.ts": { "statements": 100, "branches": 90, "functions": 100, "lines": 100 },
@@ -136,6 +136,7 @@
     "src/shims/hero-identity.ts": "never loaded by a domain test; the coverage report has no entry for it"
   },
   "waivers": {
+    "src/deconstruct.ts": { "reason": "local import-cooldown block removed with its tests; the game now lets imported items burn at once", "statements": 97.83, "branches": 95.24, "functions": 100, "lines": 100 },
     "src/inventory-view.ts": { "reason": "sell-for-gold fields and Value sort removed with their tests after the game removed selling", "statements": 96.27, "branches": 91.63, "functions": 98.04, "lines": 97.31 }
   }
 }
