@@ -293,6 +293,13 @@ Worth knowing before you trust a screen you developed against it.
   about 19M/hour extrapolated, roughly fifty times the mid-game calibration anchor. Loot pops sum
   to exactly the gold delta, which makes it a good stream to build a rate readout against; the
   number that readout shows is not a plausible one.
+- **Its damage reads about double.** Each recorded frame is 0.2 s of game time and the replay
+  pumps one every 100 ms, so the game plays at twice speed and Team DPS and Hero DPS come out about
+  twice what the same hits would read live. Per-hero attribution still reconciles with the team
+  total; only the rate is off.
+- **It replays the older, smaller capture, not the combat one.** The combat capture the tests
+  replay to check damage attribution is a test fixture, not the offline default, so offline damage
+  has no second-blast hits and sends hits that land outside every blast to Unattributed.
 - **No bonus window.** `bonus_secs` / `bonus_mult` are documented in
   [wire-vocabulary.md](wire-vocabulary.md) but absent from this capture — it was taken outside one.
 - **One account, one moment.** The account fixture is a single capture pair. Any regime it does not

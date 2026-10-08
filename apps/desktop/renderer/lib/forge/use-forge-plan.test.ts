@@ -10,6 +10,7 @@ import {
   forgePlanReducer,
   parseForgeLimit,
 } from './use-forge-plan';
+import { resolveStoneRanges, stoneRangeBase, stonesByTarget } from './forge-stones';
 
 describe('defaultForgeTarget', () => {
   it('aims at the last rung that always lands while the piece is below it', () => {
@@ -143,6 +144,25 @@ describe('forgePlanReducer stones', () => {
     const raised = forgePlanReducer(stoned, { kind: 'step', itemId: 'a', upgrade: 8, delta: 1 });
     expect(raised.target).toBe(14);
     expect(forgePlanReducer(raised, { kind: 'stoneAdd', ...piece }).stones.at(-1)).toEqual({ upTo: 14, rarity: 1 });
+  });
+
+  it('reaches the levels a miss can drop a piece back to, so a +13 piece can set a stone for +11 to +13', () => {
+    const worn = { itemId: 'a', upgrade: 13 };
+    const plan = { ...INITIAL_FORGE_PLAN, itemId: 'a', target: 15 };
+    const split = forgePlanReducer(plan, { kind: 'stoneAdd', ...worn });
+    const stoned = forgePlanReducer(split, { kind: 'stoneRarity', ...worn, index: 0, rarity: 2 });
+    expect(stoned.stones).toEqual([
+      { upTo: 13, rarity: 2 },
+      { upTo: 15, rarity: null },
+    ]);
+    expect(stonesByTarget(resolveStoneRanges(stoned.stones, stoneRangeBase(13), 15))).toEqual([
+      ...new Array<null>(10).fill(null),
+      2,
+      2,
+      2,
+      null,
+      null,
+    ]);
   });
 });
 

@@ -136,15 +136,21 @@ export type {
 } from './rotation-snapshot.js';
 export type {
   CountdownBasis,
+  CreditAmounts,
   FieldCountdown,
+  LiveBomb,
   LiveCurrency,
   LiveDiagnosticsDumpOutcome,
   LiveDiagnosticsDumpReason,
   LiveEarnings,
   LiveEvent,
+  LiveExplosion,
   LiveFrame,
   LiveGapExtra,
   LiveGapReason,
+  LiveDamage,
+  LiveDamageHeroRow,
+  LiveDamageUnattributed,
   LiveHeroEnergy,
   LiveHit,
   LiveLootPop,
@@ -154,8 +160,9 @@ export type {
   LiveTickHero,
   LiveView,
   RecoveryCountdown,
+  UnattributedReason,
 } from './live-source.js';
-export { energyDisplayPercent, isActionableGap, isConnectedCurrency, isLiveCurrency, liveGap, LIVE_DISPLAY_REFRESH_MS } from './live-source.js';
+export { energyDisplayPercent, isActionableGap, isConnectedCurrency, isLiveCurrency, liveGap, LIVE_DISPLAY_REFRESH_MS, sameLiveDamage, UNATTRIBUTED_REASONS } from './live-source.js';
 export type {
   MarketQuoteCurrency,
   MarketQuoteFailureReason,
@@ -225,7 +232,6 @@ export interface InventoryItem {
   upgrade: number;
   power: number;
   stats: { stat: number; value: number; effective: number }[];
-  sellValueGold: number;
   tradable: boolean;
   marketState: number;
   locked: boolean;
@@ -324,7 +330,6 @@ export interface RawInventoryItem {
   level?: number;
   stats?: { stat: number; value: number; effective: number }[];
   power?: number;
-  sell_value?: string | number | null;
   upgrade?: number;
   tradable?: boolean | null;
   market_state?: number;

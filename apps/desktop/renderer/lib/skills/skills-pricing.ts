@@ -46,6 +46,7 @@ export function priceSkillsView(
     account: buildAccount(inputs),
     enabledHeroIds: resolveEnabledHeroIds(inputs),
     returnBonus: inputs.farmReturnBonus,
+    pass: inputs.farmPass ?? false,
     phase,
     totals,
     state,

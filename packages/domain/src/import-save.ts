@@ -138,6 +138,8 @@ export type AccountImportData = {
    * Never put a real capture's values in a tracked fixture — invent them (`'Tester'` / `'1'`).
    */
   playerName?: string | null;
+  /** `account.vip_until`, unix seconds; `0` when the Pass was never owned. `null` when absent. */
+  vipUntil?: number | null;
   accountId?: string | null;
   /**
    * Owned skill-tree levels (and the wallet / refunds that travel with them). `null` when the
@@ -329,6 +331,16 @@ function mapImportedSkillTree(
   return { levels: parsed.levels, refunds: parsed.refunds, gold: parsed.gold };
 }
 
+export function passActive(vipUntil: number | null | undefined, nowMs: number): boolean {
+  return typeof vipUntil === 'number' && Number.isFinite(vipUntil) && vipUntil * 1000 > nowMs;
+}
+
+function mapVipUntil(raw: Record<string, unknown>): number | null {
+  const account = isObject(raw.account) ? raw.account : null;
+  const value = account?.vip_until;
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
 function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   const skills = isObject(raw.skills) ? raw.skills : null;
   const totals = skills && isObject(skills.totals) ? skills.totals : null;
@@ -382,6 +394,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       maxPhase,
       playerName,
       accountId,
+      vipUntil: mapVipUntil(raw),
       skillTree: mapImportedSkillTree(skills),
     };
   }
@@ -398,6 +411,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
     maxPhase,
     playerName,
     accountId,
+    vipUntil: mapVipUntil(raw),
     skillTree: mapImportedSkillTree(skills),
   };
 }
@@ -412,6 +426,7 @@ const EMPTY_ACCOUNT_DATA: AccountImportData = {
   maxPhase: null,
   playerName: null,
   accountId: null,
+  vipUntil: null,
   skillTree: null,
 };
 

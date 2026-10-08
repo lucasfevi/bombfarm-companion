@@ -7,7 +7,7 @@ export type QuoteFetchResult =
   | { ok: false; rateLimited: boolean };
 
 export interface QuoteDeps {
-  fetchPriceOverview: (url: string) => Promise<QuoteFetchResult>;
+  fetchPriceOverview: (url: string, currency: string) => Promise<QuoteFetchResult>;
   sleep: (ms: number) => Promise<void>;
   baseDelayMs?: number;
   maxDelayMs?: number;
@@ -94,7 +94,10 @@ export async function quoteNative(
   ): Promise<{ answered: boolean; quote: PriceQuote | null }> => {
     for (;;) {
       calls += 1;
-      const result = await deps.fetchPriceOverview(priceOverviewUrl(appId, hashName, currency));
+      const result = await deps.fetchPriceOverview(
+        priceOverviewUrl(appId, hashName, currency),
+        currency,
+      );
 
       if (result.ok) {
         consecutiveRateLimits = 0;

@@ -342,7 +342,7 @@ const KEYS_REMOVED: readonly string[] = [
   // symbolic formula templates with the glossary tips their tokens opened — every figure now
   // prints its substituted formula with each term named instead — all lose their reader.
   // One line: this file sits at the max-lines cap.
-  'bdGroupSheet', 'bdGroupDerived', 'bdTriggerAria', 'bdLedgerTotal', 'bdFormulaMitF', 'bdFormulaDmg', 'bdFormulaHit', 'bdFormulaCriticalHit', 'bdFormulaCritFactor', 'bdFormulaFuse', 'bdFormulaField', 'bdFormulaRest', 'bdFormulaUptime', 'bdFormulaActive', 'bdFormulaSustained', 'bdTermMit', 'bdTermPen', 'bdTermTree', 'bdTermAbl', 'bdTermExtra', 'bdTermAtk', 'bdTermMitigation', 'bdTermDamage', 'bdTermCc', 'bdTermCd', 'bdTermCdr', 'bdTermWalk', 'bdTermDrain', 'bdTermRestSeconds', 'bdTermField', 'bdTermRestSecs', 'bdTermAvg', 'bdTermRange', 'bdTermActiveDps',
+  'bdGroupSheet', 'bdGroupDerived', 'bdTriggerAria', 'bdLedgerTotal', 'bdFormulaMitF', 'bdFormulaDmg', 'bdFormulaHit', 'bdFormulaCriticalHit', 'bdFormulaCritFactor', 'bdFormulaFuse', 'bdFormulaField', 'bdFormulaRest', 'bdFormulaUptime', 'bdFormulaActive', 'bdFormulaSustained', 'bdTermMit', 'bdTermPen', 'bdTermTree', 'bdTermAbl', 'bdTermExtra', 'bdTermAtk', 'bdTermMitigation', 'bdTermDamage', 'bdTermCc', 'bdTermCd', 'bdTermCdr', 'bdTermWalk', 'bdTermDrain', 'bdTermRestSeconds', 'bdTermField', 'bdTermRestSecs', 'bdTermAvg', 'bdTermRange', 'bdTermActiveDps', 'farmRankingReturnBonusOff', 'farmRankingReturnBonusOn', 'farmRankingReturnBonusVip',
 ];
 
 /**
@@ -528,7 +528,7 @@ const KEYS_REMOVED: readonly string[] = [
  * `KEYS_REMOVED` — same precedent as the drop labels and `phasesBoost*` keys above.
  */
 const KEYS_ADDED: readonly string[] = [
-  'navHeroes',
+  'navHeroes', 'farmRankingPassLabel', 'farmRankingPassOn', 'farmRankingPassOff', 'farmRankingPassTip', 'farmRankingPassTipDetected',
   // The Optimizer's ledger of what changed since the plan (2026-09-19, narrowed to breaking
   // changes only 2026-09-21): the notice that only said inputs had changed now lists every
   // change that breaks the plan — a hero it placed or a piece it used is gone — and the field
@@ -754,6 +754,8 @@ const KEYS_ADDED: readonly string[] = [
   'inventoryGroupStone',
   'inventoryGroupChanceStone',
   'inventoryChanceStone',
+  'inventoryMapKey',
+  'inventorySkillStone',
   'inventoryGroupChest',
   'inventoryGroupRune',
   'inventoryGroupSkin',
@@ -793,7 +795,6 @@ const KEYS_ADDED: readonly string[] = [
   'inventorySortLabel',
   'inventorySortRarity',
   'inventorySortLevel',
-  'inventorySortValue',
   'inventorySortName',
   'inventorySortCount',
   'inventorySortAscending',
@@ -1398,15 +1399,12 @@ describe('i18n split parity', () => {
  * EN and PT key sets are structurally equal (compile-time via `pt: typeof en`,
  * asserted again here at runtime) and no PT value for a Farm Ranking key is byte-identical to
  * its EN counterpart, except an explicit allowlist. `navPhases` ("Farm") is the
- * design's own allowlisted collision. `farmRankingReturnBonusVip` ("VIP") is added on the same
- * rationale — a universal loanword used unchanged in Brazilian Portuguese gaming UI, not a
- * missed translation. `farmRankingColXp` ("XP") joins them for the same reason once the fourth
+ * design's own allowlisted collision. `farmRankingColXp` ("XP") joins it for the same reason once the fourth
  * pass dropped its "/hr"/"/ h" suffix — the abbreviation itself was never translated.
  */
 describe('Farm Ranking i18n parity', () => {
   const EN_PT_COLLISION_ALLOWLIST = new Set([
     'navPhases',
-    'farmRankingReturnBonusVip',
     'farmRankingColXp',
   ]);
 

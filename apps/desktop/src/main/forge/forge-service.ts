@@ -284,12 +284,15 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
         }
 
         const wanted = stoneWanted(request.stones, step.target);
-        const useStone = wanted !== null && step.chance < 1;
-        if (useStone && (owned[wanted] ?? 0) <= 0) {
+        const rollsOnWithoutStones = request.stopWhenOutOfStones === false;
+        const wantsStone = wanted !== null && step.chance < 1;
+        const outOfStone = wantsStone && (owned[wanted] ?? 0) <= 0;
+        if (outOfStone && !rollsOnWithoutStones) {
           stop = 'stones';
           stoneRarity = wanted;
           break;
         }
+        const useStone = wantsStone && !outOfStone;
 
         const wantsScroll = request.scroll === true && forgeProtectable(step.target);
         const chanceAfterStone = useStone ? forgeChance(step.target, fails, forgeStonePp(wanted)) : step.chance;
@@ -333,6 +336,13 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
             sentStone = null;
             sentScroll = false;
             outcome = await send(null, false);
+          } else if (sentStone !== null && rollsOnWithoutStones && outcome.kind === 'api_error' && outcome.code === 'NO_FORGE_AID') {
+            deps.gate.observe(outcome);
+            deps.log.info({ scope: 'forge', event: 'run.stone_out_rolling_on', runId });
+            owned[sentStone] = 0;
+            sentStone = null;
+            sentScroll = wantsScroll && step.chance < 1 && scrollCost > 0;
+            outcome = await send(null, sentScroll);
           }
         } catch (err) {
           stop = err instanceof PacingRefusedError && err.gateState !== 'halted' ? 'cooldown' : 'error';

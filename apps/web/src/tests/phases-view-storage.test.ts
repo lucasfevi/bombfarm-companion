@@ -53,6 +53,7 @@ describe('phases-view-storage', () => {
         phase: 151,
         farmPool: {},
         farmReturnBonus: 'off',
+        farmPass: false,
       });
     });
 
@@ -60,12 +61,13 @@ describe('phases-view-storage', () => {
       vi.stubGlobal('localStorage', memoryLocalStorage());
       localStorage.setItem(
         'bf-hp-phases-view-v1',
-        '{"phase":12,"farmPool":{"h1":true},"farmReturnBonus":"vip"}',
+        '{"phase":12,"farmPool":{"h1":true},"farmReturnBonus":"on","farmPass":true}',
       );
       expect(loadPhasesView()).toEqual({
         phase: 12,
         farmPool: { h1: true },
-        farmReturnBonus: 'vip',
+        farmReturnBonus: 'on',
+        farmPass: true,
       });
     });
 
@@ -75,7 +77,7 @@ describe('phases-view-storage', () => {
       vi.stubGlobal('localStorage', memoryLocalStorage());
       localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmObjective":"chests"}');
       const view = loadPhasesView();
-      expect(view).toEqual({ phase: 1, farmPool: {}, farmReturnBonus: 'off' });
+      expect(view).toEqual({ phase: 1, farmPool: {}, farmReturnBonus: 'off', farmPass: false });
       expect('farmObjective' in view).toBe(false);
     });
 
@@ -127,18 +129,36 @@ describe('phases-view-storage', () => {
       expect(loadPhasesView().farmPool).toEqual({ 'ghost-hero': false });
     });
 
-    it('farmReturnBonus outside the three literals normalizes to off', () => {
+    it('farmReturnBonus outside the two literals normalizes to off', () => {
       vi.stubGlobal('localStorage', memoryLocalStorage());
       localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmReturnBonus":"standard"}');
       expect(loadPhasesView().farmReturnBonus).toBe('off');
     });
 
-    it("farmReturnBonus 'on' and 'vip' round-trip as themselves", () => {
+    it("farmReturnBonus 'on' round-trips as itself, with no Pass", () => {
       vi.stubGlobal('localStorage', memoryLocalStorage());
       localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmReturnBonus":"on"}');
-      expect(loadPhasesView().farmReturnBonus).toBe('on');
+      expect(loadPhasesView()).toMatchObject({ farmReturnBonus: 'on', farmPass: false });
+    });
+
+    it("a legacy stored 'vip' loads as Return Bonus on with the Pass on", () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
       localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmReturnBonus":"vip"}');
-      expect(loadPhasesView().farmReturnBonus).toBe('vip');
+      expect(loadPhasesView()).toMatchObject({ farmReturnBonus: 'on', farmPass: true });
+    });
+
+    it('an explicit farmPass wins over the legacy migration, and a non-boolean one is ignored', () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
+      localStorage.setItem('bf-hp-phases-view-v1', '{"farmReturnBonus":"vip","farmPass":false}');
+      expect(loadPhasesView().farmPass).toBe(false);
+      localStorage.setItem('bf-hp-phases-view-v1', '{"farmPass":"yes"}');
+      expect(loadPhasesView().farmPass).toBe(false);
+    });
+
+    it('farmPass round-trips through save and load', () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
+      savePhasesView({ farmReturnBonus: 'off', farmPass: true });
+      expect(loadPhasesView()).toMatchObject({ farmReturnBonus: 'off', farmPass: true });
     });
 
     it('defaultPhasesView() omits phase/farmPool/farmReturnBonus so an untouched payload stays byte-identical', () => {

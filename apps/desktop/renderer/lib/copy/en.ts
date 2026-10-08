@@ -26,6 +26,9 @@ export const en = {
   // onlinePlayers* — the count beside the game connection at the status strip's left.
   onlinePlayersLabel: 'Players',
   onlinePlayersTip: 'Players online in the game right now, as its server counts them. Refreshed every few minutes.',
+  // passFeed* — the time left on the Pass, beside the players count.
+  passFeedLabel: 'Pass',
+  passFeedTip: 'Time left on your Pass.',
   shellUpdateAvailable: 'Update available',
   shellUpdateDownloading: 'Updating… {percent}%',
   shellUpdateReady: 'Restart to update',
@@ -121,7 +124,7 @@ export const en = {
   settingsForgeSectionTitle: 'Changes to your account',
   settingsForgeWritesLabel: 'Let the app forge, equip and reset points',
   settingsForgeWritesHelp:
-    "Off: the app plans and never changes your account. On: the Forge button, the forge queue, the Deconstruct page and the Optimizer's Apply steps can spend gold and essence, move gear and burn items — one confirmed run at a time, and forge runs can be stopped between calls.",
+    "Off: the app plans and never changes your account. On: the Forge button, the forge queue, the Deconstruct page and the Optimizer's Apply steps can spend gold, essence and Chance Stones, move gear and burn items — one confirmed run at a time, and forge runs can be stopped between calls.",
   settingsForgeWritesNotSavedTitle: 'Forge setting changed, but not saved',
 
   // settingsGame*/settingsRestartGameOnExit* — the one switch that lets Steam bring the game
@@ -333,6 +336,26 @@ export const en = {
   liveEarningsGoldPerPropOver: '{percent}% over estimate',
   liveEarningsGoldPerPropOnEstimate: 'on estimate',
 
+  // liveDamage* — the Damage panel: team and per-hero damage folded in the main process, only ever
+  // formatted here, never recomputed.
+  liveDamageTitle: 'Damage',
+  liveDamageTableAria: 'Damage by hero',
+  liveDamageTeamDpsLabel: 'Team DPS',
+  liveDamageSessionWindowLabel: 'session',
+  liveDamageHeroColumn: 'Hero',
+  liveDamageDpsColumn: 'DPS',
+  liveDamageUptimeColumn: 'Uptime',
+  liveDamageUptimeTip: 'On the field for {field} of the session’s {session}',
+  liveDurationUnderMinute: '<1 min',
+  liveDurationMinutes: '{n} min',
+  liveDurationHoursMinutes: '{h} h {mm} min',
+  liveDamagePropsColumn: 'Props',
+  liveDamageGoldColumn: 'Gold',
+  liveDamageUnattributedLabel: 'Unattributed',
+  liveDamageInfoLabel: 'About these figures',
+  liveDamageInfoBody:
+    'Damage is tied to a hero only when the game’s own feed proves which hero planted the bomb. Anything that could belong to more than one hero, or to none, is shown as Unattributed instead of guessed. Team DPS counts all of it; a hero’s DPS is its attributed damage over the time it spent on the field.',
+
   // liveMap* — the Map panel: which map is being played, and how far through it the run is.
   liveMapTitle: 'Map',
   liveMapHealthLabel: 'Map health',
@@ -361,7 +384,9 @@ export const en = {
   inventoryGroupTime: 'House parts',
   inventoryGroupStone: 'Skill stones',
   inventoryGroupChanceStone: 'Chance Stones',
-  inventoryChanceStone: '{rarity} Chance Stone',
+  inventoryChanceStone: 'Chance Stone',
+  inventoryMapKey: 'Map Key',
+  inventorySkillStone: 'Skill Stone',
   inventoryGroupChest: 'Chests',
   inventoryGroupRune: 'Runes',
   inventoryGroupSkin: 'Skins',
@@ -398,7 +423,6 @@ export const en = {
   inventorySortLabel: 'Sort by',
   inventorySortRarity: 'Rarity',
   inventorySortLevel: 'Level',
-  inventorySortValue: 'Value',
   inventorySortName: 'Name',
   inventorySortCount: 'Quantity',
   inventorySortMarket: 'Market price',
@@ -482,12 +506,12 @@ export const en = {
   forgeScrollOtherOn: 'Without the scroll',
   forgeLadderScrollTip: 'Protection Scroll: a miss keeps the level and costs {essence} essence',
   forgeScrollTip:
-    'On a roll it covers, the scroll costs essence whether the roll lands or misses, and a miss keeps the level. It works only on a single forge, never on the queue, and the run stops if the essence runs out.',
+    'On a roll it covers, the scroll costs essence whether the roll lands or misses, and a miss keeps the level. The run stops if the essence runs out.',
   forgeStopScrollMismatch: 'Scroll not taken',
   forgeResultScrollMismatch: 'Stopped at {level}: the game did not charge the Protection Scroll as this app asked',
   forgeResultScrollEssence: 'Essence on scrolls',
   forgeStoneNote:
-    'A Chance Stone is spent on every roll it is used on, landed or missed, and only on a single forge, never on the queue or automated runs. The game keeps the stone when a roll is already certain. The run uses one stone for each roll that can miss and stops when they run out.',
+    'A Chance Stone is spent on every roll it is used on, landed or missed, but the game keeps the stone when a roll is already certain. The run uses one stone for each roll that can miss and stops when they run out.',
   forgeStonesTitle: 'Chance Stones',
   forgeStonesTip:
     'Pick the Chance Stone each roll uses. "{join}" puts one kind on every roll. "{split}" lets different levels use different stones, and the minus and plus buttons move where each range ends. The cross removes a range, and "{none}" spends no stone on it. A roll that is already certain keeps its stone.',
@@ -514,6 +538,7 @@ export const en = {
   forgeStonesNoticeNone: 'No {rarity} Chance Stones owned: the run stops at the first roll that needs one',
   forgeFactBadRun: 'A bad run (p90)',
   forgeFactWallet: 'Wallet',
+  forgeFactWalletEssence: 'Essence',
   forgeWarnRisky:
     'A missed roll at {from}…{to} adds 5 points to the next roll’s chance and the gold is charged either way. From {high} up it also drops the piece one level.',
   forgeButton: 'Forge to {target}',
@@ -661,6 +686,18 @@ export const en = {
   forgeQueueConfirm: 'Start — spends gold and essence',
   forgeQueueConfirmCancel: 'Not now',
   forgeQueuePanelCaption: 'Forged in turn from the top; a piece already at its target leaves on its own.',
+  forgeQueueSettingsTitle: 'For every piece',
+  forgeQueueSettingsTip:
+    'These apply to every piece in the queue. Stone ranges are by the level a roll aims for, so one covering levels 10 to 13 is used on every roll aiming at those levels, whatever the piece. A change reaches the next piece to start, and the settings lock while the queue runs.',
+  forgeQueueStopLabel: 'Stop when out of Chance Stones',
+  forgeQueueStopTip:
+    'On, the queue stops at the first roll that needs a Chance Stone you no longer own. Off, it carries on without the stone, at the lower chance.',
+  forgeQueueScrollLabel: 'Protection Scroll on every roll it covers',
+  forgeQueueScrollTip:
+    'Each piece is forged with the Protection Scroll on the rolls that offer it: a miss keeps the level and costs essence. A piece stops if the essence runs out.',
+  forgeQueueStonesStop: 'Chance Stones expected to run out at {item} — the queue stops there',
+  forgeQueueStonesRoll: 'Chance Stones expected to run out at {item} — it and the pieces after it roll without them',
+  forgeQueueConfirmStones: 'Chance Stones used: about {stones}.',
   // Printed in place of the rolling/progress span while the Optimizer has paused the queue for
   // one of its own steps — see apply* below.
   forgeQueuePausedForApply: 'Paused for the Optimizer',

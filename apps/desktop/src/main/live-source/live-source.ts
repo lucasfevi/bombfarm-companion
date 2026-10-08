@@ -40,9 +40,12 @@ import {
   type RosterHeroAbilities,
 } from '@bombfarm/domain/live';
 import { collectionFromSave } from '@bombfarm/domain/model';
+import { economyMultipliers } from '@bombfarm/domain/farm-rate';
+import { passActive } from '@bombfarm/domain/import-save';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { xpPerProp } from '@bombfarm/domain/phase-wiki';
 import { gameProcessQuery, runPowerShellAsync, runPowerShellSync } from '../game-reader/process.js';
+import { DamageFold } from './damage-fold.js';
 import { EarningsFold } from './earnings-fold.js';
 import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
 import { FrameRing } from './frame-ring.js';
@@ -488,19 +491,20 @@ function fieldHeroesFromRotation(rotation: RotationSnapshot): readonly LiveTickH
  * `xpPerPropActual` and `weightedAvgGoldActual` are the boost-applied variants; their `*Wiki`
  * siblings are the unboosted base and are deliberately not what a player-facing panel shows.
  */
-function wikiFactsFor(phase: number, boosts: MapAccountBoosts): MapWikiFacts | null {
+export function wikiFactsFor(phase: number, boosts: MapAccountBoosts, returnWindow: boolean): MapWikiFacts | null {
   const intel = computePhaseIntelGlobal(phase, {
     teamCoinPct: boosts.teamCoinPct,
     xpMult: boosts.xpMult,
     collectionGoldPct: boosts.collectionGoldPct,
   });
   if (!intel) return null;
+  const economy = economyMultipliers({ returnBonus: returnWindow ? 'on' : 'off', pass: boosts.pass });
   return {
     propsTotal: intel.propCount,
     economy: {
-      xpPerProp: intel.xpPerPropActual,
-      averageGoldPerProp: intel.weightedAvgGoldActual,
-      averageGoldPerClear: intel.totalMapGoldActual,
+      xpPerProp: intel.xpPerPropActual * economy.xp,
+      averageGoldPerProp: intel.weightedAvgGoldActual * economy.gold,
+      averageGoldPerClear: intel.totalMapGoldActual * economy.gold,
     },
   };
 }
@@ -532,6 +536,13 @@ function readXpMult(skills: Record<string, unknown> | undefined): number | undef
   const totals = skills.totals;
   if (!isPlainObject(totals)) return undefined;
   const value = totals.xp_mult;
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+/** `account.vip_until`, unix seconds. */
+function readVipUntil(account: Record<string, unknown> | undefined): number | undefined {
+  if (!isPlainObject(account)) return undefined;
+  const value = account.vip_until;
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
@@ -588,6 +599,11 @@ export class LiveSource {
 
   readonly #earningsFold: EarningsFold;
   readonly #mapFold: MapFold;
+  readonly #damageFold: DamageFold;
+  /** Every tap numbers its own frames from 1, so a tap rebuilt by {@link forceDetach} restarts at 1
+   *  while the folds still remember the previous tap's last number and would drop its frames. The
+   *  folds are handed this process-level count instead, which only ever grows. */
+  #frameCounter = 0;
   /** `null` until the first tap frame of the session has been folded — {@link LiveView.earnings}
    *  stays `null` until then too, rather than reporting a rate computed over zero real ticks. */
   #goldBalance: number | null = null;
@@ -608,6 +624,7 @@ export class LiveSource {
    *  {@link #xpMult} is. */
   #teamCoinPct: number | undefined;
   #collectionGoldPct: number | undefined;
+  #vipUntil: number | undefined;
   /** `undefined` means no binding has been observed yet, the state a `null` read from the store
    *  must never be mistaken for — see {@link #trackAccountBinding}. */
   #lastBinding: string | undefined;
@@ -620,6 +637,7 @@ export class LiveSource {
     this.#now = deps.now ?? Date.now;
     this.#earningsFold = new EarningsFold({ now: this.#now, xpPerProp, log: this.#log });
     this.#mapFold = new MapFold({ wikiFactsFor });
+    this.#damageFold = new DamageFold({ now: this.#now, log: this.#log });
     if (deps.createTap) {
       this.#createTap = deps.createTap;
       this.#ring = null;
@@ -699,6 +717,7 @@ export class LiveSource {
       onFieldHeroIds: this.#fieldState.onFieldHeroIdsSorted,
       earnings: this.#buildEarnings(),
       map: this.#mapFold.current,
+      damage: this.#damageFold.view,
       updatedAt: this.#updatedAt,
     };
   }
@@ -728,6 +747,7 @@ export class LiveSource {
    *  window is untouched: see {@link EarningsFold.reset}. */
   resetEarnings(): void {
     this.#earningsFold.reset('reset');
+    this.#damageFold.reset('reset');
   }
 
   /** The REST rotation projection: the base view every countdown falls back to when no live tap
@@ -740,12 +760,15 @@ export class LiveSource {
     this.#xpMult = readXpMult(view.payload.skills) ?? this.#xpMult;
     this.#teamCoinPct = readTeamCoinPct(view.payload.skills) ?? this.#teamCoinPct;
     this.#collectionGoldPct = readCollectionGoldPct(view.payload.skills) ?? this.#collectionGoldPct;
+    this.#vipUntil = readVipUntil(view.payload.account) ?? this.#vipUntil;
     this.#mapFold.setAccountBoosts({
       xpMult: this.#xpMult ?? 1,
       teamCoinPct: this.#teamCoinPct ?? 0,
       collectionGoldPct: this.#collectionGoldPct ?? 0,
+      pass: passActive(this.#vipUntil, this.#now()),
     });
     this.#trackAccountBinding(view.store.binding);
+    if (Array.isArray(view.payload.heroes)) this.#damageFold.setRoster(view.payload.heroes);
     const accountGold = readAccountGold(view.payload.account);
     if (accountGold !== undefined) {
       this.#accountGoldBalance = accountGold;
@@ -763,6 +786,7 @@ export class LiveSource {
     if (binding === null) return;
     if (this.#lastBinding !== undefined && binding !== this.#lastBinding) {
       this.#earningsFold.reset('accountChange');
+      this.#damageFold.reset('accountChange');
       // Only the stream-derived half is dropped. The boosts were read from THIS call's payload,
       // a few lines above — they already belong to the new account, and clearing them here would
       // report the map's economy at no boost at all until the next rotation read landed. Same
@@ -931,8 +955,10 @@ export class LiveSource {
       this.#currency = event.currency;
       this.#touch();
     } else if (event.type === 'frame') {
-      this.#earningsFold.consumeTick(event.frame.tick, event.frame.sequence, this.#xpMult);
-      this.#mapFold.consumeTick(event.frame.tick, event.frame.sequence);
+      this.#frameCounter += 1;
+      this.#earningsFold.consumeTick(event.frame.tick, this.#frameCounter, this.#xpMult);
+      this.#mapFold.consumeTick(event.frame.tick, this.#frameCounter);
+      this.#damageFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#earningsStarted = true;
       if (event.frame.tick.gold !== undefined) this.#goldBalance = event.frame.tick.gold;
       this.#ingestTick(event.frame.tick, Date.parse(event.frame.at));

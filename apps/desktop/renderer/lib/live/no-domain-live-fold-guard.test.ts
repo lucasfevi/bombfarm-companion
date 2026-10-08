@@ -69,3 +69,32 @@ describe('the renderer never re-folds the field-countdown drain rate', () => {
     expect(FORBIDDEN_PATTERN.test(stripComments(fixtureSource))).toBe(true);
   });
 });
+
+const GAME_DATA_PATTERN = /@bombfarm\/game-data\b/;
+
+describe('the renderer never re-attributes live damage', () => {
+  it('zero imports of @bombfarm/game-data anywhere under the renderer tree', () => {
+    const offenders = readAll(RENDERER_ROOT, ['.ts', '.tsx'])
+      .filter((file) => GAME_DATA_PATTERN.test(stripComments(file.source)))
+      .map((file) => file.path);
+    expect(
+      offenders,
+      `Found an @bombfarm/game-data import in: ${offenders.join(', ')}. Damage is attributed once, ` +
+        'in the main process, and sent to the renderer as finished figures — recomputing any of it ' +
+        'here is exactly the divergence this guard exists to catch.',
+    ).toEqual([]);
+  });
+
+  it('red state demonstrated: a temporary @bombfarm/game-data import is caught, in any form', () => {
+    const fixtures = [
+      "import { createLiveDamageAttributor } from '@bombfarm/game-data';",
+      "import { crossCells } from '@bombfarm/game-data/live-damage';",
+      "const engine = await import('@bombfarm/game-data');",
+    ];
+    expect(fixtures.map((fixture) => GAME_DATA_PATTERN.test(stripComments(fixture)))).toEqual([true, true, true]);
+  });
+
+  it('an import named only in a comment does not trip it', () => {
+    expect(GAME_DATA_PATTERN.test(stripComments("// import x from '@bombfarm/game-data'"))).toBe(false);
+  });
+});

@@ -11,6 +11,7 @@ import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
 import { canonicalStringify } from '@bombfarm/contracts';
 import type { AccountView } from '@bombfarm/contracts';
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import { passActive } from '@bombfarm/domain/import-save';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { NO_AURAS_AT_CAP, type AurasAtCap } from '@bombfarm/domain/team-buffs';
 import { readFarmDepTuple, type FarmInputs } from '@bombfarm/farm/core';
@@ -48,7 +49,11 @@ export const DEFAULT_FARM_CONTROLS: FarmControls = Object.freeze({
  * missing input withholds the whole board rather than producing a plausible-looking number from
  * an invented one.
  */
-export function buildFarmInputs(view: AccountView, controls: FarmControls): FarmInputs | null {
+export function buildFarmInputs(
+  view: AccountView,
+  controls: FarmControls,
+  nowMs: number = Date.now(),
+): FarmInputs | null {
   const payload = view.payload;
 
   const roster = buildAccountRoster(view);
@@ -104,6 +109,7 @@ export function buildFarmInputs(view: AccountView, controls: FarmControls): Farm
     maxPhase: account.maxPhase ?? null,
     farmPoolOverrides: controls.farmPoolOverrides,
     farmReturnBonus: controls.farmReturnBonus,
+    farmPass: passActive(account.vipUntil, nowMs),
     aurasAtCap: controls.aurasAtCap,
   };
 }

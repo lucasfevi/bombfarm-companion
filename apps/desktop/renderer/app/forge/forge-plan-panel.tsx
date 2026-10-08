@@ -231,6 +231,7 @@ export function ForgeForecastPanel({
   stoneRanges,
   ownedStones,
   walletGold,
+  walletEssence,
   reason,
   startRefusal,
   labels,
@@ -244,6 +245,7 @@ export function ForgeForecastPanel({
   /** Chance Stones held per rarity, 0…5. */
   ownedStones: readonly number[];
   walletGold: number | null;
+  walletEssence: number | null;
   reason: ForgeButtonReason;
   /** Why main refused the last start, until the next press or a change of piece. */
   startRefusal: ForgeStartReason | null;
@@ -321,6 +323,11 @@ export function ForgeForecastPanel({
       id: 'wallet',
       label: t.forgeFactWallet,
       value: <span data-testid="forge-fact-wallet">{walletGold === null ? BLANK : <ForgeGold>{labels.gold(walletGold)}</ForgeGold>}</span>,
+    },
+    {
+      id: 'wallet-essence',
+      label: t.forgeFactWalletEssence,
+      value: <span data-testid="forge-fact-wallet-essence">{walletEssence === null ? BLANK : labels.count(walletEssence)}</span>,
     },
   ];
   if (forecast?.other) {

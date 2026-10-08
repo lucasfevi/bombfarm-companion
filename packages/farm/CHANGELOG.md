@@ -1,5 +1,21 @@
 # @bombfarm/farm
 
+## 1.3.0
+
+### Minor Changes
+
+- bc5f232: The app now detects your Pass: Farm and Skill Tree figures include its always-on gold, XP and drop bonuses, the Live map's per-prop gold and XP follow it and the Return Bonus window, and the status strip shows the time left on the Pass.
+
+### Patch Changes
+
+- bc5f232: The Farm board has a Pass toggle that prices the Pass's always-on gold, XP and drop bonuses into every estimate, and the Return Bonus is now an on/off switch whose rate follows the Pass.
+- Updated dependencies [8951cb5]
+- Updated dependencies [0925ddb]
+- Updated dependencies [bc5f232]
+  - @bombfarm/domain@1.10.0
+  - @bombfarm/game-art@0.8.1
+  - @bombfarm/hero@0.5.6
+
 ## 1.2.13
 
 ### Patch Changes

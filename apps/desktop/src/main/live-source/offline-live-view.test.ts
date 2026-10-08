@@ -140,30 +140,55 @@ describe('offline mode produces a Live view with something in it', () => {
   });
 
   /**
-   * The committed capture is only 60 records — a session runs well past that many frames, so the
-   * replay restarts it from the top. A tap torn down and rebuilt (a consent revoke, here forced
-   * directly) restarts the capture the same way, with a fresh per-instance sequence counter
-   * starting back at 1 — and the fold's own `#lastSequence` remembers what the PREVIOUS tap already
-   * consumed. Advancing the same number of frames both before and after the rebuild means the
-   * second batch's sequence numbers (1..N) are all `<= lastSequence`, so this proves the seam pays
-   * nothing twice: without the guard, session time and gold/XP totals recorded in `before` would
-   * accrue again, only doubled, when it isn't.
+   * A tap torn down and rebuilt (a consent revoke, here forced directly) restarts the capture and
+   * numbers its own frames from 1 again. The folds are handed the process-level counter, so the
+   * rebuilt tap's frames count again, exactly as each replay loop's restart already does.
    */
-  it('a restarted capture does not pay its early props twice', async () => {
+  it('frames replayed after a tap rebuild count again, so the session keeps growing', async () => {
     const source = offlineLiveSource();
     source.ingestRotation(offlineAccountView());
     source.start();
     vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 30);
     const before = source.getView().earnings;
+    const damageBefore = source.getView().damage;
     expect(before?.sessionSeconds).toBeGreaterThan(0);
+    expect(damageBefore?.sessionSeconds).toBeGreaterThan(0);
 
     await source.forceDetach();
     vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 30);
 
     const after = source.getView().earnings;
-    expect(after?.sessionSeconds).toBe(before?.sessionSeconds);
-    expect(after?.goldSession).toBe(before?.goldSession);
-    expect(after?.xpSession).toBe(before?.xpSession);
+    const damageAfter = source.getView().damage;
+    expect(after?.sessionSeconds).toBeGreaterThan(before?.sessionSeconds as number);
+    expect(after?.goldSessionTotal).toBeGreaterThan(before?.goldSessionTotal as number);
+    expect(after?.xpSessionTotal).toBeGreaterThan(before?.xpSessionTotal as number);
+    expect(damageAfter?.sessionSeconds).toBeGreaterThan(damageBefore?.sessionSeconds as number);
+    expect(damageAfter?.team.damage).toBeGreaterThan(damageBefore?.team.damage as number);
+    await source.teardown();
+  });
+
+  it('is null in the damage view before any frame is replayed', () => {
+    expect(offlineLiveSource().getView().damage).toBeNull();
+  });
+
+  it('produces a damage view with team damage that reconciles against its heroes and Unattributed', async () => {
+    const source = offlineLiveSource();
+    source.ingestRotation(offlineAccountView());
+    source.start();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 60);
+
+    const damage = source.getView().damage;
+    expect(damage).not.toBeNull();
+    expect(damage?.team.damage).toBeGreaterThan(0);
+    const accounted = [...(damage?.heroes ?? []), ...Object.values(damage?.unattributedReasons ?? {})].reduce(
+      (total, entry) => ({
+        damage: total.damage + entry.damage,
+        props: total.props + entry.props,
+        gold: total.gold + entry.gold,
+      }),
+      { damage: 0, props: 0, gold: 0 },
+    );
+    expect(accounted).toEqual(damage?.team);
     await source.teardown();
   });
 });

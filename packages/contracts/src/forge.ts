@@ -28,6 +28,8 @@ export interface ForgeStartRequest {
   stones?: readonly (number | null | undefined)[];
   /** Ask for the Protection Scroll on every roll that offers it; absent or false is none. */
   scroll?: boolean;
+  /** Absent or true stops the run when a chosen Chance Stone runs out; false rolls on without it. */
+  stopWhenOutOfStones?: boolean;
 }
 
 /** Why a run did not start. `busy` is another run in flight; `offline` is an account with no

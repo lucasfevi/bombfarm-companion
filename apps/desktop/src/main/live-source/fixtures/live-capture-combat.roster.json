@@ -1,0 +1,62 @@
+[
+  {
+    "id": "1047421",
+    "cooldownReduction": 0.08523597197637996,
+    "carriesFantasma": false
+  },
+  {
+    "id": "1059626",
+    "cooldownReduction": 0.1887954944144401,
+    "carriesFantasma": false
+  },
+  {
+    "id": "1200141",
+    "cooldownReduction": 0.1715322660299143,
+    "carriesFantasma": false
+  },
+  {
+    "id": "1200171",
+    "cooldownReduction": 0.14825252006168124,
+    "carriesFantasma": true
+  },
+  {
+    "id": "1254372",
+    "cooldownReduction": 0.09254339469651911,
+    "carriesFantasma": false
+  },
+  {
+    "id": "1295432",
+    "cooldownReduction": 0.04113732334076469,
+    "carriesFantasma": false
+  },
+  {
+    "id": "421186",
+    "cooldownReduction": 0.11253564408657742,
+    "carriesFantasma": false
+  },
+  {
+    "id": "485463",
+    "cooldownReduction": 0.057222097674905256,
+    "carriesFantasma": false
+  },
+  {
+    "id": "721878",
+    "cooldownReduction": 0.00021823180014969001,
+    "carriesFantasma": false
+  },
+  {
+    "id": "723632",
+    "cooldownReduction": 0.12579382919371127,
+    "carriesFantasma": true
+  },
+  {
+    "id": "862212",
+    "cooldownReduction": 0.18333996823129123,
+    "carriesFantasma": false
+  },
+  {
+    "id": "975490",
+    "cooldownReduction": 0.1403305291377293,
+    "carriesFantasma": true
+  }
+]

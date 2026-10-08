@@ -1,5 +1,21 @@
 # @bombfarm/game-art
 
+## 0.8.1
+
+### Patch Changes
+
+- 8951cb5: Inventory, Forge and Deconstruct show your current inventory again after the game update. The game stopped sending the gold sell value when it removed selling items for gold, and the app was treating that as a damaged read and falling back to an old snapshot, so Deconstruct could offer items you no longer had. The gold value on item cards, the Value column and the Value sort are gone with it.
+
+  Items imported from Steam can be burned in Deconstruct right away, as the game now allows.
+
+- 0925ddb: Map keys, skill stones and chance stones in the inventory now read like gems: the name on top (Map Key, Skill Stone, Chance Stone) and the rarity on the line below, in the rarity colour. Their hover cards follow the same layout.
+
+  A Chance Stone's hover card now also shows the forge chance it adds (+10% for Common up to +60% for Mythic).
+
+- Updated dependencies [8951cb5]
+- Updated dependencies [bc5f232]
+  - @bombfarm/domain@1.10.0
+
 ## 0.8.0
 
 ### Minor Changes

@@ -32,8 +32,8 @@ const entryFor = (key: string) => {
 
 describe('the live market rows', () => {
   it('prices every row it enumerated, whatever the catalog knows about it', () => {
-    expect(snapshot.coverage.marketRows).toBe(40);
-    expect(snapshot.coverage.pricedRows).toBe(40);
+    expect(snapshot.coverage.marketRows).toBe(45);
+    expect(snapshot.coverage.pricedRows).toBe(45);
     expect(snapshot.coverage.unkeyedRows).toBe(0);
   });
 
@@ -102,6 +102,21 @@ describe('the live market rows', () => {
     ['chest_skill_3', 3, 'Skill Stone Chest (Act 3)'],
   ])('links %s, which the published snapshot could not', (defId, rarityIdx, hashName) => {
     expect(entryFor(priceKey(defId, rarityIdx))?.hashName).toBe(hashName);
+  });
+
+  it.each([
+    ['forja_pedra_comum', 0, 'Chance Stone (Common)', 0.03],
+    ['forja_pedra_incomum', 1, 'Chance Stone (Uncommon)', 0.03],
+    ['forja_pedra_raro', 2, 'Chance Stone (Rare)', 0.03],
+    ['forja_pedra_epico', 3, 'Chance Stone (Epic)', 0.07],
+    ['forja_pedra_lendario', 4, 'Chance Stone (Legendary)', 0.4],
+  ])('prices an owned %s Chance Stone off its own listing', (defId, rarity, hashName, usd) => {
+    const resolved = resolveItemPrice({ defId, rarity, tradable: true }, snapshot);
+
+    expect(resolved.state).toBe('priced');
+    expect(resolved.key).toBe(priceKey(defId, rarity));
+    expect(resolved.hashName).toBe(hashName);
+    expect(resolved.lowestUsd).toBeCloseTo(usd);
   });
 
   it('keeps two same-act chests apart, which anything but the family name would have merged', () => {

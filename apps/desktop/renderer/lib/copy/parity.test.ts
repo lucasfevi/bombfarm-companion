@@ -37,7 +37,8 @@ import { ptBR } from './pt-BR';
 // in pt-BR, the same case as inventoryViewLabel above.
 // heroRank / importColRank: "Rank" is the game's own untranslated term for a hero's letter grade —
 // the game itself prints it in Portuguese, so translating it here would rename a game concept.
-// modeDps: "DPS" — an acronym, identical in both languages.
+// modeDps / liveDamageDpsColumn: "DPS" — an acronym, identical in both languages.
+// liveDamagePropsColumn: "Props" — the same loanword as liveEarningsPropsTotalLabel above.
 // forgeItemTitle: "Item" is an ordinary Portuguese noun spelled the same way, and it is the word
 // the game's own Portuguese interface uses for a piece of gear.
 // pvpNavLabel / pvpPoints / pvpStandingRankValue / pvpStandingPointsValue: "PVP" is the game's own
@@ -60,6 +61,8 @@ import { ptBR } from './pt-BR';
 // collectionsCountOf / collectionsPieceAria / collectionsAxisProgress: placeholders around a slash, a comma
 // and a dash — no words of their own, the inventoryDetailSetSlot precedent. collectionsReadyUnknownMark
 // is a lone question mark, the pvpSquadUnknownMark precedent.
+// liveDurationUnderMinute / liveDurationMinutes / liveDurationHoursMinutes: "min" and "h" abbreviate
+// the same words in both languages, around placeholders and a less-than sign — no words of their own.
 // heroesSortRoll: "Roll" is the owner's chosen pt-BR word for the birth roll too.
 // applyModalCallEquip: three placeholders around two arrows — no words, the same
 // inventoryDetailSetSlot precedent.
@@ -78,6 +81,11 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'heroesSortRoll',
   'importColRank',
   'modeDps',
+  'liveDamageDpsColumn',
+  'liveDamagePropsColumn',
+  'liveDurationUnderMinute',
+  'liveDurationMinutes',
+  'liveDurationHoursMinutes',
   'rosterColStatus',
   'forgeItemTitle',
   'pvpNavLabel',

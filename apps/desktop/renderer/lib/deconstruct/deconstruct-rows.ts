@@ -173,7 +173,7 @@ export function deconstructTableView(items: readonly InventoryViewItem[]): Inven
       {
         kind: 'other',
         count: items.length,
-        entries: items.map((item) => ({ key: item.id, item, count: 1, sellValueGold: item.sellValueGold })),
+        entries: items.map((item) => ({ key: item.id, item, count: 1 })),
       },
     ],
     skipped: 0,

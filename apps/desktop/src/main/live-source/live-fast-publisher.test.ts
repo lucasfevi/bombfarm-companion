@@ -1,4 +1,4 @@
-import { LIVE_DISPLAY_REFRESH_MS, type FieldCountdown, type LiveEarnings, type LiveEvent, type LiveHeroEnergy, type LiveView, type RecoveryCountdown, type RotationSnapshot } from '@bombfarm/contracts';
+import { LIVE_DISPLAY_REFRESH_MS, type FieldCountdown, type LiveDamage, type LiveEarnings, type LiveEvent, type LiveHeroEnergy, type LiveView, type RecoveryCountdown, type RotationSnapshot } from '@bombfarm/contracts';
 import { describe, expect, it } from 'vitest';
 import {
   createLiveFastPublisher,
@@ -7,10 +7,33 @@ import {
   sameIdList,
 } from './live-fast-publisher.js';
 
-type ViewSlice = Pick<LiveView, 'field' | 'recovery' | 'energies' | 'onFieldHeroIds' | 'rotation' | 'earnings' | 'map'>;
+type ViewSlice = Pick<LiveView, 'field' | 'recovery' | 'energies' | 'onFieldHeroIds' | 'rotation' | 'earnings' | 'map' | 'damage'>;
 
 function view(overrides: Partial<ViewSlice> = {}): ViewSlice {
-  return { field: [], recovery: [], energies: [], onFieldHeroIds: [], rotation: null, earnings: null, map: null, ...overrides };
+  return { field: [], recovery: [], energies: [], onFieldHeroIds: [], rotation: null, earnings: null, map: null, damage: null, ...overrides };
+}
+
+function damage(overrides: Partial<LiveDamage> = {}): LiveDamage {
+  const none = { damage: 0, props: 0, gold: 0 };
+  return {
+    teamDps10: 120,
+    teamDpsSession: 100,
+    coverageSeconds: 300,
+    sessionSeconds: 900,
+    heroes: [{ heroId: 'a', dps: 80, damage: 800, props: 4, gold: 400, fieldSeconds: 450, uptime: 0.5, onField: true }],
+    unattributed: { damage: 50, props: 2, gold: 90, dps: 0.05 },
+    unattributedReasons: {
+      noOwnerAtBirth: none,
+      explosionWithoutBomb: none,
+      streamDiscontinuity: none,
+      unresolvedOverlap: { damage: 50, props: 0, gold: 0 },
+      explosionlessWithoutFantasma: none,
+      sharedOrUnattributedKill: { damage: 0, props: 2, gold: 90 },
+      noHitOnLootCell: none,
+    },
+    team: { damage: 850, props: 6, gold: 490 },
+    ...overrides,
+  };
 }
 
 function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
@@ -66,7 +89,7 @@ describe('createLiveFastPublisher — publishes only when the fast channel actua
     for (let i = 0; i < 20; i += 1) fireTick();
 
     expect(emitted).toHaveLength(1);
-    expect(emitted[0]).toEqual({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: null, map: null });
+    expect(emitted[0]).toEqual({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: null, map: null, damage: null });
   });
 
   it('a genuine change in field countdowns republishes; an unrelated re-poll with identical content does not', () => {
@@ -177,6 +200,46 @@ describe('createLiveFastPublisher — publishes only when the fast channel actua
 
     expect(emitted).toHaveLength(2);
     expect(emitted[1]).toMatchObject({ type: 'fastUpdate', earnings: currentEarnings });
+  });
+
+  it('carries damage through as a finished value, unchanged from what getView returned', () => {
+    const value = damage({ teamDps10: 333 });
+    const { publisher, emitted, fireTick } = harness(() => view({ damage: value }));
+    publisher.start();
+    fireTick();
+
+    expect(emitted).toHaveLength(1);
+    expect((emitted[0] as { damage: LiveDamage | null }).damage).toBe(value);
+  });
+
+  it('a damage-only change republishes, even with every other slice unchanged', () => {
+    let current: LiveDamage | null = null;
+    const { publisher, emitted, fireTick } = harness(() => view({ damage: current }));
+    publisher.start();
+    fireTick();
+    expect(emitted).toHaveLength(1);
+
+    current = damage();
+    fireTick();
+    expect(emitted).toHaveLength(2);
+
+    current = damage({ team: { damage: 851, props: 6, gold: 490 } });
+    fireTick();
+    expect(emitted).toHaveLength(3);
+    expect(emitted[2]).toMatchObject({ type: 'fastUpdate', damage: current });
+  });
+
+  it('a new damage object with identical content does not republish', () => {
+    let current = damage();
+    const { publisher, emitted, fireTick } = harness(() => view({ damage: current }));
+    publisher.start();
+    fireTick();
+
+    current = damage();
+    fireTick();
+    fireTick();
+
+    expect(emitted).toHaveLength(1);
   });
 
   it('the publish cadence is unchanged: still one scheduled callback at the same interval, earnings included', () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ForgeEvent, ForgeRunResult, ForgeStartRequest, ForgeStartResult } from '@bombfarm/contracts';
 import type { ForgeQueuePiece } from './forge-queue-reducer';
+import { DEFAULT_FORGE_QUEUE_SETTINGS, type ForgeQueueSettings } from './forge-queue-settings';
 import { createForgeQueueStore } from './forge-queue-store';
 
 type Bridge = NonNullable<Window['bfc']>;
@@ -62,7 +63,12 @@ const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 function memory(initial: readonly ForgeQueuePiece[] = []) {
   let saved: readonly ForgeQueuePiece[] = initial;
-  return { load: () => saved, save: (pieces: readonly ForgeQueuePiece[]) => (saved = pieces), read: () => saved };
+  return {
+    load: () => saved,
+    save: (pieces: readonly ForgeQueuePiece[]) => (saved = pieces),
+    read: () => saved,
+    settings: () => DEFAULT_FORGE_QUEUE_SETTINGS,
+  };
 }
 
 function countingMemory(initial: readonly ForgeQueuePiece[] = []) {
@@ -76,8 +82,55 @@ function countingMemory(initial: readonly ForgeQueuePiece[] = []) {
     },
     read: () => saved,
     saveCalls: () => calls,
+    settings: () => DEFAULT_FORGE_QUEUE_SETTINGS,
   };
 }
+
+describe('the forge queue store sends its settings with every piece', () => {
+  it('sends the stones by target, the scroll and the stop switch it reads when the piece is asked for', async () => {
+    let sequence = 0;
+    let settings: ForgeQueueSettings = {
+      ranges: [
+        { upTo: 9, rarity: null },
+        { upTo: 13, rarity: 0 },
+        { upTo: 15, rarity: 2 },
+      ],
+      stopWhenOutOfStones: false,
+      scroll: true,
+    };
+    const { bridge, starts, push } = fakeBridge(() => ({ ok: true, runId: `r${String(++sequence)}` }));
+    const store = createForgeQueueStore({ bridge, ...memory(), settings: () => settings });
+    store.addMany([
+      { itemId: 'a', target: 12 },
+      { itemId: 'b', target: 12 },
+    ]);
+    store.startQueue();
+    await flush();
+    settings = { ...settings, scroll: false, stopWhenOutOfStones: true };
+    push(done('r1', 'a', 'target'));
+    await flush();
+
+    expect(starts[0]).toEqual({
+      itemId: 'a',
+      target: 12,
+      maxGold: null,
+      maxAttempts: null,
+      stones: [null, null, null, null, null, null, null, null, null, 0, 0, 0, 0, 2, 2],
+      scroll: true,
+      stopWhenOutOfStones: false,
+    });
+    expect(starts[1]).toMatchObject({ itemId: 'b', scroll: false, stopWhenOutOfStones: true });
+  });
+
+  it('leaves the stones out of the request when none is chosen', async () => {
+    const { bridge, starts } = fakeBridge(() => ({ ok: true, runId: 'r1' }));
+    const store = createForgeQueueStore({ bridge, ...memory(), settings: () => DEFAULT_FORGE_QUEUE_SETTINGS });
+    store.add('a', 12);
+    store.startQueue();
+    await flush();
+    expect(starts[0]).not.toHaveProperty('stones');
+  });
+});
 
 describe('the forge queue store drives main one piece at a time', () => {
   it('asks for the head piece on Start, and for the next one only once the first run is done', async () => {
@@ -89,7 +142,9 @@ describe('the forge queue store drives main one piece at a time', () => {
     store.startQueue();
     await flush();
 
-    expect(starts).toEqual([{ itemId: 'a', target: 12, maxGold: null, maxAttempts: null }]);
+    expect(starts).toEqual([
+      { itemId: 'a', target: 12, maxGold: null, maxAttempts: null, scroll: false, stopWhenOutOfStones: true },
+    ]);
     expect(store.getState().active).toEqual({ itemId: 'a', runId: 'r1' });
 
     push(done('r1', 'a', 'target'));

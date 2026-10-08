@@ -400,6 +400,7 @@ const PEEK_LABELS = {
   teamAura: { pt: 'aura do time', en: 'team aura' },
   ownSheet: { pt: 'ficha própria', en: 'own sheet' },
   forge: { pt: 'Forja', en: 'Forge' },
+  forgeChance: { pt: 'Chance de forja', en: 'Forge chance' },
   power: { pt: 'Poder', en: 'Power' },
   deployed: { pt: 'Em campo', en: 'Deployed' },
   emptySlot: { pt: 'Vazio', en: 'Empty' },

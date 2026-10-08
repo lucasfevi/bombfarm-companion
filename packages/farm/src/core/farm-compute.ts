@@ -6,7 +6,7 @@
 // computeFarmRates is @bombfarm/domain's own stated convenience entry point — it fixes the
 // facts -> squad -> rows ordering in one place. Do NOT hand-compose computeHeroFarmFacts +
 // computeSquadFarmFacts + computeFarmRateTable here: that re-creates the domain package's
-// ordering contract in a second place for no benefit. returnBonusMultiplier and E_D_CELLS are
+// ordering contract in a second place for no benefit. economyMultipliers and E_D_CELLS are
 // intentionally never imported — this surface never applies a multiplier or a cadence constant
 // itself.
 import {
@@ -15,6 +15,7 @@ import {
   type FarmAccount,
   type FarmRateRow,
 } from '@bombfarm/domain/farm-rate';
+export { normalizeStoredReturnBonus } from '@bombfarm/domain/farm-rate';
 // resolveFarmObjective, farmObjectiveValue and bestFarmPhase are deliberately NOT imported —
 // that surface belongs to the next-point ranking mode, not to this board.
 import { FARM_RESPEC_MIN_GAIN_PCT } from '@bombfarm/domain/farm-optimize';
@@ -79,6 +80,7 @@ export function readFarmDepTuple(inputs: FarmInputs) {
     inputs.farmPoolOverrides,
     inputs.farmReturnBonus,
     inputs.aurasAtCap,
+    inputs.farmPass ?? false,
   ] as const;
 }
 
@@ -176,6 +178,7 @@ export function computeFarmRanking(inputs: FarmInputs): FarmRankingResult {
       account: buildAccount(inputs),
       enabledHeroIds,
       returnBonus: inputs.farmReturnBonus,
+      pass: inputs.farmPass ?? false,
       maxPhase: inputs.maxPhase,
     });
     return { rows, reason: null };

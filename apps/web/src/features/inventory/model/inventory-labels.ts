@@ -62,7 +62,9 @@ function itemName(item: InventoryViewItem, strings: Strings, lang: Lang): string
   if (item.kind === 'chest') return chestName(item.defId, strings);
   if (item.kind === 'skin') return skinName(item.defId);
   if (item.kind === 'rune') return runeName(item, lang);
-  if (item.kind === 'chanceStone') return sub(strings.inventoryChanceStone, { rarity: itemRarityLabel(item.rarityIdx, lang) });
+  if (item.kind === 'chanceStone') return strings.inventoryChanceStone;
+  if (item.kind === 'key') return strings.inventoryMapKey;
+  if (item.kind === 'stone') return strings.inventorySkillStone;
   return itemRarityLabel(item.rarityIdx, lang);
 }
 
@@ -133,7 +135,7 @@ function itemForge(item: InventoryViewItem): string {
 }
 
 /** Kinds whose only distinguishing feature is their tier, so the tier IS the name. */
-const NAMED_BY_RARITY = new Set<ItemKind>(['key', 'time', 'stone', 'chanceStone']);
+const NAMED_BY_RARITY = new Set<ItemKind>(['time']);
 
 /**
  * Split rather than joined: the card sets the label and the number at opposite edges of the stat
@@ -153,7 +155,6 @@ function itemStat(stat: InventoryViewStat, lang: Lang): InventoryStatText {
 const SORT_KEY: Record<InventorySortMenuKey, keyof Strings> = {
   rarity: 'inventorySortRarity',
   level: 'inventorySortLevel',
-  value: 'inventorySortValue',
   name: 'inventorySortName',
   count: 'inventorySortCount',
   market: 'inventorySortMarket',
@@ -264,7 +265,6 @@ export function inventoryLabels(
     setOption: (group) =>
       sub(strings.inventorySetOption, { level: group.level, set: setName(group.set, lang) }),
     setOptionCount: (group) => formatNumber(group.count, lang, 0),
-    gold: (amount) => formatNumber(amount, lang, 0),
     searchText: (item) => searchText(item, strings, lang),
     toolbar: {
       searchPlaceholder: strings.inventorySearchPlaceholder,
@@ -316,13 +316,11 @@ export function inventoryTableLabels(
     itemLevel: grid.itemLevel,
     itemForge: grid.itemForge,
     equippedBy: grid.equippedBy,
-    gold: grid.gold,
     searchText: grid.searchText,
     column: {
       name: strings.inventorySortName,
       forge: strings.inventoryColumnForge,
       count: strings.inventorySortCount,
-      value: strings.inventorySortValue,
       market: strings.inventorySortMarket,
       hero: strings.inventoryColumnEquippedBy,
       actions: strings.inventoryColumnActions,

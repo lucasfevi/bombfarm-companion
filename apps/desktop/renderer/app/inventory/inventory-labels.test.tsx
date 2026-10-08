@@ -16,24 +16,23 @@ const ROWS = [
     rarity: 2,
     level: 20,
     upgrade: 8,
-    sell_value: '360',
     equipped_on: 'h1',
     stats: [
       { stat: 0, value: 55, effective: 90.2 },
       { stat: 5, value: 0.4, effective: 0.656 },
     ],
   },
-  { id: 'c1', def_id: 'chest_item_90', category: 1, rarity: 0, level: 0, sell_value: '100' },
-  { id: 'c3', def_id: 'chest_forja_3', category: 1, rarity: 0, level: 0, sell_value: '180' },
-  { id: 'cs1', def_id: 'forja_pedra_raro', category: 8, rarity: 0, level: 0, sell_value: '0' },
-  { id: 'c2', def_id: 'chest_hero_3', category: 1, rarity: 0, level: 0, sell_value: '0' },
-  { id: 'm1', def_id: 'gem_amethyst', category: 2, rarity: 4, level: 0, sell_value: '260' },
-  { id: 't1', def_id: 'time_part_raro', category: 3, rarity: 2, level: 0, sell_value: '180' },
-  { id: 'k1', def_id: 'map_key_epico', category: 4, rarity: 3, level: 0, sell_value: '220' },
-  { id: 'k2', def_id: 'map_key_epico', category: 4, rarity: 3, level: 0, sell_value: '220' },
-  { id: 's1', def_id: 'skill_stone_mitico', category: 5, rarity: 5, level: 0, sell_value: '300' },
-  { id: 'sk1', def_id: 'skin_6', category: 6, rarity: 0, level: 0, sell_value: '100' },
-  { id: 'r1', def_id: 'rune_critdmg_comum', category: 7, rarity: 0, level: 0, sell_value: '100' },
+  { id: 'c1', def_id: 'chest_item_90', category: 1, rarity: 0, level: 0 },
+  { id: 'c3', def_id: 'chest_forja_3', category: 1, rarity: 0, level: 0 },
+  { id: 'cs1', def_id: 'forja_pedra_raro', category: 8, rarity: 0, level: 0 },
+  { id: 'c2', def_id: 'chest_hero_3', category: 1, rarity: 0, level: 0 },
+  { id: 'm1', def_id: 'gem_amethyst', category: 2, rarity: 4, level: 0 },
+  { id: 't1', def_id: 'time_part_raro', category: 3, rarity: 2, level: 0 },
+  { id: 'k1', def_id: 'map_key_epico', category: 4, rarity: 3, level: 0 },
+  { id: 'k2', def_id: 'map_key_epico', category: 4, rarity: 3, level: 0 },
+  { id: 's1', def_id: 'skill_stone_mitico', category: 5, rarity: 5, level: 0 },
+  { id: 'sk1', def_id: 'skin_6', category: 6, rarity: 0, level: 0 },
+  { id: 'r1', def_id: 'rune_critdmg_comum', category: 7, rarity: 0, level: 0 },
 ];
 
 const HEROES = mapInventoryHeroes([
@@ -76,14 +75,25 @@ describe('desktop inventory labels', () => {
   });
 
   /**
-   * A key, a house part and a skill stone are named by their tier, so repeating it below the name
-   * read "Epic / Epic". The empty rarity is also the card's signal to colour the NAME instead.
+   * A house part is named by its tier, so repeating it below the name read "Epic / Epic". The
+   * empty rarity is also the card's signal to colour the NAME instead.
    */
   it('leaves the rarity empty for the kinds whose name is already their tier', () => {
     const labels = inventoryLabels(en, 'en');
-    for (const id of ['k1', 't1', 's1']) {
-      expect(labels.itemName(item(id))).not.toBe('');
-      expect(labels.itemRarity(item(id))).toBe('');
+    expect(labels.itemName(item('t1'))).not.toBe('');
+    expect(labels.itemRarity(item('t1'))).toBe('');
+    expect(labels.itemLevel(item('t1'))).toBe('');
+  });
+
+  it('names a map key and a skill stone by what they are, with the tier on the line below like a gem', () => {
+    const labels = inventoryLabels(en, 'en');
+    const portuguese = inventoryLabels(ptBR, 'pt');
+    expect(labels.itemName(item('k1'))).toBe('Map Key');
+    expect(portuguese.itemName(item('k1'))).toBe('Chave de Mapa');
+    expect(labels.itemName(item('s1'))).toBe('Skill Stone');
+    expect(portuguese.itemName(item('s1'))).toBe('Pedra de Habilidade');
+    for (const id of ['k1', 's1']) {
+      expect(labels.itemRarity(item(id))).not.toBe('');
       expect(labels.itemLevel(item(id))).toBe('');
     }
   });
@@ -116,11 +126,11 @@ describe('desktop inventory labels', () => {
     expect(inventoryLabels(en, 'en').itemRarity(item('c3'))).toBe('Epic');
   });
 
-  it('names a Chance Stone by its tier and files it under its own heading, apart from skill stones', () => {
+  it('names a Chance Stone with its tier on the line below and files it under its own heading, apart from skill stones', () => {
     const labels = inventoryLabels(en, 'en');
-    expect(labels.itemName(item('cs1'))).toBe('Rare Chance Stone');
-    expect(inventoryLabels(ptBR, 'pt').itemName(item('cs1'))).toBe('Pedra de Chance Raro');
-    expect(labels.itemRarity(item('cs1'))).toBe('');
+    expect(labels.itemName(item('cs1'))).toBe('Chance Stone');
+    expect(inventoryLabels(ptBR, 'pt').itemName(item('cs1'))).toBe('Pedra de Chance');
+    expect(labels.itemRarity(item('cs1'))).toBe('Rare');
     expect(labels.groupTitle('chanceStone')).toBe('Chance Stones');
     expect(inventoryLabels(ptBR, 'pt').groupTitle('chanceStone')).toBe('Pedras de Chance');
     expect(labels.groupTitle('stone')).toBe('Skill stones');
@@ -240,17 +250,17 @@ describe('desktop inventory labels', () => {
 
 describe('chance stones', () => {
   const [stone] = buildInventoryView([
-    { id: 'f1', def_id: 'forja_pedra_incomum', category: 8, rarity: 1, level: 0, sell_value: '140', essence_value: 30 },
+    { id: 'f1', def_id: 'forja_pedra_incomum', category: 8, rarity: 1, level: 0, essence_value: 30 },
   ]).items;
 
-  it('names a chance stone by its tier, leaving no second tier line, and its group in both languages', () => {
+  it('names a chance stone with its tier on a second line, and its group in both languages', () => {
     if (!stone) throw new Error('no chance stone row');
     const english = inventoryLabels(en, 'en');
     const portuguese = inventoryLabels(ptBR, 'pt');
-    expect(english.itemName(stone)).toBe('Uncommon Chance Stone');
-    expect(portuguese.itemName(stone)).toBe('Pedra de Chance Incomum');
+    expect(english.itemName(stone)).toBe('Chance Stone');
+    expect(portuguese.itemName(stone)).toBe('Pedra de Chance');
     expect(english.groupTitle('chanceStone')).toBe('Chance Stones');
     expect(portuguese.groupTitle('chanceStone')).toBe('Pedras de Chance');
-    expect(english.itemRarity(stone)).toBe('');
+    expect(english.itemRarity(stone)).toBe('Uncommon');
   });
 });

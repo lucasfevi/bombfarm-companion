@@ -15,12 +15,14 @@ import {
   isTeamPlanObjective,
   clampForgeFloor,
   clampTargetPhase,
+  dropMaterialisedScopeDefaults,
   normalizeAurasAtCap,
   normalizeFarmSet,
   normalizeGatePhase,
   type ScopeState,
   type TeamPlanControls,
 } from '@bombfarm/team-plan/core';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import {
   DEFAULT_TEAM_PLAN_RESULT_SORT,
   normalizeTeamPlanResultSort,
@@ -31,6 +33,11 @@ const OPTIMIZER_VIEW_STORAGE_KEY = 'bfc-optimizer-view';
 // Beside the controls rather than inside them: the controls are what a plan is solved from, and
 // the order its rows are read in must never mark a plan out of date.
 const OPTIMIZER_RESULT_SORT_STORAGE_KEY = 'bfc-optimizer-result-sort';
+
+// Written once the stored scope map has been cleaned of the defaults older builds saved as if
+// chosen. Its own key because the view is saved on every change, long before a roster is at hand
+// to clean against.
+const OPTIMIZER_SCOPE_MIGRATION_KEY = 'bfc-optimizer-scope-migrated-v2';
 
 export type OptimizerView = TeamPlanControls;
 
@@ -114,6 +121,28 @@ export function saveOptimizerView(view: OptimizerView): void {
   } catch {
     // Remembered controls are not worth failing a render over.
   }
+}
+
+function isScopeMigrationRecorded(): boolean {
+  try {
+    return window.localStorage.getItem(OPTIMIZER_SCOPE_MIGRATION_KEY) !== null;
+  } catch {
+    return true;
+  }
+}
+
+/** Cleans the stored scope map against the roster the first time one is available, then records
+ *  that it has run. Returns the view to adopt, or null when there is nothing to do. */
+export function migrateOptimizerScopeOnce(heroes: readonly HeroRecord[], view: OptimizerView): OptimizerView | null {
+  if (heroes.length === 0 || isScopeMigrationRecorded()) return null;
+  const next = { ...view, scopeByHeroId: dropMaterialisedScopeDefaults(heroes, view.scopeByHeroId) };
+  saveOptimizerView(next);
+  try {
+    window.localStorage.setItem(OPTIMIZER_SCOPE_MIGRATION_KEY, '1');
+  } catch {
+    return next;
+  }
+  return next;
 }
 
 export function loadOptimizerResultSort(): TeamPlanResultSort {

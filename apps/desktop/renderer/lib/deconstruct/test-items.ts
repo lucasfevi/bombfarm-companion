@@ -14,9 +14,7 @@ export function rawGear(overrides: RawRow = {}): RawRow {
     level: 60,
     stats: [],
     power: 100,
-    sell_value: '100',
     essence_value: 30,
-    sellable: true,
     upgrade: 0,
     tradable: true,
     market_state: 0,
@@ -29,7 +27,7 @@ export function rawGear(overrides: RawRow = {}): RawRow {
 
 /** A raw row for a non-gear item; `category` is the wire's own code (2 gem, 7 rune, 8 chance stone). */
 export function rawOther(id: string, defId: string, category: number, overrides: RawRow = {}): RawRow {
-  return { id, def_id: defId, category, rarity: 1, level: 0, essence_value: 5, sell_value: '10', ...overrides };
+  return { id, def_id: defId, category, rarity: 1, level: 0, essence_value: 5, ...overrides };
 }
 
 export function viewItems(rows: readonly RawRow[]): InventoryViewItem[] {

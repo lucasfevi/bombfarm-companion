@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { AccountPayload, AccountSection } from '@bombfarm/contracts';
+import { ROUTE_FINGERPRINTS, checkShape } from '@bombfarm/game-api';
 import { createAccountStore } from './account-store.js';
 import type { SqliteDb } from './index.js';
 import {
@@ -130,12 +131,10 @@ function cleanItem(overrides: Record<string, unknown> = {}): Record<string, unkn
     level: 1,
     stats: [{ stat: 1, value: 0, effective: 0 }],
     power: 100,
-    sell_value: 10,
     essence_value: 0,
     forge_fails: 0,
     forge_chance: 0,
     pergaminho_custo: 0,
-    sellable: true,
     upgrade: 0,
     tradable: true,
     market_state: 0,
@@ -211,6 +210,17 @@ beforeAll(() => {
 describe('createAccountStore().restore()', () => {
   it('ran against at least one SQLite binding', () => {
     expect(AVAILABLE_BINDINGS.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * Every test below asserts a `stale` or `missing` status, so a body that stopped conforming
+   * changes none of their outcomes — this helper can fall behind a key the game adds and the
+   * whole file stays green. Its docblock says its job is to be the schema-conforming body, which
+   * makes that premise worth asserting where it can fail, rather than inferring it from suites
+   * that cannot see it.
+   */
+  it('cleanAccountBody conforms to the account fingerprint, the premise every body below rests on', () => {
+    expect(checkShape(cleanAccountBody(), ROUTE_FINGERPRINTS.account)).toEqual({ ok: true });
   });
 
   describe.each(AVAILABLE_BINDINGS.map((binding) => ({ binding })))('binding: $binding', ({ binding }) => {

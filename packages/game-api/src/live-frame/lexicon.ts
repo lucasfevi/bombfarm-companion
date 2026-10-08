@@ -8,11 +8,11 @@
  * through {@link wireKey} below, never as an inline string literal.
  *
  * This lexicon is a dictionary of the wire protocol as observed, not a manifest of what the
- * decoder currently reads — several entries below (`bombs`, `explosions`, `rot_events`, `auras`,
- * `kinds`/`hps`, and a few per-hero fields) are declared for documentation but not yet consumed by
- * `toLiveTick`. Where a field's meaning was not established from the capture this lexicon is built
- * from, its description says so plainly instead of guessing — see `heroFieldZ`, `heroSkillState`,
- * the `aura*` fields, `boss`, `gate`, `swapSeconds`, and the `cage*`/`droughtSeconds` group.
+ * decoder currently reads — several entries below (`rot_events`, `auras`, and a few per-hero
+ * fields) are declared for documentation but not yet consumed by `toLiveTick`. Where a field's
+ * meaning was not established from the capture this lexicon is built from, its description says so
+ * plainly instead of guessing — see `heroFieldZ`, `heroSkillState`, the `aura*` fields, `boss`,
+ * `gate`, `swapSeconds`, and the `cage*`/`droughtSeconds` group.
  */
 
 import { createWireKeyLookup, type WireLexiconEntry } from '../wire-lexicon.js';
@@ -61,12 +61,15 @@ export type LiveFrameWireSymbol =
   | 'hitCell'
   | 'hitDamage'
   | 'hitCritical'
+  | 'hitSecondBlast'
+  | 'hitShardOrigin'
   | 'bombCell'
   | 'bombFuseRemainingSeconds'
   | 'bombFuseTotalSeconds'
   | 'bombRadius'
   | 'explosionCell'
   | 'explosionRadius'
+  | 'explosionSecondBlast'
   | 'rotEventName'
   | 'rotEventHeroId'
   | 'rotEventSeconds'
@@ -289,6 +292,24 @@ const KEY_ENTRIES: ReadonlyArray<{
   { symbol: 'hitCell', wireToken: 'c', domainField: 'cell', description: 'Index of the map cell the hit landed in.', origin: 'english' },
   { symbol: 'hitDamage', wireToken: 'd', domainField: 'damage', description: 'Damage dealt (179–107101 observed).', origin: 'english' },
   { symbol: 'hitCritical', wireToken: 'cr', domainField: 'critical', description: 'Whether the hit was a critical.', origin: 'english' },
+  {
+    symbol: 'hitSecondBlast',
+    wireToken: 'dd',
+    domainField: 'secondBlast',
+    description:
+      'Marks a hit dealt by the repeat blast of a bomb that exploded twice in the same tick. Observed only as ' +
+      '`true`; omitted from ordinary hits.',
+    origin: 'english',
+  },
+  {
+    symbol: 'hitShardOrigin',
+    wireToken: 'es',
+    domainField: 'shardOrigin',
+    description:
+      'Map cell index of the prop a shard hit originates from, when a shattered prop sends damage elsewhere. ' +
+      'Not observed in any committed capture: its presence and numeric shape are unconfirmed.',
+    origin: 'english',
+  },
   { symbol: 'bombCell', wireToken: 'c', domainField: 'cell', description: 'Index of the map cell the bomb sits in.', origin: 'english' },
   {
     symbol: 'bombFuseRemainingSeconds',
@@ -307,6 +328,15 @@ const KEY_ENTRIES: ReadonlyArray<{
   { symbol: 'bombRadius', wireToken: 'r', domainField: 'radius', description: 'Blast radius in cells (1–3 observed).', origin: 'english' },
   { symbol: 'explosionCell', wireToken: 'c', domainField: 'cell', description: 'Index of the map cell the explosion is centred on.', origin: 'english' },
   { symbol: 'explosionRadius', wireToken: 'r', domainField: 'radius', description: 'Blast radius in cells.', origin: 'english' },
+  {
+    symbol: 'explosionSecondBlast',
+    wireToken: 'x2',
+    domainField: 'secondBlast',
+    description:
+      'Marks the repeat blast of a bomb that exploded twice in the same tick; it arrives beside an ordinary ' +
+      'explosion with the same cell and radius. Observed only as `true`; omitted from ordinary explosions.',
+    origin: 'english',
+  },
   { symbol: 'rotEventName', wireToken: 'ev', domainField: 'event', description: 'Rotation-event name.', origin: 'english' },
   { symbol: 'rotEventHeroId', wireToken: 'hero', domainField: 'heroId', description: 'Hero id the event concerns.', origin: 'english' },
   {

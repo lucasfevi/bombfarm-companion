@@ -429,6 +429,7 @@ function renderPanel(
           stoneRanges,
           ownedStones: [0, 0, 0, 0, 0, 0],
           walletGold: null,
+          walletEssence: null,
           reason,
           startRefusal,
           labels,
@@ -585,7 +586,10 @@ describe('essence beside gold', () => {
 
   it('adds an Essence column to the ledger, a dash for a run recorded before essence was tracked', () => {
     const html = renderLedger({
-      rows: [historyRow({ id: 2, essence: 1_280 }), historyRow({ id: 1, essence: null })],
+      rows: [
+        historyRow({ id: 2, essence: 1_280, finishedAt: '2026-09-05T11:00:00.000Z' }),
+        historyRow({ id: 1, essence: null, finishedAt: '2026-09-05T10:30:00.000Z' }),
+      ],
       totals: { runs: 2, spent: 16_000, essence: 1_280, rolls: 16, fails: 2 },
     });
     expect(html).toContain(en.forgeLedgerColumnEssence);

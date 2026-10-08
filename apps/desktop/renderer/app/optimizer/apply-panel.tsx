@@ -48,6 +48,7 @@ export type ApplyForgeRowProps = {
   readonly planRunId: string;
   readonly queue: ForgeQueueState;
   readonly gear: readonly InventoryViewItem[];
+  readonly ownedStones: readonly number[];
   readonly labels: ForgeLabels;
   readonly gate: null | { readonly reason: string };
   readonly record: StepRecord | undefined;
@@ -300,6 +301,7 @@ export function ApplyPanel({
               planRunId,
               queue,
               gear: facts.forgeRow.gear,
+              ownedStones: facts.forgeRow.ownedStones,
               labels: facts.forgeRow.labels,
               gate: forgeGate,
               record: progress.steps.forge,

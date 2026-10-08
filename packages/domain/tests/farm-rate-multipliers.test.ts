@@ -278,35 +278,30 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
 });
 
 describe('Return bonus multiplies gold and XP only — drops and structure are untouched', () => {
-  it("'off' → 'on' → 'vip' scales gold and xp by exactly 1 / 1.5 / 2; every drop column and structural field is byte-identical", () => {
+  it("'off' → 'on' scales gold and xp by exactly 1 / 1.5; every drop column and structural field is byte-identical", () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const squad = computeSquadFarmFacts(heroFacts, account);
 
     const off = computeFarmRateRow(10, squad, { returnBonus: 'off' })!; // gate phase: exercises all 4 drops
     const on = computeFarmRateRow(10, squad, { returnBonus: 'on' })!;
-    const vip = computeFarmRateRow(10, squad, { returnBonus: 'vip' })!;
 
     for (const field of ['goldPerHour', 'xpPerHour'] as const) {
       expect(on[field] / off[field]).toBeCloseTo(1.5, 9);
-      expect(vip[field] / off[field]).toBeCloseTo(2, 9);
     }
 
     for (const field of ['chestsPerHour', 'gemsPerHour', 'timePiecesPerHour', 'stoneChestsPerHour'] as const) {
       expect(off[field]).toBeGreaterThan(0);
       expect(on[field]).toBe(off[field]);
-      expect(vip[field]).toBe(off[field]);
     }
 
     for (const field of ['propsPerHour', 'clearSecs', 'cyclesPerHour', 'expectedHtk', 'oneShot', 'infeasible'] as const) {
       expect(on[field]).toBe(off[field]);
-      expect(vip[field]).toBe(off[field]);
     }
 
     // A gate row's negative keysPerHour is an entry cost, and it stays put like every other
     // non-gold, non-XP column.
     expect(off.keysPerHour).toBeLessThan(0);
     expect(on.keysPerHour).toBe(off.keysPerHour);
-    expect(vip.keysPerHour).toBe(off.keysPerHour);
   });
 
   it('non-gate keysPerHour is a drop chance, so it does not move with the bonus either', () => {
@@ -314,10 +309,41 @@ describe('Return bonus multiplies gold and XP only — drops and structure are u
     const squad = computeSquadFarmFacts(heroFacts, account);
     const off = computeFarmRateRow(42, squad, { returnBonus: 'off' })!;
     const on = computeFarmRateRow(42, squad, { returnBonus: 'on' })!;
-    const vip = computeFarmRateRow(42, squad, { returnBonus: 'vip' })!;
     expect(off.keysPerHour).toBeGreaterThan(0);
     expect(on.keysPerHour).toBe(off.keysPerHour);
-    expect(vip.keysPerHour).toBe(off.keysPerHour);
+  });
+});
+
+describe('The Pass adds to gold, XP and drop chance at fixed inputs', () => {
+  const heroFacts = computeHeroFarmFacts({ heroes, account });
+  const squad = computeSquadFarmFacts(heroFacts, account);
+
+  it('gold and XP per hour scale by exactly 1.15 and 1.30 outside a return window; structure is untouched', () => {
+    const free = computeFarmRateRow(10, squad, { returnBonus: 'off', pass: false })!;
+    const pass = computeFarmRateRow(10, squad, { returnBonus: 'off', pass: true })!;
+    expect(pass.goldPerHour / free.goldPerHour).toBeCloseTo(1.15, 9);
+    expect(pass.xpPerHour / free.xpPerHour).toBeCloseTo(1.3, 9);
+    for (const field of ['propsPerHour', 'clearSecs', 'cyclesPerHour', 'expectedHtk'] as const) {
+      expect(pass[field]).toBe(free[field]);
+    }
+  });
+
+  it('inside a return window the Pass lifts gold over bare by 2.15/1.15 and XP by 2.30/1.30', () => {
+    const bare = computeFarmRateRow(10, squad, { returnBonus: 'off', pass: true })!;
+    const window = computeFarmRateRow(10, squad, { returnBonus: 'on', pass: true })!;
+    expect(window.goldPerHour / bare.goldPerHour).toBeCloseTo(2.15 / 1.15, 9);
+    expect(window.xpPerHour / bare.xpPerHour).toBeCloseTo(2.3 / 1.3, 9);
+  });
+
+  it('every drop rate is base x (1 + sorte + 0.30) with the Pass, and the Return Bonus does not move it', () => {
+    const free = computeFarmRateRow(10, squad, { returnBonus: 'off', pass: false })!;
+    const pass = computeFarmRateRow(10, squad, { returnBonus: 'off', pass: true })!;
+    const passWindow = computeFarmRateRow(10, squad, { returnBonus: 'on', pass: true })!;
+    const ratio = (1 + squad.sorteFraction + 0.3) / (1 + squad.sorteFraction);
+    for (const field of ['chestsPerHour', 'gemsPerHour', 'timePiecesPerHour', 'stoneChestsPerHour'] as const) {
+      expect(pass[field] / free[field]).toBeCloseTo(ratio, 12);
+      expect(passWindow[field]).toBe(pass[field]);
+    }
   });
 });
 

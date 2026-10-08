@@ -22,6 +22,7 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [git-commits.md](git-commits.md) | Atomic commits by default; commitlint |
 | [line-endings.md](line-endings.md) | LF everywhere; no in-place stream edits |
 | [machine-load.md](machine-load.md) | One CPU budget divided among concurrent runs; the per-tool ceilings, the `BFC_CPU_BUDGET` knob, and why `pnpm check:changed` scopes the work the budget divides |
+| [domain-coverage.md](domain-coverage.md) | The per-file coverage ratchet for `packages/domain`: what is measured (both Vitest passes, merged), the zero tolerance, why a new file with no coverage fails, the baseline and its canonical form, waivers, the base-branch cross-check, and why a high number is not a quality claim |
 | [branching.md](branching.md) | `develop` integration, `main` release-only |
 | [releases.md](releases.md) | Changesets release rail, artifacts, recovery |
 | [hard-truths.md](hard-truths.md) | How to propose / accept new hard truths |

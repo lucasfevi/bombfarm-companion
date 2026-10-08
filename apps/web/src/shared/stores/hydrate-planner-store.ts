@@ -1,7 +1,7 @@
 import { loadLang } from '@/shared/i18n';
 import { loadPhasesView } from '@/shared/lib/phases-view-storage';
 import { loadInventory } from '@/shared/lib/inventory-storage';
-import { loadTeamPlanScope } from '@/shared/lib/team-plan-scope-storage';
+import { loadTeamPlanScope, removeLegacyTeamPlanScope, saveTeamPlanScope } from '@/shared/lib/team-plan-scope-storage';
 import { loadTeamPlanEnvelope } from '@/shared/lib/team-plan-storage';
 import {
   getActiveHeroId,
@@ -35,7 +35,11 @@ export function hydratePlannerStore(): void {
 
   const inventory = loadInventory();
   state.hydrateInventory(inventory, account.forgeFloor ?? 10);
-  state.hydrateScope(loadTeamPlanScope());
+  const storedScope = loadTeamPlanScope();
+  state.hydrateScope(storedScope.scopeByHeroId, { dropMaterialisedDefaults: storedScope.fromLegacy });
+  if (storedScope.fromLegacy && saveTeamPlanScope(usePlannerStore.getState().scopeByHeroId)) {
+    removeLegacyTeamPlanScope();
+  }
   state.restoreTeamPlan(loadTeamPlanEnvelope());
 
   state.setBooted(true);

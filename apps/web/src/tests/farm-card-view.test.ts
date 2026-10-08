@@ -286,7 +286,7 @@ describe('the front page’s current-versus-best phase view', () => {
     expect(oneHero).not.toBe(both);
     expect(oneHero.currentRow!.goldPerHour).not.toBe(both.currentRow!.goldPerHour);
 
-    state().setFarmReturnBonus('vip');
+    state().setFarmReturnBonus('on');
     const withBonus = selectFarmCardRows(state());
     expect(withBonus).not.toBe(oneHero);
     expect(withBonus.currentRow!.goldPerHour).toBeGreaterThan(oneHero.currentRow!.goldPerHour);

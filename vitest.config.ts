@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { DOMAIN_COVERAGE } from './vitest.coverage';
 import { MAX_TEST_WORKERS } from './vitest.workers';
 
 export default defineConfig({
@@ -6,6 +7,7 @@ export default defineConfig({
     // See vitest.workers.ts — the critical path is one long solver file, so extra
     // workers past this cap burn cores without shortening the run.
     maxWorkers: MAX_TEST_WORKERS,
+    coverage: DOMAIN_COVERAGE,
     projects: [
       'packages/account/vitest.config.ts',
       'packages/contracts/vitest.config.ts',

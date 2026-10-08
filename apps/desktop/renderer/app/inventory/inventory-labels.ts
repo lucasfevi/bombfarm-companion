@@ -99,12 +99,14 @@ function itemName(item: InventoryViewItem, t: Copy, lang: 'pt' | 'en'): string {
   if (item.kind === 'chest') return chestName(item.defId, t);
   if (item.kind === 'skin') return skinName(item.defId);
   if (item.kind === 'rune') return runeName(item, lang);
-  if (item.kind === 'chanceStone') return fill(t.inventoryChanceStone, { rarity: itemRarityLabel(item.rarityIdx, lang) });
+  if (item.kind === 'chanceStone') return t.inventoryChanceStone;
+  if (item.kind === 'key') return t.inventoryMapKey;
+  if (item.kind === 'stone') return t.inventorySkillStone;
   return itemRarityLabel(item.rarityIdx, lang);
 }
 
 /** Kinds whose only distinguishing feature is their tier, so the tier IS the name. */
-const NAMED_BY_RARITY = new Set<ItemKind>(['key', 'time', 'stone', 'chanceStone']);
+const NAMED_BY_RARITY = new Set<ItemKind>(['time']);
 
 /**
  * The tier, on its own so the card can colour it. Empty for the kinds whose NAME is already
@@ -146,7 +148,6 @@ function itemStat(stat: InventoryViewStat, lang: 'pt' | 'en'): InventoryStatText
 const SORT_KEY: Record<InventorySortMenuKey, keyof Copy> = {
   rarity: 'inventorySortRarity',
   level: 'inventorySortLevel',
-  value: 'inventorySortValue',
   name: 'inventorySortName',
   count: 'inventorySortCount',
   market: 'inventorySortMarket',
@@ -259,7 +260,6 @@ export function inventoryLabels(
     heroOption: (heroId) => heroOption(heroId, heroes, t),
     setOption: (group) => fill(t.inventorySetOption, { level: group.level, set: setName(group.set, lang) }),
     setOptionCount: (group) => number(group.count, 0),
-    gold: (amount) => number(amount, 0),
     searchText: (item) => searchText(item, t, lang),
     toolbar: {
       searchPlaceholder: t.inventorySearchPlaceholder,
@@ -311,13 +311,11 @@ export function inventoryTableLabels(
     itemLevel: grid.itemLevel,
     itemForge: grid.itemForge,
     equippedBy: grid.equippedBy,
-    gold: grid.gold,
     searchText: grid.searchText,
     column: {
       name: t.inventorySortName,
       forge: t.inventoryColumnForge,
       count: t.inventorySortCount,
-      value: t.inventorySortValue,
       market: t.inventorySortMarket,
       hero: t.inventoryColumnEquippedBy,
       actions: t.inventoryColumnActions,
