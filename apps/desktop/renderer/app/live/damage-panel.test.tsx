@@ -3,6 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { UNATTRIBUTED_REASONS } from '@bombfarm/contracts';
 import type { AppLocale, CreditAmounts, LiveDamage, LiveDamageHeroRow, UnattributedReason } from '@bombfarm/contracts';
+import type { HeroPeekData } from '@bombfarm/game-art';
 import { CopyProvider, STRINGS, sub } from '../../lib/copy';
 import type { LiveHeroFact } from '../../lib/live/live-model';
 import { DamagePanel } from './damage-panel';
@@ -40,12 +41,22 @@ const FACTS: ReadonlyMap<string, LiveHeroFact> = new Map([
 
 function html(
   data: LiveDamage | null,
-  { locale = 'en', facts = FACTS, fieldSize }: { locale?: AppLocale; facts?: ReadonlyMap<string, LiveHeroFact>; fieldSize?: number | undefined } = {},
+  {
+    locale = 'en',
+    facts = FACTS,
+    fieldSize,
+    peekFor = () => undefined,
+  }: {
+    locale?: AppLocale;
+    facts?: ReadonlyMap<string, LiveHeroFact>;
+    fieldSize?: number | undefined;
+    peekFor?: (heroId: string) => HeroPeekData | undefined;
+  } = {},
 ) {
   return renderToStaticMarkup(
     createElement(CopyProvider, {
       locale,
-      children: createElement(DamagePanel, { damage: data, heroFacts: facts, fieldSize }),
+      children: createElement(DamagePanel, { damage: data, heroFacts: facts, peekFor, fieldSize }),
     }),
   );
 }
@@ -202,6 +213,14 @@ describe('DamagePanel', () => {
     expect(cellsOf(out, 'live-damage-row-astra')[0]).toContain('Astra');
     expect(cellsOf(out, 'live-damage-row-astra').slice(1)).toEqual(['1.5k', '75%', '120', '45k']);
     expect(textOf(innerOf(out, 'live-damage-row-astra-name'))).toBe('Astra');
+  });
+
+  it('opens the hero card from the avatar of a hero the roster has a card for, and leaves the others bare', () => {
+    const peek: HeroPeekData = { name: 'Astra', rank: 'S', level: 90, power: 1234 };
+    const out = html(damage(), { peekFor: (id) => (id === 'astra' ? peek : undefined) });
+
+    expect(innerOf(out, 'live-damage-row-astra')).toContain('data-peek="hero"');
+    expect(innerOf(out, 'live-damage-row-borealis')).not.toContain('data-peek=');
   });
 
   it('shows a hero the roster join does not know by its id', () => {
