@@ -60,11 +60,31 @@ pnpm coverage:domain
 
 Measures both passes, merges them, and compares against the baseline. It takes ten minutes or more
 and holds the machine-wide heavy-run slot for the whole sequence (see
-[`machine-load.md`](machine-load.md)), so it queues behind any other full run. CI runs it as its
-own job, `domain-coverage`, inside the web workflow: instrumented runs are several times slower
-than plain ones, and the two passes have to be measured together, so it cannot ride on the test
-shards. A dedicated path filter keeps pull requests that cannot move domain coverage from paying
-for it.
+[`machine-load.md`](machine-load.md)), so it queues behind any other full run.
+
+CI runs the same sequence split across three jobs in the web workflow, because instrumented runs
+are several times slower than plain ones and cannot ride on the test shards:
+
+| Job | Runs | Uploads |
+| --- | --- | --- |
+| `domain-coverage-pass (domain)` | `node tools/domain-coverage.mjs measure-domain` | artifact `domain-coverage-pass-domain` |
+| `domain-coverage-pass (solver)` | `node tools/domain-coverage.mjs measure-solver` | artifact `domain-coverage-pass-solver` |
+| `domain-coverage` (needs both) | `node tools/domain-coverage.mjs merge-and-compare`, then `guard-base` | artifact `domain-coverage` |
+
+The two passes run at once as a matrix; each uploads its `coverage` directory (its blob, its JSON
+results and its per-pass summary). The ratchet job downloads both into `coverage`, merges and
+compares exactly as `pnpm coverage:domain` does after its two passes. The blobs carry absolute
+source paths, which match because every runner checks the repository out to the same directory.
+`merge-and-compare` refuses to start when either blob is missing, and when the blob directory holds
+anything else: `--merge-reports` folds in every file it finds there. Each pass is judged in its own
+job, by the same rules as below, and the merge judges the replayed results again, so a failure that
+neither waiver covers fails the pass job and names its file and test. A failed or cancelled pass
+leaves the ratchet job skipped, and the `ci-web-required` aggregator fails on either job being
+anything but successful. A dedicated path filter keeps pull requests that cannot move domain
+coverage from paying for any of it.
+
+The three subcommands also run locally, one at a time, from the repository root; `pnpm
+coverage:domain` stays the one-command form and runs the same three commands in sequence.
 
 **Cost.** Measured on an idle Windows machine, the plain domain suite takes 213 s for the domain
 project and 105 s for the solver pass, about 5.3 minutes (318 s) in all. Instrumented, the passes
@@ -74,16 +94,16 @@ an idle machine ranged from 741 s to 1072 s (main pass 324-653 s, solver pass 40
 `ubuntu-latest` a run that completed took 21.5 minutes for the whole job (the measure step 21 minutes;
 per-pass blobs 596 s for the main pass and 660 s for the solver pass), against about 2 minutes for each
 plain domain job. An earlier CI run took longer, about 32 minutes, when a solver test reached its own
-900 s timeout, which the instrumentation-timeout rule tolerates. That is why this is its own CI job
-and not part of the test shards, and why its timeout stays at 60 minutes. If the wall time
-becomes a problem, the lever is to run the two passes in parallel jobs and merge their blobs in a
-third; that is not done here.
+900 s timeout, which the instrumentation-timeout rule tolerates. That is why the passes are CI jobs of their own and not part of the test shards, and why each
+pass job's timeout stays at 60 minutes. Measured as one job, the measure step took 15.4 to 31.8
+minutes across six runs on 2026-10-07 and 2026-10-08; split, the wall time is the slower pass plus
+the merge job.
 
 **The measuring passes only measure.** Both run with unhandled errors ignored and a ten-minute per-test timeout, because the regular jobs are what gate correctness and this run only reads coverage out of the same tests. A failing test still fails the run, and the dot reporter names it in the log. The reason is the worker RPC window: under instrumentation a single file, the two-stage phase optimiser test, takes about 276 s, far past the 60 s window, and the first CI run on 2026-10-07 failed on that alone with every test passing and nothing printed, because the blob reporter that records the raw data prints nothing. The merge step needs the same unhandled-errors flag, since it replays what the solver pass recorded.
 
 Wall-clock assertions are meaningless under instrumentation: the second CI run, on 2026-10-07, failed a full-solve ceiling at 4845 ms against 2500 ms and a forge forecast at 362 ms against 250 ms, with every other test passing. Those failures are tolerated by name, from a reviewed list in `tools/domain-coverage-core.mjs` (`INSTRUMENTATION_SENSITIVE_TEST_FILES`). Each entry must be a domain test file that really times itself with `performance.now(`, and a guard checks that, so the list cannot become a hiding place for ordinary tests. The regular jobs still run those tests uninstrumented and still gate them. Each of the three vitest commands writes JSON results outside the blob directory, and a non-zero exit is accepted only if the results parse, no suite failed outside its tests, and every failed test is in a listed file; any other failure fails the measurement and is named by file and test. When a run is accepted with tolerated failures, each is printed with its file, test name and first message line, and appended to the CI step summary, so a reviewer reading the log sees what was waived. The list works per file, so a listed file's non-timing tests are tolerated too: keep the list short.
 
-There is a second waiver, the **instrumentation timeout**. The solver files set their own per-test timeout (900 s in one of them), which the command-line timeout cannot override, and each of their test bodies is a single synchronous run, so under instrumentation on a slower runner a body can pass that timeout (CI run 3, 2026-10-07: the instrumented solver pass took 1016 s). The JSON results do not carry the words "Test timed out"; the dot reporter prints them, but the JSON holds only vitest's bare marker (a first line of exactly `Error: STACK_TRACE_ERROR`) and the test's duration, and that is what is matched. A failed test is tolerated as an instrumentation timeout only when its file is one of the solver files, read from the same list the solver pass uses, every one of its failure messages is that bare marker, and its duration is at least 60 s. A suite entry that is marked failed only because of such a test is not counted as a separate suite failure. A bare marker with a short duration, the marker in any other file, an assertion failure in a solver file, and a marker accompanied by a real message are all not tolerated and are named. The printed output and the step summary name which waiver applied to each failure (`wall-clock assertion` or `instrumentation timeout`); a tolerated timeout is printed with its duration (`timed out after 1002 s (explicit per-test timeout; instrumented body ran long)`), and for any other failure the first line of the message that carries the reason is shown, skipping stack markers. The CI job uploads the whole `coverage` directory, blobs included, so a red run can be examined.
+There is a second waiver, the **instrumentation timeout**. The solver files set their own per-test timeout (900 s in one of them), which the command-line timeout cannot override, and each of their test bodies is a single synchronous run, so under instrumentation on a slower runner a body can pass that timeout (CI run 3, 2026-10-07: the instrumented solver pass took 1016 s). The JSON results do not carry the words "Test timed out"; the dot reporter prints them, but the JSON holds only vitest's bare marker (a first line of exactly `Error: STACK_TRACE_ERROR`) and the test's duration, and that is what is matched. A failed test is tolerated as an instrumentation timeout only when its file is one of the solver files, read from the same list the solver pass uses, every one of its failure messages is that bare marker, and its duration is at least 60 s. A suite entry that is marked failed only because of such a test is not counted as a separate suite failure. A bare marker with a short duration, the marker in any other file, an assertion failure in a solver file, and a marker accompanied by a real message are all not tolerated and are named. The printed output and the step summary name which waiver applied to each failure (`wall-clock assertion` or `instrumentation timeout`); a tolerated timeout is printed with its duration (`timed out after 1002 s (explicit per-test timeout; instrumented body ran long)`), and for any other failure the first line of the message that carries the reason is shown, skipping stack markers. Every CI job uploads its whole `coverage` directory, blobs included and even when it fails, so a red run can be examined.
 
 ```powershell
 pnpm coverage:domain:update
@@ -98,7 +118,7 @@ metric, and writes nothing. If nothing changed it says so and writes nothing —
 never silently re-record a lower number. The baseline diff is the review surface: one line per
 file, so a diff shows exactly which file moved.
 
-Both commands accept `--summary <path>` to read an existing `coverage-summary.json` instead of
+`check` and `update` accept `--summary <path>` to read an existing `coverage-summary.json` instead of
 measuring, which is how the guards in `tools/` and a reviewer can exercise the comparison without
 the long run.
 
@@ -198,13 +218,16 @@ does not resolve fails rather than passes.
   fixtures.
 - `tools/domain-coverage-cli.test.mjs` runs the CLI as a child process against a throwaway package
   tree (`--root`) and a throwaway git repository, and pins the exit codes: findings, a malformed or
-  missing baseline, a refused update, and every guard-base outcome.
+  missing baseline, a refused update, every guard-base outcome, and a `merge-and-compare` that
+  refuses a missing or stray blob before running anything.
 - The baseline guard also fails on any `v8`, `istanbul` or `c8` ignore hint under `packages/domain/src`
   (they silently raise every metric) and on any source file that is not `.ts` or `.json` (a `.mts`,
   `.js` or upper-case `.TS` file is invisible to the ratchet and to the compiler).
-- `tools/domain-coverage-workflow.test.mjs` pins the CI job: no escape hatch, the base-branch
-  comparison on pull requests, membership in the required-check aggregator with skipped and
-  cancelled counting as failure, and the path filter that triggers it.
+- `tools/domain-coverage-workflow.test.mjs` pins the CI jobs: both passes in a matrix that does not
+  fail fast, each uploading even on failure, the ratchet job waiting on them and downloading both
+  before it merges, no escape hatch, the base-branch comparison on pull requests, membership of
+  both jobs in the required-check aggregator with skipped and cancelled counting as failure, and
+  the path filter that triggers them.
 
 ## Known limits
 
