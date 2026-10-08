@@ -55,6 +55,10 @@ describe('GameSection renders SettingsSection -> SettingsRow -> Switch, both loc
     expect(html).toContain('aria-checked="false"');
   });
 
+  it("the switch's data-testid reaches the rendered element, not just the call site", () => {
+    expect(render('en')).toContain('data-testid="settings-restart-game-on-exit-switch"');
+  });
+
   it('a true prop renders checked, so the control follows what was stored', () => {
     const html = render('en', { restartGameOnExit: true });
     expect(html).toContain('aria-checked="true"');
