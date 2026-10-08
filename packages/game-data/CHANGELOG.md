@@ -1,5 +1,19 @@
 # @bombfarm/game-data
 
+## 0.0.22
+
+### Patch Changes
+
+- 8951cb5: Inventory, Forge and Deconstruct show your current inventory again after the game update. The game stopped sending the gold sell value when it removed selling items for gold, and the app was treating that as a damaged read and falling back to an old snapshot, so Deconstruct could offer items you no longer had. The gold value on item cards, the Value column and the Value sort are gone with it.
+
+  Items imported from Steam can be burned in Deconstruct right away, as the game now allows.
+
+- 5e8088e: The Live tab gains a Damage panel: Team DPS over the last 10 minutes and over the session, and for each hero its DPS, uptime, props destroyed and gold. Uptime is the share of the session a hero spent on the field, and hovering it shows the time on the field against the session's time. Damage that cannot be tied to one hero is shown as Unattributed rather than guessed. The Damage and Heroes panels sit side by side under the earnings and map panels, and each takes the full width in narrower windows. Resetting the session restarts the damage figures along with the earnings, and the download page's Live preview shows the new panel and the same arrangement. Earnings and damage also no longer stop counting after consent is granted again mid-session.
+- Updated dependencies [695bd4a]
+- Updated dependencies [8951cb5]
+- Updated dependencies [5e8088e]
+  - @bombfarm/contracts@0.14.0
+
 ## 0.0.21
 
 ### Patch Changes

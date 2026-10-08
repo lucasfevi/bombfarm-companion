@@ -1,5 +1,20 @@
 # @bombfarm/team-plan
 
+## 0.6.3
+
+### Patch Changes
+
+- 2f2847b: The optimizer no longer keeps a hero in Donate after its battle is turned back on; only columns you set by hand are remembered.
+- Updated dependencies [8951cb5]
+- Updated dependencies [0925ddb]
+- Updated dependencies [bc5f232]
+- Updated dependencies [bc5f232]
+- Updated dependencies [bc5f232]
+  - @bombfarm/domain@1.10.0
+  - @bombfarm/game-art@0.8.1
+  - @bombfarm/farm@1.3.0
+  - @bombfarm/hero@0.5.6
+
 ## 0.6.2
 
 ### Patch Changes
