@@ -90,7 +90,7 @@ function BookButton({
         onSelect(book.code);
       }}
     >
-      <ItemIcon item={{ defId: weaponDefId(book), rarityIdx: 0, level: book.level, upgrade: 0 }} size="xs" showLevel={false} />
+      <ItemIcon item={{ defId: weaponDefId(book), rarityIdx: book.completedRarity ?? 0, level: book.level, upgrade: 0 }} size="xs" showLevel={false} className={cn(book.completedRarity === null && 'opacity-50 grayscale')} />
       <span className="flex min-w-0 flex-col leading-tight">
         <span className="truncate font-semibold text-ink" data-testid="collections-book-name">
           {name}
