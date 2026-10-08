@@ -1,5 +1,4 @@
 import type { AccountPayload, AccountSection, AccountView, RestoredAccount, SectionFidelity } from '@bombfarm/contracts';
-import { isTrustworthySection } from '@bombfarm/contracts';
 import { ACCOUNT_SECTIONS } from './account-schema.js';
 
 export interface MergeOpts {
@@ -9,18 +8,31 @@ export interface MergeOpts {
   binding: string | null;
 }
 
+/** The container kind each section's body must have before anything can read it. */
+export function isUsableSectionBody(section: AccountSection, body: unknown): boolean {
+  if (section === 'heroes' || section === 'items') return Array.isArray(body);
+  return typeof body === 'object' && body !== null && !Array.isArray(body);
+}
+
+/** The skill tree feeds every hero sheet, so a live read that lost a total must not replace the
+ *  last complete one: the stored tree is served, and the live body is never written over it. */
+export function lostRequiredKeys(section: AccountSection, fidelity: SectionFidelity | undefined): readonly string[] {
+  return section === 'skills' && fidelity?.status === 'degraded' ? fidelity.missingKeys : [];
+}
+
 /**
  * Serves live sections over stored last-known-good, per section, in
  * `ACCOUNT_SECTIONS` order. Pure — no DB, no clock.
  *
- * `resolved` and `degraded` are both "this cycle actually read and parsed something", but a
- * `degraded` live section is preferred over stored last-known-good only when `isTrustworthySection`
- * says its body lost nothing — an added key is harmless, a missing one means the body may already
- * carry a substituted default. A degraded section that did lose a key falls through to the stored
- * row exactly like `stale`/`missing` does; only when no usable stored row exists is the live
- * degraded body served anyway (still reported `degraded`, since it is better than nothing).
- * Anything else (`stale`, `missing`, or a genuinely unrecognized future status) falls through to
- * the stored value exactly as before.
+ * `resolved` and `degraded` are both "this cycle actually read and parsed something". A
+ * `degraded` live section is served, still reported `degraded` with the keys it lost, whenever
+ * its body has the container kind the section needs — the readers of each field say for
+ * themselves what an absent field means. Old data is the fallback only for a live body that is
+ * absent or cannot be read at all, along with `stale`/`missing` and any genuinely unrecognized
+ * future status.
+ *
+ * The one exception is `skills`: a live body missing a required key yields the stored section
+ * (`stale`) or, with none stored, `missing`, either way carrying the keys it lost in `lostKeys`.
  */
 export function mergeStoredIntoLive(live: AccountPayload, restored: RestoredAccount, opts: MergeOpts): AccountView {
   const liveUntyped = live as unknown as Record<string, unknown>;
@@ -41,7 +53,15 @@ export function mergeStoredIntoLive(live: AccountPayload, restored: RestoredAcco
       continue;
     }
 
-    if (liveFidelity?.status === 'degraded' && liveBody !== undefined && (isTrustworthySection(liveFidelity) || !storedUsable)) {
+    const lostKeys = lostRequiredKeys(section, liveFidelity);
+    const carriedLostKeys =
+      lostKeys.length > 0
+        ? lostKeys
+        : liveFidelity?.status === 'stale' || liveFidelity?.status === 'missing'
+          ? liveFidelity.lostKeys
+          : undefined;
+
+    if (liveFidelity?.status === 'degraded' && lostKeys.length === 0 && isUsableSectionBody(section, liveBody)) {
       fidelity[section] = {
         status: 'degraded',
         capturedAt: liveFidelity.capturedAt,
@@ -53,12 +73,16 @@ export function mergeStoredIntoLive(live: AccountPayload, restored: RestoredAcco
     }
 
     if (storedUsable) {
-      fidelity[section] = { status: 'stale', capturedAt: storedFidelity.capturedAt };
+      fidelity[section] = {
+        status: 'stale',
+        capturedAt: storedFidelity.capturedAt,
+        ...(carriedLostKeys === undefined ? {} : { lostKeys: carriedLostKeys }),
+      };
       merged[section] = restoredUntyped[section];
       continue;
     }
 
-    fidelity[section] = { status: 'missing' };
+    fidelity[section] = { status: 'missing', ...(carriedLostKeys === undefined ? {} : { lostKeys: carriedLostKeys }) };
   }
 
   return {

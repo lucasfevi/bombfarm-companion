@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { AccountFidelity, AccountPayload, AccountView, SectionFidelity } from '@bombfarm/contracts';
 import { buildFarmInputs, isSectionUsable, DEFAULT_FARM_CONTROLS } from './farm-inputs';
+import { skillTotals } from '../account/skill-totals.test-support';
 
 const NOW = '2026-08-12T00:00:00.000Z';
 
@@ -35,7 +36,7 @@ function basePayload(fidelity: AccountFidelity = resolvedFidelity()): AccountPay
   return {
     account: { phase: 60, max_phase: 88 },
     heroes: [minimalRawHero('h1', 'Alpha')],
-    skills: { totals: { dmg_static: 1.5 } },
+    skills: { totals: skillTotals({ dmg_static: 1.5 }) },
     casa: { active_casa: 1, levels: [10] },
     items: [],
     fidelity,
@@ -61,7 +62,7 @@ describe('isSectionUsable', () => {
     ['resolved', { status: 'resolved', capturedAt: NOW }, true],
     ['stale', { status: 'stale', capturedAt: NOW }, true],
     ['missing', { status: 'missing' }, false],
-    ['degraded, missing key', { status: 'degraded', capturedAt: NOW, missingKeys: ['gold'], addedKeys: [] }, false],
+    ['degraded, missing key', { status: 'degraded', capturedAt: NOW, missingKeys: ['gold'], addedKeys: [] }, true],
     ['degraded, added key only', { status: 'degraded', capturedAt: NOW, missingKeys: [], addedKeys: ['gold'] }, true],
   ];
   it.each(cases)('%s is usable=%s', (_label, fidelity, expected) => {
@@ -69,7 +70,7 @@ describe('isSectionUsable', () => {
   });
 });
 
-describe('the per-section usability gate withholds rather than computing from an untrusted section', () => {
+describe('the per-section usability gate withholds a missing section', () => {
   it.each(['account', 'heroes', 'skills', 'casa', 'items'] as const)(
     'a missing %s section withholds the whole board',
     (section) => {
@@ -78,23 +79,24 @@ describe('the per-section usability gate withholds rather than computing from an
     },
   );
 
-  it('a degraded-but-trustworthy section still computes', () => {
+  it('a degraded section that only gained a key still computes', () => {
     const payload = basePayload(
       resolvedFidelity({ items: { status: 'degraded', capturedAt: NOW, missingKeys: [], addedKeys: ['gold'] } }),
     );
     expect(buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS)).not.toBeNull();
   });
 
-  it('a degraded section that lost a key withholds, even though the payload body is right there', () => {
+  it('a degraded section that lost a key still computes from the body the game just sent', () => {
     const payload = basePayload(
       resolvedFidelity({ skills: { status: 'degraded', capturedAt: NOW, missingKeys: ['totals.dmg_static'], addedKeys: [] } }),
     );
-    expect(buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS)).toBeNull();
+    expect(buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS)).not.toBeNull();
   });
 
-  it('a whole-payload rejection withholds instead of computing over the heroes that did parse', () => {
-    const payload = { ...basePayload(), heroes: [{ id: 'h1', name: 'NoBirth' }] };
-    expect(buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS)).toBeNull();
+  it('a hero without birth stats is left off the board while the heroes that parsed are still priced', () => {
+    const payload = { ...basePayload(), heroes: [...(basePayload().heroes ?? []), { id: 'h2', name: 'NoBirth' }] };
+    const inputs = buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS);
+    expect(inputs?.heroes.map((hero) => hero.id)).toEqual(['h1']);
   });
 });
 
@@ -139,7 +141,7 @@ describe('maxPhase reaches the compute', () => {
     const payload: AccountPayload = {
       ...basePayload(),
       account: { phase: 60 },
-      skills: { totals: { dmg_static: 1.5 }, max_phase: 44 },
+      skills: { totals: skillTotals({ dmg_static: 1.5 }), max_phase: 44 },
     };
     const inputs = required(buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS), 'expected inputs');
     expect(inputs.maxPhase).toBe(44);

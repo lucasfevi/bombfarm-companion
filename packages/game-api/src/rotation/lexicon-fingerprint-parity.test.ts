@@ -13,7 +13,9 @@ if (!houseChild || houseChild.kind !== 'object') {
   throw new Error('[lexicon-fingerprint-parity] ROUTE_FINGERPRINTS.casa no longer declares an object "casa" (house) child');
 }
 
-const FINGERPRINT_KEYS = new Set<string>([...rotationLevel.keys, ...heroesChild.element.keys, ...houseChild.level.keys]);
+const FINGERPRINT_KEYS = new Set<string>(
+  [rotationLevel, heroesChild.element, houseChild.level].flatMap((level) => [...level.keys, ...(level.unread ?? [])]),
+);
 const LEXICON_KEYS = new Set<string>(
   ROTATION_WIRE_LEXICON.filter((entry) => entry.kind === 'key').map((entry) => entry.wireToken),
 );

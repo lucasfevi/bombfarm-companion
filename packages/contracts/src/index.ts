@@ -116,7 +116,8 @@ export * from './locale.js';
 export * from './usage-ping.js';
 export { disabledUpdateStatus, idleUpdateStatus, initialUpdateStatus, UPDATE_CHECK_INTERVAL_MS } from './update.js';
 export type { UpdateErrorReason, UpdatePhase, UpdateStatus } from './update.js';
-export { isTrustworthySection } from './account-payload.js';
+export { dataIssueKey } from './data-issue.js';
+export type { DataIssue, DataIssueKind } from './data-issue.js';
 export type {
   AccountFidelity,
   AccountFidelityGrade,

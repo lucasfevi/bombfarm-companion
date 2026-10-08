@@ -23,6 +23,7 @@ vi.mock('electron-log/renderer.js', () => ({
   default: {
     transports: { console: { level: 'silly' as string } },
     info: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
@@ -50,6 +51,7 @@ interface BfcBridge {
   ) => () => void;
   ping: () => ReturnType<typeof createPingResponse>;
   logBoot: () => ReturnType<typeof createPingResponse>;
+  logRendererError: (record: Record<string, string>) => void;
 }
 
 function exposedBridge(): { key: string; api: BfcBridge } {
@@ -83,10 +85,10 @@ beforeEach(() => {
 });
 
 describe('preload context bridge', () => {
-  it('exposes exactly invoke, on, ping and logBoot under the bfc key', () => {
+  it('exposes exactly invoke, on, ping, logBoot and logRendererError under the bfc key', () => {
     expect(electronState.exposeInMainWorld).toHaveBeenCalledTimes(1);
     expect(bridge.key).toBe('bfc');
-    expect(Object.keys(bridge.api).sort()).toEqual(['invoke', 'logBoot', 'on', 'ping']);
+    expect(Object.keys(bridge.api).sort()).toEqual(['invoke', 'logBoot', 'logRendererError', 'on', 'ping']);
   });
 
   it('answers ping from the preload world', () => {

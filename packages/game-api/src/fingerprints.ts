@@ -65,63 +65,40 @@ const INVENTORY_SOURCE_ARTIFACT =
 
 /** The account-level gate on selling to the Steam market, added by the game after the 2026-08-12
  *  anchor capture: `client_can_sell` (boolean), `sell_phase` (a phase number) and `sell_mode` (a
- *  string; the observed value is the Portuguese `todos`, "all"). Required keys, never `optional`:
- *  every observed `/state` body carries all three, so an absence is a real removal to report, not
- *  variance to tolerate. Nothing reads them yet. */
+ *  string; the observed value is the Portuguese `todos`, "all"). Carried on every observed
+ *  `/state` body and read by nothing, so they are `unread`. */
 export const STATE_SELL_GATE_KEYS = ['client_can_sell', 'sell_phase', 'sell_mode'] as const;
 
 /** The rune stash, added by the game alongside timed hero runes: the same
- *  `{owned, slots, cap, unit}` shape the chest and item stashes already use. A required key, not
- *  `optional` — it was on all 1,005 `/state` bodies of a six-hour 2026-09-22 observation,
- *  including while `owned` was `false`, so an absence is a real removal to report rather than
- *  variance to tolerate. Nothing reads it yet; it is declared so the account section stops being
- *  rejected outright. */
+ *  `{owned, slots, cap, unit}` shape the chest and item stashes already use. On all 1,005 `/state`
+ *  bodies of a six-hour 2026-09-22 observation, including while `owned` was `false`. Nothing reads
+ *  it, so it is `unread`. */
 export const STATE_RUNE_STASH_KEY = 'rune_stash';
-
-/** The Forge Essence balance and the fusion pity counters, added by the game with the deconstruct
- *  screen. `essence` is a number — unlike `gold`, which is a string — and `fusion_pity` is
- *  `{item, hero}`, each `{fails, chance}` with five entries per rarity. Required keys, never
- *  `optional`: both were on every `/state` body of a 2026-10-05 live read, so an absence is a
- *  real removal to report. `essence` feeds the deconstruct screen's balance; `fusion_pity` is
- *  declared so the account section stops being rejected outright. */
-export const STATE_ESSENCE_KEYS = ['essence', 'fusion_pity'] as const;
 
 /** `/rotation.heroes[]` — a sixth declared element level, distinct from the export/API roster
  *  hero. One variant across 8 elements in the committed corpus. */
 const ROTATION_HERO_LEVEL: SchemaLevel = {
-  keys: [
-    'id',
-    'level',
-    'energia_atual',
-    'energia_max',
-    'energia_pct',
-    'state',
-    'in_field',
-    'in_casa',
-    'recovering',
-    'battle_allowed',
-  ],
+  keys: ['id', 'level', 'energia_atual', 'energia_max', 'energia_pct', 'state', 'in_field', 'recovering'],
+  unread: ['in_casa', 'battle_allowed'],
 };
 
-/** `/state` — the account route body. */
+/** `/state` — the account route body. Only the keys the app reads are required: a game update
+ *  that drops a balance or counter nothing uses must not cost the section. */
 const STATE_LEVEL: SchemaLevel = {
-  keys: [
-    'gold',
+  keys: ['gold', 'phase', 'max_phase', 'vip_until', 'essence'],
+  unread: [
     'crystals',
-    'phase',
-    'max_phase',
     'locked',
     'checkpoint_at',
     'chests',
     'chest_stash',
     'item_stash',
-    'vip_until',
     'bag_tabs',
     'bag_capacity',
     'items_count',
     ...STATE_SELL_GATE_KEYS,
     STATE_RUNE_STASH_KEY,
-    ...STATE_ESSENCE_KEYS,
+    'fusion_pity',
   ],
   allowance: ['account_id', 'player_name'],
 };
@@ -143,7 +120,8 @@ const ROTATION_LEVEL: SchemaLevel = {
 
 /** `/inventory` — the items route body. */
 const INVENTORY_LEVEL: SchemaLevel = {
-  keys: ['items', 'chests', 'bag_tabs', 'bag_capacity', 'items_count'],
+  keys: ['items'],
+  unread: ['chests', 'bag_tabs', 'bag_capacity', 'items_count'],
   children: { items: { kind: 'array', element: SCHEMA_LEVELS.apiItem } },
 };
 
@@ -248,6 +226,7 @@ export function checkSectionShape(value: unknown, fingerprint: SectionFingerprin
 
   const missingKeys: string[] = [];
   const addedKeys: string[] = [];
+  const absentUnreadKeys: string[] = [];
   if (!Array.isArray(value)) {
     missingKeys.push(fingerprint.root);
   } else {
@@ -259,6 +238,7 @@ export function checkSectionShape(value: unknown, fingerprint: SectionFingerprin
         capturedAt: fingerprint.capturedAt,
         sourceArtifact: fingerprint.sourceArtifact,
       });
+      absentUnreadKeys.push(...perElement.absentUnreadKeys);
       if (!perElement.ok) {
         missingKeys.push(...perElement.missingKeys);
         addedKeys.push(...perElement.addedKeys);
@@ -266,6 +246,6 @@ export function checkSectionShape(value: unknown, fingerprint: SectionFingerprin
     });
   }
 
-  if (missingKeys.length === 0 && addedKeys.length === 0) return { ok: true };
-  return { ok: false, missingKeys, addedKeys };
+  if (missingKeys.length === 0 && addedKeys.length === 0) return { ok: true, absentUnreadKeys };
+  return { ok: false, missingKeys, addedKeys, absentUnreadKeys };
 }

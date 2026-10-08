@@ -184,7 +184,7 @@ describe('EXPORT_FINGERPRINT — corpus check', () => {
   it('every discovered save-export capture is ok:true — equality modulo allowance, never a subset', () => {
     if (!corpus) return;
     for (const { file, body } of corpus) {
-      expect(checkSchema(body, EXPORT_FINGERPRINT), `capture: ${file}`).toEqual({ ok: true });
+      expect(checkSchema(body, EXPORT_FINGERPRINT), `capture: ${file}`).toEqual({ ok: true, absentUnreadKeys: [] });
     }
   });
 
@@ -268,6 +268,7 @@ describe('EXPORT_FINGERPRINT — corpus check', () => {
         ok: false,
         missingKeys: ['save.skills.totals.vagas_campo'],
         addedKeys: [],
+        absentUnreadKeys: [],
       });
     });
 
@@ -280,6 +281,7 @@ describe('EXPORT_FINGERPRINT — corpus check', () => {
         ok: false,
         missingKeys: [],
         addedKeys: ['save.skills.totals.something_new'],
+        absentUnreadKeys: [],
       });
     });
 
@@ -291,6 +293,7 @@ describe('EXPORT_FINGERPRINT — corpus check', () => {
         ok: false,
         missingKeys: [],
         addedKeys: ['save.something_new'],
+        absentUnreadKeys: [],
       });
     });
   });

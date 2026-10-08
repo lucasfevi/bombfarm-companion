@@ -39,7 +39,7 @@ export { PacingRefusedError, READ_PACING, createPacingGate } from './pacing.js';
 export type { PacingClock, PacingGate, PacingState } from './pacing.js';
 export { ROUTE_FINGERPRINTS, SECTION_FINGERPRINTS, checkSectionShape } from './fingerprints.js';
 export type { RouteFingerprint, SectionFingerprint } from './fingerprints.js';
-export { checkShape } from './shape.js';
+export { checkShape, collapseIndexedPaths } from './shape.js';
 export type { ShapeCheckResult } from './shape.js';
 export { diagnoseObservedBodyDrift, identifyObservedBody } from './identify-observed-body.js';
 export type { ObservedBodyDrift, ObservedBodyIdentification } from './identify-observed-body.js';

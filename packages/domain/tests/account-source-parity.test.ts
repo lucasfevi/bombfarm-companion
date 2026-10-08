@@ -21,6 +21,7 @@ import { deriveAccountFidelity } from '@bombfarm/domain/account-fidelity';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import { minimalHero } from './helpers/minimal-save-hero';
+import { skillTotals } from './helpers/skill-totals';
 
 // (the ground-truth rule, class (b) — structural): re-pointed onto the post-patch corpus. The claim
 // itself (`parseSaveFile` ≡ `parseAccountPayload`) is unchanged; only the fixture names moved.
@@ -29,7 +30,7 @@ const CANONICAL_FIXTURES = ['save-20260813-5heroes.json', 'payload-20260812-8her
 /** The minimal `skills` shape that satisfies `parseSaveFile`'s positive discriminator,
  *  so a synthetic payload built for an UNRELATED assertion (e.g. missingBirthStats)
  *  reaches that assertion through both entry points instead of being intercepted by the gate. */
-const POST_PATCH_SKILLS = { refunds: {}, totals: { vagas_campo: 0, bag_tabs_bonus: 0 } };
+const POST_PATCH_SKILLS = { refunds: {}, totals: skillTotals() };
 
 describe('parseAccountPayload and parseSaveFile agree on every canonical fixture', () => {
   for (const fixture of CANONICAL_FIXTURES) {
@@ -137,7 +138,7 @@ describe('rejections are preserved through the seam', () => {
     expect(viaFile).toEqual(viaEntryPoint);
   });
 
-  it('one hero missing birth_stats: missingBirthStats naming that hero, through both entry points', () => {
+  it('one hero missing birth_stats: the file rejects naming that hero, the live payload blocks only that hero', () => {
     const payload = {
       heroes: [{ id: '1', name: 'NoBirth' }, minimalHero('2', 'HasBirth')],
       skills: POST_PATCH_SKILLS,
@@ -145,11 +146,14 @@ describe('rejections are preserved through the seam', () => {
     const viaFile = parseSaveFile(payload, []);
     const viaEntryPoint = parseAccountPayload(payload, []);
     expect(viaFile.rejected).toEqual({ reason: 'missingBirthStats', heroNames: ['NoBirth'] });
-    expect(viaEntryPoint.rejected).toEqual({ reason: 'missingBirthStats', heroNames: ['NoBirth'] });
-    expect(viaFile).toEqual(viaEntryPoint);
+    expect(viaEntryPoint.rejected).toBeNull();
+    expect(viaEntryPoint.candidates.map((candidate) => [candidate.sourceId, candidate.blocked])).toEqual([
+      ['1', true],
+      ['2', false],
+    ]);
   });
 
-  it('mixed save (some heroes have birth_stats, some do not): rejects with every missing name, through both entry points', () => {
+  it('mixed save (some heroes have birth_stats, some do not): the file rejects with every missing name, the live payload blocks exactly those', () => {
     const payload = {
       heroes: [
         { id: '1', name: 'NoBirthA' },
@@ -161,8 +165,10 @@ describe('rejections are preserved through the seam', () => {
     const viaFile = parseSaveFile(payload, []);
     const viaEntryPoint = parseAccountPayload(payload, []);
     expect(viaFile.rejected).toEqual({ reason: 'missingBirthStats', heroNames: ['NoBirthA', 'NoBirthB'] });
-    expect(viaEntryPoint.rejected).toEqual({ reason: 'missingBirthStats', heroNames: ['NoBirthA', 'NoBirthB'] });
-    expect(viaFile).toEqual(viaEntryPoint);
+    expect(viaEntryPoint.candidates.filter((candidate) => candidate.blocked).map((candidate) => candidate.name)).toEqual([
+      'NoBirthA',
+      'NoBirthB',
+    ]);
   });
 });
 

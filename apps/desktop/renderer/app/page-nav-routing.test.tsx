@@ -26,6 +26,10 @@ describe('page.tsx routes every nav item', () => {
     expect([...routed].sort()).toEqual(ids.filter((id) => id !== 'live').sort());
   });
 
+  it('keys the screen boundary by the active item so a tab change retries', () => {
+    expect(source).toContain('<ScreenBoundary screen={activeNavId}>');
+  });
+
   it('renders the Account screen on the Account item', () => {
     expect(source).toContain("activeNavId === 'account' ? (");
     expect(source).toContain('<AccountView');

@@ -969,11 +969,11 @@ describe('account-refresh — a drifted section is logged with path-qualified ke
     const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
     const sentinelGold = 918273645;
 
-    // A drifted /state body: missing the declared `crystals` key, carrying an unrecognized
+    // A drifted /state body: missing the declared `gold` key, carrying an unrecognized
     // `some_future_key` — both a missing-key and an added-key trigger in the same response, so
     // this proves the log names both lists, not just whichever `checkShape` finds first.
     const driftedState: Record<string, unknown> = { ...BODIES['/state'] };
-    delete driftedState.crystals;
+    delete driftedState.gold;
     driftedState.some_future_key = sentinelGold;
 
     const transport: HttpTransport = (req) => {
@@ -995,7 +995,7 @@ describe('account-refresh — a drifted section is logged with path-qualified ke
     expect(fidelityOf(view).account).toEqual({
       status: 'degraded',
       capturedAt: '2026-08-12T00:01:00.000Z',
-      missingKeys: ['account.crystals'],
+      missingKeys: ['account.gold'],
       addedKeys: ['account.some_future_key'],
     });
     expect(view?.payload.account).toEqual(driftedState);
@@ -1004,13 +1004,99 @@ describe('account-refresh — a drifted section is logged with path-qualified ke
     expect(drift).toBeDefined();
     expect(drift?.record.scope).toBe('account-refresh');
     expect(drift?.record.section).toBe('account');
-    expect(drift?.record.missingKeys).toContain('account.crystals');
+    expect(drift?.record.missingKeys).toContain('account.gold');
     expect(drift?.record.addedKeys).toContain('account.some_future_key');
 
     // No player data anywhere in the log payload — never the sentinel value itself, only the key
     // paths that named it.
     const payload = JSON.stringify(drift?.record);
     expect(payload).not.toContain(String(sentinelGold));
+  });
+
+  it('a /state response missing only a key nothing reads stays resolved and logs the absence once, however many cycles repeat it', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const withoutCrystals: Record<string, unknown> = { ...BODIES['/state'] };
+    delete withoutCrystals.crystals;
+
+    const transport: HttpTransport = (req) =>
+      Promise.resolve({
+        status: 200,
+        body: JSON.stringify(routeOf(req.path) === '/state' ? withoutCrystals : (BODIES[routeOf(req.path)] ?? {})),
+      });
+
+    const { log, records } = createLogSpy();
+    const refresh = createAccountRefresh(baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport, readToken, log }));
+
+    const view = await refresh.refreshNow();
+    await refresh.refreshNow();
+
+    expect(fidelityOf(view).account.status).toBe('resolved');
+    expect(view?.payload.account).toEqual(withoutCrystals);
+    expect(records.some((r) => r.record.event === 'section.drift')).toBe(false);
+    const absences = records.filter((r) => r.record.event === 'section.unread_keys_absent');
+    expect(absences).toHaveLength(1);
+    expect(absences[0]?.record.section).toBe('account');
+    expect(absences[0]?.record.absentKeys).toEqual(['account.crystals']);
+  });
+
+  it('a heroes section where every hero lost the same unread key logs one collapsed path, not one per hero', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const roster = BODIES['/roster'] as { heroes: Record<string, unknown>[] };
+    const stripped = { heroes: roster.heroes.map(({ in_market: _inMarket, ...hero }) => hero) };
+
+    const transport: HttpTransport = (req) =>
+      Promise.resolve({
+        status: 200,
+        body: JSON.stringify(routeOf(req.path) === '/roster' ? stripped : (BODIES[routeOf(req.path)] ?? {})),
+      });
+
+    const { log, records } = createLogSpy();
+    const refresh = createAccountRefresh(baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport, readToken, log }));
+
+    const view = await refresh.refreshNow();
+
+    expect(fidelityOf(view).heroes.status).toBe('resolved');
+    const absence = records.find((r) => r.record.event === 'section.unread_keys_absent');
+    expect(absence?.record.absentKeys).toEqual(['heroes.heroes[].in_market']);
+  });
+
+  describe('a game update that removes a field after an earlier cycle stored the old shape', () => {
+    async function viewAfterUpdate(removeFromState: 'gold' | 'crystals') {
+      const open = openTestAccountDb(firstBinding());
+      const store = createAccountStore(open);
+      const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+      let state: Record<string, unknown> = { ...BODIES['/state'] };
+
+      const transport: HttpTransport = (req) =>
+        Promise.resolve({
+          status: 200,
+          body: JSON.stringify(routeOf(req.path) === '/state' ? state : (BODIES[routeOf(req.path)] ?? {})),
+        });
+      const refresh = createAccountRefresh(baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport, readToken }));
+
+      await refresh.refreshNow();
+      const { [removeFromState]: _removed, ...rest } = state;
+      state = { ...rest, phase: 77 };
+      return { view: await refresh.refreshNow(), updatedState: state };
+    }
+
+    it('serves the new body, degraded and not stale, when the missing field is one the app reads', async () => {
+      const { view, updatedState } = await viewAfterUpdate('gold');
+
+      expect(view?.payload.account).toEqual(updatedState);
+      expect(fidelityOf(view).account).toMatchObject({ status: 'degraded', missingKeys: ['account.gold'] });
+    });
+
+    it('serves the new body as resolved when the missing field is one nothing reads', async () => {
+      const { view, updatedState } = await viewAfterUpdate('crystals');
+
+      expect(view?.payload.account).toEqual(updatedState);
+      expect(fidelityOf(view).account.status).toBe('resolved');
+    });
   });
 
   it('a cycle that loses one route and commits the other four logs section.failed naming it, so a partial commit is not indistinguishable from a clean one', async () => {

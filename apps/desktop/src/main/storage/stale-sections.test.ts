@@ -74,49 +74,18 @@ describe('judgeStoredSection', () => {
     expect(judgeStoredSection('heroes', [])).toEqual({ drop: false });
   });
 
-  it('an unrecognized skills.totals key drops, naming the path — presence, not truthiness', () => {
-    const verdict = judgeStoredSection('skills', cleanSkillsBody({ ...cleanTotals(), retired_total: 0 }));
-    expect(verdict.drop).toBe(true);
-    if (!verdict.drop) throw new Error('unreachable');
-    expect(verdict.triggers).toEqual(['skills.totals.retired_total']);
+  it('a skills body carrying keys the schema does not know is kept, at the top level and in totals', () => {
+    expect(judgeStoredSection('skills', cleanSkillsBody({ ...cleanTotals(), new_total: 0 }))).toEqual({ drop: false });
+    expect(judgeStoredSection('skills', { ...cleanSkillsBody(), new_key: 'x' })).toEqual({ drop: false });
   });
 
-  it('several unrecognized skills.totals keys are each named individually', () => {
-    const verdict = judgeStoredSection(
-      'skills',
-      cleanSkillsBody({ ...cleanTotals(), retired_list: [], retired_base: 0, retired_mult: 1 }),
-    );
-    expect(verdict.drop).toBe(true);
-    if (!verdict.drop) throw new Error('unreachable');
-    expect(verdict.triggers).toContain('skills.totals.retired_list');
-    expect(verdict.triggers).toContain('skills.totals.retired_base');
-    expect(verdict.triggers).toContain('skills.totals.retired_mult');
-  });
-
-  it('the shape check is an ADDED-key check only: a skills body merely missing refunds is NOT dropped on shape alone', () => {
-    // The rule: "neither [trigger] is 'the new keys are missing' — that's the export path's
-    // question, not this one." A body missing a key the store never required is not, by itself,
-    // evidence of staleness — plenty of this store's OWN test suite seeds partial bodies like
-    // this deliberately, and none of that is retired-mechanic drift.
+  it('a skills body missing a key is kept: absence is for the readers to judge, not the store', () => {
     const body = cleanSkillsBody();
     delete (body as { refunds?: unknown }).refunds;
     expect(judgeStoredSection('skills', body)).toEqual({ drop: false });
   });
 
-  it('an unrecognized future key anywhere in the section also drops on shape alone', () => {
-    const body = cleanSkillsBody();
-    body.some_future_key = 'x';
-    const verdict = judgeStoredSection('skills', body);
-    expect(verdict.drop).toBe(true);
-    if (!verdict.drop) throw new Error('unreachable');
-    expect(verdict.triggers).toContain('skills.some_future_key');
-  });
-
-  it('the shape check is scoped to skills only: a heroes element with a missing OR an added key is never dropped on shape', () => {
-    // The 2026-08-13 patch changed exactly one section's schema (skills). `heroes`/`casa`/
-    // `items`/`account` never drifted, so their fingerprints are deliberately never consulted
-    // here — checking them would only produce false positives against this codebase's own
-    // long-standing partial/synthetic stored bodies elsewhere in the suite.
+  it('a heroes element with a missing OR an added key is never dropped on shape', () => {
     const missingKey = cleanHero();
     delete (missingKey as { in_market?: unknown }).in_market;
     expect(judgeStoredSection('heroes', [cleanHero(), missingKey])).toEqual({ drop: false });
@@ -160,13 +129,9 @@ describe('judgeStoredSection', () => {
   });
 
   it('triggers are path-qualified key names only, never a stored value', () => {
-    const verdict = judgeStoredSection(
-      'skills',
-      cleanSkillsBody({ ...cleanTotals(), retired_total: 918273645 }),
-    );
+    const verdict = judgeStoredSection('casa', { slots: 918273645 });
     expect(verdict.drop).toBe(true);
     if (!verdict.drop) throw new Error('unreachable');
-    const payload = JSON.stringify(verdict.triggers);
-    expect(payload).not.toContain('918273645');
+    expect(JSON.stringify(verdict.triggers)).not.toContain('918273645');
   });
 });

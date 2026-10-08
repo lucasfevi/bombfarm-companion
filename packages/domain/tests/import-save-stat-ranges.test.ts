@@ -9,6 +9,7 @@ import { readStatRanges } from '@bombfarm/domain/save-units';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { AccountPayload } from '@bombfarm/contracts';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
+import { skillTotals } from './helpers/skill-totals';
 
 const BIRTH = {
   dmg: 100,
@@ -50,7 +51,7 @@ function saveWithHeroes(heroes: Record<string, unknown>[]) {
       ...overrides,
     })),
     items: [],
-    skills: { refunds: {}, totals: { vagas_campo: 0, bag_tabs_bonus: 0 }, levels: {} },
+    skills: { refunds: {}, totals: skillTotals(), levels: {} },
     casa: { active_casa: 1, cycle_secs: 1000, levels: [1, 0, 0, 0, 0], slots: 1 },
   };
 }

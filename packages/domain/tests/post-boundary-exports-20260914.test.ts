@@ -49,7 +49,7 @@ describe.each([
   const { raw, parsed } = loadExport(file);
 
   it('is a save export whose account block carries the placeholder identity keys, and still fingerprints ok', () => {
-    expect(checkSchema(raw, EXPORT_FINGERPRINT)).toEqual({ ok: true });
+    expect(checkSchema(raw, EXPORT_FINGERPRINT)).toEqual({ ok: true, absentUnreadKeys: [] });
     const account = raw.account as Record<string, unknown>;
     expect(typeof account.account_id).toBe('number');
     expect(typeof account.player_name).toBe('string');

@@ -85,12 +85,13 @@ export type SectionFailureReason =
   | 'partner_failed';
 
 export type SectionOutcome =
-  | { readonly kind: 'ok'; readonly body: unknown }
+  | { readonly kind: 'ok'; readonly body: unknown; readonly absentUnreadKeys: readonly string[] }
   | {
       readonly kind: 'drift';
       readonly body: unknown;
       readonly missingKeys: readonly string[];
       readonly addedKeys: readonly string[];
+      readonly absentUnreadKeys: readonly string[];
     }
   | {
       readonly kind: 'failed';
@@ -132,14 +133,20 @@ export async function readSection(
         // on it (fall through to `failed`) if the drifted body doesn't even hold the shape this
         // section's own consumers require (e.g. the key being projected is itself gone).
         if (route.acceptProjected(projected)) {
-          return { kind: 'drift', body: projected, missingKeys: shape.missingKeys, addedKeys: shape.addedKeys };
+          return {
+            kind: 'drift',
+            body: projected,
+            missingKeys: shape.missingKeys,
+            addedKeys: shape.addedKeys,
+            absentUnreadKeys: shape.absentUnreadKeys,
+          };
         }
         return { kind: 'failed', reason: 'empty_roster' };
       }
       if (!route.acceptProjected(projected)) {
         return { kind: 'failed', reason: 'empty_roster' };
       }
-      return { kind: 'ok', body: projected };
+      return { kind: 'ok', body: projected, absentUnreadKeys: shape.absentUnreadKeys };
     }
     case 'unauthorized':
       return outcome.code === null

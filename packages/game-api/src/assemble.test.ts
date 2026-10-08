@@ -5,11 +5,11 @@ import type { SectionOutcome } from './routes.js';
 
 const NOW = '2026-08-12T13:15:38.000Z';
 
-const OK_ACCOUNT: SectionOutcome = { kind: 'ok', body: { gold: 100 } };
-const OK_HEROES: SectionOutcome = { kind: 'ok', body: [{ id: '1' }] };
-const OK_SKILLS: SectionOutcome = { kind: 'ok', body: { totals: {} } };
-const OK_CASA: SectionOutcome = { kind: 'ok', body: { active_casa: 1 } };
-const OK_ITEMS: SectionOutcome = { kind: 'ok', body: [{ id: '99' }] };
+const OK_ACCOUNT: SectionOutcome = { kind: 'ok', body: { gold: 100 }, absentUnreadKeys: [] };
+const OK_HEROES: SectionOutcome = { kind: 'ok', body: [{ id: '1' }], absentUnreadKeys: [] };
+const OK_SKILLS: SectionOutcome = { kind: 'ok', body: { totals: {} }, absentUnreadKeys: [] };
+const OK_CASA: SectionOutcome = { kind: 'ok', body: { active_casa: 1 }, absentUnreadKeys: [] };
+const OK_ITEMS: SectionOutcome = { kind: 'ok', body: [{ id: '99' }], absentUnreadKeys: [] };
 
 const ALL_OK: Record<AccountSection, SectionOutcome> = {
   account: OK_ACCOUNT,
@@ -25,6 +25,7 @@ const DRIFT_MISSING_TOTALS: SectionOutcome = {
   body: { totals: 'still-usable' },
   missingKeys: ['totals'],
   addedKeys: [],
+  absentUnreadKeys: [],
 };
 // A drift outcome whose ONLY finding is an added key — proves addedKeys threads
 // through assembleAccountPayload independently of missingKeys, not merely alongside it.
@@ -33,6 +34,7 @@ const DRIFT_ADDED_REFUNDS: SectionOutcome = {
   body: { totals: {}, refunds: {} },
   missingKeys: [],
   addedKeys: ['refunds'],
+  absentUnreadKeys: [],
 };
 
 describe('assembleAccountPayload — arity and no history/grade (carry-over closed by signature)', () => {

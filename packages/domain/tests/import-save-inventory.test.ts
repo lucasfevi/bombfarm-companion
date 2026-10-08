@@ -3,6 +3,7 @@ import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { skipUnlessInRegime } from './helpers/capture-regime';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import { minimalHero } from './helpers/minimal-save-hero';
+import { skillTotals } from './helpers/skill-totals';
 
 const SEVEN_HEROES = 'save-20260819-11882-7heroes.json';
 
@@ -12,7 +13,7 @@ const SEVEN_HEROES = 'save-20260819-11882-7heroes.json';
  * inline literal below that used to omit `skills` entirely now carries this, or the whole file
  * (not just the item/hero under test) would reject before this suite's own assertions run.
  */
-const POST_PATCH_SKILLS = { refunds: {}, totals: { vagas_campo: 0, bag_tabs_bonus: 0 } };
+const POST_PATCH_SKILLS = { refunds: {}, totals: skillTotals() };
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;

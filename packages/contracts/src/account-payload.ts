@@ -5,15 +5,25 @@ export type AccountSection = 'account' | 'heroes' | 'skills' | 'casa' | 'items';
  * `resolved` — read in this capture. `stale` — last-known-good, older than this capture.
  * `missing` — never seen, or not recoverable at all. `degraded` — the source answered with a
  * shape that no longer matches its fingerprint; the body is carried alongside the status
- * regardless, but it is only trustworthy when nothing this section reads was lost — see
- * `isTrustworthySection` for the added-vs-missing distinction that decides that.
+ * regardless.
  */
 export type SectionStatus = 'resolved' | 'stale' | 'missing' | 'degraded';
 
 /** ISO-8601 `capturedAt` is required for anything that is not `missing`. */
 export type SectionFidelity =
-  | { readonly status: 'resolved' | 'stale'; readonly capturedAt: string }
-  | { readonly status: 'missing'; readonly capturedAt?: undefined }
+  | { readonly status: 'resolved'; readonly capturedAt: string }
+  | {
+      readonly status: 'stale';
+      readonly capturedAt: string;
+      /** Required keys the live read lacked, when that is why the saved section is on screen. */
+      readonly lostKeys?: readonly string[];
+    }
+  | {
+      readonly status: 'missing';
+      readonly capturedAt?: undefined;
+      /** Required keys the live read lacked, when that is why nothing is on screen. */
+      readonly lostKeys?: readonly string[];
+    }
   | {
       readonly status: 'degraded';
       readonly capturedAt: string;
@@ -25,15 +35,6 @@ export type SectionFidelity =
        *  collection present, the other silently dropped) becomes unrepresentable. */
       readonly addedKeys: readonly string[];
     };
-
-/**
- * Whether a `degraded` section's body is safe to compute from. An added key is a game update we
- * do not read yet — harmless. A missing key is a field this repo declares gone, and a parser can
- * silently substitute a default in its place — not safe, even though a body was returned.
- */
-export function isTrustworthySection(fidelity: Extract<SectionFidelity, { readonly status: 'degraded' }>): boolean {
-  return fidelity.missingKeys.length === 0;
-}
 
 export type AccountFidelity = { readonly [S in AccountSection]: SectionFidelity };
 

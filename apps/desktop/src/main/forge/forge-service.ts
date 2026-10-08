@@ -124,8 +124,8 @@ export function resolveForgeItem(rows: readonly unknown[] | null, itemId: string
   const level = finiteNumber(row.level);
   if (rarity === null || level === null || !FORGE_ITEM_LEVELS.includes(level)) return null;
   const slot = finiteNumber(row.slot);
-  const upgrade = finiteNumber(row.upgrade) ?? 0;
-  if (!Number.isInteger(upgrade) || upgrade < 0 || upgrade > FORGE_MAX) return null;
+  const upgrade = finiteNumber(row.upgrade);
+  if (upgrade === null || !Number.isInteger(upgrade) || upgrade < 0 || upgrade > FORGE_MAX) return null;
   return {
     id: itemId,
     defId: row.def_id,

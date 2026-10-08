@@ -280,7 +280,7 @@ describe('createAccountStore().persist()', () => {
       store.close();
     });
 
-    it('does not write a degraded section that lost a key, whose body may already carry a substituted default', () => {
+    it('writes a degraded section that lost a key over the older row, since the game\'s current answer is the truth', () => {
       const open = openTestAccountDb(binding);
       if (!open.db) throw new Error('expected a usable db');
       const store = createAccountStore(open);
@@ -298,7 +298,7 @@ describe('createAccountStore().persist()', () => {
       const beforeRow = readRow(open.db, 'heroes');
 
       const result = store.persist({
-        heroes: [{ id: 'h2-should-not-be-written' }],
+        heroes: [{ id: 'h2' }],
         fidelity: {
           account: MISSING,
           heroes: DEGRADED('2026-08-12T03:00:00.000Z', { missingKeys: ['heroes.heroes[].rarity'] }),
@@ -308,8 +308,10 @@ describe('createAccountStore().persist()', () => {
         },
       });
 
-      expect(result.written).toEqual([]);
-      expect(readRow(open.db, 'heroes')).toEqual(beforeRow);
+      expect(result.written).toEqual(['heroes']);
+      const afterRow = readRow(open.db, 'heroes');
+      expect(afterRow).not.toEqual(beforeRow);
+      expect(JSON.parse(afterRow?.body ?? 'null')).toEqual([{ id: 'h2' }]);
       store.close();
     });
 

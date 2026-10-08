@@ -18,8 +18,12 @@
  */
 
 export interface SchemaLevel {
-  /** Complete required key set for this object. Exact — see `optional`/`allowance` for the only escapes. */
+  /** Keys shipped code reads from this object. Missing one degrades the section, so every entry
+   *  must have a reader — `tools/required-keys-are-read.test.mjs` fails on one that has none. */
   readonly keys: readonly string[];
+  /** Keys the game sends that nothing reads. Declared so they are not reported as added; a
+   *  missing one is reported in `absentUnreadKeys` and never degrades the section. */
+  readonly unread?: readonly string[];
   /** Keys the GAME emits only sometimes. Enumerated, never a wildcard. e.g. `item.slot`. */
   readonly optional?: readonly string[];
   /** Keys OUR committed artifact removed (e.g. the account_id/player_name scrub). Enumerated. */
@@ -45,8 +49,13 @@ export interface SchemaFingerprint {
 }
 
 export type SchemaCheckResult =
-  | { readonly ok: true }
-  | { readonly ok: false; readonly missingKeys: readonly string[]; readonly addedKeys: readonly string[] };
+  | { readonly ok: true; readonly absentUnreadKeys: readonly string[] }
+  | {
+      readonly ok: false;
+      readonly missingKeys: readonly string[];
+      readonly addedKeys: readonly string[];
+      readonly absentUnreadKeys: readonly string[];
+    };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -63,6 +72,7 @@ function checkLevel(
   path: string,
   missing: string[],
   added: string[],
+  absentUnread: string[],
 ): void {
   if (!isPlainObject(value)) {
     missing.push(path);
@@ -70,10 +80,14 @@ function checkLevel(
   }
 
   const bodyKeys = new Set(Object.keys(value));
-  const escapes = new Set([...(level.optional ?? []), ...(level.allowance ?? [])]);
+  const unread = level.unread ?? [];
+  const escapes = new Set([...unread, ...(level.optional ?? []), ...(level.allowance ?? [])]);
 
   for (const key of level.keys) {
     if (!bodyKeys.has(key)) missing.push(`${path}.${key}`);
+  }
+  for (const key of unread) {
+    if (!bodyKeys.has(key)) absentUnread.push(`${path}.${key}`);
   }
   for (const key of bodyKeys) {
     if (!level.keys.includes(key) && !escapes.has(key)) added.push(`${path}.${key}`);
@@ -88,7 +102,7 @@ function checkLevel(
 
     switch (child.kind) {
       case 'object':
-        checkLevel(childValue, child.level, childPath, missing, added);
+        checkLevel(childValue, child.level, childPath, missing, added, absentUnread);
         break;
       case 'array':
         if (!Array.isArray(childValue)) {
@@ -96,7 +110,7 @@ function checkLevel(
           break;
         }
         childValue.forEach((element, index) => {
-          checkLevel(element, child.element, `${childPath}[${index}]`, missing, added);
+          checkLevel(element, child.element, `${childPath}[${index}]`, missing, added, absentUnread);
         });
         break;
       case 'valueMap':
@@ -111,16 +125,18 @@ function checkLevel(
 }
 
 /**
- * Checks `value` against `fingerprint`. Returns `{ok:true}` or a not-`ok` result naming every
- * missing and every added key, path-qualified from `fingerprint.root`. Never throws.
+ * Checks `value` against `fingerprint`. Returns an `ok` result, or a not-`ok` one naming every
+ * missing required key and every added key, path-qualified from `fingerprint.root`. Unread keys
+ * that are absent ride along on both. Never throws.
  */
 export function checkSchema(value: unknown, fingerprint: SchemaFingerprint): SchemaCheckResult {
   const missingKeys: string[] = [];
   const addedKeys: string[] = [];
-  checkLevel(value, fingerprint.level, fingerprint.root, missingKeys, addedKeys);
+  const absentUnreadKeys: string[] = [];
+  checkLevel(value, fingerprint.level, fingerprint.root, missingKeys, addedKeys, absentUnreadKeys);
 
-  if (missingKeys.length === 0 && addedKeys.length === 0) return { ok: true };
-  return { ok: false, missingKeys, addedKeys };
+  if (missingKeys.length === 0 && addedKeys.length === 0) return { ok: true, absentUnreadKeys };
+  return { ok: false, missingKeys, addedKeys, absentUnreadKeys };
 }
 
 /**
@@ -200,30 +216,32 @@ const HERO_LEVEL: SchemaLevel = {
     'id',
     'name',
     'level',
-    'xp',
     'rarity',
     'rank',
     'stars',
     'skin',
-    'skin_birth',
     'in_field',
     'battle_allowed',
     'marketable',
-    'in_market',
-    'slots',
     'stats',
     'birth_stats',
     'stat_ranges',
     'abilities',
+    'stat_points_available',
+    'slots',
+  ],
+  unread: [
+    'xp',
+    'skin_birth',
+    'in_market',
     'ability_points_total',
     'ability_points_spent',
     'ability_reroll_cost',
     'ability_reroll_stone',
-    'stat_points_available',
   ],
-  // `stats`/`birth_stats`/`stat_ranges`/`abilities`/`slots` are value-shaped, not schema-shaped —
-  // deliberately NOT declared as children: they are neither fingerprinted nor descended (design
-  // §2.3). Their presence is still covered because they are keys of this level.
+  // `stats`/`birth_stats`/`stat_ranges`/`abilities` are value-shaped, not schema-shaped —
+  // deliberately NOT declared as children: they are neither fingerprinted nor descended. Their
+  // presence is still covered because they are keys of this level.
   //
   // `soulbound` marks a hero as bound to the account and unsellable on the marketplace. It is
   // declared so the fidelity layer stops reporting it added on every refresh, and for nothing
@@ -246,11 +264,16 @@ const HERO_LEVEL: SchemaLevel = {
  * deconstruct screen (game build 25733721): the Forge Essence an item burns for, its forge-roll
  * failure streak and odds, and the scroll cost of its next forge. Present on every item of two
  * live reads held out of band (219 and about 1,090 items), equipment and non-equipment alike, so
- * they are required on the API item level — an absence is a real removal to report. The shared
- * `item` level tolerates them as optional instead: the committed save exports predate them, and
- * those are checked against it.
+ * the API item level declares them: all but the odds are read, and the odds are `unread`. The
+ * shared `item` level tolerates them as optional instead: the committed save exports predate
+ * them, and those are checked against it.
  */
 export const ITEM_ESSENCE_KEYS = ['essence_value', 'forge_fails', 'forge_chance', 'pergaminho_custo'] as const;
+
+const ITEM_ESSENCE_UNREAD_KEYS: readonly string[] = ['forge_chance'];
+const ITEM_ESSENCE_READ_KEYS: readonly string[] = ITEM_ESSENCE_KEYS.filter((key) => !ITEM_ESSENCE_UNREAD_KEYS.includes(key));
+
+const ITEM_UNREAD_KEYS: readonly string[] = ['equip_slot'];
 
 const ITEM_LEVEL: SchemaLevel = {
   keys: [
@@ -267,9 +290,9 @@ const ITEM_LEVEL: SchemaLevel = {
     'market_state',
     'locked',
     'equipped_on',
-    'equip_slot',
     'in_stash',
   ],
+  unread: ITEM_UNREAD_KEYS,
   // Measured: `/inventory.items` 27 with `slot` / 3 without (all category 4);
   // `save.items` 17 with / 5 without. Genuine game variance, not our artifact — `optional`, not
   // `allowance`. `assertOptionalKeyWitnessedBothWays` keeps this escape from ever going dead.
@@ -305,18 +328,19 @@ const ITEM_LEVEL: SchemaLevel = {
 
 const API_ITEM_LEVEL: SchemaLevel = {
   ...ITEM_LEVEL,
-  keys: [...ITEM_LEVEL.keys, ...ITEM_ESSENCE_KEYS],
+  keys: [...ITEM_LEVEL.keys, ...ITEM_ESSENCE_READ_KEYS],
+  unread: [...ITEM_UNREAD_KEYS, ...ITEM_ESSENCE_UNREAD_KEYS],
   optional: (ITEM_LEVEL.optional ?? []).filter((key) => !(ITEM_ESSENCE_KEYS as readonly string[]).includes(key)),
 };
 
 const CASA_LEVEL: SchemaLevel = {
-  keys: ['active_casa', 'levels', 'cycle_secs', 'slots', 'slots_per_house', 'cycle_secs_per_house', 'upgrade_cost'],
+  keys: ['active_casa', 'levels', 'cycle_secs', 'slots', 'slots_per_house'],
+  // The rotation normalizer validates both and nothing consumes either value.
+  unread: ['cycle_secs_per_house', 'upgrade_cost'],
   children: {
     // House-indexed arrays are game data, not schema — only presence/container kind matters.
     levels: { kind: 'valueList' },
     slots_per_house: { kind: 'valueList' },
-    cycle_secs_per_house: { kind: 'valueList' },
-    upgrade_cost: { kind: 'valueList' },
   },
 };
 
@@ -340,12 +364,14 @@ export const SCHEMA_LEVELS = {
  * `packages/domain/tests/helpers/fidelity-pair.ts`) — same scrub, same reason as `/state`.
  */
 const EXPORT_ACCOUNT_LEVEL: SchemaLevel = {
-  keys: ['bag_capacity', 'bag_tabs', 'gold', 'items_count', 'locked', 'max_phase', 'phase'],
+  keys: ['gold', 'max_phase', 'phase'],
+  unread: ['bag_capacity', 'bag_tabs', 'items_count', 'locked'],
   allowance: ['account_id', 'player_name'],
 };
 
 const EXPORT_LEVEL: SchemaLevel = {
-  keys: ['account', 'casa', 'export_version', 'generated_at', 'heroes', 'items', 'skills'],
+  keys: ['account', 'casa', 'heroes', 'items', 'skills'],
+  unread: ['export_version', 'generated_at'],
   children: {
     account: { kind: 'object', level: EXPORT_ACCOUNT_LEVEL },
     casa: { kind: 'object', level: SCHEMA_LEVELS.casa },

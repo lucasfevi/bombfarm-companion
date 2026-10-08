@@ -18,6 +18,7 @@ import {
 } from '@bombfarm/domain/farm-rate';
 import { requireFixture } from './helpers/require-fixture';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
+import { skillTotals } from './helpers/skill-totals';
 
 const DOMAIN_ROOT = join(__dirname, '..');
 const FIXTURE_PATH = join(DOMAIN_ROOT, 'tests/fixtures/sheet-math/save-20260813-5heroes.json');
@@ -121,7 +122,7 @@ describe('account.max_phase — rejection paths yield null', () => {
   it('missingBirthStats ⇒ maxPhase null even though the raw payload carries a value', () => {
     const payload = {
       heroes: [{ name: 'NoBirth' }],
-      skills: { refunds: 0, totals: { vagas_campo: 0, bag_tabs_bonus: 0 }, max_phase: 99 },
+      skills: { refunds: 0, totals: skillTotals(), max_phase: 99 },
       account: { max_phase: 99 },
     };
     const result = parseSaveFile(payload, []);

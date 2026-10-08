@@ -48,11 +48,11 @@ describe('the /inventory body since the game stopped selling items for gold', ()
       itemsRoute,
     );
 
-    expect(outcome).toEqual({ kind: 'ok', body: postPatch.items });
+    expect(outcome).toEqual({ kind: 'ok', body: postPatch.items, absentUnreadKeys: [] });
   });
 
   it('passes the stored-row check, so a section persisted from it restores', () => {
-    expect(checkSectionShape(postPatch.items, SECTION_FINGERPRINTS.items)).toEqual({ ok: true });
+    expect(checkSectionShape(postPatch.items, SECTION_FINGERPRINTS.items)).toEqual({ ok: true, absentUnreadKeys: [] });
   });
 
   it('still reports an item that lost a key the game does send', () => {
@@ -77,6 +77,6 @@ describe('the /inventory body since the game stopped selling items for gold', ()
     expect(SCHEMA_LEVELS.apiItem.keys).not.toContain('sell_value');
     expect(SCHEMA_LEVELS.apiItem.keys).not.toContain('sellable');
     expect(SCHEMA_LEVELS.apiItem.optional).toEqual(expect.arrayContaining(['sell_value', 'sellable']));
-    expect(ROUTE_FINGERPRINTS.items.level.keys).toContain('chests');
+    expect(ROUTE_FINGERPRINTS.items.level.unread).toContain('chests');
   });
 });

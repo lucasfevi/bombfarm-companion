@@ -11,6 +11,7 @@ import type { AccountFidelity, AccountPayload, AccountView } from '@bombfarm/con
 import { accountChangeKey } from '@bombfarm/contracts';
 import { buildOptimizerInputs } from './optimizer-inputs';
 import { createOptimizerStore, optimizerSnapshotStale } from './use-optimizer-snapshot';
+import { skillTotals } from '../account/skill-totals.test-support';
 
 const EMPTY_BASIS = { inputs: { heroes: [] }, controls: {} } as unknown as PlanBasis;
 
@@ -42,7 +43,7 @@ function payloadAtLevel(level: number): AccountPayload {
   return {
     account: { phase: 12, max_phase: 20, gold: '1' },
     heroes: [rawHero('h1', level)],
-    skills: { totals: { dmg_static: 1.5 } },
+    skills: { totals: skillTotals({ dmg_static: 1.5 }) },
     casa: { active_casa: 1, levels: [10] },
     items: [],
     fidelity: fidelityAt('2026-08-12T00:00:00.000Z'),
