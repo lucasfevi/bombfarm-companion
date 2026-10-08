@@ -254,6 +254,11 @@ jobs:
         if: matrix.build
         run: pnpm --filter @bombfarm/contracts --filter @bombfarm/domain build
 
+      # Hosted runners come in two speeds and an instrumented pass takes twice as long on the slow
+      # one; the CPU model is what tells a slow pass's runner from a regression.
+      - name: Print the runner's CPU
+        run: lscpu
+
       - name: Measure the ${{ matrix.pass }} pass
         run: node tools/domain-coverage.mjs measure-${{ matrix.pass }}
 
