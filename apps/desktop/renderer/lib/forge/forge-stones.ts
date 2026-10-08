@@ -1,6 +1,12 @@
-import { FORGE_GUARANTEED, forgeStonePp, type ForgeStones } from '@bombfarm/domain/forge';
+import { FORGE_FAIL_FLOOR, FORGE_GUARANTEED, forgeStonePp, type ForgeStones } from '@bombfarm/domain/forge';
 
 export const MAX_STONE_RANGES = 4;
+
+/** The level below which a stone range need not reach: a miss can drop a piece down to the fail
+ *  floor, so the levels between the floor and the piece are rolled again and want a stone too. */
+export function stoneRangeBase(upgrade: number): number {
+  return Math.min(upgrade, FORGE_FAIL_FLOOR);
+}
 
 /** A stored range: a Chance Stone rarity (or none) for every target up to `upTo`. The last range
  *  always runs to the plan's target, whatever its stored `upTo` says. */

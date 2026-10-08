@@ -89,6 +89,8 @@ export interface CollectionSetRow {
   readonly code: string;
   readonly level: number;
   readonly status: CollectionSetStatus;
+  /** The highest rarity whose page and every page below it are complete, as the game tints the book; null while the common page is unfinished. */
+  readonly completedRarity: number | null;
   readonly effects: readonly CollectionSetEffectRow[];
   readonly pages: readonly CollectionPageRow[];
   readonly pieces: readonly CollectionPieceRow[];
@@ -255,6 +257,12 @@ function setEffectRows(effects: readonly CollectionEffectState[], pages: readonl
   });
 }
 
+function completedRarityOf(pages: readonly CollectionPageRow[]): number | null {
+  const firstOpen = pages.findIndex((page) => !page.complete);
+  const completed = firstOpen === -1 ? pages.length : firstOpen;
+  return completed === 0 ? null : completed - 1;
+}
+
 function setRow(set: CollectionSetState, allPieces: readonly CollectionPieceState[], freeKeys: ReadonlySet<string>, partialPct: number): CollectionSetRow {
   const fullPages = pageCounts(set.piecesByPage).map((count) => count >= COLLECTION_PIECES_PER_PAGE);
   const pieces = allPieces
@@ -266,6 +274,7 @@ function setRow(set: CollectionSetState, allPieces: readonly CollectionPieceStat
     code: set.code,
     level: set.level,
     status: setStatus(set.piecesByPage),
+    completedRarity: completedRarityOf(pages),
     effects: setEffectRows(set.effects, pages),
     pages,
     pieces,

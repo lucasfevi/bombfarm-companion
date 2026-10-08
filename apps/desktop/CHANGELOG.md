@@ -1,5 +1,58 @@
 # @bombfarm/desktop
 
+## 0.27.0
+
+### Minor Changes
+
+- 695bd4a: The forge queue can use Chance Stones and the Protection Scroll. In the Forge tab's queue panel, pick a stone for each range of target levels (for example Common for +10 to +13 and another kind for +14 and +15), turn the Protection Scroll on for every piece, and choose whether the queue stops when a stone runs out or rolls on without it. The expected gold and essence, the Start confirmation and the Optimizer's Apply step all count the stones and scroll, and say where the stones are expected to run out. The Forge forecast also lists the essence on hand beside the wallet.
+- 5e8088e: The Live tab gains a Damage panel: Team DPS over the last 10 minutes and over the session, and for each hero its DPS, uptime, props destroyed and gold. Uptime is the share of the session a hero spent on the field, and hovering it shows the time on the field against the session's time. Damage that cannot be tied to one hero is shown as Unattributed rather than guessed. The Damage and Heroes panels sit side by side under the earnings and map panels, and each takes the full width in narrower windows. Resetting the session restarts the damage figures along with the earnings, and the download page's Live preview shows the new panel and the same arrangement. Earnings and damage also no longer stop counting after consent is granted again mid-session.
+- bc5f232: The app now detects your Pass: Farm and Skill Tree figures include its always-on gold, XP and drop bonuses, the Live map's per-prop gold and XP follow it and the Return Bonus window, and the status strip shows the time left on the Pass.
+
+### Patch Changes
+
+- 0c73025: The outline around a Collections piece that is ready in the inventory no longer shows extra padding under the icon.
+- 8781897: The Forge screen's Chance Stone ranges now reach the levels a miss can drop a piece back to. A piece at +13 could only be given stones for +14 and +15; if the +14 roll failed and it fell to +12, the +13 roll ran with no stone and there was no way to set one. The ranges now start at +11 for any piece worn at +10 or above, so those re-rolls use the stone you choose.
+- c4405f4: The Heroes tab's Combat figures now include your Collections bonuses.
+- 8951cb5: Inventory, Forge and Deconstruct show your current inventory again after the game update. The game stopped sending the gold sell value when it removed selling items for gold, and the app was treating that as a damaged read and falling back to an old snapshot, so Deconstruct could offer items you no longer had. The gold value on item cards, the Value column and the Value sort are gone with it.
+
+  Items imported from Steam can be burned in Deconstruct right away, as the game now allows.
+
+- f664ee2: Market prices quoted in Kuwaiti Dinar are no longer read a thousand times too high. Steam returns
+  a price only as a formatted string, and the parser decided which of `.` and `,` was the decimal
+  point by counting digits: exactly three after the last separator meant thousands grouping. That is
+  right for the two-decimal currencies, but the Dinar has three decimal places, so `1.234 KD` — one
+  and a bit — was read as 1234, and an inventory valued in it came out roughly 1000x its real worth.
+  Each currency now carries its own number of decimal places and that is what decides the parse, so
+  a three-decimal amount reads as a fraction, a thousands-grouped one still groups, and a currency
+  with no decimal places at all — Yen, Won, Dong, Chilean Peso — can never pick up a fraction by
+  accident. Kuwaiti Dinar is the only three-decimal currency Steam quotes, and it is the only one
+  whose prices move.
+- 0925ddb: Map keys, skill stones and chance stones in the inventory now read like gems: the name on top (Map Key, Skill Stone, Chance Stone) and the rarity on the line below, in the rarity colour. Their hover cards follow the same layout.
+
+  A Chance Stone's hover card now also shows the forge chance it adds (+10% for Common up to +60% for Mythic).
+
+- 2f2847b: The optimizer no longer keeps a hero in Donate after its battle is turned back on; only columns you set by hand are remembered.
+- Updated dependencies [7176304]
+- Updated dependencies [695bd4a]
+- Updated dependencies [8951cb5]
+- Updated dependencies [f664ee2]
+- Updated dependencies [5e8088e]
+- Updated dependencies [0925ddb]
+- Updated dependencies [2f2847b]
+- Updated dependencies [bc5f232]
+- Updated dependencies [bc5f232]
+- Updated dependencies [bc5f232]
+  - @bombfarm/pricing@0.4.4
+  - @bombfarm/contracts@0.14.0
+  - @bombfarm/domain@1.10.0
+  - @bombfarm/game-data@0.0.22
+  - @bombfarm/game-art@0.8.1
+  - @bombfarm/game-api@0.7.1
+  - @bombfarm/team-plan@0.6.3
+  - @bombfarm/farm@1.3.0
+  - @bombfarm/account@0.3.12
+  - @bombfarm/hero@0.5.6
+
 ## 0.26.0
 
 ### Minor Changes

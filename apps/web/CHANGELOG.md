@@ -1,5 +1,39 @@
 # @bombfarm/web
 
+## 0.27.0
+
+### Minor Changes
+
+- 5e8088e: The Live tab gains a Damage panel: Team DPS over the last 10 minutes and over the session, and for each hero its DPS, uptime, props destroyed and gold. Uptime is the share of the session a hero spent on the field, and hovering it shows the time on the field against the session's time. Damage that cannot be tied to one hero is shown as Unattributed rather than guessed. The Damage and Heroes panels sit side by side under the earnings and map panels, and each takes the full width in narrower windows. Resetting the session restarts the damage figures along with the earnings, and the download page's Live preview shows the new panel and the same arrangement. Earnings and damage also no longer stop counting after consent is granted again mid-session.
+- bc5f232: The Farm board has a Pass toggle that prices the Pass's always-on gold, XP and drop bonuses into every estimate, and the Return Bonus is now an on/off switch whose rate follows the Pass.
+
+### Patch Changes
+
+- 8951cb5: Inventory, Forge and Deconstruct show your current inventory again after the game update. The game stopped sending the gold sell value when it removed selling items for gold, and the app was treating that as a damaged read and falling back to an old snapshot, so Deconstruct could offer items you no longer had. The gold value on item cards, the Value column and the Value sort are gone with it.
+
+  Items imported from Steam can be burned in Deconstruct right away, as the game now allows.
+
+- 0925ddb: Map keys, skill stones and chance stones in the inventory now read like gems: the name on top (Map Key, Skill Stone, Chance Stone) and the rarity on the line below, in the rarity colour. Their hover cards follow the same layout.
+
+  A Chance Stone's hover card now also shows the forge chance it adds (+10% for Common up to +60% for Mythic).
+
+- 2f2847b: The optimizer no longer keeps a hero in Donate after its battle is turned back on; only columns you set by hand are remembered.
+- Updated dependencies [7176304]
+- Updated dependencies [8951cb5]
+- Updated dependencies [f664ee2]
+- Updated dependencies [0925ddb]
+- Updated dependencies [2f2847b]
+- Updated dependencies [bc5f232]
+- Updated dependencies [bc5f232]
+- Updated dependencies [bc5f232]
+  - @bombfarm/pricing@0.4.4
+  - @bombfarm/domain@1.10.0
+  - @bombfarm/game-art@0.8.1
+  - @bombfarm/team-plan@0.6.3
+  - @bombfarm/farm@1.3.0
+  - @bombfarm/account@0.3.12
+  - @bombfarm/hero@0.5.6
+
 ## 0.26.2
 
 ### Patch Changes

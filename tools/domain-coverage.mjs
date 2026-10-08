@@ -45,18 +45,22 @@ const HEARTBEAT_MS = 60_000;
 const MERGE_COMMAND =
   'pnpm exec vitest run --merge-reports=coverage/domain-blobs --dangerouslyIgnoreUnhandledErrors --reporter=default --reporter=json --outputFile.json=coverage/domain-results/merge.json --coverage --coverage.reportsDirectory=coverage/domain --coverage.reporter=text-summary --coverage.reporter=json-summary';
 
-const MEASUREMENT_COMMANDS = [
-  'pnpm exec vitest run --project @bombfarm/domain --dangerouslyIgnoreUnhandledErrors --testTimeout=600000 --coverage --coverage.reporter=json-summary --coverage.reportsDirectory=coverage/domain-main --reporter=blob --reporter=dot --reporter=json --outputFile.blob=coverage/domain-blobs/main.json --outputFile.json=coverage/domain-results/main.json',
-  'pnpm exec vitest run --config vitest.solver.config.ts --dangerouslyIgnoreUnhandledErrors --testTimeout=600000 --coverage --coverage.reporter=json-summary --coverage.reportsDirectory=coverage/domain-solver --reporter=blob --reporter=dot --reporter=json --outputFile.blob=coverage/domain-blobs/solver.json --outputFile.json=coverage/domain-results/solver.json',
-  MERGE_COMMAND,
-];
-const EXPECTED_BLOBS = ['main.json', 'solver.json'];
+const PASS_COMMANDS = {
+  main: 'pnpm exec vitest run --project @bombfarm/domain --dangerouslyIgnoreUnhandledErrors --testTimeout=600000 --coverage --coverage.reporter=json-summary --coverage.reportsDirectory=coverage/domain-main --reporter=blob --reporter=dot --reporter=json --outputFile.blob=coverage/domain-blobs/main.json --outputFile.json=coverage/domain-results/main.json',
+  solver: 'pnpm exec vitest run --config vitest.solver.config.ts --dangerouslyIgnoreUnhandledErrors --testTimeout=600000 --coverage --coverage.reporter=json-summary --coverage.reportsDirectory=coverage/domain-solver --reporter=blob --reporter=dot --reporter=json --outputFile.blob=coverage/domain-blobs/solver.json --outputFile.json=coverage/domain-results/solver.json',
+};
+const PASS_OF_COMMAND = { 'measure-domain': 'main', 'measure-solver': 'solver' };
+const EXPECTED_BLOBS = Object.keys(PASS_COMMANDS).map((pass) => `${pass}.json`);
+const COMMANDS = ['check', 'update', 'guard-base', ...Object.keys(PASS_OF_COMMAND), 'merge-and-compare'];
 const STALE_OUTPUT_DIRECTORIES = ['domain-blobs', 'domain-results', 'domain-main', 'domain-solver', 'domain'];
 
 function usage() {
   return [
-    'usage: node tools/domain-coverage.mjs [check|update|guard-base] [options]',
-    '  check (default)      measure, then fail on any finding against the committed baseline',
+    `usage: node tools/domain-coverage.mjs [${COMMANDS.join('|')}] [options]`,
+    '  check (default)      measure both passes, merge them, then fail on any finding against the committed baseline',
+    '  measure-domain       measure the domain project pass alone, into coverage/domain-blobs/main.json',
+    '  measure-solver       measure the solver pass alone, into coverage/domain-blobs/solver.json',
+    '  merge-and-compare    merge the two blobs already under coverage/domain-blobs, then compare as check does',
     '  update               measure, refuse regressions, then rewrite the baseline',
     '  guard-base --base R  fail when head records a lower number than ref R, without a new waiver',
     'options:',
@@ -76,7 +80,7 @@ function parseArguments(argv) {
   const options = { command: 'check', summary: null, baseline: BASELINE_PATH, base: null, waivers: [] };
   const rest = [...argv];
   if (rest.length > 0 && !rest[0].startsWith('--')) options.command = rest.shift();
-  if (!['check', 'update', 'guard-base'].includes(options.command)) fail(`unknown command "${options.command}"\n${usage()}`, 2);
+  if (!COMMANDS.includes(options.command)) fail(`unknown command "${options.command}"\n${usage()}`, 2);
 
   const takeValue = (flag) => {
     const value = rest.shift();
@@ -99,6 +103,7 @@ function parseArguments(argv) {
   const unreasoned = options.waivers.filter((waiver) => waiver.reason === null);
   if (unreasoned.length > 0) fail(`--waive ${unreasoned[0].file} has no --reason`, 2);
   if (options.waivers.length > 0 && options.command !== 'update') fail('--waive is only valid with update', 2);
+  if (options.summary !== null && !['check', 'update'].includes(options.command)) fail('--summary is only valid with check or update', 2);
   if (options.command === 'guard-base' && options.base === null) fail('guard-base needs --base <ref>', 2);
   return options;
 }
@@ -170,18 +175,47 @@ function acceptOrFail(command, code) {
   appendStepSummary(formatToleratedFailuresMarkdown(judgement.tolerated));
 }
 
+async function runJudged(command) {
+  const code = await runStreaming(command);
+  if (code !== 0) acceptOrFail(command, code);
+}
+
+function clearOutputs(relativePaths) {
+  for (const relativePath of relativePaths) rmSync(path.join(COVERAGE_DIRECTORY, relativePath), { recursive: true, force: true });
+}
+
+function requireBlobs(blobs) {
+  const missingBlobs = blobs.filter((blob) => !existsSync(path.join(BLOB_DIRECTORY, blob)));
+  if (missingBlobs.length > 0) fail(`the measurement left no ${missingBlobs.join(', ')} under coverage/domain-blobs`);
+}
+
+// --merge-reports merges every file in the directory, so a stray blob would silently join the numbers.
+function requireExactlyTheExpectedBlobs() {
+  requireBlobs(EXPECTED_BLOBS);
+  const strays = readdirSync(BLOB_DIRECTORY).filter((entry) => !EXPECTED_BLOBS.includes(entry));
+  if (strays.length > 0) fail(`coverage/domain-blobs holds ${strays.join(', ')} besides ${EXPECTED_BLOBS.join(' and ')}; the merge would include it`);
+}
+
+async function measurePass(pass) {
+  waitForHeavySlot('domain-coverage');
+  clearOutputs([`domain-blobs/${pass}.json`, `domain-results/${pass}.json`, `domain-${pass}`]);
+  await runJudged(PASS_COMMANDS[pass]);
+  requireBlobs([`${pass}.json`]);
+}
+
+async function mergePasses() {
+  requireExactlyTheExpectedBlobs();
+  waitForHeavySlot('domain-coverage');
+  clearOutputs(['domain', 'domain-results/merge.json']);
+  await runJudged(MERGE_COMMAND);
+  return MERGED_SUMMARY_PATH;
+}
+
 async function measure() {
   waitForHeavySlot('domain-coverage');
-  for (const directory of STALE_OUTPUT_DIRECTORIES) {
-    rmSync(path.join(COVERAGE_DIRECTORY, directory), { recursive: true, force: true });
-  }
-  for (const command of MEASUREMENT_COMMANDS) {
-    const code = await runStreaming(command);
-    if (code !== 0) acceptOrFail(command, code);
-  }
-  const missingBlobs = EXPECTED_BLOBS.filter((blob) => !existsSync(path.join(BLOB_DIRECTORY, blob)));
-  if (missingBlobs.length > 0) fail(`the measurement left no ${missingBlobs.join(', ')} under coverage/domain-blobs`);
-  return MERGED_SUMMARY_PATH;
+  clearOutputs(STALE_OUTPUT_DIRECTORIES);
+  for (const pass of Object.keys(PASS_COMMANDS)) await runJudged(PASS_COMMANDS[pass]);
+  return mergePasses();
 }
 
 function loadSummary(summaryPath) {
@@ -207,10 +241,10 @@ function printFindings(findings) {
   for (const item of findings) process.stderr.write(`  [${item.kind}] ${item.message}\n`);
 }
 
-async function check(options) {
+async function check(options, measureSummary = measure) {
   const baseline = readBaseline(options.baseline);
   if (baseline === null) fail(`${options.baseline} does not exist — run \`pnpm coverage:domain:update\` to record it`);
-  const summaryPath = options.summary ?? (await measure());
+  const summaryPath = options.summary ?? (await measureSummary());
   const { measured, overall } = loadSummary(summaryPath);
   const findings = evaluateAgainstBaseline({ baseline, measured, ...sourceTree() });
 
@@ -300,7 +334,9 @@ function guardBase(options) {
 
 async function main() {
   const options = parseArguments(process.argv.slice(2));
-  if (options.command === 'guard-base') guardBase(options);
+  if (options.command === 'guard-base') return guardBase(options);
+  if (options.command in PASS_OF_COMMAND) await measurePass(PASS_OF_COMMAND[options.command]);
+  else if (options.command === 'merge-and-compare') await check(options, mergePasses);
   else if (options.command === 'update') await update(options);
   else await check(options);
 }

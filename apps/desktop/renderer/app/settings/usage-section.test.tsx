@@ -57,6 +57,10 @@ describe('UsageSection copy says exactly what the ping carries, in both locales'
     expect(render('en', { usagePingEnabled: false })).toContain('aria-checked="false"');
     expect(render('en')).toContain('aria-label="Include my account in the usage count"');
   });
+
+  it("the switch's data-testid reaches the rendered element, not just the call site", () => {
+    expect(render('en')).toContain('data-testid="settings-usage-ping-switch"');
+  });
 });
 
 describe('UsageSection — the not-persisted Banner is an always-mounted slot', () => {

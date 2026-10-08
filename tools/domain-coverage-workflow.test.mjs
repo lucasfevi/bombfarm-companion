@@ -6,10 +6,14 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const CI_WEB_PATH = join(root, '.github/workflows/ci-web.yml');
 const JOB = 'domain-coverage';
+const PASS_JOB = 'domain-coverage-pass';
+const DOMAIN_GATE = "github.event_name != 'pull_request' || needs.changes.outputs.domain == 'true'";
+const MERGE_RUN = 'node tools/domain-coverage.mjs merge-and-compare';
+const PASS_RUN = 'node tools/domain-coverage.mjs measure-${{ matrix.pass }}';
 const AGGREGATOR = 'ci-web-required';
 
 /**
- * The shape guard for the `domain-coverage` job in `ci-web.yml`, modelled on
+ * The shape guard for the `domain-coverage-pass` matrix and the `domain-coverage` job in `ci-web.yml`, modelled on
  * `tools/repo-guards-workflow.test.mjs`. The ratchet is only a ratchet while the job that runs
  * it can neither be skipped, nor made advisory, nor starved of its inputs: it has to run the
  * check with no escape hatch, compare against the base branch on pull requests, be a need of
@@ -120,17 +124,74 @@ function coverageJob(text) {
   return block === null ? null : stripCommentLines(block);
 }
 
+function passJob(text) {
+  const block = extractJobBlock(text, PASS_JOB);
+  return block === null ? null : stripCommentLines(block);
+}
+
+function runsExactly(step, command) {
+  return stepRun(step).replace(/^\s*run:\s*/, '').trim() === command;
+}
+
+function unconditionalStrictStep(block, command) {
+  if (block === null) return false;
+  const step = extractSteps(block).find((candidate) => runsExactly(candidate, command));
+  return step !== undefined && stepIf(step) === null && !/continue-on-error/.test(step);
+}
+
 function coverageJobExists(text) {
   return coverageJob(text) !== null && /^ {4}name:\s*Domain coverage ratchet\s*$/m.test(coverageJob(text));
 }
 
 function jobGatedOnDomainFilter(text) {
   const block = coverageJob(text);
+  const pass = passJob(text);
+  if (block === null || pass === null) return false;
+  return (
+    jobLevelValue(block, 'if') === DOMAIN_GATE &&
+    jobLevelValue(block, 'needs') === `[changes, ${PASS_JOB}]` &&
+    jobLevelValue(pass, 'if') === DOMAIN_GATE &&
+    jobLevelValue(pass, 'needs') === 'changes'
+  );
+}
+
+function passMatrixMeasuresBothPasses(text) {
+  const block = passJob(text);
   if (block === null) return false;
   return (
-    jobLevelValue(block, 'if') === "github.event_name != 'pull_request' || needs.changes.outputs.domain == 'true'" &&
-    jobLevelValue(block, 'needs') === 'changes'
+    /^ {6}fail-fast:\s*false\s*$/m.test(block) &&
+    /^ {10}- pass: domain\n {12}build: true\s*$/m.test(block) &&
+    /^ {10}- pass: solver\n {12}build: false\s*$/m.test(block) &&
+    (block.match(/^ {10}- pass:/gm) ?? []).length === 2
   );
+}
+
+function passUploadsBlobAndResultsEvenOnFailure(text) {
+  const block = passJob(text);
+  if (block === null) return false;
+  const step = extractSteps(block).find((candidate) => /uses:\s*actions\/upload-artifact@/.test(candidate));
+  return (
+    step !== undefined &&
+    stepIf(step) === 'always()' &&
+    /name:\s*domain-coverage-pass-\$\{\{ matrix\.pass \}\}\s*$/m.test(step) &&
+    /path:\s*coverage\s*$/m.test(step)
+  );
+}
+
+function mergeDownloadsBothPassesFirst(text) {
+  const block = coverageJob(text);
+  if (block === null) return false;
+  const steps = extractSteps(block);
+  const download = steps.findIndex(
+    (step) =>
+      /uses:\s*actions\/download-artifact@/.test(step) &&
+      /pattern:\s*domain-coverage-pass-\*\s*$/m.test(step) &&
+      /path:\s*coverage\s*$/m.test(step) &&
+      /merge-multiple:\s*true\s*$/m.test(step) &&
+      stepIf(step) === null,
+  );
+  const merge = steps.findIndex((step) => runsExactly(step, MERGE_RUN));
+  return download !== -1 && merge !== -1 && download < merge;
 }
 
 function changesJobExportsDomainFilter(text) {
@@ -139,24 +200,21 @@ function changesJobExportsDomainFilter(text) {
 }
 
 function checkStepIsUnconditionalAndStrict(text) {
-  const block = coverageJob(text);
-  if (block === null) return false;
-  const checkStep = extractSteps(block).find((step) => /^\s*run:\s*pnpm coverage:domain\s*$/m.test(step));
-  return checkStep !== undefined && stepIf(checkStep) === null && !/continue-on-error/.test(checkStep) && !/\|\|/.test(stepRun(checkStep));
+  return unconditionalStrictStep(coverageJob(text), MERGE_RUN) && unconditionalStrictStep(passJob(text), PASS_RUN);
 }
 
 function noEscapeHatchInJob(text) {
-  const block = coverageJob(text);
-  if (block === null) return false;
-  return !/continue-on-error/.test(block) && !/\|\|\s*true/.test(block) && !/--passWithNoTests/.test(block);
+  return [coverageJob(text), passJob(text)].every(
+    (block) => block !== null && !/continue-on-error/.test(block) && !/\|\|\s*true/.test(block) && !/--passWithNoTests/.test(block),
+  );
 }
 
 function buildPrecedesMeasurement(text) {
-  const block = coverageJob(text);
+  const block = passJob(text);
   if (block === null) return false;
   const steps = extractSteps(block);
-  const build = steps.findIndex((step) => /pnpm --filter @bombfarm\/contracts --filter @bombfarm\/domain build/.test(step));
-  const measure = steps.findIndex((step) => /^\s*run:\s*pnpm coverage:domain\s*$/m.test(step));
+  const build = steps.findIndex((step) => /pnpm --filter @bombfarm\/contracts --filter @bombfarm\/domain build/.test(step) && stepIf(step) === 'matrix.build');
+  const measure = steps.findIndex((step) => runsExactly(step, PASS_RUN));
   return build !== -1 && measure !== -1 && build < measure;
 }
 
@@ -189,7 +247,7 @@ function uploadsReportEvenOnFailure(text) {
 }
 
 function jobTimeoutLeavesRoomForTheInstrumentedRun(text) {
-  const block = coverageJob(text);
+  const block = passJob(text);
   if (block === null) return false;
   return Number(jobLevelValue(block, 'timeout-minutes')) >= 60;
 }
@@ -198,23 +256,23 @@ function aggregatorNeedsCoverageJob(text) {
   const block = extractJobBlock(stripCommentLines(text), AGGREGATOR);
   if (block === null) return false;
   const match = block.match(/^ {4}needs:\s*\[(.*)\]\s*$/m);
-  return match !== null && match[1].split(',').map((need) => need.trim()).includes(JOB);
+  const needs = match === null ? [] : match[1].split(',').map((need) => need.trim());
+  return needs.includes(JOB) && needs.includes(PASS_JOB);
 }
 
 function aggregatorFailsOnAnyNonSuccess(text) {
   const block = extractJobBlock(stripCommentLines(text), AGGREGATOR);
   if (block === null) return false;
   if (!/^ {4}if:\s*always\(\)\s*$/m.test(block)) return false;
-  return extractSteps(block).some(
-    (step) =>
-      stepIf(step) === `needs.changes.outputs.domain == 'true' && needs.${JOB}.result != 'success'` && stepFails(step),
+  return [JOB, PASS_JOB].every((job) =>
+    extractSteps(block).some((step) => stepIf(step) === `needs.changes.outputs.domain == 'true' && needs.${job}.result != 'success'` && stepFails(step)),
   );
 }
 
 function aggregatorToleratesNothing(text) {
   const block = extractJobBlock(stripCommentLines(text), AGGREGATOR);
   if (block === null) return false;
-  return !new RegExp(`needs\\.${JOB}\\.result\\s*==\\s*'(failure|cancelled|skipped)'`).test(block);
+  return [JOB, PASS_JOB].every((job) => !new RegExp(`needs\\.${job}\\.result\\s*==\\s*'(failure|cancelled|skipped)'`).test(block));
 }
 
 function domainFilterHasEveryRequiredPath(text) {
@@ -284,6 +342,9 @@ const PREDICATES = {
   checkStepIsUnconditionalAndStrict,
   noEscapeHatchInJob,
   buildPrecedesMeasurement,
+  passMatrixMeasuresBothPasses,
+  passUploadsBlobAndResultsEvenOnFailure,
+  mergeDownloadsBothPassesFirst,
   guardsAgainstBaseBranchOnPullRequests,
   uploadsReportEvenOnFailure,
   jobTimeoutLeavesRoomForTheInstrumentedRun,
@@ -321,7 +382,8 @@ describe('ci-web.yml domain-coverage shape guard — each predicate is true agai
 });
 
 const JOB_IF = "    if: github.event_name != 'pull_request' || needs.changes.outputs.domain == 'true'\n    runs-on: ubuntu-latest\n    timeout-minutes: 60";
-const CHECK_STEP = 'run: pnpm coverage:domain\n';
+const CHECK_STEP = `run: ${MERGE_RUN}\n`;
+const PASS_STEP = `run: ${PASS_RUN}\n`;
 const ENFORCING_IF = "        if: needs.changes.outputs.domain == 'true' && needs.domain-coverage.result != 'success'";
 const TOLERANT_IF = "        if: needs.domain-coverage.result == 'failure' || needs.domain-coverage.result == 'cancelled'";
 const GUARD_RUN = 'node tools/domain-coverage.mjs guard-base --base "origin/$BASE_REF"';
@@ -331,13 +393,38 @@ describe('ci-web.yml domain-coverage shape guard — mutations, each turning its
     expect(coverageJobExists(mutate(realText, '\n  domain-coverage:\n', '\n  domain-coverage-renamed:\n'))).toBe(false);
   });
 
-  it('(2) the job deleted entirely ⇒ every job-level predicate is false', () => {
-    const start = realText.indexOf('  domain-coverage:\n');
+  it('(2) both jobs deleted entirely ⇒ every job-level predicate is false', () => {
+    const start = realText.indexOf(`  ${PASS_JOB}:\n`);
     const end = realText.indexOf('  design-system:\n');
     const mutated = realText.slice(0, start) + realText.slice(end);
-    for (const name of ['coverageJobExists', 'jobGatedOnDomainFilter', 'checkStepIsUnconditionalAndStrict', 'noEscapeHatchInJob', 'buildPrecedesMeasurement', 'guardsAgainstBaseBranchOnPullRequests', 'uploadsReportEvenOnFailure']) {
+    for (const name of ['coverageJobExists', 'jobGatedOnDomainFilter', 'checkStepIsUnconditionalAndStrict', 'noEscapeHatchInJob', 'buildPrecedesMeasurement', 'passMatrixMeasuresBothPasses', 'passUploadsBlobAndResultsEvenOnFailure', 'mergeDownloadsBothPassesFirst', 'guardsAgainstBaseBranchOnPullRequests', 'uploadsReportEvenOnFailure', 'jobTimeoutLeavesRoomForTheInstrumentedRun']) {
       expect(PREDICATES[name](mutated), name).toBe(false);
     }
+  });
+
+  it('(2a) the merge job no longer waiting for the passes ⇒ jobGatedOnDomainFilter is false', () => {
+    expect(jobGatedOnDomainFilter(mutate(realText, `    needs: [changes, ${PASS_JOB}]\n`, '    needs: changes\n'))).toBe(false);
+  });
+
+  it('(2b) the pass matrix losing an entry, or failing fast ⇒ passMatrixMeasuresBothPasses is false', () => {
+    expect(passMatrixMeasuresBothPasses(mutate(realText, '          - pass: solver\n            build: false\n', ''))).toBe(false);
+    const failFast = '      fail-fast: false\n      matrix:\n        include:\n          - pass: domain\n';
+    expect(passMatrixMeasuresBothPasses(mutate(realText, failFast, failFast.replace('false', 'true')))).toBe(false);
+    expect(passMatrixMeasuresBothPasses(mutate(realText, '          - pass: domain\n            build: true\n', '          - pass: domain\n            build: false\n'))).toBe(false);
+  });
+
+  it('(2c) a pass that stops uploading on failure, or uploads under another name ⇒ passUploadsBlobAndResultsEvenOnFailure is false', () => {
+    const anchor = "      - name: Upload the pass's blob and results\n        if: always()\n";
+    expect(passUploadsBlobAndResultsEvenOnFailure(mutate(realText, anchor, "      - name: Upload the pass's blob and results\n"))).toBe(false);
+    expect(passUploadsBlobAndResultsEvenOnFailure(mutate(realText, 'name: domain-coverage-pass-${{ matrix.pass }}\n', 'name: domain-coverage-${{ matrix.pass }}\n'))).toBe(false);
+  });
+
+  it('(2d) the merge job not downloading both passes, or downloading after the merge ⇒ mergeDownloadsBothPassesFirst is false', () => {
+    expect(mergeDownloadsBothPassesFirst(mutate(realText, '          merge-multiple: true\n', ''))).toBe(false);
+    expect(mergeDownloadsBothPassesFirst(mutate(realText, '          pattern: domain-coverage-pass-*\n', '          pattern: domain-coverage-pass-domain\n'))).toBe(false);
+    const download = realText.slice(realText.indexOf("      - name: Download both passes' blobs and results\n"), realText.indexOf('      - name: Merge both passes and compare'));
+    const merge = realText.slice(realText.indexOf('      - name: Merge both passes and compare'), realText.indexOf('      - name: Compare the baseline with the base branch'));
+    expect(mergeDownloadsBothPassesFirst(mutate(realText, download + merge, merge + download))).toBe(false);
   });
 
   it('(3) the job gated on the web filter instead ⇒ jobGatedOnDomainFilter is false', () => {
@@ -352,32 +439,36 @@ describe('ci-web.yml domain-coverage shape guard — mutations, each turning its
     expect(changesJobExportsDomainFilter(mutate(realText, '      domain: ${{ steps.filter.outputs.domain }}\n', ''))).toBe(false);
   });
 
-  it('(6) continue-on-error on the check step ⇒ checkStepIsUnconditionalAndStrict and noEscapeHatchInJob are false', () => {
-    const mutated = mutate(realText, `        ${CHECK_STEP}`, `        ${CHECK_STEP}        continue-on-error: true\n`);
-    expect(checkStepIsUnconditionalAndStrict(mutated)).toBe(false);
-    expect(noEscapeHatchInJob(mutated)).toBe(false);
+  describe.each([
+    ['merge', CHECK_STEP, '      - name: Merge both passes and compare with the committed baseline\n'],
+    ['pass', PASS_STEP, '      - name: Measure the ${{ matrix.pass }} pass\n'],
+  ])('the %s step', (_, step, nameLine) => {
+    it('(6) continue-on-error on it ⇒ checkStepIsUnconditionalAndStrict and noEscapeHatchInJob are false', () => {
+      const mutated = mutate(realText, `        ${step}`, `        ${step}        continue-on-error: true\n`);
+      expect(checkStepIsUnconditionalAndStrict(mutated)).toBe(false);
+      expect(noEscapeHatchInJob(mutated)).toBe(false);
+    });
+
+    it('(7) `|| true` after it ⇒ checkStepIsUnconditionalAndStrict and noEscapeHatchInJob are false', () => {
+      const mutated = mutate(realText, step, step.replace('\n', ' || true\n'));
+      expect(checkStepIsUnconditionalAndStrict(mutated)).toBe(false);
+      expect(noEscapeHatchInJob(mutated)).toBe(false);
+    });
+
+    it('(8) it made conditional ⇒ checkStepIsUnconditionalAndStrict is false', () => {
+      expect(checkStepIsUnconditionalAndStrict(mutate(realText, nameLine, `${nameLine}        if: github.event_name == 'push'\n`))).toBe(false);
+    });
+
+    it('(9) it replaced by an echo ⇒ checkStepIsUnconditionalAndStrict is false', () => {
+      expect(checkStepIsUnconditionalAndStrict(mutate(realText, step, 'run: echo skipped\n'))).toBe(false);
+    });
   });
 
-  it('(7) `|| true` after the check ⇒ checkStepIsUnconditionalAndStrict is false', () => {
-    expect(checkStepIsUnconditionalAndStrict(mutate(realText, 'run: pnpm coverage:domain\n', 'run: pnpm coverage:domain || true\n'))).toBe(false);
-  });
-
-  it('(8) the check step made conditional ⇒ checkStepIsUnconditionalAndStrict is false', () => {
-    const mutated = mutate(
-      realText,
-      '      - name: Measure both passes and compare with the committed baseline\n',
-      "      - name: Measure both passes and compare with the committed baseline\n        if: github.event_name == 'push'\n",
-    );
-    expect(checkStepIsUnconditionalAndStrict(mutated)).toBe(false);
-  });
-
-  it('(9) the check step replaced by an echo ⇒ checkStepIsUnconditionalAndStrict is false', () => {
-    expect(checkStepIsUnconditionalAndStrict(mutate(realText, 'run: pnpm coverage:domain\n', 'run: echo skipped\n'))).toBe(false);
-  });
-
-  it('(10) the build step removed ⇒ buildPrecedesMeasurement is false', () => {
-    const mutated = mutate(realText, 'run: pnpm --filter @bombfarm/contracts --filter @bombfarm/domain build\n\n      - name: Measure', 'run: echo no build\n\n      - name: Measure');
-    expect(buildPrecedesMeasurement(mutated)).toBe(false);
+  it('(10) the build step removed, or no longer run for the domain pass ⇒ buildPrecedesMeasurement is false', () => {
+    const build = '        if: matrix.build\n        run: pnpm --filter @bombfarm/contracts --filter @bombfarm/domain build\n\n      # Hosted runners';
+    expect(buildPrecedesMeasurement(mutate(realText, build, build.replace('run: pnpm --filter @bombfarm/contracts --filter @bombfarm/domain build', 'run: echo no build')))).toBe(false);
+    const unconditional = mutate(realText, build, build.replace('if: matrix.build', 'if: false'));
+    expect(buildPrecedesMeasurement(unconditional)).toBe(false);
   });
 
   it('(11) the guard-base step removed ⇒ guardsAgainstBaseBranchOnPullRequests is false', () => {
@@ -401,21 +492,33 @@ describe('ci-web.yml domain-coverage shape guard — mutations, each turning its
   });
 
   it('(15a) the artifact narrowed back to the merged report only, or its retention dropped ⇒ uploadsReportEvenOnFailure is false', () => {
-    expect(uploadsReportEvenOnFailure(mutate(realText, '          path: coverage\n', '          path: coverage/domain\n'))).toBe(false);
-    expect(uploadsReportEvenOnFailure(mutate(realText, '          retention-days: 7\n', ''))).toBe(false);
+    expect(uploadsReportEvenOnFailure(mutate(realText, '          name: domain-coverage\n          path: coverage\n', '          name: domain-coverage\n          path: coverage/domain\n'))).toBe(false);
+    expect(uploadsReportEvenOnFailure(mutate(realText, '          name: domain-coverage\n          path: coverage\n          retention-days: 7\n', '          name: domain-coverage\n          path: coverage\n'))).toBe(false);
   });
 
-  it('(15b) the job timeout cut back to 50 or 40 minutes ⇒ jobTimeoutLeavesRoomForTheInstrumentedRun is false', () => {
-    expect(jobTimeoutLeavesRoomForTheInstrumentedRun(mutate(realText, 'timeout-minutes: 60', 'timeout-minutes: 50'))).toBe(false);
-    expect(jobTimeoutLeavesRoomForTheInstrumentedRun(mutate(realText, 'timeout-minutes: 60', 'timeout-minutes: 40'))).toBe(false);
+  it('(15b) the pass timeout cut back to 50 or 40 minutes ⇒ jobTimeoutLeavesRoomForTheInstrumentedRun is false', () => {
+    const passTimeout = '    runs-on: ubuntu-latest\n    timeout-minutes: 60\n    strategy:';
+    expect(jobTimeoutLeavesRoomForTheInstrumentedRun(mutate(realText, passTimeout, passTimeout.replace('60', '50')))).toBe(false);
+    expect(jobTimeoutLeavesRoomForTheInstrumentedRun(mutate(realText, passTimeout, passTimeout.replace('60', '40')))).toBe(false);
   });
 
   it('(15) the artifact upload no longer runs on failure ⇒ uploadsReportEvenOnFailure is false', () => {
-    expect(uploadsReportEvenOnFailure(mutate(realText, "if: always()\n        uses: actions/upload-artifact@", 'uses: actions/upload-artifact@'))).toBe(false);
+    expect(uploadsReportEvenOnFailure(mutate(realText, '      - name: Upload the coverage report\n        if: always()\n', '      - name: Upload the coverage report\n'))).toBe(false);
   });
 
-  it('(16) the job dropped from the aggregator needs ⇒ aggregatorNeedsCoverageJob is false', () => {
-    expect(aggregatorNeedsCoverageJob(mutate(realText, 'needs: [changes, quality, domain, domain-coverage]', 'needs: [changes, quality, domain]'))).toBe(false);
+  it('(16) either job dropped from the aggregator needs ⇒ aggregatorNeedsCoverageJob is false', () => {
+    const needs = `needs: [changes, quality, domain, ${PASS_JOB}, domain-coverage]`;
+    expect(aggregatorNeedsCoverageJob(mutate(realText, needs, `needs: [changes, quality, domain, ${PASS_JOB}]`))).toBe(false);
+    expect(aggregatorNeedsCoverageJob(mutate(realText, needs, 'needs: [changes, quality, domain, domain-coverage]'))).toBe(false);
+  });
+
+  it('(16a) the pass requirement swapped for the skipped-tolerant idiom, or never failing ⇒ the aggregator predicates are false', () => {
+    const enforcing = `        if: needs.changes.outputs.domain == 'true' && needs.${PASS_JOB}.result != 'success'`;
+    const tolerant = mutate(realText, enforcing, `        if: needs.${PASS_JOB}.result == 'failure' || needs.${PASS_JOB}.result == 'cancelled'`);
+    expect(aggregatorFailsOnAnyNonSuccess(tolerant)).toBe(false);
+    expect(aggregatorToleratesNothing(tolerant)).toBe(false);
+    const echo = `          echo "${PASS_JOB}: \${{ needs.${PASS_JOB}.result }}"\n`;
+    expect(aggregatorFailsOnAnyNonSuccess(mutate(realText, `${echo}          exit 1`, echo))).toBe(false);
   });
 
   it('(17) the aggregator step swapped for the skipped-tolerant idiom ⇒ aggregatorFailsOnAnyNonSuccess and aggregatorToleratesNothing are false', () => {

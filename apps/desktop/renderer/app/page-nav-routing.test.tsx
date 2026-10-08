@@ -1,7 +1,8 @@
 /**
  * A nav item nothing routes to is a tab that silently shows the Live screen instead, which no
- * unit render of `page.tsx` catches — the shell's own hooks reach a preload bridge. So the
- * contract is checked against the source, the way the other `page-*-wiring` guards are.
+ * unit render of `page.tsx` catches — the shell's own hooks reach a preload bridge. The routing
+ * is a ternary ladder over JSX with nothing to inject, so unlike the settings handlers it cannot
+ * be lifted into a module and executed; the contract is read off the source instead.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

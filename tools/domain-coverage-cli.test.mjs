@@ -377,3 +377,45 @@ describe('the same code is judged identically from a Windows-shaped and a Linux-
     expect(linux.stdout).toContain(`[unallowed-zero-coverage] ${NEVER_LOADED}`);
   }, SLOW);
 });
+
+describe('the split commands CI runs as parallel jobs', () => {
+  function writeBlobs(dir, names) {
+    const blobs = join(dir, 'coverage/domain-blobs');
+    mkdirSync(blobs, { recursive: true });
+    for (const name of names) writeFileSync(join(blobs, name), '{}');
+  }
+
+  it('merge-and-compare refuses to merge when either pass left no blob, naming each missing one, before running anything', () => {
+    const dir = freshCopy();
+    const none = cli(dir, ['merge-and-compare']);
+    expect(none.status).toBe(1);
+    expect(none.stderr).toContain('left no main.json, solver.json under coverage/domain-blobs');
+
+    writeBlobs(dir, ['main.json']);
+    const onlyMain = cli(dir, ['merge-and-compare']);
+    expect(onlyMain.status).toBe(1);
+    expect(onlyMain.stderr).toContain('left no solver.json under coverage/domain-blobs');
+    expect(existsSync(join(dir, 'coverage/domain-results'))).toBe(false);
+  }, SLOW);
+
+  it('merge-and-compare refuses a stray blob, which --merge-reports would silently fold into the numbers', () => {
+    const dir = freshCopy();
+    writeBlobs(dir, ['main.json', 'solver.json', 'old-main.json']);
+    const result = cli(dir, ['merge-and-compare']);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('coverage/domain-blobs holds old-main.json besides main.json and solver.json');
+    expect(existsSync(join(dir, 'coverage/domain-results'))).toBe(false);
+  }, SLOW);
+
+  it.each(['measure-domain', 'measure-solver', 'merge-and-compare'])('%s takes no --summary: it exists to measure', (command) => {
+    const result = cli(freshCopy(), [command, '--summary', 'summary-base.json']);
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('--summary is only valid with check or update');
+  }, SLOW);
+
+  it('the usage names every command', () => {
+    const result = cli(freshCopy(), ['bogus']);
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('[check|update|guard-base|measure-domain|measure-solver|merge-and-compare]');
+  }, SLOW);
+});
