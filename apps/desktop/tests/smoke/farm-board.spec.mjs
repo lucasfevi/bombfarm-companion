@@ -92,14 +92,6 @@ function navTab(page, labelKey) {
   return page.locator('nav[aria-label="Main"]').getByRole('button', { name: en(labelKey), exact: true });
 }
 
-/** The design system's `Select` is Base UI, not a native `<select>`, so `selectOption()` does not
- *  drive it: a reader clicks the trigger and then the option, and so does this
- *  (`inventory.spec.mjs`'s house idiom). */
-async function chooseOption(page, selectLabel, optionName) {
-  await page.getByRole('combobox', { name: selectLabel }).click();
-  await page.getByRole('option', { name: optionName, exact: true }).click();
-}
-
 /** The board marks itself busy while a compute runs rather than unmounting, so every read after a
  *  control change waits that out instead of racing it. */
 async function settled(page) {
@@ -282,14 +274,26 @@ test.describe('farm board smoke — a phase, a rotation pool and a return bonus,
     });
   });
 
-  test('switching the return bonus to VIP recomputes the gold rates and records the mode in the stored view', async () => {
+  test('turning the return bonus on recomputes the gold rates and records the mode in the stored view, while the Pass shows the state it read', async () => {
     await withFarm(async (page) => {
       const label = farm('farmRankingReturnBonusLabel');
       const control = page.getByTestId('farm-return-bonus');
       await expect(control).toBeVisible({ timeout: 20_000 });
-      await expect(control.getByRole('combobox', { name: label })).toContainText(
-        farm('farmRankingReturnBonusOff'),
-      );
+      const bonus = control.getByRole('switch', { name: label });
+      await expect(bonus).toHaveAttribute('aria-checked', 'false');
+
+      // The Pass carries the other half of the bonus and is NOT a control here: the desktop reads
+      // it from the account's `vip_until` and supplies no setter, so the board draws its state
+      // instead of a switch. This fixture's account has no Pass, and that is the claim — a switch
+      // in this slot would mean the desktop had started inventing a value the account decides.
+      const pass = page.getByTestId('farm-pass');
+      await expect(pass).toBeVisible({ timeout: 20_000 });
+      await expect(pass.getByTestId('farm-pass-state')).toHaveAttribute('data-pass', 'off');
+      expect(
+        await pass.getByRole('switch').count(),
+        'the Pass is drawn as a switch, so this screen is offering to set a value it is supposed ' +
+          'to read from the account',
+      ).toBe(0);
 
       const before = await page
         .locator('[data-testid="farm-ranking-table"] [data-testid^="farm-row-gold-"]')
@@ -303,14 +307,11 @@ test.describe('farm board smoke — a phase, a rotation pool and a return bonus,
         'the ranking mounted no gold cells, so a recompute could not be seen in them',
       ).toBeGreaterThan(0);
 
-      await chooseOption(page, label, farm('farmRankingReturnBonusVip'));
+      await bonus.click();
       await settled(page);
-      await expect(control.getByRole('combobox', { name: label })).toContainText(
-        farm('farmRankingReturnBonusVip'),
-        { timeout: 20_000 },
-      );
+      await expect(bonus).toHaveAttribute('aria-checked', 'true', { timeout: 20_000 });
 
-      // The bonus multiplies gold and XP, so turning it from off to VIP has to move the gold column
+      // The bonus multiplies gold and XP, so turning it on has to move the gold column
       // of every row that earns anything. Reported as the set that did NOT move, since a control
       // that writes its own label and recomputes nothing is the failure worth naming.
       await expect
@@ -329,8 +330,8 @@ test.describe('farm board smoke — a phase, a rotation pool and a return bonus,
           },
           {
             message:
-              `none of the ${String(Object.keys(before).length)} gold figures the board printed on "off" ` +
-              'changed after the bonus was set to VIP, so the control wrote its own label and the ' +
+              `none of the ${String(Object.keys(before).length)} gold figures the board printed with the ` +
+              'return bonus off changed after it was turned on, so the control moved itself and the ' +
               'rates behind it were never recomputed',
             timeout: 30_000,
           },
@@ -341,7 +342,7 @@ test.describe('farm board smoke — a phase, a rotation pool and a return bonus,
         (await storedFarmView(page))?.farmReturnBonus,
         'the stored farm view did not record the return-bonus mode, so the next launch prices the ' +
           'whole table under a bonus the player turned off',
-      ).toBe('vip');
+      ).toBe('on');
 
       await navTab(page, 'liveNavLabel').click();
       await expect(page.getByTestId('farm-view')).toHaveCount(0, { timeout: 20_000 });
@@ -350,8 +351,8 @@ test.describe('farm board smoke — a phase, a rotation pool and a return bonus,
       await settled(page);
 
       await expect(
-        page.getByTestId('farm-return-bonus').getByRole('combobox', { name: label }),
-      ).toContainText(farm('farmRankingReturnBonusVip'), { timeout: 30_000 });
+        page.getByTestId('farm-return-bonus').getByRole('switch', { name: label }),
+      ).toHaveAttribute('aria-checked', 'true', { timeout: 30_000 });
     });
   });
 });
