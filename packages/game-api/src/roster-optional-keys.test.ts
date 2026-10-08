@@ -68,7 +68,7 @@ describe('a roster body carrying the hero level’s optional keys', () => {
       result,
       'an optional key reported as added is a shape break, which degrades the heroes section on ' +
         'every refresh of an account with a runed or bound hero.',
-    ).toEqual({ ok: true });
+    ).toEqual({ ok: true, absentUnreadKeys: [] });
   });
 
   it('still fails on a hero carrying a key the fingerprint does not declare', () => {

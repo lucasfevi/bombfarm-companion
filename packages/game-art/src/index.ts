@@ -122,6 +122,13 @@ export {
   inventoryTableToolbarClass,
 } from './inventory-table.recipe';
 export {
+  HeroDataFlagDot,
+  HeroDataFlagProvider,
+  useHeroDataFlag,
+  type HeroDataFlag,
+  type HeroDataFlagResolver,
+} from './hero-data-flag';
+export {
   AbilityPeek,
   AbilityPeekCard,
   HeroPeek,

@@ -12,6 +12,7 @@
     "src/collection-board.ts": { "statements": 100, "branches": 90.38, "functions": 100, "lines": 100 },
     "src/collection.ts": { "statements": 100, "branches": 100, "functions": 100, "lines": 100 },
     "src/combat-window.ts": { "statements": 90, "branches": 73.68, "functions": 100, "lines": 100 },
+    "src/data-issues.ts": { "statements": 95.89, "branches": 85.5, "functions": 100, "lines": 98.3 },
     "src/deconstruct.ts": { "statements": 97.83, "branches": 95.24, "functions": 100, "lines": 100 },
     "src/derive.ts": { "statements": 100, "branches": 100, "functions": 100, "lines": 100 },
     "src/drain.ts": { "statements": 100, "branches": 100, "functions": 100, "lines": 100 },

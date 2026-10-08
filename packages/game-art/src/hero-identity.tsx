@@ -31,6 +31,7 @@ export function HeroIdentity({
   showRarity = true,
   nameTestId,
   peek,
+  heroId,
 }: {
   name: string;
   rank?: string | undefined;
@@ -59,6 +60,8 @@ export function HeroIdentity({
    * this is, so the card is worth drawing only when it can say more: the sheet, the gear.
    */
   peek?: HeroPeekData | undefined;
+  /** The game's id for the hero, so a hero the host holds back wears its flag. */
+  heroId?: string | undefined;
 }) {
   // An index off the end reads as unknown, not as a rarity with no name: the roster join accepts
   // any non-negative number so a new tier lands here before this list knows it, and
@@ -89,6 +92,7 @@ export function HeroIdentity({
           size={size}
           name={name}
           peek={peek === undefined ? undefined : { hero: peek, lang }}
+          heroId={heroId}
         />
       </div>
       <div className="min-w-0 text-left">

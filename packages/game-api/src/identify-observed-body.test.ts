@@ -44,14 +44,14 @@ describe('identifyObservedBody: never guesses', () => {
     expect(identifyObservedBody(body)).toEqual({ kind: 'unidentified' });
   });
 
-  it('returns unidentified for a /state body from before the sell gate — the tap no longer accepts the thirteen-key shape', () => {
+  it('still identifies a /state body from before the sell gate, since nothing reads those keys', () => {
     if (!bodies) return;
     const { client_can_sell, sell_phase, sell_mode, ...preSellGate } = required(bodies['/state'], 'missing /state body');
     expect([client_can_sell, sell_phase, sell_mode].every((value) => value !== undefined)).toBe(true);
-    expect(identifyObservedBody(preSellGate)).toEqual({ kind: 'unidentified' });
+    expect(identifyObservedBody(preSellGate)).toEqual({ kind: 'identified', section: 'account' });
   });
 
-  it('returns unidentified for a /state body from before the deconstruct screen — essence and fusion_pity are required', () => {
+  it('returns unidentified for a /state body from before the deconstruct screen, where essence is required', () => {
     if (!bodies) return;
     const { essence, fusion_pity, ...preEssence } = required(bodies['/state'], 'missing /state body');
     expect([essence, fusion_pity].every((value) => value !== undefined)).toBe(true);

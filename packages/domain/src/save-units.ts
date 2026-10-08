@@ -54,6 +54,33 @@ export function treeTotalsFromSave(totalsRaw: Record<string, unknown>): TreeShee
   };
 }
 
+/** Every `skills.totals` key the tree facts and the hero sheets are built from. `colecao` is not
+ *  here: it is absent on every save from before it existed, and absent means no collections. */
+export const REQUIRED_TREE_TOTALS = [
+  'dmg_static',
+  'energia_add',
+  'speed_add',
+  'crit_chance_add',
+  'crit_dmg_add',
+  'luck_add',
+  'team_dmg_add',
+  'coin_add',
+  'xp_mult',
+  'geo_mult',
+  'vagas_campo',
+  'bag_tabs_bonus',
+] as const;
+
+export function absentTreeTotals(totalsRaw: Record<string, unknown>): string[] {
+  return REQUIRED_TREE_TOTALS.filter((key) => typeof totalsRaw[key] !== 'number' || !Number.isFinite(totalsRaw[key]));
+}
+
+/** The tree, or `null` when any required total is absent: a default for one is a different tree. */
+export function readTreeTotals(totalsRaw: Record<string, unknown> | null): TreeSheetTotals | null {
+  if (totalsRaw === null || absentTreeTotals(totalsRaw).length > 0) return null;
+  return treeTotalsFromSave(totalsRaw);
+}
+
 /** The 8 save-side keys `birth_stats` must carry for a hero to compose a birth sheet. */
 const BIRTH_STATS_KEYS = [
   'dmg',
@@ -66,17 +93,24 @@ const BIRTH_STATS_KEYS = [
   'luck',
 ] as const;
 
+/** The `birth_stats` keys a hero lacks, `birth_stats` itself when the block is absent or not an object. */
+export function absentBirthStatsKeys(hero: unknown): string[] {
+  if (!isObject(hero)) return ['birth_stats'];
+  const birth = hero.birth_stats;
+  if (!isObject(birth)) return ['birth_stats'];
+  return BIRTH_STATS_KEYS.filter((key) => typeof birth[key] !== 'number' || !Number.isFinite(birth[key])).map(
+    (key) => `birth_stats.${key}`,
+  );
+}
+
 /**
  * WHEN a hero object carries a `birth_stats` block with all 8 save keys present and
  * finite THEN it can compose a birth sheet. A partial block — missing key
- * or a non-finite value (NaN, Infinity, string, null) — is NOT usable; the whole save
- * rejects rather than composing from an invented default.
+ * or a non-finite value (NaN, Infinity, string, null) — is NOT usable; the hero is blocked
+ * rather than composed from an invented default.
  */
 export function hasUsableBirthStats(hero: unknown): boolean {
-  if (!isObject(hero)) return false;
-  const birth = hero.birth_stats;
-  if (!isObject(birth)) return false;
-  return BIRTH_STATS_KEYS.every((key) => typeof birth[key] === 'number' && Number.isFinite(birth[key]));
+  return absentBirthStatsKeys(hero).length === 0;
 }
 
 type BirthStatsKey = (typeof BIRTH_STATS_KEYS)[number];

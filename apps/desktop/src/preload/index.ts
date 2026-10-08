@@ -11,6 +11,14 @@ import {
   type IpcInvokeResult,
 } from '@bombfarm/contracts';
 
+interface RendererErrorRecord {
+  event: string;
+  screen: string;
+  message: string;
+  stack: string;
+  componentStack: string;
+}
+
 log.transports.console.level = 'debug';
 log.info({ scope: 'preload', event: 'boot' });
 
@@ -39,6 +47,9 @@ contextBridge.exposeInMainWorld('bfc', {
   invoke,
   on,
   ping: () => createPingResponse('preload'),
+  logRendererError: (record: RendererErrorRecord) => {
+    log.error({ scope: 'renderer', ...record });
+  },
   logBoot: () => {
     log.info({ scope: 'preload', event: 'boot.bridge' });
     return createPingResponse('preload');
@@ -52,6 +63,7 @@ declare global {
       on: typeof on;
       ping: () => ReturnType<typeof createPingResponse>;
       logBoot: () => ReturnType<typeof createPingResponse>;
+      logRendererError: (record: RendererErrorRecord) => void;
     };
   }
 }

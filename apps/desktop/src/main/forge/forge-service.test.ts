@@ -368,6 +368,11 @@ describe('resolveForgeItem / parseForgeReply', () => {
     expect(resolveForgeItem(null, 'g1')).toBeNull();
   });
 
+  it('refuses a row that carries no forge level rather than forging it as an unforged piece', () => {
+    const { upgrade: _upgrade, ...withoutUpgrade } = ITEM_ROW;
+    expect(resolveForgeItem([withoutUpgrade], 'g1')).toBeNull();
+  });
+
   it('carries the misses in a row the item reports, and none when it reports none', () => {
     expect(resolveForgeItem([{ ...ITEM_ROW, forge_fails: 3 }], 'g1')?.fails).toBe(3);
     expect(resolveForgeItem([{ ...ITEM_ROW, forge_fails: -1 }], 'g1')?.fails).toBe(0);

@@ -8,17 +8,19 @@ import { resolveCasaSlots, resolveFieldSlots } from './casa-slots';
 import { mapInventoryItem, type InventoryItem } from './inventory';
 import { mapInventoryViewItem, type InventoryViewItem } from './inventory-view';
 import { ABILITIES, RarityKey, abilityMods } from './model';
-import { EquippedItem, Loadout, emptyLoadout, emptySheetOther } from './gear';
+import { EquippedItem, Loadout, emptyLoadout, emptySheet, emptySheetOther } from './gear';
 import { ZERO_PTS, type SheetKey } from './planner-constants';
 import { HeroRecord } from './shims/storage';
 import { isKnownSkin } from './wiki-assets';
 import {
+  absentBirthStatsKeys,
+  absentTreeTotals,
   birthFromSave,
-  hasUsableBirthStats,
   readStatRanges,
+  readTreeTotals,
   saveSheetUnits,
-  treeTotalsFromSave,
 } from './save-units';
+import { GEAR_FORGE_KEYS, absentNumbers, isHeroBlockingIssue, scanRosterIssues } from './data-issues';
 import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
 import { collectionFromSave, type Collection } from './collection';
 import { inferSpentPoints, spentPointsOf, type PointInferenceIssue } from './point-inference';
@@ -27,7 +29,7 @@ import { ACCOUNT_SECTIONS, sectionHasData } from './account-fidelity';
 import { missingRequiredAccountFields, type RequiredAccountField } from './account-required-fields';
 import { missingPostUpdateKeys } from './save-schema';
 import { WIKI_PHASE_LINES } from './phase-wiki';
-import type { AccountPayload } from '@bombfarm/contracts';
+import type { AccountPayload, DataIssue } from '@bombfarm/contracts';
 import { parseSkillTreeState } from './skill-tree';
 
 const RARITY_BY_IDX: RarityKey[] = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendária', 'Mítico'];
@@ -156,14 +158,16 @@ export type AccountImportData = {
 /**
  * A whole-file reject. `notASaveFile` is today's shape-check behaviour,
  * now typed; `missingBirthStats`: any hero object in `heroes[]` lacking a
- * usable `birth_stats` block rejects the whole file, not just that hero.
+ * usable `birth_stats` block rejects the whole file, not just that hero. Like
+ * `unsupportedSaveShape` it belongs to the file adapter alone: a live payload blocks only the
+ * hero that lacks birth stats.
  *
  * `unsupportedSaveShape` — a save file lacking the current game version's
  * post-update keys (`skills.refunds`, `skills.totals.vagas_campo`, `skills.totals.bag_tabs_bonus`)
  * is rejected before any hero/item/account value is read. Web-only: the gate lives in
  * {@link parseSaveFile} alone, never in {@link parseAccountPayload} — `apps/desktop` imports only
- * the latter (measured; enforced by `tools/save-acceptance-guards.test.mjs`), so this member is
- * structurally unreachable from the desktop and needs no desktop copy.
+ * the latter (measured; enforced by `tools/save-acceptance-guards.test.mjs`), so these members are
+ * structurally unreachable from the desktop and need no desktop copy.
  */
 export type ParseRejection = {
   reason: 'notASaveFile' | 'missingBirthStats' | 'unsupportedSaveShape';
@@ -205,6 +209,10 @@ function asString(value: unknown, fallback = ''): string {
 
 function bool(value: unknown, fallback = false): boolean {
   return typeof value === 'boolean' ? value : fallback;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
 }
 
 /** Keeps "the save did not say" distinct from "the save said no". */
@@ -352,18 +360,17 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   const fieldSlots = resolveFieldSlots(skills);
   const { playerName, accountId } = mapAccountIdentity(raw);
 
-  // Single-pass optional-field parse — stays null unless the save carries `totals`.
+  // Single-pass optional-field parse — stays null unless the save carries every required total.
   let tree: AccountImportData['tree'] = null;
-  if (totals) {
+  if (totals && absentTreeTotals(totals).length === 0) {
     tree = {
       danoTotal: asNumber(totals.dmg_static, 1) || 1,
       critChance: asNumber(totals.crit_chance_add) * 100,
       critDmg: asNumber(totals.crit_dmg_add) * 100,
       speed: asNumber(totals.speed_add) * 100,
       energy: asNumber(totals.energia_add) * 100,
-      teamCoinPct: asNumber(totals.coin_add ?? totals.team_coin_add) * 100,
+      teamCoinPct: asNumber(totals.coin_add) * 100,
       xpMult: asNumber(totals.xp_mult, 1) || 1,
-      // Flat Luck percentage points — absent key defaults to 0.
       luckFlatPct: asNumber(totals.luck_add) * 100,
       squadDmgPct: asNumber(totals.team_dmg_add) * 100,
       geoMult: asNumber(totals.geo_mult, 1) || 1,
@@ -381,7 +388,8 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
     if (activeCasa > 0) {
       houseIdx = activeCasa - 1;
       const levels = Array.isArray(casa.levels) ? casa.levels : [];
-      houseLevel = Math.max(1, Math.round(asNumber(levels[houseIdx], 1)));
+      const levelAtHouse: unknown = levels[houseIdx];
+      houseLevel = isFiniteNumber(levelAtHouse) ? Math.max(1, Math.round(levelAtHouse)) : null;
     }
     return {
       tree,
@@ -451,6 +459,15 @@ function looksLikeASaveFile(payload: AccountPayload): boolean {
   return isObject(raw) && Array.isArray(raw.heroes);
 }
 
+function heroNamesWithoutBirthStats(payload: AccountPayload): string[] {
+  const raw: unknown = payload;
+  if (!isObject(raw) || !Array.isArray(raw.heroes)) return [];
+  return raw.heroes
+    .filter(isObject)
+    .filter((hero) => absentBirthStatsKeys(hero).length > 0)
+    .map((hero) => asString(hero.name, 'Hero'));
+}
+
 /**
  * The file adapter over {@link parseAccountPayload} (unchanged name, signature,
  * observable output for every input this gate accepts).
@@ -488,6 +505,23 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
         accountMissingRequired: [],
       };
     }
+  }
+
+  const missingBirthHeroNames = heroNamesWithoutBirthStats(payload);
+  if (missingBirthHeroNames.length > 0) {
+    return {
+      candidates: [],
+      warnings: [
+        `This save is missing birth stats on ${missingBirthHeroNames.length} hero(es) ` +
+          `(${missingBirthHeroNames.join(', ')}) — re-export your save from a newer BombFarm ` +
+          `build to use the planner.`,
+      ],
+      account: EMPTY_ACCOUNT_DATA,
+      inventory: [],
+      inventoryView: [],
+      rejected: { reason: 'missingBirthStats', heroNames: missingBirthHeroNames },
+      accountMissingRequired: [],
+    };
   }
 
   const result = parseAccountPayload(payload, existing);
@@ -546,34 +580,6 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     };
   }
 
-  // Whole-file birth scan BEFORE any per-hero work — a partial birth block on
-  // even one hero rejects the whole file rather than composing a sheet from an invented
-  // default. "Any hero missing" (not "every hero missing") is the
-  // correct gate — a mixed save (some heroes with birth_stats, some without) still rejects.
-  const missingBirthHeroNames: string[] = [];
-  for (const rawHero of raw.heroes) {
-    if (!isObject(rawHero)) continue;
-    if (!hasUsableBirthStats(rawHero)) {
-      missingBirthHeroNames.push(asString(rawHero.name, 'Hero'));
-    }
-  }
-  if (missingBirthHeroNames.length > 0) {
-    warnings.push(
-      `This save is missing birth stats on ${missingBirthHeroNames.length} hero(es) ` +
-        `(${missingBirthHeroNames.join(', ')}) — re-export your save from a newer BombFarm ` +
-        `build to use the planner.`,
-    );
-    return {
-      candidates: [],
-      warnings,
-      account: EMPTY_ACCOUNT_DATA,
-      inventory: [],
-      inventoryView: [],
-      rejected: { reason: 'missingBirthStats', heroNames: missingBirthHeroNames },
-      accountMissingRequired: [],
-    };
-  }
-
   const items: Record<string, unknown>[] = Array.isArray(raw.items) ? raw.items.filter(isObject) : [];
   if (!Array.isArray(raw.items)) {
     warnings.push('Save file has no "items" list — imported heroes will have no gear equipped.');
@@ -583,15 +589,48 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
   const inventoryView: InventoryViewItem[] = [];
   let unresolvedUnequipped = 0;
   let marketBlockedCount = 0;
+  let withoutCategory = 0;
+  let unreadableGear = 0;
+  let unownedGear = 0;
+  const rosterScan = scanRosterIssues(payload);
   for (const item of items) {
     const viewItem = mapInventoryViewItem(item);
     if (viewItem) inventoryView.push(viewItem);
 
+    if (item.category === undefined) withoutCategory++;
     const mapped = mapInventoryItem(item);
     if (!mapped) continue;
+    if (absentNumbers(item, GEAR_FORGE_KEYS).length > 0) {
+      unreadableGear++;
+      continue;
+    }
+    if (item.equipped_on === undefined) {
+      const owner = rosterScan.ownerOfOrphan.get(mapped.id) ?? null;
+      if (owner === null) {
+        unownedGear++;
+        continue;
+      }
+      inventory.push({ ...mapped, equipped: true, equippedBy: owner });
+      continue;
+    }
     if (!mapped.defResolved && !mapped.equipped) unresolvedUnequipped++;
     if (mapped.marketBlocked) marketBlockedCount++;
     inventory.push(mapped);
+  }
+  if (withoutCategory > 0) {
+    warnings.push(
+      `${withoutCategory} item(s) carry no category — gear cannot be told from anything else, so none of them enter the pool.`,
+    );
+  }
+  if (unownedGear > 0) {
+    warnings.push(
+      `${unownedGear} gear item(s) carry no equipped_on and no hero's record names them — they are left out of every hero's gear and of the pool.`,
+    );
+  }
+  if (unreadableGear > 0) {
+    warnings.push(
+      `${unreadableGear} gear item(s) carry no rarity, level or forge level — they are excluded from the pool.`,
+    );
   }
   if (unresolvedUnequipped > 0) {
     warnings.push(
@@ -614,7 +653,14 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
   // (danoStatic 1, everything else 0) when `skills.totals` is absent.
   const skillsRaw = isObject(raw.skills) ? raw.skills : null;
   const totalsRaw = skillsRaw && isObject(skillsRaw.totals) ? skillsRaw.totals : null;
-  const tree: TreeSheetTotals = treeTotalsFromSave(totalsRaw ?? {});
+  const tree: TreeSheetTotals | null = readTreeTotals(totalsRaw);
+  const issuesByHero = new Map<string, DataIssue[]>();
+  for (const issue of rosterScan.issues) {
+    if (issue.heroId === undefined || !isHeroBlockingIssue(issue)) continue;
+    issuesByHero.set(issue.heroId, [...(issuesByHero.get(issue.heroId) ?? []), issue]);
+  }
+  const ownerOf = (item: Record<string, unknown>): string =>
+    item.equipped_on === undefined ? (rosterScan.ownerOfOrphan.get(asString(item.id)) ?? '') : asString(item.equipped_on);
 
   const candidates: ImportCandidate[] = [];
   for (const rawHero of raw.heroes) {
@@ -627,7 +673,21 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     }
 
     const issues: string[] = [];
-    const level = asNumber(rawHero.level, 1);
+    let blocked = false;
+    const fieldIssues = issuesByHero.get(sourceId) ?? [];
+    for (const fieldIssue of fieldIssues) {
+      issues.push(`Missing ${fieldIssue.keys.join(', ')} — hero blocked from import (a default would feed a wrong sheet).`);
+      blocked = true;
+    }
+    const lostHeroKeys = fieldIssues.filter((fieldIssue) => fieldIssue.kind === 'hero_field_absent').flatMap((fieldIssue) => fieldIssue.keys);
+    const lostSheetInput = lostHeroKeys.some((key) => key === 'level' || key === 'stars' || key.startsWith('birth_stats'));
+    const sheetReadable = tree !== null && !lostSheetInput;
+    const pointsInvertible = sheetReadable && !lostHeroKeys.includes('stats') && !lostHeroKeys.includes('stat_points_available');
+    if (tree === null) {
+      issues.push('The skill tree is unavailable — hero blocked from import (its sheet cannot be inverted without it).');
+      blocked = true;
+    }
+    const level = asNumber(rawHero.level, 0);
     const rarityIdx = Math.round(asNumber(rawHero.rarity, -1));
     const rarity = RARITY_BY_IDX[rarityIdx];
     if (!rarity) issues.push(`Unknown rarity index ${rarityIdx} — defaulted to Raro.`);
@@ -669,12 +729,11 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
 
     // Gear: match items by equipped_on, resolve slot from the catalog definition (not
     // the save's own numeric equip_slot, which uses a different ordering).
-    let blocked = false;
     const loadout: Loadout = emptyLoadout();
     // Genuine accumulator — counts equipped slots filled while looping `items`.
     let gearCount = 0;
     for (const item of items) {
-      if (asString(item.equipped_on) !== sourceId) continue;
+      if (ownerOf(item) !== sourceId) continue;
       const defId = asString(item.def_id);
       const definition = defById.get(defId);
       if (!definition) {
@@ -684,6 +743,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
         blocked = true;
         continue;
       }
+      if (absentNumbers(item, GEAR_FORGE_KEYS).length > 0) continue;
       const equippedItem: EquippedItem = {
         defId,
         rarityIdx: Math.round(asNumber(item.rarity, 0)),
@@ -703,12 +763,13 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       cdr: mods.sheetCdrFlat,
     };
 
-    // Birth-backed composition — birth_stats is guaranteed usable here,
-    // the whole-file gate above already rejected any save where it was not. naked and the
-    // tree-inclusive, zero-points gearedOverride are pure functions of birth/level/stars/
-    // sheetOther/loadout/tree — neither needs the save's `stats` block at all; only the
-    // spent-points inversion below does.
-    const birth: BirthStats = birthFromSave(rawHero.birth_stats as Record<string, unknown>);
+    // Birth-backed composition. naked and the tree-inclusive, zero-points gearedOverride are pure
+    // functions of birth/level/stars/sheetOther/loadout/tree — neither needs the save's `stats`
+    // block at all; only the spent-points inversion below does. A hero or tree that cannot be
+    // read gets empty sheets: it is blocked, so nothing computes from them.
+    const birth: BirthStats | undefined = sheetReadable
+      ? birthFromSave(rawHero.birth_stats as Record<string, unknown>)
+      : undefined;
     // Read INSIDE the per-hero loop, deliberately — the bounds get no whole-file gate of their
     // own. They enrich a sheet that is already correct without them, so a hero, a save, or a
     // live account read carrying no `stat_ranges` imports exactly as it did before.
@@ -716,17 +777,11 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     // Same posture as the roll bounds: a rune the payload spells wrongly is dropped alone, and a
     // hero with none composes exactly as it did before the field existed.
     const runes = readHeroRunes(rawHero.runas);
-    const naked = nakedFromBirth(birth, level, stars, sheetOther);
-    const gearedOverride = composeSheetFromBirth({
-      birth,
-      level,
-      stars,
-      sheetOther,
-      loadout,
-      pts: ZERO_PTS(),
-      tree,
-      runes,
-    });
+    const naked = birth === undefined ? emptySheet() : nakedFromBirth(birth, level, stars, sheetOther);
+    const gearedOverride =
+      birth === undefined || tree === null
+        ? emptySheet()
+        : composeSheetFromBirth({ birth, level, stars, sheetOther, loadout, pts: ZERO_PTS(), tree, runes });
 
     // Stats: the save's `stats` block is the hero's final (geared + spent-points, tree-
     // inclusive) sheet — invert it against the birth-backed naked/gearedOverride above to
@@ -737,10 +792,10 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     // this through to `record` below, so a later re-import that recovers `stats` isn't the first
     // time the app has ever seen the player's banked points.
     const statPointsAvailable = asNumber(rawHero.stat_points_available, 0);
+    const power = statsRaw ? asNumber(statsRaw.power) : 0;
     let pts: Record<SheetKey, number>;
     let pointIssues: PointInferenceIssue[] = [];
-    let power = 0;
-    if (statsRaw) {
+    if (statsRaw && pointsInvertible && birth !== undefined && tree !== null) {
       const sheet = saveSheetUnits(statsRaw);
       const inferred = inferSpentPoints({ birth, level, stars, sheetOther, loadout, tree, sheet, statPointsAvailable, runes });
       pts = inferred.pts;
@@ -771,11 +826,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
         pts = ZERO_PTS();
         blocked = true;
       }
-      power = asNumber(statsRaw.power);
     } else {
-      // A hero with birth_stats but no `stats` cannot be point-inferred —
-      // block rather than guess with an invented sheet (never an unknown-ability-style warn).
-      issues.push('Missing stats block — hero blocked from import (cannot infer spent points).');
       pts = ZERO_PTS();
       blocked = true;
     }

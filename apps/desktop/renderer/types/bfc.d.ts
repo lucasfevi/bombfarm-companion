@@ -13,6 +13,13 @@ declare global {
       ) => () => void;
       ping: () => { ok: true; from: 'preload' };
       logBoot: () => { ok: true; from: 'preload' };
+      logRendererError: (record: {
+        event: string;
+        screen: string;
+        message: string;
+        stack: string;
+        componentStack: string;
+      }) => void;
     };
   }
 }

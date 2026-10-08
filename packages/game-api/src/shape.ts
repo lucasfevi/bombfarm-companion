@@ -14,3 +14,9 @@ export type ShapeCheckResult = SchemaCheckResult;
 export function checkShape(body: Record<string, unknown>, fingerprint: RouteFingerprint): ShapeCheckResult {
   return checkSchema(body, fingerprint);
 }
+
+/** `heroes[3].xp` and `heroes[4].xp` are one finding; a log line naming every element of a
+ *  thousand-item inventory is not. */
+export function collapseIndexedPaths(paths: readonly string[]): readonly string[] {
+  return [...new Set(paths.map((path) => path.replace(/\[\d+\]/g, '[]')))];
+}

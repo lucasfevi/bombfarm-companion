@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
+import { skillTotals } from './helpers/skill-totals';
 
 const BIRTH = {
   dmg: 100,
@@ -31,7 +32,7 @@ function saveWithHeroes(heroes: Record<string, unknown>[]) {
       ...overrides,
     })),
     items: [],
-    skills: { refunds: {}, totals: { vagas_campo: 0, bag_tabs_bonus: 0 }, levels: {} },
+    skills: { refunds: {}, totals: skillTotals(), levels: {} },
     casa: { active_casa: 1, cycle_secs: 1000, levels: [1, 0, 0, 0, 0], slots: 1 },
   };
 }

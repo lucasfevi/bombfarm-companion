@@ -26,6 +26,10 @@ import type { ConsentRecord } from '@bombfarm/game-api';
 import { CopyProvider, useCopy, useLocale } from '../lib/copy';
 import { useTabScrollMemory } from '../lib/use-tab-scroll-memory';
 import { navItemsFor } from './nav-items';
+import { ScreenBoundary } from './screen-boundary';
+import { DataNoticesBanner } from './data-notices-banner';
+import { useDataNotices } from '../lib/account/use-data-notices';
+import { AccountHeroDataFlags } from '../lib/account/account-hero-data-flags';
 import { createSettingsHandlers, loadStoredSettings, type SettingsSink } from './settings-handlers';
 import { ShellActions } from './shell-actions';
 import { ShellWindowControls } from './shell-window-controls';
@@ -315,6 +319,7 @@ function HomePageContent({
   // The shell draws the band only while there is a queue to show: an element that renders null
   // would still claim the strip's height on every screen.
   const forgeQueueShown = isForgeQueueShown(useForgeQueue());
+  const dataNotices = useDataNotices();
   // The status strip's rail: every feed the app keeps asking for, with the account item speaking
   // for the screen on show when that screen computes from a copy of its own.
   const feeds = useFeeds({ activeTabId: activeNavId, updateStatus, onUpdateCheck });
@@ -324,6 +329,7 @@ function HomePageContent({
 
   return (
     <AccountHeroPeekStats>
+      <AccountHeroDataFlags>
       <ConsentModal forceOpen={consentForceOpen} onDecided={onConsentDecided} />
       <AppShell
         badge={environment?.badgeLabel ?? null}
@@ -351,15 +357,20 @@ function HomePageContent({
           </>
         }
         banner={
-          granted && forgeQueueShown ? (
-            <ForgeQueueBar
-              forgeWritesEnabled={forgeWritesEnabled}
-              accountSource={environment?.accountSource ?? null}
-              onOpenForge={() => {
-                setForgePage('forge');
-                setActiveNavId('forge');
-              }}
-            />
+          granted && (forgeQueueShown || dataNotices.length > 0) ? (
+            <>
+              {dataNotices.length > 0 ? <DataNoticesBanner notices={dataNotices} /> : null}
+              {forgeQueueShown ? (
+                <ForgeQueueBar
+                  forgeWritesEnabled={forgeWritesEnabled}
+                  accountSource={environment?.accountSource ?? null}
+                  onOpenForge={() => {
+                    setForgePage('forge');
+                    setActiveNavId('forge');
+                  }}
+                />
+              ) : null}
+            </>
           ) : null
         }
         version={
@@ -399,6 +410,7 @@ function HomePageContent({
           <span data-testid="domain-label-probe" className="sr-only">
             {rarityLabel('Comum', lang)}
           </span>
+          <ScreenBoundary screen={activeNavId}>
           {!consentLoaded ? null : gated ? (
             <ConsentGate locale={locale} onLocaleChange={onLocaleChange} onReadAgain={onConsentReallow} />
           ) : activeNavId === 'settings' ? (
@@ -470,8 +482,10 @@ function HomePageContent({
           ) : (
             <LiveView onReopenConsent={onConsentReallow} />
           )}
+          </ScreenBoundary>
         </div>
       </AppShell>
+      </AccountHeroDataFlags>
     </AccountHeroPeekStats>
   );
 }

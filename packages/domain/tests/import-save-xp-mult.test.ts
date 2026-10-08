@@ -6,10 +6,11 @@
  */
 import { describe, expect, it } from 'vitest';
 import { parseSaveFile } from '@bombfarm/domain/import-save';
+import { skillTotals } from './helpers/skill-totals';
 
 function accountWithTotals(totals: Record<string, unknown>) {
   const { account } = parseSaveFile(
-    { heroes: [], skills: { refunds: {}, totals: { vagas_campo: 0, bag_tabs_bonus: 0, ...totals } } },
+    { heroes: [], skills: { refunds: {}, totals: skillTotals(totals) } },
     [],
   );
   return account;
@@ -21,9 +22,8 @@ describe('import-save — skills.totals.xp_mult -> account.tree.xpMult', () => {
     expect(account.tree?.xpMult).toBe(1.56);
   });
 
-  it('absent xp_mult defaults to 1 (no XP boost)', () => {
-    const account = accountWithTotals({});
-    expect(account.tree?.xpMult).toBe(1);
+  it('an absent xp_mult makes the whole tree unavailable instead of defaulting to no boost', () => {
+    expect(accountWithTotals({ xp_mult: undefined }).tree).toBeNull();
   });
 
   it('xp_mult: 0 resolves to 1, never 0 — a literal 0 would zero every phase\'s XP', () => {
@@ -31,9 +31,9 @@ describe('import-save — skills.totals.xp_mult -> account.tree.xpMult', () => {
     expect(account.tree?.xpMult).toBe(1);
   });
 
-  it('a non-finite xp_mult (NaN, string, null) defaults to 1', () => {
-    expect(accountWithTotals({ xp_mult: Number.NaN }).tree?.xpMult).toBe(1);
-    expect(accountWithTotals({ xp_mult: '1.56' }).tree?.xpMult).toBe(1);
-    expect(accountWithTotals({ xp_mult: null }).tree?.xpMult).toBe(1);
+  it('a non-finite xp_mult (NaN, string, null) makes the tree unavailable', () => {
+    expect(accountWithTotals({ xp_mult: Number.NaN }).tree).toBeNull();
+    expect(accountWithTotals({ xp_mult: '1.56' }).tree).toBeNull();
+    expect(accountWithTotals({ xp_mult: null }).tree).toBeNull();
   });
 });

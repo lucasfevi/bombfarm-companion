@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
 import type { AccountFidelity, AccountPayload, AccountView } from '@bombfarm/contracts';
 import { buildAccountRoster } from './account-roster';
+import { skillTotals } from './skill-totals.test-support';
 
 const NOW = '2026-08-12T00:00:00.000Z';
 
@@ -36,7 +37,7 @@ function basePayload(heroes: unknown[] = [rawHero('h1', 'Alpha')]): AccountPaylo
   return {
     account: { phase: 60, max_phase: 88 },
     heroes,
-    skills: { totals: { dmg_static: 1.5 } },
+    skills: { totals: skillTotals({ dmg_static: 1.5 }) },
     casa: { active_casa: 1, levels: [10] },
     items: [],
     fidelity: resolvedFidelity(),
@@ -84,9 +85,11 @@ describe('one record per hero the account view carries', () => {
     expect(roster.heroes).toEqual([]);
   });
 
-  it('a payload that does not parse withholds the whole roster, rather than the heroes that did parse', () => {
+  it('a hero without birth stats is left out of calculations alone, the heroes that parsed stay computable', () => {
     const payload = basePayload([rawHero('h1', 'Alpha'), { id: 'h2', name: 'NoBirth' }]);
-    expect(buildAccountRoster(viewOf(payload))).toBeNull();
+    const roster = required(buildAccountRoster(viewOf(payload)), 'expected a roster');
+    expect(roster.heroes.map((hero) => hero.id)).toEqual(['h1', 'h2']);
+    expect(roster.pointsUnrecovered).toEqual([{ id: 'h2', name: 'NoBirth' }]);
   });
 });
 

@@ -16,7 +16,7 @@ import {
   checkSectionShape,
   ROUTE_FINGERPRINTS,
   SECTION_FINGERPRINTS,
-  STATE_ESSENCE_KEYS,
+  STATE_RUNE_STASH_KEY,
   STATE_SELL_GATE_KEYS,
 } from './fingerprints.js';
 import { ROUTES } from './routes.js';
@@ -59,7 +59,7 @@ describe('ROUTE_FINGERPRINTS', () => {
       const fingerprint = ROUTE_FINGERPRINTS[route.section];
       const body = bodies[route.path];
       expect(body, `missing fixture body for ${route.path}`).toBeDefined();
-      expect(checkSchema(body, fingerprint)).toEqual({ ok: true });
+      expect(checkSchema(body, fingerprint)).toEqual({ ok: true, absentUnreadKeys: [] });
     }
   });
 
@@ -70,15 +70,18 @@ describe('ROUTE_FINGERPRINTS', () => {
     expect(stateFingerprint.level.allowance).toEqual(['account_id', 'player_name']);
   });
 
-  describe('the sell-gate keys on /state — required, because the game emits them on every body', () => {
-    it('client_can_sell, sell_phase and sell_mode are declared keys, and /state declares no optional escape', () => {
+  describe('the sell-gate keys and the rune stash on /state — unread, so their absence never degrades the section', () => {
+    it('client_can_sell, sell_phase, sell_mode and rune_stash are declared unread, never required', () => {
       const stateLevel = ROUTE_FINGERPRINTS.account.level;
       expect([...STATE_SELL_GATE_KEYS]).toEqual(['client_can_sell', 'sell_phase', 'sell_mode']);
-      for (const key of STATE_SELL_GATE_KEYS) expect(stateLevel.keys).toContain(key);
+      for (const key of [...STATE_SELL_GATE_KEYS, STATE_RUNE_STASH_KEY]) {
+        expect(stateLevel.unread).toContain(key);
+        expect(stateLevel.keys).not.toContain(key);
+      }
       expect(stateLevel.optional).toBeUndefined();
     });
 
-    it('the /state fixture carries all three, with the observed value kinds: boolean, number, string', () => {
+    it('the /state fixture carries all three sell-gate keys, with the observed value kinds: boolean, number, string', () => {
       if (!bodies) return;
       const stateBody = required(bodies['/state'], 'missing /state body');
       expect(typeof stateBody.client_can_sell).toBe('boolean');
@@ -86,25 +89,35 @@ describe('ROUTE_FINGERPRINTS', () => {
       expect(typeof stateBody.sell_mode).toBe('string');
     });
 
-    it('RED: a /state body from before the sell gate reports exactly the three keys missing, path-qualified', () => {
+    it('a /state body without the sell gate stays ok and names the three keys absent, path-qualified', () => {
       if (!bodies) return;
       const { client_can_sell, sell_phase, sell_mode, ...preSellGate } = required(bodies['/state'], 'missing /state body');
       expect([client_can_sell, sell_phase, sell_mode].every((value) => value !== undefined)).toBe(true);
       expect(checkSchema(preSellGate, ROUTE_FINGERPRINTS.account)).toEqual({
-        ok: false,
-        missingKeys: ['account.client_can_sell', 'account.sell_phase', 'account.sell_mode'],
-        addedKeys: [],
+        ok: true,
+        absentUnreadKeys: ['account.client_can_sell', 'account.sell_phase', 'account.sell_mode'],
       });
     });
 
-    it('RED: a /state body from before the rune stash reports exactly that one key missing, path-qualified', () => {
+    it('a /state body without the rune stash stays ok and names that one key absent, path-qualified', () => {
       if (!bodies) return;
       const { rune_stash, ...preRuneStash } = required(bodies['/state'], 'missing /state body');
       expect(rune_stash).toBeDefined();
       expect(checkSchema(preRuneStash, ROUTE_FINGERPRINTS.account)).toEqual({
+        ok: true,
+        absentUnreadKeys: ['account.rune_stash'],
+      });
+    });
+
+    it('a key the app reads, gold, still reports missing when it goes', () => {
+      if (!bodies) return;
+      const { gold, ...withoutGold } = required(bodies['/state'], 'missing /state body');
+      expect(gold).toBeDefined();
+      expect(checkSchema(withoutGold, ROUTE_FINGERPRINTS.account)).toEqual({
         ok: false,
-        missingKeys: ['account.rune_stash'],
+        missingKeys: ['account.gold'],
         addedKeys: [],
+        absentUnreadKeys: [],
       });
     });
 
@@ -125,10 +138,10 @@ describe('ROUTE_FINGERPRINTS', () => {
     });
   });
 
-  describe('the essence keys — required, because the live read carries them on every body', () => {
-    it('essence and fusion_pity are declared /state keys, and /state still declares no optional escape', () => {
-      expect([...STATE_ESSENCE_KEYS]).toEqual(['essence', 'fusion_pity']);
-      for (const key of STATE_ESSENCE_KEYS) expect(ROUTE_FINGERPRINTS.account.level.keys).toContain(key);
+  describe('the essence keys — the balance is read, the pity counters and the odds are not', () => {
+    it('essence is a required /state key and fusion_pity an unread one, and /state still declares no optional escape', () => {
+      expect(ROUTE_FINGERPRINTS.account.level.keys).toContain('essence');
+      expect(ROUTE_FINGERPRINTS.account.level.unread).toContain('fusion_pity');
       expect(ROUTE_FINGERPRINTS.account.level.optional).toBeUndefined();
     });
 
@@ -140,26 +153,28 @@ describe('ROUTE_FINGERPRINTS', () => {
       expect(Object.keys(stateBody.fusion_pity as object)).toEqual(['item', 'hero']);
     });
 
-    it('RED: a /state body from before the deconstruct screen reports exactly the two keys missing, path-qualified', () => {
+    it('a /state body from before the deconstruct screen reports essence missing and fusion_pity absent, path-qualified', () => {
       if (!bodies) return;
       const { essence, fusion_pity, ...preEssence } = required(bodies['/state'], 'missing /state body');
       expect([essence, fusion_pity].every((value) => value !== undefined)).toBe(true);
       expect(checkSchema(preEssence, ROUTE_FINGERPRINTS.account)).toEqual({
         ok: false,
-        missingKeys: ['account.essence', 'account.fusion_pity'],
+        missingKeys: ['account.essence'],
         addedKeys: [],
+        absentUnreadKeys: ['account.fusion_pity'],
       });
     });
 
-    it('RED: an /inventory item from before the deconstruct screen reports exactly the four keys missing, path-qualified', () => {
+    it('an /inventory item from before the deconstruct screen reports the three read keys missing and the odds absent, path-qualified', () => {
       if (!bodies) return;
       const inventory = deepClone(required(bodies['/inventory'], 'missing /inventory body'));
       const items = inventory.items as Record<string, unknown>[];
       for (const key of ITEM_ESSENCE_KEYS) delete items[0]?.[key];
       expect(checkSchema(inventory, ROUTE_FINGERPRINTS.items)).toEqual({
         ok: false,
-        missingKeys: ITEM_ESSENCE_KEYS.map((key) => `items.items[0].${key}`),
+        missingKeys: ['essence_value', 'forge_fails', 'pergaminho_custo'].map((key) => `items.items[0].${key}`),
         addedKeys: [],
+        absentUnreadKeys: ['items.items[0].forge_chance'],
       });
     });
 
@@ -181,7 +196,7 @@ describe('ROUTE_FINGERPRINTS', () => {
       const items = inventory.items as Record<string, unknown>[];
       expect(items.some((item) => 'jewels' in item || 'ritual' in item)).toBe(false);
       Object.assign(items[0] ?? {}, { jewels: [], ritual: { desconstruir: false, desconstruir_reason: 'ITEM_HAS_GEMS' } });
-      expect(checkSchema(inventory, ROUTE_FINGERPRINTS.items)).toEqual({ ok: true });
+      expect(checkSchema(inventory, ROUTE_FINGERPRINTS.items)).toEqual({ ok: true, absentUnreadKeys: [] });
     });
   });
 
@@ -201,6 +216,7 @@ describe('ROUTE_FINGERPRINTS', () => {
         ok: false,
         missingKeys: ['skills.totals.vagas_campo'],
         addedKeys: [],
+        absentUnreadKeys: [],
       });
     });
 
@@ -212,6 +228,7 @@ describe('ROUTE_FINGERPRINTS', () => {
         ok: false,
         missingKeys: [],
         addedKeys: ['skills.totals.something_new'],
+        absentUnreadKeys: [],
       });
     });
 
@@ -223,6 +240,7 @@ describe('ROUTE_FINGERPRINTS', () => {
         ok: false,
         missingKeys: [],
         addedKeys: ['skills.something_new'],
+        absentUnreadKeys: [],
       });
     });
   });
@@ -237,7 +255,7 @@ describe('ROUTE_FINGERPRINTS', () => {
       // exactly five dimensions" — a VALUE twin from the same capture session, not a
       // schema twin. checkSchema only ever inspects key sets, never values, so this passing
       // confirms the key space held stable across the in-game state change between captures.
-      expect(checkSchema(body, fingerprint)).toEqual({ ok: true });
+      expect(checkSchema(body, fingerprint)).toEqual({ ok: true, absentUnreadKeys: [] });
     }
   });
 
@@ -262,7 +280,10 @@ describe('ROUTE_FINGERPRINTS', () => {
 
   describe('the forge-patch item fields', () => {
     const forgeFields = { essence_value: 420, forge_fails: 0, forge_chance: 0.15, pergaminho_custo: 12320 };
-    const prePatchItem = () => Object.fromEntries(SCHEMA_LEVELS.item.keys.map((key) => [key, 0]));
+    const prePatchItem = () => ({
+      ...Object.fromEntries(SCHEMA_LEVELS.item.keys.map((key) => [key, 0])),
+      equip_slot: 0,
+    });
     const inventoryBody = (item: Record<string, unknown>) => ({
       items: [item],
       chests: [],
@@ -273,15 +294,15 @@ describe('ROUTE_FINGERPRINTS', () => {
 
     it('an item carrying all four reports no drift, on the route and on the section', () => {
       const item = { ...prePatchItem(), ...forgeFields };
-      expect(checkSchema(inventoryBody(item), ROUTE_FINGERPRINTS.items)).toEqual({ ok: true });
-      expect(checkSectionShape([item], SECTION_FINGERPRINTS.items)).toEqual({ ok: true });
+      expect(checkSchema(inventoryBody(item), ROUTE_FINGERPRINTS.items)).toEqual({ ok: true, absentUnreadKeys: [] });
+      expect(checkSectionShape([item], SECTION_FINGERPRINTS.items)).toEqual({ ok: true, absentUnreadKeys: [] });
     });
 
     it('an item from before the patch is tolerated on the shared level the save exports use, and reported by the API fingerprints', () => {
       const item = prePatchItem();
       const shared = { ...SECTION_FINGERPRINTS.items, element: SCHEMA_LEVELS.item };
-      expect(checkSectionShape([item], shared)).toEqual({ ok: true });
-      expect(checkSectionShape([{ ...item, ...forgeFields }], shared)).toEqual({ ok: true });
+      expect(checkSectionShape([item], shared)).toEqual({ ok: true, absentUnreadKeys: [] });
+      expect(checkSectionShape([{ ...item, ...forgeFields }], shared)).toEqual({ ok: true, absentUnreadKeys: [] });
       expect(checkSectionShape([item], SECTION_FINGERPRINTS.items)).toMatchObject({ ok: false });
       expect(checkSchema(inventoryBody(item), ROUTE_FINGERPRINTS.items)).toMatchObject({ ok: false });
     });
@@ -364,7 +385,7 @@ describe('SECTION_FINGERPRINTS — the projected shapes derive from ROUTE_FINGER
     for (const route of ROUTES) {
       const body = required(bodies[route.path], `missing fixture body for ${route.path}`);
       const projected = route.project(body);
-      expect(checkSectionShape(projected, SECTION_FINGERPRINTS[route.section])).toEqual({ ok: true });
+      expect(checkSectionShape(projected, SECTION_FINGERPRINTS[route.section])).toEqual({ ok: true, absentUnreadKeys: [] });
     }
   });
 
@@ -373,11 +394,24 @@ describe('SECTION_FINGERPRINTS — the projected shapes derive from ROUTE_FINGER
     const rosterBody = required(bodies['/roster'], 'missing /roster body');
     const heroes = deepClone(rosterBody.heroes as Record<string, unknown>[]);
     const thirdHero = required(heroes[2], 'expected a third roster hero in the committed corpus');
-    delete thirdHero.in_market;
+    delete thirdHero.level;
     expect(checkSectionShape(heroes, SECTION_FINGERPRINTS.heroes)).toEqual({
       ok: false,
-      missingKeys: ['heroes[2].in_market'],
+      missingKeys: ['heroes[2].level'],
       addedKeys: [],
+      absentUnreadKeys: [],
+    });
+  });
+
+  it('checkSectionShape keeps a hero that lost an unread key ok, naming the key at its element', () => {
+    if (!bodies) return;
+    const rosterBody = required(bodies['/roster'], 'missing /roster body');
+    const heroes = deepClone(rosterBody.heroes as Record<string, unknown>[]);
+    const thirdHero = required(heroes[2], 'expected a third roster hero in the committed corpus');
+    delete thirdHero.in_market;
+    expect(checkSectionShape(heroes, SECTION_FINGERPRINTS.heroes)).toEqual({
+      ok: true,
+      absentUnreadKeys: ['heroes[2].in_market'],
     });
   });
 });

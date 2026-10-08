@@ -220,6 +220,38 @@ export const ptBR: Copy = {
   // error* — §2.8
   errorAccountReadFailedDescription: 'Tente novamente depois que o jogo terminar de carregar, ou reinicie o app.',
 
+  // screenCrash* — o substituto de uma aba cuja renderização falhou
+  screenCrashTitle: 'Não foi possível carregar esta tela',
+  screenCrashInfoLabel: 'O que aconteceu',
+  screenCrashInfo: 'O resto do app continua funcionando. Troque de aba ou tente novamente; os detalhes foram salvos no arquivo de log.',
+  screenCrashRetry: 'Tentar novamente',
+  // dataNotice* / heroFlag* / dataField* — o que o app diz quando o jogo para de enviar um campo que ele lê
+  dataNoticeInfoLabel: 'O que isso significa',
+  dataNoticeSkillTreeStale: 'O jogo mudou a forma de enviar sua árvore de habilidades. Mostrando a última que lemos ({age}).',
+  dataNoticeSkillTreeStaleInfo:
+    'O quadro da Fazenda, o Otimizador e as fichas dos heróis usam essa árvore salva, então os números podem estar desatualizados até o app ser atualizado.',
+  dataNoticeSkillTreeWithheld: 'O jogo mudou a forma de enviar sua árvore de habilidades e o app não consegue lê-la até ser atualizado.',
+  dataNoticeSkillTreeWithheldInfo:
+    'As telas que precisam da árvore de habilidades não mostram nada em vez de um palpite, e voltam quando o app for atualizado.',
+  dataNoticeGearOwnerUnknown: 'Alguns equipamentos ficaram de fora porque o jogo parou de dizer quem os usa.',
+  dataNoticeGearOwnerUnknownInfo:
+    'Essas peças não contam em nenhum herói e não são oferecidas ao Otimizador até o app ser atualizado.',
+  dataNoticeGearFieldsAbsent: 'Alguns equipamentos reserva ficaram de fora do Otimizador.',
+  dataNoticeGearFieldsAbsentInfo:
+    'O jogo parou de enviar parte do que compõe essas peças, então elas não são oferecidas até o app ser atualizado.',
+  heroFlagLabel: 'Fora dos cálculos',
+  heroFlagFieldsTip:
+    'O jogo parou de enviar {fields} deste herói, então ele fica fora dos cálculos até o app ser atualizado.',
+  heroFlagGearTip:
+    'O jogo parou de enviar {fields} de uma peça que este herói usa, então ele fica fora dos cálculos até o app ser atualizado.',
+  dataFieldLevel: 'o nível',
+  dataFieldStars: 'as estrelas',
+  dataFieldStatPoints: 'os pontos de atributo livres',
+  dataFieldBirthStats: 'os atributos de nascimento',
+  dataFieldStats: 'os atributos',
+  dataFieldRarity: 'a raridade',
+  dataFieldForgeLevel: 'o nível de forja',
+
   // live* — a tela Ao Vivo: rótulo de navegação e a linha de status de atualização no topo do painel
   liveNavLabel: 'Ao vivo',
 

@@ -119,6 +119,11 @@ function cleanCasaBody(houseOverrides: Record<string, unknown> = {}): Record<str
   };
 }
 
+/** The bare house object a `casa` row held before `/rotation` yielded its whole body. */
+function preContractCasaBody(): Record<string, unknown> {
+  return (cleanCasaBody().casa as Record<string, unknown>);
+}
+
 /** `stats` is a plain (non-`children`) `ITEM_LEVEL` key — any value round-trips through it
  *  untouched, which is why the deeply-nested-array adversarial test uses it below. */
 function cleanItem(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -220,7 +225,7 @@ describe('createAccountStore().restore()', () => {
    * that cannot see it.
    */
   it('cleanAccountBody conforms to the account fingerprint, the premise every body below rests on', () => {
-    expect(checkShape(cleanAccountBody(), ROUTE_FINGERPRINTS.account)).toEqual({ ok: true });
+    expect(checkShape(cleanAccountBody(), ROUTE_FINGERPRINTS.account)).toEqual({ ok: true, absentUnreadKeys: [] });
   });
 
   describe.each(AVAILABLE_BINDINGS.map((binding) => ({ binding })))('binding: $binding', ({ binding }) => {
@@ -524,30 +529,50 @@ describe('createAccountStore().restore()', () => {
 
     // --- the stale-section drop ---
 
-    it('per-section: a skills row carrying a retired totals key is dropped and its row deleted; a clean sibling heroes row survives byte-identical', () => {
+    it('a stored skills row that carries keys the schema does not know is kept and served stale', () => {
       const open = openTestAccountDb(binding);
       if (!open.db) throw new Error('expected a usable db');
-      const staleSkillsBody = cleanSkillsBody({ retired_list: [], retired_base: 1.05, retired_mult: 2 });
+      const body = { ...cleanSkillsBody({ brand_new_total: 7 }), brand_new_key: 'x' };
+      seedSectionRow(open.db, '', 'skills', body, '2026-08-12T00:00:00.000Z');
+
+      const { log, records } = createLogSpy();
+      const store = createAccountStore(open, { log });
+      const restored = store.restore();
+
+      expect(restored.payload.fidelity.skills).toEqual({ status: 'stale', capturedAt: '2026-08-12T00:00:00.000Z' });
+      expect(sectionField(restored.payload, 'skills')).toEqual(body);
+      expect(records.some((r) => r.record.event === 'account.row_dropped')).toBe(false);
+      const row = open.db
+        .prepare('SELECT body FROM account_section WHERE account_key = ? AND section = ?')
+        .get('', 'skills');
+      expect(row).toBeDefined();
+      store.close();
+    });
+
+    it('per-section: a pre-contract casa row is dropped and its row deleted; a clean sibling heroes row survives byte-identical', () => {
+      const open = openTestAccountDb(binding);
+      if (!open.db) throw new Error('expected a usable db');
+      const staleCasaBody = preContractCasaBody();
       const cleanHeroesBody = [cleanHero('h1', 'Bellatrix')];
-      seedSectionRow(open.db, '', 'skills', staleSkillsBody, '2026-08-12T00:00:00.000Z');
+      seedSectionRow(open.db, '', 'casa', staleCasaBody, '2026-08-12T00:00:00.000Z');
       seedSectionRow(open.db, '', 'heroes', cleanHeroesBody, '2026-08-12T00:00:01.000Z');
 
       const { log, records } = createLogSpy();
       const store = createAccountStore(open, { log });
       const restored = store.restore();
 
-      expect(restored.payload.fidelity.skills).toEqual({ status: 'missing' });
-      expect(sectionField(restored.payload, 'skills')).toBeUndefined();
+      expect(restored.payload.fidelity.casa).toEqual({ status: 'missing' });
+      expect(sectionField(restored.payload, 'casa')).toBeUndefined();
       expect(restored.payload.fidelity.heroes).toEqual({ status: 'stale', capturedAt: '2026-08-12T00:00:01.000Z' });
       expect(sectionField(restored.payload, 'heroes')).toEqual(cleanHeroesBody);
 
       expect(
-        records.some((r) => r.record.event === 'account.row_dropped' && r.record.section === 'skills'),
+        records.some((r) => r.record.event === 'account.row_dropped' && r.record.section === 'casa'),
       ).toBe(true);
 
       const skillsRow = open.db
         .prepare('SELECT body FROM account_section WHERE account_key = ? AND section = ?')
-        .get('', 'skills');
+        .get('', 'casa');
       expect(skillsRow).toBeUndefined();
 
       const heroesRow = open.db
@@ -560,7 +585,7 @@ describe('createAccountStore().restore()', () => {
     it('idempotent: a second restore() after a drop reports the same result and drops nothing further', () => {
       const open = openTestAccountDb(binding);
       if (!open.db) throw new Error('expected a usable db');
-      seedSectionRow(open.db, '', 'skills', cleanSkillsBody({ retired_mult: 1 }), '2026-08-12T00:00:00.000Z');
+      seedSectionRow(open.db, '', 'casa', preContractCasaBody(), '2026-08-12T00:00:00.000Z');
       seedSectionRow(open.db, '', 'heroes', [cleanHero('h1', 'Bellatrix')], '2026-08-12T00:00:01.000Z');
 
       const { log, records } = createLogSpy();
@@ -570,7 +595,7 @@ describe('createAccountStore().restore()', () => {
       const second = store.restore();
 
       expect(second).toEqual(first);
-      expect(second.payload.fidelity.skills).toEqual({ status: 'missing' });
+      expect(second.payload.fidelity.casa).toEqual({ status: 'missing' });
       expect(records.some((r) => r.record.event === 'account.row_dropped')).toBe(false);
       store.close();
     });
@@ -578,7 +603,7 @@ describe('createAccountStore().restore()', () => {
     it('store failure ≠ drop: a failing DELETE during cleanup still reports the section missing and never throws', () => {
       const open = openTestAccountDb(binding);
       if (!open.db) throw new Error('expected a usable db');
-      seedSectionRow(open.db, '', 'skills', cleanSkillsBody({ retired_mult: 1 }), '2026-08-12T00:00:00.000Z');
+      seedSectionRow(open.db, '', 'casa', preContractCasaBody(), '2026-08-12T00:00:00.000Z');
       const realDb = open.db;
       const wrappedOpen = { ...open, db: wrapFailingDelete(realDb) };
 
@@ -589,8 +614,8 @@ describe('createAccountStore().restore()', () => {
       expect(() => {
         restored = store.restore();
       }).not.toThrow();
-      expect(restored?.payload.fidelity.skills).toEqual({ status: 'missing' });
-      expect(restored ? sectionField(restored.payload, 'skills') : undefined).toBeUndefined();
+      expect(restored?.payload.fidelity.casa).toEqual({ status: 'missing' });
+      expect(restored ? sectionField(restored.payload, 'casa') : undefined).toBeUndefined();
       expect(records.some((r) => r.level === 'error' && r.record.event === 'account.row_drop_delete_failed')).toBe(
         true,
       );
@@ -598,7 +623,7 @@ describe('createAccountStore().restore()', () => {
       // The delete failed, so the row is still on disk — read it back with the real (unwrapped) db.
       const stillThere = realDb
         .prepare('SELECT body FROM account_section WHERE account_key = ? AND section = ?')
-        .get('', 'skills');
+        .get('', 'casa');
       expect(stillThere).toBeDefined();
       store.close();
     });
@@ -610,8 +635,8 @@ describe('createAccountStore().restore()', () => {
       seedSectionRow(
         open.db,
         '',
-        'skills',
-        cleanSkillsBody({ retired_mult: 1, dmg_static: sentinelGold }),
+        'casa',
+        { ...preContractCasaBody(), slots: sentinelGold },
         '2026-08-12T00:00:00.000Z',
       );
 

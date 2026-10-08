@@ -9,21 +9,23 @@ import type {
   StoredAccountFidelity,
   StoredSectionFidelity,
 } from '@bombfarm/contracts';
-import { isTrustworthySection } from '@bombfarm/contracts';
+import { dataIssuesOf } from '@bombfarm/domain/data-issues';
 import { decodeStoredSection, resolveAccountKey } from './account-rows.js';
 import { ACCOUNT_SECTIONS } from './account-schema.js';
+import { createDataIssueLog } from './data-issue-log.js';
 import type { LogPort, OpenResult } from './index.js';
 import type { FsPort } from './legacy-snapshot.js';
 import { readLegacySnapshotPayload } from './legacy-snapshot.js';
-import { mergeStoredIntoLive } from './merge-account.js';
+import { isUsableSectionBody, lostRequiredKeys, mergeStoredIntoLive } from './merge-account.js';
 import { judgeStoredSection } from './stale-sections.js';
 
 /** Deliberately the same test `mergeStoredIntoLive` applies when deciding whether a degraded body
  *  may be served: a section good enough to show is good enough to keep, or it reads fine while the
- *  game runs and is gone the moment it closes. */
-function isWritableFidelity(fidelity: SectionFidelity): fidelity is SectionFidelity & { capturedAt: string } {
-  if (fidelity.status === 'resolved') return true;
-  return fidelity.status === 'degraded' && isTrustworthySection(fidelity);
+ *  game runs and is gone the moment it closes. A degraded body is the game's current answer, so it
+ *  replaces the stored row rather than yielding to it. */
+function isWritableSection(section: AccountSection, fidelity: SectionFidelity, body: unknown): fidelity is SectionFidelity & { capturedAt: string } {
+  if (fidelity.status === 'resolved') return body !== undefined;
+  return fidelity.status === 'degraded' && lostRequiredKeys(section, fidelity).length === 0 && isUsableSectionBody(section, body);
 }
 
 export interface AccountStoreDeps {
@@ -96,6 +98,7 @@ function unavailableRestore(status: AccountStoreStatus, reason: AccountStoreReas
  */
 export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}): AccountStore {
   const log = deps.log ?? NOOP_LOG;
+  const dataIssueLog = createDataIssueLog(log);
   const db = open.db;
   // Belt-and-braces guard (see fix/fixture-tick-after-db-close): `close()` below only ever
   // runs once shutdown ordering has already stopped every producer, so this should never
@@ -234,7 +237,7 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
   }
 
   /**
-   * Writes section `S` iff `payload[S]` is present and {@link isWritableFidelity} accepts its
+   * Writes section `S` iff `payload[S]` is present and {@link isWritableSection} accepts its
    * status — an allow-list, so a future/unknown status is never written by default. `capturedAt`
    * is stored verbatim. All writes for one poll run inside one transaction; a throw mid-poll
    * rolls back the whole poll, leaving every previously stored section untouched.
@@ -255,7 +258,7 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
     for (const section of ACCOUNT_SECTIONS) {
       const sectionFidelity = fidelity[section];
       const body = untypedPayload[section];
-      if (isWritableFidelity(sectionFidelity) && body !== undefined) {
+      if (isWritableSection(section, sectionFidelity, body)) {
         toWrite.push({ section, body, capturedAt: sectionFidelity.capturedAt });
       }
     }
@@ -296,7 +299,9 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
     const accountId = opts.accountId ?? null;
     persist(live, { accountId });
     const restored = restore(accountId);
-    return mergeStoredIntoLive(live, restored, { gameRunning: opts.gameRunning, binding: open.binding });
+    const view = mergeStoredIntoLive(live, restored, { gameRunning: opts.gameRunning, binding: open.binding });
+    dataIssueLog.record(dataIssuesOf(view.payload));
+    return view;
   }
 
   /**
