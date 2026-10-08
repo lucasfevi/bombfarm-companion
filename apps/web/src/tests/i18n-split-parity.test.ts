@@ -795,7 +795,6 @@ const KEYS_ADDED: readonly string[] = [
   'inventorySortLabel',
   'inventorySortRarity',
   'inventorySortLevel',
-  'inventorySortValue',
   'inventorySortName',
   'inventorySortCount',
   'inventorySortAscending',

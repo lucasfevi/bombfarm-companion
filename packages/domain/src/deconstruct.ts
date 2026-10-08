@@ -69,7 +69,6 @@ export function deconstructBlockReason(item: InventoryViewItem): DeconstructBloc
   if (item.locked) return 'locked';
   if (item.marketBlocked) return 'market';
   if (item.hasGems) return 'has_gems';
-  if (item.exportLocked) return 'import_cooldown';
   return null;
 }
 

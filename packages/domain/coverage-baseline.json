@@ -12,7 +12,7 @@
     "src/collection-board.ts": { "statements": 100, "branches": 90.38, "functions": 100, "lines": 100 },
     "src/collection.ts": { "statements": 100, "branches": 100, "functions": 100, "lines": 100 },
     "src/combat-window.ts": { "statements": 90, "branches": 73.68, "functions": 100, "lines": 100 },
-    "src/deconstruct.ts": { "statements": 97.92, "branches": 95.45, "functions": 100, "lines": 100 },
+    "src/deconstruct.ts": { "statements": 97.83, "branches": 95.24, "functions": 100, "lines": 100 },
     "src/derive.ts": { "statements": 100, "branches": 100, "functions": 100, "lines": 100 },
     "src/drain.ts": { "statements": 100, "branches": 100, "functions": 100, "lines": 100 },
     "src/farm-context.ts": { "statements": 100, "branches": 90, "functions": 100, "lines": 100 },
@@ -34,7 +34,7 @@
     "src/gear/naked-rescale.ts": { "statements": 88.33, "branches": 90, "functions": 75, "lines": 90.2 },
     "src/hero-abilities.ts": { "statements": 100, "branches": 50, "functions": 100, "lines": 100 },
     "src/import-save.ts": { "statements": 94.83, "branches": 91.5, "functions": 100, "lines": 96.12 },
-    "src/inventory-view.ts": { "statements": 96.71, "branches": 92.15, "functions": 98.04, "lines": 97.34 },
+    "src/inventory-view.ts": { "statements": 96.27, "branches": 91.63, "functions": 98.04, "lines": 97.31 },
     "src/inventory.ts": { "statements": 100, "branches": 85.11, "functions": 100, "lines": 100 },
     "src/item-forge-ladder.ts": { "statements": 100, "branches": 75, "functions": 100, "lines": 100 },
     "src/live/drain-checker.ts": { "statements": 100, "branches": 100, "functions": 100, "lines": 100 },
@@ -135,5 +135,8 @@
     "src/sheet-normalize.ts": "never loaded by a domain test; the coverage report has no entry for it",
     "src/shims/hero-identity.ts": "never loaded by a domain test; the coverage report has no entry for it"
   },
-  "waivers": {}
+  "waivers": {
+    "src/deconstruct.ts": { "reason": "local import-cooldown block removed with its tests; the game now lets imported items burn at once", "statements": 97.83, "branches": 95.24, "functions": 100, "lines": 100 },
+    "src/inventory-view.ts": { "reason": "sell-for-gold fields and Value sort removed with their tests after the game removed selling", "statements": 96.27, "branches": 91.63, "functions": 98.04, "lines": 97.31 }
+  }
 }

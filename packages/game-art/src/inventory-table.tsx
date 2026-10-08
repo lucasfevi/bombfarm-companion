@@ -30,7 +30,6 @@ import {
 } from '@bombfarm/domain/inventory-view';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { Checkbox, cn, DataTable, EmptyState, Icon, Tooltip } from '@bombfarm/ui';
-import { GoldIcon } from './gold-icon';
 import { HeroAvatar } from './hero-avatar';
 import type { ItemPeekPrice } from './peek';
 import { ItemIdentity, type ItemIdentityLabels } from './item-identity';
@@ -48,7 +47,6 @@ import {
   inventoryTableActionButtonClass,
   inventoryTableBlankClass,
   inventoryTableDisabledRowClass,
-  inventoryTableGoldClass,
   inventoryTableGroupCountClass,
   inventoryTableGroupHeaderClass,
   inventoryTableHeroClass,
@@ -69,7 +67,6 @@ export type InventoryTableColumnId =
   | 'name'
   | 'forge'
   | 'count'
-  | 'value'
   | 'market'
   | 'hero'
   | 'actions';
@@ -80,7 +77,6 @@ export type InventoryTableColumnId =
 export const DEFAULT_INVENTORY_TABLE_COLUMNS: readonly InventoryTableColumnId[] = [
   'name',
   'count',
-  'value',
   'market',
   'hero',
   'actions',
@@ -94,7 +90,6 @@ export interface InventoryTableLabels extends ItemIdentityLabels<InventoryViewIt
   groupTitle: (kind: ItemKind) => string;
   /** `null` when the item is loose, or when the caller has no roster. Absent drops the column. */
   equippedBy?: ((item: InventoryViewItem) => InventoryEquippedBy | null) | undefined;
-  gold: (amount: number) => string;
   /** What free-text search matches against for one item. */
   searchText: (item: InventoryViewItem) => string;
   column: InventoryTableColumnLabels;
@@ -238,7 +233,6 @@ const COLUMN_SHAPE: Record<
   name: { align: 'left', sortKey: 'name', width: undefined },
   forge: { align: 'right', sortKey: 'forge', width: '5.5rem' },
   count: { align: 'right', sortKey: 'count', width: '5rem' },
-  value: { align: 'right', sortKey: 'value', width: '8rem' },
   market: { align: 'right', sortKey: 'market', width: '11rem' },
   hero: { align: 'left', sortKey: null, width: '13rem' },
   actions: { align: 'right', sortKey: null, width: '3.5rem' },
@@ -551,19 +545,6 @@ const InventoryTableRow = memo(function InventoryTableRow({
         return (
           <DataTable.Cell key={column.id} align="right" numeric>
             {count}
-          </DataTable.Cell>
-        );
-      case 'value':
-        return (
-          <DataTable.Cell key={column.id} align="right" numeric>
-            {entry.sellValueGold > 0 ? (
-              <span className={inventoryTableGoldClass}>
-                <GoldIcon className="size-3.5" />
-                {labels.gold(entry.sellValueGold)}
-              </span>
-            ) : (
-              <Blank />
-            )}
           </DataTable.Cell>
         );
       case 'market':

@@ -24,8 +24,6 @@ export const inventoryTableGroupCountClass = 'ml-2 font-normal tabular-nums text
  *  would move every other row by a pixel as the selection walks down the list. */
 export const inventoryTableSelectedRowClass = 'bg-[color-mix(in_oklch,var(--accent)_14%,var(--surface))]';
 
-export const inventoryTableGoldClass = 'inline-flex items-center gap-1';
-
 /** Every cell with nothing in it gets the same mark, so a blank column reads as "none" rather
  *  than as a rendering gap. */
 export const inventoryTableBlankClass = 'text-muted';

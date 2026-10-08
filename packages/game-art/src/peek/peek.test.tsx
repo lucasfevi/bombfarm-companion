@@ -94,19 +94,12 @@ describe('ItemPeekCard', () => {
     expect(forged).toContain('Crit, Cooldown ×1.95');
   });
 
-  it('says what the item is worth — gold, and the market’s quote when the host has one', () => {
-    const priced = render(createElement(ItemPeekCard, { item: { ...helmet, sellValueGold: 1234 }, lang: 'en', price: dollars }));
-    expect(priced).toContain('data-slot="item-peek-gold"');
-    expect(priced).toContain('1,234');
+  it('prints the market’s quote when the host has one', () => {
+    const priced = render(createElement(ItemPeekCard, { item: helmet, lang: 'en', price: dollars }));
     expect(priced).toContain('USD 12.50');
 
-    const goldOnly = render(createElement(ItemPeekCard, { item: { ...helmet, sellValueGold: 1234 }, lang: 'en' }));
-    expect(goldOnly).toContain('1,234');
-    expect(goldOnly).not.toContain('USD');
-
-    const catalogBuilt = render(createElement(ItemPeekCard, { item: helmet, lang: 'en' }));
-    expect(catalogBuilt).not.toContain('data-slot="item-peek-gold"');
-    expect(catalogBuilt).not.toContain('USD');
+    const unpriced = render(createElement(ItemPeekCard, { item: helmet, lang: 'en' }));
+    expect(unpriced).not.toContain('USD');
   });
 
   it('prints the rolls it is handed over the catalog’s, so an inventory row and its card agree', () => {

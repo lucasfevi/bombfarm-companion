@@ -62,8 +62,6 @@ describe('buildInventoryView over the calibration capture', () => {
     expect(gloves).toBeDefined();
     expect(gloves!.set).toBe('ember');
     expect(gloves!.slot).toBe('luva');
-    expect(gloves!.sellValueGold).toBe(100);
-    expect(gloves!.sellable).toBe(true);
     expect(gloves!.tradable).toBe(false);
     expect(gloves!.inStash).toBe(false);
     expect(gloves!.equippedBy).toBe('555');
@@ -71,11 +69,12 @@ describe('buildInventoryView over the calibration capture', () => {
     expect(gloves!.stats).toEqual([{ name: 'dmg', code: 0, unit: 'flat', value: 19.25, effective: 19.25 }]);
   });
 
-  it('reads sell_value through the digit string the wire sends rather than dropping it to zero', () => {
-    const view = buildInventoryView(loadPayloadItems());
-    const withValue = view.items.filter((item) => item.sellValueGold > 0);
-    expect(withValue.length).toBeGreaterThan(0);
-    for (const item of withValue) expect(Number.isFinite(item.sellValueGold)).toBe(true);
+  it('reads a row that carries no sell keys, as the game sends them now that selling is gone', () => {
+    const view = buildInventoryView([{ id: '1', def_id: 'ember_luva', category: 0, rarity: 1, level: 5 }]);
+    expect(view.skipped).toBe(0);
+    expect(view.items).toHaveLength(1);
+    expect(view.items[0]).not.toHaveProperty('sellValueGold');
+    expect(view.items[0]).not.toHaveProperty('sellable');
   });
 });
 
@@ -151,9 +150,8 @@ describe('mapInventoryViewItem', () => {
     expect(item!.stats).toEqual([{ name: null, code: 99, unit: 'pct', value: 1, effective: 2 }]);
   });
 
-  it('treats a missing sellable flag as sellable and a missing tradable flag as not tradable', () => {
+  it('treats a missing tradable flag as not tradable', () => {
     const item = mapInventoryViewItem({ id: '1', def_id: 'ember_luva', category: 0 });
-    expect(item!.sellable).toBe(true);
     expect(item!.tradable).toBe(false);
   });
 });
@@ -226,7 +224,6 @@ describe('mapInventoryViewItem across the storage round trip', () => {
     rarity: 4,
     level: 60,
     upgrade: 12,
-    sell_value: 1234,
     market_state: 1,
     in_stash: true,
     locked: true,
@@ -249,11 +246,10 @@ describe('mapInventoryViewItem across the storage round trip', () => {
     expect(reloaded.rarityCode).toBe('lendaria');
   });
 
-  it('keeps sell value, market state, stash flag and stats across the same trip', () => {
+  it('keeps market state, stash flag and stats across the same trip', () => {
     const reloaded = mapInventoryViewItem(
       JSON.parse(JSON.stringify(mapInventoryViewItem(wireRow))) as unknown,
     )!;
-    expect(reloaded.sellValueGold).toBe(1234);
     expect(reloaded.marketBlocked).toBe(true);
     expect(reloaded.inStash).toBe(true);
     expect(reloaded.stats).toEqual([{ name: 'velocidade', code: 2, unit: 'pct', value: 10, effective: 12 }]);
@@ -486,7 +482,7 @@ describe('rune tiers from the def_id tail', () => {
 });
 
 describe('stacking', () => {
-  const rows = (defId: string, rarity: number, count: number, sell = 220) =>
+  const rows = (defId: string, rarity: number, count: number) =>
     Array.from(
       { length: count },
       (_, index) =>
@@ -495,18 +491,16 @@ describe('stacking', () => {
           def_id: defId,
           category: 4,
           rarity,
-          sell_value: String(sell),
         })!,
     );
 
-  it('collapses identical keys into one counted entry, and sums the stack sell value', () => {
+  it('collapses identical keys into one counted entry, and counts the stack', () => {
     const groups = groupInventoryByKind(rows('map_key_epico', 3, 11));
     const keys = groups.find((group) => group.kind === 'key')!;
 
     expect(keys.count).toBe(11);
     expect(keys.entries).toHaveLength(1);
     expect(keys.entries[0].count).toBe(11);
-    expect(keys.entries[0].sellValueGold).toBe(11 * 220);
   });
 
   it('keeps two rarities of the same family apart', () => {
@@ -729,10 +723,10 @@ describe('hero filter', () => {
 describe('sortInventoryView', () => {
   const view = () =>
     buildInventoryView([
-      { id: '1', def_id: 'glacier_arma', category: 0, rarity: 4, level: 60, sell_value: '900' },
-      { id: '2', def_id: 'ember_luva', category: 0, rarity: 0, level: 10, sell_value: '100' },
-      { id: '3', def_id: 'clay_bota', category: 0, rarity: 2, level: 40, sell_value: '500' },
-      { id: '4', def_id: 'map_key_epico', category: 4, rarity: 3, sell_value: '220' },
+      { id: '1', def_id: 'glacier_arma', category: 0, rarity: 4, level: 60 },
+      { id: '2', def_id: 'ember_luva', category: 0, rarity: 0, level: 10 },
+      { id: '3', def_id: 'clay_bota', category: 0, rarity: 2, level: 40 },
+      { id: '4', def_id: 'map_key_epico', category: 4, rarity: 3 },
     ]);
 
   const nameOf = (item: InventoryViewItem) => item.defId;
@@ -765,14 +759,14 @@ describe('sortInventoryView', () => {
   it.each([
     [[{ key: 'rarity', direction: 'asc' }], ['2', '3', '1']],
     [[{ key: 'level', direction: 'asc' }], ['2', '3', '1']],
-    [[{ key: 'value', direction: 'desc' }], ['1', '3', '2']],
+    [[{ key: 'level', direction: 'desc' }], ['1', '3', '2']],
     [[{ key: 'name', direction: 'asc' }], ['3', '2', '1']],
   ] as [InventorySort, string[]][])('sorts by %j', (sort, expected) => {
     expect(gearOrder(sort)).toEqual(expected);
   });
 
   it('reorders within a group and never across groups', () => {
-    const sorted = sortInventoryView(view(), [{ key: 'value', direction: 'desc' }], nameOf);
+    const sorted = sortInventoryView(view(), [{ key: 'level', direction: 'desc' }], nameOf);
     expect(sorted.groups.map((group) => group.kind)).toEqual(['equipment', 'key']);
   });
 
@@ -789,7 +783,7 @@ describe('sortInventoryView', () => {
 
   it('leaves the item list itself untouched — only the grouped entries move', () => {
     const original = view();
-    const sorted = sortInventoryView(original, [{ key: 'value', direction: 'asc' }], nameOf);
+    const sorted = sortInventoryView(original, [{ key: 'level', direction: 'asc' }], nameOf);
     expect(sorted.items).toBe(original.items);
     expect(sorted.skipped).toBe(original.skipped);
   });
@@ -858,7 +852,7 @@ describe('withSortTerm', () => {
 
   it('caps the depth, because a fourth tie-break is not something a reader can hold', () => {
     let sort: InventorySort = [];
-    for (const key of ['name', 'count', 'value', 'level', 'rarity'] as const) {
+    for (const key of ['name', 'count', 'market', 'level', 'rarity'] as const) {
       sort = withSortTerm(sort, { key, direction: 'desc' });
     }
     expect(sort).toHaveLength(3);

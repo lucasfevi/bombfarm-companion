@@ -8,7 +8,6 @@ import { runeFromDefId } from '@bombfarm/domain/runes';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn, formatNumber } from '@bombfarm/ui';
 import { rarityTextClass } from '../game-art.recipe';
-import { GoldIcon } from '../gold-icon';
 import {
   inventoryStatLabelClass,
   inventoryStatLeaderClass,
@@ -19,7 +18,6 @@ import { ItemIcon, type ItemIconItem } from '../item-icon';
 import { MarketPrice, type MarketPriceLabels, type MarketPriceView } from '../market-price';
 import { usePeek, type PeekSpec } from './use-peek';
 import {
-  peekGoldClass,
   peekHeadClass,
   peekNameClass,
   peekNameTextClass,
@@ -49,7 +47,6 @@ export type ItemPeekPrice = { view: MarketPriceView; labels: MarketPriceLabels }
 export function itemPeekFromInventory(
   item: ItemIconItem & {
     count?: number | undefined;
-    sellValueGold?: number | undefined;
     stats?: readonly WireItemStat[] | undefined;
   },
 ): ItemPeekItem {
@@ -64,8 +61,6 @@ export function itemPeekFromInventory(
 export type ItemPeekItem = ItemIconItem & {
   /** A stack's size — a gem, a key. Absent or 1 on gear. */
   count?: number | undefined;
-  /** What the game pays for one of it. Absent on a piece the planner built from the catalog. */
-  sellValueGold?: number | undefined;
   /**
    * The rolls the game itself reported for this item, forge applied. Absent, the card derives
    * them from the catalog at the item's level and forge — right for a piece the planner built,
@@ -136,7 +131,7 @@ function stoneChanceBonus(item: ItemPeekItem, lang: Lang): string | null {
   return points === null ? null : `+${formatNumber(points * 100, lang, 0)}%`;
 }
 
-/** The card an item opens: name and forge, tier, level and forge multiplier, every stat it rolls, and what it is worth. */
+/** The card an item opens: name and forge, tier, level and forge multiplier, every stat it rolls, and its market quote. */
 export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'item' | 'lang' | 'name' | 'price'>) {
   const gear = isGear(item);
   const tier = rarityTextClass(item.rarityIdx) ?? 'text-ink';
@@ -144,7 +139,6 @@ export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'i
   const upgrade = gear ? Math.max(0, Math.round(item.upgrade)) : 0;
   const stats: readonly ItemPeekStat[] = gear ? (item.stats ?? itemValores(item)) : [];
   const count = item.count ?? 1;
-  const gold = item.sellValueGold ?? 0;
   const rune = runeEffect(item, lang);
   const stoneChance = stoneChanceBonus(item, lang);
   const tierLine = hasTierLine(item);
@@ -231,19 +225,11 @@ export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'i
           </div>
         </>
       ) : null}
-      {gold > 0 || price ? (
+      {price ? (
         <>
           <div className={peekRuleClass} />
           <div className={peekValueRowClass}>
-            {gold > 0 ? (
-              <span data-slot="item-peek-gold" className={peekGoldClass}>
-                <GoldIcon className="size-3.5" />
-                {formatNumber(gold, lang, 0)}
-              </span>
-            ) : (
-              <span />
-            )}
-            {price ? <MarketPrice price={price.view} labels={price.labels} className="text-[11px]" /> : null}
+            <MarketPrice price={price.view} labels={price.labels} className="text-[11px]" />
           </div>
         </>
       ) : null}

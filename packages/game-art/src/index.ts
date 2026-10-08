@@ -111,7 +111,6 @@ export {
 export {
   inventoryTableActionButtonClass,
   inventoryTableBlankClass,
-  inventoryTableGoldClass,
   inventoryTableGroupCountClass,
   inventoryTableGroupHeaderClass,
   inventoryTableHeroClass,

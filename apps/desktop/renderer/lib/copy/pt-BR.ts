@@ -414,7 +414,6 @@ export const ptBR: Copy = {
   inventorySortLabel: 'Ordenar por',
   inventorySortRarity: 'Raridade',
   inventorySortLevel: 'Nível',
-  inventorySortValue: 'Valor',
   inventorySortName: 'Nome',
   inventorySortCount: 'Quantidade',
   inventorySortMarket: 'Preço de mercado',

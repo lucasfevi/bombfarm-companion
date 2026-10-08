@@ -1,0 +1,200 @@
+{
+  "items": [
+    {
+      "id": "7000",
+      "def_id": "glacier_calca",
+      "set": "glacier",
+      "rarity": 4,
+      "category": 0,
+      "slot": 3,
+      "level": 60,
+      "stats": [
+        {
+          "stat": 6,
+          "value": 0.056206259999999994,
+          "effective": 0.10960220699999998
+        },
+        {
+          "stat": 2,
+          "value": 0.00462,
+          "effective": 0.009702
+        },
+        {
+          "stat": 1,
+          "value": 0.20999999999999996,
+          "effective": 0.44099999999999995
+        },
+        {
+          "stat": 3,
+          "value": 0.18480000000000002,
+          "effective": 0.38808000000000004
+        },
+        {
+          "stat": 0,
+          "value": 231,
+          "effective": 485.1
+        }
+      ],
+      "power": 3614.955627097249,
+      "essence_value": 960,
+      "forge_fails": 0,
+      "forge_chance": 0.15,
+      "pergaminho_custo": 4050,
+      "upgrade": 13,
+      "tradable": false,
+      "soulbound": true,
+      "market_state": 0,
+      "locked": false,
+      "equipped_on": "100",
+      "equip_slot": 3,
+      "in_stash": false
+    },
+    {
+      "id": "7001",
+      "def_id": "iron_arma",
+      "set": "iron",
+      "rarity": 2,
+      "category": 0,
+      "slot": 0,
+      "level": 70,
+      "stats": [
+        {
+          "stat": 0,
+          "value": 1347.5,
+          "effective": 2829.75
+        },
+        {
+          "stat": 4,
+          "value": 0.04508161,
+          "effective": 0.0879091395
+        },
+        {
+          "stat": 5,
+          "value": 0.9800000000000001,
+          "effective": 2.0580000000000003
+        }
+      ],
+      "power": 19556.804886480186,
+      "essence_value": 280,
+      "forge_fails": 0,
+      "forge_chance": 0.15,
+      "pergaminho_custo": 2835,
+      "upgrade": 13,
+      "tradable": true,
+      "market_state": 0,
+      "locked": true,
+      "equipped_on": null,
+      "equip_slot": null,
+      "in_stash": false
+    },
+    {
+      "id": "7002",
+      "def_id": "gem_roselite",
+      "set": "",
+      "rarity": 3,
+      "category": 2,
+      "level": 0,
+      "stats": [],
+      "power": 0,
+      "essence_value": 2893,
+      "forge_fails": 0,
+      "forge_chance": 0,
+      "pergaminho_custo": 0,
+      "upgrade": 0,
+      "tradable": true,
+      "market_state": 0,
+      "locked": false,
+      "equipped_on": null,
+      "equip_slot": null,
+      "in_stash": true
+    },
+    {
+      "id": "7003",
+      "def_id": "forja_pedra_comum",
+      "set": "",
+      "rarity": 0,
+      "category": 8,
+      "level": 0,
+      "stats": [],
+      "power": 0,
+      "essence_value": 389,
+      "forge_fails": 0,
+      "forge_chance": 0,
+      "pergaminho_custo": 0,
+      "upgrade": 0,
+      "tradable": true,
+      "market_state": 0,
+      "locked": false,
+      "equipped_on": null,
+      "equip_slot": null,
+      "in_stash": true
+    },
+    {
+      "id": "7004",
+      "def_id": "map_key_epico",
+      "set": "",
+      "rarity": 3,
+      "category": 4,
+      "level": 0,
+      "stats": [],
+      "power": 0,
+      "essence_value": 22,
+      "forge_fails": 0,
+      "forge_chance": 0,
+      "pergaminho_custo": 0,
+      "upgrade": 0,
+      "tradable": true,
+      "market_state": 0,
+      "locked": false,
+      "equipped_on": null,
+      "equip_slot": null,
+      "in_stash": true
+    },
+    {
+      "id": "7005",
+      "def_id": "chest_item_90",
+      "set": "",
+      "rarity": 0,
+      "category": 1,
+      "level": 0,
+      "stats": [],
+      "power": 0,
+      "essence_value": 90,
+      "forge_fails": 0,
+      "forge_chance": 0,
+      "pergaminho_custo": 0,
+      "upgrade": 0,
+      "tradable": true,
+      "market_state": 0,
+      "locked": false,
+      "equipped_on": null,
+      "equip_slot": null,
+      "in_stash": true
+    },
+    {
+      "id": "7006",
+      "def_id": "skill_stone_comum",
+      "set": "",
+      "rarity": 0,
+      "category": 5,
+      "level": 0,
+      "stats": [],
+      "power": 0,
+      "essence_value": 75,
+      "forge_fails": 0,
+      "forge_chance": 0,
+      "pergaminho_custo": 0,
+      "upgrade": 0,
+      "tradable": false,
+      "market_state": 0,
+      "locked": false,
+      "equipped_on": null,
+      "equip_slot": null,
+      "in_stash": true
+    }
+  ],
+  "chests": [],
+  "bag_tabs": 4,
+  "bag_capacity": 100,
+  "items_count": 7
+}

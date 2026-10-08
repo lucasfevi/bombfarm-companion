@@ -3,7 +3,11 @@ import { fileURLToPath } from 'node:url';
 import type { ConsentRecord, GrantedConsent } from './consent.js';
 import { CONSENT_TEXT_VERSION } from './consent-text.js';
 
-export type FixtureName = 'api-bodies.json' | 'api-bodies-after.json' | 'roster-optional-keys.json';
+export type FixtureName =
+  | 'api-bodies.json'
+  | 'api-bodies-after.json'
+  | 'inventory-post-patch.json'
+  | 'roster-optional-keys.json';
 
 /**
  * Resolves a committed `src/__fixtures__/*.json` fixture to an absolute filesystem path — never
