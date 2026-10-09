@@ -1,5 +1,11 @@
 # @bombfarm/contracts
 
+## 0.14.1
+
+### Patch Changes
+
+- b2995e8: When Windows blocks the app from reading the game — usually because the game or Steam is running as administrator — the Live screen now says so and how to fix it, instead of a generic "could not connect".
+
 ## 0.14.0
 
 ### Minor Changes
