@@ -14,6 +14,7 @@ import {
   LiveSource,
   nodeObservationAppendPort,
   observationCaptureFilePath,
+  parseProcessImagePath,
   type ObservedCollectionsBody,
   type ObservedPvpBody,
   type TapHandle,
@@ -1866,5 +1867,22 @@ describe('LiveSource: observed frames reach the recorder through the tap factory
     const frames = seen.filter((entry) => entry.kind === 'frame');
     expect(frames.length).toBeGreaterThan(0);
     expect(frames[0]?.value).toHaveProperty(liveFrameWireKey('messageType'), liveFrameWireKey('snapMessageType'));
+  });
+});
+
+describe('the game image path probe', () => {
+  it('reads a path PowerShell answered as a path', () => {
+    expect(parseProcessImagePath('found:C:\\Games\\Bomb Farm\\game.exe')).toEqual({
+      kind: 'path',
+      path: 'C:\\Games\\Bomb Farm\\game.exe',
+    });
+  });
+
+  it('reads a process that exists but answers no path as access denied — a game run as administrator', () => {
+    expect(parseProcessImagePath('found:')).toEqual({ kind: 'accessDenied' });
+  });
+
+  it('reads no output at all as a process that is gone, never as access denied', () => {
+    expect(parseProcessImagePath('')).toEqual({ kind: 'gone' });
   });
 });

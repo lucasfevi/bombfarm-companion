@@ -22,6 +22,7 @@ const EXPECTED_ACTIONABLE = {
   consentMissing: true,
   runtimeUnavailable: true,
   attachFailed: true,
+  gameAccessDenied: true,
   detached: true,
   hookSilent: true,
 } satisfies Record<LiveGapReason, boolean>;

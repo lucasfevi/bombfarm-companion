@@ -33,6 +33,9 @@ export interface HookCandidateResolution {
   /** The build id `resolve` already paid to compute — handed back so `commit`/`invalidate` never
    *  have to re-read and re-parse the image to re-derive it. */
   readonly buildId: string | null;
+  /** Windows refused to say where the game's image is, so no scan could run — see
+   *  {@link ProcessImageRead}. */
+  readonly accessDenied: boolean;
 }
 
 export interface HookCandidateSource {
@@ -171,7 +174,12 @@ export class Tap {
    *  mid-scan, a game launched elevated and restarted since — and under a permanent latch a
    *  single unlucky poll left the app reporting `attachFailed` every 5s until it was restarted,
    *  with no line in the log to say why. Backing off keeps the cost bounded and still recovers. */
-  #discoveryRetry: { readonly pid: number; readonly failures: number; readonly notBeforeMs: number } | null = null;
+  #discoveryRetry: {
+    readonly pid: number;
+    readonly failures: number;
+    readonly notBeforeMs: number;
+    readonly reason: 'attachFailed' | 'gameAccessDenied';
+  } | null = null;
 
   /** How many consecutive fresh-discovery validation failures the current build has racked up —
    *  an index into {@link HOOK_DISCOVERY_WIDTHS}, not a raw candidate count. Reset on a confirmed
@@ -349,7 +357,7 @@ export class Tap {
 
     const retry = this.#discoveryRetry;
     if (retry?.pid === pid && this.#deps.clock.now() < retry.notBeforeMs) {
-      this.#reportGap('attachFailed');
+      this.#reportGap(retry.reason);
       return;
     }
 
@@ -358,7 +366,8 @@ export class Tap {
     if (candidateResolution.addresses.length === 0) {
       const failures = (retry?.pid === pid ? retry.failures : 0) + 1;
       const backoffMs = discoveryBackoffMs(failures);
-      this.#discoveryRetry = { pid, failures, notBeforeMs: this.#deps.clock.now() + backoffMs };
+      const reason = candidateResolution.accessDenied ? 'gameAccessDenied' : 'attachFailed';
+      this.#discoveryRetry = { pid, failures, notBeforeMs: this.#deps.clock.now() + backoffMs, reason };
       // The only account of why the app is stuck on `attachFailed`: whether an image was read at
       // all is already logged by the image source, so what this adds is that a scan ran, which
       // build it ran against, and that the app has not given up.
@@ -367,10 +376,11 @@ export class Tap {
         event: 'tap.hook_discovery_empty',
         pid,
         buildId: candidateResolution.buildId,
+        accessDenied: candidateResolution.accessDenied,
         failures,
         retryInMs: backoffMs,
       });
-      this.#reportGap('attachFailed');
+      this.#reportGap(reason);
       return;
     }
     this.#discoveryRetry = null;
@@ -672,12 +682,19 @@ export function createSystemClock(): Clock {
   };
 }
 
+/** `accessDenied` is the process existing while Windows withholds even its path — what a game run
+ *  as administrator looks like to an app that is not. It is split from `unreadable` because only
+ *  the player can fix it, and the Live screen tells them how. */
+export type ProcessImageRead =
+  | { readonly kind: 'read'; readonly image: Buffer }
+  | { readonly kind: 'accessDenied' }
+  | { readonly kind: 'unreadable' };
+
 export interface ProcessImageSource {
-  /** The running process's own on-disk PE image, or `null` when it cannot be read (permissions,
-   *  the process already gone). Getting from a pid to that image is OS-specific and deliberately
-   *  kept out of this module, the same way `hook-cache.ts` keeps the cache directory out of
-   *  itself. */
-  read(pid: number): Buffer | null;
+  /** The running process's own on-disk PE image. Getting from a pid to that image is OS-specific
+   *  and deliberately kept out of this module, the same way `hook-cache.ts` keeps the cache
+   *  directory out of itself. */
+  read(pid: number): ProcessImageRead;
 }
 
 export interface HookCandidateSourceDeps {
@@ -706,18 +723,19 @@ export function createHookCandidateSource(deps: HookCandidateSourceDeps): HookCa
 
   return {
     resolve(pid, maxCandidates = 4) {
-      const image = deps.image.read(pid);
-      const parsed = image ? tryParseImage(pid, image) : null;
+      const imageRead = deps.image.read(pid);
+      const accessDenied = imageRead.kind === 'accessDenied';
+      const parsed = imageRead.kind === 'read' ? tryParseImage(pid, imageRead.image) : null;
       const buildId = parsed?.buildId ?? null;
 
       const cacheFile = readHookCacheFile(deps.cacheDir, deps.log);
       const cached = lookupHook(cacheFile, buildId, READ_HOOK_ANCHORS);
-      if (cached) return { addresses: [cached.rva], fromCache: true, buildId };
+      if (cached) return { addresses: [cached.rva], fromCache: true, buildId, accessDenied };
 
-      if (!parsed) return { addresses: [], fromCache: false, buildId };
+      if (!parsed) return { addresses: [], fromCache: false, buildId, accessDenied };
 
       const ranked = discoverHookCandidates(parsed, READ_HOOK_ANCHORS).slice(0, maxCandidates);
-      return { addresses: ranked.map((candidate) => candidate.rva), fromCache: false, buildId };
+      return { addresses: ranked.map((candidate) => candidate.rva), fromCache: false, buildId, accessDenied };
     },
     commit(_pid, address, buildId) {
       if (buildId === null) return;
