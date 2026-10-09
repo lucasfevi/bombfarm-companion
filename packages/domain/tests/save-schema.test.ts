@@ -34,12 +34,12 @@ function validSkills(): Record<string, unknown> {
 }
 
 function validHero(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  const base = Object.fromEntries(SCHEMA_LEVELS.hero.keys.map((key) => [key, 'value']));
+  const base = Object.fromEntries([...SCHEMA_LEVELS.hero.keys, ...(SCHEMA_LEVELS.hero.unread ?? [])].map((key) => [key, 'value']));
   return { ...base, ...overrides };
 }
 
 function validItem(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  const base = Object.fromEntries(SCHEMA_LEVELS.item.keys.map((key) => [key, 'value']));
+  const base = Object.fromEntries([...SCHEMA_LEVELS.item.keys, ...(SCHEMA_LEVELS.item.unread ?? [])].map((key) => [key, 'value']));
   return { ...base, slot: 'weapon', ...overrides };
 }
 
@@ -59,7 +59,7 @@ function validCasa(overrides: Record<string, unknown> = {}): Record<string, unkn
 describe('checkSchema — the declared-path engine', () => {
   it('returns exactly {ok:true} with no missingKeys/addedKeys property on a matching body', () => {
     const result = checkSchema(validSkills(), fingerprint('skills', SCHEMA_LEVELS.skills));
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, absentUnreadKeys: [] });
     expect(result).not.toHaveProperty('missingKeys');
     expect(result).not.toHaveProperty('addedKeys');
   });
@@ -68,7 +68,7 @@ describe('checkSchema — the declared-path engine', () => {
     const body = validSkills();
     delete body.gold;
     const result = checkSchema(body, fingerprint('skills', SCHEMA_LEVELS.skills));
-    expect(result).toEqual({ ok: false, missingKeys: ['skills.gold'], addedKeys: [] });
+    expect(result).toEqual({ ok: false, missingKeys: ['skills.gold'], addedKeys: [], absentUnreadKeys: [] });
   });
 
   it('a removed NESTED key is reported path-qualified — skills.totals.vagas_campo', () => {
@@ -76,20 +76,20 @@ describe('checkSchema — the declared-path engine', () => {
     const totals = body.totals as Record<string, unknown>;
     delete totals.vagas_campo;
     const result = checkSchema(body, fingerprint('skills', SCHEMA_LEVELS.skills));
-    expect(result).toEqual({ ok: false, missingKeys: ['skills.totals.vagas_campo'], addedKeys: [] });
+    expect(result).toEqual({ ok: false, missingKeys: ['skills.totals.vagas_campo'], addedKeys: [], absentUnreadKeys: [] });
   });
 
   it('an added TOP-LEVEL key is fatal, demonstrated separately from the nested case', () => {
     const body = { ...validSkills(), something_new: 1 };
     const result = checkSchema(body, fingerprint('skills', SCHEMA_LEVELS.skills));
-    expect(result).toEqual({ ok: false, missingKeys: [], addedKeys: ['skills.something_new'] });
+    expect(result).toEqual({ ok: false, missingKeys: [], addedKeys: ['skills.something_new'], absentUnreadKeys: [] });
   });
 
   it('an added NESTED key is fatal, path-qualified', () => {
     const body = validSkills();
     (body.totals as Record<string, unknown>).something_new = 1;
     const result = checkSchema(body, fingerprint('skills', SCHEMA_LEVELS.skills));
-    expect(result).toEqual({ ok: false, missingKeys: [], addedKeys: ['skills.totals.something_new'] });
+    expect(result).toEqual({ ok: false, missingKeys: [], addedKeys: ['skills.totals.something_new'], absentUnreadKeys: [] });
   });
 
   it('no {ok:true} result can carry an added key — a body with both a missing and an added key reports both, ok:false', () => {
@@ -107,26 +107,26 @@ describe('checkSchema — the declared-path engine', () => {
   it('exact-key model: an allowance key and an optional key are never reported added; anything else is', () => {
     const level: SchemaLevel = { keys: ['a'], optional: ['b'], allowance: ['c'] };
     const okBody = checkSchema({ a: 1, b: 2, c: 3 }, fingerprint('root', level));
-    expect(okBody).toEqual({ ok: true });
+    expect(okBody).toEqual({ ok: true, absentUnreadKeys: [] });
 
     const noOptionalOrAllowance = checkSchema({ a: 1 }, fingerprint('root', level));
-    expect(noOptionalOrAllowance).toEqual({ ok: true });
+    expect(noOptionalOrAllowance).toEqual({ ok: true, absentUnreadKeys: [] });
 
     const trulyAdded = checkSchema({ a: 1, d: 4 }, fingerprint('root', level));
-    expect(trulyAdded).toEqual({ ok: false, missingKeys: [], addedKeys: ['root.d'] });
+    expect(trulyAdded).toEqual({ ok: false, missingKeys: [], addedKeys: ['root.d'], absentUnreadKeys: [] });
   });
 
   it('there is no wildcard or prefix escape — a key sharing a prefix with a declared key is still added', () => {
     const level: SchemaLevel = { keys: ['totals'] };
     const result = checkSchema({ totals: 1, totalsExtra: 2 }, fingerprint('root', level));
-    expect(result).toEqual({ ok: false, missingKeys: [], addedKeys: ['root.totalsExtra'] });
+    expect(result).toEqual({ ok: false, missingKeys: [], addedKeys: ['root.totalsExtra'], absentUnreadKeys: [] });
   });
 
   it('descent only via a declared children entry — an undeclared nested object is invisible to the engine', () => {
     const level: SchemaLevel = { keys: ['nested'] };
     // `nested` is a declared KEY but not a declared CHILD — its internal shape is never checked.
     const result = checkSchema({ nested: { anything: 'goes', here: true } }, fingerprint('root', level));
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, absentUnreadKeys: [] });
   });
 
   it('declared value map: added/removed entries inside stay ok — only presence + container kind matter', () => {
@@ -134,13 +134,13 @@ describe('checkSchema — the declared-path engine', () => {
     emptied.levels = {};
     emptied.refunds = { newEntry: 1, anotherEntry: 2 };
     const result = checkSchema(emptied, fingerprint('skills', SCHEMA_LEVELS.skills));
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, absentUnreadKeys: [] });
   });
 
   it('declared value list: added/removed elements stay ok — only presence + container kind matter', () => {
     const body = validCasa({ levels: [1], slots_per_house: [1, 2, 3, 4, 5, 6, 7] });
     const result = checkSchema(body, fingerprint('casa', SCHEMA_LEVELS.casa));
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, absentUnreadKeys: [] });
   });
 
   it.each([
@@ -152,20 +152,20 @@ describe('checkSchema — the declared-path engine', () => {
     body.totals = value;
     expect(() => checkSchema(body, fingerprint('skills', SCHEMA_LEVELS.skills))).not.toThrow();
     const result = checkSchema(body, fingerprint('skills', SCHEMA_LEVELS.skills));
-    expect(result).toEqual({ ok: false, missingKeys: ['skills.totals'], addedKeys: [] });
+    expect(result).toEqual({ ok: false, missingKeys: ['skills.totals'], addedKeys: [], absentUnreadKeys: [] });
   });
 
   it('a declared VALUE MAP child present but not an object (wrong container kind) is reported missing, not descended', () => {
     const body = validSkills();
     body.levels = ['not', 'a', 'map'];
     const result = checkSchema(body, fingerprint('skills', SCHEMA_LEVELS.skills));
-    expect(result).toEqual({ ok: false, missingKeys: ['skills.levels'], addedKeys: [] });
+    expect(result).toEqual({ ok: false, missingKeys: ['skills.levels'], addedKeys: [], absentUnreadKeys: [] });
   });
 
   it('a declared VALUE LIST child present but not an array (wrong container kind) is reported missing, not descended', () => {
     const body = validCasa({ levels: { not: 'a list' } });
     const result = checkSchema(body, fingerprint('casa', SCHEMA_LEVELS.casa));
-    expect(result).toEqual({ ok: false, missingKeys: ['casa.levels'], addedKeys: [] });
+    expect(result).toEqual({ ok: false, missingKeys: ['casa.levels'], addedKeys: [], absentUnreadKeys: [] });
   });
 
   it('a declared ARRAY child present but not an array (wrong container kind) is reported missing, not descended', () => {
@@ -174,7 +174,7 @@ describe('checkSchema — the declared-path engine', () => {
       children: { heroes: { kind: 'array', element: SCHEMA_LEVELS.hero } },
     };
     const result = checkSchema({ heroes: 'not-an-array' }, fingerprint('root', level));
-    expect(result).toEqual({ ok: false, missingKeys: ['root.heroes'], addedKeys: [] });
+    expect(result).toEqual({ ok: false, missingKeys: ['root.heroes'], addedKeys: [], absentUnreadKeys: [] });
   });
 
   it('non-object body reports the root path as missing — never throws (edge case: valid JSON, not an object)', () => {
@@ -185,6 +185,7 @@ describe('checkSchema — the declared-path engine', () => {
         ok: false,
         missingKeys: ['root'],
         addedKeys: [],
+        absentUnreadKeys: [],
       });
     }
   });
@@ -193,13 +194,13 @@ describe('checkSchema — the declared-path engine', () => {
     const body = validSkills();
     delete body.totals;
     const result = checkSchema(body, fingerprint('skills', SCHEMA_LEVELS.skills));
-    expect(result).toEqual({ ok: false, missingKeys: ['skills.totals'], addedKeys: [] });
+    expect(result).toEqual({ ok: false, missingKeys: ['skills.totals'], addedKeys: [], absentUnreadKeys: [] });
   });
 
   it.each([0, false, null, []])('a key present with value %s counts as PRESENT, never missing', (falsyValue) => {
     const level: SchemaLevel = { keys: ['a'] };
     const result = checkSchema({ a: falsyValue }, fingerprint('root', level));
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, absentUnreadKeys: [] });
   });
 
   it('every element of a declared array is checked, indexed root.path[i].key', () => {
@@ -209,9 +210,32 @@ describe('checkSchema — the declared-path engine', () => {
     };
     const goodHero = validHero();
     const badHero = validHero();
-    delete badHero.in_market;
+    delete badHero.level;
     const result = checkSchema({ heroes: [goodHero, badHero] }, fingerprint('root', level));
-    expect(result).toEqual({ ok: false, missingKeys: ['root.heroes[1].in_market'], addedKeys: [] });
+    expect(result).toEqual({ ok: false, missingKeys: ['root.heroes[1].level'], addedKeys: [], absentUnreadKeys: [] });
+  });
+
+  it('an unread key missing from one array element keeps the body ok and is named by index', () => {
+    const level: SchemaLevel = {
+      keys: ['heroes'],
+      children: { heroes: { kind: 'array', element: SCHEMA_LEVELS.hero } },
+    };
+    const lackingUnread = validHero();
+    delete lackingUnread.in_market;
+    const result = checkSchema({ heroes: [validHero(), lackingUnread] }, fingerprint('root', level));
+    expect(result).toEqual({ ok: true, absentUnreadKeys: ['root.heroes[1].in_market'] });
+  });
+
+  it('an unread key is never reported added when present, and never required when absent', () => {
+    const level: SchemaLevel = { keys: ['a'], unread: ['b'] };
+    expect(checkSchema({ a: 1, b: 2 }, fingerprint('root', level))).toEqual({ ok: true, absentUnreadKeys: [] });
+    expect(checkSchema({ a: 1 }, fingerprint('root', level))).toEqual({ ok: true, absentUnreadKeys: ['root.b'] });
+    expect(checkSchema({ b: 2 }, fingerprint('root', level))).toEqual({
+      ok: false,
+      missingKeys: ['root.a'],
+      addedKeys: [],
+      absentUnreadKeys: [],
+    });
   });
 
   it('a heterogeneous array names the offending element by index even when other elements agree', () => {
@@ -221,7 +245,12 @@ describe('checkSchema — the declared-path engine', () => {
     };
     const heroes = [validHero(), validHero(), { ...validHero(), extra_field: 1 }];
     const result = checkSchema({ heroes }, fingerprint('root', level));
-    expect(result).toEqual({ ok: false, missingKeys: [], addedKeys: ['root.heroes[2].extra_field'] });
+    expect(result).toEqual({
+      ok: false,
+      missingKeys: [],
+      addedKeys: ['root.heroes[2].extra_field'],
+      absentUnreadKeys: [],
+    });
   });
 
   it('a mixed array where only some records carry `soulbound` is ok:true on both sections — the flag is neither added nor missing', () => {
@@ -236,7 +265,7 @@ describe('checkSchema — the declared-path engine', () => {
       heroes: [validHero({ soulbound: true }), validHero()],
       items: [validItem({ soulbound: true }), validItem()],
     };
-    expect(checkSchema(body, fingerprint('root', level))).toEqual({ ok: true });
+    expect(checkSchema(body, fingerprint('root', level))).toEqual({ ok: true, absentUnreadKeys: [] });
   });
 });
 
@@ -303,11 +332,34 @@ describe('SCHEMA_LEVELS — the shared catalogue, key sets written as literals',
     ]);
   });
 
-  it('hero: the measured 23-key set, with no `children` (value-shaped fields are not descended)', () => {
-    expect(SCHEMA_LEVELS.hero.keys).toHaveLength(23);
-    expect(SCHEMA_LEVELS.hero.keys).toEqual(
-      expect.arrayContaining(['in_market', 'ability_reroll_cost', 'ability_reroll_stone']),
-    );
+  it('hero: the sixteen keys shipped code reads are required, the seven it never reads are unread, and nothing is descended', () => {
+    expect(SCHEMA_LEVELS.hero.keys).toEqual([
+      'id',
+      'name',
+      'level',
+      'rarity',
+      'rank',
+      'stars',
+      'skin',
+      'in_field',
+      'battle_allowed',
+      'marketable',
+      'stats',
+      'birth_stats',
+      'stat_ranges',
+      'abilities',
+      'stat_points_available',
+      'slots',
+    ]);
+    expect(SCHEMA_LEVELS.hero.unread).toEqual([
+      'xp',
+      'skin_birth',
+      'in_market',
+      'ability_points_total',
+      'ability_points_spent',
+      'ability_reroll_cost',
+      'ability_reroll_stone',
+    ]);
     expect(SCHEMA_LEVELS.hero.children).toBeUndefined();
   });
 
@@ -318,8 +370,9 @@ describe('SCHEMA_LEVELS — the shared catalogue, key sets written as literals',
     expect(SCHEMA_LEVELS.hero.keys).not.toContain('export_lock_secs');
   });
 
-  it('item: the measured 15-key set with the enumerated optional escapes `slot` and `soulbound` (27/3 API split, 17/5 export split)', () => {
-    expect(SCHEMA_LEVELS.item.keys).toHaveLength(15);
+  it('item: the fourteen read keys, `equip_slot` unread, and the enumerated optional escapes `slot` and `soulbound` (27/3 API split, 17/5 export split)', () => {
+    expect(SCHEMA_LEVELS.item.keys).toHaveLength(14);
+    expect(SCHEMA_LEVELS.item.unread).toEqual(['equip_slot']);
     expect(SCHEMA_LEVELS.item.optional).toEqual([
       'slot',
       'soulbound',
@@ -337,8 +390,14 @@ describe('SCHEMA_LEVELS — the shared catalogue, key sets written as literals',
     expect(SCHEMA_LEVELS.item.keys).not.toContain('ritual');
   });
 
-  it('apiItem: the item level plus the four essence keys as required keys, never also optional', () => {
-    expect(SCHEMA_LEVELS.apiItem.keys).toEqual([...SCHEMA_LEVELS.item.keys, ...ITEM_ESSENCE_KEYS]);
+  it('apiItem: the item level plus the three read essence keys required and the odds unread, never also optional', () => {
+    expect(SCHEMA_LEVELS.apiItem.keys).toEqual([
+      ...SCHEMA_LEVELS.item.keys,
+      'essence_value',
+      'forge_fails',
+      'pergaminho_custo',
+    ]);
+    expect(SCHEMA_LEVELS.apiItem.unread).toEqual(['equip_slot', 'forge_chance']);
     expect([...ITEM_ESSENCE_KEYS]).toEqual(['essence_value', 'forge_fails', 'forge_chance', 'pergaminho_custo']);
     expect(SCHEMA_LEVELS.apiItem.optional).toEqual([
       'slot',
@@ -355,13 +414,12 @@ describe('SCHEMA_LEVELS — the shared catalogue, key sets written as literals',
     }
   });
 
-  it('casa: the measured 7-key set with 4 value-list children (house-indexed arrays)', () => {
-    expect(SCHEMA_LEVELS.casa.keys).toHaveLength(7);
+  it('casa: five read keys with 2 value-list children, and the two per-house arrays nothing consumes unread', () => {
+    expect(SCHEMA_LEVELS.casa.keys).toHaveLength(5);
+    expect(SCHEMA_LEVELS.casa.unread).toEqual(['cycle_secs_per_house', 'upgrade_cost']);
     expect(SCHEMA_LEVELS.casa.children).toEqual({
       levels: { kind: 'valueList' },
       slots_per_house: { kind: 'valueList' },
-      cycle_secs_per_house: { kind: 'valueList' },
-      upgrade_cost: { kind: 'valueList' },
     });
   });
 
@@ -383,6 +441,6 @@ describe('SCHEMA_LEVELS — the shared catalogue, key sets written as literals',
       items: [validItem(), itemWithoutSlot],
       casa: validCasa(),
     };
-    expect(checkSchema(body, fingerprint('save', level))).toEqual({ ok: true });
+    expect(checkSchema(body, fingerprint('save', level))).toEqual({ ok: true, absentUnreadKeys: [] });
   });
 });

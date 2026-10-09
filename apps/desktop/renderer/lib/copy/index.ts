@@ -82,6 +82,7 @@ export const LIVE_GAP_REASON_COPY_KEY = {
   consentMissing: 'liveGapReasonConsentMissing',
   runtimeUnavailable: 'liveGapReasonRuntimeUnavailable',
   attachFailed: 'liveGapReasonAttachFailed',
+  gameAccessDenied: 'liveGapReasonGameAccessDenied',
   detached: 'liveGapReasonDetached',
   hookSilent: 'liveGapReasonHookSilent',
 } as const satisfies Record<LiveGapReason, CopyKey>;

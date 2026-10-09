@@ -94,7 +94,7 @@ export function PhasesTop9Table({
                 </DataTable.Cell>
                 <DataTable.Cell className="w-12 px-1" nowrap={false}>
                   <span className={inactiveChrome}>
-                    <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="md" name={hero.name} peek={{ hero: heroPeekData(hero, peekStats(hero)), lang }} />
+                    <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="md" name={hero.name} heroId={hero.sourceId ?? hero.id} peek={{ hero: heroPeekData(hero, peekStats(hero)), lang }} />
                   </span>
                 </DataTable.Cell>
                 <DataTable.Cell className={inactiveChrome}>

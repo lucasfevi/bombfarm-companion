@@ -16,6 +16,7 @@ export type SwitchProps = {
   size?: SwitchSize;
   'aria-label'?: string;
   'aria-labelledby'?: string;
+  'data-testid'?: string;
 };
 
 /**
@@ -37,6 +38,7 @@ export function Switch({
   size = 'default',
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
+  'data-testid': testId,
 }: SwitchProps) {
   return (
     <BaseSwitch.Root
@@ -52,6 +54,7 @@ export function Switch({
       value={value}
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
+      data-testid={testId}
       className={cn(switchRootRecipe({ size }), className)}
     >
       <BaseSwitch.Thumb className={switchThumbClass} />

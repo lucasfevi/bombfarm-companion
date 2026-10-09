@@ -5,6 +5,7 @@ import { phaseLine } from '@bombfarm/domain/phases';
 import type { AccountFidelity, AccountPayload, AccountView } from '@bombfarm/contracts';
 import { buildAccountRoster } from '../account/account-roster';
 import { buildOptimizerInputs, mitigationPctFor, optimizerDepKey } from './optimizer-inputs';
+import { skillTotals } from '../account/skill-totals.test-support';
 
 const NOW = '2026-08-12T00:00:00.000Z';
 
@@ -37,7 +38,7 @@ function basePayload(fidelity: AccountFidelity = resolvedFidelity()): AccountPay
   return {
     account: { phase: 60, max_phase: 88, gold: 100 },
     heroes: [minimalRawHero('h1', 'Alpha')],
-    skills: { totals: { dmg_static: 1.5 } },
+    skills: { totals: skillTotals({ dmg_static: 1.5 }) },
     casa: { active_casa: 1, levels: [10] },
     items: [{ id: 'i1', def_id: 'g1', rarity: 0, level: 1, upgrade: 0 }],
     fidelity,

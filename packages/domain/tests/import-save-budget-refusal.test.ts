@@ -24,6 +24,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
+import { skillTotals } from './helpers/skill-totals';
 
 /** A single clean hero: level 5, nothing unspent, so the budget is exactly 5. */
 function oneHeroSave(statsOverride: Record<string, number> = {}) {
@@ -57,7 +58,7 @@ function oneHeroSave(statsOverride: Record<string, number> = {}) {
     items: [],
     // The positive discriminator requires these three paths present, or the whole file
     // is rejected before any hero is read. Values are irrelevant; presence is the whole test.
-    skills: { refunds: {}, totals: { vagas_campo: 0, bag_tabs_bonus: 0 }, levels: {} },
+    skills: { refunds: {}, totals: skillTotals(), levels: {} },
     casa: { active_casa: 1, cycle_secs: 1000, levels: [1, 0, 0, 0, 0], slots: 1 },
   };
 }

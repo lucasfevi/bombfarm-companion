@@ -1,7 +1,18 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import { MAX_TEST_WORKERS } from '../vitest.workers';
 
+const root = path.dirname(fileURLToPath(import.meta.url));
+
 export default defineConfig({
+  resolve: {
+    // The required-keys guard reads the fingerprints from source, so it needs no build; the one
+    // workspace specifier they import is a self-contained module.
+    alias: {
+      '@bombfarm/domain/save-schema': path.resolve(root, '../packages/domain/src/save-schema.ts'),
+    },
+  },
   test: {
     // Capped here too, so a standalone `pnpm --filter` run is bounded — see vitest.workers.ts.
     maxWorkers: MAX_TEST_WORKERS,

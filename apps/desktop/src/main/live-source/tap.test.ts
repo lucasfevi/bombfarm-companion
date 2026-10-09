@@ -13,6 +13,7 @@ import type {
   Clock,
   HookCandidateResolution,
   HookCandidateSource,
+  ProcessImageRead,
   ProcessImageSource,
   ProcessLister,
   TapTargetProcess,
@@ -83,7 +84,7 @@ class FakeProcessLister implements ProcessLister {
 }
 
 class FakeHookCandidateSource implements HookCandidateSource {
-  resolveResult: HookCandidateResolution = { addresses: [], fromCache: false, buildId: null };
+  resolveResult: HookCandidateResolution = { addresses: [], fromCache: false, buildId: null, accessDenied: false };
   readonly resolveCalls: { pid: number; maxCandidates: number | undefined }[] = [];
   readonly committed: { pid: number; address: number; buildId: string | null }[] = [];
   readonly invalidated: { pid: number; buildId: string | null }[] = [];
@@ -216,7 +217,7 @@ describe('Tap: validation timeout at 20s when the hook never fires', () => {
   it('drops the cached address and rescans on a cache-hit timeout, and never reports live', async () => {
     const { tap, clock, processes, candidates, runtime, events } = createHarness();
     processes.processes = [{ pid: 111, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x1000], fromCache: true, buildId: 'build-cache-hit' };
+    candidates.resolveResult = { addresses: [0x1000], fromCache: true, buildId: 'build-cache-hit', accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -232,7 +233,7 @@ describe('Tap: validation timeout at 20s when the hook never fires', () => {
   it('reports an actionable attachFailed gap on a fresh-scan timeout, without touching the cache', async () => {
     const { tap, clock, processes, candidates } = createHarness();
     processes.processes = [{ pid: 222, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x1000, 0x2000, 0x3000, 0x4000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x1000, 0x2000, 0x3000, 0x4000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -247,7 +248,7 @@ describe('Tap: staleness watch', () => {
   it('stays live when frames arrive once per second, well past the 45s staleness threshold', async () => {
     const { tap, clock, processes, candidates, runtime, events } = createHarness();
     processes.processes = [{ pid: 333, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x5000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x5000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -271,7 +272,7 @@ describe('Tap: staleness watch', () => {
   it('leaves the trusted state and reports hookSilent after 45s of silence, with the process never exiting', async () => {
     const { tap, clock, processes, candidates, runtime } = createHarness();
     processes.processes = [{ pid: 444, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x6000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x6000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -296,6 +297,7 @@ describe('Tap: ambiguous discovery', () => {
       addresses: [0x1000, 0x2000, 0x3000, 0x4000],
       fromCache: false,
       buildId: 'build-ambiguous',
+      accessDenied: false,
     };
 
     tap.start();
@@ -355,7 +357,7 @@ describe('Tap: frame capture receives only the confirmed winner\'s bytes', () =>
     });
 
     processes.processes = [{ pid: 777, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x1000, 0x2000], fromCache: false, buildId: 'build-capture' };
+    candidates.resolveResult = { addresses: [0x1000, 0x2000], fromCache: false, buildId: 'build-capture', accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -390,6 +392,7 @@ describe('Tap: fresh-discovery escalation widens the candidate window', () => {
       addresses: [0x1000, 0x2000, 0x3000, 0x4000],
       fromCache: false,
       buildId: 'build-first',
+      accessDenied: false,
     };
 
     tap.start();
@@ -405,6 +408,7 @@ describe('Tap: fresh-discovery escalation widens the candidate window', () => {
       addresses: [0x1000, 0x2000, 0x3000, 0x4000],
       fromCache: false,
       buildId: 'build-escalate',
+      accessDenied: false,
     };
 
     tap.start();
@@ -424,6 +428,7 @@ describe('Tap: fresh-discovery escalation widens the candidate window', () => {
       addresses: [0x1000, 0x2000, 0x3000, 0x4000],
       fromCache: false,
       buildId: 'build-reset-on-winner',
+      accessDenied: false,
     };
 
     tap.start();
@@ -452,6 +457,7 @@ describe('Tap: fresh-discovery escalation widens the candidate window', () => {
       addresses: [0x1000, 0x2000, 0x3000, 0x4000],
       fromCache: false,
       buildId: 'build-old',
+      accessDenied: false,
     };
 
     tap.start();
@@ -462,6 +468,7 @@ describe('Tap: fresh-discovery escalation widens the candidate window', () => {
       addresses: [0x9000, 0x9001, 0x9002, 0x9003],
       fromCache: false,
       buildId: 'build-new',
+      accessDenied: false,
     };
     await clock.advance(20_000);
     await clock.advance(20_000);
@@ -472,7 +479,7 @@ describe('Tap: fresh-discovery escalation widens the candidate window', () => {
   it('leaves the escalation window untouched when a cache-sourced address fails validation', async () => {
     const { tap, clock, processes, candidates } = createHarness();
     processes.processes = [{ pid: 7_005, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x1000], fromCache: true, buildId: 'build-cache' };
+    candidates.resolveResult = { addresses: [0x1000], fromCache: true, buildId: 'build-cache', accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -491,6 +498,7 @@ describe('Tap: winner confirmation logging', () => {
       addresses: [0x1000, 0x2000],
       fromCache: true,
       buildId: 'build-winner-log',
+      accessDenied: false,
     };
 
     tap.start();
@@ -520,7 +528,7 @@ describe('Tap: winner confirmation logging', () => {
   it('does not log tap.winner_confirmed when validation times out with no winner', async () => {
     const { tap, clock, processes, candidates, infos } = createHarness();
     processes.processes = [{ pid: 777, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x1000], fromCache: true, buildId: 'build-timeout' };
+    candidates.resolveResult = { addresses: [0x1000], fromCache: true, buildId: 'build-timeout', accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -544,7 +552,7 @@ describe('Tap: a throwing attach or install does not kill the poll loop', () => 
       resolveRuntime: () => Promise.resolve(throwingRuntime),
     });
     processes.processes = [{ pid: 4_001, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -572,7 +580,7 @@ describe('Tap: a throwing attach or install does not kill the poll loop', () => 
       resolveRuntime: () => Promise.resolve(runtime),
     });
     processes.processes = [{ pid: 4_003, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -617,7 +625,7 @@ describe('Tap: a throwing attach or install does not kill the poll loop', () => 
       resolveRuntime: () => Promise.resolve(new ThrowingInstallRuntime()),
     });
     processes.processes = [{ pid: 4_002, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -644,7 +652,7 @@ describe('Tap: observed HTTP bodies reach onHttpBody', () => {
   it('forwards a reassembled HTTP body once the response completes, stamped with the tap clock', async () => {
     const { tap, clock, processes, candidates, runtime, httpBodies } = createHarness();
     processes.processes = [{ pid: 6_001, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0xa000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0xa000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -662,7 +670,7 @@ describe('Tap: observed HTTP bodies reach onHttpBody', () => {
   it('never calls onHttpBody for a status-only response with no body', async () => {
     const { tap, clock, processes, candidates, runtime, httpBodies } = createHarness();
     processes.processes = [{ pid: 6_002, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0xb000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0xb000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -679,7 +687,7 @@ describe('Tap: REST-only traffic on a proven hook reports clientNotStreaming, no
   it('stays actionable=false and does not fire hookSilent when only periodic HTTP responses keep arriving', async () => {
     const { tap, clock, processes, candidates, runtime, events } = createHarness();
     processes.processes = [{ pid: 5_001, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x8000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x8000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -703,7 +711,7 @@ describe('Tap: REST-only traffic on a proven hook reports clientNotStreaming, no
   it('still reports hookSilent (actionable) when a proven hook goes completely silent, no traffic of any kind', async () => {
     const { tap, clock, processes, candidates, runtime } = createHarness();
     processes.processes = [{ pid: 5_002, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x9000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x9000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -725,7 +733,7 @@ describe('Tap: discovery backoff after a failed candidate scan', () => {
     class CountingHookCandidateSource implements HookCandidateSource {
       resolve(_pid: number): HookCandidateResolution {
         resolveCalls += 1;
-        return { addresses: [], fromCache: false, buildId: null };
+        return { addresses: [], fromCache: false, buildId: null, accessDenied: false };
       }
       commit(): void {
         /* not exercised */
@@ -763,6 +771,22 @@ describe('Tap: discovery backoff after a failed candidate scan', () => {
     expect(resolveCalls).toBe(1);
   });
 
+  it('reports gameAccessDenied, not attachFailed, when Windows withholds the image — and holds it through the backoff', async () => {
+    const { tap, clock, processes, candidates } = createHarness();
+    processes.processes = [{ pid: 6_101, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [], fromCache: false, buildId: null, accessDenied: true };
+
+    tap.start();
+    await clock.advance(0);
+    expect(tap.getCurrency()).toMatchObject({ kind: 'gap', reason: 'gameAccessDenied', actionable: true });
+
+    await clock.advance(5_000);
+    await clock.advance(5_000);
+
+    expect(candidates.resolveCalls).toHaveLength(1);
+    expect(tap.getCurrency()).toMatchObject({ kind: 'gap', reason: 'gameAccessDenied' });
+  });
+
   it('scans again once a different pid is the attach target', async () => {
     let resolveCalls = 0;
     const seenPids: number[] = [];
@@ -770,7 +794,7 @@ describe('Tap: discovery backoff after a failed candidate scan', () => {
       resolve(pid: number): HookCandidateResolution {
         resolveCalls += 1;
         seenPids.push(pid);
-        return { addresses: [], fromCache: false, buildId: null };
+        return { addresses: [], fromCache: false, buildId: null, accessDenied: false };
       }
       commit(): void {
         /* not exercised */
@@ -865,7 +889,7 @@ describe('Tap: consent gate', () => {
   it('begins probing once consent is granted, without a restart', async () => {
     const { tap, clock, processes, candidates, runtime, setConsent } = createHarness({ consent: false });
     processes.processes = [{ pid: 9_001, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -940,7 +964,7 @@ describe('Tap: target selection', () => {
       { pid: 999, name: PROCESS_NAME },
       { pid: 100, name: PROCESS_NAME },
     ];
-    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -965,7 +989,7 @@ describe('Tap: process lifecycle', () => {
 
   it('attaches once the process appears after the tap has already started, without a restart', async () => {
     const { tap, clock, processes, candidates, runtime } = createHarness();
-    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -980,7 +1004,7 @@ describe('Tap: process lifecycle', () => {
   it('tears down cleanly and reports a non-actionable gap when the process exits while attached', async () => {
     const { tap, clock, processes, candidates, runtime } = createHarness();
     processes.processes = [{ pid: 1_111, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -1021,9 +1045,12 @@ function createHookCacheLogSpy(): { log: HookCacheLogPort; warnings: Record<stri
 
 class FakeImageSource implements ProcessImageSource {
   readonly images = new Map<number, Buffer>();
+  readonly denied = new Set<number>();
 
-  read(pid: number): Buffer | null {
-    return this.images.get(pid) ?? null;
+  read(pid: number): ProcessImageRead {
+    if (this.denied.has(pid)) return { kind: 'accessDenied' };
+    const image = this.images.get(pid);
+    return image ? { kind: 'read', image } : { kind: 'unreadable' };
   }
 }
 
@@ -1063,7 +1090,7 @@ describe('createHookCandidateSource: resolve()', () => {
       result = source.resolve(2_020);
     }).not.toThrow();
 
-    expect(result).toEqual({ addresses: [], fromCache: false, buildId: null });
+    expect(result).toEqual({ addresses: [], fromCache: false, buildId: null, accessDenied: false });
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toMatchObject({
       scope: 'live-source',
@@ -1081,7 +1108,23 @@ describe('createHookCandidateSource: resolve()', () => {
     );
     const source = createHookCandidateSource({ cacheDir: dir, image });
 
-    expect(source.resolve(2_121)).toEqual({ addresses: [], fromCache: false, buildId: '11111111-2000-1000' });
+    expect(source.resolve(2_121)).toEqual({ addresses: [], fromCache: false, buildId: '11111111-2000-1000', accessDenied: false });
+  });
+});
+
+describe('createHookCandidateSource: an image Windows will not hand over', () => {
+  it('says so, so the tap can name it apart from a scan that found nothing', () => {
+    const image = new FakeImageSource();
+    image.denied.add(2_222);
+    const source = createHookCandidateSource({ cacheDir: tempCacheDir(), image });
+
+    expect(source.resolve(2_222)).toEqual({ addresses: [], fromCache: false, buildId: null, accessDenied: true });
+  });
+
+  it('does not claim it for a process whose image simply could not be read', () => {
+    const source = createHookCandidateSource({ cacheDir: tempCacheDir(), image: new FakeImageSource() });
+
+    expect(source.resolve(2_323)).toEqual({ addresses: [], fromCache: false, buildId: null, accessDenied: false });
   });
 });
 
@@ -1128,7 +1171,7 @@ describe('Tap: teardown', () => {
   it('resolves only once every interceptor and session is detached, and stops future attach attempts', async () => {
     const { tap, clock, processes, candidates, runtime } = createHarness();
     processes.processes = [{ pid: 1_212, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -1152,7 +1195,7 @@ describe('Tap: teardown', () => {
   it('does not resolve until the session detach promise settles', async () => {
     const { tap, clock, processes, candidates, runtime } = createHarness();
     processes.processes = [{ pid: 1_213, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -1185,7 +1228,7 @@ describe('Tap: teardown', () => {
   it('abandons a session detach that never settles once the timeout elapses, and still resolves', async () => {
     const { tap, clock, processes, candidates, runtime, infos } = createHarness();
     processes.processes = [{ pid: 1_214, name: PROCESS_NAME }];
-    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
 
     tap.start();
     await clock.advance(0);
@@ -1221,7 +1264,7 @@ describe('Tap: observed frames reach onObservedFrame', () => {
   async function attachedTap(options: HarnessOptions, pid: number, address: number) {
     const harness = createHarness(options);
     harness.processes.processes = [{ pid, name: PROCESS_NAME }];
-    harness.candidates.resolveResult = { addresses: [address], fromCache: false, buildId: null };
+    harness.candidates.resolveResult = { addresses: [address], fromCache: false, buildId: null, accessDenied: false };
     harness.tap.start();
     await harness.clock.advance(0);
     const interceptor = harness.runtime.sessions[0]?.interceptorsByAddress.get(address);
@@ -1281,7 +1324,7 @@ describe('Tap: a throwing body consumer cannot stop the tap reading', () => {
   async function attachedTap(options: HarnessOptions, pid: number, address: number) {
     const harness = createHarness(options);
     harness.processes.processes = [{ pid, name: PROCESS_NAME }];
-    harness.candidates.resolveResult = { addresses: [address], fromCache: false, buildId: null };
+    harness.candidates.resolveResult = { addresses: [address], fromCache: false, buildId: null, accessDenied: false };
     harness.tap.start();
     await harness.clock.advance(0);
     const interceptor = harness.runtime.sessions[0]?.interceptorsByAddress.get(address);
@@ -1338,7 +1381,7 @@ describe('Tap: a throwing body consumer cannot stop the tap reading', () => {
 });
 
 describe('Tap: an empty hook discovery backs off instead of giving up on the pid', () => {
-  const EMPTY: HookCandidateResolution = { addresses: [], fromCache: false, buildId: 'build-empty' };
+  const EMPTY: HookCandidateResolution = { addresses: [], fromCache: false, buildId: 'build-empty', accessDenied: false };
 
   it('stands down for the backoff, then rescans the same pid with no restart', async () => {
     const { tap, clock, processes, candidates } = createHarness();
@@ -1368,7 +1411,7 @@ describe('Tap: an empty hook discovery backs off instead of giving up on the pid
     await clock.advance(0);
     expect(runtime.sessions).toHaveLength(0);
 
-    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: 'build-empty' };
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: 'build-empty', accessDenied: false };
     await clock.advance(16_000);
 
     expect(runtime.sessions).toHaveLength(1);
@@ -1404,6 +1447,7 @@ describe('Tap: an empty hook discovery backs off instead of giving up on the pid
       event: 'tap.hook_discovery_empty',
       pid: 4_242,
       buildId: 'build-empty',
+      accessDenied: false,
       failures: 1,
       retryInMs: 15_000,
     });

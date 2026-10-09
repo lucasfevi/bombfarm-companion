@@ -106,6 +106,54 @@ describe('readSection — the happy path, per route, over the committed fixture'
   }
 });
 
+describe('readSection — a game update that removes keys nothing reads', () => {
+  it('resolves ok and names the absent unread key, instead of drifting', async () => {
+    const { rune_stash, ...body } = bodyFor('/state');
+    expect(rune_stash).toBeDefined();
+    const gate = createPacingGate(createTestClock());
+    const transport = fixedResponseTransport({ status: 200, body: JSON.stringify(body) });
+
+    const outcome = await readSection(session, transport, gate, routeFor('/state'));
+
+    expect(outcome).toEqual({ kind: 'ok', body, absentUnreadKeys: ['account.rune_stash'] });
+  });
+
+  it('drifts when a key the app reads is removed, carrying the whole body', async () => {
+    const { gold, ...body } = bodyFor('/state');
+    expect(gold).toBeDefined();
+    const gate = createPacingGate(createTestClock());
+    const transport = fixedResponseTransport({ status: 200, body: JSON.stringify(body) });
+
+    const outcome = await readSection(session, transport, gate, routeFor('/state'));
+
+    expect(outcome).toEqual({
+      kind: 'drift',
+      body,
+      missingKeys: ['account.gold'],
+      addedKeys: [],
+      absentUnreadKeys: [],
+    });
+  });
+
+  it('keeps every hero when each lost an unread key, summarising one absence per hero', async () => {
+    const roster = bodyFor('/roster');
+    const heroes = (roster.heroes as Record<string, unknown>[]).map(({ in_market, ...hero }) => {
+      expect(in_market).toBeDefined();
+      return hero;
+    });
+    const gate = createPacingGate(createTestClock());
+    const transport = fixedResponseTransport({ status: 200, body: JSON.stringify({ heroes }) });
+
+    const outcome = await readSection(session, transport, gate, routeFor('/roster'));
+
+    expect(outcome.kind).toBe('ok');
+    if (outcome.kind === 'ok') {
+      expect(outcome.body).toEqual(heroes);
+      expect(outcome.absentUnreadKeys).toHaveLength(heroes.length);
+    }
+  });
+});
+
 describe('readSection — /roster with zero heroes is empty_roster, not an empty-but-valid section (spec edge case)', () => {
   it('produces failed/empty_roster', async () => {
     const rosterRoute = routeFor('/roster');
@@ -127,7 +175,7 @@ describe('readSection — /rotation.heroes[] empty is not a failure, unlike /ros
 
     const outcome = await readSection(session, transport, gate, rotationRoute);
 
-    expect(outcome).toEqual({ kind: 'ok', body });
+    expect(outcome).toEqual({ kind: 'ok', body, absentUnreadKeys: [] });
   });
 });
 
@@ -140,7 +188,13 @@ describe('readSection — a shape-broken but still-usable /rotation body drifts 
 
     const outcome = await readSection(session, transport, gate, rotationRoute);
 
-    expect(outcome).toEqual({ kind: 'drift', body, missingKeys: [], addedKeys: ['casa.seasonal_flag'] });
+    expect(outcome).toEqual({
+      kind: 'drift',
+      body,
+      missingKeys: [],
+      addedKeys: ['casa.seasonal_flag'],
+      absentUnreadKeys: [],
+    });
   });
 
   it('a missing top-level key still drifts (not fails) as long as the projected body is itself an acceptable shape', async () => {

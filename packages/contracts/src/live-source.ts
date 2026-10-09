@@ -185,6 +185,9 @@ export type LiveEvent =
  * - `runtimeUnavailable` — the instrumentation runtime could not be loaded: no build for this
  *   platform, or it was removed from disk.
  * - `attachFailed` — attach was attempted and failed.
+ * - `gameAccessDenied` — Windows refused the app access to the game process, which is what a game
+ *   (or a Steam) running as administrator looks like from an app that is not. Only the player can
+ *   fix it, so it is named apart from `attachFailed` rather than folded into it.
  * - `detached` — the app was attached and the target went away.
  * - `hookSilent` — the read path proved itself with real traffic and then went quiet, without the
  *   target process ever exiting.
@@ -195,6 +198,7 @@ export type LiveGapReason =
   | 'consentMissing'
   | 'runtimeUnavailable'
   | 'attachFailed'
+  | 'gameAccessDenied'
   | 'detached'
   | 'hookSilent';
 

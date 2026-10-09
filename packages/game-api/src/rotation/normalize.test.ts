@@ -23,13 +23,13 @@ const heroesChild = rotationFingerprint.level.children?.['heroes'];
 if (heroesChild?.kind !== 'array') {
   throw new Error('rotation fingerprint "heroes" child is no longer declared as an array — update this sweep');
 }
-const heroKeys = heroesChild.element.keys;
+const heroKeys = [...heroesChild.element.keys, ...(heroesChild.element.unread ?? [])];
 
 const casaChild = rotationFingerprint.level.children?.['casa'];
 if (casaChild?.kind !== 'object') {
   throw new Error('rotation fingerprint "casa" child is no longer declared as an object — update this sweep');
 }
-const houseKeys = casaChild.level.keys;
+const houseKeys = [...casaChild.level.keys, ...(casaChild.level.unread ?? [])];
 
 // --- Mutators over cloned fixture JSON ---------------------------------------------------------
 

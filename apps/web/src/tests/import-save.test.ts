@@ -339,11 +339,11 @@ describe('parseSaveFile', () => {
     expect(account.tree!.luckFlatPct).toBeCloseTo(3.94647275, 5);
   });
 
-  it('edge case: luck_add absent from skills.totals defaults luckFlatPct to 0', () => {
+  it('edge case: luck_add absent from skills.totals makes the tree unavailable instead of defaulting luckFlatPct', () => {
     const save = baseSave();
     delete (save.skills.totals as { luck_add?: number }).luck_add;
     const { account } = parseSaveFile(save, []);
-    expect(account.tree!.luckFlatPct).toBe(0);
+    expect(account.tree).toBeNull();
   });
 
   it('returns nulls for account data when casa/skills are absent (payload entry point — a FILE lacking skills entirely is now rejected upstream by the positive-discriminator gate, so this is parseAccountPayload\'s territory, not parseSaveFile\'s)', () => {

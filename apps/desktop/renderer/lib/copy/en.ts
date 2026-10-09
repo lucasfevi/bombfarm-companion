@@ -226,6 +226,38 @@ export const en = {
   // pre-rendered English. The raw message is kept as diagnostic data only.
   errorAccountReadFailedDescription: 'Try again after the game finishes loading, or restart the app.',
 
+  // screenCrash* — the stand-in for a tab whose render threw
+  screenCrashTitle: "This screen couldn't load",
+  screenCrashInfoLabel: 'What happened',
+  screenCrashInfo: 'The rest of the app still works. Switch tabs or try again; the details were saved to the log file.',
+  screenCrashRetry: 'Try again',
+  // dataNotice* / heroFlag* / dataField* — what the app says when the game stops sending a field it reads
+  dataNoticeInfoLabel: 'What this means',
+  dataNoticeSkillTreeStale: 'The game changed how it sends your skill tree. Showing the last one we read ({age}).',
+  dataNoticeSkillTreeStaleInfo:
+    'The Farm board, the Optimizer and the hero sheets use that saved tree, so their numbers can be out of date until the app is updated.',
+  dataNoticeSkillTreeWithheld: "The game changed how it sends your skill tree, and the app can't read it until it is updated.",
+  dataNoticeSkillTreeWithheldInfo:
+    'The screens that need the skill tree show nothing rather than a guess, and come back once the app is updated.',
+  dataNoticeGearOwnerUnknown: 'Some gear is left out because the game stopped saying who wears it.',
+  dataNoticeGearOwnerUnknownInfo:
+    'Those pieces are not counted on any hero and are not offered to the Optimizer until the app is updated.',
+  dataNoticeGearFieldsAbsent: 'Some spare gear is left out of the Optimizer.',
+  dataNoticeGearFieldsAbsentInfo:
+    'The game stopped sending part of what those pieces are made of, so they are not offered until the app is updated.',
+  heroFlagLabel: 'Left out of calculations',
+  heroFlagFieldsTip:
+    "The game stopped sending this hero's {fields}, so it is left out of calculations until the app is updated.",
+  heroFlagGearTip:
+    'The game stopped sending the {fields} of a piece this hero wears, so it is left out of calculations until the app is updated.',
+  dataFieldLevel: 'level',
+  dataFieldStars: 'stars',
+  dataFieldStatPoints: 'unspent stat points',
+  dataFieldBirthStats: 'birth stats',
+  dataFieldStats: 'stats',
+  dataFieldRarity: 'rarity',
+  dataFieldForgeLevel: 'forge level',
+
   // live* — the Live screen: nav label and the top-of-panel freshness status line
   liveNavLabel: 'Live',
 
@@ -259,6 +291,8 @@ export const en = {
     'The game is open, but it is not sending anything right now — a menu, an idle screen, or being logged out. The app keeps trying on its own.',
   liveGapReasonNeverAttached: 'The app has not connected to the game yet this session. It keeps trying on its own.',
   liveGapReasonAttachFailed: 'The app tried to connect to the game and could not. It keeps trying on its own.',
+  liveGapReasonGameAccessDenied:
+    'Windows blocked the app from reading the game. This usually means the game or Steam is running as administrator — start it normally, or run this app as administrator too, then restart the game.',
   liveGapReasonDetached: 'The app was connected, but the game closed. It keeps trying on its own.',
   liveGapReasonHookSilent:
     'The connection went quiet on its own, even though the game is still open. The app keeps trying.',

@@ -19,6 +19,7 @@ import {
   type StepFacts,
 } from './apply-panel-model';
 import type { RowSkipReason } from './apply-labels';
+import { skillTotals } from '../account/skill-totals.test-support';
 
 const NOW = '2026-09-20T00:00:00.000Z';
 
@@ -94,7 +95,7 @@ function basePayload(overrides: Partial<AccountPayload> = {}): AccountPayload {
       // change at all — attack is the axis with a real non-zero base to invert against.
       rawHero('h-changed', 'Changed Hero', 20, { ...ZERO_PTS(), attack: 2 }),
     ],
-    skills: { totals: {} },
+    skills: { totals: skillTotals() },
     casa: { active_casa: 1, levels: [10] },
     items: [
       // i-move: the plan expects it on h1, but it is actually worn by h9 — "one piece moved".

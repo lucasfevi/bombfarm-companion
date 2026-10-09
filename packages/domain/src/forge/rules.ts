@@ -9,6 +9,9 @@ export const FORGE_CRITICAL: readonly number[] = forgeWiki.critical;
 export const FORGE_FAIL_LEVEL: readonly number[] = forgeWiki.fail_level;
 export const FORGE_ITEM_LEVELS: readonly number[] = forgeWiki.niveis;
 
+/** Rolls up to this target cost gold only; the wiki's essence price for them is not charged by the game. */
+const FORGE_GOLD_ONLY_THROUGH = 9;
+
 /** The miss count past which every roll on the ladder is certain, so state beyond it is the same. */
 export const FORGE_PITY_CAP: number = Math.ceil((1 - Math.min(...forgeWiki.chance)) / forgeWiki.pity_step - 1e-9);
 
@@ -112,10 +115,11 @@ export function forgeRollCost(level: number, rarity: number, target: number): nu
   return costRow(level, rarity).custos[target - 1];
 }
 
-/** Essence spent on one roll for `target`, whether it lands or not. */
+/** Essence spent on one roll for `target`, whether it lands or not; none through +9. */
 export function forgeRollEssence(level: number, rarity: number, target: number): number {
   assertTarget(target);
-  return costRow(level, rarity).essencia[target - 1];
+  const row = costRow(level, rarity);
+  return target <= FORGE_GOLD_ONLY_THROUGH ? 0 : row.essencia[target - 1];
 }
 
 /** The scroll price for `target` (+12…+15), scaled from the published level-10 common price. */

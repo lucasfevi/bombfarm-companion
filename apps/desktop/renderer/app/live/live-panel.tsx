@@ -114,7 +114,7 @@ export function LivePanel({
           onReset={onResetEarnings}
         />
         <MapPanel map={map} />
-        <DamagePanel damage={damage} heroFacts={heroFacts} fieldSize={fieldSize} className="col-span-2 lg:col-span-1" />
+        <DamagePanel damage={damage} heroFacts={heroFacts} peekFor={peekFor} fieldSize={fieldSize} className="col-span-2 lg:col-span-1" />
         <Panel data-testid="live-heroes" className="col-span-2 lg:col-span-1">
           <PanelHeader title={t.liveHeroesTitle} />
           <div className="flex flex-col gap-3">

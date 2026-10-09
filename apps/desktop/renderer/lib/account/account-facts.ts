@@ -15,7 +15,6 @@ import { resolveHouseRestSeconds } from '@bombfarm/domain/model';
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { heroPeekData, type HeroPeekData, type HeroPeekStatsResolver } from '@bombfarm/game-art';
-import { isTrustworthySection } from '@bombfarm/contracts';
 import type {
   AccountPayload,
   AccountSection,
@@ -27,11 +26,11 @@ import { rosterHeroPeekStats, type AccountRoster } from './account-roster';
 
 /**
  * The withhold gate is per-section usability, never the account-wide fidelity grade. A
- * `degraded` section is usable only when `isTrustworthySection` says its body lost nothing.
+ * `degraded` section is still the current read: a field the game stopped sending is handled by
+ * the parser that reads it, not by withholding everything the section carries.
  */
 export function isSectionUsable(fidelity: SectionFidelity): boolean {
-  if (fidelity.status === 'degraded') return isTrustworthySection(fidelity);
-  return fidelity.status === 'resolved' || fidelity.status === 'stale';
+  return fidelity.status !== 'missing';
 }
 
 export function sectionFidelityOf(
@@ -134,9 +133,9 @@ function readable(payload: AccountPayload, section: AccountSection): boolean {
  * supply it.
  *
  * The roster is dropped rather than filtered, because `parseAccountPayload` rejects the WHOLE
- * payload when a hero lacks birth stats or the list is not an array, and a reject empties the
- * account block it returns. Nothing the three panels show is read off a hero, so a roster problem
- * must not be able to take the House and the skill tree down with it.
+ * payload when the hero list is not an array, and a reject empties the account block it returns.
+ * Nothing the three panels show is read off a hero, so a roster problem must not be able to take
+ * the House and the skill tree down with it.
  */
 function accountBlockOf(payload: AccountPayload): AccountBlock {
   return parseAccountPayload(
@@ -257,7 +256,7 @@ function priceableHeroesOf(
 }
 
 function recordsByIdOf(roster: AccountRoster | null): ReadonlyMap<string, HeroRecord> {
-  return new Map((roster?.heroes ?? []).map((hero) => [hero.id, hero]));
+  return new Map((roster?.heroes ?? []).filter((hero) => hero.birth !== undefined).map((hero) => [hero.id, hero]));
 }
 
 function skinsWornOf(rawHeroes: readonly unknown[]): number[] {

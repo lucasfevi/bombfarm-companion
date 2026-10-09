@@ -39,6 +39,7 @@
       "id": "1002",
       "name": "Lorne",
       "level": 11,
+      "stars": 0,
       "rank": "C",
       "rarity": 1,
       "abilities": [
@@ -136,7 +137,10 @@
       "speed_add": 0.027186897,
       "team_dmg_add": 0.652685185,
       "vagas_campo": 0,
-      "bag_tabs_bonus": 0
+      "bag_tabs_bonus": 0,
+      "coin_add": 0,
+      "luck_add": 0,
+      "xp_mult": 1
     }
   }
 }

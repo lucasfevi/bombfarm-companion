@@ -114,9 +114,10 @@ describe('BooksPanel', () => {
     expect(cellOf(gold, 'collections-book-left')).toBe('+18.26%');
   });
 
-  it('draws the book’s weapon at common rarity as its icon', () => {
+  it('draws the book’s weapon at its highest unbroken completed rarity', () => {
     expect(rowOf(render(), 'ember')).toContain('/items/lvl10_weapon_ember.png');
-    expect(rowOf(render(), 'ember')).toContain('slot_background_common');
+    expect(rowOf(render(), 'ember')).toContain('slot_background_mythic');
+    expect(rowOf(render(), 'gold')).toContain('slot_background_uncommon');
   });
 
   it('draws the three-effect book with three bonuses, three figures to each column', () => {

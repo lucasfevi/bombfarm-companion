@@ -374,7 +374,7 @@ export function BookDetailPanel({
       <CloseCorner label={t.collectionsDetailClose} onClose={onClose} />
       <div ref={band}>
         <div className={cn(panelHClass, 'items-center', 'justify-start', 'pr-8')}>
-          <ItemIcon item={{ defId: weaponDefId(book), rarityIdx: 0, level: book.level, upgrade: 0 }} size="xs" showLevel={false} />
+          <ItemIcon item={{ defId: weaponDefId(book), rarityIdx: book.completedRarity ?? 0, level: book.level, upgrade: 0 }} size="xs" showLevel={false} className={cn(book.completedRarity === null && 'opacity-50 grayscale')} />
           <h2 ref={heading} tabIndex={-1} className={cn(panelTitleClass, 'outline-none')} data-testid="collections-detail-heading">
             {setName(book.code, lang)}
           </h2>

@@ -79,6 +79,7 @@ export const ScopeHeroCard = memo(function ScopeHeroCard({
             rarityIdx={rarIdx}
             size="md"
             name={hero.name}
+            heroId={hero.sourceId ?? hero.id}
             peek={overlay ? undefined : { hero: heroPeekData(hero, peekStats(hero)), lang }}
           />
         </div>

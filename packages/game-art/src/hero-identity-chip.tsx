@@ -54,6 +54,7 @@ export function HeroIdentityChip({
       variant={variant}
       nameTestId={nameTestId}
       peek={heroPeekData(hero, peekStats(hero))}
+      heroId={hero.sourceId ?? hero.id}
     />
   );
 }

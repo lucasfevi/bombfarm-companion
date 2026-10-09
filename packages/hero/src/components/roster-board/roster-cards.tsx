@@ -249,7 +249,7 @@ function CardHeader({ row, copy, lang }: { row: RosterHeroRow; copy: ShowcaseCop
   const stars = Math.max(0, Math.min(3, Math.round(hero.stars)));
   return (
     <div className="flex min-w-0 items-center gap-2.5 pr-8">
-      <HeroAvatar skin={hero.skin ?? 0} rarityIdx={Math.max(0, rarityIdx)} size="md" name={hero.name} />
+      <HeroAvatar skin={hero.skin ?? 0} rarityIdx={Math.max(0, rarityIdx)} size="md" name={hero.name} heroId={hero.sourceId ?? hero.id} />
       <div className="min-w-0">
         <p className="m-0 flex min-w-0 items-baseline gap-1.5">
           <span className="truncate text-[15px] leading-tight font-bold text-ink">{hero.name}</span>

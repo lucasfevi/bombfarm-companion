@@ -144,7 +144,7 @@ describe('mergeStoredIntoLive', () => {
     });
   });
 
-  it('live degraded with a missing key defers to a usable stored row — an incomplete body is not preferred, reported stale', () => {
+  it('live degraded with a missing key is served over a usable stored row, still reported degraded with the key it lost', () => {
     const degradedFidelity: SectionFidelity = {
       status: 'degraded',
       capturedAt: 'live-t',
@@ -162,15 +162,15 @@ describe('mergeStoredIntoLive', () => {
 
     const view = mergeStoredIntoLive(live, restored, { gameRunning: true, binding: 'node:sqlite' });
 
-    expect(view.payload.fidelity?.casa).toEqual({ status: 'stale', capturedAt: 'stored-t' });
+    expect(view.payload.fidelity?.casa).toEqual(degradedFidelity);
     expect((view.payload as unknown as Record<string, unknown>).casa).toEqual({
-      field_size: 3,
+      field_size: 5,
       heroes: [],
-      casa: { active_casa: 0 },
+      casa: { active_casa: 1 },
     });
   });
 
-  it('live degraded with a missing key and no usable stored row takes the live body anyway, still reported degraded', () => {
+  it('live degraded with a missing key and no usable stored row takes the live body, still reported degraded', () => {
     const degradedFidelity: SectionFidelity = {
       status: 'degraded',
       capturedAt: 'live-t',
@@ -191,6 +191,27 @@ describe('mergeStoredIntoLive', () => {
       heroes: [],
       casa: { active_casa: 1 },
     });
+  });
+
+  it.each([
+    ['heroes', { id: 'not-a-list' }],
+    ['items', 'not-a-list'],
+    ['account', ['not', 'an', 'object']],
+    ['skills', null],
+    ['casa', 7],
+  ] as const)('live degraded %s whose body is the wrong kind of container falls back to the stored row', (section, unusable) => {
+    const degradedFidelity: SectionFidelity = { status: 'degraded', capturedAt: 'live-t', missingKeys: [section], addedKeys: [] };
+    const live = {
+      [section]: unusable,
+      fidelity: { account: MISSING_LIVE, heroes: MISSING_LIVE, skills: MISSING_LIVE, casa: MISSING_LIVE, items: MISSING_LIVE, [section]: degradedFidelity },
+    } as unknown as AccountPayload;
+    const storedBody = section === 'heroes' || section === 'items' ? [{ id: 'old' }] : { old: true };
+    const restored = restoredAccount({ [section]: storedBody }, storedFidelity({ [section]: { status: 'stale', capturedAt: 'stored-t' } }));
+
+    const view = mergeStoredIntoLive(live, restored, { gameRunning: true, binding: null });
+
+    expect(view.payload.fidelity?.[section]).toMatchObject({ status: 'stale', capturedAt: 'stored-t' });
+    expect((view.payload as unknown as Record<string, unknown>)[section]).toEqual(storedBody);
   });
 
   it('live degraded but body absent falls through to the stored value, same as live resolved but body absent', () => {
@@ -393,14 +414,6 @@ describe('createAccountStore().commit()', () => {
     store.close();
   });
 
-  /**
-   * This test used to be named for a persist-then-restore round trip it never performed. A
-   * drifted section is deliberately not written (`persist` allow-lists `resolved` alone), so
-   * restore returns nothing for it and the merge serves the live body — which is what actually
-   * makes the drifted body reach the view. Named as a round trip, it read as the proof that
-   * degraded sections survive storage, and it passed with `persist()` deleted. The pass-through
-   * is asserted here; the non-persistence it depends on is pinned in the test below.
-   */
   it('a drifted casa body reaches the committed view from the live payload: its body, missingKeys and addedKeys all survive the merge', () => {
     const open = openTestAccountDb('node:sqlite');
     const store = createAccountStore(open);
@@ -435,12 +448,6 @@ describe('createAccountStore().commit()', () => {
     store.close();
   });
 
-  /**
-   * The other half of the test above, and the reason it cannot be read as a storage proof:
-   * `persist` writes `resolved` sections alone, so a drifted body is never stored and a later
-   * restore cannot serve it. Asserted rather than assumed — without this, deleting `persist()`
-   * changes no test outcome anywhere in this file.
-   */
   it('a drifted section that lost no key is written and served stale later, so a game update that only adds a field does not cost the last-known-good', () => {
     const open = openTestAccountDb('node:sqlite');
     const store = createAccountStore(open);
@@ -465,12 +472,18 @@ describe('createAccountStore().commit()', () => {
     store.close();
   });
 
-  it('a drifted section that lost a key is still not written, so a body that may carry a substituted default never becomes the fallback', () => {
+  it('a drifted section that lost a key replaces the older stored row, because the game\'s current answer is the truth', () => {
     const open = openTestAccountDb('node:sqlite');
     const store = createAccountStore(open);
+    const older = { field_size: 3, heroes: [], casa: { active_casa: 1 }, rescues_left: 1, rescues_max: 3 };
+    const current = { field_size: 5, heroes: [], casa: { active_casa: 2 }, rescues_left: 2 };
 
+    store.persist({
+      casa: older,
+      fidelity: { account: MISSING_LIVE, heroes: MISSING_LIVE, skills: MISSING_LIVE, casa: RESOLVED('t0'), items: MISSING_LIVE },
+    });
     const written = store.persist({
-      casa: { field_size: 5, heroes: [], casa: { active_casa: 1 }, rescues_left: 2, rescues_max: 3 },
+      casa: current,
       fidelity: {
         account: MISSING_LIVE,
         heroes: MISSING_LIVE,
@@ -480,10 +493,56 @@ describe('createAccountStore().commit()', () => {
       },
     });
 
-    expect(written.written).toEqual([]);
+    expect(written.written).toEqual(['casa']);
+    expect((store.restore().payload as unknown as Record<string, unknown>).casa).toEqual(current);
+    store.close();
+  });
 
-    const restored = store.restore();
-    expect((restored.payload as unknown as Record<string, unknown>).casa).toBeUndefined();
+  it('a drifted section whose body is the wrong kind of container is not written over a good stored row', () => {
+    const open = openTestAccountDb('node:sqlite');
+    const store = createAccountStore(open);
+
+    const written = store.persist({
+      heroes: { id: 'not-a-list' } as unknown as unknown[],
+      fidelity: {
+        account: MISSING_LIVE,
+        heroes: { status: 'degraded', capturedAt: 't1', missingKeys: ['heroes'], addedKeys: [] },
+        skills: MISSING_LIVE,
+        casa: MISSING_LIVE,
+        items: MISSING_LIVE,
+      },
+    });
+
+    expect(written.written).toEqual([]);
+    store.close();
+  });
+
+  it('a body that lost a key the app reads is served live by the next commit, not the stored row from before the game update', () => {
+    const open = openTestAccountDb('node:sqlite');
+    const store = createAccountStore(open);
+    const before = [{ id: 'h1', level: 10 }];
+    const after = [{ id: 'h1', level: 11 }];
+
+    store.commit(
+      { heroes: before, fidelity: { account: MISSING_LIVE, heroes: RESOLVED('t0'), skills: MISSING_LIVE, casa: MISSING_LIVE, items: MISSING_LIVE } },
+      { gameRunning: true },
+    );
+    const view = store.commit(
+      {
+        heroes: after,
+        fidelity: {
+          account: MISSING_LIVE,
+          heroes: { status: 'degraded', capturedAt: 't1', missingKeys: ['heroes[0].stars'], addedKeys: [] },
+          skills: MISSING_LIVE,
+          casa: MISSING_LIVE,
+          items: MISSING_LIVE,
+        },
+      },
+      { gameRunning: true },
+    );
+
+    expect((view.payload as unknown as Record<string, unknown>).heroes).toEqual(after);
+    expect(view.payload.fidelity?.heroes).toMatchObject({ status: 'degraded', missingKeys: ['heroes[0].stars'] });
     store.close();
   });
 });

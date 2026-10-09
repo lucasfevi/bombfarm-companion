@@ -15,6 +15,9 @@ export function minimalHero(id: string, name = 'Hero') {
   return {
     id,
     name,
+    level: 1,
+    stars: 0,
+    stat_points_available: 1,
     birth_stats: MINIMAL_BIRTH,
     stats: MINIMAL_STATS,
   };

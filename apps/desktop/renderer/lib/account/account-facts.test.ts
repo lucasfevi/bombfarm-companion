@@ -22,7 +22,7 @@ function rawHero(id: string, overrides: Record<string, unknown> = {}) {
 }
 
 function rawItem(id: string, overrides: Record<string, unknown> = {}) {
-  return { id, def_id: 'espada_ferro', rarity: 2, category: 0, tradable: true, ...overrides };
+  return { id, def_id: 'espada_ferro', rarity: 2, category: 0, tradable: true, equipped_on: null, ...overrides };
 }
 
 function basePayload(fidelity: AccountFidelity = resolvedFidelity()): AccountPayload {
@@ -151,14 +151,13 @@ describe('each part withholds on its own sections, and on no others', () => {
     expect(factsOf(payload).house).not.toBeNull();
   });
 
-  it('a degraded section that lost a key withholds, even though its body is right there', () => {
+  it('a degraded section that lost a key is still read, because its body is the current one', () => {
     const payload = basePayload(
       resolvedFidelity({
         skills: { status: 'degraded', capturedAt: NOW, missingKeys: ['totals.geo_mult'], addedKeys: [] },
       }),
     );
-    expect(payload.skills).toBeDefined();
-    expect(factsOf(payload).tree).toBeNull();
+    expect(factsOf(payload).tree).not.toBeNull();
   });
 
   it('a degraded section that only gained a key is still read', () => {
@@ -296,16 +295,16 @@ describe('the sellable flag the game itself sends', () => {
     expect(nim?.peek).toMatchObject({ name: 'Nim', rarityIdx: 2 });
   });
 
-  it('leaves the card out when the parser rejected the roster, and still prices every row', () => {
+  it('leaves the card out of a hero the roster could not build, and still prices every row', () => {
     const payload: AccountPayload = {
       ...basePayload(),
       heroes: [wholeRawHero('h1', { marketable: true }), rawHero('h2', { marketable: true })],
     };
-    expect(buildAccountRoster(viewOf(payload))).toBeNull();
 
-    const heroes = factsOf(payload).holdings.heroes ?? [];
-    expect(heroes.map((hero) => hero.marketable)).toEqual([true, true]);
-    for (const hero of heroes) expect(hero).not.toHaveProperty('peek');
+    const [whole, unbuilt] = factsOf(payload).holdings.heroes ?? [];
+    expect(whole).toHaveProperty('peek');
+    expect(unbuilt).not.toHaveProperty('peek');
+    expect([whole?.marketable, unbuilt?.marketable]).toEqual([true, true]);
   });
 
   it('reads every worn skin, leaving the collapsing to the shared computation', () => {
@@ -344,7 +343,7 @@ describe('the per-section reads the farm board shares with this screen', () => {
     ['resolved', { status: 'resolved', capturedAt: NOW }, true],
     ['stale', { status: 'stale', capturedAt: NOW }, true],
     ['missing', { status: 'missing' }, false],
-    ['degraded, missing key', { status: 'degraded', capturedAt: NOW, missingKeys: ['gold'], addedKeys: [] }, false],
+    ['degraded, missing key', { status: 'degraded', capturedAt: NOW, missingKeys: ['gold'], addedKeys: [] }, true],
     ['degraded, added key only', { status: 'degraded', capturedAt: NOW, missingKeys: [], addedKeys: ['gold'] }, true],
   ] as const)('%s is usable=%s', (_label, fidelity, expected) => {
     expect(isSectionUsable(fidelity)).toBe(expected);

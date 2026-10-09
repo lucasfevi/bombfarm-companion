@@ -7,7 +7,7 @@ import type {
   SectionOutcome,
   SessionToken,
 } from '@bombfarm/game-api';
-import { ROUTES, assembleAccountPayload, grantSession, isGranted, readSection } from '@bombfarm/game-api';
+import { ROUTES, assembleAccountPayload, collapseIndexedPaths, grantSession, isGranted, readSection } from '@bombfarm/game-api';
 import type { AccountCommitter } from '../game-reader/game-reader-service.js';
 import type { LogPort } from '../storage/index.js';
 import type { ConsentStore } from './consent-store.js';
@@ -137,6 +137,16 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
   let cachedToken: CachedToken | null = null;
   let currentAbort: AbortController | null = null;
   let lastView: AccountView | null = null;
+  const lastUnreadAbsence = new Map<AccountSection, string>();
+
+  function logUnreadAbsence(section: AccountSection, absentUnreadKeys: readonly string[]): void {
+    const absentKeys = collapseIndexedPaths(absentUnreadKeys);
+    const signature = absentKeys.join(',');
+    if (signature === (lastUnreadAbsence.get(section) ?? '')) return;
+    lastUnreadAbsence.set(section, signature);
+    if (absentKeys.length === 0) return;
+    deps.log.warn({ scope: 'account-refresh', event: 'section.unread_keys_absent', section, absentKeys });
+  }
 
   function clearTimer(): void {
     if (timer) {
@@ -235,6 +245,9 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
             missingKeys: outcome.missingKeys,
             addedKeys: outcome.addedKeys,
           });
+        }
+        if (outcome.kind !== 'failed') {
+          logUnreadAbsence(route.section, outcome.absentUnreadKeys);
         }
         if (outcome.kind === 'failed') {
           deps.log.warn({

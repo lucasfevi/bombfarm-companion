@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import type { LiveDamage, LiveDamageHeroRow, LiveDamageUnattributed } from '@bombfarm/contracts';
-import { HeroIdentity } from '@bombfarm/game-art';
+import { HeroIdentity, type HeroPeekData } from '@bombfarm/game-art';
 import { cn, DataTable, formatCompactNumber, InfoTip, Panel, PanelHeader, Tooltip, type Lang } from '@bombfarm/ui';
 import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
 import type { LiveHeroFact } from '../../lib/live/live-model';
@@ -80,12 +80,14 @@ const UptimeFigure = memo(function UptimeFigure({ percent, tip, testId }: { perc
 const DamageHeroRowView = memo(function DamageHeroRowView({
   row,
   fact,
+  peek,
   lang,
   t,
   sessionSeconds,
 }: {
   row: LiveDamageHeroRow;
   fact: LiveHeroFact | undefined;
+  peek: HeroPeekData | undefined;
   lang: Lang;
   t: Copy;
   sessionSeconds: number;
@@ -104,6 +106,7 @@ const DamageHeroRowView = memo(function DamageHeroRowView({
           lang={lang}
           size="xs"
           showRarity={false}
+          peek={peek}
           nameTestId={`live-damage-row-${row.heroId}-name`}
         />
       </DataTable.Cell>
@@ -187,11 +190,13 @@ function Head({ t }: { t: Copy }) {
 export function DamagePanel({
   damage,
   heroFacts,
+  peekFor,
   fieldSize,
   className,
 }: {
   damage: LiveDamage | null;
   heroFacts: ReadonlyMap<string, LiveHeroFact>;
+  peekFor: (heroId: string) => HeroPeekData | undefined;
   fieldSize: number | undefined;
   className?: string;
 }) {
@@ -237,6 +242,7 @@ export function DamagePanel({
                       key={row.heroId}
                       row={row}
                       fact={heroFacts.get(row.heroId)}
+                      peek={peekFor(row.heroId)}
                       lang={lang}
                       t={t}
                       sessionSeconds={damage?.sessionSeconds ?? 0}

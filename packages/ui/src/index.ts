@@ -60,6 +60,7 @@ export { cssVariables, tokens, colorTokens, breakpoints, motionTokens, contrastP
 export type { ColorTokenKey, ContrastPair } from './tokens';
 
 export { Button, type ButtonProps } from './button';
+export { ErrorBoundary, type ErrorBoundaryProps } from './error-boundary';
 export { Chip, type ChipProps } from './chip';
 export { Stepper, type StepperProps } from './stepper';
 export { RankControl } from './rank-control';

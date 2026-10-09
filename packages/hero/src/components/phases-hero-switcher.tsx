@@ -61,6 +61,7 @@ export function PhasesHeroSwitcherView({
         rarityIdx={rarityIndex}
         size="lg"
         name={hero.name}
+        heroId={hero.sourceId ?? hero.id}
         className="shrink-0"
       />
 

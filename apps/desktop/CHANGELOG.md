@@ -1,5 +1,33 @@
 # @bombfarm/desktop
 
+## 0.27.1
+
+### Patch Changes
+
+- 88d87e6: A Collections book now takes the rarity of its highest completed page, counted only while every page below it is also complete, the way the game tints it. A book with no complete common page shows dimmed.
+- d81d30b: Hovering a hero in the Live Damage panel now opens the same hero card the Heroes list shows.
+- 045c4d2: The Forge no longer shows an essence cost for upgrading an item up to +9 — those rolls cost gold only; essence starts at +10.
+- ddffe28: A game update that adds or removes a field no longer makes the app show old data. Before, one removed field that nothing in the app uses (an item's sale value, a hero's market flag) made the app throw away the fresh read and keep showing the last good one until a new release shipped. Now fields the app does not use can disappear without any effect, and when a field the app does use goes missing, the app still shows what the game just sent, and tells you what it could not use. A hero missing something its sheet is built from (its birth stats, level, stars or a piece of gear's forge level) is left out of the calculations on its own, with a small dot on its portrait that explains why on hover. If the game stops sending your skill tree, the app keeps the last tree it read and says so in a banner at the top of the window, or says it cannot read the tree when it never saved one. A piece of gear the game stops saying who wears is matched from the hero's own record, or left out alone if no hero names it.
+- b2995e8: When Windows blocks the app from reading the game — usually because the game or Steam is running as administrator — the Live screen now says so and how to fix it, instead of a generic "could not connect".
+- ddffe28: A screen that fails to load no longer takes down the whole window. If one tab hits a problem, it shows a short "This screen couldn't load" message with a Try again button while the menu and the other tabs keep working, and coming back to the tab tries it again. The details are saved to the log file.
+- Updated dependencies [88d87e6]
+- Updated dependencies [045c4d2]
+- Updated dependencies [ddffe28]
+- Updated dependencies [b2995e8]
+- Updated dependencies [ddffe28]
+- Updated dependencies [7eaa54b]
+  - @bombfarm/domain@1.10.1
+  - @bombfarm/game-art@0.8.2
+  - @bombfarm/contracts@0.14.1
+  - @bombfarm/ui@0.18.1
+  - @bombfarm/account@0.3.13
+  - @bombfarm/farm@1.3.1
+  - @bombfarm/game-api@0.7.2
+  - @bombfarm/hero@0.5.7
+  - @bombfarm/team-plan@0.6.4
+  - @bombfarm/game-data@0.0.23
+  - @bombfarm/pricing@0.4.5
+
 ## 0.27.0
 
 ### Minor Changes

@@ -19,6 +19,7 @@ vi.mock('../../lib/copy', () => ({
     consentMissing: 'liveGapReasonConsentMissing',
     runtimeUnavailable: 'liveGapReasonRuntimeUnavailable',
     attachFailed: 'liveGapReasonAttachFailed',
+    gameAccessDenied: 'liveGapReasonGameAccessDenied',
     detached: 'liveGapReasonDetached',
     hookSilent: 'liveGapReasonHookSilent',
   },
@@ -30,6 +31,7 @@ const GAP_REASONS: readonly LiveGapReason[] = [
   'consentMissing',
   'runtimeUnavailable',
   'attachFailed',
+  'gameAccessDenied',
   'detached',
   'hookSilent',
 ];
@@ -40,6 +42,7 @@ const GAP_COPY: Record<LiveGapReason, string> = {
   consentMissing: en.liveGapReasonConsentMissing,
   runtimeUnavailable: en.liveGapReasonRuntimeUnavailable,
   attachFailed: en.liveGapReasonAttachFailed,
+  gameAccessDenied: en.liveGapReasonGameAccessDenied,
   detached: en.liveGapReasonDetached,
   hookSilent: en.liveGapReasonHookSilent,
 };
