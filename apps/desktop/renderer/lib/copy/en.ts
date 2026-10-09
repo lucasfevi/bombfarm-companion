@@ -259,6 +259,8 @@ export const en = {
     'The game is open, but it is not sending anything right now — a menu, an idle screen, or being logged out. The app keeps trying on its own.',
   liveGapReasonNeverAttached: 'The app has not connected to the game yet this session. It keeps trying on its own.',
   liveGapReasonAttachFailed: 'The app tried to connect to the game and could not. It keeps trying on its own.',
+  liveGapReasonGameAccessDenied:
+    'Windows blocked the app from reading the game. This usually means the game or Steam is running as administrator — start it normally, or run this app as administrator too, then restart the game.',
   liveGapReasonDetached: 'The app was connected, but the game closed. It keeps trying on its own.',
   liveGapReasonHookSilent:
     'The connection went quiet on its own, even though the game is still open. The app keeps trying.',

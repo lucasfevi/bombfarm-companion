@@ -59,6 +59,7 @@ import {
   createHookCandidateSource,
   createSystemClock,
   Tap,
+  type ProcessImageRead,
   type ProcessImageSource,
   type ProcessLister,
   type TapTargetProcess,
@@ -371,6 +372,26 @@ function readImageFile(exePath: string): Buffer {
   }
 }
 
+const PROCESS_FOUND_PREFIX = 'found:';
+
+/** Windows PowerShell's `Process.Path` swallows the access-denied error of a process the caller
+ *  may not open, so a bare `.Path` reads the same for a game run as administrator and a game that
+ *  has just exited. The prefix tells the two apart: no output at all means no process. */
+function processImagePathScript(pid: number): string {
+  return `$p = Get-Process -Id ${String(pid)} -ErrorAction SilentlyContinue; if ($p) { '${PROCESS_FOUND_PREFIX}' + $p.Path }`;
+}
+
+export type ProcessImagePath =
+  | { readonly kind: 'path'; readonly path: string }
+  | { readonly kind: 'accessDenied' }
+  | { readonly kind: 'gone' };
+
+export function parseProcessImagePath(output: string): ProcessImagePath {
+  if (!output.startsWith(PROCESS_FOUND_PREFIX)) return { kind: 'gone' };
+  const exePath = output.slice(PROCESS_FOUND_PREFIX.length).trim();
+  return exePath ? { kind: 'path', path: exePath } : { kind: 'accessDenied' };
+}
+
 /**
  * Every failure here used to resolve to a bare `null`, which the tap could only report as a
  * generic `attachFailed` — an unreadable image and a binary with no discoverable hook produced
@@ -380,23 +401,27 @@ function readImageFile(exePath: string): Buffer {
  */
 function createProcessImageSource(deps: { readonly log: LogPort }): ProcessImageSource {
   return {
-    read(pid: number): Buffer | null {
-      let exePath: string;
+    read(pid: number): ProcessImageRead {
+      let imagePath: ProcessImagePath;
       try {
-        exePath = runPowerShellSync(`(Get-Process -Id ${String(pid)} -ErrorAction SilentlyContinue).Path`);
+        imagePath = parseProcessImagePath(runPowerShellSync(processImagePathScript(pid)));
       } catch (error) {
         deps.log.warn({ scope: 'live-source', event: 'image.path_lookup_failed', pid, error: String(error) });
-        return null;
+        return { kind: 'unreadable' };
       }
-      if (!exePath) {
-        deps.log.warn({ scope: 'live-source', event: 'image.path_unresolved', pid });
-        return null;
+      if (imagePath.kind === 'accessDenied') {
+        deps.log.warn({ scope: 'live-source', event: 'image.access_denied', pid });
+        return { kind: 'accessDenied' };
+      }
+      if (imagePath.kind === 'gone') {
+        deps.log.warn({ scope: 'live-source', event: 'image.process_gone', pid });
+        return { kind: 'unreadable' };
       }
       try {
-        return readImageFile(exePath);
+        return { kind: 'read', image: readImageFile(imagePath.path) };
       } catch (error) {
         deps.log.warn({ scope: 'live-source', event: 'image.unreadable', pid, error: String(error) });
-        return null;
+        return { kind: 'unreadable' };
       }
     },
   };

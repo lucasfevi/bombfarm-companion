@@ -19,6 +19,7 @@ vi.mock('../../lib/copy', () => ({
     consentMissing: 'liveGapReasonConsentMissing',
     runtimeUnavailable: 'liveGapReasonRuntimeUnavailable',
     attachFailed: 'liveGapReasonAttachFailed',
+    gameAccessDenied: 'liveGapReasonGameAccessDenied',
     detached: 'liveGapReasonDetached',
     hookSilent: 'liveGapReasonHookSilent',
   },

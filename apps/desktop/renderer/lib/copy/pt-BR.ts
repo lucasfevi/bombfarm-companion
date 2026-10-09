@@ -250,6 +250,8 @@ export const ptBR: Copy = {
     'O jogo está aberto, mas não está enviando nada no momento — pode estar em um menu, parado ou deslogado. O app continua tentando por conta própria.',
   liveGapReasonNeverAttached: 'O app ainda não se conectou ao jogo nesta sessão. Ele continua tentando por conta própria.',
   liveGapReasonAttachFailed: 'O app tentou se conectar ao jogo e não conseguiu. Ele continua tentando por conta própria.',
+  liveGapReasonGameAccessDenied:
+    'O Windows impediu o app de ler o jogo. Normalmente isso acontece quando o jogo ou a Steam está rodando como administrador — abra-os normalmente, ou rode este app como administrador também, e reinicie o jogo.',
   liveGapReasonDetached: 'O app estava conectado, mas o jogo foi fechado. Ele continua tentando por conta própria.',
   liveGapReasonHookSilent:
     'A conexão ficou muda sozinha, mesmo com o jogo ainda aberto. O app continua tentando.',
