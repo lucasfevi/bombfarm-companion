@@ -49,12 +49,12 @@ describe('forgeForecast', () => {
   it('+4 to +5 on a level-10 common is 1.105 rolls: a 90% roll, then 95%, then certain', () => {
     const forecast = forgeForecast(4, 5, 10, 0);
     expect(forecast.rolls).toBeCloseTo(1.105, 10);
-    expect(forecast.essence).toBeCloseTo(1.105, 10);
+    expect(forecast.essence).toBe(0);
     expect(forecast.gold).toBeCloseTo(1.105 * 1_800, 6);
   });
 
   it('the guaranteed rungs are certain rolls: +0 to +4 on a level-10 common is 4 rolls and the sum of the four', () => {
-    expect(forgeForecast(0, 4, 10, 0)).toMatchObject({ rolls: 4, gold: 200 + 450 + 800 + 1_250, essence: 4 });
+    expect(forgeForecast(0, 4, 10, 0)).toMatchObject({ rolls: 4, gold: 200 + 450 + 800 + 1_250, essence: 0 });
   });
 
   it('forecasts nothing when the item already sits at or above the target', () => {
@@ -80,7 +80,8 @@ describe('forgeForecast', () => {
     const reference = iterate(from, fails, target, level, rarity);
     expect(exact.rolls).toBeCloseTo(reference.rolls, 6);
     expect(exact.gold / reference.gold).toBeCloseTo(1, 9);
-    expect(exact.essence / reference.essence).toBeCloseTo(1, 9);
+    if (reference.essence === 0) expect(exact.essence).toBe(0);
+    else expect(exact.essence / reference.essence).toBeCloseTo(1, 9);
   });
 
   it('a piece already carrying misses is cheaper to finish than a fresh one', () => {
@@ -407,27 +408,35 @@ describe('expected essence matches the published average', () => {
     expect(mismatches).toEqual([]);
   });
 
-  it('forgeForecast charges each roll its published whole price, so it never reads under the average', () => {
+  it('forgeForecast charges essence only from +10, each roll its published whole price, so it never reads under the average of those rolls', () => {
     for (const row of forgeWiki.custo_por_nivel) {
       for (const byRarity of row.por_raridade) {
-        byRarity.essencia_media.forEach((published, index) => {
+        for (let index = 0; index < FORGE_MAX; index += 1) {
+          const paidRolls = visits[index].reduce(
+            (sum, count, rung) => sum + (rung + 1 > 9 ? count * fractionalEssence(row.nivel, byRarity.raridade, rung) : 0),
+            0,
+          );
           const modelled = forgeForecast(0, index + 1, row.nivel, byRarity.raridade).essence;
           expect(modelled, `level ${row.nivel} rarity ${byRarity.raridade} +${index + 1}`).toBeGreaterThanOrEqual(
-            published - 0.5,
+            paidRolls - 0.5,
           );
-        });
+        }
       }
     }
   });
 
-  it('forgeForecast equals the average to the unit wherever every roll price is already whole', () => {
+  it('forgeForecast equals the average of the paid rolls to the unit wherever every roll price is already whole', () => {
     for (const row of forgeWiki.custo_por_nivel) {
       for (const byRarity of row.por_raridade) {
         if ((row.nivel * (byRarity.raridade + 1)) % forgeWiki.essencia_div !== 0) continue;
-        byRarity.essencia_media.forEach((published, index) => {
+        for (let index = 0; index < FORGE_MAX; index += 1) {
+          const paidRolls = visits[index].reduce(
+            (sum, count, rung) => sum + (rung + 1 > 9 ? count * fractionalEssence(row.nivel, byRarity.raridade, rung) : 0),
+            0,
+          );
           const modelled = forgeForecast(0, index + 1, row.nivel, byRarity.raridade).essence;
-          expect(Math.round(modelled), `level ${row.nivel} rarity ${byRarity.raridade} +${index + 1}`).toBe(published);
-        });
+          expect(Math.round(modelled), `level ${row.nivel} rarity ${byRarity.raridade} +${index + 1}`).toBe(Math.round(paidRolls));
+        }
       }
     }
   });

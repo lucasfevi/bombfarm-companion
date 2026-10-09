@@ -71,8 +71,8 @@ describe('the committed forge cost table', () => {
     }
     expect(mismatches).toEqual([]);
     expect(forgeRollEssence(300, 5, 15)).toBe(360);
-    expect(forgeRollEssence(10, 5, 3)).toBe(2);
-    expect(forgeRollEssence(10, 0, 1)).toBe(1);
+    expect(forgeRollEssence(10, 5, 3)).toBe(0);
+    expect(forgeRollEssence(10, 0, 10)).toBe(2);
   });
 
   it('holds the scroll price to base[target] × (rarity + 1) × level / 10 in every published example', () => {

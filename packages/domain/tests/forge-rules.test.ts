@@ -83,6 +83,11 @@ describe('forgeRollCost and forgeRollEssence', () => {
     expect(() => forgeRollEssence(10, 6, 1)).toThrow(/rarity 6/);
   });
 
+  it('charges no essence for a roll up to +9, and the published price from +10', () => {
+    for (let target = 1; target <= 9; target += 1) expect(forgeRollEssence(300, 5, target)).toBe(0);
+    expect(forgeRollEssence(300, 5, 10)).toBeGreaterThan(0);
+  });
+
   it('throws for a target outside +1…+15', () => {
     expect(() => forgeRollCost(10, 0, 0)).toThrow(RangeError);
     expect(() => forgeRollEssence(10, 0, 16)).toThrow(RangeError);
@@ -114,7 +119,7 @@ describe('nextForgeStep', () => {
       chance: 1,
       failTo: 0,
       cost: 200,
-      essence: 1,
+      essence: 0,
       protection: 0,
       stoneUsed: false,
       stone: null,
