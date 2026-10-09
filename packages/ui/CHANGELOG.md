@@ -1,5 +1,15 @@
 # @bombfarm/ui
 
+## 0.18.1
+
+### Patch Changes
+
+- ddffe28: A screen that fails to load no longer takes down the whole window. If one tab hits a problem, it shows a short "This screen couldn't load" message with a Try again button while the menu and the other tabs keep working, and coming back to the tab tries it again. The details are saved to the log file.
+- 7eaa54b: Internal: the Switch control now forwards a `data-testid` to the element it renders instead of
+  discarding it. Three desktop Settings switches — the one that lets the app forge and equip, the
+  one that restarts the game if it exits, and the usage count — were written with a test hook that
+  never reached the page. Nothing a player sees changes.
+
 ## 0.18.0
 
 ### Minor Changes
