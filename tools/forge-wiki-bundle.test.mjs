@@ -38,6 +38,7 @@ const TOP_LEVEL_KEYS = [
   'chance',
   'critical',
   'custo_por_nivel',
+  'essencia_desde',
   'essencia_div',
   'essencia_k',
   'fail_level',
