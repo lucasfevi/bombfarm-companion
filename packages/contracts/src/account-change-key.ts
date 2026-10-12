@@ -57,7 +57,7 @@ export function canonicalStringify(value: unknown): string {
  * imply a *planning-relevant* difference — tier 1 (`heroChangeKey`/`sharedChangeKey` in
  * `hero-advice.ts`) is the exact answer to that question. This tier's only job is to never miss
  * a real change: it may false-positive (cheap — one recompute), it must never false-negative
- * (expensive — a silently stale number, the `D24` failure).
+ * (expensive — a silently stale number, a confidently wrong display).
  *
  * `capturedAt` is never read here — not filtered out downstream, never reached at all. It is the
  * only timestamp an `AccountPayload` carries (`account-payload.ts`'s own doc comment) and it
@@ -78,8 +78,8 @@ export function accountChangeKey(payload: AccountPayload): string {
 
   const parts = ACCOUNT_SECTIONS.map((section) => {
     // `'section' in payload` — distinct from "the value is undefined" (assemble.ts's own
-    // distinction between an absent key and an explicit undefined; D24 is why it matters
-    // here too: a section that was never asserted must key differently from one asserted empty).
+    // distinction between an absent key and an explicit undefined; mistaking absence for an
+    // empty value is why it matters here too: a section that was never asserted must key differently from one asserted empty).
     const present = section in untyped;
     const sectionFidelity = fidelity?.[section];
     const status = sectionFidelity?.status ?? 'missing';

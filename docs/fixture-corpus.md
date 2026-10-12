@@ -62,7 +62,7 @@ calls) or **corpus-anchored** (needed the deleted account to exist at all).
 SHEET_KEYS` is restated as one line in the new `fixture-corpus.test.ts` guard (both trees).
 
 **`abisso-damage-mult.test.ts`'s gating/clamping describes call `computeCombatMults` directly on
-retired tree math `F2` deletes anyway** — recorded as lost, not rescued into a surviving file (spec's
+retired tree math the tree removal deletes anyway** — recorded as lost, not rescued into a surviving file (spec's
 default: whole-file deletion).
 
 **The `point-inference` and `sheet-peel` corpus-anchored claims have the strongest available
@@ -114,7 +114,7 @@ replacement**: §6 below, the round-trip invariant.
   ability entry at level 0 exists in either post-patch capture (every entry is level ≥ 17).
 - **`import-inventory-sync.test.ts` (web): the retired-mechanic half of a real-fixture disclosure
   test** — a tree flag flowing from a real save's retired `skills.totals` key is unreproducible
-  (no post-patch capture carries the key at all, §4); the mechanic itself was deleted with `F2`.
+  (no post-patch capture carries the key at all, §4); the mechanic itself was deleted with the tree removal.
 - **`apps/web/e2e/team-plan-disclosures.spec.ts`'s `saturated account shows saturation callout`
   test** was found RED on the new corpus during the re-pointing work (its `slots: 2` override was tuned for the
   deleted 11-hero fixture's ~2.5–3.2 `sumDuty` range) and was fixed by an orchestrator ruling
@@ -273,9 +273,9 @@ matched-pair argument in reverse — identical gear/ability/tree inputs must pro
 under a flat model and PROPORTIONAL (to the birth roll) deltas under percent-of-base, and the
 2026-08-18 capture shows the latter.
 
-## 10. Four properties added on top of the F1 corpus, and one gap they exposed
+## 10. Four properties added on top of the post-patch corpus, and one gap they exposed
 
-Four gaps stood between the corpus as F1 left it and a corpus that (a) keeps a structural test
+Four gaps stood between the corpus as the re-pointing left it and a corpus that (a) keeps a structural test
 from failing when a capture's numbers age out, (b) makes a stale-numbers value assertion expire
 loudly instead of quietly passing, (c) bounds and inventories every capture family the same way,
 and (d) proves a derived (non-captured) fixture still matches the command that produces it.

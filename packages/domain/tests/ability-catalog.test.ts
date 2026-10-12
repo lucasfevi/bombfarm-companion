@@ -59,7 +59,7 @@ describe('catalog completeness', () => {
   });
 
   it('save slot === ABILITIES.findIndex(id) + 1 for every owned code in the fixture', () => {
-    // F1 (ground-truth-rule class (b) — structural): re-pointed onto payload-20260812-8heroes.json.
+    // Ground-truth-rule class (b) — structural: re-pointed onto payload-20260812-8heroes.json.
     // RECORDED LOSS: the payload's 8 heroes own 11 distinct ability codes, not the deleted
     // fixture's 13 — two codes (of the 20-entry catalog) lose their in-fixture slot check.
     // The claim itself (slot === catalog index + 1) still re-points cleanly for every code

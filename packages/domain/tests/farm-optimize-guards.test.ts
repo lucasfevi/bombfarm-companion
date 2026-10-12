@@ -223,8 +223,7 @@ describe('public-repo hygiene — no research-private identifier or path anywher
   });
 
   it('DEMONSTRATED RED STATE: a research-private id is caught by the hygiene scan', () => {
-    // Built via concatenation so this line does not itself contain the forbidden substring.
-    const forbiddenToken = ['FRAD', '-01'].join('');
+    const forbiddenToken = 'FRAD-01';
     const mutated = `// per ${forbiddenToken}, the result carries...`;
     expect(mutated).toMatch(HYGIENE_PATTERN);
   });

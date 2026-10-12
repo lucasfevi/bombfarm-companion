@@ -122,7 +122,7 @@ describe('assembleAccountPayload — per-outcome mapping', () => {
   });
 });
 
-describe('assembleAccountPayload — the skills-never-fabricated rule (D24)', () => {
+describe('assembleAccountPayload — the skills-never-fabricated rule', () => {
   it("emits no 'skills' key at all when the skills outcome is failed — key absent, not undefined", () => {
     const outcomes: Record<AccountSection, SectionOutcome> = { ...ALL_OK, skills: FAILED };
     const payload = assembleAccountPayload(outcomes, NOW);

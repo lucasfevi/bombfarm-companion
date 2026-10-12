@@ -20,11 +20,11 @@ halves that are fully real today, and are what this gate's exit clause actually 
    (`packages/domain/tests/fidelity-gate-discrimination.test.ts`).
 
 Once `live.source` flips to `"api-assembled"`, the equality half becomes the real cross-source
-proof — see [F2 handoff](#f2-handoff) below.
+proof — see [the live-source handoff](#live-source-handoff) below.
 
-> **`D24` changed which token that will be.** This document was written when F2 was scoped as a
-> *memory* reader, so the ladder's original post-F2 branch was `"memory-assembled"`. F2 shipped
-> as an **API** source (`@bombfarm/game-api`) instead, so the ladder now carries a **third**
+> **Going API-first changed which token that will be.** This document was written when the live
+> reader was scoped as a *memory* reader, so the ladder's original post-reader branch was
+> `"memory-assembled"`. The live reader shipped as an **API** source (`@bombfarm/game-api`) instead, so the ladder now carries a **third**
 > token, `"api-assembled"`, rather than taking the flip originally planned. The rung is in place;
 > the handoff below is still pending because it needs a capture nobody has taken yet.
 
@@ -79,7 +79,7 @@ origin — arrives when the handoff below is done.
 
   "live": {
     "file": "live-capture.json",
-    "source": "export-derived",   // ladder token — see F2 handoff for "api-assembled"
+    "source": "export-derived",   // ladder token — see the live-source handoff for "api-assembled"
     "gameBuild": "string",
     "capturedAt": "ISO-8601",
     "scrubbed": ["account_id", "player_name"],
@@ -124,7 +124,7 @@ pointing back at this document (`FidelityGateError('fixtureMissing', …)`).
 contains the string `account_id` or `player_name` anywhere. Do not hand-edit around this — the
 committed pair must genuinely carry neither field.
 
-## F2 handoff
+## Live-source handoff
 
 **The rung exists; the capture does not.** `'api-assembled'` is registered in `LiveSource` and
 `PROVENANCE_LADDER` with the same two assertions `'memory-assembled'` carries, both exercised

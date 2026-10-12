@@ -472,7 +472,7 @@ describe('parseSaveFile', () => {
     expect(Object.keys(weird.record.abilities)).toHaveLength(0);
   });
 
-  // Un-skipped 2026-08-28. This was on the F8 worklist, whose entries all fail on COMMITTED
+  // Un-skipped 2026-08-28. This was on the stale-capture worklist, whose entries all fail on COMMITTED
   // captures that predate the 2026-08-18 patch and need re-capturing. This one never belonged
   // there: it fails on `baseSave()`, an inline synthetic fixture, and it failed because Brenna's
   // authored `stats` had drifted far enough that the importer refused her. Recomputing that block

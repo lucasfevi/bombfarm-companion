@@ -251,7 +251,7 @@ export const createAccountSlice: StateCreator<
     // AccountImportData.maxPhase is required-and-total (number | null on every path), so a
     // payload carrying no max_phase source is an ASSERTION that this account has no known max
     // phase, not an absence to be ignored. Preserving a stale value here would leave lock
-    // badges asserting progress the payload just contradicted (D24's "confidently wrong"
+    // badges asserting progress the payload just contradicted (the "confidently wrong"
     // shape). Both the file-import and API-refresh paths reach this branch — both funnel
     // through parseAccountPayload -> mapAccountData.
     // `data.maxPhase` is optional on AccountImportData's TYPE only so hand-built test fixtures
