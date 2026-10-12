@@ -120,7 +120,7 @@ const GUARD_1_EXCLUDE = (path: string): boolean =>
   // layout.tsx is explicitly UNCHANGED by design — a prebuilt static export cannot know
   // the locale; page.tsx sets documentElement.lang at runtime instead. Its <head> `metadata`
   // (browser-tab title / SEO description) is Next.js page metadata, not shell UI copy, and is
-  // out of the every-string-renders-in-PT-BR requirement's "the desktop shell" scope the same way it is out of F4's edit list.
+  // out of the every-string-renders-in-PT-BR requirement's "the desktop shell" scope the same way it is out of the locale work's edit list.
   path.endsWith(join('app', 'layout.tsx')) ||
   // A PowerShell cmdlet string built for execSync() (game-reader/process.ts) — assigned to a
   // local variable first, so it is one indirection away from the NON_PROSE_CALL_CONTEXT check

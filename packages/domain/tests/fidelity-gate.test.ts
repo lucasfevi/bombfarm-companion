@@ -45,7 +45,7 @@ function baseManifest(overrides: Partial<FidelityPairManifest> = {}): FidelityPa
   };
 }
 
-describe(`cross-source equality [live.source=export-derived — F2 has not landed; this half is a regression fence]`, () => {
+describe(`cross-source equality [live.source=export-derived — the API-assembled source has not landed; this half is a regression fence]`, () => {
   it('the committed pair agrees on every hero across all three sheet blocks — returned counts equal pair.json expected exactly', () => {
     const pair = loadFidelityPair();
     const result = runFidelityGate(pair);
@@ -148,7 +148,7 @@ describe('provenance ladder — cannot be neutered', () => {
     expectFidelityError(() => assertProvenanceLadder(pair), 'manifestInvalid');
   });
 
-  describe('[live.source=export-derived — F2 has not landed; this half is a regression fence]', () => {
+  describe('[live.source=export-derived — the API-assembled source has not landed; this half is a regression fence]', () => {
     it('the committed pair passes: live-capture.json is byte-reproducible from export-capture.json', () => {
       const pair = loadFidelityPair();
       expect(() => assertProvenanceLadder(pair)).not.toThrow();

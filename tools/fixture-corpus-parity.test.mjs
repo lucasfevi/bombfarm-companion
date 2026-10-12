@@ -137,7 +137,7 @@ describe('cross-package fixture corpus parity', () => {
 
   /**
    * This guard was a HARD ZERO: no skipped test under these roots, ever. It became an exact
-   * per-file manifest for one bounded reason — the F8 stale-capture debt — and that debt is now
+   * per-file manifest for one bounded reason — the stale-capture debt — and that debt is now
    * PAID: the list below is empty, and every skip in the tree is a deliberate one declared in
    * `SKIPS_NOT_F8`.
    *

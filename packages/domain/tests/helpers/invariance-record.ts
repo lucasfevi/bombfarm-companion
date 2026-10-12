@@ -1,7 +1,7 @@
 /**
  * The pre-deletion characterization baseline recorder.
  *
- * Walks F1's two corpus fixtures, every hero in each, and calls the functions the characterization baseline names,
+ * Walks the two post-patch corpus fixtures, every hero in each, and calls the functions the characterization baseline names,
  * projecting an EXPLICIT, hand-written key list per function — the SURVIVING numeric surface
  * only. Deleted-arm members are excluded BY CONSTRUCTION. A recorder that serialised whole
  * objects would fail trivially the moment a member is deleted, proving nothing about the
@@ -47,7 +47,7 @@ import type { HeroRecord, AccountShared } from '@bombfarm/domain/shims/storage';
 import { extractHero, loadFixtureJson, type SaveHeroSheet } from './sheet-math-fixtures';
 import { teamPlanInputFromFixture } from './team-plan-fixtures';
 
-/** The two corpus files F1 committed — read only, never edited. */
+/** The two post-patch corpus files — read only, never edited. */
 export const CORPUS_FILES = [
   'save-20260813-5heroes.json',
   'payload-20260812-8heroes.json',
@@ -275,7 +275,7 @@ function recordHero(
 ): HeroRecordEntry {
   const birth: BirthStats = saveHero.birth ?? (() => {
     throw new Error(
-      `hero "${saveHero.name}"@${saveHero.level} in ${file} has no birth_stats — the corpus is expected to be fully birth-backed post-F1`,
+      `hero "${saveHero.name}"@${saveHero.level} in ${file} has no birth_stats — the corpus is expected to be fully birth-backed after the patch`,
     );
   })();
   const sheetOther: SheetOtherPct = saveHero.sheetOther;
@@ -544,8 +544,8 @@ function recordHero(
 }
 
 /**
- * Pure. No wall-clock read, no PRNG, no filesystem write, no network — walks F1's committed
- * corpus files (read-only) and calls the surviving functions this feature touches.
+ * Pure. No wall-clock read, no PRNG, no filesystem write, no network — walks the committed
+ * post-patch corpus files (read-only) and calls the surviving functions this feature touches.
  */
 export function recordInvarianceSurface(): InvarianceRecord {
   scalarCounter = 0;

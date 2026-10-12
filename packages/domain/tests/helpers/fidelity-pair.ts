@@ -68,7 +68,7 @@ export interface FidelityPair {
 /**
  * Personal fields scrubbed from every committed capture (`docs/SAVE_EXPORT.md`).
  * Exported so the repo-wide fixture guard (`fixtures-scrubbed.test.ts`) enforces the same
- * list F4's own pair is held to — one source of truth, not two drifting copies.
+ * list the fidelity pair is held to — one source of truth, not two drifting copies.
  */
 export const PERSONAL_FIELDS = ['account_id', 'player_name'] as const;
 

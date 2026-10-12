@@ -43,7 +43,7 @@ function viewWithHeroLevel(level: number): AccountView {
 }
 
 describe('accept — the pure reducer', () => {
-  it('has no React import — read from source (F2\'s technique)', () => {
+  it('has no React import — read from source', () => {
     const source = readFileSync(path.join(__dirname, 'account-view-store.ts'), 'utf8');
     expect(source).not.toMatch(/from ['"]react['"]/);
   });

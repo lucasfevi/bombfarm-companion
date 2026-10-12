@@ -1,9 +1,8 @@
 /**
  * Validates changeset files before versioning.
  *
- * The changesets CLI already rejects unknown package names with a named file
- * (design F4). This module adds bump-kind and empty-summary checks the CLI
- * does not guarantee.
+ * The changesets CLI already rejects unknown package names with a named file.
+ * This module adds bump-kind and empty-summary checks the CLI does not guarantee.
  */
 
 import { readFileSync, readdirSync } from 'node:fs';
