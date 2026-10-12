@@ -111,7 +111,7 @@ function phaseOptionsFor(
 ): BestFarmPhaseOptions {
   const maxPhase = account.maxPhase;
   if (targetPhase != null && Number.isFinite(targetPhase)) {
-    return { maxPhase: maxPhase ?? null, pinnedPhase: targetPhase, ignoreFieldCrowding };
+    return { maxPhase: maxPhase ?? null, pinnedPhase: targetPhase, ignoreFieldCrowding, pass: account.pass ?? false };
   }
   if (typeof maxPhase !== 'number' || !Number.isFinite(maxPhase) || maxPhase < 1) {
     throw new Error(
@@ -120,7 +120,7 @@ function phaseOptionsFor(
         'plan would optimise the squad across the whole 600-phase table.',
     );
   }
-  return { maxPhase, ignoreFieldCrowding };
+  return { maxPhase, ignoreFieldCrowding, pass: account.pass ?? false };
 }
 
 /**
@@ -140,7 +140,12 @@ function setPhaseOptionsFor(
         `phase); got ${JSON.stringify(maxPhase)}.`,
     );
   }
-  return { maxPhase, ignoreFieldCrowding, phaseRange: { min: band.minPhase, max: band.maxPhase } };
+  return {
+    maxPhase,
+    ignoreFieldCrowding,
+    pass: account.pass ?? false,
+    phaseRange: { min: band.minPhase, max: band.maxPhase },
+  };
 }
 
 function squadAccountFor(account: TeamPlanAccountInput, aurasAtCap: AurasAtCap | undefined): SquadFarmAccount {

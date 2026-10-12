@@ -577,6 +577,7 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanChangesFieldSlots',
   'teamPlanChangesFieldFieldSlots',
   'teamPlanChangesFieldHouseCycleSecs',
+  'teamPlanChangesFieldPass',
   'teamPlanChangesControlForgeFloor',
   'teamPlanChangesControlObjective',
   'teamPlanChangesControlAllowedChanges',

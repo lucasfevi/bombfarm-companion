@@ -102,15 +102,19 @@ export const TREE_AXES = [
 ] as const;
 export type TreeAxis = (typeof TREE_AXES)[number];
 
-export const ACCOUNT_FIELDS = ['houseIdx', 'houseLevel', 'phase', 'maxPhase', 'slots', 'fieldSlots', 'houseCycleSecs'] as const;
+export const ACCOUNT_FIELDS = ['houseIdx', 'houseLevel', 'phase', 'maxPhase', 'slots', 'fieldSlots', 'houseCycleSecs', 'farmPass'] as const;
 export type AccountField = (typeof ACCOUNT_FIELDS)[number];
 
+/** `farmPass` rides as 1/0 so the ledger can diff every account field the same way. */
 type AccountView = Record<TreeAxis, number> & Record<AccountField, number | null>;
 
 function planningAccountView(inputs: TeamPlanInputs): AccountView {
   const view = {} as AccountView;
   for (const axis of TREE_AXES) view[axis] = inputs[axis];
-  for (const field of ACCOUNT_FIELDS) view[field] = inputs[field] ?? null;
+  for (const field of ACCOUNT_FIELDS) {
+    const value = inputs[field];
+    view[field] = typeof value === 'boolean' ? Number(value) : (value ?? null);
+  }
   return view;
 }
 

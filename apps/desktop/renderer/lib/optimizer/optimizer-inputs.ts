@@ -10,6 +10,7 @@
  * template: same withhold gate, same tree/house/cycle field reads.
  */
 import { phaseLine } from '@bombfarm/domain/phases';
+import { passActive } from '@bombfarm/domain/import-save';
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
 import type { AccountView } from '@bombfarm/contracts';
 import { planInputsSignature, type TeamPlanInputs } from '@bombfarm/team-plan/core';
@@ -47,6 +48,7 @@ export type OptimizerInputsResult = {
 export function buildOptimizerInputs(
   view: AccountView,
   farmChosenPhase: number | null,
+  nowMs: number = Date.now(),
 ): OptimizerInputsResult | null {
   const payload = view.payload;
 
@@ -99,6 +101,7 @@ export function buildOptimizerInputs(
     houseCycleSecsHouseIdx: houseIdx,
     houseCycleSecsLevel: houseLevel,
     maxPhase: account.maxPhase ?? null,
+    farmPass: passActive(account.vipUntil, nowMs),
     farmChosenPhase,
     // The duel room's phase and the squad's slots are live, not part of the account read: the
     // screen merges them in.

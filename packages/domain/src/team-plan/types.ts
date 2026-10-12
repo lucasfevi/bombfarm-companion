@@ -270,6 +270,9 @@ export type TeamPlanAccountInput = {
   /** `skills.totals.colecao` — the farm objective reads its gold and luck. Absent reads as none. */
   collection?: Collection | undefined;
   maxPhase?: number | null;
+  /** Whether the Pass is active. The farm objective prices gold with its always-on bonus; absent
+   *  reads as a free account. */
+  pass?: boolean;
 };
 
 /**
