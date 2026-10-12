@@ -68,7 +68,7 @@ const rawIconImportRule = [
       {
         group: ['react-icons', 'react-icons/*'],
         message:
-          'Import { Icon } from @bombfarm/ui instead (D12). react-icons is reachable only from packages/ui/src/icon/ui-registry.ts.',
+          'Import { Icon } from @bombfarm/ui instead. react-icons is reachable only from packages/ui/src/icon/ui-registry.ts.',
       },
       {
         group: ['*.svg', '**/*.svg'],
@@ -392,7 +392,7 @@ export default tseslint.config(
     rules: { 'no-restricted-imports': rawIconImportRule },
   },
   // Stories sit outside packages/ui/tsconfig.json, so they cannot carry type-aware
-  // rules — but the icon seam (D12) is syntactic and must hold for them too, or a raw
+  // rules — but the icon seam is syntactic and must hold for them too, or a raw
   // react-icons/SVG import lands in a story with only review to catch it. So stories
   // are linted (not ignored) with type checking off; the packages/ui blocks above,
   // including the raw-icon ban, apply to them.

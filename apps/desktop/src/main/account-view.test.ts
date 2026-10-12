@@ -141,7 +141,7 @@ describe('resolveCachedAccountView — the pure-read half of the single-source c
   });
 });
 
-describe('resolveAccountView — the single-source change-signal rule, point 1: byte-for-byte the pre-F3 account:get behaviour', () => {
+describe('resolveAccountView — the single-source change-signal rule, point 1: byte-for-byte the account:get behaviour from before the change signal', () => {
   const fakeAccountStore: AccountCommitterLike = {
     commit: vi.fn((payload: AccountPayload, opts: { gameRunning: boolean }) =>
       makeView({ ...payload, fidelity: fidelity('missing') }, opts.gameRunning),

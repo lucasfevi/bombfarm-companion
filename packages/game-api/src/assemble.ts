@@ -26,7 +26,7 @@ import type { SectionOutcome } from './routes.js';
  *
  * A `failed` outcome for `skills` still produces a payload with no `skills` key at all —
  * `'skills' in payload === false`, not `payload.skills === undefined` — which is the specific
- * failure `D24` was written about: the parser must never mistake absence for an empty,
+ * failure this rule exists to prevent: the parser must never mistake absence for an empty,
  * zeroed skill tree. `drift` is deliberately not held to that rule any more — it carries a real,
  * usable body, not a fabricated one.
  */

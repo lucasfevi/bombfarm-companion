@@ -3,7 +3,7 @@
  * recorded evidence) — the shared "green without executing" guard, lifted
  * from `apps/web/src/tests/support/build-output.ts`'s `requireBuildOutput` into a
  * fixture-agnostic form so every artifact-dependent suite in this feature routes through the
- * same shape: F4 has FOUR guarded artifacts (the two API bodies, the export corpus, the
+ * same shape: it has FOUR guarded artifacts (the two API bodies, the export corpus, the
  * rejection fixture directory), and duplicating this five times would be its own drift risk.
  *
  * The trap this closes (this repo's repeated "green without executing" failure, which

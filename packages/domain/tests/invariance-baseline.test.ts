@@ -64,7 +64,7 @@ describe('invariance baseline — the pre-deletion characterization harness', ()
 
   const record = recordInvarianceSurface();
 
-  it("non-vacuity: exactly 13 heroes are recorded (5 + 8, F1's two corpus files)", () => {
+  it("non-vacuity: exactly 13 heroes are recorded (5 + 8, the two corpus files)", () => {
     expect(record.meta.heroCount, `recorded heroes: ${Object.keys(record.heroes).join(', ')}`).toBe(13);
     expect(Object.keys(record.heroes).length).toBe(13);
   });

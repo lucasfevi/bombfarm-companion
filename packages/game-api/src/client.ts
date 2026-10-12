@@ -8,7 +8,7 @@ import type { ConsentedSession } from './session.js';
  * The client. Holds no per-section state at all: every call walks `ROUTES`
  * fresh and returns a brand-new outcome map. A change between two cycles is reflected because
  * there is nothing here that could serve a stale value — the only place "last known good" exists
- * in this product is F3's `commit()`.
+ * in this product is the account store's `commit()`.
  */
 export interface GameApiClient {
   readAllSections(

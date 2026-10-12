@@ -211,14 +211,14 @@ describe('guard (e) — public-repo hygiene: no research-private identifier in t
   // excluded from the package-wide scan below — each would otherwise flag the other's spelling.
   const SELF_FILENAMES = ['farm-point-rank-guards.test.ts', 'farm-optimize-guards.test.ts'];
   const HYGIENE_TOKENS = [
-    ['FRA', 'D-'].join(''),
-    ['FRA', 'W-'].join(''),
-    ['FRA', 'C-'].join(''),
-    ['OD', '-A', '\\d'].join(''),
-    ['OQ', '-FRA-'].join(''),
-    ['AD', '-1', '\\d\\d'].join(''),
-    ['bombfarm', '-research'].join(''),
-    ['\\.specs', '\\/'].join(''),
+    'FRAD-',
+    'FRAW-',
+    'FRAC-',
+    'OD-A\\d',
+    'OQ-FRA-',
+    'AD-1\\d\\d',
+    'bombfarm-(?!companion)[a-z][a-z-]*',
+    '\\.specs\\/',
   ];
   const HYGIENE_PATTERN = new RegExp(HYGIENE_TOKENS.join('|'));
 

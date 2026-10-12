@@ -45,7 +45,7 @@ export interface ResolveAccountViewDeps extends AccountViewDeps {
 }
 
 /**
- * Pure read — the verbatim body of `index.ts`'s pre-F3 `account:get` handler (`index.ts:77-98`),
+ * Pure read — the verbatim body of `index.ts`'s `account:get` handler from before the change signal,
  * split at the point a fallback commit would otherwise happen. **No commit, no SQLite, no
  * throw.** Safe to call from the commit path itself, which is exactly what the notifier does
  * this is the half of the split that keeps the notifier from ever reaching
@@ -82,7 +82,7 @@ export function resolveCachedAccountView(deps: AccountViewDeps): AccountView | n
 
 /**
  * `resolveCachedAccountView(deps)` else `accountStore.commit({}, {gameRunning})` else the
- * unavailable-store literal — `account:get`'s full pre-F3 behaviour, unchanged.
+ * unavailable-store literal — `account:get`'s full behaviour from before the change signal, unchanged.
  * `index.ts`'s handler becomes a one-line call to this.
  */
 export function resolveAccountView(deps: ResolveAccountViewDeps): AccountView {

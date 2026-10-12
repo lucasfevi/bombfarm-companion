@@ -93,7 +93,7 @@ function tryOpenRawBetterSqlite3(dbPath: string): SqliteDb | null {
   }
 }
 
-/** Prefer better-sqlite3 when its native binding is usable; otherwise node:sqlite (D5). */
+/** Prefer better-sqlite3 when its native binding is usable; otherwise node:sqlite. */
 export function detectSqliteBinding(): SqliteBinding {
   const probePath = ':memory:';
   if (tryOpenBetterSqlite3(probePath)) {

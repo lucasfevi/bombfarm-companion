@@ -1,6 +1,6 @@
 // Rendering. Every function here is pure text assembly: it names WHICH sections
 // differ, with WHICH hashes, and reports the ONE outcome the run reached. It never says what a
-// difference means or what to do about it — that is F6's job (triage), not this feature's.
+// difference means or what to do about it — that is triage's job, not this feature's.
 
 import { DATA_URL, FASES_NOMES_URL } from './fetch-endpoints.mjs';
 

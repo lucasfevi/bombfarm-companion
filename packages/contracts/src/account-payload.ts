@@ -56,7 +56,7 @@ export interface AccountFidelityReport {
  * skip validation downstream.
  */
 export interface AccountPayload {
-  /** `/state`-derived scalars. Only `phase` is read by F1. */
+  /** `/state`-derived scalars. Only `phase` is read by the payload parser. */
   readonly account?: Record<string, unknown> | undefined;
   /** `/roster` heroes. Absent or non-array ⇒ `notASaveFile`. */
   readonly heroes?: readonly unknown[] | undefined;
