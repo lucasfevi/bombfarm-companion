@@ -91,7 +91,7 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
   const { birth, level, stars, sheetOther, loadout, tree, statPointsAvailable } = input;
   const runeFree =
     input.runes && input.runes.length > 0
-      ? stripRuneMultipliers(input.sheet, flatAddsOutsideRune(tree, sheetOther), runeSheetMultipliers(input.runes))
+      ? stripRuneMultipliers(input.sheet, flatAddsOutsideRune(tree), runeSheetMultipliers(input.runes))
       : input.sheet;
   const sheet = stripCollection(runeFree, collectionSheetPct(tree.collection), tree.critDmgPct);
 

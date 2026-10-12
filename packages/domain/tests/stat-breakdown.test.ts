@@ -12,6 +12,7 @@ import { emptySheetOther, starsMult, type SheetOtherPct, type SheetStats } from 
 import { computeCombatMults, derive } from '@bombfarm/domain/derive';
 import type { TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
 import { applyCollection, type CollectionSheetPct } from '@bombfarm/domain/collection';
+import { applyRuneMultipliers, flatAddsOutsideRune, readHeroRunes, runeSheetMultipliers, type HeroRune } from '@bombfarm/domain/runes';
 import { ZERO_PTS, SHEET_DISPLAY_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import {
@@ -95,6 +96,7 @@ type FixtureOpts = {
   naked?: SheetStats;
   geared?: SheetStats;
   collection?: CollectionSheetPct;
+  runes?: readonly HeroRune[];
 };
 
 function buildFixture(opts: FixtureOpts = {}) {
@@ -145,7 +147,9 @@ function buildFixture(opts: FixtureOpts = {}) {
       // Crit damage takes no pool bump: the tree node is a flat percentage-point addend.
       critDmg: naked.critDmg + treeCritDmg,
     } satisfies SheetStats);
-  const geared = collection && !opts.geared ? applyCollection(gearedPlain, collection, treeCritDmg) : gearedPlain;
+  const gearedBeforeRunes = collection && !opts.geared ? applyCollection(gearedPlain, collection, treeCritDmg) : gearedPlain;
+  const runes = opts.runes ?? [];
+  const geared = applyRuneMultipliers(gearedBeforeRunes, flatAddsOutsideRune({ critDmgPct: treeCritDmg }), runeSheetMultipliers(runes));
 
   const treeSheet: TreeSheetTotals = {
     danoStatic: treeDanoTotal,
@@ -189,6 +193,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     hitMult: mults.hitMult,
     dmgMult: mults.dmgMult,
     mitigationPct: 6.7,
+    runes,
   });
 
   const field = deriveResult.effective.energy / context.drainMult;
@@ -226,6 +231,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     uptime,
     rest,
     collection,
+    runes,
   };
 
   return { facts, deriveResult };
@@ -339,6 +345,24 @@ describe('stat-breakdown builder', () => {
     }
     const attack = buildStatBreakdown('attack', facts);
     expect(attack.kind === 'ledger' && attack.steps.some((s) => s.source === 'collection')).toBe(false);
+  });
+
+  it('cooldown: a rune and Collections both scale Short Fuse, and the ledger still recomposes', () => {
+    const { facts } = buildFixture({
+      pts: { ...ZERO_PTS(), cdr: 3 },
+      abilities: { pavio_curto: 20 },
+      collection: { energyPct: 0, critChancePct: 0, critDmgPct: 0, cdrPct: 5.8 },
+      runes: readHeroRunes([{ e: 'cdr', p: 0.09, s: 1000, r: 1 }]),
+    });
+    assertLedgersRecompose(facts);
+    const cdr = buildStatBreakdown('cdr', facts);
+    if (cdr.kind !== 'ledger') throw new Error('cooldown is a ledger');
+    for (const [source, factor] of [['rune', 1.09], ['collection', 1.058]] as const) {
+      const index = cdr.steps.findIndex((step) => step.source === source);
+      const before = cdr.steps[index - 1];
+      if (!before) throw new Error(`${source} has a step before it`);
+      expect(cdr.steps[index]?.running, source).toBeCloseTo(before.running * factor, 9);
+    }
   });
 
   it('F4b — shared-pool gear shows percent × base', () => {

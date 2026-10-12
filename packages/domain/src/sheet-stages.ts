@@ -122,7 +122,7 @@ export function peelSheetStages(input: PeelSheetStagesInput): SheetStageTable {
   const afterGear = applyGear(afterAbility, loadout, sheetOther);
   const afterPoints = applyPoints(afterAbility, loadout, pts, sheetOther, level, stars);
   const afterTree = applySkillTree(afterPoints, afterAbility, sheetOther, tree);
-  const total = runes.length === 0 ? afterTree : applyRuneMultipliers(afterTree, flatAddsOutsideRune(tree, sheetOther), runeSheetMultipliers(runes));
+  const total = runes.length === 0 ? afterTree : applyRuneMultipliers(afterTree, flatAddsOutsideRune(tree), runeSheetMultipliers(runes));
 
   const out = {} as SheetStageTable;
   for (const key of SHEET_KEYS) {
