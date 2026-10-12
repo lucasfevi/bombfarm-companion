@@ -183,7 +183,7 @@ export function composeSheetFromBirth(input: ComposeSheetFromBirthInput): SheetS
   );
   const withTree = applySkillTree(pooled, naked, input.sheetOther, input.tree);
   if (!input.runes || input.runes.length === 0) return withTree;
-  return applyRuneMultipliers(withTree, flatAddsOutsideRune(input.tree, input.sheetOther), runeSheetMultipliers(input.runes));
+  return applyRuneMultipliers(withTree, flatAddsOutsideRune(input.tree), runeSheetMultipliers(input.runes));
 }
 
 /**

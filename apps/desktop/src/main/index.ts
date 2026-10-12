@@ -1213,8 +1213,8 @@ if (env.envConflict) {
 log.info(createBootRecord(env, 'main'));
 
 // Proves the main process can compute with @bombfarm/domain: a value
-// import from the built package, called once at boot. No behaviour depends on this; F2/F3
-// are what actually use the edge. See src/main/domain-edge.ts.
+// import from the built package, called once at boot. No behaviour depends on this; the
+// features built on the edge are what actually use it. See src/main/domain-edge.ts.
 log.info({ scope: 'main', event: 'domain.edge_ready', fuseSecondsAtZeroCdr: fuseSecondsForCdr(0) });
 
 if (!gotLock) {

@@ -48,10 +48,8 @@ export type AbilityEffect =
    * `SheetStats.cdr`. Short Fuse is the only source; the wiki says it is "added directly, the same
    * on any hero" and "after everything else, up to the Cooldown Reduction cap", so the addend
    * sits outside the shared gear/points pool and outside the skill tree, exactly like
-   * `critChanceFlat`, and the final sheet value is clamped at `STAT_CAPS.cdr`. The same wording
-   * puts it outside the rune multiplier too (`applyRuneMultipliers`), unlike Olho Clínico, whose
-   * plain "crit chance" text was measured inside it. No live save carries this ability yet: both
-   * placements follow the wiki's wording, they are not measurements.
+   * `critChanceFlat`, and the final sheet value is clamped at `STAT_CAPS.cdr`. The wording
+   * overstates it: Collections' `recarga` and a cooldown rune both multiply it, measured.
    */
   | { kind: 'cdrFlat'; perLevel: number }
   /**

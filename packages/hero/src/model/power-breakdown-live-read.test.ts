@@ -37,7 +37,7 @@ function panelInput(hero: HeroRecord, switches?: TeamAuraSwitches) {
 }
 
 function runeFreePower(hero: HeroRecord, switches?: TeamAuraSwitches): number {
-  return gamePower(gamePowerInputWithoutRunes(panelInput(hero, switches), runesOf(hero), { critDmgPct: treeCritDmgPct, cdrFlat: 0 }));
+  return gamePower(gamePowerInputWithoutRunes(panelInput(hero, switches), runesOf(hero), { critDmgPct: treeCritDmgPct }));
 }
 
 function storedPower(hero: HeroRecord): number {
@@ -75,7 +75,7 @@ describe('the Power panel on a live account read', () => {
       const zeroPoints = gamePowerInputWithoutRunes(
         gamePowerInputOf(hero.gearedOverride, hero.abilities),
         runesOf(hero),
-        { critDmgPct: treeCritDmgPct, cdrFlat: 0 },
+        { critDmgPct: treeCritDmgPct },
       );
       return relativeError(gamePower(zeroPoints), storedPower(hero)) > 1e-3;
     });
@@ -84,7 +84,7 @@ describe('the Power panel on a live account read', () => {
 
   it('the highest rune-free cooldown this read checks is the bound the chart draws solid to', () => {
     const cooldowns = fixture.heroes.map(
-      (hero) => gamePowerInputWithoutRunes(panelInput(hero), runesOf(hero), { critDmgPct: treeCritDmgPct, cdrFlat: 0 }).sheet.cdr,
+      (hero) => gamePowerInputWithoutRunes(panelInput(hero), runesOf(hero), { critDmgPct: treeCritDmgPct }).sheet.cdr,
     );
     expect(Math.max(...cooldowns)).toBeCloseTo(GAME_POWER_CDR_CHECKED_MAX_PCT, 2);
   });

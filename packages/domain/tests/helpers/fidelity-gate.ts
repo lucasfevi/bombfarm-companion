@@ -124,7 +124,7 @@ function assertExportCaptureIsUsable(payload: AccountPayload, label: string): vo
 
 /**
  * Runs the whole gate: live-capture fidelity guard → export-capture light guard → parse both
- * sides through F1's entry point → cross-source compare → raw-payload sanity (fields
+ * sides through the payload parser's entry point → cross-source compare → raw-payload sanity (fields
  * `parseAccountPayload` does not project into `ParseResult` at all, e.g. the spec's own named
  * "coerced string gold" / dropped "stat_ranges" hazards — see `compareRawAccountFields` /
  * `compareRawHeroFields` doc comments in `fidelity-compare.ts`) → assert the manifest's

@@ -172,8 +172,14 @@ export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames
         slots: t.teamPlanChangesFieldSlots,
         fieldSlots: t.teamPlanChangesFieldFieldSlots,
         houseCycleSecs: t.teamPlanChangesFieldHouseCycleSecs,
+        farmPass: t.teamPlanChangesFieldPass,
       }[d.name];
-      return { change: label, before: text(d.before === null ? none : String(d.before)), after: text(d.after === null ? none : String(d.after)), note: null };
+      const value = (raw: number | null): string => {
+        if (raw === null) return none;
+        if (d.name === 'farmPass') return raw === 1 ? t.teamPlanChangesOn : t.teamPlanChangesOff;
+        return String(raw);
+      };
+      return { change: label, before: text(value(d.before)), after: text(value(d.after)), note: null };
     }
     case 'control': {
       const label = {

@@ -2,7 +2,7 @@ import { checkSchema, type SchemaCheckResult } from '@bombfarm/domain/save-schem
 import type { RouteFingerprint } from './fingerprints.js';
 
 /**
- * The runtime drift guard. Cross-validation is gone under `D24` — this
+ * The runtime drift guard. Cross-validation is gone — this
  * is the only thing standing between a game update that reshapes a response and a confidently
  * wrong number. A missing required key is a shape break (`ok:false`), and an
  * ADDED key at any declared level is ALSO a shape break, never additive, never merely logged. The

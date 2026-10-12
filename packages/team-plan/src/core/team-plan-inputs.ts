@@ -27,6 +27,8 @@ export type TeamPlanInputs = {
   houseCycleSecsHouseIdx: number | null;
   houseCycleSecsLevel: number | null;
   maxPhase: number | null;
+  /** Whether the Pass is active — the farm board's own flag, so a gold figure here and there agree. */
+  farmPass: boolean;
   /** Already resolved by the host: the farm screen's phase when the player chose one there, else
    *  null. Web: `phasesViewPhaseChosen ? phasesViewPhase : null`. Desktop: the Farm view
    *  storage's `selectedPhase`. Resolved here because the "chosen" flag is each host's own. */

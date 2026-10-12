@@ -112,14 +112,14 @@ describe('source-surface — the skip-directive guard', () => {
     return actual;
   }
 
-  it('unconditional skip directives in packages/domain are exactly the declared F8 manifest', () => {
+  it('unconditional skip directives in packages/domain are exactly the declared manifest', () => {
     const actual = countMatches(SKIP_PATTERN_GLOBAL);
 
     const expectedFiles = Object.keys(F8_SKIP_MANIFEST).sort();
     const actualFiles = Object.keys(actual).sort();
     expect(
       actualFiles,
-      'a skip appeared outside the F8 manifest, or a manifested file no longer has one',
+      'a skip appeared outside the manifest, or a manifested file no longer has one',
     ).toEqual(expectedFiles);
 
     for (const file of expectedFiles) {

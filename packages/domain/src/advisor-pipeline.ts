@@ -402,7 +402,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
       sheetOther,
       treeSheet,
     ),
-    flatAddsOutsideRune(treeSheet, sheetOther),
+    flatAddsOutsideRune(treeSheet),
     runeSheetMultipliers(runes),
   );
 

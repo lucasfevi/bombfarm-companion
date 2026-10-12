@@ -17,7 +17,7 @@ const NEXT_CONFIG_PATH = resolve(root, 'apps/web/next.config.ts');
  * Next's webpack/Turbopack too), `apps/web/vitest.config.ts`'s `resolve.alias`, and
  * `apps/web/next.config.ts`'s `transpilePackages`.
  *
- * Before F1 these were a convenience. After F1 they are the ONLY thing standing between an
+ * Before that flip these were a convenience. After it they are the ONLY thing standing between an
  * `exports`-map change and a broken production deploy — removing any one of them silently
  * moves the public planner onto `packages/domain/dist`, a directory Vercel's build never
  * produces. This guard exists so that removal fails a check instead of a deploy.

@@ -18,7 +18,7 @@ const ARRAY_SECTIONS: ReadonlySet<AccountSection> = new Set(['heroes', 'items'])
  * Decodes a stored row's `body` text for `section`. Never throws for any input string.
  * Performs no field-level normalization, defaulting, key-stripping or coercion — an
  * unfamiliar extra key and the original key order both survive untouched (the
- * desktop normalizes nothing; payload-level normalization is F1's `parseAccountPayload`).
+ * desktop normalizes nothing; payload-level normalization is `parseAccountPayload`'s job).
  */
 export function decodeStoredSection(section: AccountSection, text: string): DecodedSection {
   let parsed: unknown;

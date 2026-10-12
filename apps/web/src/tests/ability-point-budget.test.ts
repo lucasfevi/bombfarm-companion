@@ -14,7 +14,7 @@ describe('abilityPointBudget', () => {
     expect(abilityPointBudget('Lendária', 200)).toBe(100);
   });
 
-  // Boundary cases, re-pointed onto the post-patch corpus (F1, ground-truth-rule class
+  // Boundary cases, re-pointed onto the post-patch corpus (ground-truth-rule class
   // (a) — read from the capture). RECORDED LOSS: the deleted `Bram L49 -> 40 spendable / 9
   // dead` and `Torin L45 -> 40 / 5` rows named heroes of the deleted account whose level
   // exceeded `quota × 20` (the "dead point" boundary). No hero on either post-patch corpus
@@ -45,7 +45,7 @@ describe('abilityPointBudget', () => {
   });
 
   it('spent === min(level, quota x 20) holds 13/13 across both post-patch corpus files (equality, not <=)', () => {
-    // F1 (ground-truth-rule class (a) — read from the capture): re-pointed onto both corpus files
+    // Ground-truth-rule class (a) — read from the capture: re-pointed onto both corpus files
     // combined (5 export heroes + 8 payload heroes). The hero count is read from the two
     // fixtures, not hand-copied.
     const exportRaw = loadFixtureJson('save-20260813-5heroes.json');

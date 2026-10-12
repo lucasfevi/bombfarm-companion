@@ -31,7 +31,7 @@ function categoryHistogram(raw: unknown): Record<number, number> {
 }
 
 describe('parseSaveFile inventory pass', () => {
-  // F1 (ground-truth-rule class (a) — read from the capture): re-pointed onto payload-20260812-8heroes
+  // Ground-truth-rule class (a) — read from the capture: re-pointed onto payload-20260812-8heroes
   // for its larger, richer inventory (27 catalogued vs the export's 17).
   it('payload-20260812-8heroes: gear, equipped, spare, histogram, and slots', () => {
     const raw = loadFixtureJson('payload-20260812-8heroes.json');
@@ -44,7 +44,7 @@ describe('parseSaveFile inventory pass', () => {
     expect(account.slots).toBe(3);
   });
 
-  // F1 (ground-truth-rule class (a)): re-pointed onto save-20260813-5heroes (the export).
+  // Ground-truth-rule class (a): re-pointed onto save-20260813-5heroes (the export).
   it('save-20260813-5heroes: gear, equipped, and spare counts', () => {
     const raw = loadFixtureJson('save-20260813-5heroes.json');
     const { inventory, rejected } = parseSaveFile(raw, []);

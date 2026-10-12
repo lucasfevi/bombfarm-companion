@@ -1,9 +1,10 @@
 {
-  "capturedAt": "2026-10-01T02:58:19.460Z",
+  "capturedAt": "2026-10-12T20:19:31.168Z",
   "endpoints": {
     "data": {
-      "payloadSha256": "ed1994cfe45d5e90f6ced8f72596bd27b1c4adfcaae10e4c90575fccc689a3df",
+      "payloadSha256": "43f82eb2801a8512f59227fba4a438178b3d3b54913bc3ad94fc481c6f30d3a8",
       "sectionNames": [
+        "bestiario",
         "bolsa",
         "boost",
         "combate",
@@ -12,6 +13,7 @@
         "diaria",
         "drops",
         "entidades",
+        "essencia",
         "fases",
         "gemas",
         "habilidades",
@@ -35,6 +37,7 @@
         "vip"
       ],
       "sectionSha256": {
+        "bestiario": "f669cce06777f1d872ac53d6ec41145e91f646947b9ffd860a27a60dc7b522ab",
         "bolsa": "32e0d7a1eeb1e027b19c8efe0c9731792167b68346fc626adf5e1cb4bda7c6fb",
         "boost": "69a3669fbad66c90a7ea19a41b6e0d69605f66fcb4e1b7f2850435b2c1dd813b",
         "combate": "b97475c0fc8784cc0e748bef836373f504522845198212cfe48f462f7e4cf725",
@@ -43,16 +46,17 @@
         "diaria": "37139dc0f4c183ace7593b9a8161aae20d36807d94cf3e29308dfbe48152231e",
         "drops": "126937a4c0e30373e8b6ffe9a46ad3e6dc3ed45eb5e27ca7dd1579c9a9cded47",
         "entidades": "8abc9272d059d18c5a1af18f2542f98579f7d84130a87fc93ec41d46f9925c86",
+        "essencia": "9b11c09cf93c1dd13bc2e0f339e0e19c4f624f847b7314f775dabb3359835ddd",
         "fases": "837853ea4e700d6973ca675a9efcea85036da849d7b6b564fe327193078d8c4a",
-        "gemas": "611140ce2878ce4290580a2efaea428a765313efcf58e08b5a1459985df0bc83",
-        "habilidades": "229ca91579752fc96e9c4bc68070f183cf748edf27875bdedfbb6b1a499be480",
+        "gemas": "b6f89dffb1441c13b7ee6b4839f383edd94dde22289fc10ffba2675fc2295954",
+        "habilidades": "6fae0b39ec04792c22cbea55a1422092d6a6234cbc7799ac43e58d329b20a2c5",
         "herois": "580aa49dbf4cf58cd4532ba36972525d13263d1fa39deb1e9d3b622c672215e1",
-        "inventario": "f53ee894e7ca1e5b9bb78c589912f33fa099c175f66030b439fbb0ccc2edf74a",
+        "inventario": "31cbda67c396da2c9ee2615717f8438ee4f47afad823cef056c66e53f14433bb",
         "item_stats": "94041e8cad48122447a273106df9ecccec1c44d569659737dfd73fa44bb7cd79",
-        "itens": "3c62de2a14ac4dc705f23e3443986d3ffe9658fafd921c0f8998e760c75f11dc",
+        "itens": "ef061543b5b9187c95d938d54d5a29e5355d7e42390d6b1a6039afb86dd5dd41",
         "mercado": "a0f334373960949666fb787087fe2dde632de09c54cbca6080ada5e772f1aa25",
         "pedra": "baedadf2ed982b0c12570e2c82d6b4ce2f305d6c9ff401fc5b9f70f714196a43",
-        "premios": "e5e42ac4bd041411e9ece92b3ee3f3e337bf3f7f0e6fb79575118ebaed81e4ef",
+        "premios": "8a5c376d86e618a0e28ad194f4f87ce2015dc8d40342aebe99c7aaf0b42c76f6",
         "pvp": "94da20fd028ee53086eeb4465738364af88d39fb07ac13a5d9ba478269233806",
         "ranking_premio": "370ec771247cf90ab821e8ea75ae808802362cb38b9069c50f52813875d184a7",
         "raridades": "e014307c9fa181014e6669a97b435adf1813069b2cba314bb8623ee89b0bd070",
@@ -63,7 +67,7 @@
         "skins": "8b89b65eaed5a7b5af48f0fbdb3fdab02f69d3f467e67b25e268900389ff5da0",
         "slots": "a6337d8d90139df16155157e7880ac185bd2428460320714cdbac97fdcc7071a",
         "stat_kinds": "8cd8ba2c0b3f951aae2d864a2113c9cd8d7a0c017653653adf47cb0bc6da94f6",
-        "vip": "4db9e88c30b3099154b0e3606ade1f2433cc34c2411b3ac9ea6888c74dc22cd4"
+        "vip": "21096001e0f3b089d950b6e3611d834ecfee4b48d34efc82532c3a083635beed"
       },
       "url": "https://wiki.bombfarm.net/wiki/api/data",
       "versaoCatalogo": 4

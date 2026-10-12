@@ -12,6 +12,7 @@ import { emptySheetOther, starsMult, type SheetOtherPct, type SheetStats } from 
 import { computeCombatMults, derive } from '@bombfarm/domain/derive';
 import type { TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
 import { applyCollection, type CollectionSheetPct } from '@bombfarm/domain/collection';
+import { applyRuneMultipliers, flatAddsOutsideRune, readHeroRunes, runeSheetMultipliers, type HeroRune } from '@bombfarm/domain/runes';
 import { ZERO_PTS, SHEET_DISPLAY_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import {
@@ -95,6 +96,7 @@ type FixtureOpts = {
   naked?: SheetStats;
   geared?: SheetStats;
   collection?: CollectionSheetPct;
+  runes?: readonly HeroRune[];
 };
 
 function buildFixture(opts: FixtureOpts = {}) {
@@ -145,7 +147,9 @@ function buildFixture(opts: FixtureOpts = {}) {
       // Crit damage takes no pool bump: the tree node is a flat percentage-point addend.
       critDmg: naked.critDmg + treeCritDmg,
     } satisfies SheetStats);
-  const geared = collection && !opts.geared ? applyCollection(gearedPlain, collection, treeCritDmg) : gearedPlain;
+  const gearedBeforeRunes = collection && !opts.geared ? applyCollection(gearedPlain, collection, treeCritDmg) : gearedPlain;
+  const runes = opts.runes ?? [];
+  const geared = applyRuneMultipliers(gearedBeforeRunes, flatAddsOutsideRune({ critDmgPct: treeCritDmg }), runeSheetMultipliers(runes));
 
   const treeSheet: TreeSheetTotals = {
     danoStatic: treeDanoTotal,
@@ -189,6 +193,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     hitMult: mults.hitMult,
     dmgMult: mults.dmgMult,
     mitigationPct: 6.7,
+    runes,
   });
 
   const field = deriveResult.effective.energy / context.drainMult;
@@ -226,6 +231,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     uptime,
     rest,
     collection,
+    runes,
   };
 
   return { facts, deriveResult };
@@ -289,7 +295,7 @@ function assertFormulasMatch(facts: PipelineFacts): void {
 }
 
 describe('stat-breakdown builder', () => {
-  it('F1 — buffs off / zeroed points: birth + level + gear', () => {
+  it('buffs off / zeroed points: birth + level + gear', () => {
     const { facts } = buildFixture({ pts: ZERO_PTS() });
     assertLedgersRecompose(facts);
     assertFormulasMatch(facts);
@@ -304,7 +310,7 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F2 — general buffs on: all step kinds present; ledgers recompose', () => {
+  it('general buffs on: all step kinds present; ledgers recompose', () => {
     const { facts } = buildFixture({
       pts: { ...ZERO_PTS(), attack: 3, energy: 2, speed: 1, critChance: 1, critDmg: 1, penetration: 1, cdr: 1 },
       abilities: { grito_guerra: 5, marcha_acelerada: 5, olho_clinico: 5 },
@@ -341,7 +347,25 @@ describe('stat-breakdown builder', () => {
     expect(attack.kind === 'ledger' && attack.steps.some((s) => s.source === 'collection')).toBe(false);
   });
 
-  it('F4b — shared-pool gear shows percent × base', () => {
+  it('cooldown: a rune and Collections both scale Short Fuse, and the ledger still recomposes', () => {
+    const { facts } = buildFixture({
+      pts: { ...ZERO_PTS(), cdr: 3 },
+      abilities: { pavio_curto: 20 },
+      collection: { energyPct: 0, critChancePct: 0, critDmgPct: 0, cdrPct: 5.8 },
+      runes: readHeroRunes([{ e: 'cdr', p: 0.09, s: 1000, r: 1 }]),
+    });
+    assertLedgersRecompose(facts);
+    const cdr = buildStatBreakdown('cdr', facts);
+    if (cdr.kind !== 'ledger') throw new Error('cooldown is a ledger');
+    for (const [source, factor] of [['rune', 1.09], ['collection', 1.058]] as const) {
+      const index = cdr.steps.findIndex((step) => step.source === source);
+      const before = cdr.steps[index - 1];
+      if (!before) throw new Error(`${source} has a step before it`);
+      expect(cdr.steps[index]?.running, source).toBeCloseTo(before.running * factor, 9);
+    }
+  });
+
+  it('shared-pool gear shows percent × base', () => {
     const naked = sampleNaked();
     const geared = { ...naked, speed: naked.speed + naked.speed * 0.02 };
     const { facts } = buildFixture({ naked, geared, pts: ZERO_PTS() });
@@ -356,7 +380,7 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F5 — uncapped team: ownTeamSplit note (PR #139: own is always 0, the hero’s own rank never reaches abilityMods)', () => {
+  it('uncapped team: ownTeamSplit note (PR #139: own is always 0, the hero’s own rank never reaches abilityMods)', () => {
     // Grito de Guerra is a team aura — a hero's own rank (5, here, to prove it is harmlessly
     // ignored) never reaches abilityMods, so the roster-wide team total (10) alone drives
     // attackMult 1.10, under Grito's 20 cap.
@@ -376,7 +400,7 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F6 — capped team: capped note; still recomposes', () => {
+  it('capped team: capped note; still recomposes', () => {
     // Own Grito 10 (+10%) + team Grito 100 (+100%) would total 110% under the old global cap;
     // the real cap is Grito's own maximum (20%, Fault 4).
     const { facts } = buildFixture({
@@ -394,7 +418,7 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F7 — zeroed points with buffs: Points step omitted', () => {
+  it('zeroed points with buffs: Points step omitted', () => {
     const { facts } = buildFixture({
       pts: ZERO_PTS(),
       abilities: { grito_guerra: 10 },
@@ -411,7 +435,7 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F8 — peels birth → level → stars → Keen Eye / Diamond Tip', () => {
+  it('peels birth → level → stars → Keen Eye / Diamond Tip', () => {
     const level = 26;
     const stars = 2;
     const { facts } = buildFixture({
@@ -481,7 +505,7 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F9 — attack tree step is × dmg_static on the Hero+Gear+Ability subtotal', () => {
+  it('attack tree step is × dmg_static on the Hero+Gear+Ability subtotal', () => {
     const { facts } = buildFixture({
       pts: { ...ZERO_PTS(), attack: 2 },
       treeDanoTotal: 1.2,
@@ -507,7 +531,7 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F10 — critChance / critDmg tree steps are additive-pool, sourced before combat mults', () => {
+  it('critChance / critDmg tree steps are additive-pool, sourced before combat mults', () => {
     const { facts } = buildFixture({
       pts: { ...ZERO_PTS(), critChance: 1, critDmg: 1 },
       treeCritChance: 6,

@@ -1,5 +1,20 @@
 # @bombfarm/web
 
+## 0.27.2
+
+### Patch Changes
+
+- 0a911da: The Optimizer now counts the Pass's +15% gold, so its gold/h figures match the Farm board's instead of reading about 13% low on a Pass account.
+- 435e413: The planner's top bar now fits a phone. Below 640px the tabs scroll inside their own row, and Download, Import, the referral code, the coffee link and the language switch move into one menu, so no page scrolls sideways at 380px.
+- Updated dependencies [e84d206]
+- Updated dependencies [0a911da]
+  - @bombfarm/domain@1.10.2
+  - @bombfarm/account@0.3.14
+  - @bombfarm/farm@1.3.2
+  - @bombfarm/game-art@0.8.3
+  - @bombfarm/hero@0.5.8
+  - @bombfarm/team-plan@0.6.5
+
 ## 0.27.1
 
 ### Patch Changes

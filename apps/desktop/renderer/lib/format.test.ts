@@ -2,7 +2,7 @@
  * Formatting follows the locale, bounded to the four shipped formatters — this suite rewrites
  * every assertion here to prove the locale actually reaches `Intl` —
  * grouping and decimal separators must differ between `en` and `pt-BR`, not just the words. This
- * is a STRENGTHENING of the pre-F4 suite (which asserted English-only), not a weakening: the old
+ * is a STRENGTHENING of the earlier suite (which asserted English-only), not a weakening: the old
  * cases are kept, `t`/`locale` parameters are threaded through, and each numeric formatter now
  * has a paired assertion showing the two locales disagree.
  */

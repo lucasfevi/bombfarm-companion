@@ -27,7 +27,7 @@ function listTsFiles(dir: string): string[] {
 
 // Isolates one `import`/`export ... from '@bombfarm/contracts';` statement at a time.
 // Anchored to the start of a line (`^[ \t]*`) so prose inside a comment that merely
-// contains the word "import" (e.g. "F3/F4 import this without...") can never seed a
+// contains the word "import" (e.g. "other packages import this without...") can never seed a
 // false match — only an actual import/export keyword starting a line qualifies.
 // `[^;]*?` cannot cross a preceding statement's terminating semicolon, and the whole
 // pattern is non-greedy, so multi-line import lists are matched without bleeding into

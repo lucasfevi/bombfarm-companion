@@ -577,6 +577,7 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanChangesFieldSlots',
   'teamPlanChangesFieldFieldSlots',
   'teamPlanChangesFieldHouseCycleSecs',
+  'teamPlanChangesFieldPass',
   'teamPlanChangesControlForgeFloor',
   'teamPlanChangesControlObjective',
   'teamPlanChangesControlAllowedChanges',
@@ -1077,7 +1078,7 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanResultSortLabel', 'teamPlanResultSortName', 'teamPlanResultSortDelta', 'teamPlanResultSortDeltaPct', 'teamPlanResultSortAfter', 'teamPlanResultSortBefore', 'teamPlanResultSortLevel', 'teamPlanResultSortAscending', 'teamPlanResultSortDescending',
   // The Items panel's two editable slot grids (2026-09-29) name themselves with this plus the
   // compare side, so current gear and the clone are told apart by name rather than by position.
-  'slotEditor',
+  'slotEditor', 'siteMenuAria', 'siteMenuLanguage',
 ];
 
 /**

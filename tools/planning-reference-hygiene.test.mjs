@@ -157,6 +157,25 @@ const SPELLED_PLAN_NUMBER = /\b(?:[Ww]ave|[Mm]ilestone)[ -][0-9]{1,2}\b/;
 const PLAN_STEP_NUMBER =
   /\b(?:W[1-9][0-9]?\b|T[1-9][0-9]?[a-z]?\b(?!:[0-9])|M[0-9]{1,2}\b(?![ ,]?-?[0-9.]|-[a-z]))/;
 
+/**
+ * A feature or decision-record tag with no hyphen and no second token: the prefix letter glued to
+ * a one- or two-digit number. It is the shape every scan above misses — there is no
+ * `PREFIX-NUMBER` hyphen, the feature half of a milestone citation has no milestone beside it, and
+ * `PLAN_STEP_NUMBER` only knows the letters W, T and M. A blanket one-letter-and-digits class would
+ * be an offense on `L38` (a hero level), `S1` (a solver strategy), `C1` (a control range) and `V8`,
+ * so the pattern names the two prefix letters the planning tree actually used (feature, decision)
+ * and nothing else. Like `PLAN_STEP_NUMBER` it only reads prose, because the feature letter is
+ * also a function key and either letter could be a variable in code. In prose a function key is
+ * told apart by its neighbours (`press F1`, `F1 key`), a colour or hex literal by the word
+ * character or `#` before it, a spreadsheet cell by the letter after it (`A1b`), and a skill-tree
+ * node id by its leading zero (`H02`) — the number starts at 1 for that reason. The feature half of
+ * a milestone-and-feature citation is already reported by `MILESTONE_FEATURE_CITATION`, so it is
+ * skipped here rather than reported twice. Every exemption above is hyphenated (`SHA-`, `P-01`,
+ * `X-10`), so none can overlap an unhyphenated tag.
+ */
+const BARE_PLANNING_TAG =
+  /(?<![A-Za-z0-9_#$.])(?<!\b(?:press|pressing|hit|key)\s)(?<!\b[A-Z]{1,4}[0-9]{1,2}\s)[FD][1-9][0-9]?(?![A-Za-z0-9_])(?!\s+key\b)/;
+
 const TEST_TITLE = /\b(?:describe|it|test)(?:\.[a-z]+)*\(\s*(['"`])((?:\\.|(?!\1).)*)\1/g;
 const LINE_COMMENT = /^\s*(?:\/\/|\/\*|\*|\{\/\*)/;
 const TRAILING_COMMENT = /(?<![:\\'"`])\/\/(.*)$|\/\*(.*?)(?:\*\/|$)/g;
@@ -230,6 +249,9 @@ export function planningReferenceOffenses(line, { file = '' } = {}) {
   if (SPELLED_PLAN_NUMBER.test(line)) offenses.push('spelled-out wave or milestone number');
   if (proseOf(line, file).some((prose) => PLAN_STEP_NUMBER.test(prose))) {
     offenses.push('wave, task or milestone number in prose');
+  }
+  if (proseOf(line, file).some((prose) => BARE_PLANNING_TAG.test(prose))) {
+    offenses.push('bare planning tag in prose');
   }
   for (const { name, pattern } of PLANNING_PATHS) {
     if (pattern.test(line)) offenses.push(name);
@@ -419,6 +441,58 @@ describe('planning-reference hygiene — the scan discriminates', () => {
       expect(planningReferenceOffenses(line, { file }), line).toEqual([
         'wave, task or milestone number in prose',
       ]);
+    }
+  });
+
+  it('red state: a bare feature or decision-record tag in a comment, test title, doc or YAML comment is caught', () => {
+    for (const [line, file] of [
+      ['  // re-pointed onto the corpus, per F31 of the rewrite', 'x.ts'],
+      [' * the pre-F31 suite asserted English only', 'x.ts'],
+      ['/** Only `phase` is read by F31. */', 'x.ts'],
+      ['  // the same shape D77 was written about', 'x.ts'],
+      ['// F31/F32 import this without a build', 'x.ts'],
+      ["describe('the shape guard (D77 — the repo is public)', () => {", 'x.test.ts'],
+      ["  it('F31\\'s technique, read from source', () => {", 'x.test.ts'],
+      ['> **`D77` changed which token that will be.** F31 shipped as a different source.', 'docs/x.md'],
+      ['| F31 | the reader | shipped |', 'docs/x.md'],
+      ['# F31 handoff: the capture is still owed', '.github/workflows/x.yml'],
+    ]) {
+      expect(planningReferenceOffenses(line, { file }), line).toEqual(['bare planning tag in prose']);
+    }
+  });
+
+  it('red state: a bare tag in a markdown heading or link label is caught', () => {
+    expect(planningReferenceOffenses('## F31 handoff', { file: 'docs/x.md' })).toEqual([
+      'bare planning tag in prose',
+    ]);
+    expect(planningReferenceOffenses('see [F31 handoff](#f31-handoff) below', { file: 'docs/x.md' })).toEqual([
+      'bare planning tag in prose',
+    ]);
+  });
+
+  it('green state: a bare tag in code, or in JSON, is not an offense (the shape is prose-only)', () => {
+    for (const [line, file] of [
+      ['const D5 = 5;', 'x.ts'],
+      ['  const F31 = readFileSync(path);', 'x.ts'],
+      ['  "id": "F31",', 'x.json'],
+      ['      "note": "D77 shipped",', 'x.json'],
+    ]) {
+      expect(planningReferenceOffenses(line, { file }), line).toEqual([]);
+    }
+  });
+
+  it('green state: text that shares part of the bare-tag shape is not an offense', () => {
+    for (const [line, file] of [
+      ['// press F11 to open the console, or hit F12 to resume', 'x.ts'],
+      ['// the F11 key opens the console', 'x.ts'],
+      ['// the hero is L38 and the strategy is S1; C1 is a control range', 'x.ts'],
+      ['// a spreadsheet cell F31b, a colour #F00 and a hash 0xF7', 'x.ts'],
+      ['// the node ids are H02 and H03, then a leading-zero F07 or D07', 'x.ts'],
+      ['// words such as F31s, D7th and the F31a variant are not tags', 'x.ts'],
+      ['// the engine is V8, the drive is a 3D7 sensor, a ZF7 part', 'x.ts'],
+      ['phase 5 F31 row of a table', 'x.ts'],
+    ]) {
+      expect(planningReferenceOffenses(line, { file }), line).toEqual([]);
     }
   });
 

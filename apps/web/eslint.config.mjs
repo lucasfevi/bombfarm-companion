@@ -467,7 +467,7 @@ export default tseslint.config(
             {
               group: ['react-icons', 'react-icons/*'],
               message:
-                'Import { Icon } from @bombfarm/ui instead (D12). react-icons is reachable only from packages/ui/src/icon/ui-registry.ts.',
+                'Import { Icon } from @bombfarm/ui instead. react-icons is reachable only from packages/ui/src/icon/ui-registry.ts.',
             },
             {
               group: ['*.svg', '**/*.svg'],

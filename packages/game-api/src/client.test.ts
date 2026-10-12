@@ -30,7 +30,7 @@ function transportFor(bodies: Record<string, Record<string, unknown>>): HttpTran
   return (req) => Promise.resolve({ status: 200, body: JSON.stringify(bodies[routeOf(req.path)] ?? {}) });
 }
 
-describe('the committed fixtures are scrubbed (D19 — the repo is public)', () => {
+describe('the committed fixtures are scrubbed (the repo is public)', () => {
   const fixturesDir = fileURLToPath(new URL('./__fixtures__', import.meta.url));
   const fixtureFiles = readdirSync(fixturesDir).filter((f) => f.endsWith('.json'));
 

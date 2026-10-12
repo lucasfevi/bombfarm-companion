@@ -4,7 +4,7 @@
  * reflected, that the grade is the parser's own `deriveAccountFidelity` and never recomputed
  * here, that a partial payload still delivers and parses every section that resolved,
  * and that an absent `skills` section is refused rather than parsed as a zeroed tree
- * (D24's specific failure).
+ * (mistaking absence for an empty value).
  *
  * The fixtures are the real, committed output of `assembleAccountPayload` driven over the real,
  * scrubbed 2026-08-12 capture — see `packages/game-api/scripts/generate-domain-fixtures.mjs`.
@@ -28,7 +28,7 @@ const after = loadPayload('assembled-payload-after.json');
 const partial = loadPayload('assembled-payload-partial.json');
 const drift = loadPayload('assembled-payload-drift.json');
 
-describe('the committed fixtures carry no account identity (D19 — the repo is public)', () => {
+describe('the committed fixtures carry no account identity (the repo is public)', () => {
   for (const [name, payload] of Object.entries({ before, after, partial, drift })) {
     it(`${name} carries no account_id, player_name or 64-hex token-shaped string`, () => {
       const text = JSON.stringify(payload);
