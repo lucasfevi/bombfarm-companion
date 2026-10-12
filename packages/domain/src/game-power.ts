@@ -236,7 +236,7 @@ export function gamePowerInputOf(
 
 /**
  * The sheet with the hero's runes on, through the rune model — crit damage's rune multiplies the
- * excess before the skill tree's flat add, and cooldown reduction's before Short Fuse's flat points.
+ * excess before the skill tree's flat add.
  */
 export function gamePowerInputWithRunes(
   input: GamePowerInput,

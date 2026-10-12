@@ -25,18 +25,13 @@ export function gearedFor(statKey: SheetDisplayKey, facts: PipelineFacts): numbe
 /**
  * {@link gearedFor} with the hero's runes taken back off, so the birth → gear → tree lines
  * are built from what the game built before the rune multiplied it. Crit damage's rune sits
- * inside the tree's flat add and cooldown reduction's inside Short Fuse's (`applyRuneMultipliers`), so
- * that add is peeled first and put back.
+ * inside the tree's flat add (`applyRuneMultipliers`), so that add is peeled first and put back.
  */
 export function gearedBeforeRunesFor(statKey: SheetDisplayKey, facts: PipelineFacts, treePct: number): number {
   const geared = gearedFor(statKey, facts);
   const factor = sheetBuffFactorFor(statKey, facts);
   if (factor === 1) return geared;
   if (statKey === 'critDmg') return (geared - treePct) / factor + treePct;
-  if (statKey === 'cdr') {
-    const flat = Math.max(0, facts.sheetOther.cdr);
-    return (geared - flat) / factor + flat;
-  }
   return geared / factor;
 }
 
@@ -71,8 +66,7 @@ export function pushCollection(steps: LedgerStep[], statKey: SheetDisplayKey, fa
   if (Math.abs(factor - 1) < EPS) return;
   const previous = steps.at(-1);
   if (!previous) return;
-  const held = heldOutOfSheetBuffs(statKey, facts);
-  steps.push({ source: 'collection', op: '×', amount: factor, running: (previous.running - held) * factor + held });
+  steps.push({ source: 'collection', op: '×', amount: factor, running: previous.running * factor });
 }
 
 /** The rune on this key with the least play time left — the one whose expiry ends the buff first. */
@@ -85,11 +79,6 @@ export function runeExpiringFirst(statKey: SheetDisplayKey, facts: PipelineFacts
   return soonest;
 }
 
-/** Short Fuse's flat, which the game adds after the runes and Collections alike. */
-function heldOutOfSheetBuffs(statKey: SheetDisplayKey, facts: PipelineFacts): number {
-  return statKey === 'cdr' ? Math.max(0, facts.sheetOther.cdr) : 0;
-}
-
 /** The `× (1 + p)` step for this key's runes; nothing is pushed on a hero carrying none. */
 export function pushRune(steps: LedgerStep[], statKey: SheetDisplayKey, facts: PipelineFacts): void {
   const factor = runeFactorFor(statKey, facts);
@@ -100,7 +89,7 @@ export function pushRune(steps: LedgerStep[], statKey: SheetDisplayKey, facts: P
     source: 'rune',
     op: '×',
     amount: factor,
-    running: (previous.running - heldOutOfSheetBuffs(statKey, facts)) * factor + heldOutOfSheetBuffs(statKey, facts),
+    running: previous.running * factor,
     runePlaySecondsLeft: runeExpiringFirst(statKey, facts)?.playSecondsLeft,
   });
 }

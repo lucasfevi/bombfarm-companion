@@ -12,6 +12,9 @@
  * - attack, energy, speed, crit chance, cooldown — the rune multiplies the FINAL sheet value,
  *   after gear, points and the skill tree. Speed is the discriminating axis: the tree's speed
  *   term is a flat add, and only the post-tree placement recovers integer points (three heroes).
+ *   Cooldown's final value includes Short Fuse's flat points, despite the wiki's "added after
+ *   everything else": a Short Fuse carrier under a cooldown rune (2026-10-11) reproduces to float
+ *   precision only with the rune on top of them, as Collections' `recarga` already was.
  * - crit damage — the rune multiplies the PRE-tree excess (birth ★ + Golpe Brutal + points), and
  *   the tree's flat `crit_dmg_add` lands on top of that (four heroes, tree term 68 pp — the two
  *   placements differ by ~3 points per hero).
@@ -22,7 +25,7 @@
  * timer instead — so {@link runeSheetMultipliers} simply multiplies whatever it is handed.
  */
 import type { TreeSheetTotals } from './birth-sheet';
-import type { SheetOtherPct, SheetStats } from './gear/types';
+import type { SheetStats } from './gear/types';
 import { WIKI_RUNES } from './phase-wiki';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
 
@@ -139,17 +142,14 @@ export function hasRuneOnSheet(runes: readonly HeroRune[]): boolean {
   return runes.some((rune) => RUNE_AXIS_SHEET_KEY[rune.axis] !== null);
 }
 
-/** The flat adds the game applies after a rune: the tree's crit-damage points and Short Fuse's cooldown-reduction points. */
-export type FlatAddsOutsideRune = { critDmgPct: number; cdrFlat: number };
+/** The flat add the game applies after a rune: the tree's crit-damage points. */
+export type FlatAddsOutsideRune = { critDmgPct: number };
 
-export function flatAddsOutsideRune(
-  tree: Pick<TreeSheetTotals, 'critDmgPct'>,
-  sheetOther: Pick<SheetOtherPct, 'cdr'>,
-): FlatAddsOutsideRune {
-  return { critDmgPct: tree.critDmgPct, cdrFlat: Math.max(0, sheetOther.cdr) };
+export function flatAddsOutsideRune(tree: Pick<TreeSheetTotals, 'critDmgPct'>): FlatAddsOutsideRune {
+  return { critDmgPct: tree.critDmgPct };
 }
 
-/** Composition order: the flat adds sit OUTSIDE the rune, every other key inside. */
+/** Composition order: the flat add sits OUTSIDE the rune, every other key inside. */
 export function applyRuneMultipliers(
   sheet: SheetStats,
   flat: FlatAddsOutsideRune,
@@ -162,7 +162,7 @@ export function applyRuneMultipliers(
     critChance: sheet.critChance * mult.critChance,
     critDmg: (sheet.critDmg - flat.critDmgPct) * mult.critDmg + flat.critDmgPct,
     penetration: sheet.penetration,
-    cdr: (sheet.cdr - flat.cdrFlat) * mult.cdr + flat.cdrFlat,
+    cdr: sheet.cdr * mult.cdr,
     luck: sheet.luck,
   };
 }
@@ -180,7 +180,7 @@ export function stripRuneMultipliers(
     critChance: sheet.critChance / mult.critChance,
     critDmg: (sheet.critDmg - flat.critDmgPct) / mult.critDmg + flat.critDmgPct,
     penetration: sheet.penetration,
-    cdr: (sheet.cdr - flat.cdrFlat) / mult.cdr + flat.cdrFlat,
+    cdr: sheet.cdr / mult.cdr,
     luck: sheet.luck,
   };
 }
