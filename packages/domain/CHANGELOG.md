@@ -1,5 +1,12 @@
 # @bombfarm/domain
 
+## 1.10.2
+
+### Patch Changes
+
+- e84d206: A hero with Short Fuse and a cooldown rune is no longer left out of the Farm board and the Optimizer — the rune also boosts Short Fuse's cooldown reduction, as the game does.
+- 0a911da: The Optimizer now counts the Pass's +15% gold, so its gold/h figures match the Farm board's instead of reading about 13% low on a Pass account.
+
 ## 1.10.1
 
 ### Patch Changes
