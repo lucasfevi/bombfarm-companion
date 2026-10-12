@@ -50,6 +50,7 @@ export const teamPlanChangesEn = {
   teamPlanChangesFieldSlots: 'house slots',
   teamPlanChangesFieldFieldSlots: 'field slots',
   teamPlanChangesFieldHouseCycleSecs: 'house cycle, seconds',
+  teamPlanChangesFieldPass: 'Pass',
   teamPlanChangesControlForgeFloor: 'forge floor',
   teamPlanChangesControlObjective: 'objective',
   teamPlanChangesControlAllowedChanges: 'what to change',

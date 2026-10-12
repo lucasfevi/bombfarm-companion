@@ -35,6 +35,7 @@ import { buildHeroPlanContexts } from '@bombfarm/domain/team-plan/hero-context';
 import { createScoreMemo, scoreHeroLoadout } from '@bombfarm/domain/team-plan/score';
 import { TEAM_BUFF_ABILITY_IDS, zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { runTeamPlan } from '@bombfarm/domain/team-plan';
+import { PASS_ADDS } from '@bombfarm/domain/phase-wiki';
 import type { Loadout, PointAlloc } from '@bombfarm/domain/gear/types';
 import type {
   EvaluateRosterInput,
@@ -350,6 +351,39 @@ describe('aurasAtCap reaches the farm objective through the squad account and th
     const capped = runTeamPlan({ ...base, aurasAtCap: AT_CAP }, { maxEvaluations: 200 });
     if (plain.blocked || capped.blocked) throw new Error('blocked');
     expect(capped.plan.currentDps).toBeGreaterThan(plain.plan.currentDps);
+  });
+});
+
+describe('the Pass reaches the farm objective', () => {
+  const file = 'save-20260828-4heroes-postpatch.json';
+
+  function bridgedGold(pass: boolean): number {
+    const fixture = loadTeamPlanFarmFixture(file);
+    const input = fixture.teamPlanInput;
+    const account = { ...input.account, pass };
+    const built = buildHeroPlanContexts(input.heroes, account, input.scopeByHeroId);
+    if (built.blocked) throw new Error('blocked');
+    const squad = built.contexts.filter((ctx) => isSquadScope(ctx.scope));
+    const { loadouts, pts } = bridgeFor(input);
+    return evaluateFarmObjective(buildFarmObjective(squad, account, loadouts), loadouts, pts, undefined).objective;
+  }
+
+  it('prices gold on the same Pass multiplier the farm board does', () => {
+    const fixture = loadTeamPlanFarmFixture(file);
+    const bases = computeHeroFarmBases({
+      heroes: fixture.heroes,
+      account: fixture.account,
+      enabledHeroIds: fixture.enabledHeroIds,
+    });
+    const board = bestFarmPhase(squadFactsFromBases(bases, null, fixture.account), GOLD, UNUSED_SCALES, {
+      maxPhase: fixture.account.maxPhase,
+      pass: true,
+    });
+    expect(bridgedGold(true)).toBe(board ? board.value : 0);
+  });
+
+  it('a Pass account earns the Pass bonus more than a free one', () => {
+    expect(bridgedGold(true) / bridgedGold(false)).toBeCloseTo(1 + PASS_ADDS.gold[1] - PASS_ADDS.gold[0], 6);
   });
 });
 
