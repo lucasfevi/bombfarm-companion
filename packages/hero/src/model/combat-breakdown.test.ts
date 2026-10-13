@@ -82,7 +82,7 @@ describe('which card an ability lands on', () => {
   it('is decided by the catalog\'s effect kind, so every per-bomb ability has a card and the loot and per-kill ones have none', () => {
     for (const ability of ABILITIES) {
       const card = cardForAbility(ability.id);
-      const cardless = ['none', 'shatterPct', 'bossDmgPct', 'teamXpPct'];
+      const cardless = ['none', 'shatterPct', 'bossDmgPct', 'teamXpPct', 'goldPct', 'teamGoldPct'];
       if (cardless.includes(ability.effect.kind)) expect(card, ability.id).toBeNull();
       else expect(card, ability.id).not.toBeNull();
     }

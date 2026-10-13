@@ -100,6 +100,12 @@ export type AbilityEffect =
    * hero's own mods: the farm board prices it over the rotation (`team-buffs.ts`).
    */
   | { kind: 'teamXpPct'; perLevel: number }
+  /** Veia de Ouro — gold % per level on the props its carrier destroys. Priced by the farm board's
+   *  loot layer from the wiki's own figure (`LOOT_ABILITY_VALUES`), never by the combat model. */
+  | { kind: 'goldPct'; perLevel: number }
+  /** Fortuna — TEAM gold % per level, capped at one carrier's maximum. Priced by the farm board's
+   *  loot layer like Veia de Ouro. */
+  | { kind: 'teamGoldPct'; perLevel: number }
   | { kind: 'none' };
 
 export interface AbilityDef {
@@ -153,13 +159,13 @@ export const ABILITIES: AbilityDef[] = [
   // 2026-08-23 patch restated the scope: it upgrades the drop of the hero that destroyed the
   // object, and does not apply to Jaulas. The per-level rate is unchanged (wiki 0.025).
   { id: 'olho_lapidador', name: 'Olho de Lapidador', max: 20, effectText: '+2.5% chance de subir a raridade do drop do herói que destruiu o objeto/nível (loot, não vale para Jaulas)', effect: { kind: 'none' } },
-  { id: 'veia_ouro', name: 'Veia de Ouro', max: 20, effectText: '+2% ouro (próprio)/nível, +40% no teto (loot)', effect: { kind: 'none' } },
+  { id: 'veia_ouro', name: 'Veia de Ouro', max: 20, effectText: '+2% ouro (próprio)/nível, +40% no teto (loot)', effect: { kind: 'goldPct', perLevel: 2 } },
   { id: 'grito_guerra', name: 'Grito de Guerra', max: 20, effectText: '+1% Ataque do TIME/nível', effect: { kind: 'attackPct', perLevel: 1 } },
   { id: 'golpe_brutal', name: 'Golpe Brutal', max: 20, effectText: '+4% dano crítico/nível (valor fixo, altera atributos)', effect: { kind: 'critDmgFlat', perLevel: 4, onSheet: true } },
   // Live wiki 2026-09-13: `per_level` 0.005 and `combate.pack_dmg_cap` 0.9 — the older text's
   // 2%/40% matched neither. Allies are the OTHER heroes on the field beside the carrier.
   { id: 'matilha', name: 'Matilha', max: 20, effectText: '+0.5% dano por aliado em campo/nível', effect: { kind: 'packDmgPct', perLevel: MATILHA_PER_RANK_PER_ALLY * 100 } },
-  { id: 'fortuna', name: 'Fortuna', max: 20, effectText: '+0.5% ouro do TIME/nível, +10% no teto (loot, aura capada)', effect: { kind: 'none' } },
+  { id: 'fortuna', name: 'Fortuna', max: 20, effectText: '+0.5% ouro do TIME/nível, +10% no teto (loot, aura capada)', effect: { kind: 'teamGoldPct', perLevel: 0.5 } },
   // Live wiki 2026-09-13: `kind: team_pen`, `per_level` 1 — flat points on every hero on the
   // field, capped at 20, the same shape as Presságio Mortal. Never on the carrier's own sheet.
   { id: 'brecha', name: 'Brecha', max: 20, effectText: '+1 ponto de Penetração do TIME/nível, +20 no teto', effect: { kind: 'penetrationPp', perLevel: 1 } },
@@ -332,6 +338,10 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
         break;
       case 'teamXpPct':
         // Aprendiz (team XP) — see the module doc above.
+        break;
+      case 'goldPct':
+      case 'teamGoldPct':
+        // Veia de Ouro and Fortuna — loot, priced by the farm board, never a combat mod.
         break;
       case 'none':
         break;

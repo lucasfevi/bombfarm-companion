@@ -12,9 +12,10 @@ import {
  * An ability's effect at a rank, in the unit a reader can check against the game: a percentage
  * of attack, crit points, a second-blast chance and the multiplier it works out to. Keyed by what
  * the effect DOES rather than by ability id, so an ability added to the catalog under an existing
- * kind gets a readout without anyone touching this file. The modelled kinds are read off the
- * combat model's own arithmetic; the loot kinds the model never prices read off the catalog's
- * published per-level figure, so a card can still say what rank 20 buys.
+ * kind gets a readout without anyone touching this file. The combat kinds are read off the
+ * combat model's own arithmetic; the loot kinds the farm board prices, and the effects nothing
+ * prices, read off the catalog's published per-level figure, so a card can still say what rank 20
+ * buys.
  */
 export type AbilityEffectReadout =
   | { kind: 'attackPct'; value: number }
@@ -56,25 +57,24 @@ export type AbilityEffectReadout =
   | { kind: 'none' };
 
 /**
- * The per-level figure of every ability the combat model does not price, as the wiki publishes
- * it — loot and cage effects the farm board prices elsewhere or not at all. A test holds each
+ * The per-level figure of every ability no part of the model prices, as the wiki publishes it —
+ * the cage, passage and drop-rarity effects. A test holds each
  * figure against the ability's own effect text, so the two cannot drift apart.
  */
-type UnmodelledReadoutKind = 'cageDmgPct' | 'passageAttackPct' | 'dropTierPct' | 'goldPct';
+type UnmodelledReadoutKind = 'cageDmgPct' | 'passageAttackPct' | 'dropTierPct';
 
 const UNMODELLED_PER_LEVEL: Record<string, { kind: UnmodelledReadoutKind; perLevel: number }> = {
   caca_hero: { kind: 'cageDmgPct', perLevel: 5 },
   fantasma: { kind: 'passageAttackPct', perLevel: 0.05 },
   olho_lapidador: { kind: 'dropTierPct', perLevel: 2.5 },
-  veia_ouro: { kind: 'goldPct', perLevel: 2 },
-  fortuna: { kind: 'goldPct', perLevel: 0.5 },
 };
 
 export const UNMODELLED_READOUT_PER_LEVEL: Readonly<typeof UNMODELLED_PER_LEVEL> = UNMODELLED_PER_LEVEL;
 
-const UNMODELLED_KINDS = new Set<AbilityEffectReadout['kind']>(['none', 'cageDmgPct', 'passageAttackPct', 'dropTierPct', 'goldPct']);
+const UNMODELLED_KINDS = new Set<AbilityEffectReadout['kind']>(['none', 'cageDmgPct', 'passageAttackPct', 'dropTierPct']);
 
-/** Whether the combat model prices this readout, or merely repeats a figure the wiki publishes. */
+/** Whether the model prices this readout — the combat model or the farm board's loot layer — or
+ *  merely repeats a figure the wiki publishes. */
 export function isPricedReadout(readout: AbilityEffectReadout): boolean {
   return !UNMODELLED_KINDS.has(readout.kind);
 }
@@ -144,6 +144,9 @@ function readoutKind(effect: AbilityEffect): AbilityEffectReadout['kind'] {
       return 'teamPulseDmgPct';
     case 'teamXpPct':
       return 'xpPct';
+    case 'goldPct':
+    case 'teamGoldPct':
+      return 'goldPct';
     case 'none':
       return 'none';
   }
@@ -196,6 +199,7 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
       return { kind, value: mods.packDmgPctPerAlly };
     case 'teamPulseDmgPct':
     case 'xpPct':
+    case 'goldPct':
       return { kind, value: perLevelOf(definition.effect) * rank };
     case 'none': {
       const published = UNMODELLED_PER_LEVEL[abilityId];
@@ -206,7 +210,6 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
     case 'cageDmgPct':
     case 'passageAttackPct':
     case 'dropTierPct':
-    case 'goldPct':
     case 'teamCritDmgPct':
       return { kind: 'none' };
   }

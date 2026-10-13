@@ -12,6 +12,7 @@ import {
   abilityMods,
   isSheetAbility,
 } from '@bombfarm/domain/model';
+import { LOOT_ABILITY_VALUES } from '@bombfarm/domain/phase-wiki';
 import { TEAM_BUFF_PER_LEVEL } from '@bombfarm/domain/team-buffs';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
@@ -200,24 +201,33 @@ describe('rank-20 migration', () => {
     expect(fantasma.effect).toEqual({ kind: 'none' });
   });
 
-  it('veia_ouro and fortuna carry the wiki-corrected figures, stay { kind: none }, and abilityMods is the identity', () => {
+  it('veia_ouro and fortuna carry the wiki-corrected figures as gold kinds, and abilityMods is the identity', () => {
     const veiaOuro = ABILITIES.find((a) => a.id === 'veia_ouro')!;
     const fortuna = ABILITIES.find((a) => a.id === 'fortuna')!;
 
     expect(veiaOuro.max).toBe(20);
-    expect(veiaOuro.effect).toEqual({ kind: 'none' });
+    expect(veiaOuro.effect).toEqual({ kind: 'goldPct', perLevel: 2 });
     expect(veiaOuro.effectText).toMatch(/\+2% ouro \(próprio\)/);
     expect(veiaOuro.effectText).toMatch(/\+40% no teto/);
     expect(veiaOuro.effectText).not.toMatch(/\+4% ouro\/nível/);
 
     expect(fortuna.max).toBe(20);
-    expect(fortuna.effect).toEqual({ kind: 'none' });
+    expect(fortuna.effect).toEqual({ kind: 'teamGoldPct', perLevel: 0.5 });
     expect(fortuna.effectText).toMatch(/\+0\.5% ouro do TIME/);
     expect(fortuna.effectText).toMatch(/\+10% no teto/);
     expect(fortuna.effectText).not.toMatch(/\+2% ouro ganho/);
     expect(fortuna.effectText).not.toMatch(/\+40% no teto/);
 
     expect(abilityMods({ veia_ouro: 20, fortuna: 20 })).toMatchObject(IDENTITY_MODS);
+  });
+
+  it('the catalog gold figures are the ones the farm board prices from the wiki bundle', () => {
+    const perLevel = (id: string) => {
+      const effect = ABILITIES.find((a) => a.id === id)!.effect;
+      return 'perLevel' in effect ? effect.perLevel : Number.NaN;
+    };
+    expect(perLevel('veia_ouro') / 100).toBeCloseTo(LOOT_ABILITY_VALUES.veia_ouro.perLevel, 15);
+    expect(perLevel('fortuna') / 100).toBeCloseTo(LOOT_ABILITY_VALUES.fortuna.perLevel, 15);
   });
 
   it('aprendiz is a team XP aura at 0.75% a rank that abilityMods never folds into its carrier', () => {

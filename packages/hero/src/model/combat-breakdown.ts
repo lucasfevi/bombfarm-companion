@@ -114,8 +114,10 @@ const CARD_FOR_EFFECT: Record<AbilityEffect['kind'], BreakdownStatId | null> = {
   shatterPct: null,
   packDmgPct: 'dmg',
   teamPulseDmgPct: 'dmg',
-  // XP, which no combat card carries.
+  // Loot, which no combat card carries.
   teamXpPct: null,
+  goldPct: null,
+  teamGoldPct: null,
   none: null,
 };
 
