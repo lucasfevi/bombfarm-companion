@@ -529,6 +529,7 @@ const KEYS_REMOVED: readonly string[] = [
  */
 const KEYS_ADDED: readonly string[] = [
   'navHeroes', 'farmRankingPassLabel', 'farmRankingPassOn', 'farmRankingPassOff', 'farmRankingPassTip', 'farmRankingPassTipDetected',
+  'farmRankingBoostLabel', 'farmRankingBoostGold', 'farmRankingBoostXp', 'farmRankingBoostDrop', 'farmRankingBoostTip', 'farmRankingBoostTipDetected',
   // The Optimizer's ledger of what changed since the plan (2026-09-19, narrowed to breaking
   // changes only 2026-09-21): the notice that only said inputs had changed now lists every
   // change that breaks the plan — a hero it placed or a piece it used is gone — and the field
@@ -1401,12 +1402,16 @@ describe('i18n split parity', () => {
  * asserted again here at runtime) and no PT value for a Farm Ranking key is byte-identical to
  * its EN counterpart, except an explicit allowlist. `navPhases` ("Farm") is the
  * design's own allowlisted collision. `farmRankingColXp` ("XP") joins it for the same reason once the fourth
- * pass dropped its "/hr"/"/ h" suffix — the abbreviation itself was never translated.
+ * pass dropped its "/hr"/"/ h" suffix — the abbreviation itself was never translated. The Boost
+ * control's name and its XP and Drop axes are the game's own words in both languages.
  */
 describe('Farm Ranking i18n parity', () => {
   const EN_PT_COLLISION_ALLOWLIST = new Set([
     'navPhases',
     'farmRankingColXp',
+    'farmRankingBoostLabel',
+    'farmRankingBoostXp',
+    'farmRankingBoostDrop',
   ]);
 
   it('EN and PT key sets are equal at runtime', () => {

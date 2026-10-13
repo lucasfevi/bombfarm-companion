@@ -7,10 +7,13 @@
  */
 export type { FarmInputs } from './farm-inputs';
 export {
+  BOOST_ADD,
+  NO_ECONOMY_BOOST,
   buildAccount,
   buildRosterAccount,
   computeFarmRanking,
   computeFarmTeamBuffs,
+  computeFarmXpPerPropMult,
   deriveFarmPoolEntries,
   FARM_RESPEC_WORTH_MAKING_PCT,
   farmDepsEqual,

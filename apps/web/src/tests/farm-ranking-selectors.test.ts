@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { PASS_ADDS } from '@bombfarm/domain/phase-wiki';
+import { PASS_ADDS, xpPerProp } from '@bombfarm/domain/phase-wiki';
 import { emptyLoadout } from '@bombfarm/domain/gear';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import { normalizeHero } from '@/shared/lib/storage';
@@ -11,6 +11,7 @@ import {
   selectFarmRankingRows,
   selectFarmReturnBonus,
   selectFarmPass,
+  selectFarmXpPerPropMult,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
 
@@ -247,6 +248,80 @@ describe('selectFarmRankingRows', () => {
     it('farmPass', () => {
       expectRecompute(() => usePlannerStore.getState().setFarmPass(true));
     });
+
+    it('treeXpMult', () => {
+      expectRecompute(() =>
+        usePlannerStore.getState().applyAccountImport({
+          tree: { danoTotal: 1, critChance: 0, critDmg: 0, speed: 0, energy: 0, teamCoinPct: 0, luckFlatPct: 0, xpMult: 2.35 },
+          houseIdx: null,
+          houseLevel: null,
+          phase: null,
+        }),
+      );
+    });
+
+    it('farmBoost', () => {
+      expectRecompute(() => usePlannerStore.getState().setFarmBoost({ gold: false, xp: true, drop: false }));
+    });
+  });
+});
+
+describe('the XP the board prints', () => {
+  const TREE = { danoTotal: 1, critChance: 0, critDmg: 0, speed: 0, energy: 0, teamCoinPct: 0, luckFlatPct: 0 };
+
+  beforeEach(() => {
+    resetPlannerStoreForTests();
+    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
+  });
+
+  afterEach(() => {
+    resetPlannerStoreForTests();
+  });
+
+  function xpRows() {
+    return selectFarmRankingRows(usePlannerStore.getState()).rows.filter((row) => (row.xpPerHour ?? 0) > 0);
+  }
+
+  function importXpMult(xpMult: number) {
+    usePlannerStore.getState().applyAccountImport({ tree: { ...TREE, xpMult }, houseIdx: null, houseLevel: null, phase: null });
+  }
+
+  it('scales exactly with the account XP multiplier, which used to never reach it', () => {
+    importXpMult(1);
+    const bare = xpRows();
+    importXpMult(2.35);
+    const scaled = xpRows();
+    expect(bare.length).toBeGreaterThan(0);
+    for (const row of bare) {
+      const match = scaled.find((candidate) => candidate.phase === row.phase)!;
+      expect((match.xpPerHour ?? Number.NaN) / (row.xpPerHour ?? Number.NaN)).toBeCloseTo(2.35, 9);
+      expect(match.goldPerHour).toBe(row.goldPerHour);
+    }
+  });
+
+  it('an xp Boost adds its 100% inside the Pass bracket: ×2.3 over ×1.3', () => {
+    importXpMult(2.35);
+    usePlannerStore.getState().setFarmPass(true);
+    const passOnly = xpRows();
+    usePlannerStore.getState().setFarmBoost({ gold: false, xp: true, drop: false });
+    const boosted = xpRows();
+    for (const row of passOnly) {
+      const match = boosted.find((candidate) => candidate.phase === row.phase)!;
+      expect((match.xpPerHour ?? Number.NaN) / (row.xpPerHour ?? Number.NaN)).toBeCloseTo(2.3 / 1.3, 9);
+      expect(match.goldPerHour).toBe(row.goldPerHour);
+    }
+  });
+
+  it('the Phases panel per-prop XP times the row props/hr is the row XP/hr, phase for phase', () => {
+    importXpMult(2.35);
+    usePlannerStore.getState().setFarmPass(true);
+    usePlannerStore.getState().setFarmReturnBonus('on');
+    usePlannerStore.getState().setFarmBoost({ gold: true, xp: true, drop: false });
+    const mult = selectFarmXpPerPropMult(usePlannerStore.getState());
+    expect(mult).toBeCloseTo(2.35 * (1 + 1 + 0.3 + 1), 12);
+    for (const row of xpRows()) {
+      expect(row.xpPerHour).toBeCloseTo(row.propsPerHour * xpPerProp(row.phase) * (mult ?? Number.NaN), 4);
+    }
   });
 });
 

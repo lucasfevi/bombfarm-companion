@@ -8,9 +8,10 @@
 import { formatCompactNumber, formatNumber } from '@bombfarm/ui';
 import type { Lang } from '@bombfarm/hero/copy';
 
-/** A non-negative rate (gold/hr, chests/hr, gems/hr, time-pieces/hr, xp/hr). */
-export function formatRate(value: number, lang: Lang): string {
-  if (!Number.isFinite(value)) return '—';
+/** A non-negative rate (gold/hr, chests/hr, gems/hr, time-pieces/hr, xp/hr). `null` is a
+ *  withheld figure. */
+export function formatRate(value: number | null, lang: Lang): string {
+  if (value === null || !Number.isFinite(value)) return '—';
   return formatCompactNumber(value, lang, 1);
 }
 
@@ -30,7 +31,7 @@ export function formatSignedRate(value: number, lang: Lang): string {
  * change to `formatRate` itself, which other surfaces print without a unit. A non-finite value
  * stays the bare em dash — no unit on "no data".
  */
-export function formatRatePerHour(value: number, lang: Lang): string {
+export function formatRatePerHour(value: number | null, lang: Lang): string {
   const formatted = formatRate(value, lang);
   return formatted === '—' ? formatted : `${formatted}/h`;
 }

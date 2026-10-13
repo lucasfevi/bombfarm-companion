@@ -18,7 +18,9 @@
  * - crit damage — the rune multiplies the PRE-tree excess (birth ★ + Golpe Brutal + points), and
  *   the tree's flat `crit_dmg_add` lands on top of that (four heroes, tree term 68 pp — the two
  *   placements differ by ~3 points per hero).
- * - xp, gold — not sheet statistics; carried on the record, priced nowhere yet.
+ * - xp — not a sheet statistic: a per-hero multiplier on the XP of the props that hero destroys
+ *   ({@link runeXpMultiplier}).
+ * - gold — not a sheet statistic; carried on the record, priced nowhere yet.
  *
  * Every carrier was rarity 0 (`p = 0.05`); a stronger rune is assumed to keep the same shape.
  * Two runes on one axis at once were never observed — applying the same axis again extends the
@@ -134,6 +136,19 @@ export function runeSheetMultipliers(runes: readonly HeroRune[]): RuneSheetMulti
     const key = RUNE_AXIS_SHEET_KEY[rune.axis];
     if (key === null) continue;
     mult[key] *= 1 + rune.strengthPct / 100;
+  }
+  return mult;
+}
+
+/**
+ * The XP a hero earns per prop it destroys, as a multiple of the account's: `× (1 + p)` per xp
+ * rune, OUTSIDE the additive Return/Pass/Boost bracket — measured from live traffic, a hero under
+ * a 9% xp rune gained exactly 1.09× the bracket, which a `+p` inside it cannot reproduce.
+ */
+export function runeXpMultiplier(runes: readonly HeroRune[]): number {
+  let mult = 1;
+  for (const rune of runes) {
+    if (rune.axis === 'xp') mult *= 1 + rune.strengthPct / 100;
   }
   return mult;
 }

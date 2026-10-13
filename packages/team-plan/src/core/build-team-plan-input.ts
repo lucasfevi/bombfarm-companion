@@ -59,6 +59,7 @@ export function buildTeamPlanInput(
       collection: inputs.treeCollection,
       maxPhase: inputs.maxPhase,
       pass: inputs.farmPass,
+      boost: inputs.farmBoost,
     },
     // Must match the scope board: missing keys use battleAllowed defaults (Donate when
     // disabled), never a hard-coded Optimize — that silently scored Donate-looking heroes.

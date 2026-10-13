@@ -135,6 +135,12 @@ describe('phase-fact-items', () => {
     expect(subtext(gateXp)).toBe('194 + 56%');
   });
 
+  it('economyItems XP row is a bare dash when the account carries no XP multiplier', () => {
+    const intel = computePhaseIntelGlobal(PHASE_NON_GATE, { xpMult: null })!;
+    expect(intel.xpWithheld).toBe(true);
+    expect(economyItems(intel, t, fmt).find((row) => row.id === 'xp')!.value).toBe('—');
+  });
+
   it('economyItems XP row label carries no tooltip — it moved to the subtext', () => {
     const intel = computePhaseIntelGlobal(PHASE_NON_GATE, { xpMult: XP_MULT })!;
     const xp = economyItems(intel, t, fmt).find((row) => row.id === 'xp')!;

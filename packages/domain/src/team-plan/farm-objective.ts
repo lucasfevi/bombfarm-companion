@@ -111,7 +111,13 @@ function phaseOptionsFor(
 ): BestFarmPhaseOptions {
   const maxPhase = account.maxPhase;
   if (targetPhase != null && Number.isFinite(targetPhase)) {
-    return { maxPhase: maxPhase ?? null, pinnedPhase: targetPhase, ignoreFieldCrowding, pass: account.pass ?? false };
+    return {
+      maxPhase: maxPhase ?? null,
+      pinnedPhase: targetPhase,
+      ignoreFieldCrowding,
+      pass: account.pass ?? false,
+      boost: account.boost,
+    };
   }
   if (typeof maxPhase !== 'number' || !Number.isFinite(maxPhase) || maxPhase < 1) {
     throw new Error(
@@ -120,7 +126,7 @@ function phaseOptionsFor(
         'plan would optimise the squad across the whole 600-phase table.',
     );
   }
-  return { maxPhase, ignoreFieldCrowding, pass: account.pass ?? false };
+  return { maxPhase, ignoreFieldCrowding, pass: account.pass ?? false, boost: account.boost };
 }
 
 /**
@@ -144,6 +150,7 @@ function setPhaseOptionsFor(
     maxPhase,
     ignoreFieldCrowding,
     pass: account.pass ?? false,
+    boost: account.boost,
     phaseRange: { min: band.minPhase, max: band.maxPhase },
   };
 }
@@ -301,6 +308,7 @@ function basisForHero(
     adjustedLuckPct: score.adjusted.luck,
     treeLuckFlatPct: objective.treeLuckFlatPct,
     abilities: ctx.abilities,
+    runes: ctx.runes,
     critPointCeiling: critPointCeilingOf(
       objective.critFlatAtFullPresence,
       teamAuraLayer(objective.auras).teamCritFlat,

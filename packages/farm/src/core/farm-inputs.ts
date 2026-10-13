@@ -9,7 +9,7 @@
  * rename-free copy, and a reviewer comparing it against {@link FarmInputs} can see a missing
  * field rather than having to translate two vocabularies first.
  */
-import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import type { EconomyBoost, ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { AurasAtCap } from '@bombfarm/domain/team-buffs';
 import type { Collection } from '@bombfarm/domain/model';
@@ -23,6 +23,9 @@ export type FarmInputs = {
   treeEnergy: number;
   treeTeamCoinPct: number;
   treeLuckFlatPct: number;
+  /** `skills.totals.xp_mult`, verbatim. `null` when the account carries none: every XP figure is
+   *  then withheld, never priced at 1. */
+  treeXpMult: number | null;
   /** `skills.totals.colecao`; absent reads as no Collections bonus. */
   treeCollection?: Collection | null | undefined;
   houseIdx: number;
@@ -48,6 +51,8 @@ export type FarmInputs = {
   farmReturnBonus: ReturnBonusMode;
   /** The account owns the Pass. Absent reads as not owned. */
   farmPass?: boolean;
+  /** The Boosts running, per axis. Absent reads as none. */
+  farmBoost?: EconomyBoost;
   /**
    * The team auras to price at their cap the whole time (`FarmAccount.aurasAtCap`). Compared by
    * REFERENCE in the dep tuple like `farmPoolOverrides`, so a host that offers no control passes

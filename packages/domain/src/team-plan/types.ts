@@ -2,7 +2,7 @@ import type { BirthStats, TreeSheetTotals } from '../birth-sheet';
 import type { Collection } from '../collection';
 import type { HeroRune } from '../runes';
 import type { BestFarmPhaseOptions, ResolvedFarmObjective } from '../farm-optimize-objective';
-import type { HeroFarmFacts, SquadFarmAccount } from '../farm-rate';
+import type { EconomyBoost, HeroFarmFacts, SquadFarmAccount } from '../farm-rate';
 import type { Loadout, PointAlloc, SheetStats } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import type {
@@ -273,6 +273,8 @@ export type TeamPlanAccountInput = {
   /** Whether the Pass is active. The farm objective prices gold with its always-on bonus; absent
    *  reads as a free account. */
   pass?: boolean;
+  /** The Boosts running, priced the same way. Absent reads as none. */
+  boost?: EconomyBoost | undefined;
 };
 
 /**

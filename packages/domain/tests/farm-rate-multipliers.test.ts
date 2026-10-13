@@ -374,28 +374,29 @@ describe('XP tracks tree.xpMult, never gold/drops (issue #127)', () => {
     }
   });
 
-  it('an absent tree.xpMult behaves exactly as xpMult: 1 (identity, not zero)', () => {
+  it('an absent tree.xpMult withholds XP/hr rather than pricing it at 1 — every other rate stands', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const { xpMult: _drop, ...treeWithoutXpMult } = account.tree;
     const absentAccount: AccountShared = { ...account, tree: treeWithoutXpMult };
     const explicitOneAccount: AccountShared = { ...account, tree: { ...account.tree, xpMult: 1 } };
 
     const absentSquad = computeSquadFarmFacts(heroFacts, absentAccount);
-    const explicitOneSquad = computeSquadFarmFacts(heroFacts, explicitOneAccount);
-    expect(absentSquad.xpMult).toBe(1);
+    expect(absentSquad.xpMult).toBeNull();
 
     const absentRow = computeFarmRateRow(42, absentSquad)!;
-    const explicitOneRow = computeFarmRateRow(42, explicitOneSquad)!;
-    expect(absentRow.xpPerHour).toBe(explicitOneRow.xpPerHour);
-    expect(absentRow.xpPerHour).toBeGreaterThan(0);
+    const explicitOneRow = computeFarmRateRow(42, computeSquadFarmFacts(heroFacts, explicitOneAccount))!;
+    expect(absentRow.xpPerHour).toBeNull();
+    expect(explicitOneRow.xpPerHour).toBeGreaterThan(0);
+    expect(absentRow.goldPerHour).toBe(explicitOneRow.goldPerHour);
+    expect(absentRow.chestsPerHour).toBe(explicitOneRow.chestsPerHour);
   });
 
-  it('a non-finite tree.xpMult (NaN) also falls back to 1, not NaN', () => {
+  it('a non-finite tree.xpMult (NaN) withholds the same way, never printing NaN', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const nanAccount: AccountShared = { ...account, tree: { ...account.tree, xpMult: NaN } };
     const squad = computeSquadFarmFacts(heroFacts, nanAccount);
-    expect(squad.xpMult).toBe(1);
-    expect(Number.isNaN(computeFarmRateRow(42, squad)!.xpPerHour)).toBe(false);
+    expect(squad.xpMult).toBeNull();
+    expect(computeFarmRateRow(42, squad)!.xpPerHour).toBeNull();
   });
 });
 

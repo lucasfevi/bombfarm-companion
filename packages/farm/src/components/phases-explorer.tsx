@@ -32,6 +32,9 @@ export type PhasesExplorerData = {
   activeHeroId: string | null;
   account: AccountShared;
   farmRows: FarmRankingResult;
+  /** `computeFarmXpPerPropMult` over the board's own inputs, so the per-prop XP printed here
+   *  is the one the board's XP/hr is built on. `null` withholds it, as the board does. */
+  xpPerPropMult: number | null;
 };
 
 export type PhasesExplorerActions = {
@@ -63,7 +66,7 @@ export function PhasesExplorerView({
   actions: PhasesExplorerActions;
   slots?: PhasesExplorerSlots;
 }) {
-  const { phase, heroes, activeHeroId, account, farmRows } = data;
+  const { phase, heroes, activeHeroId, account, farmRows, xpPerPropMult: xpMult } = data;
   const { setPhasesViewPhase, onSelectHero } = actions;
 
   // FIELD concurrency — who can be on the field at once, not the House recovery number
@@ -72,7 +75,6 @@ export function PhasesExplorerView({
   const squadSlots = account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS;
 
   const teamCoinPct = account.tree.teamCoinPct ?? 0;
-  const xpMult = account.tree.xpMult ?? 1;
   const collectionGoldPct = account.tree.collection?.goldPct ?? 0;
 
   // Map/mitigation facts don't depend on teamCoinPct/xpMult/luckFraction, so this pass gives

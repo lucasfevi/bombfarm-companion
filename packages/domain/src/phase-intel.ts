@@ -42,8 +42,13 @@ export type DropChanceRow = {
 export type PhaseIntelGlobalOptions = {
   /** Team Coin %, e.g. `82.52` for `coin_add: 0.8252083332`. Default 0. */
   teamCoinPct?: number;
-  /** `skills.totals.xp_mult`, e.g. `1.56`. Default 1 (no XP boost). */
-  xpMult?: number;
+  /**
+   * What one prop's wiki XP is multiplied by: `skills.totals.xp_mult`, e.g. `1.56`, or — from a
+   * caller that prices the Return/Pass/Boost bracket — `accountXpPerPropMult` (`farm-rate.ts`),
+   * so the figure agrees with the Farm board's rows. Default 1. `null` means the account carries
+   * no `xp_mult`: {@link PhaseIntelGlobal.xpWithheld} is set and no boosted XP is claimed.
+   */
+  xpMult?: number | null;
   /** The Collections gold bonus, percent — on top of {@link teamCoinPct}. Default 0. */
   collectionGoldPct?: number;
   /** Average of on-field heroes' final `luck` stat, e.g. `0.1723005`. Default 0 (no luck boost).
@@ -83,7 +88,10 @@ export type PhaseIntelGlobal = {
    *  (unboosted) meaning. New code should pick `xpPerPropWiki` or `xpPerPropActual` explicitly. */
   xpPerProp: number;
   xpPerPropWiki: number;
+  /** Equal to {@link xpPerPropWiki} while {@link xpWithheld}. */
   xpPerPropActual: number;
+  /** The account carries no XP multiplier, so no per-prop XP for it can be stated. */
+  xpWithheld: boolean;
   itemLevels: number[];
   itemLevelLabel: string;
   weightedAvgHp: number;
@@ -188,7 +196,8 @@ export function computePhaseIntelGlobal(
   const itemLevels = itemLevelsForPhase(phase);
   const atoIdx = Math.max(0, Math.min(4, line.ato - 1));
   const xpPerPropWiki = xpPerProp(phase);
-  const xpPerPropActual = xpPerPropWiki * xpMult;
+  const xpWithheld = xpMult === null;
+  const xpPerPropActual = xpMult === null ? xpPerPropWiki : xpPerPropWiki * xpMult;
 
   return {
     phase: line.phase,
@@ -203,6 +212,7 @@ export function computePhaseIntelGlobal(
     xpPerProp: xpPerPropWiki,
     xpPerPropWiki,
     xpPerPropActual,
+    xpWithheld,
     itemLevels,
     itemLevelLabel: itemLevelDropLabel(itemLevels),
     weightedAvgHp,

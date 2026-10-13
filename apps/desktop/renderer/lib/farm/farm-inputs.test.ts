@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { AccountFidelity, AccountPayload, AccountView, SectionFidelity } from '@bombfarm/contracts';
+import { computeFarmRanking } from '@bombfarm/farm/core';
 import { buildFarmInputs, isSectionUsable, DEFAULT_FARM_CONTROLS } from './farm-inputs';
 import { skillTotals } from '../account/skill-totals.test-support';
 
@@ -165,6 +166,38 @@ describe('the Pass is read from the account, never from the controls', () => {
     expect(passOf(secondsFromNow(-1))).toBe(false);
     expect(passOf(0)).toBe(false);
     expect(passOf(undefined)).toBe(false);
+  });
+});
+
+describe('the account XP multiplier reaches the board', () => {
+  const inputsWith = (xpMult: number) => {
+    const payload = { ...basePayload(), skills: { totals: skillTotals({ dmg_static: 1.5, xp_mult: xpMult }) } };
+    return required(buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS), 'expected inputs');
+  };
+
+  it('is read off the skill totals verbatim', () => {
+    expect(inputsWith(2.35).treeXpMult).toBe(2.35);
+  });
+
+  it('scales every row XP/hr by exactly its ratio, and leaves gold alone', () => {
+    const bare = computeFarmRanking(inputsWith(1)).rows;
+    const scaled = computeFarmRanking(inputsWith(2.35)).rows;
+    const priced = bare.filter((row) => (row.xpPerHour ?? 0) > 0);
+    expect(priced.length).toBeGreaterThan(0);
+    for (const row of priced) {
+      const match = required(scaled[row.phase - 1] ?? null, `expected a row for phase ${String(row.phase)}`);
+      expect((match.xpPerHour ?? Number.NaN) / (row.xpPerHour ?? Number.NaN)).toBeCloseTo(2.35, 9);
+      expect(match.goldPerHour).toBe(row.goldPerHour);
+    }
+  });
+
+  it('withholds XP/hr on every row when the account carries none, while gold still prices', () => {
+    const inputs = inputsWith(2.35);
+    const withheld = computeFarmRanking({ ...inputs, treeXpMult: null }).rows;
+    const priced = computeFarmRanking(inputs).rows;
+    expect(withheld.every((row) => row.xpPerHour === null)).toBe(true);
+    expect(withheld.map((row) => row.goldPerHour)).toEqual(priced.map((row) => row.goldPerHour));
+    expect(withheld.some((row) => row.goldPerHour > 0)).toBe(true);
   });
 });
 

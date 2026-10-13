@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Banner, EmptyState, Panel } from '@bombfarm/ui';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
-import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import type { EconomyBoost, ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { FarmCopy } from '../copy';
@@ -22,6 +22,7 @@ import {
 import { formatMitigationPct } from '../model/farm-ranking-format';
 import { FarmRankingFilters } from './farm-ranking-filters';
 import { FarmRotationPool } from './farm-rotation-pool';
+import { FarmBoost } from './farm-boost';
 import { FarmPass } from './farm-pass';
 import { FarmReturnBonus } from './farm-return-bonus';
 import { FarmRankingTable } from './farm-ranking-table';
@@ -44,6 +45,8 @@ export type FarmRankingBoardData = {
   returnBonus: ReturnBonusMode;
   /** The account owns the Pass. Omitted, it reads as not owned. */
   pass?: boolean;
+  /** The Boosts running. Omitted, the board draws no Boost control. */
+  boost?: EconomyBoost;
   maxPhase: number | null;
   fieldSlots: number | null;
   currentPhase: number;
@@ -68,6 +71,8 @@ export type FarmRankingBoardActions = {
   setFarmReturnBonus: (mode: ReturnBonusMode) => void;
   /** Omitted where the Pass is read from the account: the control then shows its state only. */
   setFarmPass?: (pass: boolean) => void;
+  /** Omitted where the Boosts are read from the game: the control then shows their state only. */
+  setFarmBoost?: (boost: EconomyBoost) => void;
   /** The Optimize button — routing to the host's Optimizer screen is the host's. */
   openOptimizer: () => void;
 };
@@ -97,6 +102,7 @@ export function FarmRankingBoardView({
     poolEntries,
     returnBonus,
     pass = false,
+    boost,
     maxPhase,
     fieldSlots,
     currentPhase,
@@ -109,6 +115,7 @@ export function FarmRankingBoardView({
     setFarmHeroEnabled,
     setFarmReturnBonus,
     setFarmPass,
+    setFarmBoost,
     openOptimizer,
   } = actions;
 
@@ -218,6 +225,7 @@ export function FarmRankingBoardView({
           <div className="flex flex-wrap items-start gap-3">
             <FarmReturnBonus value={returnBonus} onChange={setFarmReturnBonus} t={t} />
             <FarmPass pass={pass} onPassChange={setFarmPass} t={t} />
+            {boost ? <FarmBoost boost={boost} onBoostChange={setFarmBoost} t={t} /> : null}
             {slots?.controls}
             <FarmOptimizeButton t={t} onOpenOptimizer={openOptimizer} />
           </div>

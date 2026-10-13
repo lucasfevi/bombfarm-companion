@@ -130,6 +130,12 @@ describe('sortFarmRows', () => {
     });
   }
 
+  it('sinks a withheld XP figure to the bottom in both directions', () => {
+    const withheld = [row({ phase: 4, xpPerHour: null }), ...rows];
+    expect(sortFarmRows(withheld, 'xpPerHour', 'desc').map((entry) => entry.phase)).toEqual([1, 3, 2, 4]);
+    expect(sortFarmRows(withheld, 'xpPerHour', 'asc').map((entry) => entry.phase)).toEqual([2, 3, 1, 4]);
+  });
+
   it('breaks ties deterministically by ascending phase', () => {
     const tied = [
       row({ phase: 5, goldPerHour: 100 }),

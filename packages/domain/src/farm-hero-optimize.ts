@@ -17,6 +17,7 @@ import {
   type FarmAccount,
   type FarmRateOptions,
   type HeroFarmBasis,
+  type EconomyBoost,
   type ReturnBonusMode,
 } from './farm-rate';
 import {
@@ -46,6 +47,8 @@ export type HeroFarmOptimizeInput = {
   returnBonus?: ReturnBonusMode;
   /** Default `false`. */
   pass?: boolean;
+  /** Default none, matching the estimator and the Farm board. */
+  boost?: EconomyBoost | undefined;
 };
 
 export type HeroFarmOptimizeOutcome =
@@ -109,7 +112,12 @@ function terminal(
 export function optimizeHeroForFarm(input: HeroFarmOptimizeInput): HeroFarmOptimizeResult {
   const { bases, account, heroId } = input;
   const objective = resolveFarmObjective(input.objective);
-  const phaseOptions: FarmRateOptions = { maxPhase: input.maxPhase, returnBonus: input.returnBonus, pass: input.pass };
+  const phaseOptions: FarmRateOptions = {
+    maxPhase: input.maxPhase,
+    returnBonus: input.returnBonus,
+    pass: input.pass,
+    boost: input.boost,
+  };
 
   if (bases.length === 0) {
     return terminal('emptyPool', objective, ZERO_PTS(), null, 0, 0, 0);

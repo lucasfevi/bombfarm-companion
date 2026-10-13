@@ -54,6 +54,7 @@ describe('phases-view-storage', () => {
         farmPool: {},
         farmReturnBonus: 'off',
         farmPass: false,
+        farmBoost: { gold: false, xp: false, drop: false },
       });
     });
 
@@ -68,6 +69,7 @@ describe('phases-view-storage', () => {
         farmPool: { h1: true },
         farmReturnBonus: 'on',
         farmPass: true,
+        farmBoost: { gold: false, xp: false, drop: false },
       });
     });
 
@@ -77,7 +79,7 @@ describe('phases-view-storage', () => {
       vi.stubGlobal('localStorage', memoryLocalStorage());
       localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmObjective":"chests"}');
       const view = loadPhasesView();
-      expect(view).toEqual({ phase: 1, farmPool: {}, farmReturnBonus: 'off', farmPass: false });
+      expect(view).toEqual({ phase: 1, farmPool: {}, farmReturnBonus: 'off', farmPass: false, farmBoost: { gold: false, xp: false, drop: false } });
       expect('farmObjective' in view).toBe(false);
     });
 
@@ -159,6 +161,16 @@ describe('phases-view-storage', () => {
       vi.stubGlobal('localStorage', memoryLocalStorage());
       savePhasesView({ farmReturnBonus: 'off', farmPass: true });
       expect(loadPhasesView()).toMatchObject({ farmReturnBonus: 'off', farmPass: true });
+    });
+
+    it('farmBoost round-trips per axis, and a non-boolean axis reads off', () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
+      savePhasesView({ farmBoost: { gold: true, xp: false, drop: true } });
+      expect(loadPhasesView().farmBoost).toEqual({ gold: true, xp: false, drop: true });
+      localStorage.setItem('bf-hp-phases-view-v1', '{"farmBoost":{"gold":"yes","xp":true}}');
+      expect(loadPhasesView().farmBoost).toEqual({ gold: false, xp: true, drop: false });
+      localStorage.setItem('bf-hp-phases-view-v1', '{"farmBoost":[true]}');
+      expect(loadPhasesView().farmBoost).toEqual({ gold: false, xp: false, drop: false });
     });
 
     it('defaultPhasesView() omits phase/farmPool/farmReturnBonus so an untouched payload stays byte-identical', () => {

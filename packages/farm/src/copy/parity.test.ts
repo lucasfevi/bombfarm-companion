@@ -31,6 +31,11 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof farmEn)[] = [
   'farmRankingColXp',
   'phasesColNormalHit',
   'phasesJaulaWindowVip',
+  // The game's own words in both languages: the item is sold as "Boost", the axis as "XP" and
+  // "Drop".
+  'farmRankingBoostLabel',
+  'farmRankingBoostXp',
+  'farmRankingBoostDrop',
 ];
 
 function placeholderSet(value: string): Set<string> {

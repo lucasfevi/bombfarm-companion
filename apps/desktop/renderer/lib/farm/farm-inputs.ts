@@ -90,6 +90,7 @@ export function buildFarmInputs(
     treeEnergy: tree.energy,
     treeTeamCoinPct: tree.teamCoinPct ?? 0,
     treeLuckFlatPct: tree.luckFlatPct,
+    treeXpMult: tree.xpMult ?? null,
     treeCollection: tree.collection,
     houseIdx,
     houseLevel,
@@ -128,7 +129,7 @@ function withoutCaptureTime(hero: HeroRecord): Record<string, unknown> {
 
 /**
  * A value identity for everything the farm board recomputes from — `readFarmDepTuple`'s
- * nineteen members, compared as values rather than as references.
+ * members, compared as values rather than as references.
  *
  * `@bombfarm/farm/core` compares that tuple with `Object.is` and places the matching obligation
  * on the host app: the two object members (`heroes`, `farmPoolOverrides`) must keep their

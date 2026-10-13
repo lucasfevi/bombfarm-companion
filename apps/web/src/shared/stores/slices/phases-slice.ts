@@ -1,9 +1,11 @@
 import type { StateCreator } from 'zustand';
 import {
   savePhasesView,
+  type EconomyBoost,
   type PhasesViewState,
   type ReturnBonusMode,
 } from '@/shared/lib/phases-view-storage';
+import { NO_ECONOMY_BOOST } from '@bombfarm/farm/core';
 import { noTeamAuraSwitches, type TeamAuraId, type TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 
@@ -18,6 +20,9 @@ export type PhasesSlice = {
   farmReturnBonus: ReturnBonusMode;
   /** Whether the Pass is owned — an input to every farm estimate, persisted with the return bonus. */
   farmPass: boolean;
+  /** The Boosts running, per axis — persisted beside the Pass. Every axis off is the domain's
+   *  frozen `NO_ECONOMY_BOOST`, never a fresh object. */
+  farmBoost: EconomyBoost;
   /**
    * EPHEMERAL — the planner's Combat tab asking about a phase other than the one the app would
    * choose on its own (`selectCombatPhase`). `null` while no such pick is in force. Never
@@ -41,6 +46,7 @@ export type PhasesSlice = {
   setFarmHeroEnabled: (heroId: string, enabled: boolean) => void;
   setFarmReturnBonus: (mode: ReturnBonusMode) => void;
   setFarmPass: (pass: boolean) => void;
+  setFarmBoost: (boost: EconomyBoost) => void;
   /** `null` clears the pick and hands the planner back to `selectCombatPhase`'s own answer. */
   setPlannerPhaseOverride: (phase: number | null) => void;
   setTeamAuraSwitch: (buffId: TeamAuraId, enabled: boolean) => void;
@@ -71,6 +77,7 @@ export const createPhasesSlice: StateCreator<
       farmPool: state.farmPoolOverrides,
       farmReturnBonus: state.farmReturnBonus,
       farmPass: state.farmPass,
+      farmBoost: state.farmBoost,
     });
   }
 
@@ -80,6 +87,7 @@ export const createPhasesSlice: StateCreator<
     farmPoolOverrides: {},
     farmReturnBonus: 'off',
     farmPass: false,
+    farmBoost: NO_ECONOMY_BOOST,
     plannerPhaseOverride: null,
     teamAuraSwitches: noTeamAuraSwitches(),
 
@@ -90,6 +98,7 @@ export const createPhasesSlice: StateCreator<
         farmPoolOverrides: view.farmPool ?? {},
         farmReturnBonus: view.farmReturnBonus ?? 'off',
         farmPass: view.farmPass ?? false,
+        farmBoost: view.farmBoost ?? NO_ECONOMY_BOOST,
       });
     },
 
@@ -135,6 +144,13 @@ export const createPhasesSlice: StateCreator<
     setFarmPass: (pass) => {
       if (get().farmPass === pass) return;
       set({ farmPass: pass });
+      persistPhasesView(get());
+    },
+
+    setFarmBoost: (boost) => {
+      const current = get().farmBoost;
+      if (current.gold === boost.gold && current.xp === boost.xp && current.drop === boost.drop) return;
+      set({ farmBoost: { gold: boost.gold, xp: boost.xp, drop: boost.drop } });
       persistPhasesView(get());
     },
 

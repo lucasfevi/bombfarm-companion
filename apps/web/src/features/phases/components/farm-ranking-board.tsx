@@ -8,6 +8,7 @@ import { SITE_SECTION_HREF } from '@/shared/lib/site-sections';
 import {
   deriveFarmPoolEntries,
   selectFarmRankingRows,
+  selectFarmBoost,
   selectFarmPass,
   selectFarmReturnBonus,
   selectFieldSlots,
@@ -41,6 +42,7 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
   );
   const returnBonus = usePlannerStore(selectFarmReturnBonus);
   const pass = usePlannerStore(selectFarmPass);
+  const boost = usePlannerStore(selectFarmBoost);
   const maxPhase = usePlannerStore(selectMaxPhase);
   const fieldSlots = usePlannerStore(selectFieldSlots);
   const currentPhase = usePlannerStore(selectPhasesViewPhase);
@@ -50,6 +52,7 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
   const setFarmHeroEnabled = usePlannerStore((state) => state.setFarmHeroEnabled);
   const setFarmReturnBonus = usePlannerStore((state) => state.setFarmReturnBonus);
   const setFarmPass = usePlannerStore((state) => state.setFarmPass);
+  const setFarmBoost = usePlannerStore((state) => state.setFarmBoost);
   const openOptimizer = useCallback(() => {
     router.push(SITE_SECTION_HREF.optimizer);
   }, [router]);
@@ -64,6 +67,7 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
         poolEntries,
         returnBonus,
         pass,
+        boost,
         maxPhase,
         fieldSlots,
         currentPhase,
@@ -75,6 +79,7 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
         setFarmHeroEnabled,
         setFarmReturnBonus,
         setFarmPass,
+        setFarmBoost,
         openOptimizer,
       }}
     />

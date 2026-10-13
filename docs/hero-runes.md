@@ -24,7 +24,8 @@ whole-number point vector landing exactly on its level (`runes-live-read.test.ts
 | --- | --- | --- |
 | attack, energy, speed, crit chance, cooldown | `× (1 + p)` on the **final** sheet value, after gear, points and the tree | speed — the tree's speed term is a flat add, and only the post-tree placement recovers whole points (three heroes) |
 | crit damage | `× (1 + p)` on the **pre-tree excess** (birth ★ + Golpe Brutal + points), the tree's flat `crit_dmg_add` added on top | four heroes on a tree adding 68 pp — the two placements differ by ~3 points each |
-| xp, gold | not sheet statistics — carried on the record, **priced nowhere** (§4) | — |
+| xp | not a sheet statistic — `× (1 + p)` on the XP of the props **that hero** destroys, outside the Return/Pass/Boost bracket (§4) | a hero under a 9% rune earned exactly 1.09× the bracket, measured from live traffic |
+| gold | not a sheet statistic — carried on the record, **priced nowhere** (§4) | — |
 
 Every carrier was rarity 0; stronger runes are assumed to keep the shape. Two runes on one axis
 at once were never observed and the wiki's cap is on play time, not on count.
@@ -49,7 +50,7 @@ beside the figure.**
 | Power panel (desktop Combat stage) | yes | the total scores the pipeline's `adjusted` sheet — points and runes on, team auras not — so it reads as the game's own screen; while a rune is on, the stored rune-free figure is named beside it. A hero whose points were not recovered (§5) gets the stored figure alone. Scoped to the desktop Heroes tab for now |
 | Runes panel (Combat tab, under the phase pick) | — | the list itself: one tile per rune with the game's sprite for its axis and rarity, the strength, and the play time left; drawn only for a carrier, folded by default to a strip of the sprites |
 | Next-point ranking, Points table | yes | a point's worth is what the game pays today |
-| Farm board (gold/hr, xp/hr) | yes, through DPS | nothing extra; the board is a snapshot of the account as read |
+| Farm board (gold/hr, xp/hr) | yes, through DPS; xp/hr also through the xp axis | nothing extra; the board is a snapshot of the account as read |
 | Optimizer / Team Plan | yes, in scoring | **a plan must never be justified by a rune** — the rune is not something the plan can buy, so the two apps name runed heroes wherever the plan explains a gain |
 
 What a rune is **not**: an input the planner can edit. There is no rune picker on the draft, no
@@ -58,12 +59,21 @@ next account read drops it and every figure falls back on its own.
 
 ## 4. The two axes the sheet does not have
 
-`xp` and `gold` are per-hero multipliers on what the hero earns, not on a statistic, and no
-capture measures their effect — a read is a snapshot, and the one runed-on-both hero was read
-once. They are parsed, carried, and shown as runes on the hero, and the Farm board's gold and
-xp rates **do not price them**. Pricing them needs a paired measurement (the same hero's
-per-prop gold and xp with and without the rune), held to the same standard as the sheet axes
-above: never a form fitted to one account, never a constant nobody measured.
+`xp` and `gold` are per-hero multipliers on what the hero earns, not on a statistic.
+
+**xp is priced.** Live traffic states the XP each prop pays out, so the axis was measured
+directly: a hero under a 9% xp rune earned exactly 1.09× what the account's bracket pays —
+`xp_mult × (1 + return + pass + boost)` — which a `+p` inside that additive bracket cannot
+reproduce. The Farm board therefore multiplies each hero's share of the props destroyed (the
+same kill shares that route Veia de Ouro's gold to the props its carrier kills) by `1 + p` for
+that hero's xp runes (`runeXpMultiplier`, `packages/domain/src/runes.ts`). It is a snapshot, like
+the sheet axes: priced for as long as the rune is on the record, with no discount for the play
+time left. The Phases panel's XP per prop is an account-level figure and carries no rune.
+
+**gold is still unpriced.** It is parsed, carried and shown as a rune on the hero, and the Farm
+board's gold rate does not price it. Pricing it needs the same kind of measurement the xp axis
+got (the same hero's per-prop gold with and without the rune), held to the same standard as the
+sheet axes above: never a form fitted to one account, never a constant nobody measured.
 
 ## 5. Blocked heroes, now that blocking is rare
 
