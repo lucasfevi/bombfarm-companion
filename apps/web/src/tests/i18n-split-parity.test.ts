@@ -529,8 +529,7 @@ const KEYS_REMOVED: readonly string[] = [
  */
 const KEYS_ADDED: readonly string[] = [
   'navHeroes', 'farmRankingPassLabel', 'farmRankingPassOn', 'farmRankingPassOff', 'farmRankingPassTip', 'farmRankingPassTipDetected',
-  'farmRankingBoostLabel', 'farmRankingBoostGold', 'farmRankingBoostXp', 'farmRankingBoostDrop', 'farmRankingBoostTip', 'farmRankingBoostTipDetected',
-  'farmRankingXpNoImportLabel', 'farmRankingXpNoImportTip',
+  'farmRankingBoostLabel', 'farmRankingBoostGold', 'farmRankingBoostXp', 'farmRankingBoostDrop', 'farmRankingBoostTip', 'farmRankingBoostTipDetected', 'farmRankingXpNoImportLabel', 'farmRankingXpNoImportTip',
   // The Optimizer's ledger of what changed since the plan (2026-09-19, narrowed to breaking
   // changes only 2026-09-21): the notice that only said inputs had changed now lists every
   // change that breaks the plan — a hero it placed or a piece it used is gone — and the field
@@ -579,8 +578,7 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanChangesFieldSlots',
   'teamPlanChangesFieldFieldSlots',
   'teamPlanChangesFieldHouseCycleSecs',
-  'teamPlanChangesFieldPass',
-  'teamPlanChangesFieldReturnBonus', 'teamPlanChangesFieldBoostGold', 'teamPlanChangesFieldBoostXp', 'teamPlanChangesFieldBoostDrop',
+  'teamPlanChangesFieldPass', 'teamPlanChangesFieldReturnBonus', 'teamPlanChangesFieldBoostGold', 'teamPlanChangesFieldBoostXp', 'teamPlanChangesFieldBoostDrop',
   'teamPlanChangesControlForgeFloor',
   'teamPlanChangesControlObjective',
   'teamPlanChangesControlAllowedChanges',
@@ -1411,9 +1409,7 @@ describe('Farm Ranking i18n parity', () => {
   const EN_PT_COLLISION_ALLOWLIST = new Set([
     'navPhases',
     'farmRankingColXp',
-    'farmRankingBoostLabel',
-    'farmRankingBoostXp',
-    'farmRankingBoostDrop',
+    'farmRankingBoostLabel', 'farmRankingBoostXp', 'farmRankingBoostDrop',
   ]);
 
   it('EN and PT key sets are equal at runtime', () => {
