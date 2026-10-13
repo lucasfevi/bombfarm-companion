@@ -69,9 +69,9 @@ describe('SheetCloneTable', () => {
     expect(t.cloneSheetTip).toContain('Points tab');
   });
 
-  it('notes on the Crit row that the 20% crit aura leaves 80% of room on the sheet', () => {
+  it('tells on the Crit row that Over cap assumes the 20% crit aura is on the team', () => {
     const markup = render(emptyLoadout(), emptyLoadout());
-    expect(markup).toContain('Deadly Omen (+20% crit chance) on the team, crit chance caps out at 80%');
+    expect(markup).toContain('Over cap assumes Deadly Omen (+20% crit chance) is on the team');
     expect(markup.match(/Deadly Omen/g)).toHaveLength(1);
   });
 });

@@ -1,5 +1,7 @@
 import type { SheetStageRow, SheetStageTable } from '@bombfarm/domain/sheet-stages';
 import { SHEET_PANEL_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
+import { STAT_CAPS } from '@bombfarm/domain/model';
+import { TEAM_BUFF_CAP } from '@bombfarm/domain/team-buffs';
 
 export const SHEET_STAGE_COLUMNS = [
   'birth',
@@ -39,6 +41,17 @@ export function cloneDeltaTone(delta: number): CloneDeltaTone {
   return 'flat';
 }
 
+export const CRIT_AURA_THRESHOLD = STAT_CAPS.critChance - TEAM_BUFF_CAP.pressagio_mortal;
+
+export function overThreshold(row: SheetStageRow, threshold: number): SheetStageRow {
+  const cappedTotal = Math.min(row.total, threshold);
+  return { ...row, cappedTotal, deltaCap: cappedTotal - row.total };
+}
+
+function overCapRow(key: SheetKey, row: SheetStageRow): SheetStageRow {
+  return key === 'critChance' ? overThreshold(row, CRIT_AURA_THRESHOLD) : row;
+}
+
 function overCapChanged(current: SheetStageRow, clone: SheetStageRow): boolean {
   if (current.deltaCap === 0 && clone.deltaCap === 0) return false;
   return (
@@ -47,7 +60,7 @@ function overCapChanged(current: SheetStageRow, clone: SheetStageRow): boolean {
   );
 }
 
-function diffRow(current: SheetStageRow, clone: SheetStageRow): SheetDiffRow {
+function diffRow(key: SheetKey, current: SheetStageRow, clone: SheetStageRow): SheetDiffRow {
   const cells = {} as Record<SheetStageColumn, SheetDiffCell>;
   for (const column of SHEET_STAGE_COLUMNS) {
     cells[column] = diffCell(current[column], clone[column]);
@@ -56,9 +69,9 @@ function diffRow(current: SheetStageRow, clone: SheetStageRow): SheetDiffRow {
   return {
     cells,
     overCap: {
-      current,
-      clone,
-      changed: overCapChanged(current, clone),
+      current: overCapRow(key, current),
+      clone: overCapRow(key, clone),
+      changed: overCapChanged(overCapRow(key, current), overCapRow(key, clone)),
     },
     cloneDelta,
     cloneDeltaTone: cloneDeltaTone(cloneDelta),
@@ -71,7 +84,7 @@ export function sheetCloneDiff(
 ): Record<SheetKey, SheetDiffRow> {
   const rows = {} as Record<SheetKey, SheetDiffRow>;
   for (const key of SHEET_PANEL_KEYS) {
-    rows[key] = diffRow(current[key], clone[key]);
+    rows[key] = diffRow(key, current[key], clone[key]);
   }
   return rows;
 }

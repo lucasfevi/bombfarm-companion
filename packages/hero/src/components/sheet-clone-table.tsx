@@ -4,7 +4,6 @@ import { useMemo, type ReactNode } from 'react';
 
 import { peelSheetStages } from '@bombfarm/domain/sheet-stages';
 import { abilityName } from '@bombfarm/domain/game-labels';
-import { STAT_CAPS } from '@bombfarm/domain/model';
 import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
 import { TEAM_BUFF_CAP } from '@bombfarm/domain/team-buffs';
 import type { Loadout } from '@bombfarm/domain/gear';
@@ -22,6 +21,7 @@ import { sub, type Lang, type SheetCloneCopy, type StatPanelCopy } from '../copy
 import { sheetStatUnit } from '../model/breakdown-labels';
 import { cloneDeltaText, formatOverCapCell, stageColumnText } from '../model/sheet-cells';
 import {
+  CRIT_AURA_THRESHOLD,
   sheetCloneDiff,
   type CloneDeltaTone,
   type SheetDiffCell,
@@ -77,7 +77,7 @@ export function SheetCloneTable({
       sub(t.critAuraCapTip, {
         aura: abilityName('pressagio_mortal', lang),
         amount: boundFormatNumber(TEAM_BUFF_CAP.pressagio_mortal, 0),
-        threshold: boundFormatNumber(STAT_CAPS.critChance - TEAM_BUFF_CAP.pressagio_mortal, 0),
+        threshold: boundFormatNumber(CRIT_AURA_THRESHOLD, 0),
       }),
     [t.critAuraCapTip, lang, boundFormatNumber],
   );

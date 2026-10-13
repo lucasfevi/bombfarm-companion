@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SHEET_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import type { SheetStageRow, SheetStageTable } from '@bombfarm/domain/sheet-stages';
 import { cloneDeltaText, formatOverCapCell, stageColumnText } from './sheet-cells';
-import { cloneDeltaTone, sheetCloneDiff } from './sheet-clone-diff';
+import { CRIT_AURA_THRESHOLD, cloneDeltaTone, overThreshold, sheetCloneDiff } from './sheet-clone-diff';
 
 const format = (value: number, decimals = 0): string => value.toFixed(decimals);
 
@@ -80,13 +80,43 @@ describe('the delta clone column', () => {
 describe('over cap on the clone', () => {
   const clonePushedPastCap = {
     critChance: { total: 104.12, deltaCap: -4.12, cappedTotal: 100 },
+    cdr: { total: 84.12, deltaCap: -4.12, cappedTotal: 80 },
   };
 
   it('differs when the clone pushes a stat past the cap the current gear sits under', () => {
     const diff = sheetCloneDiff(table(), table(clonePushedPastCap));
     expect(diff.critChance.overCap.changed).toBe(true);
     expect(formatOverCapCell(diff.critChance.overCap.current, format, '%')).toBe('—');
-    expect(formatOverCapCell(diff.critChance.overCap.clone, format, '%')).toBe('100.00% (−4.12%)');
+    expect(formatOverCapCell(diff.critChance.overCap.clone, format, '%')).toBe('80.00% (−24.12%)');
+  });
+
+  it('measures crit chance against the Deadly Omen threshold, 80 on this table', () => {
+    expect(CRIT_AURA_THRESHOLD).toBe(80);
+    const overCap = (total: number) =>
+      formatOverCapCell(
+        sheetCloneDiff(table({ critChance: { total } }), table()).critChance.overCap.current,
+        format,
+        '%',
+      );
+    expect(overCap(81.17)).toBe('80.00% (−1.17%)');
+    expect(overCap(104.12)).toBe('80.00% (−24.12%)');
+    expect(overCap(79.83)).toBe('—');
+  });
+
+  it('keeps cooldown reduction at its own cap', () => {
+    const diff = sheetCloneDiff(table(), table(clonePushedPastCap));
+    expect(formatOverCapCell(diff.cdr.overCap.current, format, '%')).toBe('—');
+    expect(formatOverCapCell(diff.cdr.overCap.clone, format, '%')).toBe('80.00% (−4.12%)');
+  });
+
+  it('leaves the Points tab row, which prints the stage row as peeled, at the game cap of 100', () => {
+    const peeled = stageRow({ total: 104.12, deltaCap: -4.12, cappedTotal: 100 });
+    expect(formatOverCapCell(peeled, format, '%')).toBe('100.00% (−4.12%)');
+  });
+
+  it('leaves the stage row untouched when it sits under the threshold', () => {
+    const row = stageRow({ total: 50, cappedTotal: 50 });
+    expect(overThreshold(row, CRIT_AURA_THRESHOLD)).toEqual(row);
   });
 
   it('is unchanged while both sides sit under the cap, even though their totals differ', () => {

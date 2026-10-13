@@ -167,6 +167,6 @@ export const sheetClonePtBR: SheetCloneCopy = {
   cloneSheetTip:
     'A ficha do herói com seu equipamento atual. Onde o clone muda um valor, o valor do clone aparece empilhado abaixo. Δ clone é o total do clone menos o total atual. O detalhamento completo por stat (sorteio de nascimento, nível, estrelas e habilidades) está na aba Pontos.',
   critAuraCapTip:
-    'Com {aura} (+{amount}% de chance de crítico) no time, a chance de crítico chega ao teto com {threshold}% na ficha. A aura é somada por cima da ficha, então tudo acima de {threshold}% é desperdiçado.',
+    'A coluna Acima do teto assume {aura} (+{amount}% de chance de crítico) no time: a aura é somada por cima desta ficha, então chance de crítico acima de {threshold}% aqui é desperdiçada.',
   colSheetDeltaClone: 'Δ clone',
 };
