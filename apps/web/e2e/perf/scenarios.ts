@@ -99,14 +99,15 @@ export const scenarios: Scenario[] = [
     id: 'P-03',
     label: 'Change a gear slot',
     startTab: 'gear',
-    selectorRecipe: 'Gear tab → first slot Item-level <select aria-label="Nível do item|Item level">',
+    selectorRecipe: 'Gear tab → first slot Item-level combobox aria-label="Nível do item|Item level: <level - set>"',
     precondition: async (page) => {
       await ensurePlannerTab(page, 'gear')
       const select = page.getByLabel(/nível do item|item level/i).first()
       return select
     },
     run: async (page, target) => {
-      const label = await target.innerText()
+      // The closed trigger prints only the set name; the level lives in its accessible name.
+      const label = (await target.getAttribute('aria-label')) ?? ''
       // Flip between level 10 and 20. Since #106 the level label also carries the set the level
       // implies — "Nível 10 - Brasa" / "Level 20 - Gold" — so both the digit probe below and the
       // option name below it are deliberately loose about what follows the number.

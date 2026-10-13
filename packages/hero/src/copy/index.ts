@@ -1,9 +1,9 @@
 /** `@bombfarm/hero/copy` — user-facing strings for the hero and roster views. */
 import { heroEn } from './en';
 import { heroPtBR } from './pt-BR';
-import { gearPanelEn, statPanelEn } from './panel-en';
-import { gearPanelPtBR, statPanelPtBR } from './panel-pt-BR';
-import type { GearPanelCopy } from './gear-panel-copy';
+import { gearPanelEn, sheetCloneEn, statPanelEn } from './panel-en';
+import { gearPanelPtBR, sheetClonePtBR, statPanelPtBR } from './panel-pt-BR';
+import type { GearPanelCopy, SheetCloneCopy } from './gear-panel-copy';
 import type { StatPanelCopy } from './stat-panel-copy';
 import { showcaseEn } from './showcase-en';
 import { showcasePtBR } from './showcase-pt-BR';
@@ -21,11 +21,11 @@ export type { RosterCopy } from './roster-copy';
 export type { RosterBoardCopy } from './roster-board-copy';
 export type { HeroPanelCopy } from './hero-panel-copy';
 export type { StatPanelCopy } from './stat-panel-copy';
-export type { GearPanelCopy } from './gear-panel-copy';
+export type { GearPanelCopy, SheetCloneCopy } from './gear-panel-copy';
 export { heroEn } from './en';
 export { heroPtBR } from './pt-BR';
-export { gearPanelEn, statPanelEn } from './panel-en';
-export { gearPanelPtBR, statPanelPtBR } from './panel-pt-BR';
+export { gearPanelEn, sheetCloneEn, statPanelEn } from './panel-en';
+export { gearPanelPtBR, sheetClonePtBR, statPanelPtBR } from './panel-pt-BR';
 
 /** The two languages these screens ship in. Spelled as the literal union `@bombfarm/domain`'s
  *  own formatters declare, so the two stay structurally identical. */
@@ -70,6 +70,12 @@ export function statPanelCopyFor(lang: Lang): StatPanelCopy {
 
 export function gearPanelCopyFor(lang: Lang): GearPanelCopy {
   return GEAR_PANEL_STRINGS[lang];
+}
+
+export const SHEET_CLONE_STRINGS: Record<Lang, SheetCloneCopy> = { en: sheetCloneEn, pt: sheetClonePtBR };
+
+export function sheetCloneCopyFor(lang: Lang): SheetCloneCopy {
+  return SHEET_CLONE_STRINGS[lang];
 }
 
 export const SHOWCASE_STRINGS: Record<Lang, ShowcaseCopy> = { en: showcaseEn, pt: showcasePtBR };

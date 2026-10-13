@@ -12,8 +12,8 @@
  * two `statShort` records equal while one of them was missing a stat.
  */
 import { describe, expect, it } from 'vitest';
-import { gearPanelEn, statPanelEn } from './panel-en';
-import { gearPanelPtBR, statPanelPtBR } from './panel-pt-BR';
+import { gearPanelEn, sheetCloneEn, statPanelEn } from './panel-en';
+import { gearPanelPtBR, sheetClonePtBR, statPanelPtBR } from './panel-pt-BR';
 
 type PanelDictionary = Record<string, string | Record<string, string>>;
 
@@ -35,6 +35,8 @@ const STAT_EN = flatten(statPanelEn);
 const STAT_PT = flatten(statPanelPtBR);
 const GEAR_EN = flatten(gearPanelEn);
 const GEAR_PT = flatten(gearPanelPtBR);
+const CLONE_EN = flatten(sheetCloneEn);
+const CLONE_PT = flatten(sheetClonePtBR);
 
 /**
  * Legitimately identical pairs across the two languages (a declared table, not an inferred one).
@@ -60,6 +62,7 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly string[] = [
   'effectiveCriticalHit',
   'compareAlt',
   'compareHit',
+  'colSheetDeltaClone',
 ];
 
 /** Reads one member, and fails loudly rather than defaulting when it is absent — a default here
@@ -99,6 +102,7 @@ function untranslated(en: Record<string, string>, ptBR: Record<string, string>):
 const DICTIONARIES: [string, Record<string, string>, Record<string, string>][] = [
   ['statPanel', STAT_EN, STAT_PT],
   ['gearPanel', GEAR_EN, GEAR_PT],
+  ['sheetClone', CLONE_EN, CLONE_PT],
 ];
 
 describe.each(DICTIONARIES)('%s member-set parity', (_name, en, ptBR) => {
@@ -151,7 +155,11 @@ describe('placeholder scanning', () => {
 
 describe('no PT leakage in EN, no EN leakage in PT', () => {
   it('every member differs between the two languages, except the declared allowlist', () => {
-    const leaked = [...untranslated(STAT_EN, STAT_PT), ...untranslated(GEAR_EN, GEAR_PT)];
+    const leaked = [
+      ...untranslated(STAT_EN, STAT_PT),
+      ...untranslated(GEAR_EN, GEAR_PT),
+      ...untranslated(CLONE_EN, CLONE_PT),
+    ];
     expect(
       leaked,
       `These members render identically in both languages and are NOT on the declared allowlist: ` +
@@ -161,8 +169,8 @@ describe('no PT leakage in EN, no EN leakage in PT', () => {
   });
 
   it('the declared allowlist entries really are identical, and none of it is stale', () => {
-    const flatEn = { ...STAT_EN, ...GEAR_EN };
-    const flatPt = { ...STAT_PT, ...GEAR_PT };
+    const flatEn = { ...STAT_EN, ...GEAR_EN, ...CLONE_EN };
+    const flatPt = { ...STAT_PT, ...GEAR_PT, ...CLONE_PT };
     for (const key of IDENTICAL_IN_BOTH_LANGUAGES) {
       expect(flatEn[key], key).toBeDefined();
       expect(flatEn[key], key).toBe(flatPt[key]);

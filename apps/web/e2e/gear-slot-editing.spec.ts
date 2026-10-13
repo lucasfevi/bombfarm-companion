@@ -3,7 +3,7 @@ import { importedRoster, seedLocalStorage, selectSavedHero } from './fixtures/se
 
 const GEAR_TAB = /^gear$|^equipamento$/i;
 const COMBAT_TAB = /^combat$|^combate$/i;
-const ITEM_LEVEL = /^(?:item level|nível do item)$/i;
+const ITEM_LEVEL = /^(?:item level|nível do item)(?::|$)/i;
 const ITEM_RARITY = /^(?:item rarity|raridade do item)$/i;
 const FORGE_LEVEL = /^(?:forge level|forja)$/i;
 const CLEAR_SLOT = /^(?:clear|limpar)$/i;
@@ -16,6 +16,7 @@ const SUSTAINED_METRIC = /sustained dps|dps efetivo/i;
 const CURRENT_SIDE = /current|atual/i;
 const CLONE_SIDE = /clone/i;
 const LEVEL_100 = /(?:level|nível) 100(?!\d)/i;
+const LEVEL_100_SET = /^(?:forest|floresta)$/i;
 const EPIC = /^(?:epic|épico)$/i;
 
 /** The catalog's slot order, which is the order both gear grids draw. */
@@ -200,7 +201,7 @@ test.describe('gear slot editing on the planner', () => {
 
     await openTab(page, GEAR_TAB);
     const reloadedWeapon = currentSlot(page, 'arma');
-    await expect(reloadedWeapon.getByRole('combobox', { name: ITEM_LEVEL })).toHaveText(LEVEL_100);
+    await expect(reloadedWeapon.getByRole('combobox', { name: ITEM_LEVEL })).toHaveText(LEVEL_100_SET);
     await expect(reloadedWeapon.getByRole('combobox', { name: ITEM_RARITY })).toHaveText(EPIC);
     await expect(reloadedWeapon.getByRole('combobox', { name: FORGE_LEVEL })).toHaveText(
       '+5 ×1.25',

@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { ITEM_LEVELS, defsForSlot, setsForLevel, type EquippedItem } from '@bombfarm/domain/gear';
 import { setName } from '@bombfarm/domain/game-labels';
-import { SlotEditor } from '@/features/gear/components/slot-editor';
+import { GearSlotEditor as SlotEditor } from '@bombfarm/hero/components';
 import { STRINGS, sub, type Lang } from '@/shared/i18n';
 
 /**
@@ -28,8 +28,8 @@ import { STRINGS, sub, type Lang } from '@/shared/i18n';
  * 2 languages, every composed label observed as text.
  */
 
-/** Strips the level control out of the rendered markup and returns its visible text. */
-function renderedLevelLabel(lang: Lang, equipped: EquippedItem | null): string {
+/** The level control's accessible name past its "Item level: " prefix, and its visible text. */
+function renderedLevelControl(lang: Lang, equipped: EquippedItem | null): { label: string; visible: string } {
   const strings = STRINGS[lang];
   const markup = renderToStaticMarkup(
     createElement(SlotEditor, {
@@ -41,17 +41,24 @@ function renderedLevelLabel(lang: Lang, equipped: EquippedItem | null): string {
     }),
   );
   // The level control is identified by its own accessible name, not by a class or position.
-  const start = markup.indexOf(`aria-label="${strings.itemLevel}"`);
+  const prefix = `aria-label="${strings.itemLevel}: `;
+  const start = markup.indexOf(prefix);
   expect(start, `no control labelled "${strings.itemLevel}" in the rendered markup`).toBeGreaterThan(-1);
+  const label = markup.slice(start + prefix.length, markup.indexOf('"', start + prefix.length));
   // `start` lands inside the open tag — step past its `>` so the remaining attributes are not
   // mistaken for text, then take everything up to the control's close tag.
   const contentStart = markup.indexOf('>', start) + 1;
   const end = markup.indexOf('</button>', contentStart);
   expect(end, 'level control is not a closed button element').toBeGreaterThan(contentStart);
-  return markup
+  const visible = markup
     .slice(contentStart, end)
     .replace(/<[^>]*>/g, '')
     .trim();
+  return { label, visible };
+}
+
+function renderedLevelLabel(lang: Lang, equipped: EquippedItem | null): string {
+  return renderedLevelControl(lang, equipped).label;
 }
 
 function equippedAt(level: number): EquippedItem {
@@ -76,6 +83,16 @@ describe('slot editor level option label (rendered, not source text)', () => {
       expect(label).toBe(
         sub(STRINGS[lang].itemLevelOpt, { n: 10, set: setName(setsForLevel(10)[0] ?? '', lang) }),
       );
+    }
+  });
+
+  it('prints only the set name on the closed trigger and keeps the level in its accessible name', () => {
+    for (const lang of ['en', 'pt'] as const) {
+      for (const level of ITEM_LEVELS) {
+        const { label, visible } = renderedLevelControl(lang, equippedAt(level));
+        expect(visible).toBe(setName(setsForLevel(level)[0] ?? '', lang));
+        expect(label).toContain(String(level));
+      }
     }
   });
 

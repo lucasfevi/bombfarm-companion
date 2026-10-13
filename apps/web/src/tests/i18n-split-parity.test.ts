@@ -528,6 +528,7 @@ const KEYS_REMOVED: readonly string[] = [
  * `KEYS_REMOVED` — same precedent as the drop labels and `phasesBoost*` keys above.
  */
 const KEYS_ADDED: readonly string[] = [
+  'itemLevelSearch', 'itemLevelEmpty',
   'navHeroes', 'farmRankingPassLabel', 'farmRankingPassOn', 'farmRankingPassOff', 'farmRankingPassTip', 'farmRankingPassTipDetected',
   // The Optimizer's ledger of what changed since the plan (2026-09-19, narrowed to breaking
   // changes only 2026-09-21): the notice that only said inputs had changed now lists every

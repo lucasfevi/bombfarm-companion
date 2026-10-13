@@ -39,3 +39,7 @@ export function gearPanelReading(input: {
     showCompare: editable || hasAltLoadout,
   };
 }
+
+export function currentGearEditable(input: { canPatchCurrent: boolean; hasSlotEditor: boolean }): boolean {
+  return input.canPatchCurrent && input.hasSlotEditor;
+}

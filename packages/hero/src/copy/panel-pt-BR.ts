@@ -9,7 +9,7 @@
  * Member set and every `{placeholder}` must match `panel-en.ts` exactly — `panel-parity.test.ts`
  * proves both at runtime as a second, independent line of defence.
  */
-import type { GearPanelCopy, StatPanelCopy } from './index';
+import type { GearPanelCopy, SheetCloneCopy, StatPanelCopy } from './index';
 
 export const statPanelPtBR: StatPanelCopy = {
   statFull: {
@@ -153,4 +153,20 @@ export const gearPanelPtBR: GearPanelCopy = {
   reCopy: 'Copiar novamente',
   applyCompare: 'Aplicar no atual',
   clearCompare: 'Limpar',
+  clear: 'Limpar',
+  itemLevel: 'Nível do item',
+  itemLevelOpt: 'Nível {n} - {set}',
+  itemLevelSearch: 'Buscar sets…',
+  itemLevelEmpty: 'Nenhum set encontrado',
+  itemRarity: 'Raridade do item',
+  forgeLevel: 'Forja',
+};
+
+export const sheetClonePtBR: SheetCloneCopy = {
+  panelCloneSheet: 'Stats: atual vs clone',
+  cloneSheetTip:
+    'A ficha do herói com seu equipamento atual. Onde o clone muda um valor, o valor do clone aparece empilhado abaixo. Δ clone é o total do clone menos o total atual. O detalhamento completo por stat (sorteio de nascimento, nível, estrelas e habilidades) está na aba Pontos.',
+  critAuraCapTip:
+    'A coluna Acima do teto assume {aura} (+{amount}% de chance de crítico) no time: a aura é somada por cima desta ficha, então chance de crítico acima de {threshold}% aqui é desperdiçada.',
+  colSheetDeltaClone: 'Δ clone',
 };

@@ -31,6 +31,8 @@ export type SearchSelectOption = {
    *  second "search text" field: a row that answers to a word it does not show is a row the
    *  player cannot learn to search for. */
   label: string;
+  /** What the closed trigger prints when this option is selected, when shorter than the row. */
+  triggerLabel?: string;
 };
 
 export type SearchSelectProps = {
@@ -155,7 +157,7 @@ export function SearchSelect({
           <Icon name="chevron-down" className="size-3.5" />
         </span>
         <span className={selectValueClass}>
-          <Combobox.Value>{(option: SearchSelectOption | null) => option?.label ?? ''}</Combobox.Value>
+          <Combobox.Value>{(option: SearchSelectOption | null) => option?.triggerLabel ?? option?.label ?? ''}</Combobox.Value>
         </span>
       </Combobox.Trigger>
 

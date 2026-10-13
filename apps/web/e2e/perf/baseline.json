@@ -1,23 +1,23 @@
 {
   "captureMode": "prod-profile",
   "fixture": "importedRoster",
-  "_note": "REFRESHED (23) for four abilities added to the catalog, per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard. P-02 6521->6557 (+36); P-03 12633->12701 (+68); P-04 6509->6537 (+28); P-05 2144->2156 (+12). Every delta is exactly 4x the per-panel commit count the previous refresh bisected (9, 17, 7, 3): each commit of that panel now renders one more component per new catalog ability. Inferred from that arithmetic, not bisected. Numbers are the CI runner's capture, which this machine's own capture reproduced digit for digit. Previous: REFRESHED (22) for the Optimizer's disabled reason moving onto the page, per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard. P-02 6512->6521 (+9); P-03 12616->12633 (+17); P-04 6502->6509 (+7); P-05 2141->2144 (+3). The reason the Optimize button cannot run used to live only in a native title attribute, which never reached touch or the keyboard; it now renders through a PointsPreviewNotice in the rail beside the button. That notice stays mounted and toggles `open`, like its two siblings, so it reserves its layout instead of shifting the panel - which costs exactly one component render per commit of that panel, and every delta above is that count. Bisected, not inferred: removing that one element and re-capturing reproduces the previous four numbers exactly, and reverting the number-field change instead leaves all four unchanged. Numbers are the CI runner's capture, which this machine's own capture reproduced digit for digit, identical across all seven repetitions.",
+  "_note": "REFRESHED (24) for the gear slot editor moving into the shared hero package with a searchable item-level picker, per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard. P-02 6557->6485 (-72); P-03 12701->18313 (+5612); P-04 6537->6271 (-266); P-05 2156->2042 (-114). Every delta is a whole number of commits at roughly the page's per-commit render count. P-03 went from 17 to 25 commits: the Base UI combobox popup commits more often than the select it replaced as it opens (a few before its rows mount, about a dozen while its 30 rows register, a few as it closes), and each of those re-renders the page, plus the 30 row components per rows-mounted commit (ComboboxItemInner, 411 renders). Not a lost memoization boundary: the slot editor still bails out on every commit that does not change its props, and the same-session control on develop reproduced the old numbers digit for digit. P-02/P-04/P-05 fall because the eight closed level pickers on the gear tab cost fewer components per commit than the eight selects they replaced. Rows-mounted-popup commit count is the same with the row list rendered by function and with a single items prop, so it is not something the wrapper adds. Previous: REFRESHED (23) for four abilities added to the catalog, per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard. P-02 6521->6557 (+36); P-03 12633->12701 (+68); P-04 6509->6537 (+28); P-05 2144->2156 (+12). Every delta is exactly 4x the per-panel commit count the previous refresh bisected (9, 17, 7, 3): each commit of that panel now renders one more component per new catalog ability. Inferred from that arithmetic, not bisected. Numbers are the CI runner's capture, which this machine's own capture reproduced digit for digit. Previous: REFRESHED (22) for the Optimizer's disabled reason moving onto the page, per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard. P-02 6512->6521 (+9); P-03 12616->12633 (+17); P-04 6502->6509 (+7); P-05 2141->2144 (+3). The reason the Optimize button cannot run used to live only in a native title attribute, which never reached touch or the keyboard; it now renders through a PointsPreviewNotice in the rail beside the button. That notice stays mounted and toggles `open`, like its two siblings, so it reserves its layout instead of shifting the panel - which costs exactly one component render per commit of that panel, and every delta above is that count. Bisected, not inferred: removing that one element and re-capturing reproduces the previous four numbers exactly, and reverting the number-field change instead leaves all four unchanged. Numbers are the CI runner's capture, which this machine's own capture reproduced digit for digit, identical across all seven repetitions.",
   "scenarios": [
     {
       "id": "P-02",
-      "medianComponentRenders": 6557
+      "medianComponentRenders": 6485
     },
     {
       "id": "P-03",
-      "medianComponentRenders": 12701
+      "medianComponentRenders": 18313
     },
     {
       "id": "P-04",
-      "medianComponentRenders": 6537
+      "medianComponentRenders": 6271
     },
     {
       "id": "P-05",
-      "medianComponentRenders": 2156
+      "medianComponentRenders": 2042
     }
   ]
 }

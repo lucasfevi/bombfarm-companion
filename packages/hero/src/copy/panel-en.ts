@@ -154,4 +154,20 @@ export const gearPanelEn = {
   reCopy: 'Re-copy',
   applyCompare: 'Apply to current',
   clearCompare: 'Clear',
+  clear: 'Clear',
+  itemLevel: 'Item level',
+  itemLevelOpt: 'Level {n} - {set}',
+  itemLevelSearch: 'Search sets…',
+  itemLevelEmpty: 'No matching set',
+  itemRarity: 'Item rarity',
+  forgeLevel: 'Forge level',
+} as const;
+
+export const sheetCloneEn = {
+  panelCloneSheet: 'Stats: current vs clone',
+  cloneSheetTip:
+    'The hero sheet with your current gear. Where the clone changes a value, the clone value is stacked beneath it. Δ clone is the clone total minus the current total. The full per-stat breakdown (birth roll, level, stars and abilities) is on the Points tab.',
+  critAuraCapTip:
+    'Over cap assumes {aura} (+{amount}% crit chance) is on the team: the aura is added on top of this sheet, so crit chance above {threshold}% here is wasted.',
+  colSheetDeltaClone: 'Δ clone',
 } as const;
