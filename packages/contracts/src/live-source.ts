@@ -432,9 +432,11 @@ export interface LiveMap {
  * report — hence "average" in each field's name, and never presented as an observation.
  */
 export interface LiveMapEconomy {
-  /** XP a single prop awards, with the account's own XP multiplier (the skill tree's `xp_mult`)
-   *  already applied — what the player actually earns, not the wiki's unboosted base. */
-  readonly xpPerProp: number;
+  /** XP a single prop awards, with the account's own XP multiplier (the skill tree's `xp_mult`),
+   *  the Return Bonus, the Pass, a running Boost and the field heroes' XP runes applied — what the
+   *  player actually earns, not the wiki's unboosted base. `null` when the account read carried no
+   *  usable XP multiplier. */
+  readonly xpPerProp: number | null;
   /** Average gold a single prop pays out, with the account's coin bonus applied. */
   readonly averageGoldPerProp: number;
   /** Average gold a full clear of this map pays out: {@link averageGoldPerProp} across every prop

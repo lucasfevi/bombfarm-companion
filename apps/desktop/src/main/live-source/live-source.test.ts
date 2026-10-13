@@ -1220,7 +1220,7 @@ describe('LiveSource: earnings', () => {
       return { xp10: requireNumber(earnings?.xp10 ?? null), xpSession: requireNumber(earnings?.xpSession ?? null) };
     }
 
-    const baseline = xpAfterOneEarningTick(undefined);
+    const baseline = xpAfterOneEarningTick(1);
     const doubled = xpAfterOneEarningTick(2);
 
     expect(baseline.xpSession).toBeGreaterThan(0);
@@ -1228,7 +1228,7 @@ describe('LiveSource: earnings', () => {
     expect(doubled.xp10).toBe(baseline.xp10 * 2);
   });
 
-  it('an absent or zero xp_mult still normalizes to 1, never zeroing the published XP figure', () => {
+  it('a zero xp_mult withholds the modelled XP instead of pricing it at ×1', () => {
     const { source, pushFrame, goLive } = createHarness();
     source.start();
     source.ingestRotation(buildAccountView(bodyWithHeroes([]), { skills: skillsWithXpMult(0) }));
@@ -1237,9 +1237,10 @@ describe('LiveSource: earnings', () => {
     pushFrame({ heroes: [], phase: 1, loot: [{ cell: 0, gold: 1 }] });
     pushFrame({ heroes: [], phase: 1 });
 
-    const earnings = source.getView().earnings;
-    expect(earnings?.xpSession).not.toBeNull();
-    expect(earnings?.xpSession).not.toBe(0);
+    const view = source.getView();
+    expect(view.earnings?.xpSessionTotal).toBe(0);
+    expect(view.map?.economy?.xpPerProp).toBeNull();
+    expect(view.map?.economy?.averageGoldPerProp).toBeGreaterThan(0);
   });
 
   it('publishes the XP the server reported, not the modelled one', () => {
@@ -2013,5 +2014,63 @@ describe('the game image path probe', () => {
 
   it('reads no output at all as a process that is gone, never as access denied', () => {
     expect(parseProcessImagePath('')).toEqual({ kind: 'gone' });
+  });
+});
+
+describe("LiveSource: the map's XP estimate", () => {
+  function viewWithRoster(xpMult: number, roster: readonly Record<string, unknown>[]): AccountView {
+    const view = buildAccountView(bodyWithHeroes([]), { skills: skillsWithXpMult(xpMult) });
+    return { ...view, payload: { ...view.payload, heroes: roster } };
+  }
+
+  function xpRune(id: string, p: number): Record<string, unknown> {
+    return { ...minimalRosterHero(id), runas: [{ e: 'xp', p, s: 600, r: 0 }] };
+  }
+
+  function estimate(source: LiveSource): number {
+    return requireNumber(source.getView().map?.economy?.xpPerProp ?? null);
+  }
+
+  it('adds a running XP Boost to the bracket, and drops it when the Boost ends', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(viewWithRoster(1.5, []));
+    goLive();
+
+    pushFrame({ heroes: [], phase: 61 });
+    const bare = estimate(source);
+    const bareGold = source.getView().map?.economy?.averageGoldPerProp ?? Number.NaN;
+    pushFrame({ heroes: [], phase: 61, boosts: [{ axis: 'xp', secondsLeft: 600, mult: 2 }] });
+    expect(estimate(source) / bare).toBeCloseTo(2, 10);
+    expect(source.getView().map?.economy?.averageGoldPerProp).toBe(bareGold);
+    pushFrame({ heroes: [], phase: 61, boosts: [{ axis: 'gold', secondsLeft: 600, mult: 2 }] });
+    expect(estimate(source)).toBeCloseTo(bare, 10);
+    expect((source.getView().map?.economy?.averageGoldPerProp ?? Number.NaN) / bareGold).toBeCloseTo(2, 10);
+  });
+
+  it("applies the field heroes' XP runes, weighted equally across the heroes on the field", () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(viewWithRoster(1.5, [xpRune('runed', 0.09), minimalRosterHero('plain')]));
+    goLive();
+
+    pushFrame({ heroes: [{ id: 'plain' }], phase: 61 });
+    const bare = estimate(source);
+    pushFrame({ heroes: [{ id: 'runed' }, { id: 'plain' }], phase: 61 });
+    expect(estimate(source) / bare).toBeCloseTo(1.045, 10);
+    pushFrame({ heroes: [{ id: 'runed' }], phase: 61 });
+    expect(estimate(source) / bare).toBeCloseTo(1.09, 10);
+  });
+
+  it("prices a loot frame without its XP under that frame's own Boost", () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(viewWithRoster(1.5, []));
+    goLive();
+
+    pushFrame({ heroes: [], phase: 61 });
+    const bare = estimate(source);
+    pushFrame({ heroes: [], phase: 61, boosts: [{ axis: 'xp', secondsLeft: 600, mult: 2 }], loot: [{ cell: 0, gold: 1 }] });
+    expect(source.getView().earnings?.xpSessionTotal).toBeCloseTo(bare * 2, 6);
   });
 });
