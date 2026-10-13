@@ -173,6 +173,8 @@ export function selectFarmPoolEntries(state: PlannerStore): FarmPoolEntry[] {
 export const selectFarmReturnBonus = (state: PlannerStore) => state.farmReturnBonus;
 export const selectFarmPass = (state: PlannerStore) => state.farmPass;
 export const selectFarmBoost = (state: PlannerStore) => state.farmBoost;
+export const selectFarmXpBonusUnknown = (state: PlannerStore) =>
+  state.importedAt === null && state.treeXpMult === 1;
 
 /** What the Phases panel multiplies one prop's wiki XP by — the board's own multiplier, so the
  *  two print one figure. */

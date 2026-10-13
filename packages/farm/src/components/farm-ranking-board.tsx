@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Banner, EmptyState, Panel } from '@bombfarm/ui';
+import { Banner, EmptyState, InfoTip, Panel } from '@bombfarm/ui';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import type { EconomyBoost, ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
@@ -47,6 +47,8 @@ export type FarmRankingBoardData = {
   pass?: boolean;
   /** The Boosts running. Omitted, the board draws no Boost control. */
   boost?: EconomyBoost;
+  /** No save is imported, so XP/hr is priced without the account's XP bonuses. Omitted, false. */
+  xpBonusUnknown?: boolean;
   maxPhase: number | null;
   fieldSlots: number | null;
   currentPhase: number;
@@ -103,6 +105,7 @@ export function FarmRankingBoardView({
     returnBonus,
     pass = false,
     boost,
+    xpBonusUnknown = false,
     maxPhase,
     fieldSlots,
     currentPhase,
@@ -173,10 +176,15 @@ export function FarmRankingBoardView({
 
   return (
     <Panel data-testid="farm-ranking">
-      <div className="mb-2.5 flex items-baseline">
+      <div className="mb-2.5 flex items-center gap-1.5">
         <h2 className="m-0 text-[13px] font-bold tracking-[0.04em] uppercase">
           {t.farmRankingTitle}
         </h2>
+        {xpBonusUnknown ? (
+          <span data-testid="farm-xp-bonus-unknown" className="inline-flex">
+            <InfoTip label={t.farmRankingXpNoImportLabel} tip={t.farmRankingXpNoImportTip} />
+          </span>
+        ) : null}
       </div>
       {result.reason !== 'no-roster' ? (
         <div className="mb-3">

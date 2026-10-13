@@ -10,6 +10,7 @@ import {
   selectFarmRankingRows,
   selectFarmBoost,
   selectFarmPass,
+  selectFarmXpBonusUnknown,
   selectFarmReturnBonus,
   selectFieldSlots,
   selectHeroes,
@@ -43,6 +44,7 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
   const returnBonus = usePlannerStore(selectFarmReturnBonus);
   const pass = usePlannerStore(selectFarmPass);
   const boost = usePlannerStore(selectFarmBoost);
+  const xpBonusUnknown = usePlannerStore(selectFarmXpBonusUnknown);
   const maxPhase = usePlannerStore(selectMaxPhase);
   const fieldSlots = usePlannerStore(selectFieldSlots);
   const currentPhase = usePlannerStore(selectPhasesViewPhase);
@@ -68,6 +70,7 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
         returnBonus,
         pass,
         boost,
+        xpBonusUnknown,
         maxPhase,
         fieldSlots,
         currentPhase,

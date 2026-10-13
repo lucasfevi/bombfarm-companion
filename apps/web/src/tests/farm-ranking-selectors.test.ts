@@ -11,8 +11,11 @@ import {
   selectFarmRankingRows,
   selectFarmReturnBonus,
   selectFarmPass,
+  selectFarmXpBonusUnknown,
   selectFarmXpPerPropMult,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
+import { selectAccountShared } from '@/shared/stores/selectors/account-selectors';
+import { normalizeAccount } from '@/shared/lib/account-shared';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
 
 function farmHero(id: string, overrides: Partial<{ battleAllowed: boolean }> = {}) {
@@ -310,6 +313,37 @@ describe('the XP the board prints', () => {
       expect((match.xpPerHour ?? Number.NaN) / (row.xpPerHour ?? Number.NaN)).toBeCloseTo(2.3 / 1.3, 9);
       expect(match.goldPerHour).toBe(row.goldPerHour);
     }
+  });
+
+  it('with no save imported, XP is priced at ×1 and the board says it leaves the account bonuses out', () => {
+    expect(selectFarmXpBonusUnknown(usePlannerStore.getState())).toBe(true);
+    expect(xpRows().length).toBeGreaterThan(0);
+    importXpMult(2.35);
+    expect(selectFarmXpBonusUnknown(usePlannerStore.getState())).toBe(false);
+  });
+
+  it('an imported save with an unusable XP multiplier withholds every XP figure, and nothing else', () => {
+    importXpMult(1);
+    const priced = selectFarmRankingRows(usePlannerStore.getState()).rows;
+    usePlannerStore.getState().applyAccountImport({ tree: { ...TREE, xpMult: null }, houseIdx: null, houseLevel: null, phase: null });
+    const state = usePlannerStore.getState();
+    const withheld = selectFarmRankingRows(state).rows;
+    expect(withheld.length).toBe(priced.length);
+    expect(withheld.every((row) => row.xpPerHour === null)).toBe(true);
+    expect(withheld.map((row) => row.goldPerHour)).toEqual(priced.map((row) => row.goldPerHour));
+    expect(selectFarmXpPerPropMult(state)).toBeNull();
+    expect(selectFarmXpBonusUnknown(state)).toBe(false);
+  });
+
+  it('a withheld XP multiplier survives the saved-account round trip instead of reloading as ×1', () => {
+    usePlannerStore.getState().applyAccountImport({ tree: { ...TREE, xpMult: null }, houseIdx: null, houseLevel: null, phase: null });
+    const reloaded = normalizeAccount(
+      JSON.parse(JSON.stringify(selectAccountShared(usePlannerStore.getState()))) as Parameters<typeof normalizeAccount>[0],
+    );
+    expect(reloaded.tree.xpMult).toBeNull();
+    resetPlannerStoreForTests();
+    usePlannerStore.getState().hydrateAccount(reloaded);
+    expect(usePlannerStore.getState().treeXpMult).toBeNull();
   });
 
   it('the Phases panel per-prop XP times the row props/hr is the row XP/hr, phase for phase', () => {

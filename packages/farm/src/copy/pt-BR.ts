@@ -111,6 +111,9 @@ export const farmPtBR: FarmCopy = {
   farmRankingColOneShot: "Um golpe",
 
   farmRankingTitle: "Ranking de Farm",
+  farmRankingXpNoImportLabel: "XP por hora",
+  farmRankingXpNoImportTip:
+    "O XP por hora não inclui os bônus de XP da sua conta até você importar um save.",
   farmRankingCaption: "Todas as fases da wiki rankeadas pelo que pagam a esta conta por hora",
   farmRankingEmptyNoRosterTitle: "Ainda sem roster",
   farmRankingEmptyNoRosterDesc: "Adicione heróis no Planner para rankear fases para sua conta.",

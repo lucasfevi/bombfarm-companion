@@ -28,6 +28,7 @@ describe('Farm Ranking board — testids present', () => {
   const expectations: [string, string][] = [
     ['farm-ranking-board.tsx', 'farm-ranking'],
     ['farm-ranking-board.tsx', 'farm-ranking-empty'],
+    ['farm-ranking-board.tsx', 'farm-xp-bonus-unknown'],
     ['farm-ranking-filters.tsx', 'farm-filter-unlocked'],
     ['farm-ranking-filters.tsx', 'farm-filter-ato'],
     ['farm-ranking-filters.tsx', 'farm-filter-gate'],

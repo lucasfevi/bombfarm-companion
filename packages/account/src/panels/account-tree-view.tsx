@@ -49,7 +49,8 @@ export interface AccountTreeViewProps {
   energyPct: number;
   teamCoinPct: number;
   luckFlatPct: number;
-  xpMultiplier: number;
+  /** `null` when the account's multiplier is unknown. */
+  xpMultiplier: number | null;
   fieldSlotsBonus: number;
   bagTabsBonus: number;
   /** The usable field width, or `null` when the account did not report one. */
@@ -108,7 +109,7 @@ export function AccountTreeView({
   const rewardItems: StatListItem[] = [
     { id: 'gold', label: labels.gold, tip: labels.goldTip, value: labels.percent(teamCoinPct) },
     { id: 'luck', label: labels.luck, value: labels.luckPoints(luckFlatPct) },
-    { id: 'xp', label: labels.xp, value: labels.multiplier(xpMultiplier) },
+    { id: 'xp', label: labels.xp, value: xpMultiplier === null ? '—' : labels.multiplier(xpMultiplier) },
     { id: 'bag-tabs', label: labels.bagTabs, value: labels.bonus(bagTabsBonus) },
   ];
 

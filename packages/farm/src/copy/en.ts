@@ -106,6 +106,9 @@ export const farmEn = {
   farmRankingColOneShot: "One-shot",
 
   farmRankingTitle: "Farm Ranking",
+  farmRankingXpNoImportLabel: "XP per hour",
+  farmRankingXpNoImportTip:
+    "XP per hour leaves out your account's XP bonuses until you import a save.",
   farmRankingCaption: "Every wiki phase ranked by what it pays this account per hour",
   farmRankingEmptyNoRosterTitle: "No roster yet",
   farmRankingEmptyNoRosterDesc: "Add heroes in the Planner to rank phases for your account.",

@@ -1,8 +1,8 @@
 /**
  * `skills.totals.xp_mult` -> `account.tree.xpMult`, mirroring exactly how `coin_add` maps to
  * `teamCoinPct` on the line above it in `mapAccountData` (`import-save.ts`). Unlike `teamCoinPct`,
- * `xpMult` is a straight multiplier (not `x * 100`) and must never resolve to 0 — a 0 XP
- * multiplier would zero every phase's XP-per-prop, which no real account state produces.
+ * `xpMult` is a straight multiplier (not `x * 100`). A zero or negative one is no real account's
+ * state, so it is withheld (`null`) rather than read as 0 or invented as 1.
  */
 import { describe, expect, it } from 'vitest';
 import { parseSaveFile } from '@bombfarm/domain/import-save';
@@ -26,9 +26,12 @@ describe('import-save — skills.totals.xp_mult -> account.tree.xpMult', () => {
     expect(accountWithTotals({ xp_mult: undefined }).tree).toBeNull();
   });
 
-  it('xp_mult: 0 resolves to 1, never 0 — a literal 0 would zero every phase\'s XP', () => {
-    const account = accountWithTotals({ xp_mult: 0 });
-    expect(account.tree?.xpMult).toBe(1);
+  it('xp_mult: 0 or below withholds the multiplier and keeps the rest of the tree', () => {
+    for (const xp_mult of [0, -1]) {
+      const account = accountWithTotals({ xp_mult });
+      expect(account.tree).not.toBeNull();
+      expect(account.tree?.xpMult).toBeNull();
+    }
   });
 
   it('a non-finite xp_mult (NaN, string, null) makes the tree unavailable', () => {

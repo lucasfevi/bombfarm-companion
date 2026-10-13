@@ -79,7 +79,7 @@ export function ImportAccountSummary({
               </div>
               <div>
                 <dt>{t.treeXpMult}</dt>
-                <dd>×{formatNumber(accountData.tree.xpMult ?? 1, lang, 2)}</dd>
+                <dd>{accountData.tree.xpMult == null ? '—' : `×${formatNumber(accountData.tree.xpMult, lang, 2)}`}</dd>
               </div>
             </dl>
           </section>

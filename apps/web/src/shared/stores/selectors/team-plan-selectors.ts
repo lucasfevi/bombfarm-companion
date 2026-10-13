@@ -24,7 +24,8 @@ export function selectTeamPlanInputs(state: PlannerStore): TeamPlanInputs {
     treeLuckFlatPct: state.treeLuckFlatPct,
     treeCollection: state.treeCollection ?? undefined,
     treeTeamCoinPct: state.treeTeamCoinPct,
-    treeXpMult: state.treeXpMult,
+    // The plan scores gold, never XP, so a withheld multiplier has nothing to withhold here.
+    treeXpMult: state.treeXpMult ?? 1,
     houseIdx: state.houseIdx,
     houseLevel: state.houseLevel,
     phase: state.phase,

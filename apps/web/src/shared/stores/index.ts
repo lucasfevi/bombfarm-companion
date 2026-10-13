@@ -136,6 +136,7 @@ export {
   selectFarmReturnBonus,
   selectFarmPass,
   selectFarmBoost,
+  selectFarmXpBonusUnknown,
   selectFarmXpPerPropMult,
   resetFarmRankingCache,
   getFarmRankingComputeCount,
