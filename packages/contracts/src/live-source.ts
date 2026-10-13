@@ -61,6 +61,22 @@ export interface LiveBoost {
   readonly mult: number;
 }
 
+const BOOST_AXIS_ORDER: readonly LiveBoostAxis[] = ['gold', 'xp', 'drop'];
+
+export const NO_BOOST_AXES: readonly LiveBoostAxis[] = Object.freeze([]);
+
+/** The axes with Boost time left, always in the same order, so two readings compare as lists
+ *  however the wire happened to order them. */
+export function runningBoostAxes(boosts: readonly LiveBoost[] | undefined): readonly LiveBoostAxis[] {
+  if (boosts === undefined) return NO_BOOST_AXES;
+  const running = BOOST_AXIS_ORDER.filter((axis) => boosts.some((boost) => boost.axis === axis && boost.secondsLeft > 0));
+  return running.length === 0 ? NO_BOOST_AXES : running;
+}
+
+export function sameBoostAxes(a: readonly LiveBoostAxis[], b: readonly LiveBoostAxis[]): boolean {
+  return a.length === b.length && a.every((axis, index) => axis === b[index]);
+}
+
 export interface LiveTick {
   /** Every hero currently standing on the field. A hero's absence from this list IS its
    *  departure from the field — there is no separate leave event. */
@@ -174,6 +190,8 @@ export function energyDisplayPercent(fraction: number): number {
 export type LiveEvent =
   | { readonly type: 'frame'; readonly frame: LiveFrame }
   | { readonly type: 'currency'; readonly currency: LiveCurrency }
+  /** The Boost axes running, sent when that set changes and never as their seconds tick down. */
+  | { readonly type: 'boosts'; readonly boosts: readonly LiveBoostAxis[] }
   /**
    * The fast channel: field/recovery countdowns, per-hero energy and the live on-field id set,
    * folded once in the main process and paced to {@link LIVE_DISPLAY_REFRESH_MS} before crossing
@@ -535,6 +553,8 @@ export interface LiveView {
   readonly map: LiveMap | null;
   /** `null` before the first tap frame of the session has arrived. */
   readonly damage: LiveDamage | null;
+  /** From the latest tap frame; empty until one carries a Boost, and again once one stops. */
+  readonly boosts: readonly LiveBoostAxis[];
   readonly updatedAt: string;
 }
 

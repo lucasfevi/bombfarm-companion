@@ -11,8 +11,9 @@
  */
 import { phaseLine } from '@bombfarm/domain/phases';
 import { passActive } from '@bombfarm/domain/import-save';
+import { NO_ECONOMY_BOOST, type EconomyBoost } from '@bombfarm/domain/farm-rate';
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
-import type { AccountView } from '@bombfarm/contracts';
+import { canonicalStringify, type AccountView } from '@bombfarm/contracts';
 import { planInputsSignature, type TeamPlanInputs } from '@bombfarm/team-plan/core';
 import { capturedAtOf, isSectionUsable, sectionFidelityOf } from '../account/account-facts';
 import { buildAccountRoster } from '../account/account-roster';
@@ -48,6 +49,7 @@ export type OptimizerInputsResult = {
 export function buildOptimizerInputs(
   view: AccountView,
   farmChosenPhase: number | null,
+  boost: EconomyBoost = NO_ECONOMY_BOOST,
   nowMs: number = Date.now(),
 ): OptimizerInputsResult | null {
   const payload = view.payload;
@@ -102,6 +104,7 @@ export function buildOptimizerInputs(
     houseCycleSecsLevel: houseLevel,
     maxPhase: account.maxPhase ?? null,
     farmPass: passActive(account.vipUntil, nowMs),
+    farmBoost: boost,
     farmChosenPhase,
     // The duel room's phase and the squad's slots are live, not part of the account read: the
     // screen merges them in.
@@ -118,7 +121,9 @@ export function buildOptimizerInputs(
  * `farmChosenPhase` (a Farm phase change alone must not read as "the account moved" — it reaches
  * the plan through the package signature instead), the capture clock, and the fields the game
  * moves without moving the answer — a hero walking off the field, a rune's seconds ticking down.
+ * The running Boosts are appended: the package signature does not carry them.
  */
 export function optimizerDepKey(inputs: TeamPlanInputs): string {
-  return planInputsSignature(inputs);
+  const boost = inputs.farmBoost ?? NO_ECONOMY_BOOST;
+  return canonicalStringify([planInputsSignature(inputs), boost.gold, boost.xp, boost.drop]);
 }

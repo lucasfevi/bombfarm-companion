@@ -1,6 +1,7 @@
-import { energyDisplayPercent, sameLiveDamage } from '@bombfarm/contracts';
+import { energyDisplayPercent, NO_BOOST_AXES, sameBoostAxes, sameLiveDamage } from '@bombfarm/contracts';
 import type {
   FieldCountdown,
+  LiveBoostAxis,
   LiveDamage,
   LiveEarnings,
   LiveEvent,
@@ -48,6 +49,8 @@ export interface LiveInternalState {
   readonly map: LiveMap | null;
   /** Same rule as `earnings`: carried through from the arrival, never derived here. */
   readonly damage: LiveDamage | null;
+  /** Raised by main only when the running set changes, so it is held as sent. */
+  readonly boosts: readonly LiveBoostAxis[];
   /** Set once any real data — the first `live:get` bootstrap or a `live:event` — has been
    *  applied. Guards only the FIRST bootstrap: subscription happens before that read resolves,
    *  so an event can legitimately arrive first, and the bootstrap resolving afterward must not
@@ -76,6 +79,7 @@ export const initialLiveInternalState: LiveInternalState = {
   earnings: null,
   map: null,
   damage: null,
+  boosts: NO_BOOST_AXES,
   hasAppliedArrival: false,
   hasBootstrapped: false,
   revision: 0,
@@ -216,6 +220,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
       const nextEarnings = keep(view.earnings, state.earnings, sameEarnings);
       const nextMap = keep(view.map, state.map, sameMap);
       const nextDamage = keep(view.damage, state.damage, sameLiveDamage);
+      const nextBoosts = keep(view.boosts, state.boosts, sameBoostAxes);
       const unchanged =
         state.hasBootstrapped &&
         view.rotation === state.rotation &&
@@ -226,7 +231,8 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
         nextOnFieldHeroIds === state.onFieldHeroIds &&
         nextEarnings === state.earnings &&
         nextMap === state.map &&
-        nextDamage === state.damage;
+        nextDamage === state.damage &&
+        nextBoosts === state.boosts;
       if (unchanged) return state;
       return {
         ...state,
@@ -239,6 +245,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
         earnings: nextEarnings,
         map: nextMap,
         damage: nextDamage,
+        boosts: nextBoosts,
         hasAppliedArrival: true,
         hasBootstrapped: true,
         revision: state.revision + 1,
@@ -251,6 +258,10 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
         const nextFreshness = buildLiveFreshness(event.currency);
         if (state.hasAppliedArrival && sameFreshness(nextFreshness, state.freshness)) return state;
         return { ...state, freshness: nextFreshness, hasAppliedArrival: true, revision: state.revision + 1 };
+      }
+      if (event.type === 'boosts') {
+        if (sameBoostAxes(state.boosts, event.boosts)) return state;
+        return { ...state, boosts: event.boosts, revision: state.revision + 1 };
       }
       if (event.type === 'fastUpdate') {
         // Per SLICE, not per arrival. The channel carries all six together and the IPC boundary
@@ -379,6 +390,7 @@ export function deriveLiveModel(state: LiveInternalState, caches: LiveModelCache
     earnings: state.earnings,
     map: state.map,
     damage: state.damage,
+    boosts: state.boosts,
   };
 }
 

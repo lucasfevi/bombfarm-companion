@@ -1924,6 +1924,81 @@ describe('LiveSource: observed frames reach the recorder through the tap factory
   });
 });
 
+describe('LiveSource: running Boosts', () => {
+  function boostEvents(source: LiveSource): LiveEvent[] {
+    const seen: LiveEvent[] = [];
+    source.subscribe((event) => {
+      if (event.type === 'boosts') seen.push(event);
+    });
+    return seen;
+  }
+
+  it('is empty in the view before any frame carries a Boost', () => {
+    const { source } = createHarness();
+    source.start();
+
+    expect(source.getView().boosts).toEqual([]);
+  });
+
+  it('publishes once when a Boost starts, not again as its seconds tick down', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    const seen = boostEvents(source);
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, boosts: [{ axis: 'xp', secondsLeft: 600, mult: 2 }] });
+    pushFrame({ heroes: [], phase: 1, boosts: [{ axis: 'xp', secondsLeft: 599, mult: 2 }] });
+    pushFrame({ heroes: [], phase: 1, boosts: [{ axis: 'xp', secondsLeft: 598, mult: 2 }] });
+
+    expect(seen).toEqual([{ type: 'boosts', boosts: ['xp'] }]);
+    expect(source.getView().boosts).toEqual(['xp']);
+  });
+
+  it('publishes again when a second axis starts, in a fixed axis order whatever the wire order', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    const seen = boostEvents(source);
+    goLive();
+
+    pushFrame({ heroes: [], boosts: [{ axis: 'xp', secondsLeft: 600, mult: 2 }] });
+    pushFrame({
+      heroes: [],
+      boosts: [
+        { axis: 'xp', secondsLeft: 599, mult: 2 },
+        { axis: 'gold', secondsLeft: 3_600, mult: 2 },
+      ],
+    });
+
+    expect(seen.map((event) => (event.type === 'boosts' ? event.boosts : null))).toEqual([['xp'], ['gold', 'xp']]);
+  });
+
+  it('reads the first frame without the list as the Boost ending', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    const seen = boostEvents(source);
+    goLive();
+
+    pushFrame({ heroes: [], boosts: [{ axis: 'gold', secondsLeft: 2, mult: 2 }] });
+    pushFrame({ heroes: [] });
+    pushFrame({ heroes: [] });
+
+    expect(seen.map((event) => (event.type === 'boosts' ? event.boosts : null))).toEqual([['gold'], []]);
+    expect(source.getView().boosts).toEqual([]);
+  });
+
+  it('does not count an entry with no seconds left as running', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    const seen = boostEvents(source);
+    goLive();
+
+    pushFrame({ heroes: [], boosts: [{ axis: 'drop', secondsLeft: 0, mult: 2 }] });
+
+    expect(seen).toEqual([]);
+    expect(source.getView().boosts).toEqual([]);
+  });
+});
+
 describe('the game image path probe', () => {
   it('reads a path PowerShell answered as a path', () => {
     expect(parseProcessImagePath('found:C:\\Games\\Bomb Farm\\game.exe')).toEqual({

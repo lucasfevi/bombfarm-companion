@@ -7,7 +7,7 @@ import { createLiveStore, type LiveBridge } from './live-store';
  *  carries the reasoning every seam here is built on. `bridge` is a getter so that constructing
  *  the store touches no `window`: the first render reads its state, and the static export build
  *  renders in Node. `createLiveStore` resolves it once, in `start()`. */
-const sharedLiveStore = createLazySingleton(() =>
+export const sharedLiveStore = createLazySingleton(() =>
   createLiveStore({
     get bridge(): LiveBridge | undefined {
       return (window as unknown as { bfc?: LiveBridge }).bfc;

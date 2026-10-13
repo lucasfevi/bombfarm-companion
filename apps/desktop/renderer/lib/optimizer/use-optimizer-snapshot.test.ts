@@ -233,6 +233,19 @@ describe('optimizerSnapshotStale', () => {
     const liveView = viewAtLevel(11).view;
     expect(optimizerSnapshotStale(store.getState(), liveView)).toBe(true);
   });
+
+  it('is true once a Boost starts, and the snapshot carries the Boosts it was taken under', () => {
+    const xpBoost = { gold: false, xp: true, drop: false };
+    const { store, open } = createOptimizerStore();
+    const opened = viewAtLevel(10);
+    open(opened.view, opened.key, null, xpBoost);
+
+    const state = store.getState();
+    if (state.status !== 'ready') throw new Error('expected ready');
+    expect(state.inputs.farmBoost).toBe(xpBoost);
+    expect(optimizerSnapshotStale(state, opened.view, xpBoost)).toBe(false);
+    expect(optimizerSnapshotStale(state, opened.view)).toBe(true);
+  });
 });
 
 describe('the runner is the package runner, owned by this store and never subscribed to here', () => {

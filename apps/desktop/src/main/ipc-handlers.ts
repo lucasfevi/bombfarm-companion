@@ -15,6 +15,7 @@ import {
   isIpcChannel,
   isMarketQuoteTarget,
   liveGap,
+  NO_BOOST_AXES,
   type AccountReadResult,
   type AccountSource,
   type AccountView,
@@ -221,6 +222,7 @@ export function defaultLiveView(nowIso: string): LiveView {
     earnings: null,
     map: null,
     damage: null,
+    boosts: NO_BOOST_AXES,
     updatedAt: nowIso,
   };
 }

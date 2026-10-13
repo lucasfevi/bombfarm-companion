@@ -1,6 +1,8 @@
+import { NO_BOOST_AXES } from '@bombfarm/contracts';
 import type {
   CountdownBasis,
   FieldCountdown,
+  LiveBoostAxis,
   LiveCurrency,
   LiveDamage,
   LiveEarnings,
@@ -99,6 +101,8 @@ export interface LiveModel {
   readonly map: LiveMap | null;
   /** Same rule as {@link earnings}: the finished figures, drawn and never recomputed. */
   readonly damage: LiveDamage | null;
+  /** The Boost axes running; the same array until the set changes. */
+  readonly boosts: readonly LiveBoostAxis[];
 }
 
 export const INITIAL_LIVE_MODEL: LiveModel = {
@@ -108,6 +112,7 @@ export const INITIAL_LIVE_MODEL: LiveModel = {
   earnings: null,
   map: null,
   damage: null,
+  boosts: NO_BOOST_AXES,
 };
 
 function heroFact(hero: RotationHeroSnapshot): LiveHeroFact {

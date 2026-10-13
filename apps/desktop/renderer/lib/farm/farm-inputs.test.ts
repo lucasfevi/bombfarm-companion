@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { AccountFidelity, AccountPayload, AccountView, SectionFidelity } from '@bombfarm/contracts';
+import { NO_ECONOMY_BOOST } from '@bombfarm/domain/farm-rate';
 import { computeFarmRanking } from '@bombfarm/farm/core';
 import { buildFarmInputs, isSectionUsable, DEFAULT_FARM_CONTROLS } from './farm-inputs';
 import { skillTotals } from '../account/skill-totals.test-support';
@@ -155,7 +156,7 @@ describe('the Pass is read from the account, never from the controls', () => {
   const passOf = (vipUntil: number | undefined) => {
     const base = basePayload();
     const payload = { ...base, account: { ...base.account, ...(vipUntil === undefined ? {} : { vip_until: vipUntil }) } };
-    return required(buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS, NOW_MS), 'expected inputs').farmPass;
+    return required(buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS, NO_ECONOMY_BOOST, NOW_MS), 'expected inputs').farmPass;
   };
 
   it('is on while vip_until is in the future', () => {
@@ -166,6 +167,33 @@ describe('the Pass is read from the account, never from the controls', () => {
     expect(passOf(secondsFromNow(-1))).toBe(false);
     expect(passOf(0)).toBe(false);
     expect(passOf(undefined)).toBe(false);
+  });
+});
+
+describe('the running Boosts are read from the game, never from the account', () => {
+  const XP_BOOST = { gold: false, xp: true, drop: false };
+
+  it('reads as none when the caller supplies none', () => {
+    expect(required(buildFarmInputs(viewOf(basePayload()), DEFAULT_FARM_CONTROLS), 'expected inputs').farmBoost).toBe(
+      NO_ECONOMY_BOOST,
+    );
+  });
+
+  it('reaches the board as supplied, and an XP Boost raises XP/hr while gold stays put', () => {
+    const payload = { ...basePayload(), skills: { totals: skillTotals({ dmg_static: 1.5, xp_mult: 2 }) } };
+    const boosted = required(buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS, XP_BOOST), 'expected inputs');
+    const bare = required(buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS), 'expected inputs');
+    expect(boosted.farmBoost).toBe(XP_BOOST);
+
+    const bareRows = computeFarmRanking(bare).rows;
+    const boostedRows = computeFarmRanking(boosted).rows;
+    const priced = bareRows.filter((row) => (row.xpPerHour ?? 0) > 0);
+    expect(priced.length).toBeGreaterThan(0);
+    for (const row of priced) {
+      const match = required(boostedRows[row.phase - 1] ?? null, `expected a row for phase ${String(row.phase)}`);
+      expect(match.xpPerHour ?? 0).toBeGreaterThan(row.xpPerHour ?? 0);
+      expect(match.goldPerHour).toBe(row.goldPerHour);
+    }
   });
 });
 

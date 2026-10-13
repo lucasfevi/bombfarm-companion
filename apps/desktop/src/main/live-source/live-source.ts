@@ -15,6 +15,7 @@ import type {
   AppFlavor,
   FieldCountdown,
   FieldDrop,
+  LiveBoostAxis,
   LiveCurrency,
   LiveDiagnosticsDumpOutcome,
   LiveEarnings,
@@ -26,7 +27,7 @@ import type {
   RotationSnapshot,
   SectionFidelity,
 } from '@bombfarm/contracts';
-import { isConnectedCurrency, isLiveCurrency, liveGap } from '@bombfarm/contracts';
+import { isConnectedCurrency, isLiveCurrency, liveGap, NO_BOOST_AXES, runningBoostAxes, sameBoostAxes } from '@bombfarm/contracts';
 import { diagnoseObservedBodyDrift, identifyObservedBody, isPlainObject, normalizeRotation, readPhaseEconomy, type PvpRoute } from '@bombfarm/game-api';
 import {
   advanceRecoveryClock,
@@ -636,6 +637,7 @@ export class LiveSource {
   /** `null` until the first tap frame of the session has been folded — {@link LiveView.earnings}
    *  stays `null` until then too, rather than reporting a rate computed over zero real ticks. */
   #goldBalance: number | null = null;
+  #boosts: readonly LiveBoostAxis[] = NO_BOOST_AXES;
   /** The most recent stored `/state` gold reading — {@link #buildEarnings} falls back to this
    *  whenever no live tick has ever set {@link #goldBalance} this session, so a game-closed read
    *  shows a real (if aging) balance instead of an em dash. */
@@ -755,6 +757,7 @@ export class LiveSource {
       earnings: this.#buildEarnings(),
       map: this.#mapFold.current,
       damage: this.#damageFold.view,
+      boosts: this.#boosts,
       updatedAt: this.#updatedAt,
     };
   }
@@ -1006,9 +1009,11 @@ export class LiveSource {
   }
 
   // The tap itself only ever raises 'frame' or 'currency' — 'fastUpdate' is a channel this class's
-  // own consumers publish downstream (see live-fast-publisher.ts), never one the tap produces —
-  // so the branch below is exhaustive over what can actually arrive here.
+  // own consumers publish downstream (see live-fast-publisher.ts), and 'boosts' one this class
+  // raises itself, never one the tap produces — so the branch below is exhaustive over what can
+  // actually arrive here.
   #handleTapEvent(event: LiveEvent): void {
+    let boostsChanged = false;
     if (event.type === 'currency') {
       this.#observer?.currency(event.currency, this.#now());
       this.#currency = event.currency;
@@ -1020,9 +1025,21 @@ export class LiveSource {
       this.#damageFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#earningsStarted = true;
       if (event.frame.tick.gold !== undefined) this.#goldBalance = event.frame.tick.gold;
+      boostsChanged = this.#trackBoosts(event.frame.tick);
       this.#ingestTick(event.frame.tick, Date.parse(event.frame.at));
     }
     this.#publish(event);
+    if (boostsChanged) this.#publish({ type: 'boosts', boosts: this.#boosts });
+  }
+
+  /** The wire lists the Boosts on every frame while one runs and drops the list when none does,
+   *  so a frame without it is a Boost that ended. */
+  #trackBoosts(tick: LiveTick): boolean {
+    const boosts = runningBoostAxes(tick.boosts);
+    if (sameBoostAxes(boosts, this.#boosts)) return false;
+    this.#boosts = boosts;
+    this.#log.info({ scope: 'live-source', event: 'boosts.changed', boosts: [...boosts] });
+    return true;
   }
 
   #ingestTick(tick: LiveTick, atMs: number, sampleSource: 'tap' | 'rest' = 'tap'): void {

@@ -10,7 +10,7 @@
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
 import { canonicalStringify } from '@bombfarm/contracts';
 import type { AccountView } from '@bombfarm/contracts';
-import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import { NO_ECONOMY_BOOST, type EconomyBoost, type ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import { passActive } from '@bombfarm/domain/import-save';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { NO_AURAS_AT_CAP, type AurasAtCap } from '@bombfarm/domain/team-buffs';
@@ -48,10 +48,13 @@ export const DEFAULT_FARM_CONTROLS: FarmControls = Object.freeze({
  * with a default: there is no `DEFAULT_TREE()` in `apps/desktop` and there must not be one, so a
  * missing input withholds the whole board rather than producing a plausible-looking number from
  * an invented one.
+ *
+ * `boost` is read from the running game, not from the account: the account read carries none.
  */
 export function buildFarmInputs(
   view: AccountView,
   controls: FarmControls,
+  boost: EconomyBoost = NO_ECONOMY_BOOST,
   nowMs: number = Date.now(),
 ): FarmInputs | null {
   const payload = view.payload;
@@ -111,6 +114,7 @@ export function buildFarmInputs(
     farmPoolOverrides: controls.farmPoolOverrides,
     farmReturnBonus: controls.farmReturnBonus,
     farmPass: passActive(account.vipUntil, nowMs),
+    farmBoost: boost,
     aurasAtCap: controls.aurasAtCap,
   };
 }
