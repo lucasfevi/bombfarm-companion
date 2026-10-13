@@ -182,10 +182,10 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
   const shareDenom = perHero.reduce((sum, x) => sum + x.term, 0);
   const bossRateSum = perHero.reduce((sum, x) => sum + x.bossTerm, 0);
   const heroesOnField = perHero.reduce((sum, x) => sum + x.onField, 0);
-  // House-ALLOCATED basis, not the unconstrained one — same `onField` term `heroesOnField` sums.
+  // Each carrier's own uptime, like every team aura; the cap is not in reach on this fixture.
   const fortunaAura = Math.min(
     FORTUNA_AURA_CAP,
-    perHero.reduce((sum, x) => sum + x.onField * LOOT_ABILITY_VALUES.fortuna.perLevel * x.hero.fortunaLevel, 0),
+    perHero.reduce((sum, x) => sum + x.hero.uptime * LOOT_ABILITY_VALUES.fortuna.perLevel * x.hero.fortunaLevel, 0),
   );
   // The FIELD QUEUE, applied after the House ceiling — to the heroes the House can keep fed.
   const concurrencyScale = handFieldQueueScale(
@@ -269,7 +269,7 @@ describe('phase 42 — non-gate hand-computed values', () => {
     expect(row.heroesOnField).toBeLessThan(squad.uptimeSum);
   });
 
-  it('fortunaAura matches the hand-derived House-allocated basis (0 here — the fixture carries no Fortuna)', () => {
+  it('fortunaAura matches the hand-derived uptime basis (0 here — the fixture carries no Fortuna)', () => {
     expect(row.fortunaAura).toBe(hand.fortunaAura);
     expect(row.fortunaAura).toBe(0);
   });

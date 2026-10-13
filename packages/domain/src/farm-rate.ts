@@ -42,30 +42,22 @@
  * row — and would have UNDER-predicted it by as much on the same roster had the heroes parked on
  * the field at import time been the ones carrying nothing.
  *
- * SORTE-AVERAGE VS FORTUNA-SUM ASYMMETRY — DO NOT "FIX": Sorte (`SquadFarmFacts.sorteFraction`)
+ * SORTE-AVERAGE VS AURA-SUM ASYMMETRY — DO NOT "FIX": Sorte (`SquadFarmFacts.sorteFraction`)
  * is a normalized, uptime-weighted AVERAGE of hero-only luck plus the tree's flat share
- * ("the average of on-field heroes' luck"). The Fortuna aura
- * (`FarmRateRow.fortunaAura`) is an UNNORMALIZED uptime-weighted SUM (an aura is
- * a presence effect that stacks across heroes, not an average). These are deliberately different
- * shapes. Live confirmation of the Fortuna-sum's cap order (cap-after-sum,
- * the conservative choice shipped here) is still an open question.
+ * ("the average of on-field heroes' luck"). A team aura is a SUM over the carriers present, capped
+ * (an aura is a presence effect that stacks across heroes, not an average). These are deliberately
+ * different shapes.
  *
- * FORTUNA MOVED TO THE HOUSE-ALLOCATED BASIS; SORTE DELIBERATELY DID NOT. `fortunaAura` is now
- * `min(FORTUNA_AURA_CAP, Σ (uptime_h × activity_h) × perLevel × level_h)` — the SAME realised
- * on-field basis `heroesOnField` uses, computed in `buildRow` alongside it (see
- * {@link allocateHouseSlots}) rather than in `computeSquadFarmFacts`, for the same phase-dependent
- * reason `concurrencyScale` moved there. Being an UNNORMALIZED SUM, its old unconstrained-uptime
- * basis scaled with `Σ uptime_h` directly, so it overcounted by exactly the House's overcommit
- * ratio whenever the House bound (1.69x on account 486's Fortuna-free roster, had it carried any).
- * `sorteFraction` stays on the unconstrained, phase-independent `uptime_h` basis: being a
- * normalized AVERAGE, the same overcommit does not inflate it the same way — reweighting by the
- * realised (allocated) composition instead would shift the average toward whichever heroes the
- * greedy allocator favours, which has no fixed sign (it depends on whether this roster's
- * high-value-density heroes happen to also be its high-luck ones, and combat throughput and Sorte
- * investment are independent point-budget knobs with no structural reason to correlate). Moving it
- * would also mean relocating a currently phase-independent, once-per-squad reduction into
- * `buildRow`'s per-phase loop for a correction with no known direction — not worth it absent a
- * roster where the correlation is demonstrated. Revisit if one is found.
+ * EVERY TEAM AURA, ONE WEIGHTING. The combat auras, Fortuna's gold and Aprendiz's XP are all
+ * `E[min(cap, Σ present value)]` with each carrier present for its own unconstrained duty cycle
+ * `uptime_h` (`teamAuraOverRotation`, `team-buffs.ts`). An aura reaches the field only while its
+ * carrier stands on it — measured for Aprendiz. Fortuna used to be weighted by the House-ALLOCATED
+ * `uptime_h × activity_h` instead, and capped outside the expectation: the allocation hands the
+ * House's scarce slots to the strongest hero first ({@link allocateHouseSlots}), which is how an
+ * automated player fills the House, not a rule of the game, so an aura total resting on it priced
+ * that behaviour; and capping `E[X]` instead of taking `E[min(cap, X)]` reads two half-present
+ * carriers as one always there. The cost of the shared basis is the one the combat auras already
+ * carry: it runs slightly rich whenever the House is the binding constraint.
  */
 import {
   fuseSeconds,
@@ -101,6 +93,7 @@ import { DEFAULT_CASA_SLOTS } from './casa-slots';
 import {
   apprenticeXpMult,
   computeTeamBuffsOverRotation,
+  teamAuraOverRotation,
   holdAurasAtCap,
   pulseHeldAtCap,
   zeroTeamBuffs,
@@ -665,13 +658,14 @@ function priceFieldForAssignment(
  * WHY THE PRESENCE WEIGHT IS THE UNCONSTRAINED DUTY CYCLE. {@link presenceAt} weighs a carrier by
  * `F/(F+T)` at its points, the same quantity {@link HeroFarmFacts.uptime} carries.
  *
- * Deliberately NOT `uptime x activity` (the House-ALLOCATED basis `heroesOnField` and
- * `fortunaAura` use). `activity` is decided per phase by {@link allocateHouseSlots}, so weighting
+ * Deliberately NOT `uptime x activity` (the House-ALLOCATED basis `heroesOnField` uses), and
+ * neither is any other team aura — see the module header's EVERY TEAM AURA, ONE WEIGHTING note.
+ * `activity` is decided per phase by {@link allocateHouseSlots}, so weighting
  * by it would make every hero's SHEET — attack, speed, crit, drain — a function of the phase being
  * priced, and with it the pipeline call that produces the sheet. That is the one thing this module
  * is built not to do: `plantsPerSecByAto` and the whole `HeroFarmBasis` exist so a row costs zero
  * pipeline calls. `sorteFraction` stays on this same unconstrained basis for a related reason —
- * see the module header's SORTE-AVERAGE VS FORTUNA-SUM ASYMMETRY note. The cost is that the auras
+ * see the module header's SORTE-AVERAGE VS AURA-SUM ASYMMETRY note. The cost is that the auras
  * run slightly rich whenever the House is the binding constraint; on account 486 (5 recovery slots
  * against a 7.34-slot demand) the lone Grito carrier's unconstrained uptime is 0.578 against a
  * live-measured field presence of 0.591, so the term is inside 3% of measurement there.
@@ -885,8 +879,8 @@ export type SquadFarmFacts = {
   houseSlots: number;
   /**
    * `Σ uptime` over enabled heroes (fractions) — the UNCONSTRAINED on-field expectation, i.e.
-   * what the roster would sustain given unlimited parallel House recovery. Kept as the Sorte /
-   * Fortuna weighting basis and as the numerator the House ceiling is measured against; it is
+   * what the roster would sustain given unlimited parallel House recovery. Kept as the Sorte and
+   * team-aura weighting basis and as the numerator the House ceiling is measured against; it is
    * NOT the number of heroes actually on the field (that is `FarmRateRow.heroesOnField`, which is
    * phase-dependent because the allocation is).
    */
@@ -938,6 +932,11 @@ export type SquadFarmFacts = {
    * hero's XP, not its carrier's alone. `1` without a carrier.
    */
   apprenticeXpMult: number;
+  /**
+   * Fortuna over the pool, a FRACTION: {@link teamAuraOverRotation} at each carrier's
+   * `perLevel × level`, present for its `uptime`, capped at {@link FORTUNA_AURA_CAP}.
+   */
+  fortunaAura: number;
 };
 
 /**
@@ -987,6 +986,10 @@ export function computeSquadFarmFacts(
   const rawXpMult = account.tree.xpMult;
   const xpMult = typeof rawXpMult === 'number' && Number.isFinite(rawXpMult) ? rawXpMult : null;
 
+  const fortunaCarriers = heroFacts.map((hero) => ({
+    value: LOOT_ABILITY_VALUES.fortuna.perLevel * hero.fortunaLevel,
+    presence: hero.uptime,
+  }));
   const apprenticeCarriers = heroFacts.flatMap((hero) =>
     hero.apprenticeRank ? [{ rank: hero.apprenticeRank, presence: hero.uptime }] : [],
   );
@@ -1004,6 +1007,7 @@ export function computeSquadFarmFacts(
     treeLuckFlatPct,
     xpMult,
     apprenticeXpMult: apprenticeXpMult(apprenticeCarriers),
+    fortunaAura: teamAuraOverRotation(fortunaCarriers, FORTUNA_AURA_CAP),
   };
 }
 
@@ -1396,16 +1400,7 @@ export type FarmRateRow = {
    * `0` exactly when the field cannot fill.
    */
   fieldContentionPct: number;
-  /**
-   * `min(FORTUNA_AURA_CAP, Σ (uptime_h × activity_h) × perLevel × level_h)`, a FRACTION.
-   *
-   * Weighted by the House-ALLOCATED on-field fraction (`uptime_h × activity_h`, the same term
-   * `heroesOnField` sums), not the unconstrained `uptime_h` — an aura a hero cannot actually keep
-   * on the field cannot be stacking with the others. Phase-dependent because the allocation is
-   * (see {@link allocateHouseSlots}); this is why it lives here and not on `SquadFarmFacts`, same
-   * as `heroesOnField`/`concurrencyScale`. `sorteFraction` deliberately stays on the unconstrained
-   * squad-level basis — see the module header's SORTE-AVERAGE VS FORTUNA-SUM ASYMMETRY note.
-   */
+  /** {@link SquadFarmFacts.fortunaAura}, repeated on the row the gold is priced on. */
   fortunaAura: number;
 };
 
@@ -1471,7 +1466,6 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
 
   let bossRateSum = 0;
   let heroesOnField = 0;
-  let fortunaWeightedSum = 0;
   const effectiveUptime = new Array<number>(perHero.length).fill(0);
   for (let i = 0; i < perHero.length; i++) {
     const hero = squad.heroes[i];
@@ -1479,10 +1473,8 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
     effectiveUptime[i] = onField;
     bossRateSum += perHero[i].fullBossTerm * activity[i];
     heroesOnField += onField;
-    // House-allocated, not unconstrained: an aura a hero cannot keep on the field cannot stack.
-    fortunaWeightedSum += onField * LOOT_ABILITY_VALUES.fortuna.perLevel * hero.fortunaLevel;
   }
-  const fortunaAura = Math.min(FORTUNA_AURA_CAP, fortunaWeightedSum);
+  const fortunaAura = squad.fortunaAura;
 
   // Constraint 2 — the field queue, applied to what the House can actually keep fed (never to the
   // unconstrained `uptimeSum`, which would double-charge the same shortage).

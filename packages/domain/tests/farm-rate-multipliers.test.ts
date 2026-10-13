@@ -240,9 +240,6 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
       syntheticHero({ heroId: 'a', fortunaLevel: 5, uptime: 0.5 }),
       syntheticHero({ heroId: 'b', fortunaLevel: 3, uptime: 0.2 }),
     ];
-    // The fixture's real House (3 slots) is not binding for this pair's 0.5+0.8 = 1.3 slot demand,
-    // so the House-allocated basis and the unconstrained one coincide here — a separate case below
-    // (`fortuna basis is the House-ALLOCATED uptime...`) proves they diverge once it does bind.
     const squad = computeSquadFarmFacts(belowCap, account);
     const row = computeFarmRateRow(42, squad)!;
     const expected = 0.5 * LOOT_ABILITY_VALUES.fortuna.perLevel * 5 + 0.2 * LOOT_ABILITY_VALUES.fortuna.perLevel * 3;
@@ -250,30 +247,18 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
     expect(row.fortunaAura).toBe(expected);
   });
 
-  it('fortuna basis is the House-ALLOCATED uptime, not the unconstrained one: a hero the House throttles to zero contributes zero aura', () => {
-    // Same construction as the concurrency suite's "GREEDY, not uniform" case: equal uptime/demand,
-    // wildly different value density, a House budget that can only ever pay for one of them. Both
-    // heroes carry the SAME Fortuna level, so any difference between the allocated and
-    // unconstrained fortunaAura can only come from which hero the House actually keeps fed.
+  it('fortuna is weighted by each carrier’s own uptime, not by which hero the House keeps fed', () => {
+    // A House budget that can only ever pay for one of two heroes with the same Fortuna level.
+    // Which one it feeds first is how a player fills the House, not a rule of the game, so the
+    // aura does not read it.
     const strong = syntheticHero({ heroId: 'strong', uptime: 0.5, plantsPerSec: 5, fortunaLevel: 5 });
     const weak = syntheticHero({ heroId: 'weak', uptime: 0.5, plantsPerSec: 0.01, fortunaLevel: 5 });
     const throttled: AccountShared = { ...account, slots: 0.5, fieldSlots: 1000 };
     const squad = computeSquadFarmFacts([strong, weak], throttled);
     const row = computeFarmRateRow(42, squad)!;
 
-    // Sanity: the House really did throttle one hero to zero (only 0.5 of the 1.0 unconstrained
-    // uptime survives).
     expect(row.heroesOnField).toBeCloseTo(0.5, 12);
-    expect(row.heroesOnField).toBeLessThan(squad.uptimeSum);
-
-    const perLevel = LOOT_ABILITY_VALUES.fortuna.perLevel;
-    const unconstrainedFortuna = (strong.uptime + weak.uptime) * perLevel * 5; // the pre-fix, defect-6 basis
-    const allocatedFortuna = strong.uptime * perLevel * 5; // strong wins the whole House budget; weak gets 0
-
-    expect(row.fortunaAura).toBeCloseTo(allocatedFortuna, 12);
-    expect(row.fortunaAura).toBeLessThan(unconstrainedFortuna);
-    // Exactly half survives: the strongly-favoured hero keeps its full uptime, the other is zeroed.
-    expect(row.fortunaAura / unconstrainedFortuna).toBeCloseTo(0.5, 9);
+    expect(row.fortunaAura).toBeCloseTo((strong.uptime + weak.uptime) * LOOT_ABILITY_VALUES.fortuna.perLevel * 5, 12);
   });
 });
 
