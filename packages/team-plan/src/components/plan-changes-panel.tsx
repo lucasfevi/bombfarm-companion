@@ -173,10 +173,11 @@ export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames
         fieldSlots: t.teamPlanChangesFieldFieldSlots,
         houseCycleSecs: t.teamPlanChangesFieldHouseCycleSecs,
         farmPass: t.teamPlanChangesFieldPass,
+        farmReturnBonus: t.teamPlanChangesFieldReturnBonus,
       }[d.name];
       const value = (raw: number | null): string => {
         if (raw === null) return none;
-        if (d.name === 'farmPass') return raw === 1 ? t.teamPlanChangesOn : t.teamPlanChangesOff;
+        if (d.name === 'farmPass' || d.name === 'farmReturnBonus') return raw === 1 ? t.teamPlanChangesOn : t.teamPlanChangesOff;
         return String(raw);
       };
       return { change: label, before: text(value(d.before)), after: text(value(d.after)), note: null };

@@ -117,6 +117,7 @@ function phaseOptionsFor(
       ignoreFieldCrowding,
       pass: account.pass ?? false,
       boost: account.boost,
+      returnBonus: account.returnBonus ?? 'off',
     };
   }
   if (typeof maxPhase !== 'number' || !Number.isFinite(maxPhase) || maxPhase < 1) {
@@ -126,7 +127,13 @@ function phaseOptionsFor(
         'plan would optimise the squad across the whole 600-phase table.',
     );
   }
-  return { maxPhase, ignoreFieldCrowding, pass: account.pass ?? false, boost: account.boost };
+  return {
+    maxPhase,
+    ignoreFieldCrowding,
+    pass: account.pass ?? false,
+    boost: account.boost,
+    returnBonus: account.returnBonus ?? 'off',
+  };
 }
 
 /**
@@ -151,6 +158,7 @@ function setPhaseOptionsFor(
     ignoreFieldCrowding,
     pass: account.pass ?? false,
     boost: account.boost,
+    returnBonus: account.returnBonus ?? 'off',
     phaseRange: { min: band.minPhase, max: band.maxPhase },
   };
 }

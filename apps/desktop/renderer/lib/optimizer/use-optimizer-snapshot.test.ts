@@ -246,6 +246,18 @@ describe('optimizerSnapshotStale', () => {
     expect(optimizerSnapshotStale(state, opened.view, xpBoost)).toBe(false);
     expect(optimizerSnapshotStale(state, opened.view)).toBe(true);
   });
+
+  it('is true once the Farm screen’s Return Bonus switch moves, and the snapshot carries the one it was taken under', () => {
+    const { store, open } = createOptimizerStore();
+    const opened = viewAtLevel(10);
+    open(opened.view, opened.key, null, undefined, 'on');
+
+    const state = store.getState();
+    if (state.status !== 'ready') throw new Error('expected ready');
+    expect(state.inputs.farmReturnBonus).toBe('on');
+    expect(optimizerSnapshotStale(state, opened.view, undefined, 'on')).toBe(false);
+    expect(optimizerSnapshotStale(state, opened.view)).toBe(true);
+  });
 });
 
 describe('the runner is the package runner, owned by this store and never subscribed to here', () => {

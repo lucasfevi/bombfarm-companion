@@ -21,7 +21,7 @@ import type { PlanBasis } from '@bombfarm/team-plan/core';
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { AccountView } from '@bombfarm/contracts';
-import { NO_ECONOMY_BOOST, type EconomyBoost } from '@bombfarm/domain/farm-rate';
+import { NO_ECONOMY_BOOST, type EconomyBoost, type ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import { createLazySingleton, createSharedStore, type SharedStore } from '../shared-store';
 import { useAccountView } from '../account/use-account-view';
 import { useLiveBoost } from '../live/use-live-boost';
@@ -44,9 +44,21 @@ export type { OptimizerSnapshotState, OptimizerPlanState };
 export interface OptimizerSnapshotActions {
   /** The tab opened. A no-op when the snapshot in hand would be rebuilt unchanged — see
    *  {@link openOwesSnapshot}. */
-  readonly open: (view: AccountView, sourceKey: string, farmChosenPhase: number | null, boost?: EconomyBoost) => void;
+  readonly open: (
+    view: AccountView,
+    sourceKey: string,
+    farmChosenPhase: number | null,
+    boost?: EconomyBoost,
+    returnBonus?: ReturnBonusMode,
+  ) => void;
   /** The player asked for the live account. Adopts it. */
-  readonly refresh: (view: AccountView, sourceKey: string, farmChosenPhase: number | null, boost?: EconomyBoost) => void;
+  readonly refresh: (
+    view: AccountView,
+    sourceKey: string,
+    farmChosenPhase: number | null,
+    boost?: EconomyBoost,
+    returnBonus?: ReturnBonusMode,
+  ) => void;
   readonly startRun: (runId: string, signature: string, heroes: readonly HeroRecord[], basis: PlanBasis) => void;
   readonly resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   readonly applyPlan: (runId: string, plan: TeamPlan) => void;
@@ -63,6 +75,8 @@ export function createOptimizerStore(): {
   let frozenView: AccountView | null = null;
   /** Frozen beside {@link frozenView}: the running Boosts the snapshot was taken under. */
   let frozenBoost: EconomyBoost = NO_ECONOMY_BOOST;
+  /** Frozen beside it too: the Farm screen's Return Bonus switch. */
+  let frozenReturnBonus: ReturnBonusMode = 'off';
   let dispatchArrival: ((arrival: OptimizerSnapshotArrival) => void) | null = null;
 
   const store = createSharedStore<OptimizerSnapshotState, OptimizerSnapshotArrival>({
@@ -107,7 +121,7 @@ export function createOptimizerStore(): {
     const view = frozenView;
     if (view === null) return;
 
-    const built = buildOptimizerInputs(view, farmChosenPhase, frozenBoost);
+    const built = buildOptimizerInputs(view, farmChosenPhase, frozenBoost, frozenReturnBonus);
     const outcome: OptimizerComputeOutcome =
       built === null
         ? { ok: false, reason: 'incomplete-account' }
@@ -121,9 +135,11 @@ export function createOptimizerStore(): {
     sourceKey: string,
     farmChosenPhase: number | null,
     boost: EconomyBoost,
+    returnBonus: ReturnBonusMode,
   ): void {
     frozenView = view;
     frozenBoost = boost;
+    frozenReturnBonus = returnBonus;
     dispatch({ kind, sourceKey, farmChosenPhase });
     computeIfOwed(sourceKey, farmChosenPhase);
   }
@@ -132,12 +148,12 @@ export function createOptimizerStore(): {
     store,
     planStore,
     runner,
-    open: (view, sourceKey, farmChosenPhase, boost = NO_ECONOMY_BOOST) => {
-      if (!openOwesSnapshot(store.getState(), view, farmChosenPhase, boost)) return;
-      adopt('begin', view, sourceKey, farmChosenPhase, boost);
+    open: (view, sourceKey, farmChosenPhase, boost = NO_ECONOMY_BOOST, returnBonus = 'off') => {
+      if (!openOwesSnapshot(store.getState(), view, farmChosenPhase, boost, returnBonus)) return;
+      adopt('begin', view, sourceKey, farmChosenPhase, boost, returnBonus);
     },
-    refresh: (view, sourceKey, farmChosenPhase, boost = NO_ECONOMY_BOOST) => {
-      adopt('refresh', view, sourceKey, farmChosenPhase, boost);
+    refresh: (view, sourceKey, farmChosenPhase, boost = NO_ECONOMY_BOOST, returnBonus = 'off') => {
+      adopt('refresh', view, sourceKey, farmChosenPhase, boost, returnBonus);
     },
     startRun: (runId, signature, heroes, basis) => {
       dispatchPlan({ kind: 'startRun', runId, signature, heroes, basis });
@@ -178,10 +194,11 @@ export function optimizerSnapshotStale(
   state: OptimizerSnapshotState,
   liveView: AccountView | null,
   liveBoost: EconomyBoost = NO_ECONOMY_BOOST,
+  liveReturnBonus: ReturnBonusMode = 'off',
 ): boolean {
   const settled = settledSnapshot(state);
   if (settled === null || liveView === null) return false;
-  const live = buildOptimizerInputs(liveView, settled.inputs.farmChosenPhase, liveBoost);
+  const live = buildOptimizerInputs(liveView, settled.inputs.farmChosenPhase, liveBoost, liveReturnBonus);
   const liveDepKey = live === null ? LIVE_ACCOUNT_INCOMPLETE : optimizerDepKey(live.inputs);
   return optimizerDepKey(settled.inputs) !== liveDepKey;
 }
@@ -198,10 +215,11 @@ export function openOwesSnapshot(
   liveView: AccountView,
   farmChosenPhase: number | null,
   liveBoost: EconomyBoost = NO_ECONOMY_BOOST,
+  liveReturnBonus: ReturnBonusMode = 'off',
 ): boolean {
   if (state.status !== 'ready') return true;
   if (state.farmChosenPhase !== farmChosenPhase) return true;
-  return optimizerSnapshotStale(state, liveView, liveBoost);
+  return optimizerSnapshotStale(state, liveView, liveBoost, liveReturnBonus);
 }
 
 export interface OptimizerSnapshotHook {
@@ -257,12 +275,14 @@ export function useOptimizerSnapshot(): OptimizerSnapshotHook {
 
   const open = useCallback(() => {
     if (liveView === null || liveKey === null) return;
-    sharedOptimizerStore().open(liveView, liveKey, loadFarmView().selectedPhase, liveBoost);
+    const farm = loadFarmView();
+    sharedOptimizerStore().open(liveView, liveKey, farm.selectedPhase, liveBoost, farm.farmReturnBonus);
   }, [liveView, liveKey, liveBoost]);
 
   const refresh = useCallback(() => {
     if (liveView === null || liveKey === null) return;
-    sharedOptimizerStore().refresh(liveView, liveKey, loadFarmView().selectedPhase, liveBoost);
+    const farm = loadFarmView();
+    sharedOptimizerStore().refresh(liveView, liveKey, farm.selectedPhase, liveBoost, farm.farmReturnBonus);
   }, [liveView, liveKey, liveBoost]);
 
   const startRun = useCallback((runId: string, signature: string, heroes: readonly HeroRecord[], basis: PlanBasis) => {
@@ -285,7 +305,12 @@ export function useOptimizerSnapshot(): OptimizerSnapshotHook {
     sharedOptimizerStore().openHeroes(heroIds);
   }, []);
 
-  const stale = useMemo(() => optimizerSnapshotStale(state, liveView, liveBoost), [state, liveView, liveBoost]);
+  // The Return Bonus switch lives on the Farm screen, so it can only have moved while this tab was
+  // unmounted; reading it per recompute is enough.
+  const stale = useMemo(
+    () => optimizerSnapshotStale(state, liveView, liveBoost, loadFarmView().farmReturnBonus),
+    [state, liveView, liveBoost],
+  );
 
   return useMemo(
     () => ({

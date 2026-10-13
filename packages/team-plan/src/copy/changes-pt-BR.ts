@@ -47,6 +47,7 @@ export const teamPlanChangesPtBR: TeamPlanChangesCopy = {
   teamPlanChangesFieldFieldSlots: 'vagas no campo',
   teamPlanChangesFieldHouseCycleSecs: 'ciclo da casa, segundos',
   teamPlanChangesFieldPass: 'Passe',
+  teamPlanChangesFieldReturnBonus: 'Bônus de Retorno',
   teamPlanChangesControlForgeFloor: 'piso da forja',
   teamPlanChangesControlObjective: 'objetivo',
   teamPlanChangesControlAllowedChanges: 'o que mudar',

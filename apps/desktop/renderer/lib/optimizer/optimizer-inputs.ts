@@ -11,7 +11,7 @@
  */
 import { phaseLine } from '@bombfarm/domain/phases';
 import { passActive } from '@bombfarm/domain/import-save';
-import { NO_ECONOMY_BOOST, type EconomyBoost } from '@bombfarm/domain/farm-rate';
+import { NO_ECONOMY_BOOST, type EconomyBoost, type ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
 import { canonicalStringify, type AccountView } from '@bombfarm/contracts';
 import { planInputsSignature, type TeamPlanInputs } from '@bombfarm/team-plan/core';
@@ -41,6 +41,9 @@ export type OptimizerInputsResult = {
 };
 
 /**
+ * `boost` is read from the running game and `returnBonus` from the Farm screen's own switch, so
+ * the plan prices gold as the board does.
+ *
  * `null` when the record must not be built at all. Nothing here ever fills a missing value with a
  * default: there is no `DEFAULT_TREE()` in `apps/desktop` and there must not be one, so a missing
  * input withholds the whole record rather than producing a plausible-looking plan from an invented
@@ -50,6 +53,7 @@ export function buildOptimizerInputs(
   view: AccountView,
   farmChosenPhase: number | null,
   boost: EconomyBoost = NO_ECONOMY_BOOST,
+  returnBonus: ReturnBonusMode = 'off',
   nowMs: number = Date.now(),
 ): OptimizerInputsResult | null {
   const payload = view.payload;
@@ -105,6 +109,7 @@ export function buildOptimizerInputs(
     maxPhase: account.maxPhase ?? null,
     farmPass: passActive(account.vipUntil, nowMs),
     farmBoost: boost,
+    farmReturnBonus: returnBonus,
     farmChosenPhase,
     // The duel room's phase and the squad's slots are live, not part of the account read: the
     // screen merges them in.

@@ -38,6 +38,7 @@ export function selectTeamPlanInputs(state: PlannerStore): TeamPlanInputs {
     maxPhase: state.maxPhase,
     farmPass: state.farmPass,
     farmBoost: state.farmBoost,
+    farmReturnBonus: state.farmReturnBonus,
     farmChosenPhase: state.phasesViewPhaseChosen ? state.phasesViewPhase : null,
     // A save carries no PVP state, so this app never offers the duel objective.
     pvpRoomPhase: null,
