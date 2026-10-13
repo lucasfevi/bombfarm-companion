@@ -136,6 +136,7 @@ import { hitsToKill, propHp } from './phases';
 import { runeXpMultiplier, runesOf, type HeroRune } from './runes';
 import type { HeroRecord, AccountShared } from './shims/storage';
 import { collectionGoldMult, collectionLuckPct } from './collection';
+import type { LiveBoostAxis } from '@bombfarm/contracts';
 
 /**
  * Seconds between consecutive hero activations at the head of a clear. Heroes do not all start
@@ -188,6 +189,12 @@ export type EconomyMultipliers = {
 export type EconomyBoost = { readonly gold: boolean; readonly xp: boolean; readonly drop: boolean };
 
 export const NO_ECONOMY_BOOST: EconomyBoost = Object.freeze({ gold: false, xp: false, drop: false });
+
+/** The running axes the game reports, as the Boost the economy is priced under. */
+export function economyBoostOf(axes: readonly LiveBoostAxis[]): EconomyBoost {
+  if (axes.length === 0) return NO_ECONOMY_BOOST;
+  return { gold: axes.includes('gold'), xp: axes.includes('xp'), drop: axes.includes('drop') };
+}
 
 /**
  * A running Boost's add on its axis: the live frame states the multiplier as 2, and it sums with

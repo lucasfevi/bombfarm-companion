@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { runningBoostAxes } from '@bombfarm/contracts';
-import { NO_ECONOMY_BOOST } from '@bombfarm/domain/farm-rate';
-import { economyBoostOf } from './live-boost';
+import { economyBoostOf, NO_ECONOMY_BOOST } from '@bombfarm/domain/farm-rate';
 
 describe('economyBoostOf', () => {
   it('turns on exactly the axes that are running', () => {

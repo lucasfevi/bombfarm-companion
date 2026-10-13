@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { EconomyBoost } from '@bombfarm/domain/farm-rate';
-import { economyBoostOf } from './live-boost';
+import { economyBoostOf, type EconomyBoost } from '@bombfarm/domain/farm-rate';
 import { sharedLiveStore } from './use-live-model';
 
 /** The running Boosts alone, for a screen that prices them. Holding only this slice keeps the

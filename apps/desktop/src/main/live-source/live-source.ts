@@ -41,7 +41,7 @@ import {
   type RosterHeroAbilities,
 } from '@bombfarm/domain/live';
 import { collectionFromSave } from '@bombfarm/domain/model';
-import { economyMultipliers, NO_ECONOMY_BOOST, type EconomyBoost } from '@bombfarm/domain/farm-rate';
+import { economyBoostOf, economyMultipliers } from '@bombfarm/domain/farm-rate';
 import { passActive } from '@bombfarm/domain/import-save';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { readHeroRunes, runeXpMultiplier } from '@bombfarm/domain/runes';
@@ -564,11 +564,6 @@ function readXpMult(skills: Record<string, unknown> | undefined): number | undef
   if (!isPlainObject(totals)) return undefined;
   const value = totals.xp_mult;
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-}
-
-function economyBoostOf(axes: readonly LiveBoostAxis[]): EconomyBoost {
-  if (axes.length === 0) return NO_ECONOMY_BOOST;
-  return { gold: axes.includes('gold'), xp: axes.includes('xp'), drop: axes.includes('drop') };
 }
 
 /** Each roster hero's XP-rune multiplier, keyed by id; a hero without one is left out. */
