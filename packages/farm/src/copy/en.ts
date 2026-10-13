@@ -31,7 +31,7 @@ export const farmEn = {
   phasesItemDrops: "Item drops",
   phasesItemDropsValue: "Level {range} items",
   phasesXpPerProp: "XP per prop",
-  phasesXpActualHint: "base value × your XP multiplier × the Return Bonus, Pass and Boost on the Farm board",
+  phasesXpActualHint: "base value × your XP multiplier × the Return Bonus, Pass and Boost on the Farm board × your squad's XP runes",
   phasesGoldComum: "Gold (Common)",
   phasesGoldActualHint: "base value × (1 + your skill tree's team coin %)",
   phasesAvgGold: "Avg gold / prop",

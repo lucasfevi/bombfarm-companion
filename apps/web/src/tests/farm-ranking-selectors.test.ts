@@ -17,8 +17,9 @@ import {
 import { selectAccountShared } from '@/shared/stores/selectors/account-selectors';
 import { normalizeAccount } from '@/shared/lib/account-shared';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
+import { phaseXpPerPropMult } from '@bombfarm/farm/core';
 
-function farmHero(id: string, overrides: Partial<{ battleAllowed: boolean }> = {}) {
+function farmHero(id: string, overrides: Partial<{ battleAllowed: boolean; xpRunePct: number }> = {}) {
   return normalizeHero({
     id,
     name: `Hero ${id}`,
@@ -41,6 +42,9 @@ function farmHero(id: string, overrides: Partial<{ battleAllowed: boolean }> = {
     loadout: emptyLoadout(),
     pts: ZERO_PTS(),
     battleAllowed: overrides.battleAllowed ?? true,
+    ...(overrides.xpRunePct !== undefined
+      ? { runes: [{ axis: 'xp', strengthPct: overrides.xpRunePct, playSecondsLeft: 600, rarity: 0 }] }
+      : {}),
   });
 }
 
@@ -355,6 +359,21 @@ describe('the XP the board prints', () => {
     expect(mult).toBeCloseTo(2.35 * (1 + 1 + 0.3 + 1), 12);
     for (const row of xpRows()) {
       expect(row.xpPerHour).toBeCloseTo(row.propsPerHour * xpPerProp(row.phase) * (mult ?? Number.NaN), 4);
+    }
+  });
+
+  it('and so it does for a squad carrying an XP rune, whose mix moves with the kill shares', () => {
+    usePlannerStore.getState().hydrateRoster([farmHero('a'), farmHero('b', { xpRunePct: 9 })], null);
+    importXpMult(2.35);
+    usePlannerStore.getState().setFarmPass(true);
+    const state = usePlannerStore.getState();
+    const mult = selectFarmXpPerPropMult(state);
+    const rows = selectFarmRankingRows(state).rows;
+    const runed = xpRows();
+    expect(runed.some((row) => row.xpRuneMix > 1 && row.xpRuneMix < 1.09)).toBe(true);
+    for (const row of runed) {
+      const perProp = xpPerProp(row.phase) * (phaseXpPerPropMult(mult, rows, row.phase) ?? Number.NaN);
+      expect(row.xpPerHour).toBeCloseTo(row.propsPerHour * perProp, 4);
     }
   });
 });

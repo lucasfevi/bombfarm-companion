@@ -28,6 +28,7 @@ function row(overrides: Partial<FarmRateRow> & { phase: number }): FarmRateRow {
     timePiecesPerHour: 0,
     stoneChestsPerHour: 0,
     xpPerHour: 0,
+    xpRuneMix: 1,
     propsPerHour: 0,
     cyclesPerHour: 0,
     clearSecs: 60,

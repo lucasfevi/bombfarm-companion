@@ -1294,6 +1294,9 @@ export type FarmRateRow = {
   stoneChestsPerHour: number;
   /** `null` when the account carries no XP multiplier ({@link SquadFarmFacts.xpMult}). */
   xpPerHour: number | null;
+  /** The squad's XP-rune multiplier at this phase, each hero's weighted by its share of the
+   *  kills; `1` without runes. Part of {@link xpPerHour}, outside the account's own multiplier. */
+  xpRuneMix: number;
   /** Props destroyed per hour, over the WHOLE cycle — including the head, and on a gate the boss,
    *  neither of which drops any. Always consistent with {@link clearSecs}:
    *  `cyclesPerHour × propsPerMap`. */
@@ -1562,6 +1565,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
     timePiecesPerHour: normalizeZero(timePiecesPerHour),
     stoneChestsPerHour: normalizeZero(stoneChestsPerHour),
     xpPerHour: xpPerHour === null ? null : normalizeZero(xpPerHour),
+    xpRuneMix: xpSelfMix,
     propsPerHour: normalizeZero(propsPerHour),
     cyclesPerHour: normalizeZero(cyclesPerHour),
     clearSecs,

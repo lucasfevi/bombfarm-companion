@@ -14,6 +14,7 @@ export {
   computeFarmRanking,
   computeFarmTeamBuffs,
   computeFarmXpPerPropMult,
+  phaseXpPerPropMult,
   deriveFarmPoolEntries,
   FARM_RESPEC_WORTH_MAKING_PCT,
   farmDepsEqual,
