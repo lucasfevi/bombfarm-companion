@@ -154,4 +154,16 @@ export const gearPanelEn = {
   reCopy: 'Re-copy',
   applyCompare: 'Apply to current',
   clearCompare: 'Clear',
+  clear: 'Clear',
+  itemLevel: 'Item level',
+  itemLevelOpt: 'Level {n} - {set}',
+  itemRarity: 'Item rarity',
+  forgeLevel: 'Forge level',
+} as const;
+
+export const sheetCloneEn = {
+  panelCloneSheet: 'Stats: current vs clone',
+  cloneSheetTip:
+    'The hero sheet with your current gear. Where the clone changes a value, the clone value is stacked beneath it. Δ clone is the clone total minus the current total.',
+  colSheetDeltaClone: 'Δ clone',
 } as const;

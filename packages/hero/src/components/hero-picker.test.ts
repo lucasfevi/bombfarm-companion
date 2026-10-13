@@ -86,7 +86,7 @@ describe('the components are prop-driven — no store, no host module', () => {
   });
 
   it('the scan reaches every component in this tree, subdirectories included', () => {
-    expect(componentFiles.length).toBe(47);
+    expect(componentFiles.length).toBe(49);
     expect(componentFiles).toContain('share-card/share-card.tsx');
     expect(componentFiles).toContain('share-card/share-card-dialog.tsx');
     expect(componentFiles).toContain('share-card/share-card-controls.tsx');

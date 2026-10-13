@@ -1,7 +1,6 @@
 'use client';
 
-import { GearTab as GearTabView } from '@bombfarm/hero/components';
-import { SlotEditor } from '@/features/gear';
+import { GearSlotEditor, GearTab as GearTabView } from '@bombfarm/hero/components';
 import { useAppLang } from '@/shared/context/app-lang';
 import { usePlannerStore, selectAdvisorPipeline } from '@/shared/stores';
 import { useHeroBuildActions } from '../hooks/use-hero-build-actions';
@@ -33,7 +32,7 @@ export function GearTab() {
         onClearCompare: clearCompare,
       }}
       renderSlot={({ slot, equipped, changed, onPatch }) => (
-        <SlotEditor
+        <GearSlotEditor
           slot={slot}
           equipped={equipped}
           changed={changed}

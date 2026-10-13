@@ -32,7 +32,7 @@ const compareRevealTransition = { duration: 0.4, ease: 'easeInOut' as const };
  */
 export type GearCompareEditing = {
   onPatchAltSlot: SlotPatchHandler;
-  onApplyAltGear: () => void;
+  onApplyAltGear?: (() => void) | undefined;
   onCopyGear: () => void;
   onClearCompare: () => void;
 };
@@ -150,9 +150,11 @@ export function GearCompareSection({
                 exit={{ opacity: 0, x: 10 }}
                 transition={{ duration: 0.28, ease: 'easeOut' }}
               >
-                <Button type="button" variant="primary" onClick={editing.onApplyAltGear}>
-                  {t.applyCompare}
-                </Button>
+                {editing.onApplyAltGear && (
+                  <Button type="button" variant="primary" onClick={editing.onApplyAltGear}>
+                    {t.applyCompare}
+                  </Button>
+                )}
                 <Button type="button" onClick={editing.onCopyGear}>
                   {t.reCopy}
                 </Button>

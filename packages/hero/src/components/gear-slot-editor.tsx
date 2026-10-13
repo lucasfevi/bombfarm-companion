@@ -1,7 +1,7 @@
+'use client';
+
 import { memo, useMemo } from 'react';
-import { HiMiniXMark } from 'react-icons/hi2';
 import {
-  Slot,
   ITEM_LEVELS,
   ITEM_RARITIES,
   FORJA_LEVELS,
@@ -9,18 +9,24 @@ import {
   itemStatUpgradeMult,
   defsForSlot,
   setsForLevel,
-  EquippedItem,
+  type EquippedItem,
+  type Slot,
 } from '@bombfarm/domain/gear';
-import { sub, type Lang, type Strings } from '@/shared/i18n';
 import { itemRarityLabel, itemStatLabel, setName } from '@bombfarm/domain/game-labels';
-import { GearSlotCard } from '@bombfarm/hero/components';
+import { Button, Icon, Select, numberFormatterFor } from '@bombfarm/ui';
+import { sub, type GearPanelCopy, type Lang } from '../copy';
+import { GearSlotCard, type GearSlotCardCopy } from './gear-slot-card';
+import type { SlotPatchHandler } from './gear-slots-grid';
 
-import { Button, Select, numberFormatterFor } from '@bombfarm/ui';
+export type GearSlotEditorCopy = GearSlotCardCopy &
+  Pick<GearPanelCopy, 'clear' | 'itemLevel' | 'itemLevelOpt' | 'itemRarity' | 'forgeLevel'>;
 
-export type SlotPatchHandler = (slot: Slot, patch: Partial<EquippedItem> | null) => void;
+function defIdPatch(defId: string | undefined): { defId?: string } {
+  return defId ? { defId } : {};
+}
 
-/** The shared slot card with this planner's controls under it: level, rarity, forge and clear. */
-export const SlotEditor = memo(function SlotEditor({
+/** The shared slot card with the controls under it: level, rarity, forge and clear. */
+export const GearSlotEditor = memo(function GearSlotEditor({
   slot,
   equipped,
   changed,
@@ -30,8 +36,8 @@ export const SlotEditor = memo(function SlotEditor({
 }: {
   slot: Slot;
   equipped: EquippedItem | null | undefined;
-  changed?: boolean;
-  t: Strings;
+  changed?: boolean | undefined;
+  t: GearSlotEditorCopy;
   lang: Lang;
   onPatch: SlotPatchHandler;
 }) {
@@ -41,6 +47,7 @@ export const SlotEditor = memo(function SlotEditor({
   const sets = setsForLevel(level);
   const setId = equipped ? equipped.defId.replace(/_.*$/, '') : sets[0] ?? '';
   const defs = defsForSlot(slot, setId);
+  const keptDefId = defIdPatch(equipped?.defId ?? defs[0]?.id);
 
   return (
     <GearSlotCard slot={slot} equipped={equipped} changed={changed} lang={lang} t={t} formatNumber={formatNumber}>
@@ -52,7 +59,7 @@ export const SlotEditor = memo(function SlotEditor({
           aria-label={t.clear}
           onClick={() => onPatch(slot, null)}
         >
-          <HiMiniXMark size={14} aria-hidden="true" />
+          <Icon name="x-mark" size="sm" />
         </Button>
       ) : null}
       {/* One level is one set (`setsByLevel` is a bijection — guarded in `@bombfarm/domain`),
@@ -65,7 +72,12 @@ export const SlotEditor = memo(function SlotEditor({
         onChange={(event) => {
           const next = Number(event.target.value);
           const definition = defsForSlot(slot, setsForLevel(next)[0])[0];
-          onPatch(slot, { level: next, defId: definition?.id, rarityIdx: equipped?.rarityIdx ?? 0, upgrade });
+          onPatch(slot, {
+            level: next,
+            ...(definition ? { defId: definition.id } : {}),
+            rarityIdx: equipped?.rarityIdx ?? 0,
+            upgrade,
+          });
         }}
       >
         {ITEM_LEVELS.map((levelOption) => (
@@ -85,7 +97,7 @@ export const SlotEditor = memo(function SlotEditor({
           onPatch(slot, {
             rarityIdx: Number(event.target.value),
             level: level,
-            defId: equipped?.defId ?? defs[0]?.id,
+            ...keptDefId,
             upgrade,
           })
         }
@@ -105,7 +117,7 @@ export const SlotEditor = memo(function SlotEditor({
             upgrade: Number(event.target.value),
             level: level,
             rarityIdx: equipped?.rarityIdx ?? 0,
-            defId: equipped?.defId ?? defs[0]?.id,
+            ...keptDefId,
           })
         }
       >

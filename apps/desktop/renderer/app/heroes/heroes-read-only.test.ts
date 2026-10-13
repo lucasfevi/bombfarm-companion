@@ -1,10 +1,11 @@
 /**
- * The Heroes screen draws the account and changes nothing.
+ * The Heroes screen draws the account and changes nothing on it. The one thing a player edits here
+ * is the gear clone, which lives in this screen's state and never reaches the account.
  *
  * Every panel it borrows from `@bombfarm/hero` takes its editing callbacks as OPTIONAL props, and
- * each one's own reading (`pointsPanelReading`, `gearPanelReading`) turns every control off when
- * they are absent. So the whole read-only posture rests on one thing: this screen passing none of
- * them. That is invisible to types — an omitted optional prop compiles — and invisible to the
+ * each one's own reading (`pointsPanelReading`, `currentGearEditable`) turns the controls off when
+ * they are absent. So the read-only posture rests on this screen passing none of the callbacks that
+ * write the account. That is invisible to types — an omitted optional prop compiles — and invisible to the
  * panels' own tests, which prove the readings and not who supplies them.
  *
  * Two independent proofs below. The first reads the screen's source and fails if any editing prop
@@ -15,20 +16,15 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { gearPanelReading, pointsPanelReading } from '@bombfarm/hero/model';
+import { currentGearEditable, gearPanelReading, pointsPanelReading } from '@bombfarm/hero/model';
 
 const SCREEN_SOURCE = readFileSync(join(__dirname, 'heroes-view.tsx'), 'utf8');
 
 /** Names the panels use for the callbacks that write, plus the two props that mount an editor. */
 const EDITING_PROPS = [
-  'editing',
-  'renderSlot',
   'onPts',
   'onPatchSlot',
-  'onPatchAltSlot',
   'onApplyAltGear',
-  'onCopyGear',
-  'onClearCompare',
   'runFarmOptimize',
   'optimizeMode',
   'onOptimizeModeChange',
@@ -54,8 +50,8 @@ describe('the Heroes screen passes no editing callback to any panel', () => {
   });
 
   it('red state demonstrated: a screen that handed one of them over is caught', () => {
-    const fixture = '<GearTab editing={{ onCopyGear: copy }} />';
-    expect(editingPropsIn(fixture)).toEqual(['editing', 'onCopyGear']);
+    const fixture = '<GearTab editing={{ onPatchSlot: patch, onApplyAltGear: apply }} />';
+    expect(editingPropsIn(fixture)).toEqual(['onPatchSlot', 'onApplyAltGear']);
   });
 });
 
@@ -71,7 +67,15 @@ describe('the panels answer read-only to what this screen supplies', () => {
     });
   });
 
-  it('the items panel offers no slot editors and no control that changes either loadout', () => {
+  it('the current gear stays read-only while the clone is editable', () => {
+    expect(currentGearEditable({ canPatchCurrent: false, hasSlotEditor: true })).toBe(false);
+    expect(gearPanelReading({ editable: true, hasSlotEditor: true })).toMatchObject({
+      showSlotEditors: true,
+      showCompareControls: true,
+    });
+  });
+
+  it('a screen that supplied no callbacks would offer no slot editors and no control that changes a loadout', () => {
     expect(gearPanelReading({ editable: false, hasSlotEditor: false })).toEqual({
       showSlotEditors: false,
       showCompareControls: false,

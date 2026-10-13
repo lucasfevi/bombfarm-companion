@@ -12,18 +12,24 @@ import {
   panelHClass,
   panelTitleClass,
 } from '@bombfarm/ui';
-import type { GearPanelCopy, Lang } from '../copy';
-import { gearPanelReading } from '../model/gear-panel';
+import { currentGearEditable } from '../model/gear-panel';
+import type { GearPanelCopy, Lang, SheetCloneCopy, StatPanelCopy } from '../copy';
 import { GearSlotsGrid, type GearSlotEditorSlot, type SlotPatchHandler } from './gear-slots-grid';
 import { GearSlotCardsGrid } from './gear-slot-card';
 import { GearCompareSection, type GearCompareEditing } from './gear-compare-section';
+import { SheetCloneTable, type SheetCloneTableInput } from './sheet-clone-table';
 
 /**
  * The callbacks a host supplies to make the Items panel editable, current loadout and clone alike.
  * Absent, the same figures render with no way to change them — see `gearPanelReading`.
  */
 export type GearEditing = GearCompareEditing & {
-  onPatchSlot: SlotPatchHandler;
+  onPatchSlot?: SlotPatchHandler | undefined;
+};
+
+export type GearCloneSheet = {
+  t: StatPanelCopy & SheetCloneCopy;
+  input: SheetCloneTableInput | null;
 };
 
 export function GearTab({
@@ -34,6 +40,7 @@ export function GearTab({
   pipeline,
   editing,
   renderSlot,
+  cloneSheet,
 }: {
   t: GearPanelCopy;
   lang: Lang;
@@ -42,14 +49,13 @@ export function GearTab({
   pipeline: AdvisorPipelineResult;
   editing?: GearEditing | undefined;
   renderSlot?: GearSlotEditorSlot | undefined;
+  cloneSheet?: GearCloneSheet | undefined;
 }) {
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
-  const reading = gearPanelReading({
-    editable: !!editing,
+  const currentEditable = currentGearEditable({
+    canPatchCurrent: !!editing?.onPatchSlot,
     hasSlotEditor: !!renderSlot,
-    hasAltLoadout: !!altLoadout,
   });
-
   const hasGear = SLOTS.some((slot) => loadout[slot] != null);
 
   return (
@@ -59,7 +65,7 @@ export function GearTab({
           <h2 className={panelTitleClass}>{t.panelItems}</h2>
           <FieldRequired show={!hasGear}>{t.fieldRequired}</FieldRequired>
         </div>
-        {reading.showSlotEditors && editing && renderSlot ? (
+        {currentEditable && editing?.onPatchSlot && renderSlot ? (
           <GearSlotsGrid
             loadout={loadout}
             onPatchSlot={editing.onPatchSlot}
@@ -85,6 +91,15 @@ export function GearTab({
           renderSlot={renderSlot}
         />
       </Panel>
+      {cloneSheet?.input && altLoadout ? (
+        <SheetCloneTable
+          t={cloneSheet.t}
+          lang={lang}
+          input={cloneSheet.input}
+          loadout={loadout}
+          altLoadout={altLoadout}
+        />
+      ) : null}
     </main>
   );
 }

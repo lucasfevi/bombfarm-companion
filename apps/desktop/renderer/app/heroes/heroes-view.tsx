@@ -11,7 +11,16 @@
  * Nothing here reads the game. It draws the account the shared seam already holds, and that seam
  * sits behind the consent gate with every other screen.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import {
   Banner,
@@ -34,6 +43,7 @@ import { phaseSearchOptions } from '@bombfarm/farm';
 import { CombatPhasePanel } from '@bombfarm/farm/components';
 import {
   CombatBreakdownPanel,
+  GearSlotEditor,
   GearTab,
   HeroAbilitiesPanel,
   HeroCopyProvider,
@@ -74,6 +84,7 @@ import type { RankMode } from '@bombfarm/domain/model';
 import { advisorInputForHero, pipelineForHero } from '@bombfarm/domain/roster-dps';
 import type { PipelineFacts } from '@bombfarm/domain/stat-breakdown';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
+import type { EquippedItem, Slot } from '@bombfarm/domain/gear';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { teamAuraDpsDeltas } from '@bombfarm/domain/team-aura-deltas';
 import {
@@ -94,10 +105,19 @@ import {
   useFarmCopy,
   useGearPanelCopy,
   useHeroDetailCopy,
+  useSheetCloneCopy,
   useShareCardCopy,
   useStatPanelCopy,
 } from '../screen-copy';
 import { heroNextPointRanking } from './hero-detail-panels';
+import {
+  NO_GEAR_CLONES,
+  clearGearClone,
+  copyGearClone,
+  heroWithGearClone,
+  patchGearClone,
+  type GearClones,
+} from './hero-gear-clone';
 import { heroesScreenModel, type HeroesScreenModel } from './heroes-screen-model';
 import { resolveSelectedHeroId, selectedRow } from './hero-selection';
 import { LAST_KNOWN_PHASE, readHeroPhase, shownHeroPhase } from './hero-phase';
@@ -207,6 +227,7 @@ function HeroesRoster({
   // Which target the next-point ranking is read against. View-local and stored nowhere, like the
   // phase override above — it changes what this screen prints, never anything on the account.
   const [rankMode, setRankMode] = useState<RankMode>('dps');
+  const [gearClones, setGearClones] = useState<GearClones>(NO_GEAR_CLONES);
   // Which team auras the shown hero is priced under at their cap, on top of its own. All off on
   // every visit, like the phase override: a what-if that outlived the screen would inflate every
   // figure here with no control in sight to explain it.
@@ -256,9 +277,14 @@ function HeroesRoster({
   const combat = useMemo(
     () =>
       figures.kind === 'at' && heroAccount
-        ? pipelineForHero(active.hero, heroAccount, figures.inputs.phase, figures.inputs.mitigationPct)
+        ? pipelineForHero(
+            heroWithGearClone(active.hero, gearClones),
+            heroAccount,
+            figures.inputs.phase,
+            figures.inputs.mitigationPct,
+          )
         : null,
-    [active.hero, figures, heroAccount],
+    [active.hero, figures, heroAccount, gearClones],
   );
 
   // What each aura switch would do to sustained DPS: one more run per aura, on the same input.
@@ -469,6 +495,8 @@ function HeroesRoster({
                     onAuraSwitch={onAuraSwitch}
                     rankMode={rankMode}
                     onRankMode={setRankMode}
+                    gearClones={gearClones}
+                    onGearClones={setGearClones}
                     statLabel={boundStatLabel}
                     marketPrice={marketPrice}
                     formatAmount={formatAmount}
@@ -564,6 +592,8 @@ function HeroDetailTabs({
   onAuraSwitch,
   rankMode,
   onRankMode,
+  gearClones,
+  onGearClones,
   statLabel: boundStatLabel,
   marketPrice,
   formatAmount,
@@ -584,6 +614,8 @@ function HeroDetailTabs({
   onAuraSwitch: (buffId: TeamAuraId, on: boolean) => void;
   rankMode: RankMode;
   onRankMode: (next: RankMode) => void;
+  gearClones: GearClones;
+  onGearClones: Dispatch<SetStateAction<GearClones>>;
   statLabel: (key: SheetKey) => string;
   marketPrice: HeroMarketPrice | null;
   formatAmount: (value: number, currency: string) => string;
@@ -684,7 +716,12 @@ function HeroDetailTabs({
         </Tabs.Panel>
         <Tabs.Panel value="gear">
           {figures.kind === 'at' && combat ? (
-            <HeroGear hero={active.hero} combat={combat} />
+            <HeroGear
+              hero={active.hero}
+              combat={combat}
+              clones={gearClones}
+              onClones={onGearClones}
+            />
           ) : (
             <FiguresNotice figures={figures} />
           )}
@@ -802,9 +839,7 @@ function effectiveFacts(
  * width the planner pairs them at.
  *
  * Every one of these panels takes its editing callbacks as optional props, and this screen passes
- * none. That is the whole read-only posture: no stepper, no Reset, no Optimize build, no slot
- * editor, and a loadout comparison with no control that changes either loadout.
- * `heroes-read-only.test.ts` holds it there.
+ * none: no stepper, no Reset, no Optimize build. `heroes-read-only.test.ts` holds it there.
  */
 function HeroReference({
   hero,
@@ -862,18 +897,79 @@ function HeroReference({
   );
 }
 
-/** The Gear stage — the planner's own Items panel, handed no editing callback. */
-function HeroGear({ hero, combat }: { hero: HeroRecord; combat: AdvisorPipelineResult }) {
+/**
+ * The Gear stage. Current gear is the running game's and is drawn read-only; the clone beside it is
+ * the one thing here a player edits, held in this screen's state per hero and never written back.
+ */
+function HeroGear({
+  hero,
+  combat,
+  clones,
+  onClones,
+}: {
+  hero: HeroRecord;
+  combat: AdvisorPipelineResult;
+  clones: GearClones;
+  onClones: Dispatch<SetStateAction<GearClones>>;
+}) {
   const { lang } = useLocale();
   const gearCopy = useGearPanelCopy();
+  const statCopy = useStatPanelCopy();
+  const cloneCopy = useSheetCloneCopy();
+  const heroId = hero.id;
+  const altLoadout = clones[heroId] ?? null;
+
+  const editing = useMemo(
+    () => ({
+      onCopyGear: () => {
+        onClones((current) => copyGearClone(current, heroId, hero.loadout));
+      },
+      onPatchAltSlot: (slot: Slot, patch: Partial<EquippedItem> | null) => {
+        onClones((current) => patchGearClone(current, heroId, slot, patch));
+      },
+      onClearCompare: () => {
+        onClones((current) => clearGearClone(current, heroId));
+      },
+    }),
+    [onClones, heroId, hero.loadout],
+  );
+  const cloneSheet = useMemo(
+    () => ({
+      t: { ...statCopy, ...cloneCopy },
+      input: hero.birth
+        ? {
+            birth: hero.birth,
+            level: hero.level,
+            stars: hero.stars,
+            sheetOther: combat.sheetOther,
+            pts: hero.pts,
+            tree: combat.treeSheet,
+            runes: hero.runes,
+          }
+        : null,
+    }),
+    [statCopy, cloneCopy, hero, combat],
+  );
 
   return (
     <GearTab
       t={gearCopy}
       lang={lang}
       loadout={hero.loadout}
-      altLoadout={hero.altLoadout}
+      altLoadout={altLoadout}
       pipeline={combat}
+      editing={editing}
+      renderSlot={({ slot, equipped, changed, onPatch }) => (
+        <GearSlotEditor
+          slot={slot}
+          equipped={equipped}
+          changed={changed}
+          t={gearCopy}
+          lang={lang}
+          onPatch={onPatch}
+        />
+      )}
+      cloneSheet={cloneSheet}
     />
   );
 }

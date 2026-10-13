@@ -454,7 +454,6 @@ export default tseslint.config(
     ignores: [
       'src/app/_shell/site-header.tsx',
       'src/app/_shell/footer.tsx',
-      'src/features/gear/components/slot-editor.tsx',
       'src/features/import/components/import-heroes-dialog.tsx',
       'src/features/planner/components/hero-strip.tsx',
       'src/features/planner/components/hero-strip-identity.tsx',

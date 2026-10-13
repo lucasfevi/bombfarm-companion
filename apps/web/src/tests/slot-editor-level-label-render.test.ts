@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { ITEM_LEVELS, defsForSlot, setsForLevel, type EquippedItem } from '@bombfarm/domain/gear';
 import { setName } from '@bombfarm/domain/game-labels';
-import { SlotEditor } from '@/features/gear/components/slot-editor';
+import { GearSlotEditor as SlotEditor } from '@bombfarm/hero/components';
 import { STRINGS, sub, type Lang } from '@/shared/i18n';
 
 /**

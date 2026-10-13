@@ -1,0 +1,7 @@
+---
+"@bombfarm/desktop": minor
+"@bombfarm/hero": minor
+"@bombfarm/web": patch
+---
+
+The desktop Gear tab can now compare gear: copy your current gear into an editable clone, change item level, rarity and forge on it, and see the whole hero sheet laid against the current one, with the clone's value under each stat that changes and a Δ clone column for the difference. Your current gear stays read-only because it comes from the running game.
