@@ -271,7 +271,7 @@ describe('Return bonus multiplies gold and XP only — drops and structure are u
     const on = computeFarmRateRow(10, squad, { returnBonus: 'on' })!;
 
     for (const field of ['goldPerHour', 'xpPerHour'] as const) {
-      expect(on[field] / off[field]).toBeCloseTo(1.5, 9);
+      expect(on[field]! / off[field]!).toBeCloseTo(1.5, 9);
     }
 
     for (const field of ['chestsPerHour', 'gemsPerHour', 'timePiecesPerHour', 'stoneChestsPerHour'] as const) {
@@ -307,7 +307,7 @@ describe('The Pass adds to gold, XP and drop chance at fixed inputs', () => {
     const free = computeFarmRateRow(10, squad, { returnBonus: 'off', pass: false })!;
     const pass = computeFarmRateRow(10, squad, { returnBonus: 'off', pass: true })!;
     expect(pass.goldPerHour / free.goldPerHour).toBeCloseTo(1.15, 9);
-    expect(pass.xpPerHour / free.xpPerHour).toBeCloseTo(1.3, 9);
+    expect(pass.xpPerHour! / free.xpPerHour!).toBeCloseTo(1.3, 9);
     for (const field of ['propsPerHour', 'clearSecs', 'cyclesPerHour', 'expectedHtk'] as const) {
       expect(pass[field]).toBe(free[field]);
     }
@@ -317,7 +317,7 @@ describe('The Pass adds to gold, XP and drop chance at fixed inputs', () => {
     const bare = computeFarmRateRow(10, squad, { returnBonus: 'off', pass: true })!;
     const window = computeFarmRateRow(10, squad, { returnBonus: 'on', pass: true })!;
     expect(window.goldPerHour / bare.goldPerHour).toBeCloseTo(2.15 / 1.15, 9);
-    expect(window.xpPerHour / bare.xpPerHour).toBeCloseTo(2.3 / 1.3, 9);
+    expect(window.xpPerHour! / bare.xpPerHour!).toBeCloseTo(2.3 / 1.3, 9);
   });
 
   it('every drop rate is base x (1 + sorte + 0.30) with the Pass, and the Return Bonus does not move it', () => {
@@ -348,7 +348,7 @@ describe('XP tracks tree.xpMult, never gold/drops (issue #127)', () => {
     for (const phase of [42, 10]) {
       const oneRow = computeFarmRateRow(phase, oneSquad)!;
       const boostedRow = computeFarmRateRow(phase, boostedSquad)!;
-      expect(boostedRow.xpPerHour / oneRow.xpPerHour).toBeCloseTo(1.56, 12);
+      expect(boostedRow.xpPerHour! / oneRow.xpPerHour!).toBeCloseTo(1.56, 12);
 
       expect(boostedRow.goldPerHour).toBe(oneRow.goldPerHour);
       expect(boostedRow.chestsPerHour).toBe(oneRow.chestsPerHour);

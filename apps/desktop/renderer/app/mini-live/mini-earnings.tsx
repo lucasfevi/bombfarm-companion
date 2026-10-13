@@ -29,7 +29,7 @@ function Figure({
   cellClassName?: string;
 }) {
   return (
-    <div className={cn('flex flex-col gap-0.5', cellClassName)}>
+    <div className={cn('flex', 'flex-col', 'gap-0.5', cellClassName)}>
       <span className="text-[10px] uppercase tracking-[0.06em] text-muted whitespace-nowrap">{label}</span>
       <span data-testid={testId} className={className}>
         {value}
