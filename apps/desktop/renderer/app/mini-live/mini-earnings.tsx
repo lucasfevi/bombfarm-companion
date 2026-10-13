@@ -67,13 +67,9 @@ export function MiniEarnings({ earnings, onReset }: { earnings: LiveEarnings | n
             </span>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-line/55 pt-2 sm:grid-cols-3">
-          <Figure
-            testId="live-earnings-gold-current"
-            label={t.liveEarningsCurrentGoldLabel}
-            value={numberText(earnings?.goldBalance, lang)}
-            className="text-[15px] font-bold tabular-nums text-gold"
-          />
+        {/* Column-first at three columns, so the gold figures fill the top row and the XP ones the
+            bottom; at two, each session and per-prop gold figure sits beside its XP twin. */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-line/55 pt-2 sm:grid-flow-col sm:grid-cols-3 sm:grid-rows-2">
           <Figure
             testId="live-earnings-gold-session"
             label={t.liveEarningsGoldSessionLabel}
@@ -93,15 +89,21 @@ export function MiniEarnings({ earnings, onReset }: { earnings: LiveEarnings | n
             className="text-[15px] font-bold tabular-nums text-gold"
           />
           <Figure
+            testId="live-earnings-xp-per-prop"
+            label={t.liveEarningsXpPerPropLabel}
+            value={earnings?.xpPerProp10 == null ? EM_DASH : formatCount(earnings.xpPerProp10, locale)}
+            className="text-[15px] font-bold tabular-nums text-info"
+          />
+          <Figure
+            testId="live-earnings-gold-current"
+            label={t.liveEarningsCurrentGoldLabel}
+            value={numberText(earnings?.goldBalance, lang)}
+            className="text-[15px] font-bold tabular-nums text-gold"
+          />
+          <Figure
             testId="live-earnings-props-per-minute"
             label={t.liveEarningsPropsPerMinuteLabel}
             value={earnings?.propsPerMinute10 == null ? EM_DASH : formatCount(earnings.propsPerMinute10, locale)}
-            className="text-[15px] font-bold tabular-nums text-ink"
-          />
-          <Figure
-            testId="live-earnings-props-total"
-            label={t.liveEarningsPropsTotalLabel}
-            value={earnings?.propsSessionTotal == null ? EM_DASH : formatCount(earnings.propsSessionTotal, locale)}
             className="text-[15px] font-bold tabular-nums text-ink"
           />
         </div>

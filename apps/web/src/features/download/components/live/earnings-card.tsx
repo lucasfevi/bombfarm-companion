@@ -52,12 +52,7 @@ export function EarningsCard({
             </span>
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-x-3 gap-y-2 border-t border-line/55 pt-2">
-          <ReplicaFigure
-            label={liveLabel('liveEarningsCurrentGoldLabel', lang)}
-            value={compact(earnings.currentGold)}
-            valueClass="text-gold"
-          />
+        <div className="grid grid-flow-col grid-cols-3 grid-rows-2 gap-x-3 gap-y-2 border-t border-line/55 pt-2">
           <ReplicaFigure
             label={liveLabel('liveEarningsGoldSessionLabel', lang)}
             value={compact(earnings.goldSession)}
@@ -74,13 +69,18 @@ export function EarningsCard({
             valueClass="text-gold"
           />
           <ReplicaFigure
-            label={liveLabel('liveEarningsPropsPerMinuteLabel', lang)}
-            value={formatNumber(measured.propsPerMinute, lang, 0)}
-            valueClass="text-ink"
+            label={liveLabel('liveEarningsXpPerPropLabel', lang)}
+            value={formatNumber(measured.xpPerProp, lang, 0)}
+            valueClass="text-info"
           />
           <ReplicaFigure
-            label={liveLabel('liveEarningsPropsTotalLabel', lang)}
-            value={formatCompactNumber(measured.propsSession, lang)}
+            label={liveLabel('liveEarningsCurrentGoldLabel', lang)}
+            value={compact(earnings.currentGold)}
+            valueClass="text-gold"
+          />
+          <ReplicaFigure
+            label={liveLabel('liveEarningsPropsPerMinuteLabel', lang)}
+            value={formatNumber(measured.propsPerMinute, lang, 0)}
             valueClass="text-ink"
           />
         </div>
