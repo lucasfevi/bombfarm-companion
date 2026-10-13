@@ -15,6 +15,7 @@ import type {
   AppFlavor,
   FieldCountdown,
   FieldDrop,
+  LiveBoostAxis,
   LiveCurrency,
   LiveDiagnosticsDumpOutcome,
   LiveEarnings,
@@ -26,8 +27,8 @@ import type {
   RotationSnapshot,
   SectionFidelity,
 } from '@bombfarm/contracts';
-import { isConnectedCurrency, isLiveCurrency, liveGap } from '@bombfarm/contracts';
-import { diagnoseObservedBodyDrift, identifyObservedBody, isPlainObject, normalizeRotation, type PvpRoute } from '@bombfarm/game-api';
+import { isConnectedCurrency, isLiveCurrency, liveGap, NO_BOOST_AXES, runningBoostAxes, sameBoostAxes } from '@bombfarm/contracts';
+import { diagnoseObservedBodyDrift, identifyObservedBody, isPlainObject, normalizeRotation, readPhaseEconomy, type PvpRoute } from '@bombfarm/game-api';
 import {
   advanceRecoveryClock,
   createInitialFieldCountdownState,
@@ -40,10 +41,11 @@ import {
   type RosterHeroAbilities,
 } from '@bombfarm/domain/live';
 import { collectionFromSave } from '@bombfarm/domain/model';
-import { economyMultipliers } from '@bombfarm/domain/farm-rate';
+import { economyBoostOf, economyMultipliers } from '@bombfarm/domain/farm-rate';
 import { passActive } from '@bombfarm/domain/import-save';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
-import { xpPerProp } from '@bombfarm/domain/phase-wiki';
+import { readHeroRunes, runeXpMultiplier } from '@bombfarm/domain/runes';
+import { apprenticeXpMult } from '@bombfarm/domain/team-buffs';
 import { gameProcessQuery, runPowerShellAsync, runPowerShellSync } from '../game-reader/process.js';
 import { DamageFold } from './damage-fold.js';
 import { EarningsFold } from './earnings-fold.js';
@@ -52,7 +54,8 @@ import { FrameRing } from './frame-ring.js';
 import { peScanExtent } from './image-scan.js';
 import type { ObservationAppendPort, ObservationCapture } from './observation-capture.js';
 import type { LogPort } from './log-port.js';
-import { MapFold, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
+import { MapFold, NO_MAP_ACCOUNT_BOOSTS, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
+import { PhaseEconomyCheck, wikiPhaseEconomyBaseline } from './phase-economy-check.js';
 import { RuntimePort } from './runtime.js';
 import { ensureWritableTempDir } from './temp-dir.js';
 import {
@@ -523,11 +526,14 @@ export function wikiFactsFor(phase: number, boosts: MapAccountBoosts, returnWind
     collectionGoldPct: boosts.collectionGoldPct,
   });
   if (!intel) return null;
-  const economy = economyMultipliers({ returnBonus: returnWindow ? 'on' : 'off', pass: boosts.pass });
+  const economy = economyMultipliers({ returnBonus: returnWindow ? 'on' : 'off', pass: boosts.pass, boost: boosts.boost });
   return {
     propsTotal: intel.propCount,
     economy: {
-      xpPerProp: intel.xpPerPropActual * economy.xp,
+      xpPerProp:
+        boosts.xpMult === null
+          ? null
+          : intel.xpPerPropActual * economy.xp * (boosts.xpRuneMix ?? 1) * (boosts.apprenticeXpMult ?? 1),
       averageGoldPerProp: intel.weightedAvgGoldActual * economy.gold,
       averageGoldPerClear: intel.totalMapGoldActual * economy.gold,
     },
@@ -562,6 +568,40 @@ function readXpMult(skills: Record<string, unknown> | undefined): number | undef
   if (!isPlainObject(totals)) return undefined;
   const value = totals.xp_mult;
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+/** Each roster hero's XP-rune multiplier, keyed by id; a hero without one is left out. */
+function readXpRuneMults(rawHeroes: unknown): ReadonlyMap<string, number> | undefined {
+  if (!Array.isArray(rawHeroes)) return undefined;
+  const mults = new Map<string, number>();
+  for (const raw of rawHeroes) {
+    if (!isPlainObject(raw) || typeof raw.id !== 'string') continue;
+    const mult = runeXpMultiplier(readHeroRunes(raw.runas));
+    if (mult !== 1) mults.set(raw.id, mult);
+  }
+  return mults;
+}
+
+/** Kill shares are not on this path, so every hero on the field counts equally. */
+function fieldXpRuneMix(heroes: readonly LiveTickHero[], mults: ReadonlyMap<string, number>): number {
+  let sum = 0;
+  for (const hero of heroes) sum += mults.get(hero.id) ?? 1;
+  return sum / heroes.length;
+}
+
+/** Each roster hero's Aprendiz rank, keyed by id; a hero without one is left out. */
+function readApprenticeRanks(rawHeroes: unknown): ReadonlyMap<string, number> | undefined {
+  if (!Array.isArray(rawHeroes)) return undefined;
+  const ranks = new Map<string, number>();
+  for (const hero of extractRosterHeroAbilities(rawHeroes)) {
+    const rank = hero.abilities.aprendiz ?? 0;
+    if (rank > 0) ranks.set(hero.id, rank);
+  }
+  return ranks;
+}
+
+function fieldApprenticeXpMult(heroes: readonly LiveTickHero[], ranks: ReadonlyMap<string, number>): number {
+  return apprenticeXpMult(heroes.map((hero) => ({ rank: ranks.get(hero.id) ?? 0, presence: 1 })));
 }
 
 /** `account.vip_until`, unix seconds. */
@@ -624,6 +664,16 @@ export class LiveSource {
 
   readonly #earningsFold: EarningsFold;
   readonly #mapFold: MapFold;
+  readonly #phaseEconomyCheck: PhaseEconomyCheck;
+  /** The boosts last handed to {@link #mapFold}, kept so the earnings fold's fallback model prices
+   *  XP under the same ones the map panel shows. */
+  #accountBoosts: MapAccountBoosts = NO_MAP_ACCOUNT_BOOSTS;
+  /** From the last read that carried the roster; see {@link readXpRuneMults}. */
+  #xpRuneMults: ReadonlyMap<string, number> = new Map();
+  #fieldXpRuneMix = 1;
+  /** From the same read as {@link #xpRuneMults}; see {@link readApprenticeRanks}. */
+  #apprenticeRanks: ReadonlyMap<string, number> = new Map();
+  #fieldApprenticeXpMult = 1;
   readonly #damageFold: DamageFold;
   /** Every tap numbers its own frames from 1, so a tap rebuilt by {@link forceDetach} restarts at 1
    *  while the folds still remember the previous tap's last number and would drop its frames. The
@@ -632,6 +682,7 @@ export class LiveSource {
   /** `null` until the first tap frame of the session has been folded — {@link LiveView.earnings}
    *  stays `null` until then too, rather than reporting a rate computed over zero real ticks. */
   #goldBalance: number | null = null;
+  #boosts: readonly LiveBoostAxis[] = NO_BOOST_AXES;
   /** The most recent stored `/state` gold reading — {@link #buildEarnings} falls back to this
    *  whenever no live tick has ever set {@link #goldBalance} this session, so a game-closed read
    *  shows a real (if aging) balance instead of an em dash. */
@@ -660,8 +711,16 @@ export class LiveSource {
     this.#onObservedPvpBody = deps.onObservedPvpBody ?? null;
     this.#onObservedCollectionsBody = deps.onObservedCollectionsBody ?? null;
     this.#now = deps.now ?? Date.now;
-    this.#earningsFold = new EarningsFold({ now: this.#now, xpPerProp, log: this.#log });
+    this.#earningsFold = new EarningsFold({
+      now: this.#now,
+      modelXpPerProp: (tick) =>
+        tick.phase === undefined
+          ? null
+          : (wikiFactsFor(tick.phase, this.#accountBoosts, (tick.bonusMultiplier ?? 1) > 1)?.economy.xpPerProp ?? null),
+      log: this.#log,
+    });
     this.#mapFold = new MapFold({ wikiFactsFor });
+    this.#phaseEconomyCheck = new PhaseEconomyCheck({ now: this.#now, wikiBaseline: wikiPhaseEconomyBaseline, log: this.#log });
     this.#damageFold = new DamageFold({ now: this.#now, log: this.#log });
     if (deps.createTap) {
       this.#createTap = deps.createTap;
@@ -743,6 +802,7 @@ export class LiveSource {
       earnings: this.#buildEarnings(),
       map: this.#mapFold.current,
       damage: this.#damageFold.view,
+      boosts: this.#boosts,
       updatedAt: this.#updatedAt,
     };
   }
@@ -760,6 +820,7 @@ export class LiveSource {
       xpSessionTotal: this.#earningsFold.xpSessionTotal,
       gold10Series: this.#earningsFold.gold10Series,
       goldPerProp10: this.#earningsFold.goldPerProp10,
+      xpPerProp10: this.#earningsFold.xpPerProp10,
       propsPerMinute10: this.#earningsFold.propsPerMinute10,
       propsSessionTotal: this.#earningsFold.propsSessionTotal,
       coverageSeconds: this.#earningsFold.coverageSeconds,
@@ -786,12 +847,15 @@ export class LiveSource {
     this.#teamCoinPct = readTeamCoinPct(view.payload.skills) ?? this.#teamCoinPct;
     this.#collectionGoldPct = readCollectionGoldPct(view.payload.skills) ?? this.#collectionGoldPct;
     this.#vipUntil = readVipUntil(view.payload.account) ?? this.#vipUntil;
-    this.#mapFold.setAccountBoosts({
-      xpMult: this.#xpMult ?? 1,
+    this.#xpRuneMults = readXpRuneMults(view.payload.heroes) ?? this.#xpRuneMults;
+    this.#apprenticeRanks = readApprenticeRanks(view.payload.heroes) ?? this.#apprenticeRanks;
+    this.#accountBoosts = {
+      xpMult: this.#xpMult === undefined || this.#xpMult <= 0 ? null : this.#xpMult,
       teamCoinPct: this.#teamCoinPct ?? 0,
       collectionGoldPct: this.#collectionGoldPct ?? 0,
       pass: passActive(this.#vipUntil, this.#now()),
-    });
+    };
+    this.#repriceMap();
     this.#trackAccountBinding(view.store.binding);
     if (Array.isArray(view.payload.heroes)) this.#damageFold.setRoster(view.payload.heroes);
     const accountGold = readAccountGold(view.payload.account);
@@ -916,6 +980,10 @@ export class LiveSource {
       this.#onObservedCollectionsBody?.({ body: parsed, atMs });
       return;
     }
+    if (identification.kind === 'phaseEconomy') {
+      this.#observePhaseEconomy(parsed, bodyBuf.length);
+      return;
+    }
 
     this.#log.info({
       scope: 'live-source',
@@ -924,6 +992,22 @@ export class LiveSource {
       byteLength: bodyBuf.length,
     });
     this.#dispatchObservedBody(identification.section, parsed, atMs);
+  }
+
+  #observePhaseEconomy(body: unknown, byteLength: number): void {
+    const read = readPhaseEconomy(body);
+    if (read === null) {
+      this.#log.warn({ scope: 'live-source', event: 'observed_body.phase_economy_malformed', byteLength });
+      return;
+    }
+    this.#log.info({
+      scope: 'live-source',
+      event: 'observed_body.phase_economy',
+      phase: read.economy.phase,
+      ignoredKeys: read.ignored,
+      byteLength,
+    });
+    this.#phaseEconomyCheck.observe(read.economy);
   }
 
   #dispatchObservedBody(section: AccountSection, body: unknown, atMs: number): void {
@@ -972,16 +1056,22 @@ export class LiveSource {
   }
 
   // The tap itself only ever raises 'frame' or 'currency' — 'fastUpdate' is a channel this class's
-  // own consumers publish downstream (see live-fast-publisher.ts), never one the tap produces —
-  // so the branch below is exhaustive over what can actually arrive here.
+  // own consumers publish downstream (see live-fast-publisher.ts), and 'boosts' one this class
+  // raises itself, never one the tap produces — so the branch below is exhaustive over what can
+  // actually arrive here.
   #handleTapEvent(event: LiveEvent): void {
+    let boostsChanged = false;
     if (event.type === 'currency') {
       this.#observer?.currency(event.currency, this.#now());
       this.#currency = event.currency;
       this.#touch();
     } else if (event.type === 'frame') {
       this.#frameCounter += 1;
-      this.#earningsFold.consumeTick(event.frame.tick, this.#frameCounter, this.#xpMult);
+      // Ahead of the folds, so a loot frame's fallback XP is priced under this frame's own Boosts
+      // and field.
+      boostsChanged = this.#trackBoosts(event.frame.tick);
+      this.#trackFieldXp(event.frame.tick.heroes);
+      this.#earningsFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#mapFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#damageFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#earningsStarted = true;
@@ -989,9 +1079,45 @@ export class LiveSource {
       this.#ingestTick(event.frame.tick, Date.parse(event.frame.at));
     }
     this.#publish(event);
+    if (boostsChanged) this.#publish({ type: 'boosts', boosts: this.#boosts });
+  }
+
+  /** The wire lists the Boosts on every frame while one runs and drops the list when none does,
+   *  so a frame without it is a Boost that ended. */
+  #trackBoosts(tick: LiveTick): boolean {
+    const boosts = runningBoostAxes(tick.boosts);
+    if (sameBoostAxes(boosts, this.#boosts)) return false;
+    this.#boosts = boosts;
+    this.#log.info({ scope: 'live-source', event: 'boosts.changed', boosts: [...boosts] });
+    this.#repriceMap();
+    return true;
+  }
+
+  /** Called on every input it composes: an account read, a Boost starting or ending, a field
+   *  change. */
+  #repriceMap(): void {
+    this.#accountBoosts = {
+      ...this.#accountBoosts,
+      boost: economyBoostOf(this.#boosts),
+      xpRuneMix: this.#fieldXpRuneMix,
+      apprenticeXpMult: this.#fieldApprenticeXpMult,
+    };
+    this.#mapFold.setAccountBoosts(this.#accountBoosts);
+  }
+
+  /** An empty field keeps the last figures: no prop pays out while nobody is on it. */
+  #trackFieldXp(heroes: readonly LiveTickHero[]): void {
+    if (heroes.length === 0) return;
+    const mix = fieldXpRuneMix(heroes, this.#xpRuneMults);
+    const apprentice = fieldApprenticeXpMult(heroes, this.#apprenticeRanks);
+    if (mix === this.#fieldXpRuneMix && apprentice === this.#fieldApprenticeXpMult) return;
+    this.#fieldXpRuneMix = mix;
+    this.#fieldApprenticeXpMult = apprentice;
+    this.#repriceMap();
   }
 
   #ingestTick(tick: LiveTick, atMs: number, sampleSource: 'tap' | 'rest' = 'tap'): void {
+    this.#trackFieldXp(tick.heroes);
     const onFieldHeroes: RosterHeroAbilities[] = [];
     for (const heroOnField of tick.heroes) {
       const hero = this.#rosterHeroById.get(heroOnField.id);

@@ -52,6 +52,31 @@ export interface LiveHit {
   readonly shardOrigin?: number;
 }
 
+export type LiveBoostAxis = 'gold' | 'xp' | 'drop';
+
+/** A Boost the account is running on this tick. The wire sends the list only while one runs. */
+export interface LiveBoost {
+  readonly axis: LiveBoostAxis;
+  readonly secondsLeft: number;
+  readonly mult: number;
+}
+
+const BOOST_AXIS_ORDER: readonly LiveBoostAxis[] = ['gold', 'xp', 'drop'];
+
+export const NO_BOOST_AXES: readonly LiveBoostAxis[] = Object.freeze([]);
+
+/** The axes with Boost time left, always in the same order, so two readings compare as lists
+ *  however the wire happened to order them. */
+export function runningBoostAxes(boosts: readonly LiveBoost[] | undefined): readonly LiveBoostAxis[] {
+  if (boosts === undefined) return NO_BOOST_AXES;
+  const running = BOOST_AXIS_ORDER.filter((axis) => boosts.some((boost) => boost.axis === axis && boost.secondsLeft > 0));
+  return running.length === 0 ? NO_BOOST_AXES : running;
+}
+
+export function sameBoostAxes(a: readonly LiveBoostAxis[], b: readonly LiveBoostAxis[]): boolean {
+  return a.length === b.length && a.every((axis, index) => axis === b[index]);
+}
+
 export interface LiveTick {
   /** Every hero currently standing on the field. A hero's absence from this list IS its
    *  departure from the field — there is no separate leave event. */
@@ -69,6 +94,12 @@ export interface LiveTick {
   readonly hits?: readonly LiveHit[];
   readonly bonusSeconds?: number;
   readonly bonusMultiplier?: number;
+  /** XP the server awarded on THIS tick, summed over every hero on the field, with every
+   *  multiplier already applied — the account's, the Pass, the Return Bonus, a Boost and each
+   *  hero's XP runes. Arrives beside {@link loot}. */
+  readonly xpGained?: number;
+  /** Absent when no Boost runs. */
+  readonly boosts?: readonly LiveBoost[];
   /** One entry per cell of the whole map grid, index-for-index with {@link hps} and in the same
    *  cell-index space as `loot[].cell` and `hits[].cell`. `-1` marks a cell holding no prop —
    *  empty ground or a prop already destroyed — so the count of entries that are NOT `-1` is the
@@ -159,6 +190,8 @@ export function energyDisplayPercent(fraction: number): number {
 export type LiveEvent =
   | { readonly type: 'frame'; readonly frame: LiveFrame }
   | { readonly type: 'currency'; readonly currency: LiveCurrency }
+  /** The Boost axes running, sent when that set changes and never as their seconds tick down. */
+  | { readonly type: 'boosts'; readonly boosts: readonly LiveBoostAxis[] }
   /**
    * The fast channel: field/recovery countdowns, per-hero energy and the live on-field id set,
    * folded once in the main process and paced to {@link LIVE_DISPLAY_REFRESH_MS} before crossing
@@ -343,6 +376,10 @@ export interface LiveEarnings {
    *  A window that spans a map change mixes two maps' payouts, so this is only comparable against
    *  the current map's estimate while the player has stayed on one map. */
   readonly goldPerProp10: number | null;
+  /** XP the server reported awarding, divided by the props that paid it, over the same window —
+   *  the measured counterpart to the map panel's modelled XP per prop. `null` until a prop has
+   *  paid out inside the window. */
+  readonly xpPerProp10: number | null;
   /** Props destroyed per real minute, measured over the same rolling window against streamed time
    *  rather than wall-clock time — so a stream gap does not read as a throughput collapse. */
   readonly propsPerMinute10: number | null;
@@ -395,9 +432,11 @@ export interface LiveMap {
  * report — hence "average" in each field's name, and never presented as an observation.
  */
 export interface LiveMapEconomy {
-  /** XP a single prop awards, with the account's own XP multiplier (the skill tree's `xp_mult`)
-   *  already applied — what the player actually earns, not the wiki's unboosted base. */
-  readonly xpPerProp: number;
+  /** XP a single prop awards, with the account's own XP multiplier (the skill tree's `xp_mult`),
+   *  the Return Bonus, the Pass, a running Boost, the field heroes' XP runes and an Apprentice on the
+   *  field applied — what the player actually earns, not the wiki's unboosted base. `null` when the
+   *  account read carried no usable XP multiplier. */
+  readonly xpPerProp: number | null;
   /** Average gold a single prop pays out, with the account's coin bonus applied. */
   readonly averageGoldPerProp: number;
   /** Average gold a full clear of this map pays out: {@link averageGoldPerProp} across every prop
@@ -516,6 +555,8 @@ export interface LiveView {
   readonly map: LiveMap | null;
   /** `null` before the first tap frame of the session has arrived. */
   readonly damage: LiveDamage | null;
+  /** From the latest tap frame; empty until one carries a Boost, and again once one stops. */
+  readonly boosts: readonly LiveBoostAxis[];
   readonly updatedAt: string;
 }
 

@@ -17,11 +17,10 @@ export type TreeState = {
   luckFlatPct?: number;
   /**
    * `skills.totals.xp_mult` verbatim (not a percentage) — scales XP per prop the same way
-   * `teamCoinPct` scales gold per prop. Optional, same precedent as `luckFlatPct`: every read
-   * site defaults absence/non-finite to `1` (NOT `0` — a `?? 0` here would silently zero every
-   * XP figure).
+   * `teamCoinPct` scales gold per prop. `null` is an imported save whose multiplier was unusable:
+   * every XP figure is withheld.
    */
-  xpMult?: number;
+  xpMult?: number | null;
   /** `skills.totals.colecao` — absent on a save from before Collections existed. */
   collection?: Collection;
 };

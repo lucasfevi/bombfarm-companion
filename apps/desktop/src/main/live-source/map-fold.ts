@@ -1,22 +1,30 @@
 import type { LiveMap, LiveMapEconomy, LiveTick } from '@bombfarm/contracts';
+import type { EconomyBoost } from '@bombfarm/domain/farm-rate';
 
 /** The wire reports room health and per-prop health as a byte, `255` meaning full. */
 const WIRE_HEALTH_FULL = 255;
 
-/** The account-derived multipliers the map's economy is worth under. Both come from the slow
- *  authenticated read, never from a tick. */
+/** The multipliers the map's economy is worth under: the account's, from the slow authenticated
+ *  read, and the running Boosts and field heroes' XP runes and Aprendiz, from the stream. */
 export interface MapAccountBoosts {
-  /** `skills.totals.xp_mult`. `1` is the identity. */
-  readonly xpMult: number;
+  /** `skills.totals.xp_mult`. `1` is the identity; `null` (no usable multiplier read) withholds
+   *  the XP estimate. */
+  readonly xpMult: number | null;
   /** Team Coin, PERCENTAGE POINTS — `skills.totals.coin_add * 100`. `0` is the identity. */
   readonly teamCoinPct: number;
   /** The Collections gold bonus, percent — `skills.totals.colecao.ouro`. `0` is the identity. */
   readonly collectionGoldPct: number;
   /** The account owns the Pass right now — its always-on gold and XP add apply on every map. */
   readonly pass: boolean;
+  /** The Boosts running, per axis. Absent, none. */
+  readonly boost?: EconomyBoost;
+  /** The field heroes' XP-rune multiplier, weighted equally across them. Absent, `1`. */
+  readonly xpRuneMix?: number;
+  /** Aprendiz over the heroes on the field, a factor on every prop's XP. Absent, `1`. */
+  readonly apprenticeXpMult?: number;
 }
 
-export const NO_MAP_ACCOUNT_BOOSTS: MapAccountBoosts = { xpMult: 1, teamCoinPct: 0, collectionGoldPct: 0, pass: false };
+export const NO_MAP_ACCOUNT_BOOSTS: MapAccountBoosts = { xpMult: null, teamCoinPct: 0, collectionGoldPct: 0, pass: false };
 
 /** What one phase is worth under one set of boosts. `null` for a phase with no wiki row. */
 export interface MapWikiFacts {
@@ -95,9 +103,24 @@ export class MapFold {
 
   /** Memoized on the phase, the boosts and the Return Bonus window together — this getter is read on every fast-channel
    *  poll, and the wiki lookup behind it walks the whole prop mix. All of them move rarely
-   *  (a map change, an account read, a window opening or closing), so one cached entry covers the common case. */
+   *  (a map change, an account read, a Boost or a field change, a window opening or closing), so
+   *  one cached entry covers the common case. */
   #factsFor(phase: number): MapWikiFacts | null {
-    const key = `${String(phase)}|${String(this.#boosts.xpMult)}|${String(this.#boosts.teamCoinPct)}|${String(this.#boosts.collectionGoldPct)}|${String(this.#boosts.pass)}|${String(this.#returnWindow)}`;
+    const boosts = this.#boosts;
+    const boost = boosts.boost;
+    const key = [
+      phase,
+      boosts.xpMult,
+      boosts.teamCoinPct,
+      boosts.collectionGoldPct,
+      boosts.pass,
+      boost?.gold ?? false,
+      boost?.xp ?? false,
+      boost?.drop ?? false,
+      boosts.xpRuneMix ?? 1,
+      boosts.apprenticeXpMult ?? 1,
+      this.#returnWindow,
+    ].map(String).join('|');
     if (this.#wikiFacts?.key === key) return this.#wikiFacts.facts;
     const facts = this.#deps.wikiFactsFor(phase, this.#boosts, this.#returnWindow);
     this.#wikiFacts = { key, facts };

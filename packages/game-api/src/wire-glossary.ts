@@ -1,12 +1,13 @@
 /**
  * Combines every declared wire lexicon — `/rotation`, the live combat websocket, the PVP duel
- * bodies and the Collections state — into one `PORTUGUESE_WIRE_TOKENS` list and one `docs/wire-vocabulary.md` document.
+ * bodies, the Collections state and the per-phase economy — into one `PORTUGUESE_WIRE_TOKENS` list and one `docs/wire-vocabulary.md` document.
  * Adding another wire boundary means declaring its own lexicon on `./wire-lexicon.js`'s machinery
  * and adding one line in each list below; nothing else here changes.
  */
 
 import { LIVE_FRAME_WIRE_LEXICON } from './live-frame/lexicon.js';
 import { COLLECTIONS_WIRE_LEXICON } from './collections/lexicon.js';
+import { PHASE_ECONOMY_WIRE_LEXICON } from './phase-economy/lexicon.js';
 import { PVP_WIRE_LEXICON } from './pvp/lexicon.js';
 import { ROTATION_WIRE_LEXICON } from './rotation/lexicon.js';
 import { glossaryTable, portugueseWireTokens, type WireLexiconEntry } from './wire-lexicon.js';
@@ -20,6 +21,7 @@ export const PORTUGUESE_WIRE_TOKENS: readonly string[] = [
   ...portugueseWireTokens(LIVE_FRAME_WIRE_LEXICON),
   ...portugueseWireTokens(PVP_WIRE_LEXICON),
   ...portugueseWireTokens(COLLECTIONS_WIRE_LEXICON),
+  ...portugueseWireTokens(PHASE_ECONOMY_WIRE_LEXICON),
 ];
 
 function boundarySection(
@@ -97,5 +99,15 @@ export function renderWireGlossary(): string {
     'Values',
   );
 
-  return [...header, ...rotation, '', ...liveFrame, '', ...pvp, '', ...collections].join('\n').trimEnd() + '\n';
+  const phaseEconomy = boundarySection(
+    'Per-phase economy',
+    'A burst of about ten bodies, one per phase of the stretch the account is playing, stating what ' +
+      'each phase pays and drops with the account’s multipliers already applied, under English keys ' +
+      'beside two Portuguese ones (`bau_chance_pct`, `jaula_teto_pct`) — see ' +
+      '`packages/game-api/src/phase-economy/lexicon.ts`. Chances are in percent.',
+    PHASE_ECONOMY_WIRE_LEXICON,
+    'Values',
+  );
+
+  return [...header, ...rotation, '', ...liveFrame, '', ...pvp, '', ...collections, '', ...phaseEconomy].join('\n').trimEnd() + '\n';
 }

@@ -37,6 +37,7 @@ const MODEL: LiveModel = {
   earnings: null,
   map: null,
   damage: DAMAGE,
+  boosts: [],
 };
 
 vi.mock('../../lib/live/use-live-model', () => ({ useLiveModel: () => MODEL }));

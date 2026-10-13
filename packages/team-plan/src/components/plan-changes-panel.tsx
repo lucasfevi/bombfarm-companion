@@ -16,7 +16,7 @@ import type { InventoryItem } from '@bombfarm/domain/inventory';
 import type { HeroRune } from '@bombfarm/domain/runes';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanScreenCopy } from '../copy';
-import type { PlanBasis, PlanChange, PlanChangeLedger, TreeAxis } from '../core/plan-changes';
+import type { AccountField, PlanBasis, PlanChange, PlanChangeLedger, TreeAxis } from '../core/plan-changes';
 import type { TeamPlanInputs } from '../core/team-plan-inputs';
 import type { ScopeState } from '../core/hero-scope';
 import { formatTreeAxisValue } from './plan-changes-format';
@@ -25,6 +25,8 @@ type Copy = TeamPlanScreenCopy;
 
 /** A value that was not there, or is not there any more. Punctuation, so the same in both languages. */
 const NONE = '—';
+
+const SWITCH_FIELDS: ReadonlySet<AccountField> = new Set(['farmPass', 'farmReturnBonus', 'farmBoostGold', 'farmBoostXp', 'farmBoostDrop']);
 
 const RUNE_AXIS_STAT = { attack: 'attack', energy: 'energy', speed: 'speed', crit: 'critChance', critdmg: 'critDmg', cdr: 'cdr' } as const;
 const TREE_AXIS_STAT = {
@@ -173,10 +175,14 @@ export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames
         fieldSlots: t.teamPlanChangesFieldFieldSlots,
         houseCycleSecs: t.teamPlanChangesFieldHouseCycleSecs,
         farmPass: t.teamPlanChangesFieldPass,
+        farmReturnBonus: t.teamPlanChangesFieldReturnBonus,
+        farmBoostGold: t.teamPlanChangesFieldBoostGold,
+        farmBoostXp: t.teamPlanChangesFieldBoostXp,
+        farmBoostDrop: t.teamPlanChangesFieldBoostDrop,
       }[d.name];
       const value = (raw: number | null): string => {
         if (raw === null) return none;
-        if (d.name === 'farmPass') return raw === 1 ? t.teamPlanChangesOn : t.teamPlanChangesOff;
+        if (SWITCH_FIELDS.has(d.name)) return raw === 1 ? t.teamPlanChangesOn : t.teamPlanChangesOff;
         return String(raw);
       };
       return { change: label, before: text(value(d.before)), after: text(value(d.after)), note: null };

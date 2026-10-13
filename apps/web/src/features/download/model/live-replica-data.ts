@@ -96,12 +96,14 @@ export interface ReplicaFrame {
     readonly seriesMinutes: number;
   };
   /**
-   * Counted from what dropped, as against the map card's estimates. `goldPerPropDelta` is the
+   * Counted from what dropped, as against the map card's estimates. Each `…DeltaPercent` is the
    * signed deviation from the map's own estimate, so the two cards agree the way the app's do.
    */
   readonly measured: {
     readonly goldPerProp: number;
     readonly goldPerPropDeltaPercent: number;
+    readonly xpPerProp: number;
+    readonly xpPerPropDeltaPercent: number;
     readonly propsPerMinute: number;
     readonly propsSession: number;
   };
@@ -138,6 +140,7 @@ const GOLD_PER_CLEAR = 1_840_000;
 const XP_PER_PROP = 41;
 const GOLD_PER_PROP = 173;
 const MEASURED_GOLD_PER_PROP = 168;
+const MEASURED_XP_PER_PROP = 36;
 const MEASURED_PROPS_PER_MINUTE = 41;
 const BASE_PROPS_SESSION = 8_940;
 const SERIES_MINUTES = 10;
@@ -263,7 +266,7 @@ export function replicaFrameAt(elapsedSeconds: number): ReplicaFrame {
   // What the clear has paid so far, from the map's own per-clear value and prop count.
   const propsDestroyed = Math.round(BASE_PROPS_ALIVE * (clearedFraction / (BASE_MAP_HEALTH / 100)));
   const goldEarned = Math.round(GOLD_PER_CLEAR * clearedFraction);
-  const xpEarned = propsDestroyed * XP_PER_PROP;
+  const xpEarned = propsDestroyed * MEASURED_XP_PER_PROP;
 
   const heroes = HERO_SEEDS.map((seed) => ({
     id: seed.id,
@@ -301,6 +304,8 @@ export function replicaFrameAt(elapsedSeconds: number): ReplicaFrame {
       goldPerProp: MEASURED_GOLD_PER_PROP,
       goldPerPropDeltaPercent:
         Math.round(((MEASURED_GOLD_PER_PROP - GOLD_PER_PROP) / GOLD_PER_PROP) * 1000) / 10,
+      xpPerProp: MEASURED_XP_PER_PROP,
+      xpPerPropDeltaPercent: Math.round(((MEASURED_XP_PER_PROP - XP_PER_PROP) / XP_PER_PROP) * 1000) / 10,
       propsPerMinute: MEASURED_PROPS_PER_MINUTE,
       propsSession: BASE_PROPS_SESSION + propsDestroyed,
     },

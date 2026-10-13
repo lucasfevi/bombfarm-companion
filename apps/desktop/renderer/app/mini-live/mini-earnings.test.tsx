@@ -26,6 +26,7 @@ function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
     xpSessionTotal: 3_750,
     gold10Series: [90_000, 110_000, 100_000],
     goldPerProp10: 180,
+    xpPerProp10: 1_655.2,
     propsPerMinute10: 110,
     propsSessionTotal: 420,
     coverageSeconds: 120,
@@ -52,12 +53,20 @@ describe('MiniEarnings', () => {
       'live-earnings-gold-session',
       'live-earnings-xp-session',
       'live-earnings-gold-per-prop',
+      'live-earnings-xp-per-prop',
       'live-earnings-props-per-minute',
       'live-earnings-props-total',
       'live-earnings-reset',
     ]) {
       expect(hasTestId(out, testId), testId).toBe(true);
     }
+  });
+
+  it('prints the measured XP per prop beside the session prop count, seven figures under the balance', () => {
+    const out = html(earnings());
+    expect(out).toMatch(/data-testid="live-earnings-xp-per-prop"[^>]*>1,655</);
+    expect(out).toMatch(/data-testid="live-earnings-props-total"[^>]*>420</);
+    expect(out.match(/<div class="flex flex-col gap-0.5[^"]*"><span class="text-\[10px\]/g)).toHaveLength(7);
   });
 
   it('omits sparkline, session totals, elapsed, and vs-estimate surfaces', () => {
@@ -67,6 +76,7 @@ describe('MiniEarnings', () => {
     expect(hasTestId(out, 'live-earnings-xp-session-total')).toBe(false);
     expect(hasTestId(out, 'live-earnings-elapsed')).toBe(false);
     expect(hasTestId(out, 'live-earnings-gold-per-prop-delta')).toBe(false);
+    expect(hasTestId(out, 'live-earnings-xp-per-prop-delta')).toBe(false);
   });
 
   it('renders em dashes for an empty payload, not zero', () => {

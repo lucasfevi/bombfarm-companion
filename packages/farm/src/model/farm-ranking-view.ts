@@ -89,10 +89,11 @@ export const DEFAULT_SORT: { key: FarmSortKey; direction: FarmSortDir } = {
 
 const FINITE_MAX = Number.MAX_SAFE_INTEGER;
 
-/** `Infinity` sorts to the "worst" end regardless of direction (never the top of any sort). */
+/** `Infinity` and a withheld `null` sort to the "worst" end regardless of direction (never the
+ *  top of any sort). */
 function sortableValue(row: FarmRateRow, key: FarmSortKey, direction: FarmSortDir): number {
   const raw = row[key];
-  if (!Number.isFinite(raw)) {
+  if (raw === null || !Number.isFinite(raw)) {
     return direction === 'desc' ? -FINITE_MAX : FINITE_MAX;
   }
   return raw;

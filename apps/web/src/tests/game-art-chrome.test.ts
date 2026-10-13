@@ -276,7 +276,7 @@ describe('abilities panel chrome', () => {
 
 describe('gear tab slot chrome', () => {
   const src = readHero('components/gear-slot-card.tsx');
-  const editor = read('features/gear/components/slot-editor.tsx');
+  const editor = readHero('components/gear-slot-editor.tsx');
 
   it('uses ItemIcon at xl with default level and upgrade glyphs', () => {
     expect(src).toMatch(/<ItemIcon item=\{equipped\} size="xl"/);
@@ -374,7 +374,7 @@ describe('import preview table chrome', () => {
 describe('gear slot card', () => {
   const card = readHero('components/gear-slot-card.tsx');
   const compareSrc = readHero('components/gear-compare-section.tsx');
-  const editor = read('features/gear/components/slot-editor.tsx');
+  const editor = readHero('components/gear-slot-editor.tsx');
 
   it('uses the short stat labels beside the slot values — the full ones head the totals table', () => {
     expect(card).toContain('slotStatLabels[');

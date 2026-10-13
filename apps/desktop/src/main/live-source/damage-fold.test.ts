@@ -244,11 +244,11 @@ describe('DamageFold: team damage per second', () => {
   it('reports coverageSeconds exactly as the earnings fold does on the same frames', () => {
     const clock = makeClock();
     const damage = new DamageFold({ now: clock.now, log: NOOP_LOG });
-    const earnings = new EarningsFold({ now: clock.now, xpPerProp: () => 1, log: NOOP_LOG });
+    const earnings = new EarningsFold({ now: clock.now, modelXpPerProp: () => 1, log: NOOP_LOG });
     for (let sequence = 1; sequence <= 12; sequence += 1) {
       clock.advance(sequence === 7 ? 90_000 : FRAME_MS);
       damage.consumeTick(tick(), sequence);
-      earnings.consumeTick(tick(), sequence, undefined);
+      earnings.consumeTick(tick(), sequence);
     }
     expect(requireView(damage).coverageSeconds).toBe(earnings.coverageSeconds);
     expect(requireView(damage).coverageSeconds).toBeGreaterThan(90);
@@ -543,7 +543,7 @@ describe('DamageFold: prop and gold totals agree with the earnings fold', () => 
   it('counts the same props and gold, skipping loot without a valid gold the same way', () => {
     const clock = makeClock();
     const damage = new DamageFold({ now: clock.now, log: NOOP_LOG });
-    const earnings = new EarningsFold({ now: clock.now, xpPerProp: () => 1, log: NOOP_LOG });
+    const earnings = new EarningsFold({ now: clock.now, modelXpPerProp: () => 1, log: NOOP_LOG });
     const frames: LiveTick[] = [
       tick({ phase: 1, loot: [{ cell: 1, gold: 100 }, { cell: 2 }, { cell: 3, gold: Number.NaN }] }),
       tick({ phase: 1, loot: [{ cell: 4, gold: 50 }] }),
@@ -553,7 +553,7 @@ describe('DamageFold: prop and gold totals agree with the earnings fold', () => 
     frames.forEach((frame, index) => {
       clock.advance(FRAME_MS);
       damage.consumeTick(frame, index + 1);
-      earnings.consumeTick(frame, index + 1, undefined);
+      earnings.consumeTick(frame, index + 1);
       expectReconciled(damage.view);
     });
 

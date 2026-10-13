@@ -102,19 +102,47 @@ export const TREE_AXES = [
 ] as const;
 export type TreeAxis = (typeof TREE_AXES)[number];
 
-export const ACCOUNT_FIELDS = ['houseIdx', 'houseLevel', 'phase', 'maxPhase', 'slots', 'fieldSlots', 'houseCycleSecs', 'farmPass'] as const;
+export const ACCOUNT_FIELDS = [
+  'houseIdx',
+  'houseLevel',
+  'phase',
+  'maxPhase',
+  'slots',
+  'fieldSlots',
+  'houseCycleSecs',
+  'farmPass',
+  'farmReturnBonus',
+  'farmBoostGold',
+  'farmBoostXp',
+  'farmBoostDrop',
+] as const;
 export type AccountField = (typeof ACCOUNT_FIELDS)[number];
 
-/** `farmPass` rides as 1/0 so the ledger can diff every account field the same way. */
+/** The switches ride as 1/0 so the ledger can diff every account field the same way. An absent
+ *  Return Bonus or Boost is off, as in a basis stored before either was read. */
 type AccountView = Record<TreeAxis, number> & Record<AccountField, number | null>;
+
+function accountFieldValue(inputs: TeamPlanInputs, field: AccountField): number | null {
+  switch (field) {
+    case 'farmPass':
+      return inputs.farmPass ? 1 : 0;
+    case 'farmReturnBonus':
+      return inputs.farmReturnBonus === 'on' ? 1 : 0;
+    case 'farmBoostGold':
+      return inputs.farmBoost?.gold ? 1 : 0;
+    case 'farmBoostXp':
+      return inputs.farmBoost?.xp ? 1 : 0;
+    case 'farmBoostDrop':
+      return inputs.farmBoost?.drop ? 1 : 0;
+    default:
+      return inputs[field];
+  }
+}
 
 function planningAccountView(inputs: TeamPlanInputs): AccountView {
   const view = {} as AccountView;
   for (const axis of TREE_AXES) view[axis] = inputs[axis];
-  for (const field of ACCOUNT_FIELDS) {
-    const value = inputs[field];
-    view[field] = typeof value === 'boolean' ? Number(value) : (value ?? null);
-  }
+  for (const field of ACCOUNT_FIELDS) view[field] = accountFieldValue(inputs, field);
   return view;
 }
 

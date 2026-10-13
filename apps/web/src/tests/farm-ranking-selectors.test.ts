@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { PASS_ADDS } from '@bombfarm/domain/phase-wiki';
+import { PASS_ADDS, xpPerProp } from '@bombfarm/domain/phase-wiki';
 import { emptyLoadout } from '@bombfarm/domain/gear';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import { normalizeHero } from '@/shared/lib/storage';
@@ -11,10 +11,15 @@ import {
   selectFarmRankingRows,
   selectFarmReturnBonus,
   selectFarmPass,
+  selectFarmXpBonusUnknown,
+  selectFarmXpPerPropMult,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
+import { selectAccountShared } from '@/shared/stores/selectors/account-selectors';
+import { normalizeAccount } from '@/shared/lib/account-shared';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
+import { phaseXpPerPropMult } from '@bombfarm/farm/core';
 
-function farmHero(id: string, overrides: Partial<{ battleAllowed: boolean }> = {}) {
+function farmHero(id: string, overrides: Partial<{ battleAllowed: boolean; xpRunePct: number; apprenticeRank: number }> = {}) {
   return normalizeHero({
     id,
     name: `Hero ${id}`,
@@ -37,6 +42,10 @@ function farmHero(id: string, overrides: Partial<{ battleAllowed: boolean }> = {
     loadout: emptyLoadout(),
     pts: ZERO_PTS(),
     battleAllowed: overrides.battleAllowed ?? true,
+    ...(overrides.apprenticeRank !== undefined ? { abilities: { aprendiz: overrides.apprenticeRank } } : {}),
+    ...(overrides.xpRunePct !== undefined
+      ? { runes: [{ axis: 'xp', strengthPct: overrides.xpRunePct, playSecondsLeft: 600, rarity: 0 }] }
+      : {}),
   });
 }
 
@@ -247,6 +256,143 @@ describe('selectFarmRankingRows', () => {
     it('farmPass', () => {
       expectRecompute(() => usePlannerStore.getState().setFarmPass(true));
     });
+
+    it('treeXpMult', () => {
+      expectRecompute(() =>
+        usePlannerStore.getState().applyAccountImport({
+          tree: { danoTotal: 1, critChance: 0, critDmg: 0, speed: 0, energy: 0, teamCoinPct: 0, luckFlatPct: 0, xpMult: 2.35 },
+          houseIdx: null,
+          houseLevel: null,
+          phase: null,
+        }),
+      );
+    });
+
+    it('farmBoost', () => {
+      expectRecompute(() => usePlannerStore.getState().setFarmBoost({ gold: false, xp: true, drop: false }));
+    });
+  });
+});
+
+describe('the XP the board prints', () => {
+  const TREE = { danoTotal: 1, critChance: 0, critDmg: 0, speed: 0, energy: 0, teamCoinPct: 0, luckFlatPct: 0 };
+
+  beforeEach(() => {
+    resetPlannerStoreForTests();
+    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
+  });
+
+  afterEach(() => {
+    resetPlannerStoreForTests();
+  });
+
+  function xpRows() {
+    return selectFarmRankingRows(usePlannerStore.getState()).rows.filter((row) => (row.xpPerHour ?? 0) > 0);
+  }
+
+  function importXpMult(xpMult: number) {
+    usePlannerStore.getState().applyAccountImport({ tree: { ...TREE, xpMult }, houseIdx: null, houseLevel: null, phase: null });
+  }
+
+  it('scales exactly with the account XP multiplier, which used to never reach it', () => {
+    importXpMult(1);
+    const bare = xpRows();
+    importXpMult(2.35);
+    const scaled = xpRows();
+    expect(bare.length).toBeGreaterThan(0);
+    for (const row of bare) {
+      const match = scaled.find((candidate) => candidate.phase === row.phase)!;
+      expect((match.xpPerHour ?? Number.NaN) / (row.xpPerHour ?? Number.NaN)).toBeCloseTo(2.35, 9);
+      expect(match.goldPerHour).toBe(row.goldPerHour);
+    }
+  });
+
+  it('an xp Boost adds its 100% inside the Pass bracket: ×2.3 over ×1.3', () => {
+    importXpMult(2.35);
+    usePlannerStore.getState().setFarmPass(true);
+    const passOnly = xpRows();
+    usePlannerStore.getState().setFarmBoost({ gold: false, xp: true, drop: false });
+    const boosted = xpRows();
+    for (const row of passOnly) {
+      const match = boosted.find((candidate) => candidate.phase === row.phase)!;
+      expect((match.xpPerHour ?? Number.NaN) / (row.xpPerHour ?? Number.NaN)).toBeCloseTo(2.3 / 1.3, 9);
+      expect(match.goldPerHour).toBe(row.goldPerHour);
+    }
+  });
+
+  it('with no save imported, XP is priced at ×1 and the board says it leaves the account bonuses out', () => {
+    expect(selectFarmXpBonusUnknown(usePlannerStore.getState())).toBe(true);
+    expect(xpRows().length).toBeGreaterThan(0);
+    importXpMult(2.35);
+    expect(selectFarmXpBonusUnknown(usePlannerStore.getState())).toBe(false);
+  });
+
+  it('an imported save with an unusable XP multiplier withholds every XP figure, and nothing else', () => {
+    importXpMult(1);
+    const priced = selectFarmRankingRows(usePlannerStore.getState()).rows;
+    usePlannerStore.getState().applyAccountImport({ tree: { ...TREE, xpMult: null }, houseIdx: null, houseLevel: null, phase: null });
+    const state = usePlannerStore.getState();
+    const withheld = selectFarmRankingRows(state).rows;
+    expect(withheld.length).toBe(priced.length);
+    expect(withheld.every((row) => row.xpPerHour === null)).toBe(true);
+    expect(withheld.map((row) => row.goldPerHour)).toEqual(priced.map((row) => row.goldPerHour));
+    expect(selectFarmXpPerPropMult(state)).toBeNull();
+    expect(selectFarmXpBonusUnknown(state)).toBe(false);
+  });
+
+  it('a withheld XP multiplier survives the saved-account round trip instead of reloading as ×1', () => {
+    usePlannerStore.getState().applyAccountImport({ tree: { ...TREE, xpMult: null }, houseIdx: null, houseLevel: null, phase: null });
+    const reloaded = normalizeAccount(
+      JSON.parse(JSON.stringify(selectAccountShared(usePlannerStore.getState()))) as Parameters<typeof normalizeAccount>[0],
+    );
+    expect(reloaded.tree.xpMult).toBeNull();
+    resetPlannerStoreForTests();
+    usePlannerStore.getState().hydrateAccount(reloaded);
+    expect(usePlannerStore.getState().treeXpMult).toBeNull();
+  });
+
+  it('the Phases panel per-prop XP times the row props/hr is the row XP/hr, phase for phase', () => {
+    importXpMult(2.35);
+    usePlannerStore.getState().setFarmPass(true);
+    usePlannerStore.getState().setFarmReturnBonus('on');
+    usePlannerStore.getState().setFarmBoost({ gold: true, xp: true, drop: false });
+    const mult = selectFarmXpPerPropMult(usePlannerStore.getState());
+    expect(mult).toBeCloseTo(2.35 * (1 + 1 + 0.3 + 1), 12);
+    for (const row of xpRows()) {
+      expect(row.xpPerHour).toBeCloseTo(row.propsPerHour * xpPerProp(row.phase) * (mult ?? Number.NaN), 4);
+    }
+  });
+
+  it('and so it does for a squad carrying an XP rune, whose mix moves with the kill shares', () => {
+    usePlannerStore.getState().hydrateRoster([farmHero('a'), farmHero('b', { xpRunePct: 9 })], null);
+    importXpMult(2.35);
+    usePlannerStore.getState().setFarmPass(true);
+    const state = usePlannerStore.getState();
+    const mult = selectFarmXpPerPropMult(state);
+    const rows = selectFarmRankingRows(state).rows;
+    const runed = xpRows();
+    expect(runed.some((row) => row.xpRuneMix > 1 && row.xpRuneMix < 1.09)).toBe(true);
+    for (const row of runed) {
+      const perProp = xpPerProp(row.phase) * (phaseXpPerPropMult(mult, rows, row.phase) ?? Number.NaN);
+      expect(row.xpPerHour).toBeCloseTo(row.propsPerHour * perProp, 4);
+    }
+  });
+
+  it('and so it does for a squad with an Aprendiz carrier beside a runed hero', () => {
+    usePlannerStore.getState().hydrateRoster([farmHero('a', { apprenticeRank: 20 }), farmHero('b', { xpRunePct: 9 })], null);
+    importXpMult(2.35);
+    usePlannerStore.getState().setFarmPass(true);
+    usePlannerStore.getState().setFarmReturnBonus('on');
+    const state = usePlannerStore.getState();
+    const mult = selectFarmXpPerPropMult(state);
+    const rows = selectFarmRankingRows(state).rows;
+    const carried = xpRows();
+    expect(carried.length).toBeGreaterThan(0);
+    expect(carried.every((row) => row.apprenticeXpMult > 1 && row.apprenticeXpMult <= 1.15)).toBe(true);
+    for (const row of carried) {
+      const perProp = xpPerProp(row.phase) * (phaseXpPerPropMult(mult, rows, row.phase) ?? Number.NaN);
+      expect(row.xpPerHour).toBeCloseTo(row.propsPerHour * perProp, 4);
+    }
   });
 });
 

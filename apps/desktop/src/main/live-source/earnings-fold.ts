@@ -3,6 +3,8 @@ import type { LogPort } from './log-port.js';
 
 /**
  * Folds the live tick stream into measured gold- and XP-per-hour, entirely in the main process —
+ * both summed from what the server says it paid, gold per prop and XP per tick, with a model only
+ * for a loot tick that arrives without its XP —
  * the renderer is forbidden from doing any of this arithmetic itself. Pure and dependency-injected:
  * every timestamp comes from `deps.now()`, never from a timer this class owns, so a test can drive
  * the clock deterministically and a caller controls exactly when a tick is considered to have
@@ -35,12 +37,21 @@ interface Bucket {
   gold: number;
   props: number;
   xp: number;
+  /** The share of {@link xp} paid on a frame that also paid props — what XP per prop divides. */
+  xpWithProps: number;
   streamedMs: number;
 }
 
+/** How often the measured XP per prop is logged against the model's, so a multiplier the model
+ *  does not know about shows up as a ratio drifting away from 1 rather than going unnoticed. */
+export const XP_MODEL_RATIO_LOG_INTERVAL_MS = 5 * MS_PER_MINUTE;
+
 export interface EarningsFoldDeps {
   readonly now: () => number;
-  readonly xpPerProp: (phase: number) => number;
+  /** The modelled XP one prop pays on this tick's phase, every multiplier the model knows already
+   *  applied; `null` when it cannot say. Only a fallback and a cross-check — the server's own
+   *  per-tick XP is what the fold counts. */
+  readonly modelXpPerProp: (tick: LiveTick) => number | null;
   readonly log: LogPort;
 }
 
@@ -51,15 +62,6 @@ export interface EarningsFoldDeps {
  * to neither, so it is cleared along with the session totals.
  */
 export type EarningsResetTrigger = 'reset' | 'accountChange';
-
-/**
- * Absent, non-finite, and a literal `0` all mean "no boost" — the same normalization
- * `packages/domain/src/import-save.ts` applies to `xp_mult` twice, so a boost multiplier can never
- * silently zero every XP figure it touches.
- */
-function normalizedXpMult(value: number | undefined): number {
-  return (typeof value === 'number' && Number.isFinite(value) ? value : 1) || 1;
-}
 
 export class EarningsFold {
   readonly #deps: EarningsFoldDeps;
@@ -79,6 +81,8 @@ export class EarningsFold {
   #crossCheckPayoutProps = 0;
   #gridClears = 0;
   #divergenceLogged = false;
+  #missingXpLogged = false;
+  #ratioWindow: { phase: number; startedAtMs: number; props: number; xp: number } | null = null;
   #lastKinds: readonly number[] | undefined;
   #lastWave: number | undefined;
 
@@ -92,7 +96,7 @@ export class EarningsFold {
    * past the last one consumed is ignored outright, so a repeated or older frame is never folded
    * twice.
    */
-  consumeTick(tick: LiveTick, sequence: number, xpMult: number | undefined): void {
+  consumeTick(tick: LiveTick, sequence: number): void {
     if (sequence <= this.#lastSequence) return;
     this.#lastSequence = sequence;
 
@@ -115,13 +119,52 @@ export class EarningsFold {
     bucket.props += propsThisTick;
     this.#propsTotal += propsThisTick;
 
-    if (propsThisTick > 0 && tick.phase !== undefined) {
-      const xp = propsThisTick * this.#deps.xpPerProp(tick.phase) * normalizedXpMult(xpMult);
-      this.#xpTotal += xp;
-      bucket.xp += xp;
-    }
+    const xp = this.#xpFor(tick, propsThisTick, now);
+    this.#xpTotal += xp;
+    bucket.xp += xp;
+    // Rarely the server pays XP on a frame that reports no prop; it is real XP, but counting it
+    // per prop would credit it to props that paid their own.
+    if (propsThisTick > 0) bucket.xpWithProps += xp;
 
     this.#crossCheckGrid(tick, propsThisTick);
+  }
+
+  #xpFor(tick: LiveTick, props: number, now: number): number {
+    if (tick.xpGained !== undefined) {
+      this.#trackModelRatio(tick, props, tick.xpGained, now);
+      return tick.xpGained;
+    }
+    if (props === 0) return 0;
+    if (!this.#missingXpLogged) {
+      this.#deps.log.warn({ scope: 'live-source', event: 'earnings.xp_gained_missing', phase: tick.phase ?? null, props });
+      this.#missingXpLogged = true;
+    }
+    return props * (this.#deps.modelXpPerProp(tick) ?? 0);
+  }
+
+  #trackModelRatio(tick: LiveTick, props: number, xp: number, now: number): void {
+    if (tick.phase === undefined) return;
+    if (this.#ratioWindow?.phase !== tick.phase) {
+      this.#ratioWindow = { phase: tick.phase, startedAtMs: now, props: 0, xp: 0 };
+    }
+    const window = this.#ratioWindow;
+    if (props === 0) return;
+    window.props += props;
+    window.xp += xp;
+    if (now - window.startedAtMs < XP_MODEL_RATIO_LOG_INTERVAL_MS) return;
+
+    const measured = window.xp / window.props;
+    const model = this.#deps.modelXpPerProp(tick);
+    this.#deps.log.debug?.({
+      scope: 'live-source',
+      event: 'earnings.xp_model_ratio',
+      phase: window.phase,
+      props: window.props,
+      measuredXpPerProp: measured,
+      modelXpPerProp: model,
+      ratio: model === null || model <= 0 ? null : measured / model,
+    });
+    this.#ratioWindow = { phase: tick.phase, startedAtMs: now, props: 0, xp: 0 };
   }
 
   reset(trigger: EarningsResetTrigger): void {
@@ -132,6 +175,7 @@ export class EarningsFold {
     this.#crossCheckPayoutProps = 0;
     this.#gridClears = 0;
     this.#divergenceLogged = false;
+    this.#ratioWindow = null;
     this.#lastKinds = undefined;
     this.#lastWave = undefined;
     if (trigger === 'accountChange') this.#buckets = [];
@@ -139,7 +183,7 @@ export class EarningsFold {
 
   /**
    * A second, independent count of prop destructions — via the map's own `kinds` array going from
-   * occupied to cleared — that the XP figure's "every destroyed prop pays out exactly once"
+   * occupied to cleared — that the per-prop figures' "every destroyed prop pays out exactly once"
    * assumption can be checked against, without ever feeding back into a displayed rate.
    *
    * The wave guard is load-bearing: a wave rollover replaces the whole grid, so diffing a fresh
@@ -184,7 +228,7 @@ export class EarningsFold {
     const last = this.#buckets[this.#buckets.length - 1];
     if (last && last.startedAtMs === startedAtMs) return last;
 
-    const bucket: Bucket = { startedAtMs, gold: 0, props: 0, xp: 0, streamedMs: 0 };
+    const bucket: Bucket = { startedAtMs, gold: 0, props: 0, xp: 0, xpWithProps: 0, streamedMs: 0 };
     this.#buckets.push(bucket);
     if (this.#buckets.length > RING_CAPACITY) this.#buckets.shift();
     return bucket;
@@ -264,6 +308,14 @@ export class EarningsFold {
     const props = this.#windowSum((bucket) => bucket.props);
     if (props === 0) return null;
     return this.#windowSum((bucket) => bucket.gold) / props;
+  }
+
+  /** The server's own XP over the props it was paid for, in the window — gated on the prop count
+   *  for the same reason {@link goldPerProp10} is. */
+  get xpPerProp10(): number | null {
+    const props = this.#windowSum((bucket) => bucket.props);
+    if (props === 0) return null;
+    return this.#windowSum((bucket) => bucket.xpWithProps) / props;
   }
 
   get propsPerMinute10(): number | null {

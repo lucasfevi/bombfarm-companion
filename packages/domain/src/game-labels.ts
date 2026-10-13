@@ -317,8 +317,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+5% damage (self) against the 2×2 gate boss/level, not the Cage',
   },
   aprendiz: {
-    pt: '+0.75% XP do TIME/nível por rocha quebrada com ele em campo, dividido como o XP normal; dois portadores não passam do máximo de um (não modelado)',
-    en: "+0.75% TEAM XP/level for every rock broken while it is on the field, split like normal XP; two carriers never exceed one's maximum (not modeled)",
+    pt: '+0.75% XP do TIME/nível por rocha quebrada com ele em campo, dividido como o XP normal; dois portadores não passam do máximo de um',
+    en: "+0.75% TEAM XP/level for every rock broken while it is on the field, split like normal XP; two carriers never exceed one's maximum",
   },
 };
 

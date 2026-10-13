@@ -42,5 +42,6 @@ export function runHeroFarmOptimize(state: PlannerStore): HeroFarmOptimizeResult
     maxPhase: state.maxPhase,
     returnBonus: state.farmReturnBonus,
     pass: state.farmPass,
+    boost: state.farmBoost,
   });
 }

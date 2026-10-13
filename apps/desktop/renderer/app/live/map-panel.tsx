@@ -167,7 +167,7 @@ function EconomyFigure({
 }: {
   testId: string;
   label: string;
-  value: number | undefined;
+  value: number | null | undefined;
   lang: Lang;
   className: string;
 }) {
@@ -175,7 +175,7 @@ function EconomyFigure({
     <div className="flex min-w-0 flex-col gap-1">
       <span className="text-[10.5px] uppercase tracking-[0.06em] text-muted whitespace-nowrap">{label}</span>
       <span data-testid={testId} className={className}>
-        {value === undefined ? EM_DASH : formatCompactNumber(value, lang)}
+        {value == null ? EM_DASH : formatCompactNumber(value, lang)}
       </span>
     </div>
   );

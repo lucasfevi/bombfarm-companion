@@ -46,8 +46,8 @@ describe('gear compare chrome copy', () => {
     }
   });
 
-  it('does not render a Was/changed-from line in SlotEditor', () => {
-    const src = readFileSync(resolve(__dirname, '../features/gear/components/slot-editor.tsx'), 'utf8');
+  it('does not render a Was/changed-from line in the slot editor', () => {
+    const src = readFileSync(resolve(__dirname, '../../../../packages/hero/src/components/gear-slot-editor.tsx'), 'utf8');
     expect(src).not.toMatch(/changedFrom/);
     expect(src).not.toMatch(/Was:/);
     expect(src).not.toMatch(/current\?:/);
@@ -61,11 +61,12 @@ describe('gear compare chrome copy', () => {
  * `setName`, not a hand-written string, so a re-key that renames a set is visible here too.
  */
 describe('gear slot set select removal', () => {
-  const src = readFileSync(resolve(__dirname, '../features/gear/components/slot-editor.tsx'), 'utf8');
+  const src = readFileSync(resolve(__dirname, '../../../../packages/hero/src/components/gear-slot-editor.tsx'), 'utf8');
 
-  it('renders three selects per slot — level, rarity, forge', () => {
-    expect(src.match(/<Select\b/g) ?? []).toHaveLength(3);
-    expect(src).toContain('aria-label={t.itemLevel}');
+  it('renders three selects per slot — a searchable level, rarity, forge', () => {
+    expect(src.match(/<Select\b/g) ?? []).toHaveLength(2);
+    expect(src.match(/<SearchSelect\b/g) ?? []).toHaveLength(1);
+    expect(src).toContain('aria-label={`${t.itemLevel}: ');
     expect(src).toContain('aria-label={t.itemRarity}');
     expect(src).toContain('aria-label={t.forgeLevel}');
   });

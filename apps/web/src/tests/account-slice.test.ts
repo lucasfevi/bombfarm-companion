@@ -96,7 +96,7 @@ describe('account slice', () => {
     expect(normalized.tree.xpMult).toBe(1);
   });
 
-  it('applyAccountImport writes tree.xpMult, defaulting absence to 1', () => {
+  it('applyAccountImport writes tree.xpMult, and an import without one withholds it (null), never 1', () => {
     usePlannerStore.getState().applyAccountImport({
       tree: { ...sampleTree, xpMult: 1.56 },
       houseIdx: null,
@@ -111,7 +111,7 @@ describe('account slice', () => {
       houseLevel: null,
       phase: null,
     });
-    expect(usePlannerStore.getState().treeXpMult).toBe(1);
+    expect(usePlannerStore.getState().treeXpMult).toBeNull();
   });
 
   it('selectAccountShared returns a stable reference while the account tuple is unchanged', () => {

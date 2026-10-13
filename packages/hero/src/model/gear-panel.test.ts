@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gearPanelReading } from './gear-panel';
+import { currentGearEditable, gearPanelReading } from './gear-panel';
 
 describe('gearPanelReading', () => {
   it('an editing host that injects a slot editor keeps every control the panel has always drawn', () => {
@@ -48,5 +48,17 @@ describe('gearPanelReading', () => {
       showCompareControls: false,
       showCompare: false,
     });
+  });
+});
+
+describe('currentGearEditable', () => {
+  it('a host that edits only the clone leaves the current gear read-only', () => {
+    expect(currentGearEditable({ canPatchCurrent: false, hasSlotEditor: true })).toBe(false);
+    expect(gearPanelReading({ editable: true, hasSlotEditor: true }).showSlotEditors).toBe(true);
+  });
+
+  it('current gear is editable only with both a patch callback and a slot editor', () => {
+    expect(currentGearEditable({ canPatchCurrent: true, hasSlotEditor: true })).toBe(true);
+    expect(currentGearEditable({ canPatchCurrent: true, hasSlotEditor: false })).toBe(false);
   });
 });

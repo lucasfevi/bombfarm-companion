@@ -15,7 +15,10 @@ import { describe, expect, it } from 'vitest';
 import { emptyLoadout, emptySheet } from '@bombfarm/domain/gear';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import {
+  APPRENTICE_XP_CAP,
+  APPRENTICE_XP_PER_RANK,
   TEAM_BUFF_ABILITY_IDS,
+  apprenticeXpMult,
   TEAM_BUFF_CAP,
   TEAM_BUFF_PER_LEVEL,
   computeTeamBuffsFromDeployed,
@@ -157,5 +160,27 @@ describe('every aura id is priced, and an empty roster is a total function', () 
     for (const [id, cap] of Object.entries(TEAM_BUFF_CAP)) {
       expect(out[id as keyof typeof TEAM_BUFF_CAP]).toBeCloseTo(cap, 9);
     }
+  });
+});
+
+describe('Aprendiz over a rotation — the same capped expectation as the standing auras', () => {
+  it('reads its per-rank add off the catalog and caps at one carrier’s maximum', () => {
+    expect(APPRENTICE_XP_PER_RANK).toBeCloseTo(0.0075, 15);
+    expect(APPRENTICE_XP_CAP).toBeCloseTo(20 * APPRENTICE_XP_PER_RANK, 15);
+  });
+
+  it('a carrier always on the field is its rank’s add; none, or one never there, is ×1', () => {
+    expect(apprenticeXpMult([{ rank: 20, presence: 1 }])).toBeCloseTo(1.15, 15);
+    expect(apprenticeXpMult([{ rank: 10, presence: 1 }])).toBeCloseTo(1.075, 15);
+    expect(apprenticeXpMult([])).toBe(1);
+    expect(apprenticeXpMult([{ rank: 20, presence: 0 }])).toBe(1);
+  });
+
+  it('two rank-20 carriers on the field together give the cap, not the sum', () => {
+    expect(apprenticeXpMult([{ rank: 20, presence: 1 }, { rank: 20, presence: 1 }])).toBeCloseTo(1.15, 15);
+  });
+
+  it('two half-present rank-20 carriers cover three quarters of wall clock, not all of it', () => {
+    expect(apprenticeXpMult([{ rank: 20, presence: 0.5 }, { rank: 20, presence: 0.5 }])).toBeCloseTo(1 + 0.15 * 0.75, 15);
   });
 });

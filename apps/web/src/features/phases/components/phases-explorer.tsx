@@ -15,6 +15,7 @@ import {
   selectActiveHeroId,
   selectRosterAccount,
   selectFarmRankingRows,
+  selectFarmXpPerPropMult,
   selectPhasesViewPhase,
   commitActiveHero,
 } from '@/shared/stores';
@@ -34,6 +35,7 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
   const activeHeroId = usePlannerStore(selectActiveHeroId);
   const account = usePlannerStore(useShallow(selectRosterAccount));
   const farmRows = usePlannerStore(selectFarmRankingRows);
+  const xpPerPropMult = usePlannerStore(selectFarmXpPerPropMult);
 
   const selectHero = useCallback((hero: HeroRecord) => {
     commitActiveHero(hero);
@@ -57,7 +59,7 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
     <PhasesExplorerView
       t={t}
       lang={lang}
-      data={{ phase, heroes, activeHeroId, account, farmRows }}
+      data={{ phase, heroes, activeHeroId, account, farmRows, xpPerPropMult }}
       actions={{ setPhasesViewPhase, onSelectHero: selectHero }}
       slots={slots}
     />

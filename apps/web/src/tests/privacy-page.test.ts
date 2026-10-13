@@ -32,8 +32,13 @@ describe('privacy page', () => {
   }
 
   it('dates the policy in each language', () => {
-    expect(render('en')).toContain('Last updated September 29, 2026');
-    expect(render('pt')).toContain('Atualizada em 29 de setembro de 2026');
+    expect(render('en')).toContain('Last updated October 13, 2026');
+    expect(render('pt')).toContain('Atualizada em 13 de outubro de 2026');
+  });
+
+  it('says a Premium sign-in keeps only the account id, never an email, in each language', () => {
+    expect(render('en')).toContain('We ask Discord and Google only for that id — not your email, name or picture.');
+    expect(render('pt')).toContain('Pedimos ao Discord e ao Google só esse id — não o seu e-mail, nome ou foto.');
   });
 
   it('says who can see the account records, and where, in each language', () => {

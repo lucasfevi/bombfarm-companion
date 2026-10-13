@@ -79,12 +79,17 @@ describe('ownAbilityReadout — the model’s own arithmetic read back', () => {
     expect(ownAbilityReadout('not_an_ability', 10)).toEqual({ kind: 'none' });
   });
 
-  it('the abilities the combat model never prices still read their published per-level figure', () => {
+  it('the abilities nothing prices still read their published per-level figure', () => {
     expect(ownAbilityReadout('caca_hero', 10)).toEqual({ kind: 'cageDmgPct', value: 50 });
     expect(ownAbilityReadout('fantasma', 20)).toEqual({ kind: 'passageAttackPct', value: 1 });
     expect(ownAbilityReadout('olho_lapidador', 20)).toEqual({ kind: 'dropTierPct', value: 50 });
+  });
+
+  it('Veia de Ouro and Fortuna read as gold at their rank, and the farm board prices them', () => {
     expect(ownAbilityReadout('veia_ouro', 20)).toEqual({ kind: 'goldPct', value: 40 });
     expect(ownAbilityReadout('fortuna', 20)).toEqual({ kind: 'goldPct', value: 10 });
+    expect(isPricedReadout(ownAbilityReadout('veia_ouro', 20))).toBe(true);
+    expect(isPricedReadout(ownAbilityReadout('fortuna', 20))).toBe(true);
   });
 
   it('every ability whose effect the model skips has a published figure, and it matches its effect text', () => {
@@ -99,6 +104,12 @@ describe('ownAbilityReadout — the model’s own arithmetic read back', () => {
     expect(ownAbilityReadout('matilha', 10)).toEqual({ kind: 'packDmgPctPerAlly', value: 5 });
     expect(ownAbilityReadout('passagem_bastao', 10)).toEqual({ kind: 'teamPulseDmgPct', value: 40 });
     expect(abilityMods({ matilha: 10, passagem_bastao: 10 }).dmgMult).toBe(1);
+  });
+
+  it('Aprendiz reads as team XP at its rank, and the farm board prices it', () => {
+    const readout = ownAbilityReadout('aprendiz', 20);
+    expect(readout).toEqual({ kind: 'xpPct', value: 15 });
+    expect(isPricedReadout(readout)).toBe(true);
   });
 
   it('Brecha as a team aura reads in penetration points at the amount asked for', () => {

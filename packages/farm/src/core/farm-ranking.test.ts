@@ -53,6 +53,7 @@ function baseInputs(overrides: Partial<FarmInputs> = {}): FarmInputs {
     treeEnergy: 14,
     treeTeamCoinPct: 15,
     treeLuckFlatPct: 16,
+    treeXpMult: 17,
     houseIdx: 2,
     houseLevel: 3,
     slots: 4,
@@ -64,6 +65,7 @@ function baseInputs(overrides: Partial<FarmInputs> = {}): FarmInputs {
     farmPoolOverrides: {},
     farmReturnBonus: 'on',
     farmPass: true,
+    farmBoost: { gold: true, xp: false, drop: true },
     aurasAtCap: ['grito_guerra'],
     ...overrides,
   };
@@ -86,6 +88,7 @@ describe('computeFarmRanking — what actually reaches the delegate', () => {
     expect(input.enabledHeroIds).toEqual(['unflagged', 'barred']);
     expect(input.returnBonus).toBe('on');
     expect(input.pass).toBe(true);
+    expect(input.boost).toEqual({ gold: true, xp: false, drop: true });
     expect(input.maxPhase).toBe(8);
     expect(result).toEqual({ rows: [ROW], reason: null });
   });
@@ -110,6 +113,7 @@ describe('computeFarmRanking — what actually reaches the delegate', () => {
       energy: 14,
       teamCoinPct: 15,
       luckFlatPct: 16,
+      xpMult: 17,
     });
     expect(account.context.houseIdx).toBe(2);
     expect(account.context.houseLevel).toBe(3);
@@ -120,6 +124,12 @@ describe('computeFarmRanking — what actually reaches the delegate', () => {
     expect(account.houseCycleSecsLevel).toBe(7);
     expect(account.maxPhase).toBe(8);
     expect(account.aurasAtCap).toBe(inputs.aurasAtCap);
+  });
+
+  it('omits the XP multiplier when the host has none, so the rows withhold XP rather than price it at 1', () => {
+    computeFarmRanking(baseInputs({ treeXpMult: null }));
+
+    expect('xpMult' in delegate.mock.calls[0][0].account.tree).toBe(false);
   });
 
   it('omits the House slots key entirely when the host has no figure, rather than sending it undefined', () => {

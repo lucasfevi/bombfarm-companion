@@ -14,6 +14,7 @@ import { createFarmSnapshotStore, farmBoardStale } from './use-farm-snapshot';
 import { skillTotals } from '../account/skill-totals.test-support';
 
 const CONTROLS: FarmControls = { farmPoolOverrides: {}, farmReturnBonus: 'off', aurasAtCap: [] };
+const XP_BOOST = { gold: false, xp: true, drop: false };
 
 function fidelityAt(capturedAt: string): AccountFidelity {
   return {
@@ -182,6 +183,27 @@ describe('the snapshot store computes once and does not follow the live account'
   });
 });
 
+describe('the running Boosts are frozen with the snapshot', () => {
+  it('the board is computed under the Boosts it was opened with, and hands them to the screen', () => {
+    const { store, open } = createFarmSnapshotStore();
+    const first = viewAtLevel(10);
+    open(first.view, first.key, CONTROLS, XP_BOOST);
+    expect(settledBoard(store.getState())?.inputs.farmBoost).toBe(XP_BOOST);
+  });
+
+  it('a control change recomputes under the frozen Boosts, never ones read since', () => {
+    const { store, open, setControls } = createFarmSnapshotStore();
+    const first = viewAtLevel(10);
+    open(first.view, first.key, CONTROLS, XP_BOOST);
+    open(first.view, first.key, CONTROLS);
+    setControls({ ...CONTROLS, farmReturnBonus: 'on' });
+    const after = store.getState();
+    if (after.status !== 'ready') throw new Error('expected ready');
+    expect(after.inputs.farmReturnBonus).toBe('on');
+    expect(after.inputs.farmBoost).toBe(XP_BOOST);
+  });
+});
+
 describe('a snapshot is stale when the BOARD would compute differently, not when any byte moved', () => {
   function opened() {
     const store = createFarmSnapshotStore();
@@ -219,6 +241,17 @@ describe('a snapshot is stale when the BOARD would compute differently, not when
     setControls({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'on', aurasAtCap: [] });
     const live = viewOf(payloadWithGold(10, '5000'));
     expect(farmBoardStale(store.getState(), live.view)).toBe(false);
+  });
+
+  it('a Boost starting or ending IS staleness — the board is priced under the Boosts it was opened with', () => {
+    const { store } = opened();
+    const same = viewOf(payloadWithGold(10, '1000'));
+    expect(farmBoardStale(store.getState(), same.view, XP_BOOST)).toBe(true);
+
+    const boosted = createFarmSnapshotStore();
+    boosted.open(same.view, same.key, CONTROLS, XP_BOOST);
+    expect(farmBoardStale(boosted.store.getState(), same.view, XP_BOOST)).toBe(false);
+    expect(farmBoardStale(boosted.store.getState(), same.view)).toBe(true);
   });
 
   it('no board and no account are both "nothing to be stale about"', () => {

@@ -1,6 +1,7 @@
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { InventorySnapshot } from '@bombfarm/domain/inventory';
 import type { Collection } from '@bombfarm/domain/model';
+import type { EconomyBoost, ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 
 export type TeamPlanInputs = {
   heroes: readonly HeroRecord[];
@@ -29,6 +30,10 @@ export type TeamPlanInputs = {
   maxPhase: number | null;
   /** Whether the Pass is active — the farm board's own flag, so a gold figure here and there agree. */
   farmPass: boolean;
+  /** The Boosts running — the farm board's own, for the same reason. Absent reads as none. */
+  farmBoost?: EconomyBoost | undefined;
+  /** The farm board's Return Bonus switch, for the same reason. Absent reads as off. */
+  farmReturnBonus?: ReturnBonusMode | undefined;
   /** Already resolved by the host: the farm screen's phase when the player chose one there, else
    *  null. Web: `phasesViewPhaseChosen ? phasesViewPhase : null`. Desktop: the Farm view
    *  storage's `selectedPhase`. Resolved here because the "chosen" flag is each host's own. */

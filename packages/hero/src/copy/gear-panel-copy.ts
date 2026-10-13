@@ -67,4 +67,23 @@ export type GearPanelCopy = {
   reCopy: string;
   applyCompare: string;
   clearCompare: string;
+
+  clear: string;
+  itemLevel: string;
+  itemLevelOpt: string;
+  itemLevelSearch: string;
+  itemLevelEmpty: string;
+  itemRarity: string;
+  forgeLevel: string;
+};
+
+/**
+ * The clone-versus-current stat table under the comparison. Kept out of `GearPanelCopy` because it
+ * is opt-in: a host that does not draw the table owes none of this vocabulary.
+ */
+export type SheetCloneCopy = {
+  panelCloneSheet: string;
+  cloneSheetTip: string;
+  critAuraCapTip: string;
+  colSheetDeltaClone: string;
 };

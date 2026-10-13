@@ -77,7 +77,12 @@ export type LiveFrameWireSymbol =
   | 'auraFieldM'
   | 'auraFieldN'
   | 'bonusSeconds'
-  | 'bonusMultiplier';
+  | 'bonusMultiplier'
+  | 'xpGained'
+  | 'boostsList'
+  | 'boostAxis'
+  | 'boostSecondsLeft'
+  | 'boostMultiplier';
 
 const KEY_ENTRIES: ReadonlyArray<{
   readonly symbol: LiveFrameWireSymbol;
@@ -365,6 +370,44 @@ const KEY_ENTRIES: ReadonlyArray<{
     description:
       'Gold-bonus multiplier active during a bonus window. Absent from the capture this lexicon is built from — ' +
       'documented as arriving per tick during one, alongside `bonus_secs`.',
+    origin: 'english',
+  },
+  {
+    symbol: 'xpGained',
+    wireToken: 'xp_ganha',
+    domainField: 'xpGained',
+    description:
+      'Portuguese `ganha` = gained. XP the server awarded on this tick, one number summed over every hero on ' +
+      "the field, with every multiplier already applied (the account's, the Pass, the Return Bonus, a Boost, " +
+      "each hero's XP runes). Arrives on every tick that carries `loot`.",
+    origin: 'portuguese',
+  },
+  {
+    symbol: 'boostsList',
+    wireToken: 'boosts',
+    domainField: 'boosts',
+    description: 'The Boosts running on the account, one entry per running Boost. Sent only while at least one runs.',
+    origin: 'english',
+  },
+  {
+    symbol: 'boostAxis',
+    wireToken: 'e',
+    domainField: 'axis',
+    description: 'Which axis the Boost applies to: `gold`, `xp` or `drop`.',
+    origin: 'english',
+  },
+  {
+    symbol: 'boostSecondsLeft',
+    wireToken: 's',
+    domainField: 'secondsLeft',
+    description: 'Seconds of Boost left on that axis.',
+    origin: 'english',
+  },
+  {
+    symbol: 'boostMultiplier',
+    wireToken: 'm',
+    domainField: 'mult',
+    description: 'The Boost multiplier on that axis (observed `2`).',
     origin: 'english',
   },
 ];

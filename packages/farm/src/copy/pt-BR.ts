@@ -38,7 +38,7 @@ export const farmPtBR: FarmCopy = {
   phasesItemDrops: "Drops de item",
   phasesItemDropsValue: "Itens nível {range}",
   phasesXpPerProp: "XP por prop",
-  phasesXpActualHint: "valor base × o multiplicador de XP da sua árvore de habilidades",
+  phasesXpActualHint: "valor base × seu multiplicador de XP × o Bônus de Retorno, o Passe e o Boost do quadro de Farm × as runas de XP do seu esquadrão × o Aprendiz em campo",
   phasesGoldComum: "Ouro (Comum)",
   phasesGoldActualHint: "valor base × (1 + o % de ouro do time da sua árvore de habilidades)",
   phasesAvgGold: "Ouro médio / prop",
@@ -111,6 +111,9 @@ export const farmPtBR: FarmCopy = {
   farmRankingColOneShot: "Um golpe",
 
   farmRankingTitle: "Ranking de Farm",
+  farmRankingXpNoImportLabel: "XP por hora",
+  farmRankingXpNoImportTip:
+    "O XP por hora não inclui os bônus de XP da sua conta até você importar um save.",
   farmRankingCaption: "Todas as fases da wiki rankeadas pelo que pagam a esta conta por hora",
   farmRankingEmptyNoRosterTitle: "Ainda sem roster",
   farmRankingEmptyNoRosterDesc: "Adicione heróis no Planner para rankear fases para sua conta.",
@@ -146,6 +149,13 @@ export const farmPtBR: FarmCopy = {
   farmRankingPassTip:
     "+{gold}% de ouro, +{xp}% de XP e +{drop}% de chance de drop, sempre ativos. Com o Passe, o Bônus de Retorno é +{returnPass}% em vez de +{returnBase}%.",
   farmRankingPassTipDetected: "Lido da sua conta.",
+  farmRankingBoostLabel: "Boost",
+  farmRankingBoostGold: "Ouro",
+  farmRankingBoostXp: "XP",
+  farmRankingBoostDrop: "Drop",
+  farmRankingBoostTip:
+    "+{pct}% no seu eixo enquanto um Boost estiver ativo, somado ao Bônus de Retorno e ao Passe em vez de multiplicado por eles.",
+  farmRankingBoostTipDetected: "Lido do jogo em execução.",
   farmRankingGateBadge: "Portão",
   farmRankingOneShotYes: "Sim",
   farmRankingOneShotNo: "Não",

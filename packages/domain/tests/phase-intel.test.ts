@@ -27,3 +27,17 @@ describe('phase-intel', () => {
     expect(mitigationLossPct(30, 50)).toBeCloseTo(15, 6);
   });
 });
+
+describe('computePhaseIntelGlobal — XP multiplier', () => {
+  it('scales the per-prop XP by the multiplier it is given', () => {
+    const intel = computePhaseIntelGlobal(171, { xpMult: 2.5 })!;
+    expect(intel.xpWithheld).toBe(false);
+    expect(intel.xpPerPropActual).toBeCloseTo(intel.xpPerPropWiki * 2.5, 9);
+  });
+
+  it('withholds the boosted figure when the account carries no multiplier', () => {
+    const intel = computePhaseIntelGlobal(171, { xpMult: null })!;
+    expect(intel.xpWithheld).toBe(true);
+    expect(intel.xpPerPropActual).toBe(intel.xpPerPropWiki);
+  });
+});

@@ -8,7 +8,7 @@ import { NO_COLLECTION } from '@bombfarm/domain/model';
  * The dependency tuple is the whole recompute contract, and its failure mode is silent: a field
  * left out of it is a planner edit that does not recompute the board, with no error anywhere and
  * a stale table that still looks like a real answer. Nothing else in this package catches that,
- * so the table below names all 20 members by the POSITION they occupy and proves, per member,
+ * so the table below names every member by the POSITION they occupy and proves, per member,
  * that it is the only position a change to it moves — and that a change to it forces a fresh
  * compute while an equal-valued input object does not.
  */
@@ -33,6 +33,7 @@ function baseInputs(): FarmInputs {
     treeEnergy: 0,
     treeTeamCoinPct: 0,
     treeLuckFlatPct: 0,
+    treeXpMult: 1,
     houseIdx: 0,
     houseLevel: 0,
     slots: 9,
@@ -93,12 +94,18 @@ const TUPLE_MEMBERS: readonly TupleMember[] = [
   // changed, and the domain's frozen empty list when it offers no control at all.
   { index: 19, name: 'aurasAtCap', change: (i) => ({ ...i, aurasAtCap: ['grito_guerra'] }) },
   { index: 20, name: 'farmPass', change: (i) => ({ ...i, farmPass: true }) },
+  // By axis value: each Boost is a primitive member, so a rebuilt-but-equal Boost record is not a
+  // change.
+  { index: 21, name: 'farmBoost.gold', change: (i) => ({ ...i, farmBoost: { gold: true, xp: false, drop: false } }) },
+  { index: 22, name: 'farmBoost.xp', change: (i) => ({ ...i, farmBoost: { gold: false, xp: true, drop: false } }) },
+  { index: 23, name: 'farmBoost.drop', change: (i) => ({ ...i, farmBoost: { gold: false, xp: false, drop: true } }) },
+  { index: 24, name: 'treeXpMult', change: (i) => ({ ...i, treeXpMult: 2.35 }) },
 ];
 
 describe('readFarmDepTuple', () => {
-  it('has exactly 21 members, one per named member of the table below', () => {
-    expect(readFarmDepTuple(baseInputs())).toHaveLength(21);
-    expect(TUPLE_MEMBERS).toHaveLength(21);
+  it('has exactly 25 members, one per named member of the table below', () => {
+    expect(readFarmDepTuple(baseInputs())).toHaveLength(25);
+    expect(TUPLE_MEMBERS).toHaveLength(25);
     expect(TUPLE_MEMBERS.map((member) => member.index)).toEqual(
       TUPLE_MEMBERS.map((_, position) => position),
     );

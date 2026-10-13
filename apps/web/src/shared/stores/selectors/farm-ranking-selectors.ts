@@ -25,6 +25,7 @@
 import {
   buildAccount as buildFarmAccount,
   computeFarmTeamBuffs,
+  computeFarmXpPerPropMult,
   createFarmRankingMemo,
   deriveFarmPoolEntries,
   farmDepsEqual,
@@ -65,6 +66,7 @@ function toFarmInputs(state: PlannerStore): FarmInputs {
     treeEnergy: state.treeEnergy,
     treeTeamCoinPct: state.treeTeamCoinPct,
     treeLuckFlatPct: state.treeLuckFlatPct,
+    treeXpMult: state.treeXpMult,
     treeCollection: state.treeCollection ?? undefined,
     houseIdx: state.houseIdx,
     houseLevel: state.houseLevel,
@@ -77,6 +79,7 @@ function toFarmInputs(state: PlannerStore): FarmInputs {
     farmPoolOverrides: state.farmPoolOverrides,
     farmReturnBonus: state.farmReturnBonus,
     farmPass: state.farmPass,
+    farmBoost: state.farmBoost,
     // This app offers no control for it: the board prices every aura as the pool sustains it.
     aurasAtCap: NO_AURAS_AT_CAP,
   };
@@ -86,7 +89,7 @@ export function farmInputsOf(state: PlannerStore): FarmInputs {
   return toFarmInputs(state);
 }
 
-/** The 19 planner edits the board must react to. See the package's own header for what each
+/** The planner edits the board must react to. See the package's own header for what each
  *  member is there to catch and why a missing one fails silently. */
 export function readFarmDepTuple(state: PlannerStore) {
   return readFarmInputsDepTuple(toFarmInputs(state));
@@ -169,3 +172,12 @@ export function selectFarmPoolEntries(state: PlannerStore): FarmPoolEntry[] {
 
 export const selectFarmReturnBonus = (state: PlannerStore) => state.farmReturnBonus;
 export const selectFarmPass = (state: PlannerStore) => state.farmPass;
+export const selectFarmBoost = (state: PlannerStore) => state.farmBoost;
+export const selectFarmXpBonusUnknown = (state: PlannerStore) =>
+  state.importedAt === null && state.treeXpMult === 1;
+
+/** What the Phases panel multiplies one prop's wiki XP by — the board's own multiplier, so the
+ *  two print one figure. */
+export function selectFarmXpPerPropMult(state: PlannerStore): number | null {
+  return computeFarmXpPerPropMult(toFarmInputs(state));
+}

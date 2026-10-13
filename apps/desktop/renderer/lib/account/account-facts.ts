@@ -73,7 +73,7 @@ export interface AccountTreeFacts {
   energyPct: number;
   teamCoinPct: number;
   luckFlatPct: number;
-  xpMultiplier: number;
+  xpMultiplier: number | null;
   fieldSlotsBonus: number;
   bagTabsBonus: number;
   fieldSlots: number | null;

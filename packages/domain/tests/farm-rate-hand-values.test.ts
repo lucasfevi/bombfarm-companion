@@ -182,10 +182,10 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
   const shareDenom = perHero.reduce((sum, x) => sum + x.term, 0);
   const bossRateSum = perHero.reduce((sum, x) => sum + x.bossTerm, 0);
   const heroesOnField = perHero.reduce((sum, x) => sum + x.onField, 0);
-  // House-ALLOCATED basis, not the unconstrained one — same `onField` term `heroesOnField` sums.
+  // Each carrier's own uptime, like every team aura; the cap is not in reach on this fixture.
   const fortunaAura = Math.min(
     FORTUNA_AURA_CAP,
-    perHero.reduce((sum, x) => sum + x.onField * LOOT_ABILITY_VALUES.fortuna.perLevel * x.hero.fortunaLevel, 0),
+    perHero.reduce((sum, x) => sum + x.hero.uptime * LOOT_ABILITY_VALUES.fortuna.perLevel * x.hero.fortunaLevel, 0),
   );
   // The FIELD QUEUE, applied after the House ceiling — to the heroes the House can keep fed.
   const concurrencyScale = handFieldQueueScale(
@@ -230,7 +230,7 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
 
   const sorteMult = 1 + squad.sorteFraction;
   const chestsPerHour = propsPerHour * DROP_RATES.chest * sorteMult * 1;
-  const xpPerHour = propsPerHour * xpPerProp(phase) * squad.xpMult * 1;
+  const xpPerHour = propsPerHour * xpPerProp(phase) * squad.xpMult! * 1;
 
   return {
     heroesOnField,
@@ -269,7 +269,7 @@ describe('phase 42 — non-gate hand-computed values', () => {
     expect(row.heroesOnField).toBeLessThan(squad.uptimeSum);
   });
 
-  it('fortunaAura matches the hand-derived House-allocated basis (0 here — the fixture carries no Fortuna)', () => {
+  it('fortunaAura matches the hand-derived uptime basis (0 here — the fixture carries no Fortuna)', () => {
     expect(row.fortunaAura).toBe(hand.fortunaAura);
     expect(row.fortunaAura).toBe(0);
   });
@@ -298,7 +298,7 @@ describe('phase 42 — non-gate hand-computed values', () => {
   });
 
   it('xpPerHour matches propsPerHour × xpPerProp(42) × squad.xpMult (issue #127)', () => {
-    expect(Math.abs(row.xpPerHour - hand.xpPerHour) / hand.xpPerHour).toBeLessThan(TOL);
+    expect(Math.abs(row.xpPerHour! - hand.xpPerHour) / hand.xpPerHour).toBeLessThan(TOL);
     // Sanity: the fixture's own xp_mult really is non-identity, so this assertion could not pass
     // by accident if buildRow silently dropped the term (as it did before issue #127's fix).
     expect(squad.xpMult).not.toBe(1);
@@ -329,7 +329,7 @@ describe('phase 10 — gate hand-computed values', () => {
     expect(Math.abs(row.propsPerHour - hand.propsPerHour) / hand.propsPerHour).toBeLessThan(TOL);
     expect(Math.abs(row.goldPerHour - hand.goldPerHour) / hand.goldPerHour).toBeLessThan(TOL);
     expect(Math.abs(row.chestsPerHour - hand.chestsPerHour) / hand.chestsPerHour).toBeLessThan(TOL);
-    expect(Math.abs(row.xpPerHour - hand.xpPerHour) / hand.xpPerHour).toBeLessThan(TOL);
+    expect(Math.abs(row.xpPerHour! - hand.xpPerHour) / hand.xpPerHour).toBeLessThan(TOL);
   });
 
   it('cyclesPerHour includes the boss term (the integral + 1/bossPerSec)', () => {

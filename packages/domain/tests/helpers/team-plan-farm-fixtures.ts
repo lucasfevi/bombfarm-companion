@@ -139,7 +139,7 @@ export function loadTeamPlanFarmFixture(
       fieldSlots: data.fieldSlots ?? data.slots ?? DEFAULT_CASA_SLOTS,
       cycleSecs: data.houseCycleSecs ?? null,
       teamCoinPct: tree.teamCoinPct ?? 0,
-      xpMult: tree.xpMult,
+      xpMult: tree.xpMult ?? undefined,
       maxPhase: data.maxPhase ?? null,
     },
     scopeByHeroId,

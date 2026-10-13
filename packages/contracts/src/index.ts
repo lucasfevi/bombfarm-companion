@@ -140,6 +140,8 @@ export type {
   CreditAmounts,
   FieldCountdown,
   LiveBomb,
+  LiveBoost,
+  LiveBoostAxis,
   LiveCurrency,
   LiveDiagnosticsDumpOutcome,
   LiveDiagnosticsDumpReason,
@@ -163,7 +165,7 @@ export type {
   RecoveryCountdown,
   UnattributedReason,
 } from './live-source.js';
-export { energyDisplayPercent, isActionableGap, isConnectedCurrency, isLiveCurrency, liveGap, LIVE_DISPLAY_REFRESH_MS, sameLiveDamage, UNATTRIBUTED_REASONS } from './live-source.js';
+export { energyDisplayPercent, isActionableGap, isConnectedCurrency, isLiveCurrency, liveGap, LIVE_DISPLAY_REFRESH_MS, NO_BOOST_AXES, runningBoostAxes, sameBoostAxes, sameLiveDamage, UNATTRIBUTED_REASONS } from './live-source.js';
 export type {
   MarketQuoteCurrency,
   MarketQuoteFailureReason,

@@ -4,10 +4,10 @@
 // exception to "computeFarmRates' module is imported in exactly one file" (see farm-ranking-guards.test.ts guard (f)).
 // Re-exported below so the slice / components reference the type through this file, not a
 // second direct import site.
-import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
-import { normalizeStoredReturnBonus } from '@bombfarm/farm/core';
+import type { EconomyBoost, ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import { NO_ECONOMY_BOOST, normalizeStoredReturnBonus } from '@bombfarm/farm/core';
 
-export type { ReturnBonusMode };
+export type { EconomyBoost, ReturnBonusMode };
 
 const PHASES_VIEW_KEY = 'bf-hp-phases-view-v1';
 
@@ -31,6 +31,8 @@ export type PhasesViewState = {
   farmReturnBonus?: ReturnBonusMode;
   /** Pass ownership. Absent => follows a legacy stored `'vip'` return bonus, else `false`. */
   farmPass?: boolean;
+  /** The Boosts running, per axis. Absent or a non-boolean axis => that axis off. */
+  farmBoost?: EconomyBoost;
 };
 
 export function defaultPhasesView(): PhasesViewState {
@@ -75,6 +77,14 @@ function normalizeReturnBonusAndPass(record: Record<string, unknown>): {
   };
 }
 
+function normalizeFarmBoost(raw: unknown): EconomyBoost {
+  if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) return NO_ECONOMY_BOOST;
+  const record = raw as Record<string, unknown>;
+  const axis = (key: keyof EconomyBoost) => record[key] === true;
+  if (!axis('gold') && !axis('xp') && !axis('drop')) return NO_ECONOMY_BOOST;
+  return { gold: axis('gold'), xp: axis('xp'), drop: axis('drop') };
+}
+
 export function loadPhasesView(): PhasesViewState {
   try {
     const raw = localStorage.getItem(PHASES_VIEW_KEY);
@@ -88,6 +98,7 @@ export function loadPhasesView(): PhasesViewState {
       phase: normalizePhase(record.phase),
       farmPool: normalizeFarmPool(record.farmPool),
       ...normalizeReturnBonusAndPass(record),
+      farmBoost: normalizeFarmBoost(record.farmBoost),
     };
   } catch {
     return defaultPhasesView();

@@ -186,6 +186,7 @@ describe('MapFold: the map economy', () => {
 
   it('recomputes when the boosts change under an unchanged phase — the memo is keyed on both', () => {
     const fold = makeFold(realWikiFactsFor);
+    fold.setAccountBoosts({ xpMult: 1, teamCoinPct: 0, collectionGoldPct: 0, pass: false });
     fold.consumeTick(baseTick({ phase: 61 }), 1);
     const before = fold.current?.economy?.xpPerProp ?? 0;
 
@@ -264,8 +265,8 @@ describe('MapFold: the Pass and the Return Bonus window', () => {
     fold.setAccountBoosts(boosts);
     fold.consumeTick(tick, 1);
     const economy = fold.current?.economy;
-    if (!economy) throw new Error('expected an economy');
-    return economy;
+    if (!economy || economy.xpPerProp === null) throw new Error('expected an economy');
+    return { ...economy, xpPerProp: economy.xpPerProp };
   }
 
   const bare = economyOf({ ...BOOSTS, pass: false }, NO_WINDOW);
