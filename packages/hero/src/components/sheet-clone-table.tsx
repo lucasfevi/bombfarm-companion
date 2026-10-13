@@ -86,7 +86,7 @@ export function SheetCloneTable({
         <h2 className={panelTitleClass}>{t.panelCloneSheet}</h2>
       </div>
       <p className={tipClass}>{t.cloneSheetTip}</p>
-      <DataTable.Root scrollable maxRows={11} className="overflow-x-auto">
+      <DataTable.Root className="overflow-x-auto">
         <DataTable.Table className="table-fixed min-w-4xl">
           <colgroup>
             <col className="w-30" />
@@ -95,8 +95,8 @@ export function SheetCloneTable({
               <col key={key} className="w-21" />
             ))}
             <col className="w-22" />
-            <col className="w-28" />
             <col className="w-22" />
+            <col className="w-28" />
           </colgroup>
           <DataTable.Head>
             <DataTable.Row>
@@ -109,10 +109,10 @@ export function SheetCloneTable({
               ))}
               <DataTable.Header align="right">{t.colSheetTotal}</DataTable.Header>
               <DataTable.Header align="right">
-                <span className="min-w-0 truncate">{t.colSheetOverCap}</span>
+                <span className="min-w-0 truncate">{t.colSheetDeltaClone}</span>
               </DataTable.Header>
               <DataTable.Header align="right">
-                <span className="min-w-0 truncate">{t.colSheetDeltaClone}</span>
+                <span className="min-w-0 truncate">{t.colSheetOverCap}</span>
               </DataTable.Header>
             </DataTable.Row>
           </DataTable.Head>
@@ -148,6 +148,14 @@ export function SheetCloneTable({
                   <DataTable.Cell align="right" numeric>
                     {cell('total', true)}
                   </DataTable.Cell>
+                  <DataTable.Cell
+                    align="right"
+                    numeric
+                    className={cn(toneClass[row.cloneDeltaTone])}
+                    data-clone-delta={row.cloneDeltaTone}
+                  >
+                    <b>{cloneDeltaText(row.cloneDelta, row.cloneDeltaTone, boundFormatNumber, unit)}</b>
+                  </DataTable.Cell>
                   <DataTable.Cell align="right" numeric className={mutedClass}>
                     {row.overCap.changed ? (
                       <Stacked
@@ -157,14 +165,6 @@ export function SheetCloneTable({
                     ) : (
                       overCapCurrent
                     )}
-                  </DataTable.Cell>
-                  <DataTable.Cell
-                    align="right"
-                    numeric
-                    className={cn(toneClass[row.cloneDeltaTone])}
-                    data-clone-delta={row.cloneDeltaTone}
-                  >
-                    <b>{cloneDeltaText(row.cloneDelta, row.cloneDeltaTone, boundFormatNumber, unit)}</b>
                   </DataTable.Cell>
                 </DataTable.Row>
               );
