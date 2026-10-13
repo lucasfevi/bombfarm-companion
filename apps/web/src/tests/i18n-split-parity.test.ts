@@ -580,7 +580,7 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanChangesFieldFieldSlots',
   'teamPlanChangesFieldHouseCycleSecs',
   'teamPlanChangesFieldPass',
-  'teamPlanChangesFieldReturnBonus',
+  'teamPlanChangesFieldReturnBonus', 'teamPlanChangesFieldBoostGold', 'teamPlanChangesFieldBoostXp', 'teamPlanChangesFieldBoostDrop',
   'teamPlanChangesControlForgeFloor',
   'teamPlanChangesControlObjective',
   'teamPlanChangesControlAllowedChanges',
