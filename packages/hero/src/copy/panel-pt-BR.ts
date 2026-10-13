@@ -156,6 +156,8 @@ export const gearPanelPtBR: GearPanelCopy = {
   clear: 'Limpar',
   itemLevel: 'Nível do item',
   itemLevelOpt: 'Nível {n} - {set}',
+  itemLevelSearch: 'Buscar sets…',
+  itemLevelEmpty: 'Nenhum set encontrado',
   itemRarity: 'Raridade do item',
   forgeLevel: 'Forja',
 };

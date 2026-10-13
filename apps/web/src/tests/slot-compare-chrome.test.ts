@@ -63,9 +63,10 @@ describe('gear compare chrome copy', () => {
 describe('gear slot set select removal', () => {
   const src = readFileSync(resolve(__dirname, '../../../../packages/hero/src/components/gear-slot-editor.tsx'), 'utf8');
 
-  it('renders three selects per slot — level, rarity, forge', () => {
-    expect(src.match(/<Select\b/g) ?? []).toHaveLength(3);
-    expect(src).toContain('aria-label={t.itemLevel}');
+  it('renders three selects per slot — a searchable level, rarity, forge', () => {
+    expect(src.match(/<Select\b/g) ?? []).toHaveLength(2);
+    expect(src.match(/<SearchSelect\b/g) ?? []).toHaveLength(1);
+    expect(src).toContain('aria-label={`${t.itemLevel}: ');
     expect(src).toContain('aria-label={t.itemRarity}');
     expect(src).toContain('aria-label={t.forgeLevel}');
   });

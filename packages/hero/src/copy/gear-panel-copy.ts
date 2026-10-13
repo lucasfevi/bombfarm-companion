@@ -71,6 +71,8 @@ export type GearPanelCopy = {
   clear: string;
   itemLevel: string;
   itemLevelOpt: string;
+  itemLevelSearch: string;
+  itemLevelEmpty: string;
   itemRarity: string;
   forgeLevel: string;
 };

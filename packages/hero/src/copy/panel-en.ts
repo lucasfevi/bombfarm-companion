@@ -157,6 +157,8 @@ export const gearPanelEn = {
   clear: 'Clear',
   itemLevel: 'Item level',
   itemLevelOpt: 'Level {n} - {set}',
+  itemLevelSearch: 'Search sets…',
+  itemLevelEmpty: 'No matching set',
   itemRarity: 'Item rarity',
   forgeLevel: 'Forge level',
 } as const;
