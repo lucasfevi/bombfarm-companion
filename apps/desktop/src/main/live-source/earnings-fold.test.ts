@@ -191,6 +191,17 @@ describe('EarningsFold: XP is the server’s own per-tick figure', () => {
     expect(fold.xpSessionTotal).toBe(12.5);
   });
 
+  it('keeps that XP out of XP per prop, which divides only what props paid', () => {
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now });
+    fold.consumeTick(baseTick({ phase: 186, loot: [{ cell: 0, gold: 1 }], xpGained: PHASE_186_XP_OUTSIDE_RETURN }), 1);
+    clock.advance(1_000);
+    fold.consumeTick(baseTick({ phase: 186, loot: [], xpGained: 12.5 }), 2);
+
+    expect(fold.xpSessionTotal).toBeCloseTo(PHASE_186_XP_OUTSIDE_RETURN + 12.5, 9);
+    expect(fold.xpPerProp10).toBe(PHASE_186_XP_OUTSIDE_RETURN);
+  });
+
   it('never asks the model on a tick that carries xpGained', () => {
     const modelXpPerProp = vi.fn(() => 1_000);
     foldAfterOneEarningTick({ modelXpPerProp }, baseTick({ phase: 186, loot: [{ cell: 0, gold: 1 }], xpGained: PHASE_186_XP_OUTSIDE_RETURN }));

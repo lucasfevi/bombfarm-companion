@@ -37,6 +37,8 @@ interface Bucket {
   gold: number;
   props: number;
   xp: number;
+  /** The share of {@link xp} paid on a frame that also paid props — what XP per prop divides. */
+  xpWithProps: number;
   streamedMs: number;
 }
 
@@ -120,6 +122,9 @@ export class EarningsFold {
     const xp = this.#xpFor(tick, propsThisTick, now);
     this.#xpTotal += xp;
     bucket.xp += xp;
+    // Rarely the server pays XP on a frame that reports no prop; it is real XP, but counting it
+    // per prop would credit it to props that paid their own.
+    if (propsThisTick > 0) bucket.xpWithProps += xp;
 
     this.#crossCheckGrid(tick, propsThisTick);
   }
@@ -143,9 +148,10 @@ export class EarningsFold {
       this.#ratioWindow = { phase: tick.phase, startedAtMs: now, props: 0, xp: 0 };
     }
     const window = this.#ratioWindow;
+    if (props === 0) return;
     window.props += props;
     window.xp += xp;
-    if (now - window.startedAtMs < XP_MODEL_RATIO_LOG_INTERVAL_MS || window.props === 0) return;
+    if (now - window.startedAtMs < XP_MODEL_RATIO_LOG_INTERVAL_MS) return;
 
     const measured = window.xp / window.props;
     const model = this.#deps.modelXpPerProp(tick);
@@ -222,7 +228,7 @@ export class EarningsFold {
     const last = this.#buckets[this.#buckets.length - 1];
     if (last && last.startedAtMs === startedAtMs) return last;
 
-    const bucket: Bucket = { startedAtMs, gold: 0, props: 0, xp: 0, streamedMs: 0 };
+    const bucket: Bucket = { startedAtMs, gold: 0, props: 0, xp: 0, xpWithProps: 0, streamedMs: 0 };
     this.#buckets.push(bucket);
     if (this.#buckets.length > RING_CAPACITY) this.#buckets.shift();
     return bucket;
@@ -309,7 +315,7 @@ export class EarningsFold {
   get xpPerProp10(): number | null {
     const props = this.#windowSum((bucket) => bucket.props);
     if (props === 0) return null;
-    return this.#windowSum((bucket) => bucket.xp) / props;
+    return this.#windowSum((bucket) => bucket.xpWithProps) / props;
   }
 
   get propsPerMinute10(): number | null {
