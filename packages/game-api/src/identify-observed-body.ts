@@ -1,6 +1,7 @@
 import type { AccountSection } from '@bombfarm/contracts';
 import { ROUTE_FINGERPRINTS, type RouteFingerprint } from './fingerprints.js';
 import { isCollectionsStateBody } from './collections/identify.js';
+import { isPhaseEconomyBody } from './phase-economy/parse.js';
 import { identifyPvpBody, type PvpRoute } from './pvp/identify.js';
 import { checkShape } from './shape.js';
 import { isPlainObject } from './type-guards.js';
@@ -19,6 +20,9 @@ import { isPlainObject } from './type-guards.js';
  * `collections` is the Collections state, told apart by its complete key set at every level
  * ({@link isCollectionsStateBody}); like a section fingerprint, a key the game adds anywhere turns
  * it into `unidentified`. The app's own read of the route does not need the verdict.
+ *
+ * `phaseEconomy` is one phase's economy as the server states it, told apart by the key pair only
+ * it carries ({@link isPhaseEconomyBody}).
  */
 /**
  * Why an `unidentified` verdict happened, when the answer is "the game added a key".
@@ -43,6 +47,7 @@ export type ObservedBodyIdentification =
   | { readonly kind: 'identified'; readonly section: AccountSection }
   | { readonly kind: 'pvp'; readonly route: PvpRoute }
   | { readonly kind: 'collections' }
+  | { readonly kind: 'phaseEconomy' }
   | { readonly kind: 'unidentified' }
   | { readonly kind: 'ambiguous'; readonly sections: readonly AccountSection[] };
 
@@ -55,6 +60,7 @@ export function identifyObservedBody(
   const pvpRoute = identifyPvpBody(body);
   if (pvpRoute !== null) return { kind: 'pvp', route: pvpRoute };
   if (isCollectionsStateBody(body)) return { kind: 'collections' };
+  if (isPhaseEconomyBody(body)) return { kind: 'phaseEconomy' };
 
   const sections = Object.keys(fingerprints) as readonly AccountSection[];
   const matches = sections.filter((section) => checkShape(body, fingerprints[section]).ok);

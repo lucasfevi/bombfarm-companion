@@ -26,6 +26,7 @@ function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
     xpSessionTotal: 3_750,
     gold10Series: [90_000, 110_000, 100_000],
     goldPerProp10: 180,
+    xpPerProp10: 1_655.2,
     propsPerMinute10: 110,
     propsSessionTotal: 420,
     coverageSeconds: 120,

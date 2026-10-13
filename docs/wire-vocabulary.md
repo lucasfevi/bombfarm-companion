@@ -111,6 +111,11 @@ The combat websocket packs its payload into single-letter and abbreviated keys b
 | `n` | `n` | Meaning not established from this capture. | English |
 | `bonus_secs` | `bonusSeconds` | Seconds remaining in a gold-bonus window. Absent from the capture this lexicon is built from — it was taken outside a bonus window — but documented as arriving per tick during one. | English |
 | `bonus_mult` | `bonusMultiplier` | Gold-bonus multiplier active during a bonus window. Absent from the capture this lexicon is built from — documented as arriving per tick during one, alongside `bonus_secs`. | English |
+| `xp_ganha` | `xpGained` | Portuguese `ganha` = gained. XP the server awarded on this tick, one number summed over every hero on the field, with every multiplier already applied (the account's, the Pass, the Return Bonus, a Boost, each hero's XP runes). Arrives on every tick that carries `loot`. | Portuguese |
+| `boosts` | `boosts` | The Boosts running on the account, one entry per running Boost. Sent only while at least one runs. | English |
+| `e` | `axis` | Which axis the Boost applies to: `gold`, `xp` or `drop`. | English |
+| `s` | `secondsLeft` | Seconds of Boost left on that axis. | English |
+| `m` | `mult` | The Boost multiplier on that axis (observed `2`). | English |
 
 ### `t` values
 
@@ -250,3 +255,27 @@ The Collections state the client requests for its panel carries the catalog of s
 | `xp` | `xp` | The Experience axis. | English |
 | `sorte` | `luck` | The Luck axis. | Portuguese |
 | `forja` | `forge` | The Forge axis. | Portuguese |
+
+
+## Per-phase economy
+
+A burst of about ten bodies, one per phase of the stretch the account is playing, stating what each phase pays and drops with the account’s multipliers already applied, under English keys beside two Portuguese ones (`bau_chance_pct`, `jaula_teto_pct`) — see `packages/game-api/src/phase-economy/lexicon.ts`. Chances are in percent.
+
+### Keys
+
+| Wire token | Domain field | Description | Origin |
+| --- | --- | --- | --- |
+| `phase` | `phase` | The phase this body describes. | English |
+| `gold_per_prop` | `goldPerProp` | Average gold one prop pays on this phase, as a digit string. The account’s gold multipliers are already applied: across one burst it is the wiki's spawn-weighted average times one shared factor. | English |
+| `xp_per_prop` | `xpPerProp` | XP one prop pays on this phase, a whole number. The account's XP multipliers are already applied: across one burst it is the wiki's per-phase XP times one shared factor (observed 1.56 to 3.96), rounded. | English |
+| `gold_mult` | `goldMult` | A gold multiplier (observed `2`), sent only while one applies. Already folded into `gold_per_prop`. | English |
+| `xp_mult` | `xpMult` | An XP multiplier (observed `2`), sent only while one applies. Already folded into `xp_per_prop`. | English |
+| `item_level_min` | `itemLevelMin` | Lowest item level this phase drops. | English |
+| `item_level_max` | `itemLevelMax` | Highest item level this phase drops. | English |
+| `chest_chance_pct` | `chestChancePct` | Chance a prop drops a chest, in percent, with the account’s luck applied. | English |
+| `bau_chance_pct` | `chestRollChancePct` | Portuguese `bau` = chest. A second chest chance, in percent, sent beside `chest_chance_pct` on later bodies (equal to it rounded on ordinary phases, larger on gate phases). Meaning not established. Not read. | Portuguese |
+| `key_chance_pct` | `keyChancePct` | Chance a prop drops a key, in percent. Ordinary phases only. | English |
+| `gem_chance_pct` | `gemChancePct` | Chance a prop drops a gem chest, in percent. Gate phases only. | English |
+| `stone_chance_pct` | `stoneChancePct` | Chance a prop drops a stone chest, in percent. Gate phases only. | English |
+| `time_chance_pct` | `timeChancePct` | Chance a prop drops a time chest, in percent. Gate phases only. | English |
+| `jaula_teto_pct` | `cageCeilingPct` | Portuguese `jaula` = cage, `teto` = ceiling. The cage ceiling for this phase’s act, in percent. | Portuguese |

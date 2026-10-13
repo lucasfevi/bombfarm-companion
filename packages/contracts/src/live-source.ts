@@ -52,6 +52,15 @@ export interface LiveHit {
   readonly shardOrigin?: number;
 }
 
+export type LiveBoostAxis = 'gold' | 'xp' | 'drop';
+
+/** A Boost the account is running on this tick. The wire sends the list only while one runs. */
+export interface LiveBoost {
+  readonly axis: LiveBoostAxis;
+  readonly secondsLeft: number;
+  readonly mult: number;
+}
+
 export interface LiveTick {
   /** Every hero currently standing on the field. A hero's absence from this list IS its
    *  departure from the field — there is no separate leave event. */
@@ -69,6 +78,12 @@ export interface LiveTick {
   readonly hits?: readonly LiveHit[];
   readonly bonusSeconds?: number;
   readonly bonusMultiplier?: number;
+  /** XP the server awarded on THIS tick, summed over every hero on the field, with every
+   *  multiplier already applied — the account's, the Pass, the Return Bonus, a Boost and each
+   *  hero's XP runes. Arrives beside {@link loot}. */
+  readonly xpGained?: number;
+  /** Absent when no Boost runs. */
+  readonly boosts?: readonly LiveBoost[];
   /** One entry per cell of the whole map grid, index-for-index with {@link hps} and in the same
    *  cell-index space as `loot[].cell` and `hits[].cell`. `-1` marks a cell holding no prop —
    *  empty ground or a prop already destroyed — so the count of entries that are NOT `-1` is the
@@ -343,6 +358,10 @@ export interface LiveEarnings {
    *  A window that spans a map change mixes two maps' payouts, so this is only comparable against
    *  the current map's estimate while the player has stayed on one map. */
   readonly goldPerProp10: number | null;
+  /** XP the server reported awarding, divided by the props that paid it, over the same window —
+   *  the measured counterpart to the map panel's modelled XP per prop. `null` until a prop has
+   *  paid out inside the window. */
+  readonly xpPerProp10: number | null;
   /** Props destroyed per real minute, measured over the same rolling window against streamed time
    *  rather than wall-clock time — so a stream gap does not read as a throughput collapse. */
   readonly propsPerMinute10: number | null;

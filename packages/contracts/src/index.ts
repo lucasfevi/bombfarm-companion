@@ -140,6 +140,8 @@ export type {
   CreditAmounts,
   FieldCountdown,
   LiveBomb,
+  LiveBoost,
+  LiveBoostAxis,
   LiveCurrency,
   LiveDiagnosticsDumpOutcome,
   LiveDiagnosticsDumpReason,

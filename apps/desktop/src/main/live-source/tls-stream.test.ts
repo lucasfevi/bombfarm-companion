@@ -1173,3 +1173,51 @@ describe('TlsConnections: the tick event carries the wire object it was decoded 
     expect(event?.tick.wave).toBe(event?.raw[wireKey('wave')]);
   });
 });
+
+describe('toLiveTick: the XP the server awarded this tick', () => {
+  it('reads it as one number beside the loot it was paid for', () => {
+    const tick = toLiveTick({
+      [wireKey('phase')]: 186,
+      [wireKey('lootList')]: [{ [wireKey('lootCell')]: 12, [wireKey('lootGold')]: '6636' }],
+      [wireKey('xpGained')]: 2_926.1,
+    });
+
+    expect(tick.xpGained).toBe(2_926.1);
+    expect(tick.loot).toHaveLength(1);
+  });
+
+  it('is absent, not zero, on a tick that does not send it', () => {
+    expect(toLiveTick({ [wireKey('phase')]: 186 })).not.toHaveProperty('xpGained');
+  });
+
+  it('drops a value that is not a finite number', () => {
+    expect(toLiveTick({ [wireKey('xpGained')]: '2926' })).not.toHaveProperty('xpGained');
+  });
+});
+
+describe('toLiveTick: Boosts', () => {
+  function wireBoost(axis: unknown, secondsLeft: unknown, mult: unknown): Record<string, unknown> {
+    return { [wireKey('boostAxis')]: axis, [wireKey('boostSecondsLeft')]: secondsLeft, [wireKey('boostMultiplier')]: mult };
+  }
+
+  it('reads one entry per running Boost', () => {
+    const tick = toLiveTick({ [wireKey('boostsList')]: [wireBoost('xp', 20_412, 2), wireBoost('gold', 311, 2)] });
+
+    expect(tick.boosts).toEqual([
+      { axis: 'xp', secondsLeft: 20_412, mult: 2 },
+      { axis: 'gold', secondsLeft: 311, mult: 2 },
+    ]);
+  });
+
+  it('is absent when no Boost runs', () => {
+    expect(toLiveTick({ [wireKey('phase')]: 186 })).not.toHaveProperty('boosts');
+  });
+
+  it('drops an entry on an axis it does not know, or with a field missing', () => {
+    const tick = toLiveTick({
+      [wireKey('boostsList')]: [wireBoost('luck', 60, 2), wireBoost('drop', undefined, 2), wireBoost('drop', 60, 2)],
+    });
+
+    expect(tick.boosts).toEqual([{ axis: 'drop', secondsLeft: 60, mult: 2 }]);
+  });
+});

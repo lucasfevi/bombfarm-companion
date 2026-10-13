@@ -356,7 +356,8 @@ export const en = {
   liveEarningsXpSessionTotalLabel: 'XP total',
   liveEarningsElapsedLabel: 'Elapsed',
   liveEarningsXpHelpLabel: 'About this XP figure',
-  liveEarningsXpHelpBody: 'Calculated from the props your heroes destroyed, not read directly from the game.',
+  liveEarningsXpHelpBody:
+    'The XP the game reports for each prop your heroes destroy, every bonus included: yours, the Pass, the Return Bonus, a Boost and hero runes.',
   liveEarningsSeriesLabel: 'Gold / hr — last {minutes} min',
   liveEarningsSeriesAria: 'Gold per hour over the last {minutes} minutes',
   liveEarningsSeriesPeakLabel: 'peak {value}',
@@ -364,11 +365,12 @@ export const en = {
   liveEarningsMeasuredBody:
     'Measured from what actually dropped over the last 10 minutes — not estimated. Moving to another map mixes both maps’ payouts until the window has caught up.',
   liveEarningsGoldPerPropLabel: 'Gold / prop',
+  liveEarningsXpPerPropLabel: 'XP / prop',
   liveEarningsPropsPerMinuteLabel: 'Props / min',
   liveEarningsPropsTotalLabel: 'Props',
-  liveEarningsGoldPerPropUnder: '{percent}% under estimate',
-  liveEarningsGoldPerPropOver: '{percent}% over estimate',
-  liveEarningsGoldPerPropOnEstimate: 'on estimate',
+  liveEarningsPerPropUnder: '{percent}% under estimate',
+  liveEarningsPerPropOver: '{percent}% over estimate',
+  liveEarningsPerPropOnEstimate: 'on estimate',
 
   // liveDamage* — the Damage panel: team and per-hero damage folded in the main process, only ever
   // formatted here, never recomputed.

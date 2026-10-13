@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import type { AccountView, LiveCurrency, LiveEvent, LiveFrame, LiveTick, SectionFidelity } from '@bombfarm/contracts';
 import { liveGap } from '@bombfarm/contracts';
-import { ROUTE_FINGERPRINTS, liveFrameWireKey, wireKey } from '@bombfarm/game-api';
+import { ROUTE_FINGERPRINTS, liveFrameWireKey, phaseEconomyWireKey, wireKey } from '@bombfarm/game-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createBoundaryLog } from '../boundary-log/index.js';
 import { generateReplayStream } from './fixtures/generate-replay-stream.js';
@@ -894,6 +894,46 @@ describe('LiveSource: the Collections state', () => {
   });
 });
 
+describe('LiveSource: an observed per-phase economy burst', () => {
+  function economyBody(phase: number, goldPerProp: string, xpPerProp: number): Record<string, unknown> {
+    return {
+      [phaseEconomyWireKey('phase')]: phase,
+      [phaseEconomyWireKey('goldPerProp')]: goldPerProp,
+      [phaseEconomyWireKey('xpPerProp')]: xpPerProp,
+      [phaseEconomyWireKey('itemLevelMin')]: 40,
+      [phaseEconomyWireKey('itemLevelMax')]: 50,
+      [phaseEconomyWireKey('chestChancePct')]: 0.14,
+      [phaseEconomyWireKey('keyChancePct')]: 0.14,
+      [phaseEconomyWireKey('cageCeilingPct')]: 10,
+    };
+  }
+
+  it('is read and cross-checked without a warning when it agrees with the bundle', () => {
+    const { log, warnRecords, infoRecords } = createSpyLog();
+    const { source, currentTap } = createHarness({ log });
+    source.start();
+
+    currentTap().emitHttpBody(economyBody(81, '2064', 428), 1);
+    currentTap().emitHttpBody(economyBody(82, '2090', 433), 2);
+    currentTap().emitHttpBody(economyBody(83, '2116', 438), 3);
+
+    expect(warnRecords).toEqual([]);
+    expect(infoRecords.filter((record) => record.event === 'observed_body.phase_economy')).toHaveLength(3);
+  });
+
+  it('warns on a phase the bundle no longer matches', () => {
+    const { log, warnRecords } = createSpyLog();
+    const { source, currentTap } = createHarness({ log });
+    source.start();
+
+    currentTap().emitHttpBody(economyBody(81, '2064', 428), 1);
+    currentTap().emitHttpBody(economyBody(82, '2090', 533), 2);
+    currentTap().emitHttpBody(economyBody(83, '2116', 438), 3);
+
+    expect(warnRecords).toEqual([expect.objectContaining({ event: 'phase_economy.wiki_mismatch', axis: 'xp', phase: 82 })]);
+  });
+});
+
 describe('LiveSource: manual diagnostics dump', () => {
   it('reports written: false with reason no-source rather than a silent success when no ring is attached', () => {
     const { source } = createHarness();
@@ -1200,6 +1240,20 @@ describe('LiveSource: earnings', () => {
     const earnings = source.getView().earnings;
     expect(earnings?.xpSession).not.toBeNull();
     expect(earnings?.xpSession).not.toBe(0);
+  });
+
+  it('publishes the XP the server reported, not the modelled one', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { skills: skillsWithXpMult(2.19) }));
+    goLive();
+
+    pushFrame({ heroes: [], phase: 186, loot: [{ cell: 0, gold: 1 }], xpGained: 2_926.1 });
+    pushFrame({ heroes: [], phase: 186 });
+
+    const earnings = source.getView().earnings;
+    expect(earnings?.xpSessionTotal).toBe(2_926.1);
+    expect(earnings?.xpPerProp10).toBe(2_926.1);
   });
 
   it('an account change (a different non-null store binding) clears session totals AND the 10-minute window', () => {

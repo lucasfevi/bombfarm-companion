@@ -178,6 +178,7 @@ function sameEarnings(a: LiveEarnings | null, b: LiveEarnings | null): boolean {
     a.goldSessionTotal === b.goldSessionTotal &&
     a.xpSessionTotal === b.xpSessionTotal &&
     a.goldPerProp10 === b.goldPerProp10 &&
+    a.xpPerProp10 === b.xpPerProp10 &&
     a.propsPerMinute10 === b.propsPerMinute10 &&
     a.propsSessionTotal === b.propsSessionTotal &&
     a.coverageSeconds === b.coverageSeconds &&

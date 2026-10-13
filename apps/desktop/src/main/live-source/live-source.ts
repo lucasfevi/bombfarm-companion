@@ -27,7 +27,7 @@ import type {
   SectionFidelity,
 } from '@bombfarm/contracts';
 import { isConnectedCurrency, isLiveCurrency, liveGap } from '@bombfarm/contracts';
-import { diagnoseObservedBodyDrift, identifyObservedBody, isPlainObject, normalizeRotation, type PvpRoute } from '@bombfarm/game-api';
+import { diagnoseObservedBodyDrift, identifyObservedBody, isPlainObject, normalizeRotation, readPhaseEconomy, type PvpRoute } from '@bombfarm/game-api';
 import {
   advanceRecoveryClock,
   createInitialFieldCountdownState,
@@ -43,7 +43,6 @@ import { collectionFromSave } from '@bombfarm/domain/model';
 import { economyMultipliers } from '@bombfarm/domain/farm-rate';
 import { passActive } from '@bombfarm/domain/import-save';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
-import { xpPerProp } from '@bombfarm/domain/phase-wiki';
 import { gameProcessQuery, runPowerShellAsync, runPowerShellSync } from '../game-reader/process.js';
 import { DamageFold } from './damage-fold.js';
 import { EarningsFold } from './earnings-fold.js';
@@ -52,7 +51,8 @@ import { FrameRing } from './frame-ring.js';
 import { peScanExtent } from './image-scan.js';
 import type { ObservationAppendPort, ObservationCapture } from './observation-capture.js';
 import type { LogPort } from './log-port.js';
-import { MapFold, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
+import { MapFold, NO_MAP_ACCOUNT_BOOSTS, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
+import { PhaseEconomyCheck, wikiPhaseEconomyBaseline } from './phase-economy-check.js';
 import { RuntimePort } from './runtime.js';
 import { ensureWritableTempDir } from './temp-dir.js';
 import {
@@ -624,6 +624,10 @@ export class LiveSource {
 
   readonly #earningsFold: EarningsFold;
   readonly #mapFold: MapFold;
+  readonly #phaseEconomyCheck: PhaseEconomyCheck;
+  /** The boosts last handed to {@link #mapFold}, kept so the earnings fold's fallback model prices
+   *  XP under the same ones the map panel shows. */
+  #accountBoosts: MapAccountBoosts = NO_MAP_ACCOUNT_BOOSTS;
   readonly #damageFold: DamageFold;
   /** Every tap numbers its own frames from 1, so a tap rebuilt by {@link forceDetach} restarts at 1
    *  while the folds still remember the previous tap's last number and would drop its frames. The
@@ -660,8 +664,16 @@ export class LiveSource {
     this.#onObservedPvpBody = deps.onObservedPvpBody ?? null;
     this.#onObservedCollectionsBody = deps.onObservedCollectionsBody ?? null;
     this.#now = deps.now ?? Date.now;
-    this.#earningsFold = new EarningsFold({ now: this.#now, xpPerProp, log: this.#log });
+    this.#earningsFold = new EarningsFold({
+      now: this.#now,
+      modelXpPerProp: (tick) =>
+        tick.phase === undefined
+          ? null
+          : (wikiFactsFor(tick.phase, this.#accountBoosts, (tick.bonusMultiplier ?? 1) > 1)?.economy.xpPerProp ?? null),
+      log: this.#log,
+    });
     this.#mapFold = new MapFold({ wikiFactsFor });
+    this.#phaseEconomyCheck = new PhaseEconomyCheck({ now: this.#now, wikiBaseline: wikiPhaseEconomyBaseline, log: this.#log });
     this.#damageFold = new DamageFold({ now: this.#now, log: this.#log });
     if (deps.createTap) {
       this.#createTap = deps.createTap;
@@ -760,6 +772,7 @@ export class LiveSource {
       xpSessionTotal: this.#earningsFold.xpSessionTotal,
       gold10Series: this.#earningsFold.gold10Series,
       goldPerProp10: this.#earningsFold.goldPerProp10,
+      xpPerProp10: this.#earningsFold.xpPerProp10,
       propsPerMinute10: this.#earningsFold.propsPerMinute10,
       propsSessionTotal: this.#earningsFold.propsSessionTotal,
       coverageSeconds: this.#earningsFold.coverageSeconds,
@@ -786,12 +799,13 @@ export class LiveSource {
     this.#teamCoinPct = readTeamCoinPct(view.payload.skills) ?? this.#teamCoinPct;
     this.#collectionGoldPct = readCollectionGoldPct(view.payload.skills) ?? this.#collectionGoldPct;
     this.#vipUntil = readVipUntil(view.payload.account) ?? this.#vipUntil;
-    this.#mapFold.setAccountBoosts({
-      xpMult: this.#xpMult ?? 1,
+    this.#accountBoosts = {
+      xpMult: this.#xpMult === undefined || this.#xpMult === 0 ? 1 : this.#xpMult,
       teamCoinPct: this.#teamCoinPct ?? 0,
       collectionGoldPct: this.#collectionGoldPct ?? 0,
       pass: passActive(this.#vipUntil, this.#now()),
-    });
+    };
+    this.#mapFold.setAccountBoosts(this.#accountBoosts);
     this.#trackAccountBinding(view.store.binding);
     if (Array.isArray(view.payload.heroes)) this.#damageFold.setRoster(view.payload.heroes);
     const accountGold = readAccountGold(view.payload.account);
@@ -916,6 +930,10 @@ export class LiveSource {
       this.#onObservedCollectionsBody?.({ body: parsed, atMs });
       return;
     }
+    if (identification.kind === 'phaseEconomy') {
+      this.#observePhaseEconomy(parsed, bodyBuf.length);
+      return;
+    }
 
     this.#log.info({
       scope: 'live-source',
@@ -924,6 +942,22 @@ export class LiveSource {
       byteLength: bodyBuf.length,
     });
     this.#dispatchObservedBody(identification.section, parsed, atMs);
+  }
+
+  #observePhaseEconomy(body: unknown, byteLength: number): void {
+    const read = readPhaseEconomy(body);
+    if (read === null) {
+      this.#log.warn({ scope: 'live-source', event: 'observed_body.phase_economy_malformed', byteLength });
+      return;
+    }
+    this.#log.info({
+      scope: 'live-source',
+      event: 'observed_body.phase_economy',
+      phase: read.economy.phase,
+      ignoredKeys: read.ignored,
+      byteLength,
+    });
+    this.#phaseEconomyCheck.observe(read.economy);
   }
 
   #dispatchObservedBody(section: AccountSection, body: unknown, atMs: number): void {
@@ -981,7 +1015,7 @@ export class LiveSource {
       this.#touch();
     } else if (event.type === 'frame') {
       this.#frameCounter += 1;
-      this.#earningsFold.consumeTick(event.frame.tick, this.#frameCounter, this.#xpMult);
+      this.#earningsFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#mapFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#damageFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#earningsStarted = true;

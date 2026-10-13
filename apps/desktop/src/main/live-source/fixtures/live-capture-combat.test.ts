@@ -101,6 +101,13 @@ describe('live-capture-combat.bfcc combat shape', () => {
   const hits = ticks.flatMap((tick) => tick.hits ?? []);
   const explosions = ticks.flatMap((tick) => tick.explosions ?? []);
 
+  it('carries the awarded XP on every one of its 212 loot ticks and on no other tick', () => {
+    const lootTicks = ticks.filter((tick) => (tick.loot?.length ?? 0) > 0);
+    expect(lootTicks.length).toBe(212);
+    expect(lootTicks.every((tick) => tick.xpGained !== undefined)).toBe(true);
+    expect(ticks.filter((tick) => tick.xpGained !== undefined).length).toBe(212);
+  });
+
   it('holds 2770 bomb entries across all ticks, none dropped as malformed by the decoder', () => {
     expect(ticks.flatMap((tick) => tick.bombs ?? []).length).toBe(2770);
   });

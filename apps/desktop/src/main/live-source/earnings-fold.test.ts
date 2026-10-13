@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import type { LiveTick } from '@bombfarm/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import { readCaptureRecords, type CaptureRecord } from './capture-format.js';
-import { EARNINGS_SERIES_POINTS, EarningsFold, MAX_TICK_GAP_MS, type EarningsFoldDeps } from './earnings-fold.js';
+import { EARNINGS_SERIES_POINTS, EarningsFold, MAX_TICK_GAP_MS, XP_MODEL_RATIO_LOG_INTERVAL_MS, type EarningsFoldDeps } from './earnings-fold.js';
 import type { LogPort } from './log-port.js';
 import { TlsConnections, type TapEvent } from './tls-stream.js';
 
@@ -31,7 +31,7 @@ function requireNumber(value: number | null | undefined): number {
 function makeFold(overrides: Partial<EarningsFoldDeps> = {}): EarningsFold {
   return new EarningsFold({
     now: () => 0,
-    xpPerProp: () => 10,
+    modelXpPerProp: () => 10,
     log: NOOP_LOG,
     ...overrides,
   });
@@ -54,18 +54,18 @@ describe('EarningsFold: sequence guard', () => {
   it('counts a repeated tick (same sequence) exactly once', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 2, undefined);
+    fold.consumeTick(baseTick({}), 2);
 
     // Only one of the two sequence-1 pushes should have landed.
     const singleClock = makeClock();
     const singleFold = makeFold({ now: singleClock.now });
-    singleFold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
+    singleFold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1);
     singleClock.advance(2_000);
-    singleFold.consumeTick(baseTick({}), 2, undefined);
+    singleFold.consumeTick(baseTick({}), 2);
 
     expect(fold.goldSession).not.toBeNull();
     expect(fold.goldSession).toBe(singleFold.goldSession);
@@ -74,17 +74,17 @@ describe('EarningsFold: sequence guard', () => {
   it('ignores an out-of-order tick (a lower sequence than already consumed)', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 5, undefined);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 5);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 999 }] }), 3, undefined);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 999 }] }), 3);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 6, undefined);
+    fold.consumeTick(baseTick({}), 6);
 
     const expectedClock = makeClock();
     const expected = makeFold({ now: expectedClock.now });
-    expected.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 5, undefined);
+    expected.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 5);
     expectedClock.advance(2_000);
-    expected.consumeTick(baseTick({}), 6, undefined);
+    expected.consumeTick(baseTick({}), 6);
 
     expect(fold.goldSession).not.toBeNull();
     expect(fold.goldSession).toBe(expected.goldSession);
@@ -96,15 +96,15 @@ describe('EarningsFold: streamed clock', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
 
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 3_600_000 }] }), 1, undefined);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 3_600_000 }] }), 1);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({ idle: true }), 2, undefined);
+    fold.consumeTick(baseTick({ idle: true }), 2);
     const rateAfterOneSecond = fold.goldSession;
     expect(rateAfterOneSecond).not.toBeNull();
     expect(fold.sessionSeconds).toBeGreaterThan(0);
 
     clock.advance(9_000);
-    fold.consumeTick(baseTick({ idle: true }), 3, undefined);
+    fold.consumeTick(baseTick({ idle: true }), 3);
     const rateAfterTenSeconds = fold.goldSession;
 
     expect(rateAfterTenSeconds).not.toBeNull();
@@ -115,14 +115,14 @@ describe('EarningsFold: streamed clock', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
 
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1_000 }] }), 1, undefined);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1_000 }] }), 1);
     clock.advance(100);
-    fold.consumeTick(baseTick({}), 2, undefined);
+    fold.consumeTick(baseTick({}), 2);
     const secondsBeforeGap = fold.sessionSeconds;
 
     const gapMs = 5 * 60 * 1000;
     clock.advance(gapMs);
-    fold.consumeTick(baseTick({}), 3, undefined);
+    fold.consumeTick(baseTick({}), 3);
 
     expect(fold.sessionSeconds).toBeCloseTo(secondsBeforeGap + MAX_TICK_GAP_MS / 1000, 6);
 
@@ -136,37 +136,140 @@ describe('EarningsFold: streamed clock', () => {
 
 /** Feeds one earning tick, then a follow-up empty tick a second later so `streamedMs` is nonzero
  *  and `xpSession`/`goldSession` report a real rate instead of `null`. */
-function foldAfterOneEarningTick(deps: Partial<EarningsFoldDeps>, tick: LiveTick, xpMult: number | undefined): EarningsFold {
+function foldAfterOneEarningTick(deps: Partial<EarningsFoldDeps>, tick: LiveTick): EarningsFold {
   const clock = makeClock();
   const fold = makeFold({ ...deps, now: clock.now });
-  fold.consumeTick(tick, 1, xpMult);
+  fold.consumeTick(tick, 1);
   clock.advance(1_000);
-  fold.consumeTick(baseTick({}), 2, undefined);
+  fold.consumeTick(baseTick({}), 2);
   return fold;
 }
 
-describe('EarningsFold: xpMult normalization', () => {
-  it('treats an absent xpMult as 1', () => {
-    const tick = baseTick({ phase: 1, loot: [{ cell: 0, gold: 1 }] });
-    const withImplicitOne = foldAfterOneEarningTick({ xpPerProp: () => 10 }, tick, undefined);
-    const explicit = foldAfterOneEarningTick({ xpPerProp: () => 10 }, tick, 1);
-    expect(withImplicitOne.xpSession).not.toBeNull();
-    expect(withImplicitOne.xpSession).toBe(explicit.xpSession);
+/** The grid cross-check's own warnings, apart from the one-off warning a tick without the server's
+ *  XP raises — the committed capture predates that field. */
+function divergenceWarnings(warn: ReturnType<typeof vi.fn>): unknown[] {
+  return warn.mock.calls.map(([record]) => record as unknown).filter((record) => (record as { event?: unknown }).event === 'earnings.grid_payout_divergence');
+}
+
+function recordingLog(): LogPort & { readonly warns: Record<string, unknown>[]; readonly debugs: Record<string, unknown>[] } {
+  const warns: Record<string, unknown>[] = [];
+  const debugs: Record<string, unknown>[] = [];
+  return {
+    warns,
+    debugs,
+    info: () => undefined,
+    warn: (record) => warns.push(record),
+    debug: (record) => debugs.push(record),
+  };
+}
+
+/** Phase 186 on a 2.19× account with the Pass, measured from live traffic: one prop paid 1,655.2
+ *  XP outside a Return Bonus window and 2,926.1 inside one. */
+const PHASE_186_XP_OUTSIDE_RETURN = 1_655.2;
+const PHASE_186_XP_INSIDE_RETURN = 2_926.1;
+
+describe('EarningsFold: XP is the server’s own per-tick figure', () => {
+  it('sums xpGained exactly, whatever the model would have said', () => {
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now, modelXpPerProp: () => 1_000 });
+    fold.consumeTick(baseTick({ phase: 186, loot: [{ cell: 0, gold: 6_000 }], xpGained: PHASE_186_XP_OUTSIDE_RETURN }), 1);
+    clock.advance(1_000);
+    fold.consumeTick(
+      baseTick({ phase: 186, loot: [{ cell: 1, gold: 6_000 }, { cell: 2, gold: 6_000 }], xpGained: 2 * PHASE_186_XP_INSIDE_RETURN }),
+      2,
+    );
+    clock.advance(1_000);
+    fold.consumeTick(baseTick({}), 3);
+
+    expect(fold.xpSessionTotal).toBeCloseTo(PHASE_186_XP_OUTSIDE_RETURN + 2 * PHASE_186_XP_INSIDE_RETURN, 9);
+    expect(fold.xpPerProp10).toBeCloseTo((PHASE_186_XP_OUTSIDE_RETURN + 2 * PHASE_186_XP_INSIDE_RETURN) / 3, 9);
   });
 
-  it('treats a literal 0 xpMult as 1, never zeroing the XP figure', () => {
-    const tick = baseTick({ phase: 1, loot: [{ cell: 0, gold: 1 }] });
-    const zeroed = foldAfterOneEarningTick({ xpPerProp: () => 10 }, tick, 0);
-    const explicit = foldAfterOneEarningTick({ xpPerProp: () => 10 }, tick, 1);
-    expect(zeroed.xpSession).toBe(explicit.xpSession);
-    expect(zeroed.xpSession).not.toBe(0);
+  it('counts XP the server reports on a tick whose loot paid no gold', () => {
+    const fold = foldAfterOneEarningTick({ modelXpPerProp: () => 1_000 }, baseTick({ phase: 186, loot: [], xpGained: 12.5 }));
+
+    expect(fold.xpSessionTotal).toBe(12.5);
   });
 
-  it('still scales by a genuine non-1 finite xpMult', () => {
-    const tick = baseTick({ phase: 1, loot: [{ cell: 0, gold: 1 }] });
-    const doubled = foldAfterOneEarningTick({ xpPerProp: () => 10 }, tick, 2);
-    const baseline = foldAfterOneEarningTick({ xpPerProp: () => 10 }, tick, 1);
-    expect(doubled.xpSession).toBe(requireNumber(baseline.xpSession) * 2);
+  it('never asks the model on a tick that carries xpGained', () => {
+    const modelXpPerProp = vi.fn(() => 1_000);
+    foldAfterOneEarningTick({ modelXpPerProp }, baseTick({ phase: 186, loot: [{ cell: 0, gold: 1 }], xpGained: PHASE_186_XP_OUTSIDE_RETURN }));
+
+    expect(modelXpPerProp).not.toHaveBeenCalled();
+  });
+
+  it('reports no XP per prop until a prop has paid inside the window', () => {
+    expect(makeFold().xpPerProp10).toBeNull();
+  });
+});
+
+describe('EarningsFold: a loot tick without xpGained falls back to the model', () => {
+  it('values each paying prop at the model’s XP per prop', () => {
+    const fold = foldAfterOneEarningTick(
+      { modelXpPerProp: () => PHASE_186_XP_OUTSIDE_RETURN },
+      baseTick({ phase: 186, loot: [{ cell: 0, gold: 1 }, { cell: 1, gold: 1 }] }),
+    );
+
+    expect(fold.xpSessionTotal).toBeCloseTo(2 * PHASE_186_XP_OUTSIDE_RETURN, 9);
+  });
+
+  it('counts nothing when the model cannot value the phase', () => {
+    const fold = foldAfterOneEarningTick({ modelXpPerProp: () => null }, baseTick({ phase: 9_999, loot: [{ cell: 0, gold: 1 }] }));
+
+    expect(fold.xpSessionTotal).toBe(0);
+  });
+
+  it('warns once, not on every such tick', () => {
+    const log = recordingLog();
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now, log });
+    for (let sequence = 1; sequence <= 3; sequence += 1) {
+      fold.consumeTick(baseTick({ phase: 186, loot: [{ cell: sequence, gold: 1 }] }), sequence);
+      clock.advance(1_000);
+    }
+
+    expect(log.warns.filter((record) => record.event === 'earnings.xp_gained_missing')).toHaveLength(1);
+  });
+
+  it('does not warn about a tick that paid nothing', () => {
+    const log = recordingLog();
+    foldAfterOneEarningTick({ log }, baseTick({ phase: 186 }));
+
+    expect(log.warns).toEqual([]);
+  });
+});
+
+describe('EarningsFold: measured-vs-model XP ratio', () => {
+  it('logs the ratio at debug once the interval has passed on one phase', () => {
+    const log = recordingLog();
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now, log, modelXpPerProp: () => PHASE_186_XP_OUTSIDE_RETURN });
+    fold.consumeTick(baseTick({ phase: 186, loot: [{ cell: 0, gold: 1 }], xpGained: PHASE_186_XP_INSIDE_RETURN }), 1);
+    expect(log.debugs).toEqual([]);
+
+    clock.advance(XP_MODEL_RATIO_LOG_INTERVAL_MS);
+    fold.consumeTick(baseTick({ phase: 186, loot: [{ cell: 1, gold: 1 }], xpGained: PHASE_186_XP_INSIDE_RETURN }), 2);
+
+    expect(log.debugs).toHaveLength(1);
+    expect(log.debugs[0]).toMatchObject({
+      event: 'earnings.xp_model_ratio',
+      phase: 186,
+      props: 2,
+      measuredXpPerProp: PHASE_186_XP_INSIDE_RETURN,
+      modelXpPerProp: PHASE_186_XP_OUTSIDE_RETURN,
+    });
+    expect(log.debugs[0]?.ratio).toBeCloseTo(PHASE_186_XP_INSIDE_RETURN / PHASE_186_XP_OUTSIDE_RETURN, 9);
+  });
+
+  it('starts over on a phase change rather than blending two maps', () => {
+    const log = recordingLog();
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now, log });
+    fold.consumeTick(baseTick({ phase: 185, loot: [{ cell: 0, gold: 1 }], xpGained: 100 }), 1);
+    clock.advance(XP_MODEL_RATIO_LOG_INTERVAL_MS);
+    fold.consumeTick(baseTick({ phase: 186, loot: [{ cell: 0, gold: 1 }], xpGained: 100 }), 2);
+
+    expect(log.debugs).toEqual([]);
   });
 });
 
@@ -184,10 +287,9 @@ describe('EarningsFold: payout parsing', () => {
         ],
       }),
       1,
-      undefined,
     );
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 2, undefined);
+    fold.consumeTick(baseTick({}), 2);
 
     expect(fold.goldSession).not.toBeNull();
     expect(Number.isNaN(fold.goldSession)).toBe(false);
@@ -195,24 +297,24 @@ describe('EarningsFold: payout parsing', () => {
 
     const expectedClock = makeClock();
     const expected = makeFold({ now: expectedClock.now });
-    expected.consumeTick(baseTick({ phase: 1, loot: [{ cell: 2, gold: 500 }] }), 1, undefined);
+    expected.consumeTick(baseTick({ phase: 1, loot: [{ cell: 2, gold: 500 }] }), 1);
     expectedClock.advance(1_000);
-    expected.consumeTick(baseTick({}), 2, undefined);
+    expected.consumeTick(baseTick({}), 2);
     expect(fold.goldSession).toBe(expected.goldSession);
   });
 });
 
 describe('EarningsFold: per-tick phase', () => {
   it('values a mid-window phase change at each tick’s own phase, not the latest one retroactively', () => {
-    const xpPerProp = vi.fn((phase: number) => (phase === 1 ? 10 : 100));
+    const modelXpPerProp = vi.fn((tick: LiveTick) => (tick.phase === 1 ? 10 : 100));
     const clock = makeClock();
-    const fold = makeFold({ xpPerProp, now: clock.now });
+    const fold = makeFold({ modelXpPerProp, now: clock.now });
 
-    fold.consumeTick(baseTick({ phase: 1, loot: [{ cell: 0, gold: 1 }] }), 1, undefined);
+    fold.consumeTick(baseTick({ phase: 1, loot: [{ cell: 0, gold: 1 }] }), 1);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({ phase: 2, loot: [{ cell: 0, gold: 1 }] }), 2, undefined);
+    fold.consumeTick(baseTick({ phase: 2, loot: [{ cell: 0, gold: 1 }] }), 2);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 3, undefined);
+    fold.consumeTick(baseTick({}), 3);
 
     const expectedXp = 1 * 10 * 1 + 1 * 100 * 1;
     expect(fold.xpSession).not.toBeNull();
@@ -235,15 +337,15 @@ describe('EarningsFold: 10-minute rolling window', () => {
   it('evicts a bucket once it ages past 10 real minutes, shrinking coverage', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 2, undefined);
+    fold.consumeTick(baseTick({}), 2);
     const coverageJustAfter = fold.coverageSeconds;
     expect(coverageJustAfter).toBeGreaterThan(0);
     expect(fold.gold10).toBeGreaterThan(0);
 
     clock.advance(10 * 60 * 1000 + 1_000);
-    fold.consumeTick(baseTick({}), 3, undefined);
+    fold.consumeTick(baseTick({}), 3);
 
     // The only gold-bearing bucket aged out; what remains is just the bucket this very tick
     // started, which streamed a capped 2 seconds and paid out nothing.
@@ -254,13 +356,13 @@ describe('EarningsFold: 10-minute rolling window', () => {
   it('a gap smaller than the 10-minute window evicts nothing', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 2, undefined);
+    fold.consumeTick(baseTick({}), 2);
     const coverageBefore = fold.coverageSeconds;
 
     clock.advance(5 * 60 * 1000);
-    fold.consumeTick(baseTick({}), 3, undefined);
+    fold.consumeTick(baseTick({}), 3);
 
     expect(fold.gold10).not.toBeNull();
     expect(fold.gold10).toBeGreaterThan(0);
@@ -271,9 +373,9 @@ describe('EarningsFold: 10-minute rolling window', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
 
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1_000 }] }), 1, undefined);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1_000 }] }), 1);
     clock.advance(500);
-    fold.consumeTick(baseTick({}), 2, undefined);
+    fold.consumeTick(baseTick({}), 2);
 
     // No further ticks at all for 5 real minutes: streamed time stays fixed at the 0.5s the two
     // ticks above accrued, while the real span the window covers grows past it by 600x — dividing
@@ -288,7 +390,7 @@ describe('EarningsFold: 10-minute rolling window', () => {
     const fold = makeFold({ now: clock.now });
     const totalSeconds = 2 * 60 * 60;
     for (let second = 0; second < totalSeconds; second += 1) {
-      fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1 }] }), second + 1, undefined);
+      fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1 }] }), second + 1);
       clock.advance(1_000);
     }
 
@@ -300,7 +402,7 @@ describe('EarningsFold: 10-minute rolling window', () => {
     const fold = makeFold({ now: clock.now });
     const totalSeconds = 700;
     for (let second = 0; second < totalSeconds; second += 1) {
-      fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1 }] }), second + 1, undefined);
+      fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1 }] }), second + 1);
       clock.advance(1_000);
     }
 
@@ -311,9 +413,9 @@ describe('EarningsFold: 10-minute rolling window', () => {
   it('a window genuinely short of a minute mark still floors down, unmoved by the bucket-width correction', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1);
     clock.advance(538_000);
-    fold.consumeTick(baseTick({}), 2, undefined);
+    fold.consumeTick(baseTick({}), 2);
 
     expect(fold.coverageSeconds).toBe(539);
     expect(Math.floor(fold.coverageSeconds / 60)).toBe(8);
@@ -326,13 +428,13 @@ describe('EarningsFold: grid cross-check', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now, log: { info: () => undefined, warn } });
 
-    fold.consumeTick({ heroes: [], wave: 1, kinds: [0, -1, 0] }, 1, undefined);
+    fold.consumeTick({ heroes: [], wave: 1, kinds: [0, -1, 0] }, 1);
     clock.advance(100);
     // A fresh map spawns with an unrelated layout: cell 0 held a prop and is now empty, but that
     // is the new map simply not spawning one there, not a destruction — nothing paid out either.
-    fold.consumeTick({ heroes: [], wave: 2, kinds: [-1, 0, 0] }, 2, undefined);
+    fold.consumeTick({ heroes: [], wave: 2, kinds: [-1, 0, 0] }, 2);
 
-    expect(warn).not.toHaveBeenCalled();
+    expect(divergenceWarnings(warn)).toEqual([]);
   });
 
   it('replaying the committed capture: the two cross-check counters agree exactly, and no divergence warning fires', () => {
@@ -342,7 +444,7 @@ describe('EarningsFold: grid cross-check', () => {
 
     const ticks = replayCommittedCaptureTicks();
     ticks.forEach((tick, index) => {
-      fold.consumeTick(tick, index + 1, undefined);
+      fold.consumeTick(tick, index + 1);
       clock.advance(100);
     });
 
@@ -351,7 +453,7 @@ describe('EarningsFold: grid cross-check', () => {
     // live-capture.test.ts). The cross-check payout counter only counts a payout on a tick where
     // the grid diff also ran, so the masked payout is excluded from both counters alike: both land
     // on 9, not 9-vs-10, and the divergence warning never fires.
-    expect(warn).not.toHaveBeenCalled();
+    expect(divergenceWarnings(warn)).toEqual([]);
   });
 
   it('a genuine divergence — a grid clear with no matching payout — still warns with both counts', () => {
@@ -359,12 +461,12 @@ describe('EarningsFold: grid cross-check', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now, log: { info: () => undefined, warn } });
 
-    fold.consumeTick({ heroes: [], wave: 1, kinds: [0] }, 1, undefined);
+    fold.consumeTick({ heroes: [], wave: 1, kinds: [0] }, 1);
     clock.advance(100);
     // Same wave, so the diff runs; the cell clears but no loot entry ever reports it.
-    fold.consumeTick({ heroes: [], wave: 1, kinds: [-1] }, 2, undefined);
+    fold.consumeTick({ heroes: [], wave: 1, kinds: [-1] }, 2);
 
-    expect(warn).toHaveBeenCalledTimes(1);
+    expect(divergenceWarnings(warn)).toHaveLength(1);
     expect(warn).toHaveBeenCalledWith(
       expect.objectContaining({ event: 'earnings.grid_payout_divergence', gridClears: 1, payoutProps: 0 }),
     );
@@ -380,7 +482,7 @@ describe('EarningsFold: session totals (goldSessionTotal / xpSessionTotal)', () 
 
   it('reports the raw accumulated sum, not divided by streamed time the way the rate is', () => {
     const tick = baseTick({ phase: 1, loot: [{ cell: 0, gold: 1 }] });
-    const fold = foldAfterOneEarningTick({ xpPerProp: () => 10 }, tick, undefined);
+    const fold = foldAfterOneEarningTick({ modelXpPerProp: () => 10 }, tick);
 
     // The rate divides by streamed time (1 second here, scaled to per-hour); the total does not.
     expect(fold.goldSessionTotal).toBe(1);
@@ -391,16 +493,16 @@ describe('EarningsFold: session totals (goldSessionTotal / xpSessionTotal)', () 
   it('keeps rising across ticks that the rolling 10-minute window would have evicted', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 2, undefined);
+    fold.consumeTick(baseTick({}), 2);
     const totalBeforeEviction = fold.goldSessionTotal;
     expect(totalBeforeEviction).toBe(100);
 
     // Past the 10-minute window: gold10 evicts its only gold-bearing bucket, but the session
     // total is not windowed at all and must be untouched by that eviction.
     clock.advance(10 * 60 * 1000 + 1_000);
-    fold.consumeTick(baseTick({}), 3, undefined);
+    fold.consumeTick(baseTick({}), 3);
 
     expect(fold.gold10).toBe(0);
     expect(fold.goldSessionTotal).toBe(totalBeforeEviction);
@@ -423,9 +525,9 @@ describe('EarningsFold: session lifecycle', () => {
   it('reset control: zeroes session totals and the session clock, but keeps the 10-minute window', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
-    fold.consumeTick(baseTick({ phase: 1, loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
+    fold.consumeTick(baseTick({ phase: 1, loot: [{ cell: 0, gold: 100 }] }), 1);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 2, undefined);
+    fold.consumeTick(baseTick({}), 2);
     expect(fold.goldSession).not.toBeNull();
     expect(fold.goldSessionTotal).not.toBeNull();
     const gold10BeforeReset = fold.gold10;
@@ -446,9 +548,9 @@ describe('EarningsFold: session lifecycle', () => {
   it('account change: zeroes session totals, the session clock, AND clears the 10-minute window', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
-    fold.consumeTick(baseTick({ phase: 1, loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
+    fold.consumeTick(baseTick({ phase: 1, loot: [{ cell: 0, gold: 100 }] }), 1);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 2, undefined);
+    fold.consumeTick(baseTick({}), 2);
     expect(fold.gold10).not.toBeNull();
     expect(fold.goldSessionTotal).not.toBeNull();
 
@@ -471,18 +573,18 @@ describe('EarningsFold: session lifecycle', () => {
 
     // Same wave both times, so the guard does not skip the diff — but a payout claims a
     // destruction the grid never confirms (the cell stays occupied), so the counts diverge.
-    fold.consumeTick({ heroes: [], wave: 1, kinds: [0] }, 1, undefined);
+    fold.consumeTick({ heroes: [], wave: 1, kinds: [0] }, 1);
     clock.advance(100);
-    fold.consumeTick({ heroes: [], wave: 1, kinds: [0], loot: [{ cell: 0, gold: 100 }] }, 2, undefined);
-    expect(warn).toHaveBeenCalledTimes(1);
+    fold.consumeTick({ heroes: [], wave: 1, kinds: [0], loot: [{ cell: 0, gold: 100 }] }, 2);
+    expect(divergenceWarnings(warn)).toHaveLength(1);
 
     fold.reset('reset');
     warn.mockClear();
 
-    fold.consumeTick({ heroes: [], wave: 10, kinds: [0] }, 3, undefined);
+    fold.consumeTick({ heroes: [], wave: 10, kinds: [0] }, 3);
     clock.advance(100);
-    fold.consumeTick({ heroes: [], wave: 10, kinds: [0], loot: [{ cell: 0, gold: 100 }] }, 4, undefined);
-    expect(warn).toHaveBeenCalledTimes(1);
+    fold.consumeTick({ heroes: [], wave: 10, kinds: [0], loot: [{ cell: 0, gold: 100 }] }, 4);
+    expect(divergenceWarnings(warn)).toHaveLength(1);
   });
 });
 
@@ -493,7 +595,7 @@ describe('EarningsFold: session lifecycle', () => {
  */
 function primedFold(clock: { now: () => number }): EarningsFold {
   const fold = makeFold({ now: clock.now });
-  fold.consumeTick(baseTick({ phase: 1 }), 0, undefined);
+  fold.consumeTick(baseTick({ phase: 1 }), 0);
   return fold;
 }
 
@@ -510,15 +612,14 @@ function pay(
   fold.consumeTick(
     baseTick({ phase: 1, loot: Array.from({ length: props }, (_, cell) => ({ cell, gold })) }),
     sequence,
-    undefined,
   );
 }
 
 describe('EarningsFold: measured per-prop figures', () => {
   it('divides window gold by the props that actually paid it, with no wiki value involved', () => {
     const clock = makeClock();
-    const fold = makeFold({ now: clock.now, xpPerProp: () => 999 });
-    fold.consumeTick(baseTick({ phase: 1 }), 0, undefined);
+    const fold = makeFold({ now: clock.now, modelXpPerProp: () => 999 });
+    fold.consumeTick(baseTick({ phase: 1 }), 0);
 
     pay(fold, clock, 1, 2, 100);
     pay(fold, clock, 2, 2, 300);
@@ -532,7 +633,7 @@ describe('EarningsFold: measured per-prop figures', () => {
     const fold = primedFold(clock);
 
     clock.advance(30_000);
-    fold.consumeTick(baseTick({ idle: true }), 1, undefined);
+    fold.consumeTick(baseTick({ idle: true }), 1);
 
     expect(fold.propsPerMinute10).toBe(0);
     expect(fold.goldPerProp10).toBeNull();
