@@ -93,8 +93,10 @@ export function SheetCloneTable({
   return (
     <Panel data-testid="gear-clone-sheet">
       <div className={panelHClass}>
-        <h2 className={panelTitleClass}>{t.panelCloneSheet}</h2>
-        <InfoTip label={t.panelCloneSheet} tip={t.cloneSheetTip} />
+        <span className="flex items-center gap-1.5">
+          <h2 className={panelTitleClass}>{t.panelCloneSheet}</h2>
+          <InfoTip label={t.panelCloneSheet} tip={t.cloneSheetTip} />
+        </span>
       </div>
       <DataTable.Root className="overflow-x-auto">
         <DataTable.Table className="table-fixed">
