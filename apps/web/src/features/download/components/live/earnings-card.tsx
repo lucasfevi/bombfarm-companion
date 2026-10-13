@@ -10,8 +10,8 @@ import { TrendLine } from './trend-line';
 /**
  * The desktop draws this panel twice, and so does this file. The compact density is the second
  * Live window's earnings: no sparkline, no session totals, no elapsed clock and no reading against
- * the map's estimate — a recent-window headline and six figures, which is all a window that size
- * can carry.
+ * the map's estimate — a recent-window headline and seven figures, which is all a window that
+ * size can carry.
  */
 export function EarningsCard({
   lang,
@@ -52,7 +52,15 @@ export function EarningsCard({
             </span>
           </span>
         </div>
-        <div className="grid grid-flow-col grid-cols-3 grid-rows-2 gap-x-3 gap-y-2 border-t border-line/55 pt-2">
+        {/* The window at its default width: the balance across the top, then one pair per row. */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-line/55 pt-2">
+          <div className="col-span-2">
+            <ReplicaFigure
+              label={liveLabel('liveEarningsCurrentGoldLabel', lang)}
+              value={compact(earnings.currentGold)}
+              valueClass="text-gold"
+            />
+          </div>
           <ReplicaFigure
             label={liveLabel('liveEarningsGoldSessionLabel', lang)}
             value={compact(earnings.goldSession)}
@@ -74,13 +82,13 @@ export function EarningsCard({
             valueClass="text-info"
           />
           <ReplicaFigure
-            label={liveLabel('liveEarningsCurrentGoldLabel', lang)}
-            value={compact(earnings.currentGold)}
-            valueClass="text-gold"
-          />
-          <ReplicaFigure
             label={liveLabel('liveEarningsPropsPerMinuteLabel', lang)}
             value={formatNumber(measured.propsPerMinute, lang, 0)}
+            valueClass="text-ink"
+          />
+          <ReplicaFigure
+            label={liveLabel('liveEarningsPropsTotalLabel', lang)}
+            value={formatCompactNumber(measured.propsSession, lang)}
             valueClass="text-ink"
           />
         </div>

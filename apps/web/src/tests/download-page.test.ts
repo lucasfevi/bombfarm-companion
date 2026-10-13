@@ -380,7 +380,7 @@ describe('the mini window section', () => {
     expect(markup).toContain(literalPrefix(liveLabel('liveEarningsRecentWindowLabel', 'en')));
     expect(markup).toContain(liveLabel('liveEarningsPropsPerMinuteLabel', 'en'));
     expect(markup).toContain(liveLabel('liveEarningsXpPerPropLabel', 'en'));
-    expect(markup).not.toContain(`>${liveLabel('liveEarningsPropsTotalLabel', 'en')}<`);
+    expect(markup).toContain(`>${liveLabel('liveEarningsPropsTotalLabel', 'en')}<`);
   });
 
   it('carries the map economy strip without the estimate heading the full panel prints', () => {
