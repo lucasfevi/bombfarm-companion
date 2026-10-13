@@ -1,4 +1,4 @@
-import { ABILITIES, PASSAGEM_BASTAO_CAP, PASSAGEM_BASTAO_PER_RANK } from './model';
+import { ABILITIES, ABILITY_LEVEL_MAX, PASSAGEM_BASTAO_CAP, PASSAGEM_BASTAO_PER_RANK } from './model';
 import type { HeroRecord } from './shims/storage';
 
 /**
@@ -238,6 +238,42 @@ export function computeTeamBuffsOverRotation(
     out[buffId] = expectedCappedTotal(contributions, cap);
   }
   return out;
+}
+
+const APPRENTICE_DEFINITION = ABILITIES.find((ability) => ability.id === 'aprendiz');
+
+/** Aprendiz's XP add per rank, as a fraction: `0.0075`. */
+export const APPRENTICE_XP_PER_RANK: number =
+  APPRENTICE_DEFINITION && 'perLevel' in APPRENTICE_DEFINITION.effect ? APPRENTICE_DEFINITION.effect.perLevel / 100 : 0;
+
+/** One carrier's maximum, which two on the field never exceed — measured at exactly ×1.15. */
+export const APPRENTICE_XP_CAP = 0.15;
+
+/** One hero that may carry Aprendiz, at the share of wall clock it stands on the field. */
+export type ApprenticeCarrier = { readonly rank: number; readonly presence: number };
+
+/**
+ * Aprendiz's multiplier on the XP of every prop the field destroys: `1 + E[min(cap, Σ present
+ * 0.0075 × rank)]`, the capped sum taken inside the expectation the same way
+ * {@link computeTeamBuffsOverRotation} prices the standing auras over a rotation. A carrier at
+ * presence 1 is the field as it stands. Measured from live traffic as a factor of its own,
+ * outside both `xp_mult` and the Return/Pass/Boost bracket.
+ */
+export function apprenticeXpMult(carriers: readonly ApprenticeCarrier[]): number {
+  const contributions: { value: number; presence: number }[] = [];
+  let weightedSum = 0;
+  let atBest = 0;
+  for (const carrier of carriers) {
+    const value = APPRENTICE_XP_PER_RANK * Math.min(ABILITY_LEVEL_MAX, Math.max(0, carrier.rank));
+    const presence = Number.isFinite(carrier.presence) ? Math.min(1, Math.max(0, carrier.presence)) : 0;
+    if (!(value > 0) || !(presence > 0)) continue;
+    contributions.push({ value, presence });
+    weightedSum += value * presence;
+    atBest += value;
+  }
+  if (contributions.length > COVERAGE_ENUMERATION_LIMIT) return 1 + Math.min(APPRENTICE_XP_CAP, weightedSum);
+  if (!(atBest > APPRENTICE_XP_CAP)) return 1 + weightedSum;
+  return 1 + expectedCappedTotal(contributions, APPRENTICE_XP_CAP);
 }
 
 /**

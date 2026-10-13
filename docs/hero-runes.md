@@ -68,7 +68,19 @@ reproduce. The Farm board therefore multiplies each hero's share of the props de
 same kill shares that route Veia de Ouro's gold to the props its carrier kills) by `1 + p` for
 that hero's xp runes (`runeXpMultiplier`, `packages/domain/src/runes.ts`). It is a snapshot, like
 the sheet axes: priced for as long as the rune is on the record, with no discount for the play
-time left. The Phases panel's XP per prop is an account-level figure and carries no rune.
+time left. The Phases panel's XP per prop carries the same mix, read off the phase's row, so it
+times the row's props per hour is the row's XP per hour.
+
+**Aprendiz is not a rune, but it is the factor beside it.** Measured from live traffic, a rank-20
+Aprendiz carrier on the field multiplies the XP of every field hero's props — not just its own —
+by exactly 1.15, outside both `xp_mult` and the bracket: neither "added to `xp_mult`" nor
+"inside the bracket" reproduces it. The model prices `1 + 0.0075 × rank`, capped at one carrier's
+maximum (0.15) the way the standing team auras are capped, and weighted over the rotation by each
+carrier's duty cycle (`apprenticeXpMult`, `packages/domain/src/team-buffs.ts`). The Live map's
+estimate prices the carriers on the field right now. Only a single rank-20 carrier, on one
+account, was measured: ranks below 20 follow the wiki's linear per-rank figure, and two carriers
+together, and the factor's interaction with a Return window, a Boost or an xp rune, are the model's
+reading, not a measurement. Nothing was fitted; only the shape was chosen.
 
 **gold is still unpriced.** It is parsed, carried and shown as a rune on the hero, and the Farm
 board's gold rate does not price it. Pricing it needs the same kind of measurement the xp axis

@@ -32,8 +32,8 @@ export type PhasesExplorerData = {
   activeHeroId: string | null;
   account: AccountShared;
   farmRows: FarmRankingResult;
-  /** `computeFarmXpPerPropMult` over the board's own inputs; the phase row's XP-rune mix is
-   *  applied here, so the per-prop XP printed is the one the board's XP/hr is built on. `null`
+  /** `computeFarmXpPerPropMult` over the board's own inputs; the phase row's XP-rune mix and
+   *  Aprendiz are applied here, so the per-prop XP printed is the one the board's XP/hr is built on. `null`
    *  withholds it, as the board does. */
   xpPerPropMult: number | null;
 };

@@ -220,6 +220,14 @@ describe('rank-20 migration', () => {
     expect(abilityMods({ veia_ouro: 20, fortuna: 20 })).toMatchObject(IDENTITY_MODS);
   });
 
+  it('aprendiz is a team XP aura at 0.75% a rank that abilityMods never folds into its carrier', () => {
+    const aprendiz = ABILITIES.find((a) => a.id === 'aprendiz')!;
+    expect(aprendiz.effect).toEqual({ kind: 'teamXpPct', perLevel: 0.75 });
+    expect(aprendiz.effectText).toContain('+0.75% XP do TIME');
+    expect(aprendiz.effectText).not.toContain('não modelado');
+    expect(abilityMods({ aprendiz: 20 })).toMatchObject(IDENTITY_MODS);
+  });
+
   it('olho_lapidador names its 2026-08-23 scope and keeps its rate', () => {
     const olhoLapidador = ABILITIES.find((a) => a.id === 'olho_lapidador')!;
     // The patch restated WHO the upgraded drop belongs to and excluded Jaulas; the per-level

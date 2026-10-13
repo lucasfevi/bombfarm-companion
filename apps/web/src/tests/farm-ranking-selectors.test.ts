@@ -19,7 +19,7 @@ import { normalizeAccount } from '@/shared/lib/account-shared';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
 import { phaseXpPerPropMult } from '@bombfarm/farm/core';
 
-function farmHero(id: string, overrides: Partial<{ battleAllowed: boolean; xpRunePct: number }> = {}) {
+function farmHero(id: string, overrides: Partial<{ battleAllowed: boolean; xpRunePct: number; apprenticeRank: number }> = {}) {
   return normalizeHero({
     id,
     name: `Hero ${id}`,
@@ -42,6 +42,7 @@ function farmHero(id: string, overrides: Partial<{ battleAllowed: boolean; xpRun
     loadout: emptyLoadout(),
     pts: ZERO_PTS(),
     battleAllowed: overrides.battleAllowed ?? true,
+    ...(overrides.apprenticeRank !== undefined ? { abilities: { aprendiz: overrides.apprenticeRank } } : {}),
     ...(overrides.xpRunePct !== undefined
       ? { runes: [{ axis: 'xp', strengthPct: overrides.xpRunePct, playSecondsLeft: 600, rarity: 0 }] }
       : {}),
@@ -372,6 +373,23 @@ describe('the XP the board prints', () => {
     const runed = xpRows();
     expect(runed.some((row) => row.xpRuneMix > 1 && row.xpRuneMix < 1.09)).toBe(true);
     for (const row of runed) {
+      const perProp = xpPerProp(row.phase) * (phaseXpPerPropMult(mult, rows, row.phase) ?? Number.NaN);
+      expect(row.xpPerHour).toBeCloseTo(row.propsPerHour * perProp, 4);
+    }
+  });
+
+  it('and so it does for a squad with an Aprendiz carrier beside a runed hero', () => {
+    usePlannerStore.getState().hydrateRoster([farmHero('a', { apprenticeRank: 20 }), farmHero('b', { xpRunePct: 9 })], null);
+    importXpMult(2.35);
+    usePlannerStore.getState().setFarmPass(true);
+    usePlannerStore.getState().setFarmReturnBonus('on');
+    const state = usePlannerStore.getState();
+    const mult = selectFarmXpPerPropMult(state);
+    const rows = selectFarmRankingRows(state).rows;
+    const carried = xpRows();
+    expect(carried.length).toBeGreaterThan(0);
+    expect(carried.every((row) => row.apprenticeXpMult > 1 && row.apprenticeXpMult <= 1.15)).toBe(true);
+    for (const row of carried) {
       const perProp = xpPerProp(row.phase) * (phaseXpPerPropMult(mult, rows, row.phase) ?? Number.NaN);
       expect(row.xpPerHour).toBeCloseTo(row.propsPerHour * perProp, 4);
     }

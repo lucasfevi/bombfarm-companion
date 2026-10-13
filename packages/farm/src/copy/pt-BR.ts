@@ -38,7 +38,7 @@ export const farmPtBR: FarmCopy = {
   phasesItemDrops: "Drops de item",
   phasesItemDropsValue: "Itens nível {range}",
   phasesXpPerProp: "XP por prop",
-  phasesXpActualHint: "valor base × seu multiplicador de XP × o Bônus de Retorno, o Passe e o Boost do quadro de Farm × as runas de XP do seu esquadrão",
+  phasesXpActualHint: "valor base × seu multiplicador de XP × o Bônus de Retorno, o Passe e o Boost do quadro de Farm × as runas de XP do seu esquadrão × o Aprendiz em campo",
   phasesGoldComum: "Ouro (Comum)",
   phasesGoldActualHint: "valor base × (1 + o % de ouro do time da sua árvore de habilidades)",
   phasesAvgGold: "Ouro médio / prop",

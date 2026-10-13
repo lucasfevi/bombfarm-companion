@@ -2062,6 +2062,29 @@ describe("LiveSource: the map's XP estimate", () => {
     expect(estimate(source) / bare).toBeCloseTo(1.09, 10);
   });
 
+  it('multiplies every field hero’s XP by Aprendiz while its carrier is on the field, the strongest carrier only', () => {
+    const apprentice = (id: string, level: number) => ({ ...minimalRosterHero(id), abilities: [{ code: 'aprendiz', level }] });
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(
+      viewWithRoster(1.5, [apprentice('top', 20), apprentice('half', 10), xpRune('runed', 0.09), minimalRosterHero('plain')]),
+    );
+    goLive();
+
+    pushFrame({ heroes: [{ id: 'plain' }], phase: 61 });
+    const bare = estimate(source);
+    pushFrame({ heroes: [{ id: 'top' }, { id: 'plain' }], phase: 61 });
+    expect(estimate(source) / bare).toBeCloseTo(1.15, 10);
+    pushFrame({ heroes: [{ id: 'half' }, { id: 'plain' }], phase: 61 });
+    expect(estimate(source) / bare).toBeCloseTo(1.075, 10);
+    pushFrame({ heroes: [{ id: 'top' }, { id: 'half' }, { id: 'plain' }], phase: 61 });
+    expect(estimate(source) / bare).toBeCloseTo(1.15, 10);
+    pushFrame({ heroes: [{ id: 'top' }, { id: 'runed' }], phase: 61 });
+    expect(estimate(source) / bare).toBeCloseTo(1.15 * 1.045, 10);
+    pushFrame({ heroes: [{ id: 'plain' }], phase: 61 });
+    expect(estimate(source)).toBeCloseTo(bare, 10);
+  });
+
   it("prices a loot frame without its XP under that frame's own Boost", () => {
     const { source, pushFrame, goLive } = createHarness();
     source.start();

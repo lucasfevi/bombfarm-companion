@@ -114,6 +114,8 @@ const CARD_FOR_EFFECT: Record<AbilityEffect['kind'], BreakdownStatId | null> = {
   shatterPct: null,
   packDmgPct: 'dmg',
   teamPulseDmgPct: 'dmg',
+  // XP, which no combat card carries.
+  teamXpPct: null,
   none: null,
 };
 

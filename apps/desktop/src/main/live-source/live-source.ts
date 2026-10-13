@@ -45,6 +45,7 @@ import { economyBoostOf, economyMultipliers } from '@bombfarm/domain/farm-rate';
 import { passActive } from '@bombfarm/domain/import-save';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { readHeroRunes, runeXpMultiplier } from '@bombfarm/domain/runes';
+import { apprenticeXpMult } from '@bombfarm/domain/team-buffs';
 import { gameProcessQuery, runPowerShellAsync, runPowerShellSync } from '../game-reader/process.js';
 import { DamageFold } from './damage-fold.js';
 import { EarningsFold } from './earnings-fold.js';
@@ -529,7 +530,10 @@ export function wikiFactsFor(phase: number, boosts: MapAccountBoosts, returnWind
   return {
     propsTotal: intel.propCount,
     economy: {
-      xpPerProp: boosts.xpMult === null ? null : intel.xpPerPropActual * economy.xp * (boosts.xpRuneMix ?? 1),
+      xpPerProp:
+        boosts.xpMult === null
+          ? null
+          : intel.xpPerPropActual * economy.xp * (boosts.xpRuneMix ?? 1) * (boosts.apprenticeXpMult ?? 1),
       averageGoldPerProp: intel.weightedAvgGoldActual * economy.gold,
       averageGoldPerClear: intel.totalMapGoldActual * economy.gold,
     },
@@ -583,6 +587,21 @@ function fieldXpRuneMix(heroes: readonly LiveTickHero[], mults: ReadonlyMap<stri
   let sum = 0;
   for (const hero of heroes) sum += mults.get(hero.id) ?? 1;
   return sum / heroes.length;
+}
+
+/** Each roster hero's Aprendiz rank, keyed by id; a hero without one is left out. */
+function readApprenticeRanks(rawHeroes: unknown): ReadonlyMap<string, number> | undefined {
+  if (!Array.isArray(rawHeroes)) return undefined;
+  const ranks = new Map<string, number>();
+  for (const hero of extractRosterHeroAbilities(rawHeroes)) {
+    const rank = hero.abilities.aprendiz ?? 0;
+    if (rank > 0) ranks.set(hero.id, rank);
+  }
+  return ranks;
+}
+
+function fieldApprenticeXpMult(heroes: readonly LiveTickHero[], ranks: ReadonlyMap<string, number>): number {
+  return apprenticeXpMult(heroes.map((hero) => ({ rank: ranks.get(hero.id) ?? 0, presence: 1 })));
 }
 
 /** `account.vip_until`, unix seconds. */
@@ -652,6 +671,9 @@ export class LiveSource {
   /** From the last read that carried the roster; see {@link readXpRuneMults}. */
   #xpRuneMults: ReadonlyMap<string, number> = new Map();
   #fieldXpRuneMix = 1;
+  /** From the same read as {@link #xpRuneMults}; see {@link readApprenticeRanks}. */
+  #apprenticeRanks: ReadonlyMap<string, number> = new Map();
+  #fieldApprenticeXpMult = 1;
   readonly #damageFold: DamageFold;
   /** Every tap numbers its own frames from 1, so a tap rebuilt by {@link forceDetach} restarts at 1
    *  while the folds still remember the previous tap's last number and would drop its frames. The
@@ -826,6 +848,7 @@ export class LiveSource {
     this.#collectionGoldPct = readCollectionGoldPct(view.payload.skills) ?? this.#collectionGoldPct;
     this.#vipUntil = readVipUntil(view.payload.account) ?? this.#vipUntil;
     this.#xpRuneMults = readXpRuneMults(view.payload.heroes) ?? this.#xpRuneMults;
+    this.#apprenticeRanks = readApprenticeRanks(view.payload.heroes) ?? this.#apprenticeRanks;
     this.#accountBoosts = {
       xpMult: this.#xpMult === undefined || this.#xpMult <= 0 ? null : this.#xpMult,
       teamCoinPct: this.#teamCoinPct ?? 0,
@@ -1047,7 +1070,7 @@ export class LiveSource {
       // Ahead of the folds, so a loot frame's fallback XP is priced under this frame's own Boosts
       // and field.
       boostsChanged = this.#trackBoosts(event.frame.tick);
-      this.#trackFieldXpRuneMix(event.frame.tick.heroes);
+      this.#trackFieldXp(event.frame.tick.heroes);
       this.#earningsFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#mapFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#damageFold.consumeTick(event.frame.tick, this.#frameCounter);
@@ -1077,21 +1100,24 @@ export class LiveSource {
       ...this.#accountBoosts,
       boost: economyBoostOf(this.#boosts),
       xpRuneMix: this.#fieldXpRuneMix,
+      apprenticeXpMult: this.#fieldApprenticeXpMult,
     };
     this.#mapFold.setAccountBoosts(this.#accountBoosts);
   }
 
-  /** An empty field keeps the last mix: no prop pays out while nobody is on it. */
-  #trackFieldXpRuneMix(heroes: readonly LiveTickHero[]): void {
+  /** An empty field keeps the last figures: no prop pays out while nobody is on it. */
+  #trackFieldXp(heroes: readonly LiveTickHero[]): void {
     if (heroes.length === 0) return;
     const mix = fieldXpRuneMix(heroes, this.#xpRuneMults);
-    if (mix === this.#fieldXpRuneMix) return;
+    const apprentice = fieldApprenticeXpMult(heroes, this.#apprenticeRanks);
+    if (mix === this.#fieldXpRuneMix && apprentice === this.#fieldApprenticeXpMult) return;
     this.#fieldXpRuneMix = mix;
+    this.#fieldApprenticeXpMult = apprentice;
     this.#repriceMap();
   }
 
   #ingestTick(tick: LiveTick, atMs: number, sampleSource: 'tap' | 'rest' = 'tap'): void {
-    this.#trackFieldXpRuneMix(tick.heroes);
+    this.#trackFieldXp(tick.heroes);
     const onFieldHeroes: RosterHeroAbilities[] = [];
     for (const heroOnField of tick.heroes) {
       const hero = this.#rosterHeroById.get(heroOnField.id);

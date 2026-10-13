@@ -5,7 +5,7 @@ import type { EconomyBoost } from '@bombfarm/domain/farm-rate';
 const WIRE_HEALTH_FULL = 255;
 
 /** The multipliers the map's economy is worth under: the account's, from the slow authenticated
- *  read, and the running Boosts and field heroes' XP runes, from the stream. */
+ *  read, and the running Boosts and field heroes' XP runes and Aprendiz, from the stream. */
 export interface MapAccountBoosts {
   /** `skills.totals.xp_mult`. `1` is the identity; `null` (no usable multiplier read) withholds
    *  the XP estimate. */
@@ -20,6 +20,8 @@ export interface MapAccountBoosts {
   readonly boost?: EconomyBoost;
   /** The field heroes' XP-rune multiplier, weighted equally across them. Absent, `1`. */
   readonly xpRuneMix?: number;
+  /** Aprendiz over the heroes on the field, a factor on every prop's XP. Absent, `1`. */
+  readonly apprenticeXpMult?: number;
 }
 
 export const NO_MAP_ACCOUNT_BOOSTS: MapAccountBoosts = { xpMult: null, teamCoinPct: 0, collectionGoldPct: 0, pass: false };
@@ -116,6 +118,7 @@ export class MapFold {
       boost?.xp ?? false,
       boost?.drop ?? false,
       boosts.xpRuneMix ?? 1,
+      boosts.apprenticeXpMult ?? 1,
       this.#returnWindow,
     ].map(String).join('|');
     if (this.#wikiFacts?.key === key) return this.#wikiFacts.facts;

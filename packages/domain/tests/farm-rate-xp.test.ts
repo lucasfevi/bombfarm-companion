@@ -1,8 +1,9 @@
 /**
- * XP per prop is `wiki xp × xp_mult × (1 + return + pass + boost) × (1 + p)` for the xp rune of
- * the hero that destroyed the prop — the bracket additive, the rune a separate per-hero factor,
- * both measured from live traffic. These cases pin that shape on hand-built facts, so they hold
- * for any account rather than for one capture.
+ * XP per prop is `wiki xp × xp_mult × (1 + return + pass + boost) × (1 + p) × (1 + 0.0075 × r)`:
+ * `p` the xp rune of the hero that destroyed the prop, `r` the rank of an Aprendiz carrier on the
+ * field — the bracket additive, the rune a per-hero factor, Aprendiz a factor on every hero's
+ * props, all measured from live traffic. These cases pin that shape on hand-built facts, so they
+ * hold for any account rather than for one capture.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -20,7 +21,7 @@ import {
 import { FUSE_FLOOR, STAT_CAPS } from '@bombfarm/domain/model';
 import { PASS_ADDS, xpPerProp } from '@bombfarm/domain/phase-wiki';
 import { runeXpMultiplier, type HeroRune } from '@bombfarm/domain/runes';
-import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
+import { loadFarmRateFixture, withAbilityLevels } from './helpers/farm-rate-fixtures';
 
 const PHASE = 171;
 const XP_MULT = 2.35;
@@ -173,6 +174,104 @@ describe('a hero record carrying an xp rune reaches the row', () => {
     for (const bareRow of compared) {
       const runedRow = runedRows[bareRow.phase - 1];
       expect((runedRow.xpPerHour ?? Number.NaN) / (bareRow.xpPerHour ?? Number.NaN)).toBeCloseTo(1.09, 9);
+    }
+  });
+});
+
+describe('Aprendiz multiplies the XP of every prop the field destroys', () => {
+  const MEASURED_XP_MULT = 2.3981289;
+
+  function perProp(heroes: readonly HeroFarmFacts[], xpMult: number = XP_MULT): number {
+    const priced = row(heroes, xpMult, PASS_ON);
+    return (priced.xpPerHour ?? Number.NaN) / priced.propsPerHour;
+  }
+
+  it('a rank-20 carrier on phase 171 pays 524 × 2.3981289 × 1.3 × 1.15 per prop', () => {
+    expect(perProp([hero('a', { apprenticeRank: 20 })], MEASURED_XP_MULT)).toBeCloseTo(1878.646, 3);
+  });
+
+  it('multiplies outside the bracket: rank 20 is exactly ×1.15 under a Return window and a Boost too', () => {
+    const options: FarmRateOptions = { returnBonus: 'on', pass: true, boost: { gold: false, xp: true, drop: false } };
+    const bare = row([hero('a')], XP_MULT, options);
+    const carried = row([hero('a', { apprenticeRank: 20 })], XP_MULT, options);
+    expect((carried.xpPerHour ?? Number.NaN) / (bare.xpPerHour ?? Number.NaN)).toBeCloseTo(1.15, 12);
+    expect(carried.goldPerHour).toBe(bare.goldPerHour);
+  });
+
+  it('a rank-10 carrier gives ×1.075', () => {
+    expect(perProp([hero('a', { apprenticeRank: 10 })]) / perProp([hero('a')])).toBeCloseTo(1.075, 12);
+  });
+
+  it('two rank-20 carriers give one carrier’s maximum, not the sum', () => {
+    const two = perProp([hero('a', { apprenticeRank: 20 }), hero('b', { apprenticeRank: 20 })]);
+    const none = perProp([hero('a'), hero('b')]);
+    expect(two / none).toBeCloseTo(1.15, 12);
+  });
+
+  it('lifts the non-carrier’s share too, unlike a rune that reaches only its own hero’s kills', () => {
+    const bare = perProp([hero('a'), hero('b')]);
+    expect(perProp([hero('a', { apprenticeRank: 20 }), hero('b')]) / bare).toBeCloseTo(1.15, 12);
+    expect(perProp([hero('a', { xpRuneMult: 1.15 }), hero('b')]) / bare).toBeCloseTo(1.075, 9);
+  });
+
+  it('a carrier that never stands on the field gives ×1', () => {
+    const benched = computeSquadFarmFacts([hero('a'), hero('b', { apprenticeRank: 20, uptime: 0 })], account(XP_MULT));
+    expect(benched.apprenticeXpMult).toBe(1);
+  });
+
+  it('a carrier on the field half the time is priced at half its aura, as the standing auras are', () => {
+    const squad = computeSquadFarmFacts([hero('a', { apprenticeRank: 20, uptime: 0.5 })], account(XP_MULT));
+    expect(squad.apprenticeXpMult).toBeCloseTo(1.075, 12);
+  });
+
+  it('the row repeats the squad factor', () => {
+    expect(row([hero('a', { apprenticeRank: 20 })], XP_MULT, PASS_ON).apprenticeXpMult).toBeCloseTo(1.15, 12);
+    expect(row([hero('a')], XP_MULT, PASS_ON).apprenticeXpMult).toBe(1);
+  });
+});
+
+describe('a hero record carrying Aprendiz reaches the row', () => {
+  const { heroes, account: fixtureAccount } = loadFarmRateFixture();
+  const accountWithXp = { ...fixtureAccount, tree: { ...fixtureAccount.tree, xpMult: XP_MULT } };
+  const [subject, other] = heroes;
+  const carrier = withAbilityLevels(other, { aprendiz: 20 });
+
+  it('the hero facts carry the rank, and a hero without it carries none', () => {
+    const facts = computeHeroFarmFacts({ heroes: [subject, carrier], account: accountWithXp, enabledHeroIds: [subject.id, carrier.id] });
+    expect(facts[1].apprenticeRank).toBe(20);
+    expect(facts[0].apprenticeRank).toBeUndefined();
+  });
+
+  it('a carrier left out of the pool is benched, and the pool earns ×1', () => {
+    const rate = (roster: typeof heroes) =>
+      computeFarmRates({ heroes: roster, account: accountWithXp, enabledHeroIds: [subject.id], pass: true }).rows;
+    const bareRows = rate([subject, other]);
+    const benchedRows = rate([subject, carrier]);
+    expect(benchedRows.map((candidate) => candidate.xpPerHour)).toEqual(bareRows.map((candidate) => candidate.xpPerHour));
+    expect(benchedRows.every((candidate) => candidate.apprenticeXpMult === 1)).toBe(true);
+  });
+
+  it('an enabled carrier lifts every feasible row by its rotation-weighted aura', () => {
+    const { squad, rows } = computeFarmRates({
+      heroes: [subject, carrier],
+      account: accountWithXp,
+      enabledHeroIds: [subject.id, carrier.id],
+      pass: true,
+    });
+    const carrierUptime = squad.heroes[1].uptime;
+    expect(squad.apprenticeXpMult).toBeCloseTo(1 + 0.15 * carrierUptime, 12);
+    const bareRows = computeFarmRates({
+      heroes: [subject, other],
+      account: accountWithXp,
+      enabledHeroIds: [subject.id, other.id],
+      pass: true,
+    }).rows;
+    const compared = bareRows.filter((candidate) => (candidate.xpPerHour ?? 0) > 0);
+    expect(compared.length).toBeGreaterThan(0);
+    for (const bareRow of compared) {
+      const carriedRow = rows[bareRow.phase - 1];
+      expect(carriedRow.propsPerHour).toBe(bareRow.propsPerHour);
+      expect((carriedRow.xpPerHour ?? Number.NaN) / (bareRow.xpPerHour ?? Number.NaN)).toBeCloseTo(squad.apprenticeXpMult, 9);
     }
   });
 });

@@ -60,12 +60,7 @@ export type AbilityEffectReadout =
  * it — loot and cage effects the farm board prices elsewhere or not at all. A test holds each
  * figure against the ability's own effect text, so the two cannot drift apart.
  */
-type UnmodelledReadoutKind =
-  | 'cageDmgPct'
-  | 'passageAttackPct'
-  | 'dropTierPct'
-  | 'goldPct'
-  | 'xpPct';
+type UnmodelledReadoutKind = 'cageDmgPct' | 'passageAttackPct' | 'dropTierPct' | 'goldPct';
 
 const UNMODELLED_PER_LEVEL: Record<string, { kind: UnmodelledReadoutKind; perLevel: number }> = {
   caca_hero: { kind: 'cageDmgPct', perLevel: 5 },
@@ -73,12 +68,11 @@ const UNMODELLED_PER_LEVEL: Record<string, { kind: UnmodelledReadoutKind; perLev
   olho_lapidador: { kind: 'dropTierPct', perLevel: 2.5 },
   veia_ouro: { kind: 'goldPct', perLevel: 2 },
   fortuna: { kind: 'goldPct', perLevel: 0.5 },
-  aprendiz: { kind: 'xpPct', perLevel: 0.75 },
 };
 
 export const UNMODELLED_READOUT_PER_LEVEL: Readonly<typeof UNMODELLED_PER_LEVEL> = UNMODELLED_PER_LEVEL;
 
-const UNMODELLED_KINDS = new Set<AbilityEffectReadout['kind']>(['none', 'cageDmgPct', 'passageAttackPct', 'dropTierPct', 'goldPct', 'xpPct']);
+const UNMODELLED_KINDS = new Set<AbilityEffectReadout['kind']>(['none', 'cageDmgPct', 'passageAttackPct', 'dropTierPct', 'goldPct']);
 
 /** Whether the combat model prices this readout, or merely repeats a figure the wiki publishes. */
 export function isPricedReadout(readout: AbilityEffectReadout): boolean {
@@ -90,9 +84,9 @@ const TEAM_BUFF_IDS = new Set<string>(TEAM_BUFF_ABILITY_IDS);
 const TEAM_AURA_IDS = new Set<string>(TEAM_AURA_SWITCH_IDS);
 
 /**
- * Every ability the game scopes to the TEAM: the switched auras plus the team auras the combat
- * model never prices (Fortuna's gold is the farm board's layer; Aprendiz is not modelled yet), so
- * they belong to no switch list.
+ * Every ability the game scopes to the TEAM: the switched auras plus the two the combat model
+ * never prices — Fortuna's gold and Aprendiz's XP are the farm board's — so they belong to no
+ * switch list.
  */
 export const TEAM_ABILITY_IDS = [...TEAM_AURA_SWITCH_IDS, 'fortuna', 'aprendiz'] as const;
 
@@ -148,6 +142,8 @@ function readoutKind(effect: AbilityEffect): AbilityEffectReadout['kind'] {
       return 'packDmgPctPerAlly';
     case 'teamPulseDmgPct':
       return 'teamPulseDmgPct';
+    case 'teamXpPct':
+      return 'xpPct';
     case 'none':
       return 'none';
   }
@@ -199,6 +195,7 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
     case 'packDmgPctPerAlly':
       return { kind, value: mods.packDmgPctPerAlly };
     case 'teamPulseDmgPct':
+    case 'xpPct':
       return { kind, value: perLevelOf(definition.effect) * rank };
     case 'none': {
       const published = UNMODELLED_PER_LEVEL[abilityId];
@@ -211,7 +208,6 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
     case 'dropTierPct':
     case 'goldPct':
     case 'teamCritDmgPct':
-    case 'xpPct':
       return { kind: 'none' };
   }
 }

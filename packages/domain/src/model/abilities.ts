@@ -93,6 +93,13 @@ export type AbilityEffect =
    * rotation, or over the hero's own stint on its own screen.
    */
   | { kind: 'teamPulseDmgPct'; perLevel: number }
+  /**
+   * Aprendiz — TEAM XP % per level. Measured from live traffic: a rank-20 carrier on the field
+   * multiplies the XP of EVERY field hero's props by exactly 1.15, outside the Return/Pass/Boost
+   * bracket and outside `xp_mult`. Capped at one carrier's maximum, like Carnificina. Never on a
+   * hero's own mods: the farm board prices it over the rotation (`team-buffs.ts`).
+   */
+  | { kind: 'teamXpPct'; perLevel: number }
   | { kind: 'none' };
 
 export interface AbilityDef {
@@ -162,7 +169,7 @@ export const ABILITIES: AbilityDef[] = [
   { id: 'pavio_curto', name: 'Pavio Curto', max: 20, effectText: '+0.5% redução de recarga (próprio)/nível, somada no fim, até o teto', effect: { kind: 'cdrFlat', perLevel: 0.5 } },
   { id: 'carnificina', name: 'Carnificina', max: 20, effectText: '+5% dano crítico do TIME/nível, somado ao bônus de crítico; dois portadores não passam do máximo de um', effect: { kind: 'teamCritDmgFlat', perLevel: 5 } },
   { id: 'matador_chefes', name: 'Matador de Chefes', max: 20, effectText: '+5% dano (próprio) no chefe do portão 2×2/nível, não vale para a Jaula', effect: { kind: 'bossDmgPct', perLevel: 5 } },
-  { id: 'aprendiz', name: 'Aprendiz', max: 20, effectText: '+0.75% XP do TIME/nível por rocha quebrada com ele em campo, dividido como o XP normal; dois portadores não passam do máximo de um (não modelado)', effect: { kind: 'none' } },
+  { id: 'aprendiz', name: 'Aprendiz', max: 20, effectText: '+0.75% XP do TIME/nível por rocha quebrada com ele em campo, dividido como o XP normal; dois portadores não passam do máximo de um', effect: { kind: 'teamXpPct', perLevel: 0.75 } },
 ];
 
 /** Inventory-sheet abilities (shared Σ with gear) — kept out of the combat ability grid. */
@@ -245,7 +252,7 @@ export interface AbilityMods {
 /**
  * Team auras — Grito de Guerra (`attackPct`), Marcha Acelerada (`speedPct`), Fôlego de Mineiro
  * (`drainPct`), Presságio Mortal (`critChanceFlat`, not `onSheet`), Brecha (`penetrationPp`, not
- * `onSheet`), Carnificina (`teamCritDmgFlat`) and Passagem de Bastão (`teamPulseDmgPct`) — never reach a hero's own `AbilityMods`
+ * `onSheet`), Carnificina (`teamCritDmgFlat`), Passagem de Bastão (`teamPulseDmgPct`) and Aprendiz (`teamXpPct`) — never reach a hero's own `AbilityMods`
  * (PR #139). Under the confirmed rule a team aura is a property of the FIELD: every deployed hero
  * experiences the SAME capped roster total (`team-buffs.ts`, `computeCombatMults`), carrier or
  * not, so there is no "this hero's own share" for `abilityMods` to fold in — doing so was exactly
@@ -322,6 +329,9 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
         break;
       case 'teamPulseDmgPct':
         // Passagem de Bastão (team, pulsed) — see the module doc above.
+        break;
+      case 'teamXpPct':
+        // Aprendiz (team XP) — see the module doc above.
         break;
       case 'none':
         break;

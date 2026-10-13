@@ -101,6 +101,12 @@ describe('ownAbilityReadout — the model’s own arithmetic read back', () => {
     expect(abilityMods({ matilha: 10, passagem_bastao: 10 }).dmgMult).toBe(1);
   });
 
+  it('Aprendiz reads as team XP at its rank, and the farm board prices it', () => {
+    const readout = ownAbilityReadout('aprendiz', 20);
+    expect(readout).toEqual({ kind: 'xpPct', value: 15 });
+    expect(isPricedReadout(readout)).toBe(true);
+  });
+
   it('Brecha as a team aura reads in penetration points at the amount asked for', () => {
     expect(teamAuraReadout('brecha', 20)).toEqual({ kind: 'penetrationPoints', value: 20 });
   });

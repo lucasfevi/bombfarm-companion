@@ -99,6 +99,7 @@ import { buildCandidateSheet } from './points-reopt-core';
 import { pipelineForHero } from './roster-dps';
 import { DEFAULT_CASA_SLOTS } from './casa-slots';
 import {
+  apprenticeXpMult,
   computeTeamBuffsOverRotation,
   holdAurasAtCap,
   pulseHeldAtCap,
@@ -324,6 +325,8 @@ export type HeroFarmFacts = {
   /** The XP this hero's kills earn over the account's ({@link runeXpMultiplier}). OPTIONAL, and
    *  absent means 1. */
   xpRuneMult?: number;
+  /** Aprendiz's rank. OPTIONAL, and absent means the hero carries none. */
+  apprenticeRank?: number;
   /** True when this hero contributes no throughput: `avgHitBase <= 0` or `plantsPerSec <= 0`. */
   degenerate: boolean;
 };
@@ -407,6 +410,8 @@ export type HeroFarmBasis = {
   blocksPerBomb: number;
   /** See {@link HeroFarmFacts.xpRuneMult}. Absent means 1. */
   xpRuneMult?: number;
+  /** See {@link HeroFarmFacts.apprenticeRank}. */
+  apprenticeRank?: number;
   /**
    * The same pipeline output with every team aura OFF, kept so {@link squadFactsFromBases} can
    * re-price the auras for any candidate assignment (see {@link priceAuraLayer}). Absent on a
@@ -467,6 +472,11 @@ function xpRuneMultField(runes: readonly HeroRune[] | undefined): { xpRuneMult?:
   return mult === 1 ? {} : { xpRuneMult: mult };
 }
 
+function apprenticeRankField(abilities: Record<string, number>): { apprenticeRank?: number } {
+  const rank = clampAbilityLevel(abilities.aprendiz ?? 0);
+  return rank > 0 ? { apprenticeRank: rank } : {};
+}
+
 /**
  * The sole construction site for a {@link HeroFarmBasis}. Exported so a second producer (the Team
  * Plan's farm objective, which reaches the same sheets through its own scorer rather than through
@@ -492,6 +502,7 @@ export function heroFarmBasisFromParts(parts: HeroFarmBasisParts): HeroFarmBasis
     matadorChefesLevel: clampAbilityLevel(parts.abilities.matador_chefes ?? 0),
     blocksPerBomb: 1 + 0.5 * parts.context.blastRange,
     ...xpRuneMultField(parts.runes),
+    ...apprenticeRankField(parts.abilities),
     ...(parts.auraFree ? { auraFree: parts.auraFree } : {}),
     ...(parts.critPointCeiling !== undefined ? { critPointCeiling: parts.critPointCeiling } : {}),
     ...(parts.critCeilingBindsSheet ? { critCeilingBindsSheet: true } : {}),
@@ -813,6 +824,7 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
       ? { bossDmgMult: abilityMods({ matador_chefes: basis.matadorChefesLevel }).bossDmgMult }
       : {}),
     ...(basis.xpRuneMult !== undefined ? { xpRuneMult: basis.xpRuneMult } : {}),
+    ...(basis.apprenticeRank !== undefined ? { apprenticeRank: basis.apprenticeRank } : {}),
     degenerate,
     ...(passagemBastao ? { passagemBastao } : {}),
   };
@@ -920,6 +932,12 @@ export type SquadFarmFacts = {
    * {@link FarmRateRow.xpPerHour} is then withheld rather than priced at an invented 1.
    */
   xpMult: number | null;
+  /**
+   * Aprendiz over the pool ({@link apprenticeXpMult}): each carrier present for its own duty
+   * cycle, the same unconstrained `uptime` the standing auras are weighted by. It multiplies every
+   * hero's XP, not its carrier's alone. `1` without a carrier.
+   */
+  apprenticeXpMult: number;
 };
 
 /**
@@ -969,6 +987,10 @@ export function computeSquadFarmFacts(
   const rawXpMult = account.tree.xpMult;
   const xpMult = typeof rawXpMult === 'number' && Number.isFinite(rawXpMult) ? rawXpMult : null;
 
+  const apprenticeCarriers = heroFacts.flatMap((hero) =>
+    hero.apprenticeRank ? [{ rank: hero.apprenticeRank, presence: hero.uptime }] : [],
+  );
+
   return {
     heroes: heroFacts,
     fieldSlots,
@@ -981,6 +1003,7 @@ export function computeSquadFarmFacts(
     teamCoinMult,
     treeLuckFlatPct,
     xpMult,
+    apprenticeXpMult: apprenticeXpMult(apprenticeCarriers),
   };
 }
 
@@ -1304,6 +1327,9 @@ export type FarmRateRow = {
   /** The squad's XP-rune multiplier at this phase, each hero's weighted by its share of the
    *  kills; `1` without runes. Part of {@link xpPerHour}, outside the account's own multiplier. */
   xpRuneMix: number;
+  /** {@link SquadFarmFacts.apprenticeXpMult}, repeated so a per-prop figure can be read off the
+   *  row. Part of {@link xpPerHour}. */
+  apprenticeXpMult: number;
   /** Props destroyed per hour, over the WHOLE cycle — including the head, and on a gate the boss,
    *  neither of which drops any. Always consistent with {@link clearSecs}:
    *  `cyclesPerHour × propsPerMap`. */
@@ -1546,7 +1572,9 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const timePiecesPerHour = line.gate ? propsPerHour * DROP_RATES.time * sorteMult : 0;
   const stoneChestsPerHour = line.gate ? propsPerHour * DROP_RATES.stone * sorteMult : 0;
   const xpPerHour =
-    squad.xpMult === null ? null : propsPerHour * xpPerProp(line.phase) * squad.xpMult * economy.xp * xpSelfMix;
+    squad.xpMult === null
+      ? null
+      : propsPerHour * xpPerProp(line.phase) * squad.xpMult * economy.xp * xpSelfMix * squad.apprenticeXpMult;
 
   const maxPropHp = line.hp * MAX_PROP_HP_MULT;
   const oneShot = perHero.length > 0 && perHero.every((hero) => hero.floorHit >= maxPropHp);
@@ -1573,6 +1601,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
     stoneChestsPerHour: normalizeZero(stoneChestsPerHour),
     xpPerHour: xpPerHour === null ? null : normalizeZero(xpPerHour),
     xpRuneMix: xpSelfMix,
+    apprenticeXpMult: squad.apprenticeXpMult,
     propsPerHour: normalizeZero(propsPerHour),
     cyclesPerHour: normalizeZero(cyclesPerHour),
     clearSecs,

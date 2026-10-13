@@ -199,7 +199,7 @@ export function computeFarmRanking(inputs: FarmInputs): FarmRankingResult {
 
 /**
  * What the board multiplies one prop's wiki XP by for the account — `xp_mult` and the same
- * Return/Pass/Boost bracket its rows use. The squad's XP runes are per phase, so
+ * Return/Pass/Boost bracket its rows use. The squad's XP runes and Aprendiz live on the rows, so
  * {@link phaseXpPerPropMult} adds them. `null` exactly when the rows withhold XP.
  */
 export function computeFarmXpPerPropMult(inputs: FarmInputs): number | null {
@@ -210,15 +210,16 @@ export function computeFarmXpPerPropMult(inputs: FarmInputs): number | null {
   });
 }
 
-/** {@link computeFarmXpPerPropMult} times the phase row's XP-rune mix, so a per-prop figure beside
- *  the board (the Phases panel) times the row's props/hr is the row's XP/hr. */
+/** {@link computeFarmXpPerPropMult} times the phase row's XP-rune mix and Aprendiz, so a per-prop
+ *  figure beside the board (the Phases panel) times the row's props/hr is the row's XP/hr. */
 export function phaseXpPerPropMult(
   accountMult: number | null,
   rows: readonly FarmRateRow[],
   phase: number,
 ): number | null {
   if (accountMult === null) return null;
-  return accountMult * (rows.find((row) => row.phase === phase)?.xpRuneMix ?? 1);
+  const row = rows.find((candidate) => candidate.phase === phase);
+  return accountMult * (row?.xpRuneMix ?? 1) * (row?.apprenticeXpMult ?? 1);
 }
 
 /**
