@@ -51,4 +51,27 @@ describe('SheetCloneTable', () => {
   it('tints the delta down for a clone that removes the weapon', () => {
     expect(render(withWeapon, emptyLoadout())).toContain('data-clone-delta="down"');
   });
+
+  it('leaves out the stage columns that gear cannot change', () => {
+    const markup = render(emptyLoadout(), withWeapon);
+    for (const label of [t.colSheetBirth, t.colSheetDeltaLevel, t.colSheetDeltaStars, t.colSheetDeltaAbility]) {
+      expect(markup).not.toContain(`>${label}<`);
+    }
+    for (const label of [t.colSheetDeltaGear, t.colSheetDeltaPoints, t.colSheetDeltaTree, t.colSheetTotal]) {
+      expect(markup).toContain(label);
+    }
+  });
+
+  it('puts the description and the pointer to the Points tab behind an info tip instead of a paragraph', () => {
+    const markup = render(emptyLoadout(), emptyLoadout());
+    expect(markup).not.toContain(`<p class="`);
+    expect(markup).toContain(`aria-label="${t.panelCloneSheet}: ${t.cloneSheetTip}`.replace(/'/g, '&#x27;'));
+    expect(t.cloneSheetTip).toContain('Points tab');
+  });
+
+  it('notes on the Crit row that the 20% crit aura leaves 80% of room on the sheet', () => {
+    const markup = render(emptyLoadout(), emptyLoadout());
+    expect(markup).toContain('Deadly Omen (+20% crit chance) on the team, crit chance caps out at 80%');
+    expect(markup.match(/Deadly Omen/g)).toHaveLength(1);
+  });
 });

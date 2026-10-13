@@ -3,19 +3,22 @@
 import { useMemo, type ReactNode } from 'react';
 
 import { peelSheetStages } from '@bombfarm/domain/sheet-stages';
+import { abilityName } from '@bombfarm/domain/game-labels';
+import { STAT_CAPS } from '@bombfarm/domain/model';
 import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
+import { TEAM_BUFF_CAP } from '@bombfarm/domain/team-buffs';
 import type { Loadout } from '@bombfarm/domain/gear';
 import {
   DataTable,
+  InfoTip,
   Panel,
   cn,
   mutedClass,
   numberFormatterFor,
   panelHClass,
   panelTitleClass,
-  tipClass,
 } from '@bombfarm/ui';
-import type { Lang, SheetCloneCopy, StatPanelCopy } from '../copy';
+import { sub, type Lang, type SheetCloneCopy, type StatPanelCopy } from '../copy';
 import { sheetStatUnit } from '../model/breakdown-labels';
 import { cloneDeltaText, formatOverCapCell, stageColumnText } from '../model/sheet-cells';
 import {
@@ -69,11 +72,18 @@ export function SheetCloneTable({
     );
   }, [birth, level, stars, sheetOther, pts, tree, runes, loadout, altLoadout]);
 
+  const critAuraTip = useMemo(
+    () =>
+      sub(t.critAuraCapTip, {
+        aura: abilityName('pressagio_mortal', lang),
+        amount: boundFormatNumber(TEAM_BUFF_CAP.pressagio_mortal, 0),
+        threshold: boundFormatNumber(STAT_CAPS.critChance - TEAM_BUFF_CAP.pressagio_mortal, 0),
+      }),
+    [t.critAuraCapTip, lang, boundFormatNumber],
+  );
+
   const showRune = runes !== undefined && runes.length > 0;
   const deltaHeaders: { key: SheetStageColumn; label: string }[] = [
-    { key: 'deltaLevel', label: t.colSheetDeltaLevel },
-    { key: 'deltaStars', label: t.colSheetDeltaStars },
-    { key: 'deltaAbility', label: t.colSheetDeltaAbility },
     { key: 'deltaGear', label: t.colSheetDeltaGear },
     { key: 'deltaPoints', label: t.colSheetDeltaPoints },
     { key: 'deltaTree', label: t.colSheetDeltaTree },
@@ -84,24 +94,22 @@ export function SheetCloneTable({
     <Panel data-testid="gear-clone-sheet">
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>{t.panelCloneSheet}</h2>
+        <InfoTip label={t.panelCloneSheet} tip={t.cloneSheetTip} />
       </div>
-      <p className={tipClass}>{t.cloneSheetTip}</p>
       <DataTable.Root className="overflow-x-auto">
-        <DataTable.Table className="table-fixed min-w-4xl">
+        <DataTable.Table className="table-fixed">
           <colgroup>
-            <col className="w-30" />
-            <col className="w-22" />
-            {deltaHeaders.map(({ key }) => (
-              <col key={key} className="w-21" />
-            ))}
-            <col className="w-22" />
-            <col className="w-22" />
             <col className="w-28" />
+            {deltaHeaders.map(({ key }) => (
+              <col key={key} className="w-24" />
+            ))}
+            <col className="w-24" />
+            <col className="w-24" />
+            <col className="w-36" />
           </colgroup>
           <DataTable.Head>
             <DataTable.Row>
               <DataTable.Header>{t.colStat}</DataTable.Header>
-              <DataTable.Header align="right">{t.colSheetBirth}</DataTable.Header>
               {deltaHeaders.map(({ key, label }) => (
                 <DataTable.Header key={key} align="right">
                   <span className="min-w-0 truncate">{label}</span>
@@ -136,9 +144,13 @@ export function SheetCloneTable({
               const overCapCurrent = formatOverCapCell(row.overCap.current, boundFormatNumber, unit);
               return (
                 <DataTable.Row key={statKey}>
-                  <DataTable.Cell className="truncate">{t.statShort[statKey]}</DataTable.Cell>
-                  <DataTable.Cell align="right" numeric className={mutedClass}>
-                    {cell('birth')}
+                  <DataTable.Cell>
+                    <span className="flex items-center gap-1">
+                      <span className="min-w-0 truncate">{t.statShort[statKey]}</span>
+                      {statKey === 'critChance' ? (
+                        <InfoTip label={t.statShort[statKey]} tip={critAuraTip} />
+                      ) : null}
+                    </span>
                   </DataTable.Cell>
                   {deltaHeaders.map(({ key }) => (
                     <DataTable.Cell key={key} align="right" numeric className={mutedClass}>

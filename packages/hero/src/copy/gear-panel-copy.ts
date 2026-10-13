@@ -82,5 +82,6 @@ export type GearPanelCopy = {
 export type SheetCloneCopy = {
   panelCloneSheet: string;
   cloneSheetTip: string;
+  critAuraCapTip: string;
   colSheetDeltaClone: string;
 };

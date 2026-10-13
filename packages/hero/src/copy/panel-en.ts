@@ -164,6 +164,8 @@ export const gearPanelEn = {
 export const sheetCloneEn = {
   panelCloneSheet: 'Stats: current vs clone',
   cloneSheetTip:
-    'The hero sheet with your current gear. Where the clone changes a value, the clone value is stacked beneath it. Δ clone is the clone total minus the current total.',
+    'The hero sheet with your current gear. Where the clone changes a value, the clone value is stacked beneath it. Δ clone is the clone total minus the current total. The full per-stat breakdown (birth roll, level, stars and abilities) is on the Points tab.',
+  critAuraCapTip:
+    'With {aura} (+{amount}% crit chance) on the team, crit chance caps out at {threshold}% on this sheet. The aura is added on top of the sheet, so anything above {threshold}% is wasted.',
   colSheetDeltaClone: 'Δ clone',
 } as const;
