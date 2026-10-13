@@ -7,7 +7,7 @@ export const en = {
   privacyTitle: "Privacy policy",
   privacyUpdated: "Last updated {date}",
   privacyIntro:
-    "Bomb Farm Companion is an unofficial, open-source fan tool for Bomb Farm, made by an independent developer and not affiliated with the game's makers. This page covers the Windows desktop app and this website: what each one collects, why, how long it is kept, and how to have it deleted.",
+    "Bomb Farm Companion is an unofficial, open-source fan tool for Bomb Farm, made by an independent developer and not affiliated with the game's makers. This page covers the Windows desktop app, this website and Premium accounts: what each one collects, why, how long it is kept, and how to have it deleted.",
   privacyPingTitle: "What the desktop app sends us",
   privacyPingIntro:
     "The installed desktop app sends one short message to our server about a minute after it opens, then once an hour while it runs. We use it to count how many people use the app, how many come back, and which versions are still in use, and so the developer can see which game accounts use the app and when each was last active. Each message contains:",
@@ -68,6 +68,40 @@ export const en = {
       ],
     },
     {
+      title: "Premium accounts",
+      p: [
+        "Premium is an optional paid tier. Everything from here to “Your rights” applies only if you create a Premium account; if you never do, none of it is collected. You create the account on the Premium account website by signing in with Discord, Google or Steam.",
+        "For a Premium account we keep a random code that identifies the account, and the account id of each sign-in you add: your Discord account id, your Google account id and your SteamID. We ask Discord and Google only for that id — not your email, name or picture. Signing in with Steam also proves which SteamID is yours.",
+        "Once you sign in on the desktop app, it can send us your game account id and the SteamID the game stores on your computer. We link them to your Premium account only if that SteamID matches the one you signed in with. Nothing else from the game is sent, and never your game session.",
+        "Sign-in sessions are random codes that keep you signed in. We store them only in a scrambled form that cannot be turned back into the code.",
+        "We use this data only to run your Premium account — performing our contract with you (LGPD art. 7, V). We send you no email.",
+      ],
+    },
+    {
+      title: "Where Premium data is stored and who else handles it",
+      p: [
+        "Premium account data is stored by Supabase in its own database in the eastern United States, separate from the usage data above. The Premium account website runs on Vercel, and our server on DigitalOcean, as above. Discord, Google and Steam confirm who you are when you sign in with them.",
+        "GitHub stores an encrypted copy of the Premium database each night, kept for 90 days, so we can recover from a failure.",
+        "Supabase, Vercel, DigitalOcean and GitHub act only on our instructions; Discord, Google and Steam also act under their own privacy policies. All of them are outside Brazil, so this is an international transfer of your data. Only the developer can look up Premium account records, in the same private dashboard described above, to answer support requests.",
+      ],
+    },
+    {
+      title: "How long Premium data is kept",
+      p: [
+        "Temporary sign-in codes are deleted within a day of expiring. A session is deleted within a day of expiring, of going unused for too long, or of you signing out.",
+        "Your account, sign-ins and game account link are kept until you delete your account.",
+        "Nightly encrypted copies are deleted after 90 days.",
+      ],
+    },
+    {
+      title: "Deleting your Premium account",
+      p: [
+        "You can delete your Premium account yourself on the Premium account website. Deletion signs you out everywhere and removes your sign-ins and game account link; only the random account code remains, marked as deleted, with nothing that identifies you.",
+        "A deleted account may still sit in the encrypted nightly copies for up to 90 days. So that a restore never brings it back, we note the deleted account's random code and the time of deletion outside the database, and delete it again if we ever restore a copy. That note holds nothing else.",
+        "Your rights below apply to Premium data too; include one of your Premium account's sign-ins (for example your SteamID) in your email so we can find it.",
+      ],
+    },
+    {
       title: "Your rights",
       p: [
         "Under Brazil's LGPD and similar laws you can ask us to confirm whether we hold data about you, see it, correct it, delete it, or learn who we share it with. Email us with your game account id and we will answer within 15 days.",
@@ -96,7 +130,7 @@ export const pt: typeof en = {
   privacyTitle: "Política de privacidade",
   privacyUpdated: "Atualizada em {date}",
   privacyIntro:
-    "O Bomb Farm Companion é uma ferramenta de fã, não oficial e de código aberto, para o Bomb Farm, feita por um desenvolvedor independente e sem vínculo com os criadores do jogo. Esta página cobre o app para Windows e este site: o que cada um coleta, por quê, por quanto tempo guardamos e como pedir a exclusão.",
+    "O Bomb Farm Companion é uma ferramenta de fã, não oficial e de código aberto, para o Bomb Farm, feita por um desenvolvedor independente e sem vínculo com os criadores do jogo. Esta página cobre o app para Windows, este site e as contas Premium: o que cada um coleta, por quê, por quanto tempo guardamos e como pedir a exclusão.",
   privacyPingTitle: "O que o app envia para nós",
   privacyPingIntro:
     "O app instalado envia uma mensagem curta ao nosso servidor cerca de um minuto depois de abrir e, em seguida, uma vez por hora enquanto estiver aberto. Usamos isso para contar quantas pessoas usam o app, quantas voltam e quais versões ainda estão em uso, e para que o desenvolvedor possa ver quais contas do jogo usam o app e quando cada uma esteve ativa pela última vez. Cada mensagem contém:",
@@ -154,6 +188,40 @@ export const pt: typeof en = {
       p: [
         "Este site é estático e hospedado pela Vercel. Os saves que você importa ficam no armazenamento do seu navegador, no seu dispositivo, e nunca são enviados.",
         "Ele carrega dados públicos do GitHub (a versão mais recente e os preços do mercado). Não usa ferramentas de análise nem cookies de rastreamento. Como qualquer hospedagem, a Vercel pode manter registros técnicos padrão das requisições.",
+      ],
+    },
+    {
+      title: "Contas Premium",
+      p: [
+        "O Premium é um plano pago e opcional. Tudo daqui até “Os seus direitos” vale só se você criar uma conta Premium; se nunca criar, nada disso é coletado. A conta é criada no site da conta Premium, entrando com Discord, Google ou Steam.",
+        "De uma conta Premium guardamos um código aleatório que identifica a conta e o id de cada forma de entrar que você adicionar: o id da sua conta do Discord, o id da sua conta do Google e o seu SteamID. Pedimos ao Discord e ao Google só esse id — não o seu e-mail, nome ou foto. Entrar com a Steam também comprova qual SteamID é seu.",
+        "Depois que você entra no app, ele pode nos enviar o id da sua conta do jogo e o SteamID que o jogo guarda no seu computador. Só os vinculamos à sua conta Premium se esse SteamID for o mesmo com que você entrou. Nada mais do jogo é enviado, e nunca a sua sessão do jogo.",
+        "As sessões de acesso são códigos aleatórios que mantêm você conectado. Guardamos só uma forma embaralhada deles, que não pode ser convertida de volta no código.",
+        "Usamos esses dados só para manter a sua conta Premium — execução do contrato com você (LGPD art. 7º, V). Não enviamos e-mails para você.",
+      ],
+    },
+    {
+      title: "Onde ficam os dados Premium e quem mais tem acesso",
+      p: [
+        "Os dados das contas Premium são guardados pela Supabase num banco de dados próprio no leste dos Estados Unidos, separado dos dados de uso descritos acima. O site da conta Premium roda na Vercel, e o nosso servidor na DigitalOcean, como acima. Discord, Google e Steam confirmam quem você é quando você entra com eles.",
+        "O GitHub guarda toda noite uma cópia criptografada do banco de dados Premium, mantida por 90 dias, para podermos recuperar falhas.",
+        "Supabase, Vercel, DigitalOcean e GitHub atuam apenas conforme as nossas instruções; Discord, Google e Steam também seguem as próprias políticas de privacidade. Todos ficam fora do Brasil, então isso envolve transferência internacional dos seus dados. Só o desenvolvedor pode consultar os registros das contas Premium, no mesmo painel privado descrito acima, para atender pedidos de suporte.",
+      ],
+    },
+    {
+      title: "Por quanto tempo guardamos os dados Premium",
+      p: [
+        "Códigos temporários de acesso são apagados em até um dia depois de expirarem. Uma sessão é apagada em até um dia depois de expirar, de ficar sem uso por tempo demais ou de você sair.",
+        "A sua conta, as formas de entrar e o vínculo com a conta do jogo ficam guardados até você excluir a conta.",
+        "As cópias noturnas criptografadas são apagadas após 90 dias.",
+      ],
+    },
+    {
+      title: "Excluir a sua conta Premium",
+      p: [
+        "Você mesmo pode excluir a sua conta Premium no site da conta Premium. A exclusão desconecta você de todos os lugares e remove as formas de entrar e o vínculo com a conta do jogo; só o código aleatório da conta permanece, marcado como excluído, sem nada que identifique você.",
+        "Uma conta excluída pode continuar nas cópias noturnas criptografadas por até 90 dias. Para que uma restauração nunca a traga de volta, anotamos o código aleatório da conta excluída e o horário da exclusão fora do banco de dados, e a excluímos de novo se algum dia restaurarmos uma cópia. Essa anotação não contém mais nada.",
+        "Os seus direitos descritos abaixo valem também para os dados Premium; inclua no e-mail uma das formas de entrar da conta Premium (por exemplo, o seu SteamID) para que possamos encontrá-la.",
       ],
     },
     {
