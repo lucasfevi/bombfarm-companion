@@ -240,11 +240,8 @@ export function computeTeamBuffsOverRotation(
   return out;
 }
 
-const APPRENTICE_DEFINITION = ABILITIES.find((ability) => ability.id === 'aprendiz');
-
-/** Aprendiz's XP add per rank, as a fraction: `0.0075`. */
-export const APPRENTICE_XP_PER_RANK: number =
-  APPRENTICE_DEFINITION && 'perLevel' in APPRENTICE_DEFINITION.effect ? APPRENTICE_DEFINITION.effect.perLevel / 100 : 0;
+/** Aprendiz's XP add per rank, as a fraction. */
+export const APPRENTICE_XP_PER_RANK = 0.0075;
 
 /** One carrier's maximum, which two on the field never exceed — measured at exactly ×1.15. */
 export const APPRENTICE_XP_CAP = 0.15;
