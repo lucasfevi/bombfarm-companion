@@ -10,8 +10,8 @@ import { TrendLine } from './trend-line';
 /**
  * The desktop draws this panel twice, and so does this file. The compact density is the second
  * Live window's earnings: no sparkline, no session totals, no elapsed clock and no reading against
- * the map's estimate — a recent-window headline and six figures, which is all a window that size
- * can carry.
+ * the map's estimate — a recent-window headline and seven figures, which is all a window that
+ * size can carry.
  */
 export function EarningsCard({
   lang,
@@ -52,12 +52,15 @@ export function EarningsCard({
             </span>
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-x-3 gap-y-2 border-t border-line/55 pt-2">
-          <ReplicaFigure
-            label={liveLabel('liveEarningsCurrentGoldLabel', lang)}
-            value={compact(earnings.currentGold)}
-            valueClass="text-gold"
-          />
+        {/* The window at its default width: the balance across the top, then one pair per row. */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-line/55 pt-2">
+          <div className="col-span-2">
+            <ReplicaFigure
+              label={liveLabel('liveEarningsCurrentGoldLabel', lang)}
+              value={compact(earnings.currentGold)}
+              valueClass="text-gold"
+            />
+          </div>
           <ReplicaFigure
             label={liveLabel('liveEarningsGoldSessionLabel', lang)}
             value={compact(earnings.goldSession)}
@@ -72,6 +75,11 @@ export function EarningsCard({
             label={liveLabel('liveEarningsGoldPerPropLabel', lang)}
             value={formatNumber(measured.goldPerProp, lang, 0)}
             valueClass="text-gold"
+          />
+          <ReplicaFigure
+            label={liveLabel('liveEarningsXpPerPropLabel', lang)}
+            value={formatNumber(measured.xpPerProp, lang, 0)}
+            valueClass="text-info"
           />
           <ReplicaFigure
             label={liveLabel('liveEarningsPropsPerMinuteLabel', lang)}
@@ -155,20 +163,28 @@ export function EarningsCard({
         <TrendLine series={earnings.goldSeries} />
       </div>
 
-      {/* The measured counterpart to the map card's three estimates, one panel over — the same
-          arrangement the desktop uses, so gold per prop can be read against its estimate. */}
+      {/* The measured counterpart to the map card's estimates, one panel over — the same
+          arrangement the desktop uses, so gold and XP per prop can be read against theirs. */}
       <div className="mt-3 flex flex-col gap-2 border-t border-line/55 pt-3">
         <span className="self-start text-[10px] tracking-wide text-muted uppercase">
           {liveLabel('liveEarningsMeasuredNote', lang)}
         </span>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           <ReplicaFigure
             label={liveLabel('liveEarningsGoldPerPropLabel', lang)}
             value={formatNumber(measured.goldPerProp, lang, 0)}
-            note={sub(liveLabel('liveEarningsGoldPerPropUnder', lang), {
+            note={sub(liveLabel('liveEarningsPerPropUnder', lang), {
               percent: formatNumber(Math.abs(measured.goldPerPropDeltaPercent), lang),
             })}
             valueClass="text-gold"
+          />
+          <ReplicaFigure
+            label={liveLabel('liveEarningsXpPerPropLabel', lang)}
+            value={formatNumber(measured.xpPerProp, lang, 0)}
+            note={sub(liveLabel('liveEarningsPerPropUnder', lang), {
+              percent: formatNumber(Math.abs(measured.xpPerPropDeltaPercent), lang),
+            })}
+            valueClass="text-info"
           />
           <ReplicaFigure
             label={liveLabel('liveEarningsPropsPerMinuteLabel', lang)}

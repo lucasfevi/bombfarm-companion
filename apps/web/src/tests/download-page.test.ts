@@ -123,6 +123,14 @@ describe('Live replica', () => {
     expect(frame.measured.goldPerProp).toBeLessThan(frame.map.goldPerProp);
   });
 
+  it('reads the measured XP per prop against the map card own estimate', () => {
+    const frame = replicaFrameAt(0);
+    const expected = Math.round(((frame.measured.xpPerProp - frame.map.xpPerProp) / frame.map.xpPerProp) * 1000) / 10;
+    expect(frame.measured.xpPerPropDeltaPercent).toBe(expected);
+    const markup = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
+    expect(markup).toContain(liveLabel('liveEarningsXpPerPropLabel', 'en'));
+  });
+
   it('marks each row with the way that hero energy is actually moving, not merely with a colour', () => {
     const markup = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
     const start = replicaFrameAt(0);
@@ -367,11 +375,12 @@ describe('the mini window section', () => {
     expect(markup).not.toContain(liveLabel('liveEarningsElapsedLabel', 'en'));
     expect(markup).not.toContain(liveLabel('liveEarningsMeasuredNote', 'en'));
     expect(markup).not.toContain(
-      liveLabel('liveEarningsGoldPerPropUnder', 'en').split('}')[1].trim(),
+      liveLabel('liveEarningsPerPropUnder', 'en').split('}')[1].trim(),
     );
     expect(markup).toContain(literalPrefix(liveLabel('liveEarningsRecentWindowLabel', 'en')));
     expect(markup).toContain(liveLabel('liveEarningsPropsPerMinuteLabel', 'en'));
-    expect(markup).toContain(liveLabel('liveEarningsPropsTotalLabel', 'en'));
+    expect(markup).toContain(liveLabel('liveEarningsXpPerPropLabel', 'en'));
+    expect(markup).toContain(`>${liveLabel('liveEarningsPropsTotalLabel', 'en')}<`);
   });
 
   it('carries the map economy strip without the estimate heading the full panel prints', () => {
@@ -503,7 +512,7 @@ describe('replica loop', () => {
 
     const propsDestroyed = start.map.propsAlive - end.map.propsAlive;
     const xpEarned = end.earnings.xpSessionTotal - start.earnings.xpSessionTotal;
-    expect(xpEarned).toBe(propsDestroyed * start.map.xpPerProp);
+    expect(xpEarned).toBe(propsDestroyed * start.measured.xpPerProp);
   });
 
   it('counts field time down, drains field energy and refills rest energy', () => {

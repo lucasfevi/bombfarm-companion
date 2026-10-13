@@ -8,7 +8,7 @@ import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { Lang } from '@bombfarm/hero/copy';
 import type { FarmScreenCopy } from '../copy';
-import type { FarmRankingResult } from '../core';
+import { phaseXpPerPropMult, type FarmRankingResult } from '../core';
 import { FarmCopyProvider } from './farm-copy-context';
 import { PhasePicker } from './phase-picker';
 import { PhaseMapFactsPanel } from './phase-map-facts-panel';
@@ -32,6 +32,10 @@ export type PhasesExplorerData = {
   activeHeroId: string | null;
   account: AccountShared;
   farmRows: FarmRankingResult;
+  /** `computeFarmXpPerPropMult` over the board's own inputs; the phase row's XP-rune mix and
+   *  Aprendiz are applied here, so the per-prop XP printed is the one the board's XP/hr is built on. `null`
+   *  withholds it, as the board does. */
+  xpPerPropMult: number | null;
 };
 
 export type PhasesExplorerActions = {
@@ -63,7 +67,11 @@ export function PhasesExplorerView({
   actions: PhasesExplorerActions;
   slots?: PhasesExplorerSlots;
 }) {
-  const { phase, heroes, activeHeroId, account, farmRows } = data;
+  const { phase, heroes, activeHeroId, account, farmRows, xpPerPropMult } = data;
+  const xpMult = useMemo(
+    () => phaseXpPerPropMult(xpPerPropMult, farmRows.rows, phase),
+    [xpPerPropMult, farmRows.rows, phase],
+  );
   const { setPhasesViewPhase, onSelectHero } = actions;
 
   // FIELD concurrency — who can be on the field at once, not the House recovery number
@@ -72,7 +80,6 @@ export function PhasesExplorerView({
   const squadSlots = account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS;
 
   const teamCoinPct = account.tree.teamCoinPct ?? 0;
-  const xpMult = account.tree.xpMult ?? 1;
   const collectionGoldPct = account.tree.collection?.goldPct ?? 0;
 
   // Map/mitigation facts don't depend on teamCoinPct/xpMult/luckFraction, so this pass gives

@@ -1,4 +1,4 @@
-import type { LiveBomb, LiveExplosion, LiveHit, LiveLootPop, LiveTick, LiveTickHero } from '@bombfarm/contracts';
+import type { LiveBomb, LiveBoost, LiveBoostAxis, LiveExplosion, LiveHit, LiveLootPop, LiveTick, LiveTickHero } from '@bombfarm/contracts';
 import { isPlainObject, liveFrameWireKey as wireKey } from '@bombfarm/game-api';
 import { brotliDecompressSync, gunzipSync, inflateRawSync, inflateSync } from 'node:zlib';
 import type { FrameDumpReason } from './frame-ring.js';
@@ -214,6 +214,21 @@ function mapHit(raw: unknown): LiveHit | undefined {
   };
 }
 
+const BOOST_AXES: ReadonlySet<string> = new Set<LiveBoostAxis>(['gold', 'xp', 'drop']);
+
+function isBoostAxis(value: string | undefined): value is LiveBoostAxis {
+  return value !== undefined && BOOST_AXES.has(value);
+}
+
+function mapBoost(raw: unknown): LiveBoost | undefined {
+  if (!isPlainObject(raw)) return undefined;
+  const axis = readString(raw, wireKey('boostAxis'));
+  const secondsLeft = readNumber(raw, wireKey('boostSecondsLeft'));
+  const mult = readNumber(raw, wireKey('boostMultiplier'));
+  if (!isBoostAxis(axis) || secondsLeft === undefined || mult === undefined) return undefined;
+  return { axis, secondsLeft, mult };
+}
+
 export function toLiveTick(raw: Record<string, unknown>): LiveTick {
   const phase = readNumber(raw, wireKey('phase'));
   const wave = readNumber(raw, wireKey('wave'));
@@ -224,6 +239,8 @@ export function toLiveTick(raw: Record<string, unknown>): LiveTick {
   const hitsRaw = readOptionalArray(raw, wireKey('hitsList'));
   const bonusSeconds = readNumber(raw, wireKey('bonusSeconds'));
   const bonusMultiplier = readNumber(raw, wireKey('bonusMultiplier'));
+  const xpGained = readNumber(raw, wireKey('xpGained'));
+  const boostsRaw = readOptionalArray(raw, wireKey('boostsList'));
   const kindsRaw = readOptionalArray(raw, wireKey('kindsList'));
   const hpsRaw = readOptionalArray(raw, wireKey('hpsList'));
   const bombsRaw = readOptionalArray(raw, wireKey('bombsList'));
@@ -240,6 +257,8 @@ export function toLiveTick(raw: Record<string, unknown>): LiveTick {
     ...(hitsRaw !== undefined ? { hits: hitsRaw.map(mapHit).filter(isDefined) } : {}),
     ...(bonusSeconds !== undefined ? { bonusSeconds } : {}),
     ...(bonusMultiplier !== undefined ? { bonusMultiplier } : {}),
+    ...(xpGained !== undefined ? { xpGained } : {}),
+    ...(boostsRaw !== undefined ? { boosts: boostsRaw.map(mapBoost).filter(isDefined) } : {}),
     ...(kindsRaw !== undefined ? { kinds: kindsRaw.filter((value): value is number => typeof value === 'number') } : {}),
     ...(hpsRaw !== undefined ? { hps: hpsRaw.filter((value): value is number => typeof value === 'number') } : {}),
     ...(bombsRaw !== undefined ? { bombs: bombsRaw.map(mapBomb).filter(isDefined) } : {}),

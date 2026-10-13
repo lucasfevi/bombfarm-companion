@@ -31,7 +31,7 @@ export const farmEn = {
   phasesItemDrops: "Item drops",
   phasesItemDropsValue: "Level {range} items",
   phasesXpPerProp: "XP per prop",
-  phasesXpActualHint: "base value × your skill tree's XP multiplier",
+  phasesXpActualHint: "base value × your XP multiplier × the Return Bonus, Pass and Boost on the Farm board × your squad's XP runes × Apprentice on the field",
   phasesGoldComum: "Gold (Common)",
   phasesGoldActualHint: "base value × (1 + your skill tree's team coin %)",
   phasesAvgGold: "Avg gold / prop",
@@ -106,6 +106,9 @@ export const farmEn = {
   farmRankingColOneShot: "One-shot",
 
   farmRankingTitle: "Farm Ranking",
+  farmRankingXpNoImportLabel: "XP per hour",
+  farmRankingXpNoImportTip:
+    "XP per hour leaves out your account's XP bonuses until you import a save.",
   farmRankingCaption: "Every wiki phase ranked by what it pays this account per hour",
   farmRankingEmptyNoRosterTitle: "No roster yet",
   farmRankingEmptyNoRosterDesc: "Add heroes in the Planner to rank phases for your account.",
@@ -141,6 +144,13 @@ export const farmEn = {
   farmRankingPassTip:
     "+{gold}% gold, +{xp}% XP and +{drop}% drop chance, always on. With the Pass the Return Bonus is +{returnPass}% instead of +{returnBase}%.",
   farmRankingPassTipDetected: "Read from your account.",
+  farmRankingBoostLabel: "Boost",
+  farmRankingBoostGold: "Gold",
+  farmRankingBoostXp: "XP",
+  farmRankingBoostDrop: "Drop",
+  farmRankingBoostTip:
+    "+{pct}% on its axis while a Boost runs, added to the Return Bonus and the Pass rather than multiplied with them.",
+  farmRankingBoostTipDetected: "Read from the running game.",
   farmRankingGateBadge: "Gate",
   farmRankingOneShotYes: "Yes",
   farmRankingOneShotNo: "No",

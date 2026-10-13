@@ -19,6 +19,7 @@ import {
   type HeroFarmFacts,
   type SquadFarmFacts,
   type FarmAccount,
+  type EconomyBoost,
   type FarmRateOptions,
   type ReturnBonusMode,
 } from './farm-rate';
@@ -225,6 +226,8 @@ export type FarmRespecInput = {
   returnBonus?: ReturnBonusMode;
   /** Default `false`. */
   pass?: boolean;
+  /** Default none, matching the estimator. */
+  boost?: EconomyBoost | undefined;
 };
 
 function buildHeroEntries(
@@ -577,7 +580,12 @@ function prepareFarmRespecSolve(input: FarmRespecInput): FarmRespecSetup {
     account: input.account,
     enabledHeroIds: input.enabledHeroIds,
   });
-  const phaseOptions: FarmRateOptions = { maxPhase: input.maxPhase, returnBonus: input.returnBonus, pass: input.pass };
+  const phaseOptions: FarmRateOptions = {
+    maxPhase: input.maxPhase,
+    returnBonus: input.returnBonus,
+    pass: input.pass,
+    boost: input.boost,
+  };
 
   if (bases.length === 0) {
     return {

@@ -103,7 +103,7 @@ describe('field-slot cap (row.concurrencyScale)', () => {
     expect(hourlyRatio).toBeLessThan(1);
     expect(hourlyRatio).toBeCloseTo(referenceRow.clearSecs / scaledRow.clearSecs, 12);
     expect(scaledRow.goldPerHour / referenceRow.goldPerHour).toBeCloseTo(hourlyRatio, 9);
-    expect(scaledRow.xpPerHour / referenceRow.xpPerHour).toBeCloseTo(hourlyRatio, 9);
+    expect(scaledRow.xpPerHour! / referenceRow.xpPerHour!).toBeCloseTo(hourlyRatio, 9);
   });
 
   it('heroesOnField < fieldSlots ⇒ scale 1, rates unchanged from the uncrowded reference', () => {

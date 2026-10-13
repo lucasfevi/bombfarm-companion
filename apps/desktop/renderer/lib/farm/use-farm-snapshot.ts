@@ -14,8 +14,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createFarmRankingMemo, type FarmInputs } from '@bombfarm/farm/core';
 import type { AccountView } from '@bombfarm/contracts';
+import { NO_ECONOMY_BOOST, type EconomyBoost } from '@bombfarm/domain/farm-rate';
 import { createLazySingleton, createSharedStore, type SharedStore } from '../shared-store';
 import { useAccountView } from '../account/use-account-view';
+import { useLiveBoost } from '../live/use-live-boost';
 import { oldestCaptureOf } from '../account/account-facts';
 import {
   buildFarmInputs,
@@ -37,9 +39,9 @@ export type { FarmSnapshotState };
 
 export interface FarmSnapshotActions {
   /** The screen opened. A no-op when the snapshot in hand is already this account's. */
-  readonly open: (view: AccountView, sourceKey: string, controls: FarmControls) => void;
+  readonly open: (view: AccountView, sourceKey: string, controls: FarmControls, boost?: EconomyBoost) => void;
   /** The player asked for the live account. Adopts it. */
-  readonly refresh: (view: AccountView, sourceKey: string, controls: FarmControls) => void;
+  readonly refresh: (view: AccountView, sourceKey: string, controls: FarmControls, boost?: EconomyBoost) => void;
   /** A compute input changed. Recomputes against the frozen account, never a newer one. */
   readonly setControls: (controls: FarmControls) => void;
 }
@@ -57,6 +59,9 @@ export function createFarmSnapshotStore(): {
    * moved on several times by then, and the board must not.
    */
   let frozenView: AccountView | null = null;
+  /** Frozen beside {@link frozenView}, for the same reason: a Boost starting or ending is a
+   *  reason to offer a refresh, not to recompute. */
+  let frozenBoost: EconomyBoost = NO_ECONOMY_BOOST;
   let dispatchArrival: ((arrival: FarmSnapshotArrival) => void) | null = null;
 
   const store = createSharedStore<FarmSnapshotState, FarmSnapshotArrival>({
@@ -83,7 +88,7 @@ export function createFarmSnapshotStore(): {
     const view = frozenView;
     if (view === null) return;
 
-    const inputs = buildFarmInputs(view, controls);
+    const inputs = buildFarmInputs(view, controls, frozenBoost);
     const outcome: FarmComputeOutcome =
       inputs === null
         ? { ok: false, reason: 'incomplete-account' }
@@ -99,19 +104,29 @@ export function createFarmSnapshotStore(): {
     dispatch({ kind: 'computed', sourceKey, controls, outcome });
   }
 
-  function adopt(kind: 'begin' | 'refresh', view: AccountView, sourceKey: string, controls: FarmControls): void {
+  function adopt(
+    kind: 'begin' | 'refresh',
+    view: AccountView,
+    sourceKey: string,
+    controls: FarmControls,
+    boost: EconomyBoost,
+  ): void {
+    // `begin` on the snapshot already in hand changes nothing, so it must not swap the Boost
+    // the board on screen was computed under either.
+    if (kind === 'begin' && snapshotSourceKey(store.getState()) === sourceKey) return;
     frozenView = view;
+    frozenBoost = boost;
     dispatch({ kind, sourceKey, controls });
     computeIfOwed(sourceKey, controls);
   }
 
   return {
     store,
-    open: (view, sourceKey, controls) => {
-      adopt('begin', view, sourceKey, controls);
+    open: (view, sourceKey, controls, boost = NO_ECONOMY_BOOST) => {
+      adopt('begin', view, sourceKey, controls, boost);
     },
-    refresh: (view, sourceKey, controls) => {
-      adopt('refresh', view, sourceKey, controls);
+    refresh: (view, sourceKey, controls, boost = NO_ECONOMY_BOOST) => {
+      adopt('refresh', view, sourceKey, controls, boost);
     },
     setControls: (controls) => {
       const sourceKey = snapshotSourceKey(store.getState());
@@ -141,10 +156,14 @@ function snapshotControls(inputs: FarmInputs): FarmControls {
  *
  * Pure and exported so the rule is testable: this project's Vitest run never mounts the hook.
  */
-export function farmBoardStale(state: FarmSnapshotState, liveView: AccountView | null): boolean {
+export function farmBoardStale(
+  state: FarmSnapshotState,
+  liveView: AccountView | null,
+  liveBoost: EconomyBoost = NO_ECONOMY_BOOST,
+): boolean {
   const settled = settledBoard(state);
   if (settled === null || liveView === null) return false;
-  const live = buildFarmInputs(liveView, snapshotControls(settled.inputs));
+  const live = buildFarmInputs(liveView, snapshotControls(settled.inputs), liveBoost);
   if (live === null) return false;
   return farmBoardDepKey(settled.inputs) !== farmBoardDepKey(live);
 }
@@ -167,6 +186,7 @@ export interface FarmSnapshotHook {
 
 export function useFarmSnapshot(): FarmSnapshotHook {
   const account = useAccountView();
+  const liveBoost = useLiveBoost();
 
   // Seeded from the store rather than from the initial state: on a remount the board is already
   // in hand, and reading it only in the effect below would paint one committed empty frame first.
@@ -189,17 +209,17 @@ export function useFarmSnapshot(): FarmSnapshotHook {
   const open = useCallback(
     (controls: FarmControls = DEFAULT_FARM_CONTROLS) => {
       if (liveView === null || liveKey === null) return;
-      sharedFarmSnapshotStore().open(liveView, liveKey, controls);
+      sharedFarmSnapshotStore().open(liveView, liveKey, controls, liveBoost);
     },
-    [liveView, liveKey],
+    [liveView, liveKey, liveBoost],
   );
 
   const refresh = useCallback(
     (controls: FarmControls) => {
       if (liveView === null || liveKey === null) return;
-      sharedFarmSnapshotStore().refresh(liveView, liveKey, controls);
+      sharedFarmSnapshotStore().refresh(liveView, liveKey, controls, liveBoost);
     },
-    [liveView, liveKey],
+    [liveView, liveKey, liveBoost],
   );
 
   const setControls = useCallback((controls: FarmControls) => {
@@ -209,7 +229,7 @@ export function useFarmSnapshot(): FarmSnapshotHook {
   // Keyed on the live view rather than on every render: the account seam hands back the same
   // reference until a genuinely different account is read, so the parse behind this runs at most
   // once per account read.
-  const stale = useMemo(() => farmBoardStale(state, liveView), [state, liveView]);
+  const stale = useMemo(() => farmBoardStale(state, liveView, liveBoost), [state, liveView, liveBoost]);
 
   return useMemo(
     () => ({

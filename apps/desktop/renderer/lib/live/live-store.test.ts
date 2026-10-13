@@ -45,6 +45,7 @@ function liveView(overrides: Partial<LiveView> = {}): LiveView {
     earnings: null,
     map: null,
     damage: null,
+    boosts: [],
     updatedAt: 't0',
     ...overrides,
   };
@@ -81,6 +82,7 @@ function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
     xpSessionTotal: 3_750,
     gold10Series: [90_000, 110_000, 100_000],
     goldPerProp10: 180,
+    xpPerProp10: 1_655.2,
     propsPerMinute10: 110,
     propsSessionTotal: 420,
     coverageSeconds: 120,
@@ -674,6 +676,35 @@ function liveDamage(overrides: Partial<LiveDamage> = {}): LiveDamage {
 function damageEvent(damage: LiveDamage | null): LiveEvent {
   return { type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: null, map: null, damage };
 }
+
+describe('the running Boosts', () => {
+  it('a bootstrap view carries them onto the model', () => {
+    const state = applyLiveArrival(initialLiveInternalState, { kind: 'bootstrap', view: liveView({ boosts: ['gold'] }) });
+
+    expect(deriveLiveModel(state, createLiveModelCaches()).boosts).toEqual(['gold']);
+  });
+
+  it('a boosts event replaces them and moves the revision', () => {
+    const booted = applyLiveArrival(initialLiveInternalState, { kind: 'bootstrap', view: liveView() });
+    const next = applyLiveArrival(booted, { kind: 'event', event: { type: 'boosts', boosts: ['gold', 'xp'] } });
+
+    expect(next.boosts).toEqual(['gold', 'xp']);
+    expect(next.revision).toBe(booted.revision + 1);
+  });
+
+  it('an event naming the set already held changes nothing, so the same array stays in hand', () => {
+    const held = applyLiveArrival(initialLiveInternalState, { kind: 'bootstrap', view: liveView({ boosts: ['xp'] }) });
+
+    expect(applyLiveArrival(held, { kind: 'event', event: { type: 'boosts', boosts: ['xp'] } })).toBe(held);
+  });
+
+  it('a re-fetch agreeing with the set held keeps the held array', () => {
+    const held = applyLiveArrival(initialLiveInternalState, { kind: 'bootstrap', view: liveView({ boosts: ['xp'] }) });
+    const refetched = applyLiveArrival(held, { kind: 'bootstrap', view: liveView({ boosts: ['xp'], rotation: held.rotation }) });
+
+    expect(refetched.boosts).toBe(held.boosts);
+  });
+});
 
 describe('createLiveStore — damage passes straight through, never folded or defaulted', () => {
   it('null before the first tick, exactly as the bootstrap view reports it', async () => {

@@ -54,6 +54,7 @@ export type ObservationBodyVerdict =
   | { readonly kind: 'identified'; readonly section: string }
   | { readonly kind: 'pvp'; readonly route: string }
   | { readonly kind: 'collections' }
+  | { readonly kind: 'phaseEconomy' }
   | { readonly kind: 'unidentified' }
   | { readonly kind: 'ambiguous'; readonly sections: readonly string[] }
   | { readonly kind: 'parse_failed' };

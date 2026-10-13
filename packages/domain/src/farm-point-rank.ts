@@ -16,7 +16,7 @@
  * a design note.
  */
 import { squadFactsFromBases, type HeroFarmBasis } from './farm-rate';
-import type { FarmAccount, ReturnBonusMode } from './farm-rate';
+import type { EconomyBoost, FarmAccount, ReturnBonusMode } from './farm-rate';
 import {
   resolveFarmObjective,
   bestFarmPhase,
@@ -82,6 +82,8 @@ export type FarmPointRankInput = {
   returnBonus?: ReturnBonusMode;
   /** Default `false`. */
   pass?: boolean;
+  /** Default none, matching the estimator and the Farm board. */
+  boost?: EconomyBoost | undefined;
 };
 
 function emptyResult(
@@ -103,6 +105,7 @@ export function rankNextPointForFarm(input: FarmPointRankInput): FarmPointRankRe
     maxPhase: input.maxPhase,
     returnBonus: input.returnBonus,
     pass: input.pass,
+    boost: input.boost,
     exhaustive: true,
   };
 

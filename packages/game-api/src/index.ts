@@ -82,6 +82,10 @@ export { parseCollectionsState, readCollectionsState } from './collections/parse
 export type { CollectionsRead } from './collections/parse.js';
 export { isCollectionsSnapshot } from './collections/snapshot-shape.js';
 export { COLLECTIONS_STATE_PATH } from './collections/routes.js';
+export { PHASE_ECONOMY_WIRE_LEXICON, wireKey as phaseEconomyWireKey } from './phase-economy/lexicon.js';
+export type { PhaseEconomyWireSymbol } from './phase-economy/lexicon.js';
+export { isPhaseEconomyBody, readPhaseEconomy } from './phase-economy/parse.js';
+export type { PhaseEconomy, PhaseEconomyRead } from './phase-economy/parse.js';
 export { PORTUGUESE_WIRE_TOKENS, renderWireGlossary } from './wire-glossary.js';
 export type { WireLexiconEntry, WireVocabularyKind, WireVocabularyOrigin } from './wire-lexicon.js';
 export { isPlainObject } from './type-guards.js';

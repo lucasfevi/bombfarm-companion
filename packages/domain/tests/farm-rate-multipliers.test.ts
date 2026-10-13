@@ -240,9 +240,6 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
       syntheticHero({ heroId: 'a', fortunaLevel: 5, uptime: 0.5 }),
       syntheticHero({ heroId: 'b', fortunaLevel: 3, uptime: 0.2 }),
     ];
-    // The fixture's real House (3 slots) is not binding for this pair's 0.5+0.8 = 1.3 slot demand,
-    // so the House-allocated basis and the unconstrained one coincide here — a separate case below
-    // (`fortuna basis is the House-ALLOCATED uptime...`) proves they diverge once it does bind.
     const squad = computeSquadFarmFacts(belowCap, account);
     const row = computeFarmRateRow(42, squad)!;
     const expected = 0.5 * LOOT_ABILITY_VALUES.fortuna.perLevel * 5 + 0.2 * LOOT_ABILITY_VALUES.fortuna.perLevel * 3;
@@ -250,30 +247,18 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
     expect(row.fortunaAura).toBe(expected);
   });
 
-  it('fortuna basis is the House-ALLOCATED uptime, not the unconstrained one: a hero the House throttles to zero contributes zero aura', () => {
-    // Same construction as the concurrency suite's "GREEDY, not uniform" case: equal uptime/demand,
-    // wildly different value density, a House budget that can only ever pay for one of them. Both
-    // heroes carry the SAME Fortuna level, so any difference between the allocated and
-    // unconstrained fortunaAura can only come from which hero the House actually keeps fed.
+  it('fortuna is weighted by each carrier’s own uptime, not by which hero the House keeps fed', () => {
+    // A House budget that can only ever pay for one of two heroes with the same Fortuna level.
+    // Which one it feeds first is how a player fills the House, not a rule of the game, so the
+    // aura does not read it.
     const strong = syntheticHero({ heroId: 'strong', uptime: 0.5, plantsPerSec: 5, fortunaLevel: 5 });
     const weak = syntheticHero({ heroId: 'weak', uptime: 0.5, plantsPerSec: 0.01, fortunaLevel: 5 });
     const throttled: AccountShared = { ...account, slots: 0.5, fieldSlots: 1000 };
     const squad = computeSquadFarmFacts([strong, weak], throttled);
     const row = computeFarmRateRow(42, squad)!;
 
-    // Sanity: the House really did throttle one hero to zero (only 0.5 of the 1.0 unconstrained
-    // uptime survives).
     expect(row.heroesOnField).toBeCloseTo(0.5, 12);
-    expect(row.heroesOnField).toBeLessThan(squad.uptimeSum);
-
-    const perLevel = LOOT_ABILITY_VALUES.fortuna.perLevel;
-    const unconstrainedFortuna = (strong.uptime + weak.uptime) * perLevel * 5; // the pre-fix, defect-6 basis
-    const allocatedFortuna = strong.uptime * perLevel * 5; // strong wins the whole House budget; weak gets 0
-
-    expect(row.fortunaAura).toBeCloseTo(allocatedFortuna, 12);
-    expect(row.fortunaAura).toBeLessThan(unconstrainedFortuna);
-    // Exactly half survives: the strongly-favoured hero keeps its full uptime, the other is zeroed.
-    expect(row.fortunaAura / unconstrainedFortuna).toBeCloseTo(0.5, 9);
+    expect(row.fortunaAura).toBeCloseTo((strong.uptime + weak.uptime) * LOOT_ABILITY_VALUES.fortuna.perLevel * 5, 12);
   });
 });
 
@@ -286,7 +271,7 @@ describe('Return bonus multiplies gold and XP only — drops and structure are u
     const on = computeFarmRateRow(10, squad, { returnBonus: 'on' })!;
 
     for (const field of ['goldPerHour', 'xpPerHour'] as const) {
-      expect(on[field] / off[field]).toBeCloseTo(1.5, 9);
+      expect(on[field]! / off[field]!).toBeCloseTo(1.5, 9);
     }
 
     for (const field of ['chestsPerHour', 'gemsPerHour', 'timePiecesPerHour', 'stoneChestsPerHour'] as const) {
@@ -322,7 +307,7 @@ describe('The Pass adds to gold, XP and drop chance at fixed inputs', () => {
     const free = computeFarmRateRow(10, squad, { returnBonus: 'off', pass: false })!;
     const pass = computeFarmRateRow(10, squad, { returnBonus: 'off', pass: true })!;
     expect(pass.goldPerHour / free.goldPerHour).toBeCloseTo(1.15, 9);
-    expect(pass.xpPerHour / free.xpPerHour).toBeCloseTo(1.3, 9);
+    expect(pass.xpPerHour! / free.xpPerHour!).toBeCloseTo(1.3, 9);
     for (const field of ['propsPerHour', 'clearSecs', 'cyclesPerHour', 'expectedHtk'] as const) {
       expect(pass[field]).toBe(free[field]);
     }
@@ -332,7 +317,7 @@ describe('The Pass adds to gold, XP and drop chance at fixed inputs', () => {
     const bare = computeFarmRateRow(10, squad, { returnBonus: 'off', pass: true })!;
     const window = computeFarmRateRow(10, squad, { returnBonus: 'on', pass: true })!;
     expect(window.goldPerHour / bare.goldPerHour).toBeCloseTo(2.15 / 1.15, 9);
-    expect(window.xpPerHour / bare.xpPerHour).toBeCloseTo(2.3 / 1.3, 9);
+    expect(window.xpPerHour! / bare.xpPerHour!).toBeCloseTo(2.3 / 1.3, 9);
   });
 
   it('every drop rate is base x (1 + sorte + 0.30) with the Pass, and the Return Bonus does not move it', () => {
@@ -363,7 +348,7 @@ describe('XP tracks tree.xpMult, never gold/drops (issue #127)', () => {
     for (const phase of [42, 10]) {
       const oneRow = computeFarmRateRow(phase, oneSquad)!;
       const boostedRow = computeFarmRateRow(phase, boostedSquad)!;
-      expect(boostedRow.xpPerHour / oneRow.xpPerHour).toBeCloseTo(1.56, 12);
+      expect(boostedRow.xpPerHour! / oneRow.xpPerHour!).toBeCloseTo(1.56, 12);
 
       expect(boostedRow.goldPerHour).toBe(oneRow.goldPerHour);
       expect(boostedRow.chestsPerHour).toBe(oneRow.chestsPerHour);
@@ -374,28 +359,29 @@ describe('XP tracks tree.xpMult, never gold/drops (issue #127)', () => {
     }
   });
 
-  it('an absent tree.xpMult behaves exactly as xpMult: 1 (identity, not zero)', () => {
+  it('an absent tree.xpMult withholds XP/hr rather than pricing it at 1 — every other rate stands', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const { xpMult: _drop, ...treeWithoutXpMult } = account.tree;
     const absentAccount: AccountShared = { ...account, tree: treeWithoutXpMult };
     const explicitOneAccount: AccountShared = { ...account, tree: { ...account.tree, xpMult: 1 } };
 
     const absentSquad = computeSquadFarmFacts(heroFacts, absentAccount);
-    const explicitOneSquad = computeSquadFarmFacts(heroFacts, explicitOneAccount);
-    expect(absentSquad.xpMult).toBe(1);
+    expect(absentSquad.xpMult).toBeNull();
 
     const absentRow = computeFarmRateRow(42, absentSquad)!;
-    const explicitOneRow = computeFarmRateRow(42, explicitOneSquad)!;
-    expect(absentRow.xpPerHour).toBe(explicitOneRow.xpPerHour);
-    expect(absentRow.xpPerHour).toBeGreaterThan(0);
+    const explicitOneRow = computeFarmRateRow(42, computeSquadFarmFacts(heroFacts, explicitOneAccount))!;
+    expect(absentRow.xpPerHour).toBeNull();
+    expect(explicitOneRow.xpPerHour).toBeGreaterThan(0);
+    expect(absentRow.goldPerHour).toBe(explicitOneRow.goldPerHour);
+    expect(absentRow.chestsPerHour).toBe(explicitOneRow.chestsPerHour);
   });
 
-  it('a non-finite tree.xpMult (NaN) also falls back to 1, not NaN', () => {
+  it('a non-finite tree.xpMult (NaN) withholds the same way, never printing NaN', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const nanAccount: AccountShared = { ...account, tree: { ...account.tree, xpMult: NaN } };
     const squad = computeSquadFarmFacts(heroFacts, nanAccount);
-    expect(squad.xpMult).toBe(1);
-    expect(Number.isNaN(computeFarmRateRow(42, squad)!.xpPerHour)).toBe(false);
+    expect(squad.xpMult).toBeNull();
+    expect(computeFarmRateRow(42, squad)!.xpPerHour).toBeNull();
   });
 });
 

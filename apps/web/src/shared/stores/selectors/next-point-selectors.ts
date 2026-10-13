@@ -262,6 +262,7 @@ function computeNextPointRanking(state: PlannerStore): NextPointRanking {
     maxPhase: state.maxPhase,
     returnBonus: state.farmReturnBonus,
     pass: state.farmPass,
+    boost: state.farmBoost,
   });
 
   if (result.outcome !== 'ranked' || result.rows === null) {
@@ -288,6 +289,7 @@ function readNextPointDepTuple(state: PlannerStore) {
     state.maxPhase,
     state.farmReturnBonus,
     state.farmPass,
+    state.farmBoost,
     pipeline,
   ] as const;
 }

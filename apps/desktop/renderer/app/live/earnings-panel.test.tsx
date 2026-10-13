@@ -39,6 +39,7 @@ function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
     xpSessionTotal: 3_750,
     gold10Series: [90_000, 110_000, 100_000],
     goldPerProp10: 180,
+    xpPerProp10: 1_655.2,
     propsPerMinute10: 110,
     propsSessionTotal: 420,
     coverageSeconds: 120,
@@ -51,9 +52,10 @@ function html(
   data: LiveEarnings | null,
   freshness: ReachedLiveFreshness = LIVE,
   goldPerPropDelta: number | null = null,
+  xpPerPropDelta: number | null = null,
 ) {
   return renderToStaticMarkup(
-    createElement(EarningsPanel, { freshness, earnings: data, goldPerPropDelta, onReset: () => undefined }),
+    createElement(EarningsPanel, { freshness, earnings: data, goldPerPropDelta, xpPerPropDelta, onReset: () => undefined }),
   );
 }
 
@@ -628,7 +630,7 @@ describe('EarningsPanel — gold per prop against the map estimate', () => {
 
   it('calls a deviation too small to round agreement, not a signed zero', () => {
     const out = html(earnings({ goldPerProp10: 183 }), LIVE, -0.004);
-    expect(cellText(out, 'live-earnings-gold-per-prop-delta')).toBe(en.liveEarningsGoldPerPropOnEstimate);
+    expect(cellText(out, 'live-earnings-gold-per-prop-delta')).toBe(en.liveEarningsPerPropOnEstimate);
   });
 
   it('says nothing when the map has no estimate to compare against', () => {
@@ -640,5 +642,28 @@ describe('EarningsPanel — gold per prop against the map estimate', () => {
     const out = html(earnings({ goldPerProp10: null }), LIVE, -0.5);
     expect(cellText(out, 'live-earnings-gold-per-prop')).toBe('—');
     expect(out).not.toContain('live-earnings-gold-per-prop-delta');
+  });
+});
+
+describe('EarningsPanel — XP per prop, measured', () => {
+  it('prints the server’s own XP per prop beside gold per prop', () => {
+    const out = html(earnings({ xpPerProp10: 2_926.1 }));
+    expect(cellText(out, 'live-earnings-xp-per-prop')).toContain('2.9');
+  });
+
+  it('dashes it before a prop has paid', () => {
+    const out = html(earnings({ xpPerProp10: null }), LIVE, null, 0.77);
+    expect(cellText(out, 'live-earnings-xp-per-prop')).toBe('—');
+    expect(out).not.toContain('live-earnings-xp-per-prop-delta');
+  });
+
+  it('reads it against the map estimate, with the gold reading left alone', () => {
+    const out = html(earnings({ xpPerProp10: 2_926.1 }), LIVE, null, 2_926.1 / 1_655.2 - 1);
+    expect(cellText(out, 'live-earnings-xp-per-prop-delta')).toBe('77% over estimate');
+    expect(out).not.toContain('live-earnings-gold-per-prop-delta');
+  });
+
+  it('no longer calls the XP headline a calculation from props', () => {
+    expect(en.liveEarningsXpHelpBody).not.toMatch(/calculated|estimat/i);
   });
 });

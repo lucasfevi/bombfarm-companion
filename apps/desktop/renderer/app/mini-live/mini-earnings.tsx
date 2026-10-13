@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { LiveEarnings } from '@bombfarm/contracts';
-import { formatCompactNumber, Icon, type Lang } from '@bombfarm/ui';
+import { cn, formatCompactNumber, Icon, type Lang } from '@bombfarm/ui';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 
@@ -20,14 +20,16 @@ function Figure({
   label,
   value,
   className,
+  cellClassName,
 }: {
   testId: string;
   label: string;
   value: ReactNode;
   className: string;
+  cellClassName?: string;
 }) {
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className={cn('flex', 'flex-col', 'gap-0.5', cellClassName)}>
       <span className="text-[10px] uppercase tracking-[0.06em] text-muted whitespace-nowrap">{label}</span>
       <span data-testid={testId} className={className}>
         {value}
@@ -67,12 +69,15 @@ export function MiniEarnings({ earnings, onReset }: { earnings: LiveEarnings | n
             </span>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-line/55 pt-2 sm:grid-cols-3">
+        {/* The balance heads the grid and every other figure sits in a pair — gold beside XP, rate
+            beside total — one pair per column at four columns, one pair per row at two. */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-line/55 pt-2 sm:grid-flow-col sm:grid-cols-4 sm:grid-rows-2">
           <Figure
             testId="live-earnings-gold-current"
             label={t.liveEarningsCurrentGoldLabel}
             value={numberText(earnings?.goldBalance, lang)}
             className="text-[15px] font-bold tabular-nums text-gold"
+            cellClassName="col-span-2 sm:col-span-1 sm:row-span-2"
           />
           <Figure
             testId="live-earnings-gold-session"
@@ -91,6 +96,12 @@ export function MiniEarnings({ earnings, onReset }: { earnings: LiveEarnings | n
             label={t.liveEarningsGoldPerPropLabel}
             value={earnings?.goldPerProp10 == null ? EM_DASH : formatCount(earnings.goldPerProp10, locale)}
             className="text-[15px] font-bold tabular-nums text-gold"
+          />
+          <Figure
+            testId="live-earnings-xp-per-prop"
+            label={t.liveEarningsXpPerPropLabel}
+            value={earnings?.xpPerProp10 == null ? EM_DASH : formatCount(earnings.xpPerProp10, locale)}
+            className="text-[15px] font-bold tabular-nums text-info"
           />
           <Figure
             testId="live-earnings-props-per-minute"

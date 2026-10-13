@@ -16,6 +16,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   computeHeroFarmBases,
+  economyMultipliers,
   farmTeamBuffs,
   heroFactsFromBasis,
   squadFactsFromBases,
@@ -384,6 +385,42 @@ describe('the Pass reaches the farm objective', () => {
 
   it('a Pass account earns the Pass bonus more than a free one', () => {
     expect(bridgedGold(true) / bridgedGold(false)).toBeCloseTo(1 + PASS_ADDS.gold[1] - PASS_ADDS.gold[0], 6);
+  });
+});
+
+describe('the Return Bonus reaches the farm objective', () => {
+  const file = 'save-20260828-4heroes-postpatch.json';
+
+  function bridgedGold(returnBonus: 'on' | 'off' | undefined): number {
+    const fixture = loadTeamPlanFarmFixture(file);
+    const input = fixture.teamPlanInput;
+    const account = { ...input.account, pass: false, returnBonus };
+    const built = buildHeroPlanContexts(input.heroes, account, input.scopeByHeroId);
+    if (built.blocked) throw new Error('blocked');
+    const squad = built.contexts.filter((ctx) => isSquadScope(ctx.scope));
+    const { loadouts, pts } = bridgeFor(input);
+    return evaluateFarmObjective(buildFarmObjective(squad, account, loadouts), loadouts, pts, undefined).objective;
+  }
+
+  it('prices gold on the same Return Bonus the farm board does', () => {
+    const fixture = loadTeamPlanFarmFixture(file);
+    const bases = computeHeroFarmBases({
+      heroes: fixture.heroes,
+      account: fixture.account,
+      enabledHeroIds: fixture.enabledHeroIds,
+    });
+    const board = bestFarmPhase(squadFactsFromBases(bases, null, fixture.account), GOLD, UNUSED_SCALES, {
+      maxPhase: fixture.account.maxPhase,
+      returnBonus: 'on',
+    });
+    expect(bridgedGold('on')).toBe(board ? board.value : 0);
+  });
+
+  it('an open window earns its add on top, and an absent switch reads as off', () => {
+    const on = economyMultipliers({ returnBonus: 'on', pass: false }).gold;
+    const off = economyMultipliers({ returnBonus: 'off', pass: false }).gold;
+    expect(bridgedGold('on') / bridgedGold('off')).toBeCloseTo(on / off, 6);
+    expect(bridgedGold(undefined)).toBe(bridgedGold('off'));
   });
 });
 

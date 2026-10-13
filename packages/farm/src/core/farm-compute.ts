@@ -10,12 +10,14 @@
 // intentionally never imported — this surface never applies a multiplier or a cadence constant
 // itself.
 import {
+  accountXpPerPropMult,
   computeFarmRates,
   farmTeamBuffs,
+  NO_ECONOMY_BOOST,
   type FarmAccount,
   type FarmRateRow,
 } from '@bombfarm/domain/farm-rate';
-export { normalizeStoredReturnBonus } from '@bombfarm/domain/farm-rate';
+export { BOOST_ADD, NO_ECONOMY_BOOST, normalizeStoredReturnBonus } from '@bombfarm/domain/farm-rate';
 // resolveFarmObjective, farmObjectiveValue and bestFarmPhase are deliberately NOT imported —
 // that surface belongs to the next-point ranking mode, not to this board.
 import { FARM_RESPEC_MIN_GAIN_PCT } from '@bombfarm/domain/farm-optimize';
@@ -35,7 +37,7 @@ const EMPTY_ROWS: readonly FarmRateRow[] = [];
 
 /**
  * The dependency-tuple traceability artifact: every planner edit the board must react to.
- * 19 members — `fieldSlots` and `houseCycleSecs` joined at the House-ceiling fix: the first is
+ * `fieldSlots` and `houseCycleSecs` joined at the House-ceiling fix: the first is
  * the FIELD concurrency cap (`skills.field_slots`, a different quantity from `slots`, which is
  * the House's RECOVERY cap), the second is the House cycle that every hero's uptime divides by.
  * `houseCycleSecsHouseIdx`/`houseCycleSecsLevel` joined at the same fix's regression repair: the
@@ -81,6 +83,10 @@ export function readFarmDepTuple(inputs: FarmInputs) {
     inputs.farmReturnBonus,
     inputs.aurasAtCap,
     inputs.farmPass ?? false,
+    (inputs.farmBoost ?? NO_ECONOMY_BOOST).gold,
+    (inputs.farmBoost ?? NO_ECONOMY_BOOST).xp,
+    (inputs.farmBoost ?? NO_ECONOMY_BOOST).drop,
+    inputs.treeXpMult,
   ] as const;
 }
 
@@ -118,6 +124,7 @@ export function buildAccount(inputs: FarmInputs): FarmAccount {
       energy: inputs.treeEnergy,
       teamCoinPct: inputs.treeTeamCoinPct,
       luckFlatPct: inputs.treeLuckFlatPct,
+      ...(inputs.treeXpMult !== null ? { xpMult: inputs.treeXpMult } : {}),
       ...(inputs.treeCollection != null ? { collection: inputs.treeCollection } : {}),
     },
     context: {
@@ -179,6 +186,7 @@ export function computeFarmRanking(inputs: FarmInputs): FarmRankingResult {
       enabledHeroIds,
       returnBonus: inputs.farmReturnBonus,
       pass: inputs.farmPass ?? false,
+      boost: inputs.farmBoost,
       maxPhase: inputs.maxPhase,
     });
     return { rows, reason: null };
@@ -187,6 +195,31 @@ export function computeFarmRanking(inputs: FarmInputs): FarmRankingResult {
     // reason instead of being swallowed into an empty list that reads as "no good phases".
     return { rows: EMPTY_ROWS, reason: 'compute-failed' };
   }
+}
+
+/**
+ * What the board multiplies one prop's wiki XP by for the account — `xp_mult` and the same
+ * Return/Pass/Boost bracket its rows use. The squad's XP runes and Aprendiz live on the rows, so
+ * {@link phaseXpPerPropMult} adds them. `null` exactly when the rows withhold XP.
+ */
+export function computeFarmXpPerPropMult(inputs: FarmInputs): number | null {
+  return accountXpPerPropMult(inputs.treeXpMult, {
+    returnBonus: inputs.farmReturnBonus,
+    pass: inputs.farmPass ?? false,
+    boost: inputs.farmBoost,
+  });
+}
+
+/** {@link computeFarmXpPerPropMult} times the phase row's XP-rune mix and Aprendiz, so a per-prop
+ *  figure beside the board (the Phases panel) times the row's props/hr is the row's XP/hr. */
+export function phaseXpPerPropMult(
+  accountMult: number | null,
+  rows: readonly FarmRateRow[],
+  phase: number,
+): number | null {
+  if (accountMult === null) return null;
+  const row = rows.find((candidate) => candidate.phase === phase);
+  return accountMult * (row?.xpRuneMix ?? 1) * (row?.apprenticeXpMult ?? 1);
 }
 
 /**

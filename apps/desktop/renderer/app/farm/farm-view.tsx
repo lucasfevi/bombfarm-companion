@@ -32,8 +32,8 @@ import {
   type FarmRankingBoardSlots,
 } from '@bombfarm/farm/components';
 import { HeroPickerDialogView, type HeroPickerSlotProps } from '@bombfarm/hero/components';
-import { buildRosterAccount, deriveFarmPoolEntries } from '@bombfarm/farm/core';
-import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import { buildRosterAccount, computeFarmXpPerPropMult, deriveFarmPoolEntries } from '@bombfarm/farm/core';
+import { NO_ECONOMY_BOOST, type ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { TeamAuraId } from '@bombfarm/domain/team-buffs';
 import { withAuraAtCap } from '@bombfarm/team-plan/core';
@@ -315,6 +315,7 @@ function FarmScreen({
       poolEntries,
       returnBonus: inputs.farmReturnBonus,
       pass: inputs.farmPass ?? false,
+      boost: inputs.farmBoost ?? NO_ECONOMY_BOOST,
       maxPhase: inputs.maxPhase,
       fieldSlots: inputs.fieldSlots,
       currentPhase: view.phase,
@@ -360,8 +361,9 @@ function FarmScreen({
       activeHeroId: view.activeHeroId,
       account,
       farmRows: board,
+      xpPerPropMult: computeFarmXpPerPropMult(inputs),
     }),
-    [view.phase, view.activeHeroId, heroes, account, board],
+    [view.phase, view.activeHeroId, heroes, account, board, inputs],
   );
 
   const explorerActions = useMemo(

@@ -233,6 +233,19 @@ describe('the changes the plan depends on, each named with before and after', ()
     expect(fields(describePlanChanges(basis, { ...basis, inputs: inputs({ phase: 92 }) }, null).other)).toEqual(['accountField', 'control']);
   });
 
+  it('the Return Bonus switch counts like the Pass, and a basis stored without it reads as off', () => {
+    const switchedOn = describePlanChanges(basis, { ...basis, inputs: inputs({ farmReturnBonus: 'on' }) }, null);
+    expect(switchedOn.other[0]?.detail).toEqual({ field: 'accountField', name: 'farmReturnBonus', before: 0, after: 1 });
+    expect(describePlanChanges(basis, { ...basis, inputs: inputs({ farmReturnBonus: 'off' }) }, null).counted).toBe(0);
+  });
+
+  it('each Boost axis counts like the Pass, and a basis stored without Boosts reads as none running', () => {
+    const xpOn = describePlanChanges(basis, { ...basis, inputs: inputs({ farmBoost: { gold: false, xp: true, drop: false } }) }, null);
+    expect(xpOn.other.map((entry) => entry.detail)).toEqual([{ field: 'accountField', name: 'farmBoostXp', before: 0, after: 1 }]);
+    const none = { gold: false, xp: false, drop: false };
+    expect(describePlanChanges(basis, { ...basis, inputs: inputs({ farmBoost: none }) }, null).counted).toBe(0);
+  });
+
   it('the controls count and fold: forge floor, objective, a scope the player changed', () => {
     const floor = describePlanChanges(basis, { ...basis, controls: controls({ forgeFloor: 13 }) }, null);
     expect(floor.other[0]?.detail).toEqual({ field: 'control', name: 'forgeFloor', before: '12', after: '13' });

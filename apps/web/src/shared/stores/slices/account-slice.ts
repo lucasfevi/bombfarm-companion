@@ -21,8 +21,9 @@ export type AccountSlice = {
   treeTeamCoinPct: number;
   treeLuckFlatPct: number;
   /** `skills.totals.xp_mult` — scales `xpPerPropWiki` the same way `treeTeamCoinPct` scales
-   *  gold per prop. `1` (not `0`) is the no-boost default, matching {@link TreeState.xpMult}. */
-  treeXpMult: number;
+   *  gold per prop. `1` until a save is imported; `null` when the imported save's multiplier was
+   *  unusable, which withholds every XP figure. */
+  treeXpMult: number | null;
   /** `team_dmg_add × 100` and `geo_mult` — the two factors `treeDanoTotal` is the product of.
    *  DISPLAY ONLY (the Account page shows the product); damage math reads `treeDanoTotal`. */
   treeSquadDmgPct: number;
@@ -172,7 +173,7 @@ export const createAccountSlice: StateCreator<
       treeEnergy: shared.tree.energy,
       treeTeamCoinPct: shared.tree.teamCoinPct ?? 0,
       treeLuckFlatPct: shared.tree.luckFlatPct ?? 0,
-      treeXpMult: shared.tree.xpMult ?? 1,
+      treeXpMult: shared.tree.xpMult === undefined ? 1 : shared.tree.xpMult,
       treeSquadDmgPct: shared.tree.squadDmgPct ?? 0,
       treeGeoMult: shared.tree.geoMult ?? 1,
       treeFieldSlotsBonus: shared.tree.fieldSlotsBonus ?? 0,
@@ -208,7 +209,7 @@ export const createAccountSlice: StateCreator<
       patch.treeEnergy = data.tree.energy;
       patch.treeTeamCoinPct = data.tree.teamCoinPct ?? 0;
       patch.treeLuckFlatPct = data.tree.luckFlatPct;
-      patch.treeXpMult = data.tree.xpMult ?? 1;
+      patch.treeXpMult = data.tree.xpMult ?? null;
       patch.treeSquadDmgPct = data.tree.squadDmgPct ?? 0;
       patch.treeGeoMult = data.tree.geoMult ?? 1;
       patch.treeFieldSlotsBonus = data.tree.fieldSlotsBonus ?? 0;

@@ -347,7 +347,8 @@ export const ptBR: Copy = {
   liveEarningsXpSessionTotalLabel: 'Total de XP',
   liveEarningsElapsedLabel: 'Decorrido',
   liveEarningsXpHelpLabel: 'Sobre esse número de XP',
-  liveEarningsXpHelpBody: 'Calculado a partir dos props que seus heróis destruíram, não lido diretamente do jogo.',
+  liveEarningsXpHelpBody:
+    'O XP que o jogo informa para cada prop que seus heróis destroem, com todos os bônus: os seus, o Passe, o Bônus de Retorno, um Boost e as runas dos heróis.',
   liveEarningsSeriesLabel: 'Ouro / h — últimos {minutes} min',
   liveEarningsSeriesAria: 'Ouro por hora nos últimos {minutes} minutos',
   liveEarningsSeriesPeakLabel: 'pico {value}',
@@ -355,11 +356,12 @@ export const ptBR: Copy = {
   liveEarningsMeasuredBody:
     'Medido a partir do que realmente caiu nos últimos 10 minutos — não estimado. Trocar de mapa mistura o que os dois pagaram até a janela se atualizar.',
   liveEarningsGoldPerPropLabel: 'Ouro / prop',
+  liveEarningsXpPerPropLabel: 'XP / prop',
   liveEarningsPropsPerMinuteLabel: 'Props / min',
   liveEarningsPropsTotalLabel: 'Props',
-  liveEarningsGoldPerPropUnder: '{percent}% abaixo da estimativa',
-  liveEarningsGoldPerPropOver: '{percent}% acima da estimativa',
-  liveEarningsGoldPerPropOnEstimate: 'na estimativa',
+  liveEarningsPerPropUnder: '{percent}% abaixo do previsto',
+  liveEarningsPerPropOver: '{percent}% acima do previsto',
+  liveEarningsPerPropOnEstimate: 'como previsto',
 
   // liveDamage* — o painel de Dano: dano do esquadrão e de cada herói, calculado no processo
   // principal; aqui só é formatado, nunca recalculado.

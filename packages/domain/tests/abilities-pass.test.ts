@@ -274,10 +274,16 @@ describe('abilityGainFor — the newly modelled abilities report a gain, the res
     expect(state.kind === 'gain' && state.gainPct).toBeGreaterThan(0);
   });
 
-  it('keeps Fantasma, Caça-Hero, Veia de Ouro, Fortuna and Olho de Lapidador not modelled', () => {
-    for (const abilityId of ['fantasma', 'caca_hero', 'veia_ouro', 'fortuna', 'olho_lapidador']) {
+  it('keeps Fantasma, Caça-Hero and Olho de Lapidador not modelled', () => {
+    for (const abilityId of ['fantasma', 'caca_hero', 'olho_lapidador']) {
       expect(ABILITIES.find((ability) => ability.id === abilityId)?.effect).toEqual({ kind: 'none' });
       expect(stateOf(withAbilityLevels(base, { [abilityId]: 3 }), abilityId)).toEqual({ kind: 'notModelled' });
+    }
+  });
+
+  it('reads Veia de Ouro, Fortuna and Aprendiz as modelled, with a worth DPS does not measure', () => {
+    for (const abilityId of ['veia_ouro', 'fortuna', 'aprendiz']) {
+      expect(stateOf(withAbilityLevels(base, { [abilityId]: 3 }), abilityId)).toEqual({ kind: 'notMeasured' });
     }
   });
 });

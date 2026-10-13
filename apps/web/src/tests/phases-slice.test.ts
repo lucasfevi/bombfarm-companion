@@ -126,12 +126,26 @@ describe('phases slice', () => {
     expect(localStorage.getItem('bf-hp-phases-view-v1')).toBeNull();
   });
 
+  it('setFarmBoost persists, keeps its identity on an equal write, and hydrates back', () => {
+    usePlannerStore.getState().setFarmBoost({ gold: true, xp: false, drop: false });
+    expect(loadPhasesView().farmBoost).toEqual({ gold: true, xp: false, drop: false });
+
+    const before = usePlannerStore.getState().farmBoost;
+    localStorage.clear();
+    usePlannerStore.getState().setFarmBoost({ gold: true, xp: false, drop: false });
+    expect(usePlannerStore.getState().farmBoost).toBe(before);
+    expect(localStorage.getItem('bf-hp-phases-view-v1')).toBeNull();
+
+    usePlannerStore.getState().hydratePhasesView({ farmBoost: { gold: false, xp: true, drop: true } });
+    expect(usePlannerStore.getState().farmBoost).toEqual({ gold: false, xp: true, drop: true });
+  });
+
   it('the persisted payload never carries the ephemeral fields', () => {
     // No setPhasesViewPhase call in this test, so the phase is still unchosen — `phase`
     // itself is correctly omitted here too (see the "omits phase while unchosen" test below).
     usePlannerStore.getState().setFarmReturnBonus('on');
     const raw = JSON.parse(localStorage.getItem('bf-hp-phases-view-v1')!) as Record<string, unknown>;
-    expect(Object.keys(raw).sort()).toEqual(['farmPass', 'farmPool', 'farmReturnBonus']);
+    expect(Object.keys(raw).sort()).toEqual(['farmBoost', 'farmPass', 'farmPool', 'farmReturnBonus']);
   });
 
   it('omits phase while unchosen, so a later write cannot freeze the auto-select onto phase 1', () => {

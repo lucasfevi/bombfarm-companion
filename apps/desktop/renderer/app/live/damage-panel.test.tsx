@@ -142,6 +142,7 @@ describe('DamagePanel', () => {
             xpSessionTotal: 1,
             gold10Series: [],
             goldPerProp10: 1,
+            xpPerProp10: 1,
             propsPerMinute10: 1,
             propsSessionTotal: 1,
             coverageSeconds,

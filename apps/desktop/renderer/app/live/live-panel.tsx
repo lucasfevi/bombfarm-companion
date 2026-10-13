@@ -26,7 +26,7 @@ interface LiveRow {
 }
 
 /**
- * How far the measured gold-per-prop sits from what this map is modelled to pay, as a signed
+ * How far a measured per-prop figure sits from what this map is modelled to pay, as a signed
  * fraction. Computed here because this is the one place holding both panels' data — the earnings
  * panel is not handed the map to reach into.
  *
@@ -34,10 +34,8 @@ interface LiveRow {
  * not a deviation of any size, and the comparison is only worth printing when there are two
  * numbers to compare.
  */
-function goldPerPropDeltaOf(earnings: LiveEarnings | null, map: LiveMap | null): number | null {
-  const measured = earnings?.goldPerProp10 ?? null;
-  const estimated = map?.economy?.averageGoldPerProp ?? null;
-  if (measured === null || estimated === null || estimated <= 0) return null;
+function deltaOf(measured: number | null | undefined, estimated: number | null | undefined): number | null {
+  if (measured == null || estimated == null || estimated <= 0) return null;
   return measured / estimated - 1;
 }
 
@@ -110,7 +108,8 @@ export function LivePanel({
         <EarningsPanel
           freshness={freshness}
           earnings={earnings}
-          goldPerPropDelta={goldPerPropDeltaOf(earnings, map)}
+          goldPerPropDelta={deltaOf(earnings?.goldPerProp10, map?.economy?.averageGoldPerProp)}
+          xpPerPropDelta={deltaOf(earnings?.xpPerProp10, map?.economy?.xpPerProp)}
           onReset={onResetEarnings}
         />
         <MapPanel map={map} />

@@ -566,6 +566,7 @@ describe('the live view', () => {
       earnings: null,
       map: null,
       damage: null,
+      boosts: [],
       updatedAt: NOW_ISO,
     });
   });

@@ -46,11 +46,12 @@ export type TreeState = {
   /**
    * `skills.totals.xp_mult` verbatim (not a percentage) — scales XP per prop the same way
    * `teamCoinPct` scales gold per prop. Optional, same precedent as {@link luckFlatPct}: so
-   * pre-existing literals (e.g. `e2e/fixtures/seed.ts`) keep typechecking; every read site
-   * defaults absence to `1` (NOT `0` — a `?? 0` here would silently zero every XP figure) and
-   * `normalizeTree`'s rebuild fills it on load.
+   * pre-existing literals (e.g. `e2e/fixtures/seed.ts`) keep typechecking; absence reads as `1`
+   * (no save imported, no bonus known) and `normalizeTree`'s rebuild fills it on load. `null` is
+   * an imported save whose multiplier was unusable, and survives the round trip so XP stays
+   * withheld.
    */
-  xpMult?: number;
+  xpMult?: number | null;
   /**
    * `team_dmg_add × 100` and `geo_mult` — the two factors {@link danoTotal} is the product of
    * (verified to full double precision on two captures). DISPLAY ONLY: every damage computation
@@ -214,7 +215,7 @@ function normalizeTree(raw?: Partial<TreeState> | null): TreeState {
     energy: raw.energy ?? base.energy,
     teamCoinPct: raw.teamCoinPct ?? base.teamCoinPct,
     luckFlatPct: raw.luckFlatPct ?? base.luckFlatPct,
-    xpMult: raw.xpMult ?? base.xpMult,
+    xpMult: raw.xpMult === null ? null : (raw.xpMult ?? base.xpMult),
     squadDmgPct: raw.squadDmgPct ?? base.squadDmgPct,
     geoMult: raw.geoMult ?? base.geoMult,
     fieldSlotsBonus: raw.fieldSlotsBonus ?? base.fieldSlotsBonus,

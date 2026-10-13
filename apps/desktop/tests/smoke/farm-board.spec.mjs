@@ -295,6 +295,17 @@ test.describe('farm board smoke — a phase, a rotation pool and a return bonus,
           'to read from the account',
       ).toBe(0);
 
+      // The Boosts are read from the running game the same way, one state per axis and no switch.
+      const boost = page.getByTestId('farm-boost');
+      await expect(boost).toBeVisible({ timeout: 20_000 });
+      for (const axis of ['gold', 'xp', 'drop']) {
+        await expect(boost.getByTestId(`farm-boost-${axis}-state`)).toHaveAttribute('data-boost', /^(on|off)$/);
+      }
+      expect(
+        await boost.getByRole('switch').count(),
+        'the Boost is drawn as switches, so this screen is offering to set a value it reads from the game',
+      ).toBe(0);
+
       const before = await page
         .locator('[data-testid="farm-ranking-table"] [data-testid^="farm-row-gold-"]')
         .evaluateAll((cells) =>

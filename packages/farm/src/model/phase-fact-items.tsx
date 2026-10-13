@@ -148,7 +148,7 @@ export function economyItems(
     {
       id: 'xp',
       label: strings.phasesXpPerProp,
-      value: boostedValue(
+      value: intel.xpWithheld ? '—' : boostedValue(
         formatNumber(intel.xpPerPropActual, 0),
         formatNumber(intel.xpPerPropWiki, 0),
         singleBoostTerm(intel.xpPerPropWiki, intel.xpPerPropActual),

@@ -40,6 +40,10 @@ describe('formatRatePerHour (the table cell variant — formatRate plus a traili
     expect(formatRatePerHour(Infinity, 'en')).toBe('—');
     expect(formatRatePerHour(Number.NaN, 'en')).toBe('—');
   });
+
+  it('a withheld figure is the same bare em dash', () => {
+    expect(formatRatePerHour(null, 'en')).toBe('—');
+  });
 });
 
 describe('formatSignedRate (sign as text, never colour alone)', () => {

@@ -840,17 +840,19 @@ async function bootstrap(): Promise<void> {
       : {}),
   });
   // The raw per-frame stream stays internal to main (the game reader still needs every tick);
-  // only `currency` crosses IPC immediately here. Field/recovery/on-field membership cross via
-  // `liveFastPublisher` below instead, paced to LIVE_DISPLAY_REFRESH_MS rather than the tap's own
-  // ~10Hz — publishing raw frames across IPC for the renderer to throttle is work in the wrong
-  // process.
-  // liveSource itself only ever raises 'frame' or 'currency' — 'fastUpdate' is constructed
+  // only `currency` and `boosts` cross IPC immediately here — both are raised only on a change.
+  // Field/recovery/on-field membership cross via `liveFastPublisher` below instead, paced to
+  // LIVE_DISPLAY_REFRESH_MS rather than the tap's own ~10Hz — publishing raw frames across IPC for
+  // the renderer to throttle is work in the wrong process.
+  // liveSource itself never raises 'fastUpdate' — it is constructed
   // downstream, by liveFastPublisher, from a separate emit callback, never by LiveSource.
   liveSource.subscribe((event) => {
     if (event.type === 'frame') {
       gameReader?.ingestLiveTick(event.frame);
     } else if (event.type === 'currency') {
       gameReader?.ingestLiveCurrency(event.currency);
+      emitEvent('live:event', event);
+    } else if (event.type === 'boosts') {
       emitEvent('live:event', event);
     }
   });

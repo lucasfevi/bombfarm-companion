@@ -42,30 +42,22 @@
  * row — and would have UNDER-predicted it by as much on the same roster had the heroes parked on
  * the field at import time been the ones carrying nothing.
  *
- * SORTE-AVERAGE VS FORTUNA-SUM ASYMMETRY — DO NOT "FIX": Sorte (`SquadFarmFacts.sorteFraction`)
+ * SORTE-AVERAGE VS AURA-SUM ASYMMETRY — DO NOT "FIX": Sorte (`SquadFarmFacts.sorteFraction`)
  * is a normalized, uptime-weighted AVERAGE of hero-only luck plus the tree's flat share
- * ("the average of on-field heroes' luck"). The Fortuna aura
- * (`FarmRateRow.fortunaAura`) is an UNNORMALIZED uptime-weighted SUM (an aura is
- * a presence effect that stacks across heroes, not an average). These are deliberately different
- * shapes. Live confirmation of the Fortuna-sum's cap order (cap-after-sum,
- * the conservative choice shipped here) is still an open question.
+ * ("the average of on-field heroes' luck"). A team aura is a SUM over the carriers present, capped
+ * (an aura is a presence effect that stacks across heroes, not an average). These are deliberately
+ * different shapes.
  *
- * FORTUNA MOVED TO THE HOUSE-ALLOCATED BASIS; SORTE DELIBERATELY DID NOT. `fortunaAura` is now
- * `min(FORTUNA_AURA_CAP, Σ (uptime_h × activity_h) × perLevel × level_h)` — the SAME realised
- * on-field basis `heroesOnField` uses, computed in `buildRow` alongside it (see
- * {@link allocateHouseSlots}) rather than in `computeSquadFarmFacts`, for the same phase-dependent
- * reason `concurrencyScale` moved there. Being an UNNORMALIZED SUM, its old unconstrained-uptime
- * basis scaled with `Σ uptime_h` directly, so it overcounted by exactly the House's overcommit
- * ratio whenever the House bound (1.69x on account 486's Fortuna-free roster, had it carried any).
- * `sorteFraction` stays on the unconstrained, phase-independent `uptime_h` basis: being a
- * normalized AVERAGE, the same overcommit does not inflate it the same way — reweighting by the
- * realised (allocated) composition instead would shift the average toward whichever heroes the
- * greedy allocator favours, which has no fixed sign (it depends on whether this roster's
- * high-value-density heroes happen to also be its high-luck ones, and combat throughput and Sorte
- * investment are independent point-budget knobs with no structural reason to correlate). Moving it
- * would also mean relocating a currently phase-independent, once-per-squad reduction into
- * `buildRow`'s per-phase loop for a correction with no known direction — not worth it absent a
- * roster where the correlation is demonstrated. Revisit if one is found.
+ * EVERY TEAM AURA, ONE WEIGHTING. The combat auras, Fortuna's gold and Aprendiz's XP are all
+ * `E[min(cap, Σ present value)]` with each carrier present for its own unconstrained duty cycle
+ * `uptime_h` (`teamAuraOverRotation`, `team-buffs.ts`). An aura reaches the field only while its
+ * carrier stands on it — measured for Aprendiz. Fortuna used to be weighted by the House-ALLOCATED
+ * `uptime_h × activity_h` instead, and capped outside the expectation: the allocation hands the
+ * House's scarce slots to the strongest hero first ({@link allocateHouseSlots}), which is how an
+ * automated player fills the House, not a rule of the game, so an aura total resting on it priced
+ * that behaviour; and capping `E[X]` instead of taking `E[min(cap, X)]` reads two half-present
+ * carriers as one always there. The cost of the shared basis is the one the combat auras already
+ * carry: it runs slightly rich whenever the House is the binding constraint.
  */
 import {
   fuseSeconds,
@@ -99,7 +91,9 @@ import { buildCandidateSheet } from './points-reopt-core';
 import { pipelineForHero } from './roster-dps';
 import { DEFAULT_CASA_SLOTS } from './casa-slots';
 import {
+  apprenticeXpMult,
   computeTeamBuffsOverRotation,
+  teamAuraOverRotation,
   holdAurasAtCap,
   pulseHeldAtCap,
   zeroTeamBuffs,
@@ -133,8 +127,10 @@ import {
   type WikiPhaseLine,
 } from './phase-wiki';
 import { hitsToKill, propHp } from './phases';
+import { runeXpMultiplier, runesOf, type HeroRune } from './runes';
 import type { HeroRecord, AccountShared } from './shims/storage';
 import { collectionGoldMult, collectionLuckPct } from './collection';
+import type { LiveBoostAxis } from '@bombfarm/contracts';
 
 /**
  * Seconds between consecutive hero activations at the head of a clear. Heroes do not all start
@@ -183,20 +179,52 @@ export type EconomyMultipliers = {
   dropAdd: number;
 };
 
+/** Which Boosts are running, one per axis. */
+export type EconomyBoost = { readonly gold: boolean; readonly xp: boolean; readonly drop: boolean };
+
+export const NO_ECONOMY_BOOST: EconomyBoost = Object.freeze({ gold: false, xp: false, drop: false });
+
+/** The running axes the game reports, as the Boost the economy is priced under. */
+export function economyBoostOf(axes: readonly LiveBoostAxis[]): EconomyBoost {
+  if (axes.length === 0) return NO_ECONOMY_BOOST;
+  return { gold: axes.includes('gold'), xp: axes.includes('xp'), drop: axes.includes('drop') };
+}
+
+/**
+ * A running Boost's add on its axis: the live frame states the multiplier as 2, and it sums with
+ * the Return Bonus rather than multiplying it — measured from live traffic, Boost with a return
+ * window open earned ×1.5 over Boost alone, not ×2.
+ */
+export const BOOST_ADD = 1;
+
+export type EconomyInput = { returnBonus: ReturnBonusMode; pass: boolean; boost?: EconomyBoost | undefined };
+
 /**
  * Gold and XP multipliers are `1 + Σ adds`, one sum: the Return Bonus add (whose rate depends on
- * the Pass) plus the Pass's always-on add. Measured on a live capture, window/bare gold was
- * 2.15/1.15 and XP 2.30/1.30 on a Pass account. The drop term is the data value assumed
- * additive with luck — unmeasured.
+ * the Pass), the Pass's always-on add, and a running Boost. Measured on a live capture,
+ * window/bare gold was 2.15/1.15 and XP 2.30/1.30 on a Pass account. The drop terms are the data
+ * values assumed additive with luck — unmeasured.
  */
-export function economyMultipliers(input: { returnBonus: ReturnBonusMode; pass: boolean }): EconomyMultipliers {
+export function economyMultipliers(input: EconomyInput): EconomyMultipliers {
   const side = input.pass ? 1 : 0;
   const returnAdd = input.returnBonus === 'on' ? (input.pass ? RETURN_BONUS_ADD_VIP : RETURN_BONUS_ADD) : 0;
+  const boost = input.boost ?? NO_ECONOMY_BOOST;
+  const boostAdd = (on: boolean) => (on ? BOOST_ADD : 0);
   return {
-    gold: 1 + returnAdd + PASS_ADDS.gold[side],
-    xp: 1 + returnAdd + PASS_ADDS.xp[side],
-    dropAdd: PASS_ADDS.drop[side],
+    gold: 1 + returnAdd + PASS_ADDS.gold[side] + boostAdd(boost.gold),
+    xp: 1 + returnAdd + PASS_ADDS.xp[side] + boostAdd(boost.xp),
+    dropAdd: PASS_ADDS.drop[side] + boostAdd(boost.drop),
   };
+}
+
+/**
+ * What one prop's wiki XP is multiplied by for the account: `xp_mult` (Collections' XP already
+ * inside it) times the economy bracket. `null` when the account carries no `xp_mult` — an XP
+ * figure is withheld rather than priced at an invented 1.
+ */
+export function accountXpPerPropMult(xpMult: number | null | undefined, economy: EconomyInput): number | null {
+  if (typeof xpMult !== 'number' || !Number.isFinite(xpMult)) return null;
+  return xpMult * economyMultipliers(economy).xp;
 }
 
 /** Maps a stored pre-split value (`'off' | 'on' | 'vip'`) to the current pair; anything else is off. */
@@ -287,6 +315,11 @@ export type HeroFarmFacts = {
   /** Matador de Chefes: the multiplier on this hero's hit against the gate boss alone — never the
    *  rocks, the shards or the cage. OPTIONAL, and absent means 1. */
   bossDmgMult?: number;
+  /** The XP this hero's kills earn over the account's ({@link runeXpMultiplier}). OPTIONAL, and
+   *  absent means 1. */
+  xpRuneMult?: number;
+  /** Aprendiz's rank. OPTIONAL, and absent means the hero carries none. */
+  apprenticeRank?: number;
   /** True when this hero contributes no throughput: `avgHitBase <= 0` or `plantsPerSec <= 0`. */
   degenerate: boolean;
 };
@@ -368,6 +401,10 @@ export type HeroFarmBasis = {
   /** `1 + 0.5 × context.blastRange`, blocks struck per bomb — ability-driven, build-independent,
    *  precomputed. Geometry, not damage: see {@link HeroFarmFacts.blocksPerBomb}. */
   blocksPerBomb: number;
+  /** See {@link HeroFarmFacts.xpRuneMult}. Absent means 1. */
+  xpRuneMult?: number;
+  /** See {@link HeroFarmFacts.apprenticeRank}. */
+  apprenticeRank?: number;
   /**
    * The same pipeline output with every team aura OFF, kept so {@link squadFactsFromBases} can
    * re-price the auras for any candidate assignment (see {@link priceAuraLayer}). Absent on a
@@ -416,10 +453,22 @@ export type HeroFarmBasisParts = {
   adjustedLuckPct: number;
   treeLuckFlatPct: number;
   abilities: Record<string, number>;
+  /** The hero's runes; only the xp axis is read here — the sheet axes are already in `effective`. */
+  runes?: readonly HeroRune[] | undefined;
   auraFree?: AuraFreeFarmTerms;
   critPointCeiling?: number;
   critCeilingBindsSheet?: boolean;
 };
+
+function xpRuneMultField(runes: readonly HeroRune[] | undefined): { xpRuneMult?: number } {
+  const mult = runeXpMultiplier(runes ?? []);
+  return mult === 1 ? {} : { xpRuneMult: mult };
+}
+
+function apprenticeRankField(abilities: Record<string, number>): { apprenticeRank?: number } {
+  const rank = clampAbilityLevel(abilities.aprendiz ?? 0);
+  return rank > 0 ? { apprenticeRank: rank } : {};
+}
 
 /**
  * The sole construction site for a {@link HeroFarmBasis}. Exported so a second producer (the Team
@@ -445,6 +494,8 @@ export function heroFarmBasisFromParts(parts: HeroFarmBasisParts): HeroFarmBasis
     estilhacosLevel: clampAbilityLevel(parts.abilities.estilhacos ?? 0),
     matadorChefesLevel: clampAbilityLevel(parts.abilities.matador_chefes ?? 0),
     blocksPerBomb: 1 + 0.5 * parts.context.blastRange,
+    ...xpRuneMultField(parts.runes),
+    ...apprenticeRankField(parts.abilities),
     ...(parts.auraFree ? { auraFree: parts.auraFree } : {}),
     ...(parts.critPointCeiling !== undefined ? { critPointCeiling: parts.critPointCeiling } : {}),
     ...(parts.critCeilingBindsSheet ? { critCeilingBindsSheet: true } : {}),
@@ -482,6 +533,7 @@ function auraFreeBasesForAccount(
       adjustedLuckPct: pipeline.adjusted.luck,
       treeLuckFlatPct,
       abilities: hero.abilities,
+      runes: runesOf(hero),
       auraFree: {
         effective: pipeline.effective,
         effectiveDelta: pipeline.A.effectiveDelta,
@@ -606,13 +658,14 @@ function priceFieldForAssignment(
  * WHY THE PRESENCE WEIGHT IS THE UNCONSTRAINED DUTY CYCLE. {@link presenceAt} weighs a carrier by
  * `F/(F+T)` at its points, the same quantity {@link HeroFarmFacts.uptime} carries.
  *
- * Deliberately NOT `uptime x activity` (the House-ALLOCATED basis `heroesOnField` and
- * `fortunaAura` use). `activity` is decided per phase by {@link allocateHouseSlots}, so weighting
+ * Deliberately NOT `uptime x activity` (the House-ALLOCATED basis `heroesOnField` uses), and
+ * neither is any other team aura — see the module header's EVERY TEAM AURA, ONE WEIGHTING note.
+ * `activity` is decided per phase by {@link allocateHouseSlots}, so weighting
  * by it would make every hero's SHEET — attack, speed, crit, drain — a function of the phase being
  * priced, and with it the pipeline call that produces the sheet. That is the one thing this module
  * is built not to do: `plantsPerSecByAto` and the whole `HeroFarmBasis` exist so a row costs zero
  * pipeline calls. `sorteFraction` stays on this same unconstrained basis for a related reason —
- * see the module header's SORTE-AVERAGE VS FORTUNA-SUM ASYMMETRY note. The cost is that the auras
+ * see the module header's SORTE-AVERAGE VS AURA-SUM ASYMMETRY note. The cost is that the auras
  * run slightly rich whenever the House is the binding constraint; on account 486 (5 recovery slots
  * against a 7.34-slot demand) the lone Grito carrier's unconstrained uptime is 0.578 against a
  * live-measured field presence of 0.591, so the term is inside 3% of measurement there.
@@ -764,6 +817,8 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
     ...(basis.matadorChefesLevel > 0
       ? { bossDmgMult: abilityMods({ matador_chefes: basis.matadorChefesLevel }).bossDmgMult }
       : {}),
+    ...(basis.xpRuneMult !== undefined ? { xpRuneMult: basis.xpRuneMult } : {}),
+    ...(basis.apprenticeRank !== undefined ? { apprenticeRank: basis.apprenticeRank } : {}),
     degenerate,
     ...(passagemBastao ? { passagemBastao } : {}),
   };
@@ -824,8 +879,8 @@ export type SquadFarmFacts = {
   houseSlots: number;
   /**
    * `Σ uptime` over enabled heroes (fractions) — the UNCONSTRAINED on-field expectation, i.e.
-   * what the roster would sustain given unlimited parallel House recovery. Kept as the Sorte /
-   * Fortuna weighting basis and as the numerator the House ceiling is measured against; it is
+   * what the roster would sustain given unlimited parallel House recovery. Kept as the Sorte and
+   * team-aura weighting basis and as the numerator the House ceiling is measured against; it is
    * NOT the number of heroes actually on the field (that is `FarmRateRow.heroesOnField`, which is
    * phase-dependent because the allocation is).
    */
@@ -867,11 +922,21 @@ export type SquadFarmFacts = {
   treeLuckFlatPct: number;
   /**
    * `tree.xpMult`, verbatim — a direct multiplier (not a percentage add, unlike
-   * {@link teamCoinMult}), so absent/non-finite defaults to `1` (identity) rather than `0`,
-   * which would silently zero every XP figure. Derived here, once per squad, rather than read
-   * from `account.tree` inside `buildRow` — same reasoning as `teamCoinMult`.
+   * {@link teamCoinMult}). `null` when the account carries none: every row's
+   * {@link FarmRateRow.xpPerHour} is then withheld rather than priced at an invented 1.
    */
-  xpMult: number;
+  xpMult: number | null;
+  /**
+   * Aprendiz over the pool ({@link apprenticeXpMult}): each carrier present for its own duty
+   * cycle, the same unconstrained `uptime` the standing auras are weighted by. It multiplies every
+   * hero's XP, not its carrier's alone. `1` without a carrier.
+   */
+  apprenticeXpMult: number;
+  /**
+   * Fortuna over the pool, a FRACTION: {@link teamAuraOverRotation} at each carrier's
+   * `perLevel × level`, present for its `uptime`, capped at {@link FORTUNA_AURA_CAP}.
+   */
+  fortunaAura: number;
 };
 
 /**
@@ -919,7 +984,15 @@ export function computeSquadFarmFacts(
   const teamCoinMult = (1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100) * collectionGoldMult(account.tree.collection);
 
   const rawXpMult = account.tree.xpMult;
-  const xpMult = typeof rawXpMult === 'number' && Number.isFinite(rawXpMult) ? rawXpMult : 1;
+  const xpMult = typeof rawXpMult === 'number' && Number.isFinite(rawXpMult) ? rawXpMult : null;
+
+  const fortunaCarriers = heroFacts.map((hero) => ({
+    value: LOOT_ABILITY_VALUES.fortuna.perLevel * hero.fortunaLevel,
+    presence: hero.uptime,
+  }));
+  const apprenticeCarriers = heroFacts.flatMap((hero) =>
+    hero.apprenticeRank ? [{ rank: hero.apprenticeRank, presence: hero.uptime }] : [],
+  );
 
   return {
     heroes: heroFacts,
@@ -933,6 +1006,8 @@ export function computeSquadFarmFacts(
     teamCoinMult,
     treeLuckFlatPct,
     xpMult,
+    apprenticeXpMult: apprenticeXpMult(apprenticeCarriers),
+    fortunaAura: teamAuraOverRotation(fortunaCarriers, FORTUNA_AURA_CAP),
   };
 }
 
@@ -1216,6 +1291,8 @@ export type FarmRateOptions = {
   returnBonus?: ReturnBonusMode;
   /** The account owns the Pass. Default `false`. */
   pass?: boolean;
+  /** The Boosts running. Default none. */
+  boost?: EconomyBoost | undefined;
   /** `account.max_phase`. `null`/omitted ⇒ every row `locked: false`. */
   maxPhase?: number | null;
   /**
@@ -1249,7 +1326,14 @@ export type FarmRateRow = {
    *  which the 2026-08-23 patch raised tenfold to `0.0005` — it is no longer the same rate as
    *  {@link gemsPerHour}, which stayed at `0.00005`. */
   stoneChestsPerHour: number;
-  xpPerHour: number;
+  /** `null` when the account carries no XP multiplier ({@link SquadFarmFacts.xpMult}). */
+  xpPerHour: number | null;
+  /** The squad's XP-rune multiplier at this phase, each hero's weighted by its share of the
+   *  kills; `1` without runes. Part of {@link xpPerHour}, outside the account's own multiplier. */
+  xpRuneMix: number;
+  /** {@link SquadFarmFacts.apprenticeXpMult}, repeated so a per-prop figure can be read off the
+   *  row. Part of {@link xpPerHour}. */
+  apprenticeXpMult: number;
   /** Props destroyed per hour, over the WHOLE cycle — including the head, and on a gate the boss,
    *  neither of which drops any. Always consistent with {@link clearSecs}:
    *  `cyclesPerHour × propsPerMap`. */
@@ -1316,16 +1400,7 @@ export type FarmRateRow = {
    * `0` exactly when the field cannot fill.
    */
   fieldContentionPct: number;
-  /**
-   * `min(FORTUNA_AURA_CAP, Σ (uptime_h × activity_h) × perLevel × level_h)`, a FRACTION.
-   *
-   * Weighted by the House-ALLOCATED on-field fraction (`uptime_h × activity_h`, the same term
-   * `heroesOnField` sums), not the unconstrained `uptime_h` — an aura a hero cannot actually keep
-   * on the field cannot be stacking with the others. Phase-dependent because the allocation is
-   * (see {@link allocateHouseSlots}); this is why it lives here and not on `SquadFarmFacts`, same
-   * as `heroesOnField`/`concurrencyScale`. `sorteFraction` deliberately stays on the unconstrained
-   * squad-level basis — see the module header's SORTE-AVERAGE VS FORTUNA-SUM ASYMMETRY note.
-   */
+  /** {@link SquadFarmFacts.fortunaAura}, repeated on the row the gold is priced on. */
   fortunaAura: number;
 };
 
@@ -1335,7 +1410,11 @@ function normalizeZero(value: number): number {
 }
 
 function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateOptions): FarmRateRow {
-  const economy = economyMultipliers({ returnBonus: options.returnBonus ?? 'off', pass: options.pass ?? false });
+  const economy = economyMultipliers({
+    returnBonus: options.returnBonus ?? 'off',
+    pass: options.pass ?? false,
+    boost: options.boost,
+  });
   const sorteMult = 1 + squad.sorteFraction + economy.dropAdd;
   const pulse = squad.entryPulse;
 
@@ -1387,7 +1466,6 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
 
   let bossRateSum = 0;
   let heroesOnField = 0;
-  let fortunaWeightedSum = 0;
   const effectiveUptime = new Array<number>(perHero.length).fill(0);
   for (let i = 0; i < perHero.length; i++) {
     const hero = squad.heroes[i];
@@ -1395,10 +1473,8 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
     effectiveUptime[i] = onField;
     bossRateSum += perHero[i].fullBossTerm * activity[i];
     heroesOnField += onField;
-    // House-allocated, not unconstrained: an aura a hero cannot keep on the field cannot stack.
-    fortunaWeightedSum += onField * LOOT_ABILITY_VALUES.fortuna.perLevel * hero.fortunaLevel;
   }
-  const fortunaAura = Math.min(FORTUNA_AURA_CAP, fortunaWeightedSum);
+  const fortunaAura = squad.fortunaAura;
 
   // Constraint 2 — the field queue, applied to what the House can actually keep fed (never to the
   // unconstrained `uptimeSum`, which would double-charge the same shortage).
@@ -1453,12 +1529,17 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   }
   // Each hero's Veia de Ouro reaches the gold of the props IT kills, so the squad's mix follows
   // the kill shares the clear itself attributed.
+  // An xp rune reaches the XP of the props its own hero kills, the same way.
   const veiaOuroPerLevel = LOOT_ABILITY_VALUES.veia_ouro.perLevel;
   let goldSelfMix = 1;
+  let xpSelfMix = 1;
   if (clearRateSum > 0) {
     goldSelfMix = 0;
+    xpSelfMix = 0;
     for (let i = 0; i < squad.heroes.length; i++) {
-      goldSelfMix += (killShareSum[i] / clearRateSum) * (1 + veiaOuroPerLevel * squad.heroes[i].veiaOuroLevel);
+      const killShare = killShareSum[i] / clearRateSum;
+      goldSelfMix += killShare * (1 + veiaOuroPerLevel * squad.heroes[i].veiaOuroLevel);
+      xpSelfMix += killShare * (squad.heroes[i].xpRuneMult ?? 1);
     }
   }
   /** Props per second over the whole cycle, head included — `0` when the squad cannot clear. */
@@ -1482,7 +1563,10 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const gemsPerHour = line.gate ? propsPerHour * DROP_RATES.gem * sorteMult : 0;
   const timePiecesPerHour = line.gate ? propsPerHour * DROP_RATES.time * sorteMult : 0;
   const stoneChestsPerHour = line.gate ? propsPerHour * DROP_RATES.stone * sorteMult : 0;
-  const xpPerHour = propsPerHour * xpPerProp(line.phase) * squad.xpMult * economy.xp;
+  const xpPerHour =
+    squad.xpMult === null
+      ? null
+      : propsPerHour * xpPerProp(line.phase) * squad.xpMult * economy.xp * xpSelfMix * squad.apprenticeXpMult;
 
   const maxPropHp = line.hp * MAX_PROP_HP_MULT;
   const oneShot = perHero.length > 0 && perHero.every((hero) => hero.floorHit >= maxPropHp);
@@ -1507,7 +1591,9 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
     gemsPerHour: normalizeZero(gemsPerHour),
     timePiecesPerHour: normalizeZero(timePiecesPerHour),
     stoneChestsPerHour: normalizeZero(stoneChestsPerHour),
-    xpPerHour: normalizeZero(xpPerHour),
+    xpPerHour: xpPerHour === null ? null : normalizeZero(xpPerHour),
+    xpRuneMix: xpSelfMix,
+    apprenticeXpMult: squad.apprenticeXpMult,
     propsPerHour: normalizeZero(propsPerHour),
     cyclesPerHour: normalizeZero(cyclesPerHour),
     clearSecs,
@@ -1555,6 +1641,11 @@ export function computeFarmRates(
 ): { heroFacts: HeroFarmFacts[]; squad: SquadFarmFacts; rows: FarmRateRow[] } {
   const heroFacts = computeHeroFarmFacts(input);
   const squad = computeSquadFarmFacts(heroFacts, input.account);
-  const rows = computeFarmRateTable(squad, { returnBonus: input.returnBonus, pass: input.pass, maxPhase: input.maxPhase });
+  const rows = computeFarmRateTable(squad, {
+    returnBonus: input.returnBonus,
+    pass: input.pass,
+    boost: input.boost,
+    maxPhase: input.maxPhase,
+  });
   return { heroFacts, squad, rows };
 }

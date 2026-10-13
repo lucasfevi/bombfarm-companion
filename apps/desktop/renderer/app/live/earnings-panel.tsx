@@ -81,7 +81,7 @@ const XpHeadlineHelp = memo(function XpHeadlineHelp({ t }: { t: Copy }) {
 });
 
 /**
- * Marks the three figures below it as measured, against the map panel's own "Estimated" note in
+ * Marks the figures below it as measured, against the map panel's own "Estimated" note in
  * the same position one panel over. The two rows sit at the same height and print the same kind of
  * per-prop figure, so which of them is a reading and which is a model has to be legible without
  * opening either tooltip.
@@ -142,55 +142,66 @@ function MeasuredFigure({
 
 /** A deviation small enough to round away is reported as agreement rather than as a signed zero —
  *  "0% under estimate" claims a direction the rounding just erased. */
-function goldPerPropFootnote(delta: number, t: Copy): { text: string; tone: string } {
+function perPropFootnote(delta: number, t: Copy): { text: string; tone: string } {
   const percent = Math.round(Math.abs(delta) * 100);
-  if (percent === 0) return { text: t.liveEarningsGoldPerPropOnEstimate, tone: 'text-muted' };
+  if (percent === 0) return { text: t.liveEarningsPerPropOnEstimate, tone: 'text-muted' };
   return delta < 0
-    ? { text: sub(t.liveEarningsGoldPerPropUnder, { percent }), tone: 'text-down' }
-    : { text: sub(t.liveEarningsGoldPerPropOver, { percent }), tone: 'text-up' };
+    ? { text: sub(t.liveEarningsPerPropUnder, { percent }), tone: 'text-down' }
+    : { text: sub(t.liveEarningsPerPropOver, { percent }), tone: 'text-up' };
+}
+
+/** Gated on the figure it annotates, never on the delta alone: a comparison printed beside a dash
+ *  is a claim about a number that is not there. */
+function deltaFootnote(testId: string, measured: number | null, delta: number | null, t: Copy): ReactNode {
+  if (measured === null || delta === null) return undefined;
+  const footnote = perPropFootnote(delta, t);
+  return (
+    <span data-testid={testId} className={footnote.tone}>
+      {footnote.text}
+    </span>
+  );
 }
 
 /**
- * The measured counterpart to the map panel's three estimates, in the same shape and at the same
- * height one panel over. Only gold-per-prop is a genuine overlap: a measured xp-per-prop would just
- * be the map's own estimate multiplied by the boost, because that is exactly how the XP figure is
- * derived in the first place, and nothing counts map completions for a gold-per-clear to divide by.
- * Props per minute and the session's prop count take the other two places instead.
+ * The measured counterpart to the map panel's estimates, at the same height one panel over. Gold
+ * and XP per prop each read against their estimate; nothing counts map completions for a
+ * gold-per-clear to divide by, so props per minute and the session's prop count take that place.
  */
 function MeasuredRow({
   earnings,
   goldPerPropDelta,
+  xpPerPropDelta,
   t,
   lang,
   locale,
 }: {
   earnings: LiveEarnings | null;
   goldPerPropDelta: number | null;
+  xpPerPropDelta: number | null;
   t: Copy;
   lang: Lang;
   locale: AppLocale;
 }) {
   const goldPerProp = earnings?.goldPerProp10 ?? null;
-  // Gated on the figure it annotates, never on the delta alone: a comparison printed beside a dash
-  // is a claim about a number that is not there.
-  const footnote = goldPerProp !== null && goldPerPropDelta !== null ? goldPerPropFootnote(goldPerPropDelta, t) : null;
+  const xpPerProp = earnings?.xpPerProp10 ?? null;
 
   return (
     <div data-testid="live-earnings-measured" className="flex flex-col gap-2 border-t border-line/55 pt-3">
       <MeasuredNote t={t} />
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <MeasuredFigure
           testId="live-earnings-gold-per-prop"
           label={t.liveEarningsGoldPerPropLabel}
           value={goldPerProp === null ? EM_DASH : formatCompactNumber(goldPerProp, lang)}
-          footnote={
-            footnote === null ? undefined : (
-              <span data-testid="live-earnings-gold-per-prop-delta" className={footnote.tone}>
-                {footnote.text}
-              </span>
-            )
-          }
+          footnote={deltaFootnote('live-earnings-gold-per-prop-delta', goldPerProp, goldPerPropDelta, t)}
           className="text-[15px] font-bold tabular-nums text-gold"
+        />
+        <MeasuredFigure
+          testId="live-earnings-xp-per-prop"
+          label={t.liveEarningsXpPerPropLabel}
+          value={xpPerProp === null ? EM_DASH : formatCompactNumber(xpPerProp, lang)}
+          footnote={deltaFootnote('live-earnings-xp-per-prop-delta', xpPerProp, xpPerPropDelta, t)}
+          className="text-[15px] font-bold tabular-nums text-info"
         />
         <MeasuredFigure
           testId="live-earnings-props-per-minute"
@@ -254,6 +265,7 @@ export function EarningsPanel({
   freshness,
   earnings,
   goldPerPropDelta = null,
+  xpPerPropDelta = null,
   onReset,
 }: {
   freshness: ReachedLiveFreshness;
@@ -261,6 +273,8 @@ export function EarningsPanel({
   /** The measured gold-per-prop's signed deviation from the map panel's estimate for the map being
    *  played, as a fraction. Computed by the caller, the one place holding both panels' data. */
   goldPerPropDelta?: number | null;
+  /** The same deviation for XP per prop. */
+  xpPerPropDelta?: number | null;
   onReset: () => void;
 }) {
   const t = useCopy();
@@ -419,7 +433,14 @@ export function EarningsPanel({
           </div>
         </div>
         <TrendBlock series={earnings?.gold10Series ?? []} minutes={minutes} lang={lang} t={t} />
-        <MeasuredRow earnings={earnings} goldPerPropDelta={goldPerPropDelta} t={t} lang={lang} locale={locale} />
+        <MeasuredRow
+          earnings={earnings}
+          goldPerPropDelta={goldPerPropDelta}
+          xpPerPropDelta={xpPerPropDelta}
+          t={t}
+          lang={lang}
+          locale={locale}
+        />
       </div>
       <button
         type="button"

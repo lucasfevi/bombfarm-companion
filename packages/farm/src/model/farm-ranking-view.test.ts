@@ -28,6 +28,8 @@ function row(overrides: Partial<FarmRateRow> & { phase: number }): FarmRateRow {
     timePiecesPerHour: 0,
     stoneChestsPerHour: 0,
     xpPerHour: 0,
+    xpRuneMix: 1,
+    apprenticeXpMult: 1,
     propsPerHour: 0,
     cyclesPerHour: 0,
     clearSecs: 60,
@@ -129,6 +131,12 @@ describe('sortFarmRows', () => {
       expect(sortFarmRows(rows, key, 'desc').map((entry) => entry.phase)).toEqual(desc);
     });
   }
+
+  it('sinks a withheld XP figure to the bottom in both directions', () => {
+    const withheld = [row({ phase: 4, xpPerHour: null }), ...rows];
+    expect(sortFarmRows(withheld, 'xpPerHour', 'desc').map((entry) => entry.phase)).toEqual([1, 3, 2, 4]);
+    expect(sortFarmRows(withheld, 'xpPerHour', 'asc').map((entry) => entry.phase)).toEqual([2, 3, 1, 4]);
+  });
 
   it('breaks ties deterministically by ascending phase', () => {
     const tied = [

@@ -70,8 +70,9 @@ export type AccountImportData = {
     speed: number;
     energy: number;
     teamCoinPct?: number;
-    /** `skills.totals.xp_mult` verbatim (not a percentage). Absent/non-finite/zero → 1 (no XP boost). */
-    xpMult?: number;
+    /** `skills.totals.xp_mult` verbatim (not a percentage). `null` when the save carries a zero or
+     *  negative one: no account has that, so XP is withheld rather than priced at a guess. */
+    xpMult?: number | null;
     /** `luck_add × 100` — flat percentage points. */
     luckFlatPct: number;
     /**
@@ -201,6 +202,11 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function asNumber(value: unknown, fallback = 0): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function positiveOrNull(value: unknown): number | null {
+  const n = asNumber(value);
+  return n > 0 ? n : null;
 }
 
 function asString(value: unknown, fallback = ''): string {
@@ -370,7 +376,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       speed: asNumber(totals.speed_add) * 100,
       energy: asNumber(totals.energia_add) * 100,
       teamCoinPct: asNumber(totals.coin_add) * 100,
-      xpMult: asNumber(totals.xp_mult, 1) || 1,
+      xpMult: positiveOrNull(totals.xp_mult),
       luckFlatPct: asNumber(totals.luck_add) * 100,
       squadDmgPct: asNumber(totals.team_dmg_add) * 100,
       geoMult: asNumber(totals.geo_mult, 1) || 1,
