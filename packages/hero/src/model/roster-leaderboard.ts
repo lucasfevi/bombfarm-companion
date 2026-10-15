@@ -117,6 +117,7 @@ export function leaderboardRowsFor(rows: readonly RosterHeroRow[], source: HeroS
 export const LEADERBOARD_COLUMN_IDS = [
   'position',
   'name',
+  'heroId',
   'rarity',
   'level',
   'birth',
@@ -148,6 +149,7 @@ export type LeaderboardColumn = {
 const LABEL_BY_COLUMN = {
   position: 'columnPosition',
   name: 'columnName',
+  heroId: 'columnHeroId',
   rarity: 'columnRarity',
   level: 'columnLevel',
   birth: 'columnBirth',
@@ -168,7 +170,7 @@ export const LEADERBOARD_COLUMNS: readonly LeaderboardColumn[] = LEADERBOARD_COL
   id,
   label: LABEL_BY_COLUMN[id],
   sortable: id !== 'position',
-  firstDirection: id === 'name' ? 'asc' : 'desc',
+  firstDirection: id === 'name' || id === 'heroId' ? 'asc' : 'desc',
 }));
 
 export type SortableLeaderboardColumnId = Exclude<LeaderboardColumnId, 'position'>;
@@ -214,12 +216,22 @@ export function pressLeaderboardColumn(current: LeaderboardSort, column: Sortabl
   return { column, direction: firstDirection };
 }
 
+/** The game's own hero id, as a number. A hero the planner made by hand has none. */
+export function heroGameId(row: Pick<LeaderboardRow, 'hero'>): number | undefined {
+  const id = Number(row.hero.sourceId);
+  return row.hero.sourceId === undefined || !Number.isInteger(id) ? undefined : id;
+}
+
 /** A lexicographic key: abilities and gear rank by how many, then by how high they are. */
 function figuresFor(row: LeaderboardRow, column: SortableLeaderboardColumnId): readonly number[] | undefined {
   const { hero } = row;
   switch (column) {
     case 'name':
       return undefined;
+    case 'heroId': {
+      const id = heroGameId(row);
+      return id === undefined ? undefined : [id];
+    }
     case 'rarity': {
       const index = RARITIES.indexOf(hero.rarity);
       return index < 0 ? undefined : [index];
@@ -371,6 +383,7 @@ const ABILITIES_COLUMN_MIN_REM = 12.5;
 const COLUMN_MIN_REM: Record<LeaderboardColumnId, number> = {
   position: 2,
   name: 9,
+  heroId: 4.5,
   rarity: 5,
   level: 3.5,
   birth: 5,

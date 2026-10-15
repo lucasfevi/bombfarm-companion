@@ -52,6 +52,7 @@ export const showcaseEn = {
   columnPosition: '#',
   columnName: 'Hero',
   columnRarity: 'Rarity',
+  columnHeroId: 'Hero ID',
   columnLevel: 'Level',
   columnBirth: 'Birth',
   columnPower: 'Power',

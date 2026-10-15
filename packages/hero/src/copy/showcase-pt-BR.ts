@@ -54,6 +54,7 @@ export const showcasePtBR: ShowcaseCopy = {
   columnPosition: '#',
   columnName: 'Herói',
   columnRarity: 'Raridade',
+  columnHeroId: 'ID do herói',
   columnLevel: 'Nível',
   columnBirth: 'Nascimento',
   columnPower: 'Poder',

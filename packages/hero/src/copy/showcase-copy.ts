@@ -67,6 +67,7 @@ export type ShowcaseCopy = {
   readonly columnPosition: string;
   readonly columnName: string;
   readonly columnRarity: string;
+  readonly columnHeroId: string;
   readonly columnLevel: string;
   readonly columnBirth: string;
   readonly columnPower: string;
