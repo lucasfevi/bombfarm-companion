@@ -54,20 +54,22 @@ const defById = new Map(catalog.defs.map((definition) => [definition.id, definit
 
 /**
  * Bundled cosmetic skin count (`hero1`…`heroN` under `public/wiki-assets/hero/`).
- * All 16 are mirrored from the wiki CDN, which serves the full set at 192x192.
+ * All 24 are mirrored from the wiki CDN, which serves the full set at 192x192.
  * Raise this when adding a new `hero{N}_avatar.png` — the wiki's `skins.total` is the count to
  * match, and a hero wearing a skin past this bound imports with an "Unknown skin" issue and the
  * neutral placeholder (`import-save.ts`), so a new skin has to land here in the same change.
  */
-export const HERO_SKIN_COUNT = 16;
+export const HERO_SKIN_COUNT = 24;
 
 /**
  * Save `skin` → bundled `hero{N}_avatar.png` N.
  * Wiki filenames `hero2` / `hero3` are swapped vs in-game skin 1 / 2.
- * The whole table was confirmed from the game client's skin table on 2026-09-26: each index's
+ * Indices 0-15 were confirmed from the game client's skin table on 2026-09-26: each index's
  * avatar texture matched exactly one wiki file by pixel comparison, the swap included.
+ * Indices 16-23 (the 2026-10-14 patch) follow the same one-ahead numbering; no save wearing
+ * them has been compared against the client yet.
  */
-const SKIN_AVATAR_FILE = [1, 3, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] as const;
+const SKIN_AVATAR_FILE = [1, 3, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24] as const;
 
 /** Save `skin` 0..(HERO_SKIN_COUNT-1) → bundled avatar path. */
 export function heroAvatarSrc(skin: number): string {
