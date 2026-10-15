@@ -1,8 +1,8 @@
 {
-  "capturedAt": "2026-10-12T20:19:31.168Z",
+  "capturedAt": "2026-10-15T16:26:49.766Z",
   "endpoints": {
     "data": {
-      "payloadSha256": "43f82eb2801a8512f59227fba4a438178b3d3b54913bc3ad94fc481c6f30d3a8",
+      "payloadSha256": "1ccae917d4cf942130a8cb991edbfba36ff161b036301cf83e42a62c1db32460",
       "sectionNames": [
         "bestiario",
         "bolsa",
@@ -50,7 +50,7 @@
         "fases": "837853ea4e700d6973ca675a9efcea85036da849d7b6b564fe327193078d8c4a",
         "gemas": "b6f89dffb1441c13b7ee6b4839f383edd94dde22289fc10ffba2675fc2295954",
         "habilidades": "6fae0b39ec04792c22cbea55a1422092d6a6234cbc7799ac43e58d329b20a2c5",
-        "herois": "580aa49dbf4cf58cd4532ba36972525d13263d1fa39deb1e9d3b622c672215e1",
+        "herois": "35dd6e42c6a8bd8ce4cc863ec9329b72de9737e10dffaf20a3c2ad0f9743e3d0",
         "inventario": "31cbda67c396da2c9ee2615717f8438ee4f47afad823cef056c66e53f14433bb",
         "item_stats": "94041e8cad48122447a273106df9ecccec1c44d569659737dfd73fa44bb7cd79",
         "itens": "ef061543b5b9187c95d938d54d5a29e5355d7e42390d6b1a6039afb86dd5dd41",
@@ -60,11 +60,11 @@
         "pvp": "94da20fd028ee53086eeb4465738364af88d39fb07ac13a5d9ba478269233806",
         "ranking_premio": "370ec771247cf90ab821e8ea75ae808802362cb38b9069c50f52813875d184a7",
         "raridades": "e014307c9fa181014e6669a97b435adf1813069b2cba314bb8623ee89b0bd070",
-        "ritual": "7651edd4871d5be5aeb13774ad41b2c05caee3a679d7fc8cf1928451fd01fd43",
+        "ritual": "68201d35c9a0d1601932e66c1e7f968da6c1591f01465446ecd367161c678620",
         "rotacao": "73e7c9aaa8005f213c3c956d180e13d028424e2b3cc5caf07fa01d886cf0dc5a",
         "runas": "8fa20b25d9ca493cb44845d19621031f33bb8fc9a9a10cd932fa26e6129a4b78",
         "skill_tree": "eb974ad0de05cb0005f9652f651337795eb3d161a2abc0b1a91777ec7eec9e59",
-        "skins": "8b89b65eaed5a7b5af48f0fbdb3fdab02f69d3f467e67b25e268900389ff5da0",
+        "skins": "17ee653678af17ed6eccf710b9683321e0682198edc20111eced6e79b9594c31",
         "slots": "a6337d8d90139df16155157e7880ac185bd2428460320714cdbac97fdcc7071a",
         "stat_kinds": "8cd8ba2c0b3f951aae2d864a2113c9cd8d7a0c017653653adf47cb0bc6da94f6",
         "vip": "21096001e0f3b089d950b6e3611d834ecfee4b48d34efc82532c3a083635beed"
