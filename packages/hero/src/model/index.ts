@@ -202,6 +202,7 @@ export {
   LEADERBOARD_STAT_COLUMN_IDS,
   TOGGLEABLE_LEADERBOARD_COLUMN_IDS,
   filterLeaderboardRows,
+  heroGameId,
   heroPeekStats,
   heroPeekStatsResolver,
   heroStatSheet,

@@ -193,6 +193,12 @@ describe('sortLeaderboardRows', () => {
     expect(ids(sortLeaderboardRows(rows, 'name', 'desc'))).toEqual(['c', 'a', 'b']);
   });
 
+  it('orders the hero id column by the game id, numerically, with a hero lacking one last', () => {
+    const rows = board({ id: 'a', sourceId: '10' }, { id: 'b', sourceId: '9' }, { id: 'c' }, { id: 'd', sourceId: '2' });
+    expect(ids(sortLeaderboardRows(rows, 'heroId', 'asc'))).toEqual(['d', 'b', 'a', 'c']);
+    expect(ids(sortLeaderboardRows(rows, 'heroId', 'desc'))).toEqual(['a', 'b', 'd', 'c']);
+  });
+
   it('orders the birth column by the roll the grade is read from', () => {
     const window = { min: 0, max: 100 };
     const rows = board(
@@ -225,6 +231,7 @@ describe('LEADERBOARD_COLUMNS', () => {
     expect(LEADERBOARD_COLUMNS.map((column) => showcaseEn[column.label])).toEqual([
       '#',
       'Hero',
+      'Hero ID',
       'Rarity',
       'Level',
       'Birth',
@@ -246,7 +253,7 @@ describe('LEADERBOARD_COLUMNS', () => {
     const unsortable = LEADERBOARD_COLUMNS.filter((column) => !column.sortable).map((c) => c.id);
     expect(unsortable).toEqual(['position']);
     const ascending = LEADERBOARD_COLUMNS.filter((column) => column.firstDirection === 'asc');
-    expect(ascending.map((column) => column.id)).toEqual(['name']);
+    expect(ascending.map((column) => column.id)).toEqual(['name', 'heroId']);
   });
 });
 
@@ -376,6 +383,7 @@ describe('column visibility', () => {
     expect(shown(DEFAULT_LEADERBOARD_VIEW)).toEqual([
       'position',
       'name',
+      'heroId',
       'rarity',
       'level',
       'birth',
