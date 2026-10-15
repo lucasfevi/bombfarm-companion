@@ -1,5 +1,18 @@
 # @bombfarm/hero
 
+## 0.7.0
+
+### Minor Changes
+
+- 44e1cbe: The heroes roster table has a Hero ID column: the game's own id for each hero, sortable lowest first on a first press, and listed in the Columns menu like the others.
+
+### Patch Changes
+
+- Updated dependencies [5fe7253]
+- Updated dependencies [6cdbae8]
+  - @bombfarm/domain@1.12.0
+  - @bombfarm/game-art@0.8.5
+
 ## 0.6.0
 
 ### Minor Changes

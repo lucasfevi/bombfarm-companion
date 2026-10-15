@@ -45,6 +45,7 @@ import {
   leaderboardMinWidthRem,
   leaderboardPowerPercent,
   leaderboardRowsFor,
+  heroGameId,
   leaderboardStatValue,
   percentText,
   pressLeaderboardColumn,
@@ -294,6 +295,12 @@ function LeaderboardCell({
       return (
         <DataTable.Cell>
           <HeroCell row={row} lang={lang} />
+        </DataTable.Cell>
+      );
+    case 'heroId':
+      return (
+        <DataTable.Cell align="right" numeric data-testid="heroes-leaderboard-hero-id">
+          {heroGameId(row) ?? NOT_PLACED}
         </DataTable.Cell>
       );
     case 'rarity':
