@@ -1,5 +1,15 @@
 # @bombfarm/domain
 
+## 1.12.0
+
+### Minor Changes
+
+- 5fe7253: Recognise the eight new hero appearances from the 2026-10-14 game update. A hero wearing one of them now imports with its own avatar instead of the "Unknown skin" placeholder, and the roster, Live and Account screens draw it.
+
+### Patch Changes
+
+- 6cdbae8: The Optimizer now places a hero's unspent stat points even when its current build is already right. Previously a plan that only added points, and so moved nothing, was dropped and the points stayed banked.
+
 ## 1.11.0
 
 ### Minor Changes
