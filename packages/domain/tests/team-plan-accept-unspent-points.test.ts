@@ -13,11 +13,9 @@ import { buildPool } from '@bombfarm/domain/team-plan/pool';
 import { buildInitialAssignment } from '@bombfarm/domain/team-plan/solver-assignment';
 import { acceptPointResets, evaluateAt } from '@bombfarm/domain/team-plan/waterfall-guards';
 import type { PointAlloc } from '@bombfarm/domain/gear/types';
-import { TEAM_PLAN_FIXTURE, holdTeamPlanSuiteUntilInRegime, teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+import { syntheticTeamPlanInput } from './helpers/synthetic-roster';
 
-holdTeamPlanSuiteUntilInRegime();
-
-const input = teamPlanInputFromFixture(TEAM_PLAN_FIXTURE, 10);
+const input = syntheticTeamPlanInput(7, { heroCount: 3, spareItemCount: 10, forgeFloor: 10, fieldSlots: 3 });
 const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
 if (built.blocked) throw new Error('fixture roster is blocked');
 const { contexts } = built;
