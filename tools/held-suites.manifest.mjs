@@ -198,6 +198,19 @@ export const HELD_SUITES = [
     },
   },
   {
+    suite: "packages/domain/tests/team-plan-accept-unspent-points.test.ts",
+    capture: [
+      "sheet-math/save-20260914-20heroes-phase101.json",
+      "sheet-math/save-20260914-9heroes-second-account.json",
+    ],
+    mechanic: "sheet",
+    rearmedBy:
+      "a capture taken on or after 2026-10-06, once the forge table is in the sheet it was taken under, registered in the capture registry",
+    rejected: {
+      "sheet-math/save-20260828-4heroes-postpatch.json": FRESH_ACCOUNT,
+    },
+  },
+  {
     suite: "packages/domain/tests/team-plan-canonicalize-assignment.test.ts",
     capture: [
       "sheet-math/save-20260914-20heroes-phase101.json",

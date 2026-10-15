@@ -9,6 +9,7 @@
  * Split out of `waterfall.ts` to keep files small and the decision logic independently testable.
  */
 import { SLOTS } from '../gear/catalog';
+import { requiresPointReset } from '../respec-cost';
 import type { PointAlloc } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { wikiPhaseLine } from '../phase-wiki';
@@ -241,6 +242,23 @@ export function acceptPointResets(
     base = bestObjective;
     baseEvaluation = bestEvaluation;
     pending = pending.filter((heroId) => heroId !== bestHero);
+  }
+
+  // A proposal that only ADDS points costs no reset, so it is taken whenever it does not lower
+  // the roster. The strict test above refuses it when the build was already right and the extra
+  // points move nothing — the points would sit banked while the plan called itself finished.
+  // A roster with nothing feasible (objective 0) has no ranking to spend against, so it proposes
+  // nothing.
+  for (const heroId of base > 0 ? pending : []) {
+    if (requiresPointReset(currentPts[heroId], finalPtsByHeroId[heroId])) continue;
+    const trial = { ...accepted, [heroId]: finalPtsByHeroId[heroId] };
+    const evaluation = evaluateAt(contexts, assignment, trial, gearInput, itemById, floor, farmObjective);
+    if (evaluation.objective < base - EPS) continue;
+    accepted[heroId] = finalPtsByHeroId[heroId];
+    acceptedHeroIds.push(heroId);
+    gainByHeroId[heroId] = evaluation.objective - base;
+    base = evaluation.objective;
+    baseEvaluation = evaluation;
   }
 
   return {
