@@ -25,23 +25,25 @@ describe('wiki-assets', () => {
     expect(heroAvatarSrc(13)).toBe('/wiki-assets/hero/hero14_avatar.png');
     expect(heroAvatarSrc(14)).toBe('/wiki-assets/hero/hero15_avatar.png');
     expect(heroAvatarSrc(15)).toBe('/wiki-assets/hero/hero16_avatar.png');
+    expect(heroAvatarSrc(16)).toBe('/wiki-assets/hero/hero17_avatar.png');
+    expect(heroAvatarSrc(23)).toBe('/wiki-assets/hero/hero24_avatar.png');
   });
 
   it('clamps skin to 0..(HERO_SKIN_COUNT-1)', () => {
     expect(normalizeSkin(-1)).toBe(0);
     expect(normalizeSkin(5)).toBe(5);
     expect(normalizeSkin(6.4)).toBe(6);
-    expect(normalizeSkin(15)).toBe(15);
-    expect(normalizeSkin(99)).toBe(15);
+    expect(normalizeSkin(23)).toBe(23);
+    expect(normalizeSkin(99)).toBe(23);
     expect(normalizeSkin('x')).toBe(0);
   });
 
-  it('treats skin 15 as known and 16 as unknown', () => {
-    // The 2026-09-26 patch took the game from 9 cosmetics to 16, which the wiki reports as
-    // `skins.total: 16`. Before they landed here, a hero wearing one imported as the placeholder.
-    expect(HERO_SKIN_COUNT).toBe(16);
-    expect(isKnownSkin(15)).toBe(true);
-    expect(isKnownSkin(16)).toBe(false);
+  it('treats skin 23 as known and 24 as unknown', () => {
+    // The 2026-10-14 patch took the game from 16 cosmetics to 24, which the wiki reports as
+    // `skins.total: 24`. Before they landed here, a hero wearing one imported as the placeholder.
+    expect(HERO_SKIN_COUNT).toBe(24);
+    expect(isKnownSkin(23)).toBe(true);
+    expect(isKnownSkin(24)).toBe(false);
   });
 
   /**
@@ -51,7 +53,7 @@ describe('wiki-assets', () => {
    * `0` — the stored value on disk was discarded, not merely mis-rendered. Nothing covered
    * this boundary through the actual import path, which is why the regression was invisible.
    */
-  it('keeps a saved skin 15 through import, and still degrades skin 16 to the placeholder', () => {
+  it('keeps a saved skin 23 through import, and still degrades skin 24 to the placeholder', () => {
     const raw = JSON.parse(
       readFileSync(
         join(WEB_PACKAGE_ROOT, '../../packages/domain/tests/fixtures/sheet-math/payload-20260812-8heroes.json'),
@@ -68,13 +70,13 @@ describe('wiki-assets', () => {
     const skinIssues = (candidate: { issues: string[] }) =>
       candidate.issues.filter((issue) => /unknown skin/i.test(issue));
 
-    const known = withSkin(15).candidates[0];
-    expect(known.record.skin).toBe(15);
+    const known = withSkin(23).candidates[0];
+    expect(known.record.skin).toBe(23);
     expect(skinIssues(known)).toEqual([]);
 
     // One past the end must NOT clamp to the nearest index — a nearest-index
     // clamp would render a different hero's face, the exact failure this whole change is about.
-    const unknown = withSkin(16).candidates[0];
+    const unknown = withSkin(24).candidates[0];
     expect(unknown.record.skin).toBe(0);
     expect(skinIssues(unknown)).toHaveLength(1);
   });

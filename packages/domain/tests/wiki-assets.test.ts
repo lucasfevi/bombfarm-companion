@@ -26,13 +26,13 @@ describe('heroAvatarSrc display map', () => {
   // Past the hero2/hero3 swap the wiki numbers files one ahead of the index; the game client's
   // own skin table agrees for every index, so a real save that contradicts this means the table
   // moved — fix `SKIN_AVATAR_FILE`, not the test.
-  it('maps each of the sixteen skins to its own file instead of falling back to skin 1', () => {
-    expect(HERO_SKIN_COUNT).toBe(16);
+  it('maps each of the twenty-four skins to its own file instead of falling back to skin 1', () => {
+    expect(HERO_SKIN_COUNT).toBe(24);
     for (let skin = 3; skin < HERO_SKIN_COUNT; skin += 1) {
       expect(heroAvatarSrc(skin)).toBe(`/wiki-assets/hero/hero${skin + 1}_avatar.png`);
     }
     // The bug: an index past the table's end hit `?? 1` and rendered skin 1's face.
-    expect(heroAvatarSrc(15)).not.toBe(heroAvatarSrc(0));
+    expect(heroAvatarSrc(23)).not.toBe(heroAvatarSrc(0));
   });
 
   it('clamps unknown skins without rewriting 1↔2', () => {
@@ -43,10 +43,10 @@ describe('heroAvatarSrc display map', () => {
     expect(normalizeSkin(HERO_SKIN_COUNT + 8)).toBe(HERO_SKIN_COUNT - 1);
   });
 
-  it('moves the known-skin boundary to 15', () => {
+  it('moves the known-skin boundary to 23', () => {
     expect(isKnownSkin(9)).toBe(true);
-    expect(isKnownSkin(15)).toBe(true);
-    expect(isKnownSkin(16)).toBe(false);
+    expect(isKnownSkin(23)).toBe(true);
+    expect(isKnownSkin(24)).toBe(false);
   });
 });
 
