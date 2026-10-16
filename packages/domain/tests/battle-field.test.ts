@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeFarmRateRow, computeHeroFarmBases, squadFactsFromBases } from '@bombfarm/domain/farm-rate';
+import { computeFarmRateRow, computeFarmRates, computeHeroFarmBases, squadFactsFromBases } from '@bombfarm/domain/farm-rate';
 import { cycleSecondsForHero } from '../src/model/cadence';
 import {
   CLASSIC_FIELD,
@@ -7,6 +7,7 @@ import {
   classicDistanceOn,
   classicEquivalentStanding,
   fieldCells,
+  fieldWalkSpeedCells,
   meanCellDistance,
   simulateClear,
   type ClearHero,
@@ -58,27 +59,48 @@ describe('the battlefield grid', () => {
 });
 
 describe('clearing the same props on the compact field', () => {
-  it('is faster, because every hop is shorter', () => {
+  it('moves every hero at the ratio of mean cell distances, ~0.856 of its classic speed (measured 0.852 on 17 heroes)', () => {
+    expect(fieldWalkSpeedCells(2.49, COMPACT_FIELD) / 2.49).toBeCloseTo(0.856, 3);
+    expect(fieldWalkSpeedCells(2.49, CLASSIC_FIELD)).toBe(2.49);
+  });
+
+  it('clears a squad that takes 45.4 s on the classic field in ~43.0 s, as measured back to back at phase 151', () => {
+    const measuredSquad = (hitNoCrit: number) =>
+      squad({ presence: 1, fuseSecs: 1.92, walkSpeedCells: 2.49, critChance: 0.3, critMult: 5, hitNoCrit });
+    let low = 1e4;
+    let high = 1e8;
+    for (let i = 0; i < 60; i++) {
+      const mid = Math.sqrt(low * high);
+      if (simulateClear(measuredSquad(mid), MIX, 100).clearSecs > 45.4) low = mid;
+      else high = mid;
+    }
+    const compact = simulateClear(measuredSquad(Math.sqrt(low * high)), MIX, 100, COMPACT_FIELD);
+    expect(compact.clearSecs).toBeGreaterThan(43.0 * 0.98);
+    expect(compact.clearSecs).toBeLessThan(43.0 * 1.02);
+  });
+
+  it('is faster although each hero plants a little less often, because more props stand under each cross', () => {
     const classic = simulateClear(squad(), MIX, 100);
     const compact = simulateClear(squad(), MIX, 100, COMPACT_FIELD);
     expect(compact.clearSecs).toBeLessThan(classic.clearSecs);
-    expect(compact.plantRateByHero[0]).toBeGreaterThan(classic.plantRateByHero[0]);
+    expect(compact.plantRateByHero[0]).toBeLessThan(classic.plantRateByHero[0]);
+    expect(compact.plantRateByHero[0] / classic.plantRateByHero[0]).toBeGreaterThan(0.95);
   });
 
-  it('makes the cooldown cap worth more, since walking binds fewer cycles', () => {
-    expect(cdrCapGain(3.2, COMPACT_FIELD)).toBeGreaterThan(cdrCapGain(3.2));
+  it('makes the cooldown cap worth a little less, since slower walking binds more cycles (measured ×1.25 against ×1.29)', () => {
+    expect(cdrCapGain(3.2, COMPACT_FIELD)).toBeLessThan(cdrCapGain(3.2));
   });
 
-  it('makes walk speed worth less for the same reason', () => {
+  it('makes walk speed worth a little more for the same reason', () => {
     const speedGain = (field = CLASSIC_FIELD) =>
       cycleSecondsForHero(1.7, 3.2, 3, field) / cycleSecondsForHero(1.7, 4.2, 3, field);
-    expect(speedGain(COMPACT_FIELD)).toBeLessThan(speedGain());
+    expect(speedGain(COMPACT_FIELD)).toBeGreaterThan(speedGain());
   });
 
   it('caches each field apart, so pricing one never answers for the other', () => {
     const classic = cycleSecondsForHero(1.3, 2.9, 3);
     const compact = cycleSecondsForHero(1.3, 2.9, 3, COMPACT_FIELD);
-    expect(compact).toBeLessThan(classic);
+    expect(compact).not.toBe(classic);
     expect(cycleSecondsForHero(1.3, 2.9, 3)).toBe(classic);
   });
 });
@@ -96,5 +118,16 @@ describe('the farm board on the compact field', () => {
     const compact = computeFarmRateRow(151, facts, { field: COMPACT_FIELD });
     expect(classic).not.toBeNull();
     expect(compact!.goldPerHour).toBeGreaterThan(classic!.goldPerHour);
+  });
+
+  it("prices each hero's own cycle on the account's field, not only the clear", () => {
+    const fixture = loadTeamPlanFarmFixture('save-20260831-13heroes-soulbound.json');
+    const input = { heroes: fixture.heroes, account: fixture.account, enabledHeroIds: fixture.enabledHeroIds };
+    const classic = computeFarmRates(input);
+    const viaOption = computeFarmRates({ ...input, field: COMPACT_FIELD });
+    const viaAccount = computeFarmRates({ ...input, account: { ...fixture.account, field: COMPACT_FIELD } });
+    expect(viaOption.heroFacts[0].cycleSecs).not.toBe(classic.heroFacts[0].cycleSecs);
+    expect(viaAccount.heroFacts[0].cycleSecs).toBe(viaOption.heroFacts[0].cycleSecs);
+    expect(viaAccount.rows[150].goldPerHour).toBe(viaOption.rows[150].goldPerHour);
   });
 });

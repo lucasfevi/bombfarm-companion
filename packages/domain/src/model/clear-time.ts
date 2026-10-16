@@ -53,9 +53,11 @@ import { REPLANT_HOP_CELLS, freeHopCells, hopSpeedFactor, meanPlantCycleSeconds,
  * plays 16 rows; the game's redesigned look plays 11, and its frames carry 209 cells, not 304.
  * The account and the phase are the same on both — the same props on fewer cells.
  *
- * The cadence constants were all measured on the classic field. Pricing another field assumes a
- * hero's hop depends on how densely the props stand, not on how many there are, and that crossing
- * the map at the head of a wave scales with the mean distance between two cells.
+ * Measured against the classic field on one account, back to back at the same phase: every wave
+ * still spawns the same props, and the server moves every hero at ~0.85 of its classic speed in
+ * cells per second — the ratio of the two fields' mean distances between cells, so crossing either
+ * map takes as long. A hop is read at the classic-field count of equal density, and the head of a
+ * wave scales with the mean distance between two cells.
  */
 export type BattleField = {
   readonly columns: number;
@@ -94,6 +96,12 @@ export function meanCellDistance(field: BattleField): number {
 export function classicDistanceOn(classicCells: number, field: BattleField): number {
   if (isClassic(field)) return classicCells;
   return (classicCells * meanCellDistance(field)) / meanCellDistance(CLASSIC_FIELD);
+}
+
+/** A hero's walk speed on `field`, cells per second, from its speed on the classic field. */
+export function fieldWalkSpeedCells(classicSpeedCells: number, field: BattleField): number {
+  if (isClassic(field)) return classicSpeedCells;
+  return (classicSpeedCells * meanCellDistance(field)) / meanCellDistance(CLASSIC_FIELD);
 }
 
 /** Cells of the cross every hero's blast covers at full damage: the epicentre and one per arm. */
@@ -148,7 +156,7 @@ export type ClearHero = {
   /** Expected share of wall clock this hero stands on the field, 0..1. */
   presence: number;
   fuseSecs: number;
-  /** Cells per second. */
+  /** Cells per second on the classic field; {@link simulateClear} converts it to the field's own. */
   walkSpeedCells: number;
   /** Cells a blast covers: `1 + 4 × blastRange` for a plus-shaped cross. Those past
    *  {@link BASE_BLAST_CELLS} take {@link EXTRA_RANGE_FRAC} of the hit. */
@@ -260,11 +268,14 @@ function mixKillsPerHit(
  * type's HP at this phase, and `field` the grid they stand on.
  */
 export function simulateClear(
-  heroes: readonly ClearHero[],
+  classicHeroes: readonly ClearHero[],
   props: readonly ClearPropType[],
   propCount: number,
   field: BattleField = CLASSIC_FIELD,
 ): ClearResult {
+  const heroes = isClassic(field)
+    ? classicHeroes
+    : classicHeroes.map((hero) => ({ ...hero, walkSpeedCells: fieldWalkSpeedCells(hero.walkSpeedCells, field) }));
   if (!(propCount > 0) || props.length === 0) {
     const zeros = new Array<number>(heroes.length).fill(0);
     return { clearSecs: FIRST_KILL_SEC, expectedHtk: 0, killShareByHero: zeros, plantRateByHero: zeros };

@@ -1642,13 +1642,16 @@ export function computeFarmRateTable(squad: SquadFarmFacts, options: FarmRateOpt
 export function computeFarmRates(
   input: FarmFactsInput & FarmRateOptions,
 ): { heroFacts: HeroFarmFacts[]; squad: SquadFarmFacts; rows: FarmRateRow[] } {
-  const heroFacts = computeHeroFarmFacts(input);
-  const squad = computeSquadFarmFacts(heroFacts, input.account);
+  const field = input.field ?? input.account.field;
+  const account = field === undefined ? input.account : { ...input.account, field };
+  const heroFacts = computeHeroFarmFacts({ ...input, account });
+  const squad = computeSquadFarmFacts(heroFacts, account);
   const rows = computeFarmRateTable(squad, {
     returnBonus: input.returnBonus,
     pass: input.pass,
     boost: input.boost,
     maxPhase: input.maxPhase,
+    ...(field !== undefined ? { field } : {}),
   });
   return { heroFacts, squad, rows };
 }

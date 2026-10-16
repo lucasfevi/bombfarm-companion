@@ -3,7 +3,7 @@ import type { StatRanges } from '../birth-sheet.js';
 import type { HeroRune } from '../runes.js';
 import type { Collection } from '../collection.js';
 import type { Loadout, SheetStats } from '../gear/types.js';
-import type { RankMode, RarityKey } from '../model/index.js';
+import type { BattleField, RankMode, RarityKey } from '../model/index.js';
 
 export type { RankMode };
 
@@ -87,6 +87,8 @@ export type AccountShared = {
    *  Optional and populated by nobody in `@bombfarm/domain` — a consumer mirrors it from
    *  `AccountImportData.maxPhase` after import. */
   maxPhase?: number | null;
+  /** The grid the account farms on. Absent, the classic field. */
+  field?: BattleField;
 };
 
 export type HeroRecord = {

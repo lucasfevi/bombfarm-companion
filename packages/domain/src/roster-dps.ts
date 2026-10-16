@@ -72,6 +72,7 @@ export function advisorInputForHero(
     // behaviour. Only the web planner's account store populates a real anchor value here.
     houseCycleSecsHouseIdx: account.houseCycleSecsHouseIdx,
     houseCycleSecsLevel: account.houseCycleSecsLevel,
+    ...(account.field !== undefined ? { field: account.field } : {}),
     phase,
     mitigationPct,
     rankMode: context.rankMode,
