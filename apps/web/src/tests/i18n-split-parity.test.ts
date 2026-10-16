@@ -1081,6 +1081,8 @@ const KEYS_ADDED: readonly string[] = [
   // The Items panel's two editable slot grids (2026-09-29) name themselves with this plus the
   // compare side, so current gear and the clone are told apart by name rather than by position.
   'slotEditor', 'siteMenuAria', 'siteMenuLanguage',
+  // The map-size control on the Farm board and the Optimizer, and its line in the plan's ledger of changes. One line for the cap.
+  'farmRankingMapSizeLabel', 'farmRankingMapSizeClassic', 'farmRankingMapSizeCompact', 'farmRankingMapSizeTip', 'farmRankingMapSizeTipDetected', 'teamPlanMapSizeLabel', 'teamPlanMapSizeClassic', 'teamPlanMapSizeCompact', 'teamPlanMapSizeHint', 'teamPlanMapSizeHintDetected', 'teamPlanChangesFieldMapSize',
 ];
 
 /**

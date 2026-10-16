@@ -5,9 +5,10 @@
 // Re-exported below so the slice / components reference the type through this file, not a
 // second direct import site.
 import type { EconomyBoost, ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import { isMapSize, type MapSize } from '@bombfarm/domain/model';
 import { NO_ECONOMY_BOOST, normalizeStoredReturnBonus } from '@bombfarm/farm/core';
 
-export type { EconomyBoost, ReturnBonusMode };
+export type { EconomyBoost, MapSize, ReturnBonusMode };
 
 const PHASES_VIEW_KEY = 'bf-hp-phases-view-v1';
 
@@ -33,6 +34,8 @@ export type PhasesViewState = {
   farmPass?: boolean;
   /** The Boosts running, per axis. Absent or a non-boolean axis => that axis off. */
   farmBoost?: EconomyBoost;
+  /** The battle field's size. Absent or unrecognized => `'classic'`. */
+  farmMapSize?: MapSize;
 };
 
 export function defaultPhasesView(): PhasesViewState {
@@ -99,6 +102,7 @@ export function loadPhasesView(): PhasesViewState {
       farmPool: normalizeFarmPool(record.farmPool),
       ...normalizeReturnBonusAndPass(record),
       farmBoost: normalizeFarmBoost(record.farmBoost),
+      farmMapSize: isMapSize(record.farmMapSize) ? record.farmMapSize : 'classic',
     };
   } catch {
     return defaultPhasesView();

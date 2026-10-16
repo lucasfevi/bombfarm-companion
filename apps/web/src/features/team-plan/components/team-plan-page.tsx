@@ -49,6 +49,7 @@ export function TeamPlanPage({
   const setTargetPhase = usePlannerStore((state) => state.setTargetPhase);
   const setGatePhase = usePlannerStore((state) => state.setGatePhase);
   const setFarmSet = usePlannerStore((state) => state.setFarmSet);
+  const setMapSize = usePlannerStore((state) => state.setFarmMapSize);
   const startRun = usePlannerStore((state) => state.startRun);
   const resolveRun = usePlannerStore((state) => state.resolveRun);
   const applyPlan = usePlannerStore((state) => state.applyPlan);
@@ -78,6 +79,7 @@ export function TeamPlanPage({
         setTargetPhase,
         setGatePhase,
         setFarmSet,
+        setMapSize,
         startRun,
         resolveRun,
         applyPlan,
