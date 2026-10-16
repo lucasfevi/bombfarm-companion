@@ -215,6 +215,7 @@ function sanitizeRowOptions(options: BestFarmPhaseOptions | undefined): FarmRate
     boost: options?.boost,
     maxPhase: sanitizedMaxPhase,
     ignoreFieldCrowding: options?.ignoreFieldCrowding,
+    field: options?.field,
   };
 }
 

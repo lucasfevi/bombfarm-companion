@@ -78,6 +78,7 @@ import {
   PASSAGEM_BASTAO_CAPPED_PULSE,
   passagemBastaoFieldPulse,
   passagemBastaoPresence,
+  type BattleField,
   type Context,
   type HeroSheet,
   type EffectiveDeltas,
@@ -776,11 +777,11 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
   const walkSpeedCells = sheet.speed * GRID_SPEED_COEF;
   const plantsPerSecByAto = Object.freeze(
     PROPS_POR_ATO.map((_, index) => {
-      const cycle = cycleSecondsForHero(fuseSecs, walkSpeedCells, index + 1);
+      const cycle = cycleSecondsForHero(fuseSecs, walkSpeedCells, index + 1, basis.context.field);
       return Number.isFinite(cycle) && cycle > 0 ? 1 / cycle : 0;
     }),
   );
-  const cycleSecs = cycleSecondsForHero(fuseSecs, walkSpeedCells);
+  const cycleSecs = cycleSecondsForHero(fuseSecs, walkSpeedCells, FIRST_ATO, basis.context.field);
   const plantsPerSec = plantsPerSecByAto[FIRST_ATO - 1];
   const field = fieldSeconds(sheet, basis.context);
   const uptime = (100 * field) / (field + basis.context.restSeconds) / 100;
@@ -1308,6 +1309,8 @@ export type FarmRateOptions = {
    * Off by default: this is the caller opting out of a term, never a correction to it.
    */
   ignoreFieldCrowding?: boolean;
+  /** The grid each clear is priced on. Default the classic field. */
+  field?: BattleField;
 };
 
 export type FarmRateRow = {
@@ -1519,7 +1522,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
         ...(hero.shatterChance ? { shatterChance: hero.shatterChance } : {}),
       };
     });
-    const clear = simulateClear(clearHeroes, propTypes, propCount);
+    const clear = simulateClear(clearHeroes, propTypes, propCount, options.field);
     if (Number.isFinite(clear.clearSecs) && clear.clearSecs > 0) {
       const rate = (level.probability * propCount) / clear.clearSecs;
       clearRateSum += rate;

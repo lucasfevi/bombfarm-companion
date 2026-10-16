@@ -48,14 +48,62 @@
 import { BASE_BLAST_RANGE, EXTRA_RANGE_FRAC, SHATTER_FRAC } from '../phase-wiki';
 import { REPLANT_HOP_CELLS, freeHopCells, hopSpeedFactor, meanPlantCycleSeconds, plantCycleSeconds } from './plant-cycle';
 
+/**
+ * The battlefield grid a wave is cleared on. Every field is 19 columns wide. The classic look
+ * plays 16 rows; the game's redesigned look plays 11, and its frames carry 209 cells, not 304.
+ * The account and the phase are the same on both — the same props on fewer cells.
+ *
+ * The cadence constants were all measured on the classic field. Pricing another field assumes a
+ * hero's hop depends on how densely the props stand, not on how many there are, and that crossing
+ * the map at the head of a wave scales with the mean distance between two cells.
+ */
+export type BattleField = {
+  readonly columns: number;
+  readonly rows: number;
+};
+
+export const FIELD_COLUMNS = 19;
+
+export const CLASSIC_FIELD: BattleField = Object.freeze({ columns: FIELD_COLUMNS, rows: 16 });
+
+export const COMPACT_FIELD: BattleField = Object.freeze({ columns: FIELD_COLUMNS, rows: 11 });
+
+export function fieldCells(field: BattleField): number {
+  return field.columns * field.rows;
+}
+
+// The classic field returns its input untouched rather than `x × 304 / 304`: the optimizer
+// goldens are pinned to the bit, and that round trip is not exact in IEEE-754.
+function isClassic(field: BattleField): boolean {
+  return field.columns === CLASSIC_FIELD.columns && field.rows === CLASSIC_FIELD.rows;
+}
+
+/** Classic-field props standing at the same density as `standing` props on `field`. */
+export function classicEquivalentStanding(standing: number, field: BattleField): number {
+  if (isClassic(field)) return standing;
+  return (standing * fieldCells(CLASSIC_FIELD)) / fieldCells(field);
+}
+
+/** Mean Manhattan distance between two uniformly random cells: `(c² − 1) / 3c + (r² − 1) / 3r`. */
+export function meanCellDistance(field: BattleField): number {
+  const axis = (cells: number) => (cells * cells - 1) / (3 * cells);
+  return axis(field.columns) + axis(field.rows);
+}
+
+/** A distance measured on the classic field, scaled to `field` by {@link meanCellDistance}. */
+export function classicDistanceOn(classicCells: number, field: BattleField): number {
+  if (isClassic(field)) return classicCells;
+  return (classicCells * meanCellDistance(field)) / meanCellDistance(CLASSIC_FIELD);
+}
+
 /** Cells of the cross every hero's blast covers at full damage: the epicentre and one per arm. */
 export const BASE_BLAST_CELLS = 1 + 4 * BASE_BLAST_RANGE;
 
 /** Rocks an Estilhaços shatter reaches: the four sides of the one destroyed. */
 export const SHATTER_SIDES = 4;
 
-/** Playable cells of the battlefield grid (19 × 16). */
-export const GRID_CELLS = 304;
+/** Playable cells of the classic battlefield grid (19 × 16), the field every constant here was fitted on. */
+export const GRID_CELLS = fieldCells(CLASSIC_FIELD);
 
 /** Hits one plant lands on an otherwise empty field: the targeted prop, less the miss chance. */
 export const HITS_PER_PLANT_BASE = 1.6;
@@ -75,7 +123,10 @@ export const FIRST_KILL_SEC = 3.0;
 /** The kill rate the head starts at, as a share of steady state, ramping to 1 over `HEAD_RAMP_PROPS`. */
 export const HEAD_RAMP_START = 0.4;
 export const HEAD_RAMP_PROPS = 10;
-/** The first hop of a wave, cells — heroes cross the map from where the last wave ended. */
+/**
+ * The first hop of a wave on the classic field, cells — heroes cross the map from where the last
+ * wave ended. Another field scales it by its mean distance between cells.
+ */
 export const HEAD_HOP_CELLS = 10;
 
 /**
@@ -206,12 +257,13 @@ function mixKillsPerHit(
  *
  * `heroes` carry their presence (the House and field-queue models decide it; this function does
  * not), their cadence inputs and their hit at THIS phase. `props` is the spawn mix with each
- * type's HP at this phase.
+ * type's HP at this phase, and `field` the grid they stand on.
  */
 export function simulateClear(
   heroes: readonly ClearHero[],
   props: readonly ClearPropType[],
   propCount: number,
+  field: BattleField = CLASSIC_FIELD,
 ): ClearResult {
   if (!(propCount > 0) || props.length === 0) {
     const zeros = new Array<number>(heroes.length).fill(0);
@@ -286,6 +338,8 @@ export function simulateClear(
   // `1 / hits`, once: the inner loops multiply, they never divide. A type this hero cannot kill
   // reads 0 kills per hit, which is what `1 / Infinity` says.
   const killsPerHitByType = hitsToKill.map((row) => row.map((hits) => 1 / hits));
+  const cells = fieldCells(field);
+  const headHop = classicDistanceOn(HEAD_HOP_CELLS, field);
   let seconds = FIRST_KILL_SEC;
   let hitsLanded = 0;
   let killed = 0;
@@ -310,14 +364,14 @@ export function simulateClear(
     const n = Math.max(1, standing - (chunk - 1) / 2);
     const propsKilled = propCount - n;
 
-    let freeHop = freeHopCells(n);
+    let freeHop = freeHopCells(classicEquivalentStanding(n, field));
     let activeShare = Math.min(1, (ACTIVE_PER_PROP * n + ACTIVE_EXTRA) / squad);
     if (propsKilled < HEAD_RAMP_PROPS) {
       const ramp = Math.max(0, propsKilled) / HEAD_RAMP_PROPS;
-      freeHop = Math.max(freeHop, HEAD_HOP_CELLS * (1 - ramp) + freeHop * ramp);
+      freeHop = Math.max(freeHop, headHop * (1 - ramp) + freeHop * ramp);
       activeShare *= HEAD_RAMP_START + (1 - HEAD_RAMP_START) * ramp;
     }
-    const densityHits = (HITS_PER_PLANT_CLUSTER * n) / GRID_CELLS;
+    const densityHits = (HITS_PER_PLANT_CLUSTER * n) / cells;
 
     // Per-hero cadence at this density; only the miss term depends on the kill rate itself.
     for (let h = 0; h < heroCount; h++) {

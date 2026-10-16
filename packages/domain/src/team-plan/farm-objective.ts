@@ -90,6 +90,7 @@ function farmContextFor(account: TeamPlanAccountInput): FarmContext {
     cycleSecs: account.cycleSecs,
     cycleSecsHouseIdx: account.cycleSecsHouseIdx,
     cycleSecsLevel: account.cycleSecsLevel,
+    ...(account.field !== undefined ? { field: account.field } : {}),
   };
 }
 
@@ -118,6 +119,7 @@ function phaseOptionsFor(
       pass: account.pass ?? false,
       boost: account.boost,
       returnBonus: account.returnBonus ?? 'off',
+    field: account.field,
     };
   }
   if (typeof maxPhase !== 'number' || !Number.isFinite(maxPhase) || maxPhase < 1) {
@@ -133,6 +135,7 @@ function phaseOptionsFor(
     pass: account.pass ?? false,
     boost: account.boost,
     returnBonus: account.returnBonus ?? 'off',
+    field: account.field,
   };
 }
 
@@ -159,6 +162,7 @@ function setPhaseOptionsFor(
     pass: account.pass ?? false,
     boost: account.boost,
     returnBonus: account.returnBonus ?? 'off',
+    field: account.field,
     phaseRange: { min: band.minPhase, max: band.maxPhase },
   };
 }

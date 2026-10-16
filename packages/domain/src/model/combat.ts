@@ -25,7 +25,7 @@ export function marginalFuseSeconds(cdrPct: number): number {
 
 /** Bombs per second at `fuseSec`: the inverse of the measured cycle, 0 for a hero that cannot move. */
 function bombsPerSecondWithFuse(hero: Pick<HeroSheet, 'speed'>, context: Context, fuseSec: number): number {
-  const cycle = cycleSecondsForHero(fuseSec, hero.speed * GRID_SPEED_COEF, context.ato);
+  const cycle = cycleSecondsForHero(fuseSec, hero.speed * GRID_SPEED_COEF, context.ato, context.field);
   return Number.isFinite(cycle) && cycle > 0 ? 1 / cycle : 0;
 }
 

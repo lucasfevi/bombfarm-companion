@@ -106,7 +106,7 @@ export function formulaBombs(facts: PipelineFacts): FormulaBreakdown {
   const value = bombsPerSecond(facts.effective, facts.context);
   const fuse = fuseSeconds(facts.effective.cdr);
   const walk = facts.effective.speed * GRID_SPEED_COEF;
-  const cycle = cycleSecondsForHero(fuse, walk, facts.context.ato);
+  const cycle = cycleSecondsForHero(fuse, walk, facts.context.ato, facts.context.field);
   return formula('bdFormulaBombs', value)`1 / cycle(${term('fuse', fuse, 2)}s, ${term('walk', walk, 2)}/s, ${term('band', facts.context.ato, 0)}) = 1 / ${term('cycle', cycle, 2)}s = ${formatBreakdownNumber(value, 2)}/s`;
 }
 
