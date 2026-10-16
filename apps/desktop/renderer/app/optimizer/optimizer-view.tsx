@@ -66,6 +66,8 @@ export function OptimizerView({
     applyPlan,
     clearPlan,
     openHeroes,
+    mapSizeDetected,
+    setMapSize,
   } = useOptimizerSnapshot();
 
   const [controls, setControls] = useState<OptimizerView>(DEFAULT_OPTIMIZER_VIEW);
@@ -200,7 +202,8 @@ export function OptimizerView({
         setResultSort={setResultSort}
         planState={planState}
         runner={runner}
-        actions={{ startRun, resolveRun, applyPlan, clearPlan, openHeroes }}
+        mapSizeDetected={mapSizeDetected}
+        actions={{ startRun, resolveRun, applyPlan, clearPlan, openHeroes, setMapSize }}
         forgeWritesEnabled={forgeWritesEnabled}
         accountSource={accountSource}
       />

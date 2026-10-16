@@ -225,6 +225,7 @@ describe('offline mode produces a Live map reading', () => {
     expect(map?.propsTotal).toBe(75);
     expect(map?.propsAlive).toBe(75);
     expect(map?.healthFraction).toBe(1);
+    expect(map?.mapSize).toBe('classic');
     await source.teardown();
   });
 

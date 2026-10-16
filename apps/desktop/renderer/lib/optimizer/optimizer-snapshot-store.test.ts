@@ -137,6 +137,24 @@ describe('controls — a pinned no-op, from every state', () => {
   });
 });
 
+describe('mapSize — re-takes the snapshot held, for the same account and Farm phase', () => {
+  it('recomputes a ready snapshot, keeping it on screen meanwhile', () => {
+    const first = ready('key-a', 10);
+    const state = acceptOptimizer(first, { kind: 'mapSize' });
+    expect(state).toMatchObject({ status: 'computing', sourceKey: 'key-a', farmChosenPhase: 10 });
+    expect(state.status === 'computing' ? state.previous?.inputs : null).toBe(INPUTS);
+  });
+
+  it('is a no-op from idle — there is no account to re-take it from', () => {
+    expect(acceptOptimizer(initialOptimizerSnapshotState, { kind: 'mapSize' })).toBe(initialOptimizerSnapshotState);
+  });
+
+  it('is a no-op while a compute is already owed', () => {
+    const state = computing('key-a');
+    expect(acceptOptimizer(state, { kind: 'mapSize' })).toBe(state);
+  });
+});
+
 describe('computed — latest wins, everything else is discarded', () => {
   it('a result for an account the screen has already moved off is discarded', () => {
     const awaiting = acceptOptimizer(ready('key-a'), { kind: 'refresh', sourceKey: 'key-b', farmChosenPhase: null });

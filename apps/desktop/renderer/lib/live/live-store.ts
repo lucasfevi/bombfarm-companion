@@ -161,6 +161,7 @@ function sameMap(a: LiveMap | null, b: LiveMap | null): boolean {
     a.healthFraction === b.healthFraction &&
     a.propsAlive === b.propsAlive &&
     a.propsTotal === b.propsTotal &&
+    a.mapSize === b.mapSize &&
     sameMapEconomy(a.economy, b.economy)
   );
 }

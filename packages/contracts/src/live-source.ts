@@ -415,6 +415,9 @@ export interface LiveMap {
    *  appears after the first wave rollover is a denominator missing exactly when it is most
    *  wanted. `null` for a phase with no wiki row. */
   readonly propsTotal: number | null;
+  /** Which field the game is drawing, read from the cell count of {@link LiveTick.kinds}. `null`
+   *  until a tick has carried a grid of a size either field has. */
+  readonly mapSize: LiveMapSize | null;
   /**
    * What this map is worth, per the wiki row for its phase and the account's own boosts.
    *
@@ -425,6 +428,9 @@ export interface LiveMap {
    */
   readonly economy: LiveMapEconomy | null;
 }
+
+/** The game's classic 19 × 16 field or its compact 19 × 11 one. */
+export type LiveMapSize = 'classic' | 'compact';
 
 /**
  * Per-map economy figures, modelled from the wiki. Gold is spawn-weighted across the prop mix
