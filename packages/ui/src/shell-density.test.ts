@@ -8,6 +8,12 @@ import {
 } from './shell-density';
 
 describe('shellDensityFor', () => {
+  it('pins the widths measured off the nine-tab bar with the gear', () => {
+    expect(SHELL_ICON_TABS_WIDTH).toBe(1304);
+    expect(SHELL_BRAND_MARK_WIDTH).toBe(1007);
+    expect(SHELL_ACTIONS_COLLAPSE_WIDTH).toBe(882);
+  });
+
   it('gives up a tab label first, then the brand words, and the actions last', () => {
     expect(SHELL_ACTIONS_COLLAPSE_WIDTH).toBeLessThan(SHELL_BRAND_MARK_WIDTH);
     expect(SHELL_BRAND_MARK_WIDTH).toBeLessThan(SHELL_ICON_TABS_WIDTH);
@@ -30,16 +36,13 @@ describe('shellDensityFor', () => {
     // 960px is `createMainWindow`'s own `minWidth`, less the strip the caption cluster takes.
     // Read from the cluster's own constant rather than written out: the OS drew those buttons at
     // 136px until the header took the job over at 100, and a number copied here would still say
-    // 136 — landing this assertion in a band the running app never reaches. The eighth tab moved
-    // this stage inside the range a window can be dragged to, where it used to sit above it, and
-    // the ninth, tenth and eleventh kept it there.
+    // 136 — landing this assertion in a band the running app never reaches.
     expect(shellDensityFor(960 - WINDOW_CONTROLS_WIDTH)).toBe('actions-collapsed');
   });
 
   it('still shrinks the brand to its mark just above the smallest window a player can drag to', () => {
-    // The band this used to be the only reachable stage at now sits a few window-width steps above
-    // the minimum — this pins that the band still exists rather than having collapsed away.
-    expect(shellDensityFor(1120 - WINDOW_CONTROLS_WIDTH)).toBe('brand-mark');
+    // This pins that the band above the minimum still exists rather than having collapsed away.
+    expect(shellDensityFor(1100 - WINDOW_CONTROLS_WIDTH)).toBe('brand-mark');
   });
 
   it('never runs out of answers, however small the window gets', () => {
