@@ -100,6 +100,8 @@ export const teamPlanPagePtBR: TeamPlanPageCopy = {
   teamPlanRunSeedGreedySlotValue: 'começou pelas melhores peças por slot',
   teamPlanRunSeedBestItemFirst: 'começou pelos melhores itens',
   teamPlanRunSeedFallback: 'começou por uma montagem alternativa',
+  teamPlanRunSeedPriority: 'equipou um herói por vez, na ordem de prioridade',
+  teamPlanPriorityBelowToday: 'Termina {delta} abaixo de hoje: os heróis mais acima na ordem pegaram itens que os de baixo usavam.',
   teamPlanHeroDeltaTitle: 'Mudanças por herói',
   teamPlanColBefore: 'Antes',
   teamPlanColAfter: 'Depois',

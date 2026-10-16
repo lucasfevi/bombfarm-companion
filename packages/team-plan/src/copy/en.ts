@@ -100,6 +100,8 @@ export const teamPlanPageEn = {
   teamPlanRunSeedGreedySlotValue: 'started with best pieces per slot',
   teamPlanRunSeedBestItemFirst: 'started with the best items first',
   teamPlanRunSeedFallback: 'started from an alternate setup',
+  teamPlanRunSeedPriority: 'geared one hero at a time, in priority order',
+  teamPlanPriorityBelowToday: 'Ends {delta} below today: the heroes higher in the order took gear the heroes below them were using.',
   teamPlanHeroDeltaTitle: 'Per-hero changes',
   teamPlanColBefore: 'Before',
   teamPlanColAfter: 'After',

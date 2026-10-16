@@ -91,16 +91,16 @@ export const ScopeHeroCard = memo(function ScopeHeroCard({
       aria-label={label}
       {...(overlay ? {} : { ...listeners, ...attributes })}
     >
+      {priority ? (
+        <span
+          className="absolute -top-1.5 -left-1.5 z-10 inline-grid min-w-4 place-items-center rounded-sm bg-accent px-1 text-[10px] leading-4 font-black tabular-nums text-accent-ink"
+          aria-label={sub(t.teamPlanPriorityRankAria, { rank: String(priority.rank) })}
+          data-priority-rank={priority.rank}
+        >
+          {priority.rank}
+        </span>
+      ) : null}
       <div className="flex items-start gap-2">
-        {priority ? (
-          <span
-            className="mt-0.5 inline-grid min-w-5 shrink-0 place-items-center rounded-sm bg-accent px-1 text-[12px] leading-5 font-black tabular-nums text-accent-ink"
-            aria-label={sub(t.teamPlanPriorityRankAria, { rank: String(priority.rank) })}
-            data-priority-rank={priority.rank}
-          >
-            {priority.rank}
-          </span>
-        ) : null}
         <div className="mt-0.5 shrink-0" aria-hidden={overlay || undefined}>
           <HeroAvatar
             skin={hero.skin ?? 0}
@@ -111,7 +111,7 @@ export const ScopeHeroCard = memo(function ScopeHeroCard({
             peek={overlay ? undefined : { hero: heroPeekData(hero, peekStats(hero)), lang }}
           />
         </div>
-        <div className={cn('min-w-0 flex-1', priority && onShiftPriority && !overlay && 'pr-11')}>
+        <div className={cn('min-w-0 flex-1', priority && onShiftPriority && !overlay && 'pr-4')}>
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
             <span
               className={cn(
@@ -200,24 +200,26 @@ function PriorityArrows({
   onShift: (heroId: string, delta: number) => void;
 }) {
   return (
-    <div className="absolute top-1 right-1 flex gap-0.5" onPointerDown={stopDrag} onMouseDown={stopDrag} onKeyDown={stopDrag}>
+    <div className="absolute inset-y-0 right-0.5 flex flex-col justify-center" onPointerDown={stopDrag} onMouseDown={stopDrag} onKeyDown={stopDrag}>
       <Button
         type="button"
         variant="icon-action"
+        className="h-5"
         disabled={priority.rank === 1}
         aria-label={sub(t.teamPlanPriorityMoveUpAria, { name: hero.name })}
         onClick={() => onShift(hero.id, -1)}
       >
-        <span aria-hidden>▲</span>
+        <span aria-hidden className="text-[11px] leading-none">▲</span>
       </Button>
       <Button
         type="button"
         variant="icon-action"
+        className="h-5"
         disabled={priority.rank === priority.count}
         aria-label={sub(t.teamPlanPriorityMoveDownAria, { name: hero.name })}
         onClick={() => onShift(hero.id, 1)}
       >
-        <span aria-hidden>▼</span>
+        <span aria-hidden className="text-[11px] leading-none">▼</span>
       </Button>
     </div>
   );

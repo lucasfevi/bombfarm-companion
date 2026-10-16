@@ -18,6 +18,8 @@ export function seedStartLabel(t: TeamPlanCopy, seedUsed: string): string {
       return t.teamPlanRunSeedGreedySlotValue;
     case 'bestItemFirst':
       return t.teamPlanRunSeedBestItemFirst;
+    case 'priority':
+      return t.teamPlanRunSeedPriority;
     default:
       return t.teamPlanRunSeedFallback;
   }
