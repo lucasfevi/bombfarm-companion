@@ -143,4 +143,15 @@ describe('the farm board on the compact field', () => {
     expect(viaAccount.heroFacts[0].cycleSecs).toBe(viaOption.heroFacts[0].cycleSecs);
     expect(viaAccount.rows[150].goldPerHour).toBe(viaOption.rows[150].goldPerHour);
   });
+
+  it("prices a row on the squad's own field when the caller names none, as the next-point ranking and the skill tree do", () => {
+    const fixture = loadTeamPlanFarmFixture('save-20260831-13heroes-soulbound.json');
+    const account = { ...fixture.account, field: COMPACT_FIELD };
+    const bases = computeHeroFarmBases({ heroes: fixture.heroes, account, enabledHeroIds: fixture.enabledHeroIds });
+    const squadFacts = squadFactsFromBases(bases, null, account);
+    expect(computeFarmRateRow(151, squadFacts)!.goldPerHour).toBe(
+      computeFarmRateRow(151, squadFacts, { field: COMPACT_FIELD })!.goldPerHour,
+    );
+  });
 });
+

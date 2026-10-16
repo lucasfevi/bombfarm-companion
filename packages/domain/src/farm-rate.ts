@@ -878,6 +878,9 @@ export type SquadFarmFacts = {
    * `account.slots ?? DEFAULT_CASA_SLOTS`. Never the field cap; see {@link fieldSlots}.
    */
   houseSlots: number;
+  /** The account's field, the one its rows price the clear on unless {@link FarmRateOptions.field}
+   *  names another. Absent, the classic field. */
+  field?: BattleField;
   /**
    * `Σ uptime` over enabled heroes (fractions) — the UNCONSTRAINED on-field expectation, i.e.
    * what the roster would sustain given unlimited parallel House recovery. Kept as the Sorte and
@@ -959,7 +962,7 @@ function houseSlotDemand(hero: HeroFarmFacts): number {
  *  {@link FarmAccount.aurasAtCap}. Narrower than the whole record so a caller holding only
  *  account-level farm terms (the Team Plan) can supply them without fabricating a `context` and a
  *  `teamBuffs` snapshot that nothing here would look at. */
-export type SquadFarmAccount = Pick<AccountShared, 'slots' | 'fieldSlots' | 'tree'> & { aurasAtCap?: AurasAtCap };
+export type SquadFarmAccount = Pick<AccountShared, 'slots' | 'fieldSlots' | 'tree' | 'field'> & { aurasAtCap?: AurasAtCap };
 
 export function computeSquadFarmFacts(
   heroFacts: readonly HeroFarmFacts[],
@@ -1009,6 +1012,7 @@ export function computeSquadFarmFacts(
     xpMult,
     apprenticeXpMult: apprenticeXpMult(apprenticeCarriers),
     fortunaAura: teamAuraOverRotation(fortunaCarriers, FORTUNA_AURA_CAP),
+    ...(account.field !== undefined ? { field: account.field } : {}),
   };
 }
 
@@ -1522,7 +1526,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
         ...(hero.shatterChance ? { shatterChance: hero.shatterChance } : {}),
       };
     });
-    const clear = simulateClear(clearHeroes, propTypes, propCount, options.field);
+    const clear = simulateClear(clearHeroes, propTypes, propCount, options.field ?? squad.field);
     if (Number.isFinite(clear.clearSecs) && clear.clearSecs > 0) {
       const rate = (level.probability * propCount) / clear.clearSecs;
       clearRateSum += rate;
