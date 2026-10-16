@@ -213,6 +213,9 @@ function HomePageContent({
   const openOptimizerTab = useCallback(() => {
     setActiveNavId('optimizer');
   }, [setActiveNavId]);
+  const openSettings = useCallback(() => {
+    setActiveNavId('settings');
+  }, [setActiveNavId]);
   const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
   const [consent, setConsent] = useState<ConsentRecord | null>(null);
@@ -358,6 +361,8 @@ function HomePageContent({
             granted={granted}
             locale={locale}
             onLocaleChange={onLocaleChange}
+            settingsActive={activeNavId === 'settings'}
+            onOpenSettings={openSettings}
           />
         }
         status={
@@ -394,9 +399,7 @@ function HomePageContent({
               {granted ? (
                 <UpdateChip
                   status={updateStatus}
-                  onOpenSettings={() => {
-                    setActiveNavId('settings');
-                  }}
+                  onOpenSettings={openSettings}
                 />
               ) : null}
               {/* The flavor is NOT repeated here. It is the header's badge, four words from the

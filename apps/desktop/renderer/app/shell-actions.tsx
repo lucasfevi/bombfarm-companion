@@ -10,7 +10,7 @@
 'use client';
 
 import type { AppLocale } from '@bombfarm/contracts';
-import { Button, Icon, Menu, SegmentedToggle, buttonRecipe, type ShellDensity } from '@bombfarm/ui';
+import { Button, Icon, Menu, SegmentedToggle, Tooltip, buttonRecipe, cn, type ShellDensity } from '@bombfarm/ui';
 import { useCopy } from '../lib/copy';
 import { CoffeeIconLink, CoffeeMenuItem } from './coffee-link';
 import { ReferralChip, ReferralMenuItem } from './referral-link';
@@ -58,6 +58,39 @@ function OpenMiniMenuItem() {
       <Icon name="window" size="sm" />
       {t.miniLiveOpenLabel}
     </Menu.Item>
+  );
+}
+
+function SettingsGear({ active, onOpen }: { active: boolean; onOpen: () => void }) {
+  const t = useCopy();
+
+  return (
+    <Tooltip.Provider delay={200} closeDelay={80}>
+      <Tooltip.Root>
+        <Tooltip.Trigger
+          render={
+            <Button
+              type="button"
+              aria-label={t.settingsNavLabel}
+              aria-current={active ? 'page' : undefined}
+              data-testid="shell-settings"
+              data-active={active ? 'true' : undefined}
+              onClick={onOpen}
+              className={cn(active && 'border-accent', active && 'text-accent')}
+            />
+          }
+        >
+          <Icon name="cog" size="sm" />
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Positioner sideOffset={6}>
+            <Tooltip.Popup>
+              <p className="m-0">{t.settingsNavLabel}</p>
+            </Tooltip.Popup>
+          </Tooltip.Positioner>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
   );
 }
 
@@ -127,13 +160,28 @@ export interface ShellActionsProps {
   granted: boolean;
   locale: AppLocale;
   onLocaleChange: (next: AppLocale) => void;
+  /** The Settings screen is on show, so the gear carries the current-page treatment. */
+  settingsActive: boolean;
+  onOpenSettings: () => void;
 }
 
-export function ShellActions({ density, granted, locale, onLocaleChange }: ShellActionsProps) {
+export function ShellActions({
+  density,
+  granted,
+  locale,
+  onLocaleChange,
+  settingsActive,
+  onOpenSettings,
+}: ShellActionsProps) {
   const t = useCopy();
 
   if (density === 'actions-collapsed') {
-    return <ShellOverflowMenu granted={granted} locale={locale} onLocaleChange={onLocaleChange} />;
+    return (
+      <div className="flex items-center gap-3">
+        <ShellOverflowMenu granted={granted} locale={locale} onLocaleChange={onLocaleChange} />
+        {granted ? <SettingsGear active={settingsActive} onOpen={onOpenSettings} /> : null}
+      </div>
+    );
   }
 
   return (
@@ -152,6 +200,7 @@ export function ShellActions({ density, granted, locale, onLocaleChange }: Shell
         }}
         ariaLabel={t.consentGateLanguageLabel}
       />
+      {granted ? <SettingsGear active={settingsActive} onOpen={onOpenSettings} /> : null}
     </div>
   );
 }

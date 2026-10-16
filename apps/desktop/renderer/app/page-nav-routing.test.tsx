@@ -18,7 +18,7 @@ const ROUTED_BY_ID = /activeNavId === '(\w+)'/g;
 describe('page.tsx routes every nav item', () => {
   const stripIds = navItemsFor(STRINGS.en).map((item) => item.id);
   const screenIds = [...stripIds.filter((id) => id !== 'progression'), 'skills', 'collections', 'settings'];
-  const routed = [...source.matchAll(ROUTED_BY_ID)].map((match) => match[1]);
+  const routed = [...new Set([...source.matchAll(ROUTED_BY_ID)].map((match) => match[1]))];
 
   it('non-vacuity: the source was read and it does route on the active item', () => {
     expect(routed.length).toBeGreaterThan(2);
@@ -40,6 +40,12 @@ describe('page.tsx routes every nav item', () => {
   it('renders the Progression page on both the Skill Tree and the Collections screens', () => {
     expect(source).toContain("activeNavId === 'skills' || activeNavId === 'collections' ? (");
     expect(source).toContain('<ProgressionPage page={activeNavId}');
+  });
+
+  it('opens Settings from the gear and from the update chip through the one handler', () => {
+    expect(source).toContain("settingsActive={activeNavId === 'settings'}");
+    expect(source.match(/onOpenSettings=\{openSettings\}/g)).toHaveLength(2);
+    expect(source).toMatch(/const openSettings = useCallback\(\(\) => \{\s*setActiveNavId\('settings'\);/);
   });
 
   it('lights the strip item the screen belongs to, and opens a pressed item on its remembered screen', () => {
