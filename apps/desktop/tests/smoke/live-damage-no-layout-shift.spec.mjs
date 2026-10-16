@@ -359,7 +359,7 @@ test.describe('live damage panel: no layout shift smoke', () => {
       await setContentWidth(app, page, WIDE_WINDOW);
       await fit('English');
 
-      await navButton(page, 10).click();
+      await page.getByTestId('shell-settings').click();
       const select = page.getByRole('combobox', { name: en('settingsLanguageLabel') });
       await select.waitFor({ state: 'visible', timeout: 10_000 });
       await select.click();
@@ -509,7 +509,7 @@ test.describe('live damage panel: no layout shift smoke', () => {
 
     try {
       await acceptConsent();
-      await navButton(page, 10).click();
+      await page.getByTestId('shell-settings').click();
       const select = page.getByRole('combobox', { name: en('settingsLanguageLabel') });
       await select.waitFor({ state: 'visible', timeout: 10_000 });
       await select.click();

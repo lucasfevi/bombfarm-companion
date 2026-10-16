@@ -52,6 +52,7 @@ export default defineConfig({
         'shell-measure-and-scrollbars.spec.mjs',
         'top-bar-density.spec.mjs',
         'top-bar-fit.spec.mjs',
+        'settings-gear-and-progression.spec.mjs',
         'tray-hide.spec.mjs',
         'mini-live.spec.mjs',
       ],

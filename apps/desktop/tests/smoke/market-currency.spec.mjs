@@ -66,7 +66,7 @@ async function acceptConsent(page) {
 }
 
 async function openSettings(page) {
-  await page.getByRole('button', { name: en('settingsNavLabel') }).click();
+  await page.getByTestId('shell-settings').click();
   await page.waitForSelector('[data-testid="settings-view"]', { timeout: 20_000 });
 }
 
