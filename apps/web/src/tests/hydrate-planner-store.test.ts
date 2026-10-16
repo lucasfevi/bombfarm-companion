@@ -113,6 +113,7 @@ function envelopeFor(signature: string, overrides: Partial<TeamPlanEnvelope> = {
     ignoreFieldCrowding: false,
     targetPhase: null,
     farmSet: null,
+    priorityMode: false,
     plan: samplePlan(),
     ...overrides,
   };
@@ -281,6 +282,16 @@ describe('hydratePlannerStore', () => {
     expect(state.plan).toBeNull();
     expect(state.runStatus).toBe('idle');
     expect(localStorage.getItem('bf-hp-team-plan-v1')).toBeNull();
+  });
+
+  it('drops a plan geared one hero at a time, since a reload starts team-wide', () => {
+    seedRosterAndAccount();
+    const liveSignature = liveSignatureAfterBoot();
+    localStorage.setItem(TEAM_PLAN_KEY, JSON.stringify(envelopeFor(liveSignature, { priorityMode: true })));
+
+    hydratePlannerStore();
+    expect(usePlannerStore.getState().plan).toBeNull();
+    expect(localStorage.getItem(TEAM_PLAN_KEY)).toBeNull();
   });
 
   it('drops a plan solved for the rotation objective the control no longer offers, and removes its key', () => {

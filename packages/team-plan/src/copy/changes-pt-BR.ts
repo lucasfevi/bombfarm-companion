@@ -59,5 +59,8 @@ export const teamPlanChangesPtBR: TeamPlanChangesCopy = {
   teamPlanChangesControlTargetPhase: 'fase pontuada',
   teamPlanChangesControlPvpSquadSlots: 'vagas do esquadrão no duelo',
   teamPlanChangesControlFarmSet: 'conjunto farmado',
+  teamPlanChangesControlPriorityOrder: 'ordem de equipar',
+  teamPlanChangesPriorityTeamWide: 'equipe toda',
+  teamPlanChangesPriorityOneAtATime: 'um herói por vez',
   teamPlanChangesScope: 'escopo de {hero}',
 };

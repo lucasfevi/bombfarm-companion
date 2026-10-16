@@ -7,7 +7,7 @@
  */
 import type { TeamPlanPerHeroRow } from '@bombfarm/domain/team-plan/types';
 
-export const TEAM_PLAN_RESULT_SORT_KEYS = ['name', 'delta', 'deltaPct', 'after', 'before', 'level'] as const;
+export const TEAM_PLAN_RESULT_SORT_KEYS = ['name', 'priority', 'delta', 'deltaPct', 'after', 'before', 'level'] as const;
 export type TeamPlanResultSortKey = (typeof TEAM_PLAN_RESULT_SORT_KEYS)[number];
 export type TeamPlanResultSortDirection = 'asc' | 'desc';
 
@@ -19,14 +19,27 @@ export type TeamPlanResultSort = {
 /** The order the plan itself arrives in, so a player who never touches the control sees no change. */
 export const DEFAULT_TEAM_PLAN_RESULT_SORT: TeamPlanResultSort = { key: 'name', direction: 'asc' };
 
-/** A to Z for a name; biggest first for every figure. Picking a key starts from here. */
+/** A to Z for a name, first to last for a gearing order; biggest first for every figure. */
 export function firstResultSortDirection(key: TeamPlanResultSortKey): TeamPlanResultSortDirection {
-  return key === 'name' ? 'asc' : 'desc';
+  return key === 'name' || key === 'priority' ? 'asc' : 'desc';
+}
+
+/** The sort a plan can honour: a gearing order exists only on a plan built in priority mode. */
+export function effectiveResultSort(sort: TeamPlanResultSort, priorityOrder: readonly string[] | undefined): TeamPlanResultSort {
+  return sort.key === 'priority' && !priorityOrder ? DEFAULT_TEAM_PLAN_RESULT_SORT : sort;
 }
 
 /** Undefined when the figure does not exist — a relative gain on a hero doing no damage today. */
-function figureFor(row: TeamPlanPerHeroRow, key: Exclude<TeamPlanResultSortKey, 'name'>): number | undefined {
+function figureFor(
+  row: TeamPlanPerHeroRow,
+  key: Exclude<TeamPlanResultSortKey, 'name'>,
+  priorityOrder: readonly string[] | undefined,
+): number | undefined {
   switch (key) {
+    case 'priority': {
+      const rank = priorityOrder?.indexOf(row.heroId) ?? -1;
+      return rank < 0 ? undefined : rank;
+    }
     case 'delta':
       return row.delta;
     case 'deltaPct':
@@ -47,12 +60,13 @@ function byName(left: TeamPlanPerHeroRow, right: TeamPlanPerHeroRow): number {
 export function sortTeamPlanResultRows(
   rows: readonly TeamPlanPerHeroRow[],
   sort: TeamPlanResultSort,
+  priorityOrder?: readonly string[],
 ): readonly TeamPlanPerHeroRow[] {
   const sign = sort.direction === 'asc' ? 1 : -1;
   return [...rows].sort((left, right) => {
     if (sort.key === 'name') return byName(left, right) * sign;
-    const a = figureFor(left, sort.key);
-    const b = figureFor(right, sort.key);
+    const a = figureFor(left, sort.key, priorityOrder);
+    const b = figureFor(right, sort.key, priorityOrder);
     // Missing last in both directions: an absent figure is not a small one.
     if (a === undefined || b === undefined) {
       if (a === b) return byName(left, right);
