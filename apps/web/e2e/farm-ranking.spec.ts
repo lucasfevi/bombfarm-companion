@@ -363,7 +363,7 @@ test.describe('Farm Ranking board', () => {
         .locator(`[data-testid="${topRowTestId}"]`)
         .locator('[data-testid^="farm-row-gold-"]');
     const mapSize = page.getByTestId('farm-map-size');
-    const compact = mapSize.getByRole('button', { name: 'Compact' });
+    const compact = mapSize.getByRole('button', { name: 'Compact', exact: true });
 
     await expect(mapSize).toHaveAttribute('data-map-size', 'classic');
     const classic = (await goldCell().textContent()) ?? '';

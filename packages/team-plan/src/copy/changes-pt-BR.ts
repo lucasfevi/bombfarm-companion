@@ -51,7 +51,7 @@ export const teamPlanChangesPtBR: TeamPlanChangesCopy = {
   teamPlanChangesFieldBoostGold: 'Boost de Ouro',
   teamPlanChangesFieldBoostXp: 'Boost de XP',
   teamPlanChangesFieldBoostDrop: 'Boost de Drop',
-  teamPlanChangesFieldMapSize: 'mapa',
+  teamPlanChangesFieldMapSize: 'tamanho do mapa',
   teamPlanChangesControlForgeFloor: 'piso da forja',
   teamPlanChangesControlObjective: 'objetivo',
   teamPlanChangesControlAllowedChanges: 'o que mudar',

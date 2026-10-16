@@ -57,7 +57,7 @@ export const teamPlanPageEn = {
     'Gear only. No point resets, so no respec cost either.',
   teamPlanIgnoreCrowdingLabel: 'Keep every hero geared',
   teamPlanIgnoreCrowdingAria: 'Score as if the field always had room, and fill every empty slot',
-  teamPlanMapSizeLabel: 'Map',
+  teamPlanMapSizeLabel: 'Map size',
   teamPlanMapSizeClassic: 'Classic',
   teamPlanMapSizeCompact: 'Compact',
   teamPlanMapSizeHint:

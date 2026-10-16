@@ -144,7 +144,7 @@ export const farmEn = {
   farmRankingPassTip:
     "+{gold}% gold, +{xp}% XP and +{drop}% drop chance, always on. With the Pass the Return Bonus is +{returnPass}% instead of +{returnBase}%.",
   farmRankingPassTipDetected: "Read from your account.",
-  farmRankingMapSizeLabel: "Map",
+  farmRankingMapSizeLabel: "Map size",
   farmRankingMapSizeClassic: "Classic",
   farmRankingMapSizeCompact: "Compact",
   farmRankingMapSizeTip:

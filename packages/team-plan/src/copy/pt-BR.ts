@@ -57,7 +57,7 @@ export const teamPlanPagePtBR: TeamPlanPageCopy = {
     'Só itens. Sem resets de pontos, então também sem custo de respec.',
   teamPlanIgnoreCrowdingLabel: 'Manter todos equipados',
   teamPlanIgnoreCrowdingAria: 'Calcular como se o campo sempre tivesse vaga, e preencher todos os espaços vazios',
-  teamPlanMapSizeLabel: 'Mapa',
+  teamPlanMapSizeLabel: 'Tamanho do mapa',
   teamPlanMapSizeClassic: 'Clássico',
   teamPlanMapSizeCompact: 'Compacto',
   teamPlanMapSizeHint:
