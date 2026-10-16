@@ -84,7 +84,7 @@ function heroNameById(contexts: HeroPlanContext[]): Map<string, string> {
   return new Map(contexts.map((ctx) => [ctx.heroId, ctx.name]));
 }
 
-function buildMoveList(
+export function buildMoveList(
   current: AssignmentState,
   plan: AssignmentState,
   itemById: ReadonlyMap<string, InventoryItem>,
@@ -171,7 +171,7 @@ export function buildForgeList(
   return list;
 }
 
-function buildPointResets(
+export function buildPointResets(
   acceptedHeroIds: string[],
   currentPtsByHeroId: Record<string, PointAlloc>,
   finalPtsByHeroId: Record<string, PointAlloc>,
@@ -236,7 +236,7 @@ function heroStatsFromSheet(adjusted: SheetStats | undefined): TeamPlanHeroStats
   };
 }
 
-function buildPerHeroTable(
+export function buildPerHeroTable(
   contexts: HeroPlanContext[],
   todayEval: ReturnType<typeof evaluateRoster>,
   respecEval: ReturnType<typeof evaluateRoster>,
