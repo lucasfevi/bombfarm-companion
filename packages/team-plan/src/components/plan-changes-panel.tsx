@@ -12,6 +12,7 @@ import { Button, Collapsible, cn, panelTitleClass } from '@bombfarm/ui';
 import { HeroIdentityChip, ItemIcon } from '@bombfarm/game-art';
 import { abilityName, itemName, itemRarityLabel, setName } from '@bombfarm/domain/game-labels';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { COMPACT_FIELD } from '@bombfarm/domain/model';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import type { HeroRune } from '@bombfarm/domain/runes';
 import { sub, type Lang } from '@bombfarm/hero/copy';
@@ -179,9 +180,11 @@ export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames
         farmBoostGold: t.teamPlanChangesFieldBoostGold,
         farmBoostXp: t.teamPlanChangesFieldBoostXp,
         farmBoostDrop: t.teamPlanChangesFieldBoostDrop,
+        farmMapSize: t.teamPlanChangesFieldMapSize,
       }[d.name];
       const value = (raw: number | null): string => {
         if (raw === null) return none;
+        if (d.name === 'farmMapSize') return raw === COMPACT_FIELD.rows ? t.teamPlanMapSizeCompact : t.teamPlanMapSizeClassic;
         if (SWITCH_FIELDS.has(d.name)) return raw === 1 ? t.teamPlanChangesOn : t.teamPlanChangesOff;
         return String(raw);
       };

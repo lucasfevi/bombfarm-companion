@@ -70,6 +70,26 @@ export const CLASSIC_FIELD: BattleField = Object.freeze({ columns: FIELD_COLUMNS
 
 export const COMPACT_FIELD: BattleField = Object.freeze({ columns: FIELD_COLUMNS, rows: 11 });
 
+/** The two fields the game plays, as a player names them: its classic look and its redesigned one. */
+export type MapSize = 'classic' | 'compact';
+
+export const MAP_SIZES: readonly MapSize[] = Object.freeze(['classic', 'compact']);
+
+export function battleFieldFor(size: MapSize): BattleField {
+  return size === 'compact' ? COMPACT_FIELD : CLASSIC_FIELD;
+}
+
+/** The map a combat frame shows, from its cell count; `null` for a count neither field has. */
+export function mapSizeOfCells(cells: number): MapSize | null {
+  if (cells === fieldCells(COMPACT_FIELD)) return 'compact';
+  if (cells === fieldCells(CLASSIC_FIELD)) return 'classic';
+  return null;
+}
+
+export function isMapSize(value: unknown): value is MapSize {
+  return value === 'classic' || value === 'compact';
+}
+
 export function fieldCells(field: BattleField): number {
   return field.columns * field.rows;
 }

@@ -23,7 +23,7 @@ export { BOOST_ADD, NO_ECONOMY_BOOST, normalizeStoredReturnBonus } from '@bombfa
 import { FARM_RESPEC_MIN_GAIN_PCT } from '@bombfarm/domain/farm-optimize';
 import type { AccountShared } from '@bombfarm/domain/shims/storage';
 import type { FarmInputs } from './farm-inputs';
-import { collectionKey } from '@bombfarm/domain/model';
+import { battleFieldFor, collectionKey } from '@bombfarm/domain/model';
 
 export type FarmRankingReason = 'no-roster' | 'no-heroes-enabled' | 'compute-failed';
 
@@ -87,6 +87,7 @@ export function readFarmDepTuple(inputs: FarmInputs) {
     (inputs.farmBoost ?? NO_ECONOMY_BOOST).xp,
     (inputs.farmBoost ?? NO_ECONOMY_BOOST).drop,
     inputs.treeXpMult,
+    inputs.farmMapSize ?? 'classic',
   ] as const;
 }
 
@@ -144,6 +145,7 @@ export function buildAccount(inputs: FarmInputs): FarmAccount {
     houseCycleSecsLevel: inputs.houseCycleSecsLevel,
     maxPhase: inputs.maxPhase,
     aurasAtCap: inputs.aurasAtCap,
+    ...(inputs.farmMapSize === 'compact' ? { field: battleFieldFor('compact') } : {}),
   };
 }
 

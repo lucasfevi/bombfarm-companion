@@ -57,6 +57,12 @@ export const teamPlanPagePtBR: TeamPlanPageCopy = {
     'Só itens. Sem resets de pontos, então também sem custo de respec.',
   teamPlanIgnoreCrowdingLabel: 'Manter todos equipados',
   teamPlanIgnoreCrowdingAria: 'Calcular como se o campo sempre tivesse vaga, e preencher todos os espaços vazios',
+  teamPlanMapSizeLabel: 'Mapa',
+  teamPlanMapSizeClassic: 'Clássico',
+  teamPlanMapSizeCompact: 'Compacto',
+  teamPlanMapSizeHint:
+    'O mapa em que o plano é calculado, o mesmo do Farm. Compacto é o visual novo do jogo (F8): os mesmos props mais próximos, então mais deles caem em cada explosão, e os heróis andam mais devagar nele, então atravessar qualquer um dos mapas leva o mesmo tempo.',
+  teamPlanMapSizeHintDetected: 'Lido do jogo enquanto ele está aberto. Escolha o outro mapa para sobrepor.',
   teamPlanIgnoreCrowdingHintOff:
     'O campo comporta um número limitado de heróis, então um herói que fica mais tempo em campo tira espaço dos outros. O plano cobra por isso, e é por isso que ele pode pedir para tirar um item.',
   teamPlanIgnoreCrowdingHintOn:

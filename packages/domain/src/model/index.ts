@@ -93,6 +93,11 @@ export {
   meanCellDistance,
   classicDistanceOn,
   fieldWalkSpeedCells,
+  type MapSize,
+  MAP_SIZES,
+  battleFieldFor,
+  mapSizeOfCells,
+  isMapSize,
 } from './clear-time';
 export {
   FUSE_CYCLE_OVERHEAD_SEC,

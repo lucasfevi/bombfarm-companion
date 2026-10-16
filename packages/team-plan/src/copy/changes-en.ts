@@ -55,6 +55,7 @@ export const teamPlanChangesEn = {
   teamPlanChangesFieldBoostGold: 'Gold Boost',
   teamPlanChangesFieldBoostXp: 'XP Boost',
   teamPlanChangesFieldBoostDrop: 'Drop Boost',
+  teamPlanChangesFieldMapSize: 'map',
   teamPlanChangesControlForgeFloor: 'forge floor',
   teamPlanChangesControlObjective: 'objective',
   teamPlanChangesControlAllowedChanges: 'what to change',

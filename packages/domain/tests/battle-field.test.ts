@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { computeFarmRateRow, computeFarmRates, computeHeroFarmBases, squadFactsFromBases } from '@bombfarm/domain/farm-rate';
 import { cycleSecondsForHero } from '../src/model/cadence';
 import {
+  battleFieldFor,
+  isMapSize,
+  mapSizeOfCells,
   CLASSIC_FIELD,
   COMPACT_FIELD,
   classicDistanceOn,
@@ -36,6 +39,16 @@ const cdrCapGain = (walk: number, field = CLASSIC_FIELD) =>
   cycleSecondsForHero(1.7, walk, 3, field) / cycleSecondsForHero(CAP_FUSE, walk, 3, field);
 
 describe('the battlefield grid', () => {
+  it('names each field by the map a player picks, and reads it off a frame by its cell count', () => {
+    expect(battleFieldFor('classic')).toBe(CLASSIC_FIELD);
+    expect(battleFieldFor('compact')).toBe(COMPACT_FIELD);
+    expect(mapSizeOfCells(304)).toBe('classic');
+    expect(mapSizeOfCells(209)).toBe('compact');
+    expect(mapSizeOfCells(0)).toBeNull();
+    expect(isMapSize('compact')).toBe(true);
+    expect(isMapSize('small')).toBe(false);
+  });
+
   it('the classic field is 19 × 16 and the compact one 19 × 11', () => {
     expect(fieldCells(CLASSIC_FIELD)).toBe(304);
     expect(fieldCells(COMPACT_FIELD)).toBe(209);
