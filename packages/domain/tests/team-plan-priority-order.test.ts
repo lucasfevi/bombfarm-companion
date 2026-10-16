@@ -113,3 +113,29 @@ describe('priority order', () => {
     expect(takenFromAnotherHero).toBe(true);
   });
 });
+
+describe('runTeamPlan when a hero cannot be rebuilt', () => {
+  function withUnbuildableHero(input: TeamPlanInput): TeamPlanInput {
+    const [first, ...rest] = input.heroes;
+    const { birth: _dropped, ...unbuildable } = first;
+    return { ...input, heroes: [unbuildable, ...rest] };
+  }
+
+  it('reports the hero as blocked, team-wide and in priority order alike', () => {
+    const input = withUnbuildableHero(syntheticTeamPlanInput(1, { heroCount: 4, spareItemCount: 10 }));
+    const name = input.heroes[0].name;
+    expect(runTeamPlan(input)).toEqual({ blocked: true, heroNames: [name] });
+    expect(runTeamPlan({ ...input, priorityOrder: heroIds(input) })).toEqual({ blocked: true, heroNames: [name] });
+  });
+});
+
+describe('runed heroes', () => {
+  it('names the heroes in scope whose gain is partly a rune, in both modes', () => {
+    const input = syntheticTeamPlanInput(97, { heroCount: 5, spareItemCount: 16, forgeFloor: 10 });
+    const runed = input.heroes[1];
+    input.heroes[1] = { ...runed, runes: [{ axis: 'attack', strengthPct: 5, playSecondsLeft: 600, rarity: 0 }] };
+
+    expect(planFor(input).runedHeroNames).toEqual([runed.name]);
+    expect(planFor({ ...input, priorityOrder: heroIds(input) }).runedHeroNames).toEqual([runed.name]);
+  });
+});
