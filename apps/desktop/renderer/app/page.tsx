@@ -26,6 +26,7 @@ import type { ConsentRecord } from '@bombfarm/game-api';
 import { CopyProvider, useCopy, useLocale } from '../lib/copy';
 import { useTabScrollMemory } from '../lib/use-tab-scroll-memory';
 import { navItemsFor } from './nav-items';
+import { screenForStripId, stripIdForScreen } from './nav-screen';
 import { ScreenBoundary } from './screen-boundary';
 import { DataNoticesBanner } from './data-notices-banner';
 import { useDataNotices } from '../lib/account/use-data-notices';
@@ -47,12 +48,16 @@ import { OnlinePlayersFeed } from './online-players-feed';
 import { PassFeed } from './pass-feed';
 import { useFeeds } from '../lib/feeds/use-feeds';
 import { setForgePage } from '../lib/forge/forge-page-store';
+import {
+  getProgressionPage,
+  isProgressionPageId,
+  setProgressionPage,
+} from '../lib/progression/progression-page-store';
 import { useForgeQueue } from '../lib/forge/forge-queue-store';
 import { ForgePage } from './forge/forge-page';
 import { OptimizerView } from './optimizer/optimizer-view';
 import { PvpView } from './pvp/pvp-view';
-import { SkillsView } from './skills/skills-view';
-import { CollectionsView } from './collections/collections-view';
+import { ProgressionPage } from './progression/progression-page';
 import { AccountView } from './account/account-view';
 import { ConsentSection } from './settings/consent-section';
 import { ForgeSection } from './settings/forge-section';
@@ -200,6 +205,9 @@ function HomePageContent({
   const density = useShellDensity(WINDOW_CONTROLS_WIDTH);
   const mainRef = useRef<HTMLElement | null>(null);
   const [activeNavId, setActiveNavId] = useTabScrollMemory(DEFAULT_NAV_ID, mainRef);
+  useEffect(() => {
+    if (isProgressionPageId(activeNavId)) setProgressionPage(activeNavId);
+  }, [activeNavId]);
   // Stable on purpose: the Farm screen folds it into the hand-memoised action bag that reaches
   // its 600-row table, and a fresh lambda per shell render would invalidate that bag every tick.
   const openOptimizerTab = useCallback(() => {
@@ -325,6 +333,7 @@ function HomePageContent({
   const feeds = useFeeds({ activeTabId: activeNavId, updateStatus, onUpdateCheck });
   // The Live tab wears the game's state at its corner — the same words the strip's game cell says.
   const liveMark = liveTabMark(status, t);
+  const activeStripId = stripIdForScreen(activeNavId);
   const navItems = navItemsFor(t).map((item) => (item.id === 'live' ? { ...item, mark: liveMark } : item));
 
   return (
@@ -335,8 +344,10 @@ function HomePageContent({
         badge={environment?.badgeLabel ?? null}
         density={density}
         items={granted ? navItems : []}
-        activeId={activeNavId}
-        onNavigate={setActiveNavId}
+        {...(activeStripId === undefined ? {} : { activeId: activeStripId })}
+        onNavigate={(stripId) => {
+          setActiveNavId(screenForStripId(stripId, getProgressionPage()));
+        }}
         brand={<BrandMark />}
         draggable
         windowControls={<ShellWindowControls />}
@@ -468,10 +479,8 @@ function HomePageContent({
             <OptimizerView forgeWritesEnabled={forgeWritesEnabled} accountSource={environment?.accountSource ?? null} />
           ) : activeNavId === 'pvp' ? (
             <PvpView />
-          ) : activeNavId === 'skills' ? (
-            <SkillsView />
-          ) : activeNavId === 'collections' ? (
-            <CollectionsView />
+          ) : activeNavId === 'skills' || activeNavId === 'collections' ? (
+            <ProgressionPage page={activeNavId} onPageChange={setActiveNavId} />
           ) : activeNavId === 'account' ? (
             <AccountView
               marketQuoteCurrency={marketQuoteCurrency}
