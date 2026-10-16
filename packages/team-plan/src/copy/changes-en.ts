@@ -63,5 +63,8 @@ export const teamPlanChangesEn = {
   teamPlanChangesControlTargetPhase: 'phase scored at',
   teamPlanChangesControlPvpSquadSlots: 'duel squad slots',
   teamPlanChangesControlFarmSet: 'set farmed',
+  teamPlanChangesControlPriorityOrder: 'gear order',
+  teamPlanChangesPriorityTeamWide: 'team-wide',
+  teamPlanChangesPriorityOneAtATime: 'one hero at a time',
   teamPlanChangesScope: 'scope of {hero}',
 } as const;

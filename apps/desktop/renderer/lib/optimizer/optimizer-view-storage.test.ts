@@ -57,6 +57,8 @@ describe('optimizer view preferences', () => {
       targetPhaseChosen: true,
       gatePhase: 150,
       farmSet: 'clay',
+      priorityMode: true,
+      priorityOrder: ['h2', 'h1'],
     };
     saveOptimizerView(view);
     expect(loadOptimizerView()).toEqual(view);
@@ -78,6 +80,13 @@ describe('optimizer view preferences', () => {
     expect(loadOptimizerView().farmSet).toBeNull();
     entries.set(KEY, JSON.stringify({ objective: 'pvp' }));
     expect(loadOptimizerView().farmSet).toBeNull();
+  });
+
+  it('keeps distinct hero ids in the stored priority order and drops anything else', () => {
+    entries.set(KEY, JSON.stringify({ priorityMode: 'yes', priorityOrder: ['h2', 3, 'h1', 'h2', ''] }));
+    expect(loadOptimizerView()).toMatchObject({ priorityMode: false, priorityOrder: ['h2', 'h1'] });
+    entries.set(KEY, JSON.stringify({ priorityOrder: 'h1' }));
+    expect(loadOptimizerView().priorityOrder).toEqual([]);
   });
 
   it('reads as the defaults when nothing is stored', () => {

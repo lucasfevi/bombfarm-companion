@@ -197,6 +197,7 @@ export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames
         targetPhase: t.teamPlanChangesControlTargetPhase,
         pvpSquadSlots: t.teamPlanChangesControlPvpSquadSlots,
         farmSet: t.teamPlanChangesControlFarmSet,
+        priorityOrder: t.teamPlanChangesControlPriorityOrder,
       }[d.name];
       const value = (raw: string): string => {
         switch (d.name) {
@@ -216,6 +217,8 @@ export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames
             return raw === 'null' ? none : raw;
           case 'farmSet':
             return raw === 'null' ? none : setName(raw, lang);
+          case 'priorityOrder':
+            return raw === 'null' ? t.teamPlanChangesPriorityTeamWide : t.teamPlanChangesPriorityOneAtATime;
         }
       };
       return { change: label, before: text(value(d.before)), after: text(value(d.after)), note: null };
