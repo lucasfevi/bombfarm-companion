@@ -55,6 +55,38 @@ describe('parseSessionCfg — the real file shape', () => {
   });
 });
 
+describe('parseSessionCfg — the SteamID beside the account id', () => {
+  const STEAM_ID = '76561198000000000';
+
+  it('reads a bare steam_id64 from [auth]', () => {
+    const result = parseSessionCfg(`[auth]\naccount_id=486\nsteam_id64=${STEAM_ID}\ntoken="tok"`);
+    expect(result.ok && result.steamId64).toBe(STEAM_ID);
+  });
+
+  it('reads a quoted steam_id64 without its quotes', () => {
+    const result = parseSessionCfg(`[auth]\naccount_id=486\nsteam_id64="${STEAM_ID}"\ntoken="tok"`);
+    expect(result.ok && result.steamId64).toBe(STEAM_ID);
+  });
+
+  it('is null, not a failure, when the key is absent', () => {
+    const result = parseSessionCfg(REAL_SHAPE);
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.steamId64).toBeNull();
+  });
+
+  it('is null, not a failure, when the key is empty', () => {
+    const result = parseSessionCfg('[auth]\naccount_id=486\nsteam_id64=""\ntoken="tok"');
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.steamId64).toBeNull();
+  });
+
+  it('ignores a steam_id64 that sits in another section', () => {
+    const result = parseSessionCfg(`[other]\nsteam_id64=${STEAM_ID}\n[auth]\naccount_id=486\ntoken="tok"`);
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.steamId64).toBeNull();
+  });
+});
+
 describe('parseSessionCfg — malformed files, never throwing', () => {
   it('reports no_auth_section when [auth] never appears', () => {
     expect(parseSessionCfg('account_id=486\ntoken="tok"')).toEqual({ ok: false, reason: 'no_auth_section' });
