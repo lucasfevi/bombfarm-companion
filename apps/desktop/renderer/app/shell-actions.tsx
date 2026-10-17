@@ -87,7 +87,7 @@ function ShellIconButton({
               data-testid={testId}
               data-active={active ? 'true' : undefined}
               onClick={onClick}
-              className={cn(SHELL_ICON_BUTTON_CLASS, active && 'border-accent text-accent')}
+              className={cn(SHELL_ICON_BUTTON_CLASS, active && 'border-accent', active && 'text-accent')}
             />
           }
         >
