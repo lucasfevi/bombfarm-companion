@@ -192,6 +192,34 @@ export {
   readOnlinePlayersBody,
 } from './online-players.js';
 export type {
+  GameAccountReportBody,
+  GameAccountReportField,
+  PremiumActionResult,
+  PremiumKind,
+  PremiumMe,
+  PremiumReportOutcome,
+  PremiumReportRefusal,
+  PremiumSignInEnd,
+  PremiumSignInMethod,
+  PremiumStatus,
+  PremiumView,
+} from './premium.js';
+export {
+  GAME_ACCOUNT_REPORT_FIELDS,
+  GAME_ACCOUNT_REPORT_FIELDS_ARE_EXHAUSTIVE,
+  PREMIUM_REFRESH_EVERY_MS,
+  PREMIUM_REFRESH_FLOOR_MS,
+  PREMIUM_SIGN_IN_TIMEOUT_MS,
+  isSteamId64,
+  readHandOffBody,
+  readPremiumMeBody,
+  readPremiumStatusBody,
+  readPremiumVisibilityBody,
+  readReportBody,
+  readSessionTokenBody,
+  readSignInRequestBody,
+} from './premium.js';
+export type {
   AccountStoreReason,
   AccountStoreStatus,
   AccountView,
