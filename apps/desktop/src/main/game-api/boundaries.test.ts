@@ -30,6 +30,10 @@ const USAGE_PING_HOST = 'api.bombfarm-companion.app';
  *  usage ping posts to; it carries no identity and reads nothing from the account. Exempted by
  *  file for the host and the socket only — its GET-only shape is asserted below. */
 const ONLINE_PLAYERS_TRANSPORT_FILE = join(DESKTOP_MAIN, 'online-players/online-players-transport.ts');
+/** The Premium sign-in's one socket. It carries the desktop's own bearer token (never the game's
+ *  session token) to the same API host, so it may POST; exempted by file for the host, the socket
+ *  and the verb, and asserted below to import nothing from the game API. */
+const PREMIUM_TRANSPORT_FILE = join(DESKTOP_MAIN, 'premium/premium-transport.ts');
 const SESSION_TOKEN_FILE_FILE = join(DESKTOP_MAIN, 'game-api/session-token-file.ts');
 const REQUEST_FILE = join(GAME_API_SRC, 'request.ts');
 /** The one write surface. It may name `POST` and exactly the six write routes below, and nothing
@@ -117,7 +121,8 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
   it('contains no PUT/PATCH/DELETE HTTP method literal anywhere, and a POST literal only in write-request.ts — including one assembled via string concatenation', () => {
     const offenders = sourceFiles
       .map((file) => {
-        const mayPost = file === WRITE_REQUEST_FILE || file === USAGE_PING_TRANSPORT_FILE;
+        const mayPost =
+          file === WRITE_REQUEST_FILE || file === USAGE_PING_TRANSPORT_FILE || file === PREMIUM_TRANSPORT_FILE;
         const methodPattern = mayPost ? /['"](PUT|PATCH|DELETE)['"]/ : /['"](POST|PUT|PATCH|DELETE)['"]/;
         return { file, match: methodPattern.exec(foldStringConcatenation(readFileSync(file, 'utf8'))) };
       })
@@ -136,11 +141,12 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
     expect(new Set(pathLiterals), `write-request.ts may name exactly ${JSON.stringify(WRITE_ROUTE_PATHS)}. Found: ${JSON.stringify(pathLiterals)}`).toEqual(new Set(WRITE_ROUTE_PATHS));
   });
 
-  it('no file other than write-request.ts and the usage ping transport contains a POST literal, and only write-request.ts names a write route', () => {
+  it('no file other than write-request.ts and the usage ping and premium transports contains a POST literal, and only write-request.ts names a write route', () => {
     const offenders = sourceFiles.filter((file) => {
       if (file === WRITE_REQUEST_FILE) return false;
       const text = foldStringConcatenation(readFileSync(file, 'utf8'));
-      const posts = /['"]POST['"]/.test(text) && file !== USAGE_PING_TRANSPORT_FILE;
+      const posts =
+        /['"]POST['"]/.test(text) && file !== USAGE_PING_TRANSPORT_FILE && file !== PREMIUM_TRANSPORT_FILE;
       return posts || WRITE_ROUTE_PATHS.some((route) => text.includes(route));
     });
     expect(offenders, `Only write-request.ts may POST to the game or name a write route. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
@@ -162,7 +168,11 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
       const allowed = new Set([
         'app.bombfarm.net',
         ...(file === MARKET_TRANSPORT_FILE ? [MARKET_SNAPSHOT_HOST] : []),
-        ...(file === USAGE_PING_TRANSPORT_FILE || file === ONLINE_PLAYERS_TRANSPORT_FILE ? [USAGE_PING_HOST] : []),
+        ...(file === USAGE_PING_TRANSPORT_FILE ||
+        file === ONLINE_PLAYERS_TRANSPORT_FILE ||
+        file === PREMIUM_TRANSPORT_FILE
+          ? [USAGE_PING_HOST]
+          : []),
       ]);
       for (const pattern of hostPatterns) {
         const re = new RegExp(pattern);
@@ -278,7 +288,8 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
         file === HTTPS_TRANSPORT_FILE ||
         file === MARKET_TRANSPORT_FILE ||
         file === USAGE_PING_TRANSPORT_FILE ||
-        file === ONLINE_PLAYERS_TRANSPORT_FILE
+        file === ONLINE_PLAYERS_TRANSPORT_FILE ||
+        file === PREMIUM_TRANSPORT_FILE
       ) {
         continue;
       }
@@ -316,9 +327,10 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
       (file) =>
         file !== USAGE_PING_TRANSPORT_FILE &&
         file !== ONLINE_PLAYERS_TRANSPORT_FILE &&
+        file !== PREMIUM_TRANSPORT_FILE &&
         readFileSync(file, 'utf8').includes(USAGE_PING_HOST),
     );
-    expect(offenders, `Only the usage ping and online-players transports name the API host. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+    expect(offenders, `Only the usage ping, online-players and premium transports name the API host. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 
   it('the online-players transport names the API host, reaches the network, and sets no HTTP method, so it can only ever GET', () => {
@@ -335,6 +347,26 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
 // -------------------------------------------------------------------------------------------
 // Guard 3 — no unconsented path.
 // -------------------------------------------------------------------------------------------
+
+describe('Guard 2 — the premium transport', () => {
+  const text = readFileSync(PREMIUM_TRANSPORT_FILE, 'utf8');
+  const gameApiImport = /from\s+['"](@bombfarm\/game-api|[^'"]*game-api\/[^'"]*|[^'"]*session-token[^'"]*)['"]/;
+
+  it('names the API host, reaches the network and POSTs (sanity — each exemption is not vacuous)', () => {
+    expect(text).toContain(USAGE_PING_HOST);
+    expect(text).toMatch(/\bfetch\s*\(/);
+    expect(/['"]POST['"]/.test(text)).toBe(true);
+  });
+
+  it('never imports the game API or the session token', () => {
+    expect(text).not.toMatch(gameApiImport);
+  });
+
+  it('red state demonstrated: the import pattern catches a game-api import', () => {
+    expect(gameApiImport.test("import { x } from '../game-api/request.js';")).toBe(true);
+    expect(gameApiImport.test("import { x } from '@bombfarm/game-api';")).toBe(true);
+  });
+});
 
 describe('Guard 3 — no path to the network or the token file bypasses consent', () => {
   const allFiles = [...walkTsFiles(GAME_API_SRC), ...walkTsFiles(DESKTOP_MAIN)];
