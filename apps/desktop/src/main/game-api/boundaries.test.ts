@@ -34,6 +34,9 @@ const ONLINE_PLAYERS_TRANSPORT_FILE = join(DESKTOP_MAIN, 'online-players/online-
  *  session token) to the same API host, so it may POST; exempted by file for the host, the socket
  *  and the verb, and asserted below to import nothing from the game API. */
 const PREMIUM_TRANSPORT_FILE = join(DESKTOP_MAIN, 'premium/premium-transport.ts');
+/** The Premium API client names the verb for each call it hands the transport, so it may carry
+ *  the `POST` literal; it names no host and reaches no socket, which Guards 1 and 2 still enforce. */
+const PREMIUM_API_FILE = join(DESKTOP_MAIN, 'premium/premium-api.ts');
 /** The Premium sign-in's one-shot callback listener: the only file that may import `node:http`,
  *  because it is a server, not a client. Asserted below to bind the loopback address and to make
  *  no outbound request. */
@@ -126,7 +129,10 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
     const offenders = sourceFiles
       .map((file) => {
         const mayPost =
-          file === WRITE_REQUEST_FILE || file === USAGE_PING_TRANSPORT_FILE || file === PREMIUM_TRANSPORT_FILE;
+          file === WRITE_REQUEST_FILE ||
+          file === USAGE_PING_TRANSPORT_FILE ||
+          file === PREMIUM_TRANSPORT_FILE ||
+          file === PREMIUM_API_FILE;
         const methodPattern = mayPost ? /['"](PUT|PATCH|DELETE)['"]/ : /['"](POST|PUT|PATCH|DELETE)['"]/;
         return { file, match: methodPattern.exec(foldStringConcatenation(readFileSync(file, 'utf8'))) };
       })
@@ -145,12 +151,15 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
     expect(new Set(pathLiterals), `write-request.ts may name exactly ${JSON.stringify(WRITE_ROUTE_PATHS)}. Found: ${JSON.stringify(pathLiterals)}`).toEqual(new Set(WRITE_ROUTE_PATHS));
   });
 
-  it('no file other than write-request.ts and the usage ping and premium transports contains a POST literal, and only write-request.ts names a write route', () => {
+  it('no file other than write-request.ts and the usage ping, premium transport and premium client contains a POST literal, and only write-request.ts names a write route', () => {
     const offenders = sourceFiles.filter((file) => {
       if (file === WRITE_REQUEST_FILE) return false;
       const text = foldStringConcatenation(readFileSync(file, 'utf8'));
       const posts =
-        /['"]POST['"]/.test(text) && file !== USAGE_PING_TRANSPORT_FILE && file !== PREMIUM_TRANSPORT_FILE;
+        /['"]POST['"]/.test(text) &&
+        file !== USAGE_PING_TRANSPORT_FILE &&
+        file !== PREMIUM_TRANSPORT_FILE &&
+        file !== PREMIUM_API_FILE;
       return posts || WRITE_ROUTE_PATHS.some((route) => text.includes(route));
     });
     expect(offenders, `Only write-request.ts may POST to the game or name a write route. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
@@ -372,6 +381,21 @@ describe('Guard 2 — the premium transport', () => {
   it('red state demonstrated: the import pattern catches a game-api import', () => {
     expect(gameApiImport.test("import { x } from '../game-api/request.js';")).toBe(true);
     expect(gameApiImport.test("import { x } from '@bombfarm/game-api';")).toBe(true);
+  });
+});
+
+describe('Guard 2 — the premium API client', () => {
+  const text = readFileSync(PREMIUM_API_FILE, 'utf8');
+
+  it('names the POST verb (sanity — its exemption is not vacuous)', () => {
+    expect(/['"]POST['"]/.test(text)).toBe(true);
+  });
+
+  it('names no host, reaches no network and imports nothing from the game API', () => {
+    expect(text).not.toContain(USAGE_PING_HOST);
+    expect(text).not.toMatch(/\bfetch\s*\(/);
+    expect(text).not.toMatch(/from\s+['"](node:https?|undici|axios)['"]/);
+    expect(text).not.toMatch(/from\s+['"](@bombfarm\/game-api|[^'"]*game-api\/[^'"]*|[^'"]*session-token[^'"]*)['"]/);
   });
 });
 
