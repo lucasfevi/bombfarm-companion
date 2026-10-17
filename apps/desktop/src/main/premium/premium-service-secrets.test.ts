@@ -122,6 +122,30 @@ describe('secrets stay out of logs and views', () => {
     expectClean(h);
   });
 
+  it('through a rotation, for both the old and the new token', async () => {
+    const h = createHarness({ vault: createFakeVault(session(SECRETS.token, 0)) });
+    h.stub.on('status', { status: 503 });
+    h.service.start();
+    await settle();
+
+    expect(h.stub.calls('rotate')).toHaveLength(1);
+    expect(h.vault.held()?.token).toBe(SECRETS.rotatedToken);
+    expectClean(h);
+  });
+
+  it('through a rotation that is refused and one that signs the player out', async () => {
+    for (const reply of [{ status: 409 }, { status: 401 }]) {
+      const h = createHarness({ vault: createFakeVault(session(SECRETS.token, 0)) });
+      h.stub.on('rotate', reply);
+      h.stub.on('status', { status: 503 });
+      h.service.start();
+      await settle();
+      await h.clock.advance(3_600_000);
+      h.log.records.push({ scope: 'premium', event: 'checked' });
+      expectClean(h);
+    }
+  });
+
   it('logs only literal events under the premium scope', async () => {
     const h = createHarness();
     h.service.start();

@@ -70,6 +70,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
   let listener: LoopbackListener | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let inFlight: { generation: number; promise: Promise<void> } | null = null;
+  let rotating: Promise<void> | null = null;
   let lastFinishedAt: number | null = null;
   let blockedUntil = 0;
   let lastPublished = '';
@@ -163,10 +164,35 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     return startedIn === generation && session === 'signing-in';
   }
 
-  function bearer(startedIn: number): string | null {
+  async function rotate(startedIn: number): Promise<void> {
     const held = token;
-    if (held === null || startedIn !== generation || session !== 'signed-in') return null;
-    return held.token;
+    if (held === null) return;
+    const result = await deps.api.rotate(held.token);
+    if (startedIn !== generation) return;
+    if (result.ok) {
+      remembered = deps.vault.store(result.session) === 'persisted';
+      token = result.session;
+      publish();
+    } else if (result.reason === 'unauthorized') {
+      handleUnauthorized(startedIn);
+    }
+  }
+
+  function stillSignedIn(startedIn: number): boolean {
+    return startedIn === generation && session === 'signed-in';
+  }
+
+  async function bearer(startedIn: number): Promise<string | null> {
+    const held = token;
+    if (held === null || !stillSignedIn(startedIn)) return null;
+    const due = Date.parse(held.rotateAfter);
+    if (!Number.isNaN(due) && deps.now() >= due) {
+      rotating ??= rotate(startedIn).finally(() => {
+        rotating = null;
+      });
+      await rotating;
+    }
+    return stillSignedIn(startedIn) && token !== null ? token.token : null;
   }
 
   function noteFailure(result: { ok: false; reason: string; retryAfterSec?: number }): void {
@@ -183,24 +209,25 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     deps.log.warn({ scope: 'premium', event: 'status.refresh_failed', status: 'unreachable' });
   }
 
-  async function endOnUnauthorized<T>(startedIn: number, request: Promise<FetchResult<T>>): Promise<FetchResult<T>> {
-    const result = await request;
+  async function withBearer<T>(
+    startedIn: number,
+    call: (bearerToken: string) => Promise<FetchResult<T>>,
+  ): Promise<FetchResult<T> | null> {
+    const bearerToken = await bearer(startedIn);
+    if (bearerToken === null) return null;
+    const result = await call(bearerToken);
     if (!result.ok && result.reason === 'unauthorized') handleUnauthorized(startedIn);
     return result;
   }
 
   async function doFetch(startedIn: number): Promise<void> {
     const visibilityRequest = deps.api.fetchVisibility();
-    let statusRequest: ReturnType<PremiumApi['fetchStatus']> | null = null;
-    let meRequest: ReturnType<PremiumApi['fetchMe']> | null = null;
-    if (session === 'signed-in') {
-      const bearerToken = bearer(startedIn);
-      if (bearerToken !== null) {
-        statusRequest = endOnUnauthorized(startedIn, deps.api.fetchStatus(bearerToken));
-        meRequest = endOnUnauthorized(startedIn, deps.api.fetchMe(bearerToken));
-      }
-    }
-    const [visibility, statusResult, meResult] = await Promise.all([visibilityRequest, statusRequest, meRequest]);
+    const signedIn = session === 'signed-in';
+    const [visibility, statusResult, meResult] = await Promise.all([
+      visibilityRequest,
+      signedIn ? withBearer(startedIn, (bearerToken) => deps.api.fetchStatus(bearerToken)) : null,
+      signedIn ? withBearer(startedIn, (bearerToken) => deps.api.fetchMe(bearerToken)) : null,
+    ]);
     if (startedIn !== generation) return;
 
     let learned = false;
