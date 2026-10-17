@@ -70,6 +70,19 @@ describe('createPremiumHttp', () => {
     expect(init.signal).toBeInstanceOf(AbortSignal);
   });
 
+  it('gives every request a ten second timeout', async () => {
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    try {
+      answer(200, '{}');
+      await createPremiumHttp(PREMIUM_API_ORIGIN)({ path: 'status', method: 'GET', token: 't' });
+      expect(timeout).toHaveBeenCalledTimes(1);
+      expect(timeout).toHaveBeenCalledWith(10_000);
+      expect(lastCall().init.signal).toBe(timeout.mock.results[0]?.value);
+    } finally {
+      timeout.mockRestore();
+    }
+  });
+
   it('returns the status and the text body, including for a refusal', async () => {
     answer(409, '{"reason":"steam_mismatch"}');
     const response = await createPremiumHttp(PREMIUM_API_ORIGIN)({ path: 'report', method: 'POST', token: 't', body: {} });

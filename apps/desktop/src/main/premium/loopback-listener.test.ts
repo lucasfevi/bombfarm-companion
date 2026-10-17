@@ -76,6 +76,21 @@ describe('startLoopbackListener', () => {
     expect(new URL(listener.redirectUri).port).not.toBe('0');
   });
 
+  it('listens on exactly the loopback address, never a wildcard', async () => {
+    let created: http.Server | null = null;
+    const capturing = ((handler: http.RequestListener) => {
+      created = http.createServer(handler);
+      return created;
+    }) as unknown as typeof http.createServer;
+    const listener = await startLoopbackListener({ expectedState: STATE, timeoutMs: 60_000, createServer: capturing });
+    open.push(listener);
+
+    const address = (created as http.Server | null)?.address() as net.AddressInfo | null | undefined;
+    expect(address?.address).toBe('127.0.0.1');
+    expect(address?.family).toBe('IPv4');
+    expect(new URL(listener.redirectUri).port).toBe(String(address?.port));
+  });
+
   it('answers the first valid callback once with the page and closes', async () => {
     const listener = await start();
     const reply = await send(`${listener.redirectUri}?code=abc&state=${STATE}`);

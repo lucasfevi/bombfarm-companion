@@ -399,8 +399,33 @@ describe('Guard 2 — the premium API client', () => {
   });
 });
 
+describe('Guard 2 — the premium transport and client keep their secrets out of logs', () => {
+  const logging = /console\s*\.|from\s+['"][^'"]*(?:\/log|logger|log-)[^'"]*['"]|LogPort|createLogger|electron-log/;
+  const files = [PREMIUM_TRANSPORT_FILE, PREMIUM_API_FILE];
+
+  it('scans both files (sanity — the guard is not vacuous)', () => {
+    expect(files).toHaveLength(2);
+    for (const file of files) expect(readFileSync(file, 'utf8').length).toBeGreaterThan(0);
+  });
+
+  it('neither file imports a logger or names console', () => {
+    for (const file of files) expect(readFileSync(file, 'utf8'), file).not.toMatch(logging);
+  });
+
+  it('red state demonstrated: the guard catches a console call and each logger import shape', () => {
+    expect(logging.test('console.log(token);')).toBe(true);
+    expect(logging.test("import type { LogPort } from '../storage/index.js';")).toBe(true);
+    expect(logging.test("import { log } from '../logger.js';")).toBe(true);
+    expect(logging.test("import log from 'electron-log';")).toBe(true);
+    expect(logging.test("import type { StoredSession } from './token-vault.js';")).toBe(false);
+  });
+});
+
 describe('Guard 2 — the premium callback listener', () => {
   const text = readFileSync(PREMIUM_LISTENER_FILE, 'utf8');
+  const constantTimeCompare = /timingSafeEqual\s*\(/;
+  const operatorCompare =
+    /(?:get\(\s*['"]state['"]\s*\)|expectedState)\s*(?:===|!==|==|!=)|(?:===|!==|==|!=)\s*(?:opts\.)?expectedState/;
   const httpImport = /from\s+['"]node:http['"]/;
   const bindsLoopback = /\.listen\(\s*0\s*,\s*'127\.0\.0\.1'/;
   const outbound = /\b(?:fetch|request)\s*\(/;
@@ -412,6 +437,19 @@ describe('Guard 2 — the premium callback listener', () => {
 
   it('makes no outbound request', () => {
     expect(text).not.toMatch(outbound);
+  });
+
+  it('compares the state in constant time', () => {
+    expect(text).toMatch(constantTimeCompare);
+    expect(text).not.toMatch(operatorCompare);
+  });
+
+  it('red state demonstrated: the guard catches an operator compare of the state', () => {
+    expect(operatorCompare.test("if (url.searchParams.get('state') !== opts.expectedState) {")).toBe(true);
+    expect(operatorCompare.test('return received === expectedState;')).toBe(true);
+    expect(operatorCompare.test('return left.length === right.length;')).toBe(false);
+    expect(constantTimeCompare.test('return timingSafeEqual(left, right);')).toBe(true);
+    expect(constantTimeCompare.test('return left === right;')).toBe(false);
   });
 
   it('is the only non-test file in the desktop main tree that imports node:http', () => {
