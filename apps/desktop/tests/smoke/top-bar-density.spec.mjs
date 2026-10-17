@@ -16,23 +16,24 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
 const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-full.json');
 
-/** Wide enough to spell every word in the bar. 1500px of bar sits 196px over the whole-bar sum
- *  (1304) — outside the range a font-rendering pass moves. */
+/** Wide enough to spell every word in the bar. 1500px of bar sits 262px over the whole-bar sum
+ *  (1238) — outside the range a font-rendering pass moves. */
 const FULL_WINDOW = 1600;
-/** Inside the band where the tabs are glyphs and everything else is untouched. 1180px of bar sits
- *  173px above `SHELL_BRAND_MARK_WIDTH` (1007) and 124px below `SHELL_ICON_TABS_WIDTH` (1304) —
+/** Inside the band where the tabs are glyphs and everything else is untouched. 1060px of bar sits
+ *  118px above `SHELL_BRAND_MARK_WIDTH` (942) and 178px below `SHELL_ICON_TABS_WIDTH` (1238) —
  *  comfortably inside the icon-tabs band on both sides. */
-const ICON_TABS_WINDOW = 1280;
+const ICON_TABS_WINDOW = 1160;
 /** Inside the band where the brand has shrunk to its mark but the actions are still spelled out.
- *  940px of bar sits 58px above `SHELL_ACTIONS_COLLAPSE_WIDTH` (882) and 67px below
- *  `SHELL_BRAND_MARK_WIDTH` (1007). */
-const BRAND_MARK_WINDOW = 1040;
+ *  880px of bar sits 63px above `SHELL_ACTIONS_COLLAPSE_WIDTH` (817) and 62px below
+ *  `SHELL_BRAND_MARK_WIDTH` (942). */
+const BRAND_MARK_WINDOW = 980;
 /** `createMainWindow`'s own `minWidth` — the narrowest window a player can drag to. 860px of bar
- *  (960 minus the caption strip) sits 22px under `SHELL_ACTIONS_COLLAPSE_WIDTH` (882), so the
- *  smallest real window is in the "actions collapsed behind the overflow" stage. */
+ *  (960 minus the caption strip) sits 43px over `SHELL_ACTIONS_COLLAPSE_WIDTH` (817), so the
+ *  smallest real window is still in the brand-mark stage with every action in the bar. */
 const MIN_WINDOW = 960;
-/** At the real minimum itself now (see `MIN_WINDOW`'s comment) — kept as its own named constant
- *  because the two assertions that use it probe a stage description, not a coincidence of value. */
+/** In the "actions collapsed behind the overflow" stage: 760px of bar sits 57px under
+ *  `SHELL_ACTIONS_COLLAPSE_WIDTH` (817). Below the real minimum, so reachable only by lifting it
+ *  as `resize` does. */
 const ACTIONS_COLLAPSED_WINDOW = 860;
 /** Narrower still, reachable only by lifting the minimum as `resize` does. The glyph strip, the
  *  active tab's word and the overflow menu stop fitting somewhere under this width; the probe
@@ -253,12 +254,12 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
     await expect(page.getByTestId('flavor-badge')).toHaveCount(0);
   });
 
-  test('collapses the actions behind one button at the smallest real window itself', async () => {
+  test('keeps every action in the bar at the smallest real window itself', async () => {
     await resize(app, page, MIN_WINDOW);
 
-    await expect(page.getByTestId('shell-overflow')).toBeVisible();
+    await expect(page.getByTestId('shell-overflow')).toHaveCount(0);
     for (const id of ['shell-referral', 'shell-coffee', 'open-mini']) {
-      await expect(page.getByTestId(id), `${id} stayed in the bar past its width`).toHaveCount(0);
+      await expect(page.getByTestId(id), `${id} left the bar at the minimum window`).toBeVisible();
     }
     await expect(page.getByTestId('shell-settings')).toBeVisible();
   });

@@ -60,3 +60,29 @@ describe('the Settings gear tooltip', () => {
     expect(popups).toContain(name);
   });
 });
+
+describe('the mini-window button tooltip', () => {
+  it.each([
+    ['en', 'Open mini'],
+    ['pt-BR', 'Abrir mini'],
+  ] as const)('names the button in %s', async (locale, name) => {
+    await act(async () => {
+      root.render(
+        createElement(CopyProvider, {
+          locale,
+          children: createElement(ShellActions, {
+            density: 'full',
+            granted: true,
+            locale,
+            onLocaleChange: () => {},
+            settingsActive: false,
+            onOpenSettings: () => {},
+          }),
+        }),
+      );
+      await Promise.resolve();
+    });
+    const popups = [...document.body.querySelectorAll('[data-open]')].map((node) => node.textContent);
+    expect(popups).toContain(name);
+  });
+});

@@ -188,9 +188,9 @@ test.describe('top bar — the same sums at each density stage', () => {
   });
 
   for (const [label, width] of [
-    ['icon-tabs: glyph strip, brand lockup, actions spelled out', 1360],
-    ['brand-mark: glyph strip, brand mark, actions spelled out', 1080],
-    ['actions-collapsed at the minimum window: overflow button and gear', 960],
+    ['icon-tabs: glyph strip, brand lockup, actions spelled out', 1160],
+    ['brand-mark: glyph strip, brand mark, actions spelled out', 980],
+    ['actions-collapsed below the minimum window: overflow button and gear', 860],
   ]) {
     test(`measures ${label}`, async () => {
       await resize(app, page, width);

@@ -112,6 +112,35 @@ describe('ShellActions', () => {
     expect(classes).not.toContain('py-1.5');
   });
 
+  it('puts the mini-window button immediately before the gear, after the language toggle', () => {
+    for (const density of ['full', 'icon-tabs', 'brand-mark'] as const) {
+      const html = render(density);
+      const toggle = html.lastIndexOf('aria-label="Language"');
+      const mini = html.indexOf('data-testid="open-mini"');
+      const settings = html.indexOf('data-testid="shell-settings"');
+      expect(toggle, density).toBeGreaterThan(-1);
+      expect(mini, density).toBeGreaterThan(toggle);
+      expect(settings, density).toBeGreaterThan(mini);
+      // Nothing but the mini button's own markup lies between it and the gear.
+      expect(html.slice(mini, settings).match(/data-testid="/g), density).toHaveLength(1);
+    }
+  });
+
+  it('draws the mini-window button as a square glyph-only button, named and explained in both languages', () => {
+    for (const [locale, name] of [
+      ['en', 'Open mini'],
+      ['pt-BR', 'Abrir mini'],
+    ] as const) {
+      const html = render('full', true, false, locale);
+      const tag = html.match(/<button[^>]*data-testid="open-mini"[^>]*>/)?.[0] ?? '';
+      expect(tag, locale).toContain(`aria-label="${name}"`);
+      for (const cls of SHELL_ICON_BUTTON_CLASS.split(' ')) expect(tag, `${locale}/${cls}`).toContain(cls);
+      const body = html.slice(html.indexOf(tag) + tag.length, html.indexOf('</button>', html.indexOf(tag)));
+      expect(body, locale).toBe(renderToStaticMarkup(createElement(Icon, { name: 'window', size: 'sm' })));
+      expect(body, locale).not.toContain(name);
+    }
+  });
+
   it('marks the gear current only while Settings is on show, at every density', () => {
     for (const density of DENSITIES) {
       expect(gear(render(density, true, true)), density).toContain('aria-current="page"');

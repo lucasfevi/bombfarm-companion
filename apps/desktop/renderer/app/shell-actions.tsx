@@ -108,18 +108,7 @@ function ShellIconButton({
 export function OpenMiniButton() {
   const t = useCopy();
 
-  return (
-    <Button
-      type="button"
-      variant="text"
-      data-testid="open-mini"
-      onClick={openMiniLive}
-      className="inline-flex items-center gap-1.5"
-    >
-      <Icon name="window" size="sm" />
-      {t.miniLiveOpenLabel}
-    </Button>
-  );
+  return <ShellIconButton icon="window" label={t.miniLiveOpenLabel} testId="open-mini" onClick={openMiniLive} />;
 }
 
 function SettingsGear({ active, onOpen }: { active: boolean; onOpen: () => void }) {
@@ -228,10 +217,9 @@ export function ShellActions({
 
   return (
     <div className="flex items-center gap-3">
-      {granted ? <OpenMiniButton /> : null}
-      {/* Left of the language toggle, and unconditional — unlike the mini-window button above
-          them: the gate screen is where a first run spends its time, and neither of these reads
-          the account or touches the game. */}
+      {/* Left of the language toggle, and unconditional — unlike the mini-window button and the
+          gear after the toggle: the gate screen is where a first run spends its time, and neither
+          of these reads the account or touches the game. */}
       <ReferralChip />
       <CoffeeIconLink />
       <SegmentedToggle
@@ -242,6 +230,7 @@ export function ShellActions({
         }}
         ariaLabel={t.consentGateLanguageLabel}
       />
+      {granted ? <OpenMiniButton /> : null}
       {granted ? <SettingsGear active={settingsActive} onOpen={onOpenSettings} /> : null}
     </div>
   );

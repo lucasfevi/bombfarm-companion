@@ -9,9 +9,9 @@ import {
 
 describe('shellDensityFor', () => {
   it('pins the widths measured off the nine-tab bar with the gear', () => {
-    expect(SHELL_ICON_TABS_WIDTH).toBe(1304);
-    expect(SHELL_BRAND_MARK_WIDTH).toBe(1007);
-    expect(SHELL_ACTIONS_COLLAPSE_WIDTH).toBe(882);
+    expect(SHELL_ICON_TABS_WIDTH).toBe(1238);
+    expect(SHELL_BRAND_MARK_WIDTH).toBe(942);
+    expect(SHELL_ACTIONS_COLLAPSE_WIDTH).toBe(817);
   });
 
   it('gives up a tab label first, then the brand words, and the actions last', () => {
@@ -32,17 +32,22 @@ describe('shellDensityFor', () => {
     expect(shellDensityFor(SHELL_ACTIONS_COLLAPSE_WIDTH - 1)).toBe('actions-collapsed');
   });
 
-  it('collapses the actions behind the overflow at the smallest window a player can drag to', () => {
+  it('keeps every action in the bar at the smallest window a player can drag to', () => {
     // 960px is `createMainWindow`'s own `minWidth`, less the strip the caption cluster takes.
     // Read from the cluster's own constant rather than written out: the OS drew those buttons at
     // 136px until the header took the job over at 100, and a number copied here would still say
     // 136 — landing this assertion in a band the running app never reaches.
-    expect(shellDensityFor(960 - WINDOW_CONTROLS_WIDTH)).toBe('actions-collapsed');
+    expect(shellDensityFor(960 - WINDOW_CONTROLS_WIDTH)).toBe('brand-mark');
+  });
+
+  it('collapses the actions only below the smallest window a player can drag to', () => {
+    expect(shellDensityFor(860 - WINDOW_CONTROLS_WIDTH)).toBe('actions-collapsed');
   });
 
   it('still shrinks the brand to its mark just above the smallest window a player can drag to', () => {
     // This pins that the band above the minimum still exists rather than having collapsed away.
-    expect(shellDensityFor(1100 - WINDOW_CONTROLS_WIDTH)).toBe('brand-mark');
+    expect(shellDensityFor(1100 - WINDOW_CONTROLS_WIDTH)).toBe('icon-tabs');
+    expect(shellDensityFor(1000 - WINDOW_CONTROLS_WIDTH)).toBe('brand-mark');
   });
 
   it('never runs out of answers, however small the window gets', () => {

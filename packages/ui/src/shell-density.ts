@@ -24,33 +24,34 @@ export type ShellDensity = 'full' | 'icon-tabs' | 'brand-mark' | 'actions-collap
  * pixel they start overlapping on. Portuguese is the binding language; its tab words and action
  * labels are the longest either language puts in the bar.
  *
- * Brand 159 + 16 + nine worded tabs 686 + 12 + actions 390 (gear included) = 1263px of content.
- * The bar's content is 24px narrower than the room measured here (the shell gutter, less the
- * caption strip the bar already holds clear), and 16px more covers a font-rendering pass that
- * measures a few pixels wider: 1263 + 24 + 16 = 1303, so 1304px.
+ * Brand 159 + 16 + nine worded tabs 686 + 12 + actions 325 (the mini-window opener and the gear
+ * each a 30px square) = 1198px of content. The bar's content is 24px narrower than the room
+ * measured here (the shell gutter, less the caption strip the bar already holds clear), and 16px
+ * more covers a font-rendering pass that measures a few pixels wider: 1198 + 24 + 16 = 1238px.
  *
- * That leaves the 1440px content cap 177px of room: a "Premium" tab (77px) and one short tab
- * (72px) with their 4px gaps still fit with the 16px margin (1436px). A tab past those two is a
- * conversation about this stage rather than a quiet addition.
+ * That leaves the 1440px content cap 242px of room: a "Premium" tab (77px) and one short tab
+ * (72px) with their 4px gaps still fit with the 16px margin (1355 + 16 = 1371px, 69px to spare).
+ * A tab past those two is a conversation about this stage rather than a quiet addition.
  */
-export const SHELL_ICON_TABS_WIDTH = 1304;
+export const SHELL_ICON_TABS_WIDTH = 1238;
 
 /**
- * The same sum with the tabs already down to glyphs: 159 + 16 + 390 + 12 + 390 = 967, so 1007px.
+ * The same sum with the tabs already down to glyphs: 159 + 16 + 390 + 12 + 325 = 902, so 942px.
  * The glyph strip, with the active tab keeping its word (92px for "Ao vivo") beside eight
  * 32px glyphs, renders 390px.
  */
-export const SHELL_BRAND_MARK_WIDTH = 1007;
+export const SHELL_BRAND_MARK_WIDTH = 942;
 
 /**
- * And with the brand down to its mark as well: 34 + 16 + 390 + 12 + 390 = 842, so 882px.
+ * And with the brand down to its mark as well: 34 + 16 + 390 + 12 + 325 = 777, so 817px.
  *
- * The smallest window a player can drag to reaches this stage: the desktop's minimum
- * is 960px, which leaves 860px of bar after the caption inset, 22px under 882. At the minimum
- * window every secondary action sits behind the overflow button next to the gear (88px), so the
- * content is 34 + 16 + 390 + 12 + 88 = 540px, and 540 + 16 fits the 860px with 304px to spare.
+ * The smallest window a player can drag to stays above this stage: the desktop's minimum is
+ * 960px, which leaves 860px of bar after the caption inset, 43px over 817, so every action is
+ * still a control there. The stage is reached only below that minimum. With every secondary
+ * action behind the overflow button next to the gear (80px) the content is
+ * 34 + 16 + 390 + 12 + 80 = 532px, and 532 + 16 fits the 860px with 312px to spare.
  */
-export const SHELL_ACTIONS_COLLAPSE_WIDTH = 882;
+export const SHELL_ACTIONS_COLLAPSE_WIDTH = 817;
 
 export function shellDensityFor(availableWidth: number): ShellDensity {
   if (availableWidth < SHELL_ACTIONS_COLLAPSE_WIDTH) return 'actions-collapsed';
