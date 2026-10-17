@@ -1,8 +1,8 @@
 'use client';
 
-import { memo } from 'react';
-import { useDraggable } from '@dnd-kit/core';
-import { Select, cn } from '@bombfarm/ui';
+import { memo, useCallback } from 'react';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { Button, Select, cn } from '@bombfarm/ui';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { HeroAvatar, heroPeekData, heroRankToneClass, rarityTextClass, useHeroPeekStats } from '@bombfarm/game-art';
@@ -34,6 +34,8 @@ export const ScopeHeroCard = memo(function ScopeHeroCard({
   lang,
   onScope,
   overlay = false,
+  priority,
+  onShiftPriority,
 }: {
   hero: HeroRecord;
   scope: ScopeState;
@@ -42,12 +44,29 @@ export const ScopeHeroCard = memo(function ScopeHeroCard({
   onScope: (heroId: string, scope: ScopeState) => void;
   /** Render-only clone for DragOverlay — no sensors. */
   overlay?: boolean;
+  /** This hero's place in the gearing order, when the board is in priority mode. */
+  priority?: { rank: number; count: number } | undefined;
+  onShiftPriority?: ((heroId: string, delta: number) => void) | undefined;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: hero.id,
     data: { type: 'hero', heroId: hero.id, scope },
     disabled: overlay,
   });
+  // A drop target only while it has a place in the gearing order: dropping a card on it takes
+  // that place. Everywhere else a drop lands on the column, as it always has.
+  const { setNodeRef: setDropRef } = useDroppable({
+    id: priorityCardDropId(hero.id),
+    data: { type: 'hero', heroId: hero.id, scope },
+    disabled: overlay || !priority,
+  });
+  const setRefs = useCallback(
+    (node: HTMLElement | null) => {
+      setNodeRef(node);
+      setDropRef(node);
+    },
+    [setNodeRef, setDropRef],
+  );
   const peekStats = useHeroPeekStats();
   const rarIdx = RARITIES.indexOf(hero.rarity);
   const stars = Math.max(0, Math.min(MAX_STARS, Math.round(hero.stars ?? 0)));
@@ -61,9 +80,9 @@ export const ScopeHeroCard = memo(function ScopeHeroCard({
 
   return (
     <article
-      ref={overlay ? undefined : setNodeRef}
+      ref={overlay ? undefined : setRefs}
       className={cn(
-        'touch-manipulation rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1.5 shadow-[inset_0_1px_0_color-mix(in_oklch,var(--line)_28%,transparent)]',
+        'relative touch-manipulation rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1.5 shadow-[inset_0_1px_0_color-mix(in_oklch,var(--line)_28%,transparent)]',
         !overlay && 'cursor-grab active:cursor-grabbing',
         isDragging && !overlay && 'opacity-30',
         overlay && 'cursor-grabbing shadow-lg ring-1 ring-accent',
@@ -72,6 +91,15 @@ export const ScopeHeroCard = memo(function ScopeHeroCard({
       aria-label={label}
       {...(overlay ? {} : { ...listeners, ...attributes })}
     >
+      {priority ? (
+        <span
+          className="absolute -top-1.5 -left-1.5 z-10 inline-grid min-w-4 place-items-center rounded-sm bg-accent px-1 text-[10px] leading-4 font-black tabular-nums text-accent-ink"
+          aria-label={sub(t.teamPlanPriorityRankAria, { rank: String(priority.rank) })}
+          data-priority-rank={priority.rank}
+        >
+          {priority.rank}
+        </span>
+      ) : null}
       <div className="flex items-start gap-2">
         <div className="mt-0.5 shrink-0" aria-hidden={overlay || undefined}>
           <HeroAvatar
@@ -83,7 +111,7 @@ export const ScopeHeroCard = memo(function ScopeHeroCard({
             peek={overlay ? undefined : { hero: heroPeekData(hero, peekStats(hero)), lang }}
           />
         </div>
-        <div className="min-w-0 flex-1">
+        <div className={cn('min-w-0 flex-1', priority && onShiftPriority && !overlay && 'pr-4')}>
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
             <span
               className={cn(
@@ -116,6 +144,9 @@ export const ScopeHeroCard = memo(function ScopeHeroCard({
               <span aria-hidden> · </span>#{shortId}
             </span>
           </div>
+          {priority && onShiftPriority && !overlay ? (
+            <PriorityArrows hero={hero} priority={priority} t={t} onShift={onShiftPriority} />
+          ) : null}
           {!overlay ? (
             <div
               className="mt-1 md:hidden"
@@ -142,3 +173,54 @@ export const ScopeHeroCard = memo(function ScopeHeroCard({
     </article>
   );
 });
+
+const PRIORITY_CARD_PREFIX = 'priority-card:';
+
+export function priorityCardDropId(heroId: string): string {
+  return `${PRIORITY_CARD_PREFIX}${heroId}`;
+}
+
+export function isPriorityCardDropId(id: string): boolean {
+  return id.startsWith(PRIORITY_CARD_PREFIX);
+}
+
+function stopDrag(event: { stopPropagation: () => void }) {
+  event.stopPropagation();
+}
+
+function PriorityArrows({
+  hero,
+  priority,
+  t,
+  onShift,
+}: {
+  hero: HeroRecord;
+  priority: { rank: number; count: number };
+  t: TeamPlanCopy;
+  onShift: (heroId: string, delta: number) => void;
+}) {
+  return (
+    <div className="absolute inset-y-0 right-0.5 flex flex-col justify-center" onPointerDown={stopDrag} onMouseDown={stopDrag} onKeyDown={stopDrag}>
+      <Button
+        type="button"
+        variant="icon-action"
+        className="h-5"
+        disabled={priority.rank === 1}
+        aria-label={sub(t.teamPlanPriorityMoveUpAria, { name: hero.name })}
+        onClick={() => onShift(hero.id, -1)}
+      >
+        <span aria-hidden className="text-[11px] leading-none">▲</span>
+      </Button>
+      <Button
+        type="button"
+        variant="icon-action"
+        className="h-5"
+        disabled={priority.rank === priority.count}
+        aria-label={sub(t.teamPlanPriorityMoveDownAria, { name: hero.name })}
+        onClick={() => onShift(hero.id, 1)}
+      >
+        <span aria-hidden className="text-[11px] leading-none">▼</span>
+      </Button>
+    </div>
+  );
+}

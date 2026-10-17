@@ -1239,6 +1239,8 @@ export const ptBR: Copy = {
   collectionsReadNow: 'Ler agora',
   collectionsReading: 'Lendo…',
 
+  progressionNavLabel: 'Progressão',
+  progressionSwitchLabel: 'Páginas de progressão',
   skillsNavLabel: 'Árvore',
   skillsTitle: 'Árvore de habilidades',
   skillsTip: 'Cada nó da sua árvore como o jogo desenha, e quanto o próximo nível de cada um vale para o seu farm.',

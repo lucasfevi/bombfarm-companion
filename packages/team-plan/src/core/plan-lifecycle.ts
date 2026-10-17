@@ -1,7 +1,14 @@
 import type { TeamPlanInputs } from './team-plan-inputs';
 import type { TeamPlanControls } from './team-plan-controls';
 import type { ScopeState } from './hero-scope';
-import { clampForgeFloor, clampTargetPhase, normalizeFarmSet, normalizeGatePhase, withAuraAtCap } from './team-plan-controls';
+import {
+  clampForgeFloor,
+  clampTargetPhase,
+  normalizeFarmSet,
+  normalizeGatePhase,
+  normalizePriorityOrder,
+  withAuraAtCap,
+} from './team-plan-controls';
 import type { TeamAuraId } from '@bombfarm/domain/team-buffs';
 import { pvpSquadExcess, resolveTeamPlanGatePhase } from './combat-window';
 import { resolveHeroScope } from './hero-scope';
@@ -70,7 +77,9 @@ export type TeamPlanControlChange =
   | { kind: 'auraAtCap'; auraId: TeamAuraId; value: boolean }
   | { kind: 'targetPhase'; value: number | null }
   | { kind: 'gatePhase'; value: number | null }
-  | { kind: 'farmSet'; value: string | null };
+  | { kind: 'farmSet'; value: string | null }
+  | { kind: 'priorityMode'; value: boolean }
+  | { kind: 'priorityOrder'; value: readonly string[] };
 
 export function applyTeamPlanControlChange(
   controls: TeamPlanControls,
@@ -171,6 +180,22 @@ export function applyTeamPlanControlChange(
       const next = normalizeFarmSet(change.value);
       if (controls.farmSet === next) return null;
       return { controls: { ...controls, farmSet: next }, clearsPlan: controls.objective === 'setFarm' };
+    }
+
+    // Gearing one hero at a time answers a different question from gearing the team, so a plan
+    // built under the other mode is cleared, never left on screen as stale.
+    case 'priorityMode': {
+      if (controls.priorityMode === change.value) return null;
+      return { controls: { ...controls, priorityMode: change.value }, clearsPlan: true };
+    }
+
+    // A new order is a different plan only while the mode is on; off, it is remembered for later.
+    case 'priorityOrder': {
+      const next = normalizePriorityOrder(change.value);
+      if (next.length === controls.priorityOrder.length && next.every((id, index) => id === controls.priorityOrder[index])) {
+        return null;
+      }
+      return { controls: { ...controls, priorityOrder: next }, clearsPlan: controls.priorityMode };
     }
 
     default: {

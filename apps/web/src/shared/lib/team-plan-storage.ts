@@ -21,6 +21,9 @@ export type TeamPlanEnvelope = {
   /** The set a Set farm plan was solved for; `null` under every other objective. Absent in an
    *  envelope written before the objective existed, which reads as `null`. */
   farmSet: string | null;
+  /** Whether the plan geared heroes one at a time. Absent in an envelope written before the mode
+   *  existed, which reads as `false`. */
+  priorityMode: boolean;
   plan: TeamPlan;
 };
 
@@ -61,14 +64,17 @@ function isTeamPlanEnvelope(value: unknown): value is TeamPlanEnvelope {
     typeof value.ignoreFieldCrowding === 'boolean' &&
     isTargetPhase(value.targetPhase) &&
     isFarmSet(value.farmSet) &&
+    typeof value.priorityMode === 'boolean' &&
     isWholePlan(value.plan)
   );
 }
 
 export function loadTeamPlanEnvelope(): TeamPlanEnvelope | null {
   const raw = readJson<unknown>(TEAM_PLAN_KEY, null);
-  const withFarmSet = isPlainObject(raw) && !('farmSet' in raw) ? { ...raw, farmSet: null } : raw;
-  return isTeamPlanEnvelope(withFarmSet) ? withFarmSet : null;
+  const withDefaults = isPlainObject(raw)
+    ? { farmSet: null, priorityMode: false, ...raw }
+    : raw;
+  return isTeamPlanEnvelope(withDefaults) ? withDefaults : null;
 }
 
 export function saveTeamPlanEnvelope(envelope: TeamPlanEnvelope): boolean {

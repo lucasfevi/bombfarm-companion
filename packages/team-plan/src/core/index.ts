@@ -25,7 +25,9 @@ export {
   isTeamAuraId,
   normalizeAurasAtCap,
   withAuraAtCap,
+  normalizePriorityOrder,
 } from './team-plan-controls';
+export { movePriorityBefore, resolvePriorityOrder, shiftPriority } from './priority-order';
 export type { ScopeState } from './hero-scope';
 export {
   defaultScopeForHero,

@@ -56,6 +56,9 @@ export type TeamPlanSlice = {
   gatePhase: number | null;
   /** The set a Set farm plan collects; `null` until the player picks one. */
   farmSet: string | null;
+  /** Gear the Optimize heroes one at a time in `priorityOrder`, instead of as one team. */
+  priorityMode: boolean;
+  priorityOrder: readonly string[];
   runStatus: TeamPlanRunStatus;
   runId: string | null;
   plan: TeamPlan;
@@ -83,6 +86,8 @@ export type TeamPlanSlice = {
   setTargetPhase: (value: number | null) => void;
   setGatePhase: (value: number | null) => void;
   setFarmSet: (value: string | null) => void;
+  setPriorityMode: (value: boolean) => void;
+  setPriorityOrder: (order: readonly string[]) => void;
   startRun: (runId: string) => void;
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   applyPlan: (runId: string, plan: DomainTeamPlan) => void;
@@ -143,6 +148,8 @@ export const createTeamPlanSlice: StateCreator<
     targetPhaseChosen: false,
     gatePhase: null,
     farmSet: null,
+    priorityMode: false,
+    priorityOrder: [],
     runStatus: 'idle',
     runId: null,
     plan: null,
@@ -183,7 +190,8 @@ export const createTeamPlanSlice: StateCreator<
         envelope.allowedChanges === state.allowedChanges &&
         envelope.ignoreFieldCrowding === state.ignoreFieldCrowding &&
         envelope.targetPhase === selectTeamPlanScoredPhase(state) &&
-        envelope.farmSet === (state.objective === 'setFarm' ? state.farmSet : null);
+        envelope.farmSet === (state.objective === 'setFarm' ? state.farmSet : null) &&
+        envelope.priorityMode === state.priorityMode;
       if (!solvedUnderLiveControls) {
         removeTeamPlanEnvelope();
         return;
@@ -216,6 +224,8 @@ export const createTeamPlanSlice: StateCreator<
     setTargetPhase: (value) => applyChange({ kind: 'targetPhase', value }),
     setGatePhase: (value) => applyChange({ kind: 'gatePhase', value }),
     setFarmSet: (value) => applyChange({ kind: 'farmSet', value }),
+    setPriorityMode: (value) => applyChange({ kind: 'priorityMode', value }),
+    setPriorityOrder: (value) => applyChange({ kind: 'priorityOrder', value }),
 
     startRun: (runId) => {
       if (get().runId === runId && get().runStatus === 'running') return;

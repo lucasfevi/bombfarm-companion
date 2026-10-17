@@ -406,6 +406,17 @@ export type TeamPlanInput = {
    * question about a field the roster does not light on its own, never a correction to the model.
    */
   aurasAtCap?: AurasAtCap;
+  /**
+   * Gear the Optimize heroes one at a time, in this order, instead of as one team.
+   *
+   * Omitted, empty, or naming fewer than two Optimize heroes ⇒ the historical team-wide search.
+   * Otherwise each hero in turn is the only one the search may re-gear: it takes the best the
+   * pool offers for the selected objective — including pieces worn by heroes later in the order,
+   * whose loss is not counted against it — and is then locked in its new gear for the heroes
+   * after it. Optimize heroes the order leaves out go last, in roster order; ids that are not
+   * Optimize heroes are ignored.
+   */
+  priorityOrder?: readonly string[] | null;
 };
 
 /**
@@ -546,6 +557,8 @@ export type TeamPlan = {
     elapsedMs: number;
     seedUsed: string;
   };
+  /** Present only on a priority plan: the order the Optimize heroes were geared in. */
+  priorityOrder?: string[];
 };
 
 export type TeamPlanBlockedResult = {

@@ -73,7 +73,6 @@ function navButton(page, index) {
 }
 
 const OPTIMIZER_TAB_INDEX = 5;
-const SETTINGS_TAB_INDEX = 10;
 
 async function openOptimizer(page) {
   await navButton(page, OPTIMIZER_TAB_INDEX).click();
@@ -100,7 +99,7 @@ async function solveToSettledPlan(page) {
 }
 
 async function turnOnForgeWrites(page) {
-  await navButton(page, SETTINGS_TAB_INDEX).click();
+  await page.getByTestId('shell-settings').click();
   const forgeSwitch = page.getByRole('switch', { name: en('settingsForgeWritesLabel') });
   await expect(forgeSwitch).toBeVisible({ timeout: 15_000 });
   if ((await forgeSwitch.getAttribute('aria-checked')) !== 'true') await forgeSwitch.click();
@@ -108,7 +107,7 @@ async function turnOnForgeWrites(page) {
 }
 
 async function turnOffForgeWrites(page) {
-  await navButton(page, SETTINGS_TAB_INDEX).click();
+  await page.getByTestId('shell-settings').click();
   const forgeSwitch = page.getByRole('switch', { name: en('settingsForgeWritesLabel') });
   await expect(forgeSwitch).toBeVisible({ timeout: 15_000 });
   if ((await forgeSwitch.getAttribute('aria-checked')) !== 'false') await forgeSwitch.click();
@@ -378,7 +377,7 @@ test.describe('the Apply panel, solved, switched, confirmed and run through the 
       await expect(addControls.nth(i)).toHaveAttribute('data-queued', 'true');
     }
 
-    await navButton(page, SETTINGS_TAB_INDEX).click();
+    await page.getByTestId('shell-settings').click();
     await openOptimizer(page);
     await expect(page.getByTestId('apply-step-forge')).toContainText('added to the queue');
   });

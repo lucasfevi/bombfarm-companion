@@ -16,15 +16,16 @@ const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8');
 const ROUTED_BY_ID = /activeNavId === '(\w+)'/g;
 
 describe('page.tsx routes every nav item', () => {
-  const ids = navItemsFor(STRINGS.en).map((item) => item.id);
-  const routed = [...source.matchAll(ROUTED_BY_ID)].map((match) => match[1]);
+  const stripIds = navItemsFor(STRINGS.en).map((item) => item.id);
+  const screenIds = [...stripIds.filter((id) => id !== 'progression'), 'skills', 'collections', 'settings'];
+  const routed = [...new Set([...source.matchAll(ROUTED_BY_ID)].map((match) => match[1]))];
 
   it('non-vacuity: the source was read and it does route on the active item', () => {
     expect(routed.length).toBeGreaterThan(2);
   });
 
-  it('gives every item but the default one a branch of its own', () => {
-    expect([...routed].sort()).toEqual(ids.filter((id) => id !== 'live').sort());
+  it('gives every screen but the default one a branch of its own, the Progression pages and Settings included', () => {
+    expect([...routed].sort()).toEqual(screenIds.filter((id) => id !== 'live').sort());
   });
 
   it('keys the screen boundary by the active item so a tab change retries', () => {
@@ -36,9 +37,24 @@ describe('page.tsx routes every nav item', () => {
     expect(source).toContain('<AccountView');
   });
 
-  it('renders the Collections screen on the Collections item', () => {
-    expect(source).toContain("activeNavId === 'collections' ? (");
-    expect(source).toContain('<CollectionsView />');
+  it('renders the Progression page on both the Skill Tree and the Collections screens', () => {
+    expect(source).toContain("activeNavId === 'skills' || activeNavId === 'collections' ? (");
+    expect(source).toContain('<ProgressionPage page={activeNavId}');
+  });
+
+  it('opens Settings from the gear and from the update chip through the one handler', () => {
+    expect(source).toContain("settingsActive={activeNavId === 'settings'}");
+    expect(source.match(/onOpenSettings=\{openSettings\}/g)).toHaveLength(2);
+    expect(source).toMatch(/const openSettings = useCallback\(\(\) => \{\s*setActiveNavId\('settings'\);/);
+  });
+
+  it('lights the strip item the screen belongs to, and opens a pressed item on its remembered screen', () => {
+    expect(source).toContain('const activeStripId = stripIdForScreen(activeNavId);');
+    expect(source).toContain('setActiveNavId(screenForStripId(stripId, getProgressionPage()))');
+  });
+
+  it('remembers the Progression page whenever the screen becomes one of its pages', () => {
+    expect(source).toMatch(/if \(isProgressionPageId\(activeNavId\)\) setProgressionPage\(activeNavId\);/);
   });
 
   it('lets the holdings inventory column lead to the Inventory tab', () => {

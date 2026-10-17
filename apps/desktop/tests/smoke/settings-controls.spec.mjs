@@ -87,7 +87,7 @@ function navTab(page, labelKey) {
 }
 
 async function openSettings(page) {
-  await navTab(page, 'settingsNavLabel').click();
+  await page.getByTestId('shell-settings').click();
   await expect(page.getByTestId('settings-view')).toBeVisible({ timeout: 20_000 });
 }
 
@@ -402,6 +402,8 @@ test.describe('settings controls smoke — driven, held across a tab switch, and
         // The companion has no data source that does not need the account read, so there is no tab
         // left to offer — a nav that kept its tabs would lead to screens with nothing behind them.
         await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(0);
+        // The gear goes with the tabs: Settings is as unreachable at the gate as the screens are.
+        await expect(page.getByTestId('shell-settings')).toHaveCount(0);
 
         const modal = page.getByTestId('consent-modal');
         await page.getByTestId('consent-gate-read-again').click();
@@ -412,7 +414,7 @@ test.describe('settings controls smoke — driven, held across a tab switch, and
         await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(tabsWhileGranted, {
           timeout: 15_000,
         });
-        await expect(navTab(page, 'settingsNavLabel')).toBeVisible();
+        await expect(page.getByTestId('shell-settings')).toBeVisible();
 
         const record = await page.evaluate(async () => window.bfc.invoke('consent:get'));
         expect(

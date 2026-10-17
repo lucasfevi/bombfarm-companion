@@ -1,5 +1,25 @@
 # @bombfarm/desktop
 
+## 0.30.0
+
+### Minor Changes
+
+- f950911: The Optimizer can gear heroes in a priority order. Turn on Priority order above the hero scope board, then drag the Optimize cards (or use their arrows) to rank them: hero 1 gets the best gear the pool offers, hero 2 the best of what is left, and so on, instead of the plan balancing gear across the whole team. Heroes lower in the order give up pieces to the ones above them, so the team total can end lower than today. The per-hero results can be sorted by priority.
+- 7c92147: Settings moved to the gear at the top right of the window, and Skill Tree and Collections are now one Progression tab with two pages, which makes room in the top bar for new screens. The Progression tab reopens on the page you last had open, and the gear stays on the bar even when the window is narrow.
+
+### Patch Changes
+
+- Updated dependencies [f950911]
+- Updated dependencies [7c92147]
+  - @bombfarm/team-plan@0.7.0
+  - @bombfarm/domain@1.13.0
+  - @bombfarm/ui@0.19.1
+  - @bombfarm/account@0.3.17
+  - @bombfarm/farm@1.4.2
+  - @bombfarm/game-api@0.8.2
+  - @bombfarm/game-art@0.8.6
+  - @bombfarm/hero@0.7.1
+
 ## 0.29.0
 
 ### Minor Changes

@@ -27,6 +27,11 @@ export type TeamPlanControls = {
   /** The equipment set a Set farm plan collects, its own control in the phase control's place:
    *  the set decides the phases. `null` until the player picks one, and no plan runs until then. */
   farmSet: string | null;
+  /** Gear the Optimize heroes one at a time, in {@link priorityOrder}, instead of as one team. */
+  priorityMode: boolean;
+  /** Hero ids as the player ordered them; Optimize heroes it leaves out follow in roster order.
+   *  Kept while the mode is off, so switching back restores the order. */
+  priorityOrder: readonly string[];
 };
 
 /**
@@ -76,6 +81,8 @@ export const DEFAULT_TEAM_PLAN_CONTROLS: TeamPlanControls = {
   targetPhaseChosen: false,
   gatePhase: null,
   farmSet: null,
+  priorityMode: false,
+  priorityOrder: [],
 };
 
 export function isScopeState(value: string): value is ScopeState {
@@ -121,4 +128,10 @@ export function normalizeGatePhase(value: unknown): number | null {
 /** A set is kept only when it names one the game drops; anything else reads as "no set picked". */
 export function normalizeFarmSet(value: unknown): string | null {
   return typeof value === 'string' && SET_FARM_SETS.includes(value) ? value : null;
+}
+
+/** A stored order read back as distinct hero ids; anything else reads as no order yet. */
+export function normalizePriorityOrder(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((id): id is string => typeof id === 'string' && id.length > 0))];
 }
