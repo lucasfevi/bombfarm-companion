@@ -339,6 +339,7 @@ function registerIpcHandlers(): void {
       getUpdateService: () => updateService,
       getMarketService: () => marketService,
       getOnlinePlayersService: () => onlinePlayersService,
+      getPremiumService: () => null,
       getForgeService: () => forgeService,
       getForgeHistory: () => forgeHistory,
       getForgeInjector: () => forgeInjector,

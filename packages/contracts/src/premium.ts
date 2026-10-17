@@ -63,6 +63,20 @@ export interface PremiumView {
   readonly reportedAccountId: string | null;
 }
 
+export const signedOutPremiumView: PremiumView = {
+  session: 'signed-out',
+  rememberedAcrossRestarts: true,
+  lastSignInEnd: null,
+  ended: null,
+  visible: false,
+  me: null,
+  status: null,
+  fetchedAt: null,
+  lastRefreshFailed: false,
+  report: null,
+  reportedAccountId: null,
+};
+
 export interface GameAccountReportBody {
   readonly account_id: string;
   readonly steam_id64: string;

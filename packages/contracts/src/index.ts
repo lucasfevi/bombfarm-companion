@@ -5,6 +5,7 @@ import type { UpdateStatus } from './update.js';
 import type { MarketQuoteCurrency, MarketQuoteResult, MarketQuoteTarget, MarketSnapshotView } from './market.js';
 import { DEFAULT_MARKET_QUOTE_CURRENCY } from './market.js';
 import type { OnlinePlayersView } from './online-players.js';
+import type { PremiumActionResult, PremiumView } from './premium.js';
 import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
 import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
 import type { CollectionsView } from './collections.js';
@@ -218,6 +219,7 @@ export {
   readReportBody,
   readSessionTokenBody,
   readSignInRequestBody,
+  signedOutPremiumView,
 } from './premium.js';
 export type {
   AccountStoreReason,
@@ -650,6 +652,20 @@ export interface IpcChannels {
    *  clipboard of its own that holds pictures reliably — the web one refuses an unfocused
    *  window — so main writes it. Main re-checks the bytes are a PNG before writing anything. */
   'clipboard:writeImage': { args: [Uint8Array]; result: ClipboardImageResult };
+  /** The Premium session as main holds it: signed out, signing in, or signed in with the last
+   *  status read. Carries no credential and no URL. */
+  'premium:get': { args: []; result: PremiumView };
+  /** Starts a sign-in in the system browser. `ok` means the attempt began; how it ends arrives on
+   *  `premium:changed`. */
+  'premium:signIn': { args: []; result: PremiumActionResult };
+  /** Abandons a sign-in that is waiting on the browser. True when an attempt was running. */
+  'premium:cancelSignIn': { args: []; result: boolean };
+  /** Signs out: the local session is deleted whether or not the server answers. */
+  'premium:signOut': { args: []; result: PremiumView };
+  /** Asks the server for the current status now; refused inside the refresh floor. */
+  'premium:refresh': { args: []; result: PremiumActionResult };
+  /** Opens the Premium page in the system browser. `ok` means a URL was opened. */
+  'premium:manage': { args: []; result: PremiumActionResult };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -714,6 +730,12 @@ export const IPC_CHANNELS = [
   'collections:get',
   'collections:refresh',
   'clipboard:writeImage',
+  'premium:get',
+  'premium:signIn',
+  'premium:cancelSignIn',
+  'premium:signOut',
+  'premium:refresh',
+  'premium:manage',
 ] as const satisfies readonly IpcInvokeChannel[];
 
 export type IpcEventChannel =
@@ -730,6 +752,7 @@ export type IpcEventChannel =
   | 'deconstruct:event'
   | 'pvp:changed'
   | 'collections:changed'
+  | 'premium:changed'
   | 'window:changed';
 
 export interface IpcEvents {
@@ -774,6 +797,8 @@ export interface IpcEvents {
    *  `collections:get` serves, re-dated even when the snapshot repeats the last one. A read that
    *  lands for an account that is no longer the bound one is stored and not announced. */
   'collections:changed': CollectionsView;
+  /** Fired whenever the Premium session or its status changes. */
+  'premium:changed': PremiumView;
   /** Fired on every maximize and unmaximize of the main window, so the header's own caption
    *  buttons follow a state change the OS made (a double-clicked title bar, a snap, Win+Up)
    *  and not only the ones they asked for. */
@@ -794,6 +819,7 @@ export const IPC_EVENT_CHANNELS = [
   'deconstruct:event',
   'pvp:changed',
   'collections:changed',
+  'premium:changed',
   'window:changed',
 ] as const satisfies readonly IpcEventChannel[];
 
