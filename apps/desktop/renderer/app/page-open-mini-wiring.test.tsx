@@ -17,9 +17,10 @@ describe('the Open-mini control sits in the header actions, not in the Live view
     expect(actions).toContain('granted ? <OpenMiniMenuItem /> : null');
   });
 
-  it('opens through miniLive:open and carries an icon beside its label, in both shapes', () => {
+  it('opens through miniLive:open as an icon-only button in the bar and an icon-and-label row in the menu', () => {
     expect(actions).toContain("'miniLive:open'");
-    expect(actions.match(/<Icon name="window" size="sm" \/>/g)).toHaveLength(2);
+    expect(actions).toMatch(/<ShellIconButton icon="window" label=\{t\.miniLiveOpenLabel\} testId="open-mini"/);
+    expect(actions.match(/<Icon name="window" size="sm" \/>/g)).toHaveLength(1);
     expect(actions.match(/\{t\.miniLiveOpenLabel\}/g)).toHaveLength(2);
   });
 });

@@ -1302,6 +1302,8 @@ export const en = {
   // skills* — the Skill Tree screen: the account's tree as the game lays it out, and what one
   // more level of each buyable node is worth to the farm. Arm, tier and node vocabulary prints
   // the game's own words. Buying stays in the game; nothing here is written back.
+  progressionNavLabel: 'Progression',
+  progressionSwitchLabel: 'Progression pages',
   skillsNavLabel: 'Skill Tree',
   skillsTitle: 'Skill tree',
   skillsTip: 'Every node of your tree as the game draws it, and what the next level of each is worth to your farm.',

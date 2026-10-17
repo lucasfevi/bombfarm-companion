@@ -1,9 +1,9 @@
 /**
- * The Skill Tree tab, end to end in the real app: the fixture account's `skills` section reaches
+ * The Skill Tree page, end to end in the real app: the fixture account's `skills` section reaches
  * the tab, the shared screen draws the tree's canvas and its recommendation panel, and the roster
  * is priced — in both languages. The unit tests under `renderer/app/skills` and
  * `renderer/lib/skills` prove each piece; only a launched window proves they were wired to each
- * other, and that the tenth tab reaches its screen at all.
+ * other, and that the Progression tab reaches its screen at all.
  */
 import { test, expect, _electron as electron } from '@playwright/test';
 import fs from 'node:fs';
@@ -16,7 +16,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
 const ACCOUNT_OFFLINE_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-offline.json');
 
-const SKILLS_TAB_INDEX = 7;
+const PROGRESSION_TAB_INDEX = 7;
 
 function electronExecutable() {
   return path.join(
@@ -77,10 +77,14 @@ function navButton(page, index) {
   return page.locator('nav[aria-label="Main"] button').nth(index);
 }
 
-/** Every test opens the tab itself: a retried test runs in a fresh worker whose `beforeAll`
- *  relaunched the app on the Live tab, so nothing may lean on the previous test's navigation. */
-async function openSkills(page) {
-  await navButton(page, SKILLS_TAB_INDEX).click();
+/** Every test opens the page itself: a retried test runs in a fresh worker whose `beforeAll`
+ *  relaunched the app on the Live tab, so nothing may lean on the previous test's navigation.
+ *  The Skill Tree is a page of the Progression tab, so it is reached through the tab and then the
+ *  page switch — the switch is pressed even though the page is the default, because the tab
+ *  reopens on whichever page was last shown. */
+async function openSkills(page, copy = en) {
+  await navButton(page, PROGRESSION_TAB_INDEX).click();
+  await page.getByRole('tab', { name: copy('skillsNavLabel'), exact: true }).click();
   await page.waitForSelector('[data-testid="skills-view"]', { timeout: 20_000 });
 }
 
@@ -96,7 +100,7 @@ async function expectScreenDrawn(page, copy) {
   await expect(view).toHaveAttribute('data-pricing', 'priced', { timeout: 20_000 });
 }
 
-test.describe('Skill Tree tab — the fixture account\'s tree, drawn and priced', () => {
+test.describe('Skill Tree page — the fixture account\'s tree, drawn and priced', () => {
   /** @type {import('@playwright/test').ElectronApplication} */
   let app;
   /** @type {import('@playwright/test').Page} */
@@ -119,19 +123,27 @@ test.describe('Skill Tree tab — the fixture account\'s tree, drawn and priced'
     fs.rmSync(runDir, { recursive: true, force: true });
   });
 
-  test('the tab is named Skill Tree and draws the tree canvas and the next-to-buy panel, priced', async () => {
-    await expect(navButton(page, SKILLS_TAB_INDEX)).toHaveAccessibleName(en('skillsNavLabel'));
+  test('the Progression tab opens on the Skill Tree, which draws the tree canvas and the next-to-buy panel, priced', async () => {
+    await expect(navButton(page, PROGRESSION_TAB_INDEX)).toHaveAccessibleName(en('progressionNavLabel'));
     await openSkills(page);
+    await expect(page.getByRole('tab', { name: en('skillsNavLabel'), exact: true })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     await expectScreenDrawn(page, en);
   });
 
   test('the same screen in Portuguese, through the top bar\'s language switch', async () => {
     await switchLanguage(page, 'pt');
-    await expect(navButton(page, SKILLS_TAB_INDEX)).toHaveAccessibleName(pt('skillsNavLabel'), { timeout: 10_000 });
-    await openSkills(page);
+    await expect(navButton(page, PROGRESSION_TAB_INDEX)).toHaveAccessibleName(pt('progressionNavLabel'), {
+      timeout: 10_000,
+    });
+    await openSkills(page, pt);
     await expectScreenDrawn(page, pt);
 
     await switchLanguage(page, 'en');
-    await expect(navButton(page, SKILLS_TAB_INDEX)).toHaveAccessibleName(en('skillsNavLabel'), { timeout: 10_000 });
+    await expect(navButton(page, PROGRESSION_TAB_INDEX)).toHaveAccessibleName(en('progressionNavLabel'), {
+      timeout: 10_000,
+    });
   });
 });
