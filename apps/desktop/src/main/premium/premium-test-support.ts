@@ -3,7 +3,7 @@ import type { LogPort } from '../storage/index.js';
 import type { LoopbackListener, LoopbackResult, startLoopbackListener } from './loopback-listener.js';
 import { createPremiumApi, type PremiumApi } from './premium-api.js';
 import type { PremiumHttp, PremiumHttpRequest, PremiumHttpResponse, PremiumPath } from './premium-transport.js';
-import { createPremiumService, type PremiumService } from './premium-service.js';
+import { createPremiumService, type GameIdentity, type PremiumService } from './premium-service.js';
 import { createPremiumCache, type PremiumCache, type PremiumCacheEntry } from './premium-cache.js';
 import type { StoredSession, TokenVault } from './token-vault.js';
 
@@ -328,6 +328,7 @@ export interface Harness {
   listeners: ListenerStarts;
   opened: string[];
   views: PremiumView[];
+  identity: { current: GameIdentity | null };
   failOpening(): void;
   signedIn(): Promise<void>;
 }
@@ -348,6 +349,9 @@ export function createHarness(options: HarnessOptions = {}): Harness {
   const listeners = createListenerFactory();
   const opened: string[] = [];
   const views: PremiumView[] = [];
+  const identity: { current: GameIdentity | null } = {
+    current: { accountId: SECRETS.accountId, steamId64: SECRETS.steamId64 },
+  };
   let openingFails = false;
   const realApi = createPremiumApi(stub.http);
   const api = options.api === undefined ? realApi : options.api(realApi);
@@ -361,6 +365,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
       opened.push(url);
       return Promise.resolve();
     },
+    readGameIdentity: () => identity.current,
     startListener: options.listener === undefined ? listeners.start : options.listener(clock),
     pkce: {
       createPkce: () => ({ verifier: SECRETS.verifier, challenge: 'challenge-fixture' }),
@@ -385,6 +390,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     listeners,
     opened,
     views,
+    identity,
     failOpening: () => {
       openingFails = true;
     },

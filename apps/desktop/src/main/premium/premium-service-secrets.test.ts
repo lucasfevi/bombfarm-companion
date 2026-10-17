@@ -11,22 +11,38 @@ const NEVER_LOGGED_OR_EMITTED = [
   SECRETS.handOffUrl,
 ];
 
+const LITERAL_EVENTS = [
+  'signin.started',
+  'signin.ended',
+  'status.refresh_failed',
+  'status.unreadable',
+  'report.outcome',
+  'handoff.failed',
+  'signout.unreachable',
+];
+
 const NEVER_LOGGED = [...NEVER_LOGGED_OR_EMITTED, SECRETS.accountId, SECRETS.steamId64];
 
 function everyLogRecord(h: Harness): string {
   return JSON.stringify(h.log.records);
 }
 
+const NEVER_EMITTED = [...NEVER_LOGGED_OR_EMITTED, SECRETS.steamId64];
+
+/** The game account id is shown to the player, so a view may carry it under `reportedAccountId` and nowhere else. */
 function everyEmittedView(h: Harness): string {
-  return JSON.stringify([...h.views, h.service.getView()]);
+  return JSON.stringify([...h.views, h.service.getView()], (key, value: unknown) =>
+    key === 'reportedAccountId' ? null : value,
+  );
 }
 
 function expectClean(h: Harness): void {
   expect(h.log.records.length).toBeGreaterThan(0);
   expect(h.views.length).toBeGreaterThan(0);
   for (const secret of NEVER_LOGGED) expect(everyLogRecord(h), `log record holds ${secret}`).not.toContain(secret);
-  for (const secret of NEVER_LOGGED_OR_EMITTED) {
-    expect(everyEmittedView(h), `emitted view holds ${secret}`).not.toContain(secret);
+  const emitted = everyEmittedView(h);
+  for (const secret of [...NEVER_EMITTED, SECRETS.accountId]) {
+    expect(emitted, `emitted view holds ${secret}`).not.toContain(secret);
   }
 }
 
@@ -160,6 +176,50 @@ describe('secrets stay out of logs and views', () => {
     expectClean(h);
   });
 
+  it.each([
+    ['linked', { status: 200, body: { outcome: 'linked' } }],
+    ['refused', { status: 409, body: { reason: 'steam_mismatch' } }],
+    ['failed', { status: 500 }],
+  ])('through a report that ends %s, with the account id and SteamID', async (_name, reply) => {
+    const h = createHarness({ vault: createFakeVault(session(SECRETS.token)) });
+    h.stub.on('report', reply);
+    h.service.start();
+    await settle();
+
+    expect(h.log.events()).toContain('report.outcome');
+    expect(h.service.getView().reportedAccountId).toBe(SECRETS.accountId);
+    expectClean(h);
+  });
+
+  it('through a report that cannot be sent and one the API turns away', async () => {
+    const unreadable = createHarness({ vault: createFakeVault(session(SECRETS.token)) });
+    unreadable.identity.current = { accountId: SECRETS.accountId, steamId64: null };
+    unreadable.stub.on('status', { status: 503 });
+    unreadable.service.start();
+    await settle();
+    expectClean(unreadable);
+
+    const turnedAway = createHarness({ vault: createFakeVault(session(SECRETS.token)) });
+    turnedAway.stub.on('report', { status: 401 });
+    turnedAway.stub.on('status', { status: 503 });
+    turnedAway.service.start();
+    await settle();
+    expect(turnedAway.service.getView()).toMatchObject({ session: 'signed-out', ended: 'expired' });
+    await turnedAway.service.signIn();
+    turnedAway.service.cancelSignIn();
+    expectClean(turnedAway);
+  });
+
+  it('shows the account id on the view under reportedAccountId and under no other key', async () => {
+    const h = createHarness({ vault: createFakeVault(session(SECRETS.token)) });
+    h.service.start();
+    await settle();
+
+    const view = h.service.getView();
+    expect(view.reportedAccountId).toBe(SECRETS.accountId);
+    expect(JSON.stringify({ ...view, reportedAccountId: null })).not.toContain(SECRETS.accountId);
+  });
+
   it('logs only literal events under the premium scope', async () => {
     const h = createHarness();
     h.service.start();
@@ -167,7 +227,8 @@ describe('secrets stay out of logs and views', () => {
 
     for (const record of h.log.records) {
       expect(record['scope']).toBe('premium');
-      expect(['signin.started', 'signin.ended']).toContain(record['event']);
+      expect(LITERAL_EVENTS).toContain(record['event']);
+      for (const value of Object.values(record)) expect(['string', 'number']).toContain(typeof value);
     }
     expect(h.log.records).toContainEqual({ scope: 'premium', event: 'signin.started' });
     expect(h.log.records).toContainEqual({ scope: 'premium', event: 'signin.ended', reason: 'completed' });

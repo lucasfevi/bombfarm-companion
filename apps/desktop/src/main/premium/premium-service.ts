@@ -1,9 +1,11 @@
 import {
+  isSteamId64,
   PREMIUM_REFRESH_EVERY_MS,
   PREMIUM_REFRESH_FLOOR_MS,
   PREMIUM_SIGN_IN_TIMEOUT_MS,
   type PremiumActionResult,
   type PremiumMe,
+  type PremiumReportOutcome,
   type PremiumSignInEnd,
   type PremiumStatus,
   type PremiumView,
@@ -18,11 +20,17 @@ import type { StoredSession, TokenVault } from './token-vault.js';
 const BACKOFF_DEFAULT_MS = 600_000;
 const BACKOFF_CAP_MS = 3_600_000;
 
+export interface GameIdentity {
+  readonly accountId: string;
+  readonly steamId64: string | null;
+}
+
 export interface PremiumServiceDeps {
   api: PremiumApi;
   vault: TokenVault;
   cache: PremiumCache;
   openExternal(url: string): Promise<void>;
+  readGameIdentity(): GameIdentity | null;
   startListener: typeof startLoopbackListener;
   pkce: { createPkce: typeof createPkce; createState: typeof createState };
   now(): number;
@@ -39,6 +47,7 @@ export interface PremiumService {
   cancelSignIn(): boolean;
   signOut(): Promise<PremiumView>;
   refresh(reason: 'open' | 'button'): Promise<PremiumActionResult>;
+  noteAccountChanged(): void;
 }
 
 type Session = PremiumView['session'];
@@ -67,6 +76,10 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
   let status: PremiumStatus | null = null;
   let fetchedAt: string | null = null;
   let lastRefreshFailed = false;
+  let report: PremiumReportOutcome | null = null;
+  let reportedAccountId: string | null = null;
+  let reportedPair: string | null = null;
+  let reportingPair: string | null = null;
 
   let listener: LoopbackListener | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -87,8 +100,8 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       status,
       fetchedAt,
       lastRefreshFailed,
-      report: null,
-      reportedAccountId: null,
+      report,
+      reportedAccountId,
     };
   }
 
@@ -130,6 +143,10 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     status = null;
     fetchedAt = null;
     lastRefreshFailed = false;
+    report = null;
+    reportedAccountId = null;
+    reportedPair = null;
+    reportingPair = null;
     remembered = true;
     deps.vault.clear();
     deps.cache.clear();
@@ -289,6 +306,56 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     void runFetch();
   }
 
+  async function reportAccount(): Promise<void> {
+    if (session !== 'signed-in') return;
+    const startedIn = generation;
+    const identity = deps.readGameIdentity();
+    if (identity === null) {
+      report = { kind: 'not-sent', reason: 'no-game-account' };
+      reportedAccountId = null;
+      publish();
+      return;
+    }
+    const { accountId, steamId64 } = identity;
+    if (steamId64 === null || !isSteamId64(steamId64)) {
+      report = { kind: 'not-sent', reason: 'no-steam-id' };
+      reportedAccountId = null;
+      publish();
+      return;
+    }
+    const pair = JSON.stringify([accountId, steamId64]);
+    if (pair === reportedPair) {
+      report = { kind: 'linked' };
+      reportedAccountId = accountId;
+      publish();
+      return;
+    }
+    if (pair === reportingPair) return;
+    reportingPair = pair;
+    try {
+      const bearerToken = await bearer(startedIn);
+      if (bearerToken === null) return;
+      const outcome = await deps.api.reportGameAccount(bearerToken, { accountId, steamId64 });
+      if (startedIn !== generation) return;
+      if (outcome.kind === 'unauthorized') {
+        handleUnauthorized(startedIn);
+        return;
+      }
+      report = outcome;
+      reportedAccountId = accountId;
+      if (outcome.kind === 'linked') reportedPair = pair;
+      deps.log.info({
+        scope: 'premium',
+        event: 'report.outcome',
+        outcome: outcome.kind,
+        ...(outcome.kind === 'refused' ? { reason: outcome.reason } : {}),
+      });
+      publish();
+    } finally {
+      if (reportingPair === pair) reportingPair = null;
+    }
+  }
+
   function completeSignIn(startedIn: number, granted: StoredSession): void {
     if (!attemptIsCurrent(startedIn)) return;
     listener = null;
@@ -301,6 +368,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     deps.log.info({ scope: 'premium', event: 'signin.ended', reason: 'completed' });
     publish();
     fetchNow();
+    void reportAccount();
   }
 
   async function awaitCallback(
@@ -404,6 +472,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       }
       publish();
       void runFetch();
+      void reportAccount();
     },
 
     stop() {
@@ -438,6 +507,10 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
         return Promise.resolve({ ok: false, reason: 'too-soon' });
       }
       return runFetch().then((): PremiumActionResult => ({ ok: true }));
+    },
+
+    noteAccountChanged() {
+      void reportAccount();
     },
   };
 }
