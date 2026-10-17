@@ -10,7 +10,17 @@
 'use client';
 
 import type { AppLocale } from '@bombfarm/contracts';
-import { Button, Icon, Menu, SegmentedToggle, Tooltip, buttonRecipe, cn, type ShellDensity } from '@bombfarm/ui';
+import {
+  Button,
+  Icon,
+  Menu,
+  SegmentedToggle,
+  Tooltip,
+  buttonRecipe,
+  cn,
+  type IconName,
+  type ShellDensity,
+} from '@bombfarm/ui';
 import { useCopy } from '../lib/copy';
 import { CoffeeIconLink, CoffeeMenuItem } from './coffee-link';
 import { ReferralChip, ReferralMenuItem } from './referral-link';
@@ -33,6 +43,68 @@ function openMiniLive(): void {
   void bridge.invoke('miniLive:open');
 }
 
+function OpenMiniMenuItem() {
+  const t = useCopy();
+
+  return (
+    <Menu.Item onClick={openMiniLive} data-testid="shell-overflow-open-mini">
+      <Icon name="window" size="sm" />
+      {t.miniLiveOpenLabel}
+    </Menu.Item>
+  );
+}
+
+/**
+ * The footprint of an icon-only control in the bar: the 30px square the support link's pill
+ * measures (a 16px glyph, 6px of padding each way and the 1px border), with the glyph centred in
+ * it. A default `Button` pads 10px across and 6px down, which draws a rectangle wider than tall
+ * and leaves a glyph off-centre in it.
+ */
+export const SHELL_ICON_BUTTON_CLASS = 'inline-grid size-[30px] place-items-center px-0 py-0';
+
+function ShellIconButton({
+  icon,
+  label,
+  testId,
+  onClick,
+  active = false,
+}: {
+  icon: IconName;
+  label: string;
+  testId: string;
+  onClick: () => void;
+  active?: boolean;
+}) {
+  return (
+    <Tooltip.Provider delay={200} closeDelay={80}>
+      <Tooltip.Root>
+        <Tooltip.Trigger
+          render={
+            <Button
+              type="button"
+              aria-label={label}
+              aria-current={active ? 'page' : undefined}
+              data-testid={testId}
+              data-active={active ? 'true' : undefined}
+              onClick={onClick}
+              className={cn(SHELL_ICON_BUTTON_CLASS, active && 'border-accent text-accent')}
+            />
+          }
+        >
+          <Icon name={icon} size="sm" />
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Positioner sideOffset={6}>
+            <Tooltip.Popup>
+              <p className="m-0">{label}</p>
+            </Tooltip.Popup>
+          </Tooltip.Positioner>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  );
+}
+
 export function OpenMiniButton() {
   const t = useCopy();
 
@@ -50,47 +122,17 @@ export function OpenMiniButton() {
   );
 }
 
-function OpenMiniMenuItem() {
-  const t = useCopy();
-
-  return (
-    <Menu.Item onClick={openMiniLive} data-testid="shell-overflow-open-mini">
-      <Icon name="window" size="sm" />
-      {t.miniLiveOpenLabel}
-    </Menu.Item>
-  );
-}
-
 function SettingsGear({ active, onOpen }: { active: boolean; onOpen: () => void }) {
   const t = useCopy();
 
   return (
-    <Tooltip.Provider delay={200} closeDelay={80}>
-      <Tooltip.Root>
-        <Tooltip.Trigger
-          render={
-            <Button
-              type="button"
-              aria-label={t.settingsNavLabel}
-              aria-current={active ? 'page' : undefined}
-              data-testid="shell-settings"
-              data-active={active ? 'true' : undefined}
-              onClick={onOpen}
-              className={cn(active && 'border-accent', active && 'text-accent')}
-            />
-          }
-        >
-          <Icon name="cog" size="sm" />
-        </Tooltip.Trigger>
-        <Tooltip.Portal>
-          <Tooltip.Positioner sideOffset={6}>
-            <Tooltip.Popup>
-              <p className="m-0">{t.settingsNavLabel}</p>
-            </Tooltip.Popup>
-          </Tooltip.Positioner>
-        </Tooltip.Portal>
-      </Tooltip.Root>
-    </Tooltip.Provider>
+    <ShellIconButton
+      icon="cog"
+      label={t.settingsNavLabel}
+      testId="shell-settings"
+      onClick={onOpen}
+      active={active}
+    />
   );
 }
 

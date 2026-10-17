@@ -7,7 +7,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Icon, type ShellDensity } from '@bombfarm/ui';
 import { CopyProvider } from '../lib/copy';
-import { ShellActions } from './shell-actions';
+import { SHELL_ICON_BUTTON_CLASS, ShellActions } from './shell-actions';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -101,6 +101,15 @@ describe('ShellActions', () => {
     const html = render('full');
     const afterGear = html.slice(html.indexOf('data-testid="shell-settings"'));
     expect(afterGear).toContain(renderToStaticMarkup(createElement(Icon, { name: 'cog', size: 'sm' })));
+  });
+
+  it('sizes the gear as a square icon button, so the glyph sits in the middle of it', () => {
+    const classes = (gear(render('full')).match(/class="([^"]*)"/)?.[1] ?? '').split(' ');
+    for (const cls of SHELL_ICON_BUTTON_CLASS.split(' ')) expect(classes, cls).toContain(cls);
+    expect(SHELL_ICON_BUTTON_CLASS).toContain('size-[30px]');
+    // The default button's padding is what made it wider than tall.
+    expect(classes).not.toContain('px-2.5');
+    expect(classes).not.toContain('py-1.5');
   });
 
   it('marks the gear current only while Settings is on show, at every density', () => {
