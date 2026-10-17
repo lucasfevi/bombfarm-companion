@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SECRETS, createHarness, settle, unreachable, type Harness } from './premium-test-support.js';
+import { SECRETS, createFakeVault, createHarness, session, settle, unreachable, type Harness } from './premium-test-support.js';
 
 const NEVER_LOGGED_OR_EMITTED = [
   SECRETS.token,
@@ -105,6 +105,21 @@ describe('secrets stay out of logs and views', () => {
     noBrowser.failOpening();
     await noBrowser.service.signIn();
     expectClean(noBrowser);
+  });
+
+  it('through refreshes that succeed, fail, are limited or are unreadable', async () => {
+    const h = createHarness({ vault: createFakeVault(session(SECRETS.token)) });
+    h.service.start();
+    await settle();
+    for (const reply of [{ status: 503 }, { status: 429 }, { status: 200, body: { nonsense: true } }, { status: 401 }]) {
+      h.stub.on('status', reply);
+      await h.clock.advance(3_600_000);
+    }
+
+    expect(h.log.events()).toEqual(
+      expect.arrayContaining(['status.refresh_failed', 'status.unreadable']),
+    );
+    expectClean(h);
   });
 
   it('logs only literal events under the premium scope', async () => {

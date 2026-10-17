@@ -1,9 +1,16 @@
-import type { PremiumView } from '@bombfarm/contracts';
+import { PREMIUM_REFRESH_FLOOR_MS, type PremiumView } from '@bombfarm/contracts';
 import { describe, expect, it } from 'vitest';
 import { SECRETS, createHarness, settle, type Harness } from './premium-test-support.js';
 
 type State = PremiumView['session'];
-type EventName = 'signIn' | 'cancelSignIn' | 'callbackAccepted' | 'callbackDeclined' | 'timeout' | 'exchangeRefused';
+type EventName =
+  | 'signIn'
+  | 'cancelSignIn'
+  | 'callbackAccepted'
+  | 'callbackDeclined'
+  | 'timeout'
+  | 'exchangeRefused'
+  | 'unauthorized';
 
 const STATES: State[] = ['signed-out', 'signing-in', 'signed-in'];
 const EVENTS: EventName[] = [
@@ -13,6 +20,7 @@ const EVENTS: EventName[] = [
   'callbackDeclined',
   'timeout',
   'exchangeRefused',
+  'unauthorized',
 ];
 
 /** The only transitions the session may make. Every pair not listed here must leave the session where it is. */
@@ -23,6 +31,7 @@ const TABLE: Partial<Record<`${State}|${EventName}`, State>> = {
   'signing-in|callbackDeclined': 'signed-out',
   'signing-in|timeout': 'signed-out',
   'signing-in|exchangeRefused': 'signed-out',
+  'signed-in|unauthorized': 'signed-out',
 };
 
 async function arrive(state: State): Promise<Harness> {
@@ -54,6 +63,11 @@ async function apply(h: Harness, event: EventName): Promise<void> {
     case 'exchangeRefused':
       h.stub.on('token', { status: 400 });
       listener?.finish({ kind: 'code', code: SECRETS.code });
+      break;
+    case 'unauthorized':
+      h.stub.on('status', { status: 401 });
+      await h.clock.advance(PREMIUM_REFRESH_FLOOR_MS);
+      await h.service.refresh('button');
       break;
   }
   await settle();

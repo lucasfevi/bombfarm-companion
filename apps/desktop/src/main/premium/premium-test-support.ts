@@ -4,6 +4,7 @@ import type { LoopbackListener, LoopbackResult, startLoopbackListener } from './
 import { createPremiumApi, type PremiumApi } from './premium-api.js';
 import type { PremiumHttp, PremiumHttpRequest, PremiumHttpResponse, PremiumPath } from './premium-transport.js';
 import { createPremiumService, type PremiumService } from './premium-service.js';
+import { createPremiumCache, type PremiumCache, type PremiumCacheEntry } from './premium-cache.js';
 import type { StoredSession, TokenVault } from './token-vault.js';
 
 export const SECRETS = {
@@ -225,6 +226,30 @@ export function createFakeVault(
   return vault;
 }
 
+export interface SpiedCache extends PremiumCache {
+  writes: PremiumCacheEntry[];
+  clears: number;
+}
+
+export function createSpiedCache(seed: PremiumCacheEntry | null = null): SpiedCache {
+  const inner = createPremiumCache(null);
+  if (seed !== null) inner.write(seed);
+  const cache: SpiedCache = {
+    writes: [],
+    clears: 0,
+    read: () => inner.read(),
+    write(entry) {
+      cache.writes.push(entry);
+      inner.write(entry);
+    },
+    clear() {
+      cache.clears += 1;
+      inner.clear();
+    },
+  };
+  return cache;
+}
+
 export interface FakeListener {
   listener: LoopbackListener;
   closed: number;
@@ -298,6 +323,7 @@ export interface Harness {
   stub: StubApi;
   clock: FakeClock;
   vault: FakeVault;
+  cache: SpiedCache;
   log: LogSink;
   listeners: ListenerStarts;
   opened: string[];
@@ -308,6 +334,7 @@ export interface Harness {
 
 export interface HarnessOptions {
   vault?: FakeVault;
+  cache?: SpiedCache;
   listener?: (clock: FakeClock) => typeof startLoopbackListener;
   api?: (real: PremiumApi) => PremiumApi;
 }
@@ -316,6 +343,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
   const stub = createStubApi();
   const clock = createFakeClock();
   const vault = options.vault ?? createFakeVault();
+  const cache = options.cache ?? createSpiedCache();
   const log = createLogSink();
   const listeners = createListenerFactory();
   const opened: string[] = [];
@@ -327,6 +355,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
   const service = createPremiumService({
     api,
     vault,
+    cache,
     openExternal: (url) => {
       if (openingFails) return Promise.reject(new Error('no browser'));
       opened.push(url);
@@ -351,6 +380,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     stub,
     clock,
     vault,
+    cache,
     log,
     listeners,
     opened,

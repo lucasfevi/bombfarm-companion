@@ -1,19 +1,27 @@
 import {
+  PREMIUM_REFRESH_EVERY_MS,
+  PREMIUM_REFRESH_FLOOR_MS,
   PREMIUM_SIGN_IN_TIMEOUT_MS,
-  signedOutPremiumView,
   type PremiumActionResult,
+  type PremiumMe,
   type PremiumSignInEnd,
+  type PremiumStatus,
   type PremiumView,
 } from '@bombfarm/contracts';
 import type { LogPort } from '../storage/index.js';
 import type { LoopbackListener, startLoopbackListener } from './loopback-listener.js';
-import type { PremiumApi } from './premium-api.js';
+import type { FetchResult, PremiumApi } from './premium-api.js';
+import type { PremiumCache } from './premium-cache.js';
 import type { createPkce, createState } from './pkce.js';
 import type { StoredSession, TokenVault } from './token-vault.js';
+
+const BACKOFF_DEFAULT_MS = 600_000;
+const BACKOFF_CAP_MS = 3_600_000;
 
 export interface PremiumServiceDeps {
   api: PremiumApi;
   vault: TokenVault;
+  cache: PremiumCache;
   openExternal(url: string): Promise<void>;
   startListener: typeof startLoopbackListener;
   pkce: { createPkce: typeof createPkce; createState: typeof createState };
@@ -29,6 +37,7 @@ export interface PremiumService {
   getView(): PremiumView;
   signIn(): Promise<PremiumActionResult>;
   cancelSignIn(): boolean;
+  refresh(reason: 'open' | 'button'): Promise<PremiumActionResult>;
 }
 
 type Session = PremiumView['session'];
@@ -42,18 +51,43 @@ function isHttps(url: string): boolean {
 }
 
 export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
+  const setTimeoutFn = deps.scheduler?.setTimeout ?? setTimeout;
+  const clearTimeoutFn = deps.scheduler?.clearTimeout ?? clearTimeout;
+
   let session: Session = 'signed-out';
   let generation = 0;
   let stopped = true;
+  let token: StoredSession | null = null;
   let remembered = true;
   let lastSignInEnd: PremiumSignInEnd | null = null;
   let ended: 'expired' | null = null;
+  let visibleFlag: boolean | null = null;
+  let me: PremiumMe | null = null;
+  let status: PremiumStatus | null = null;
+  let fetchedAt: string | null = null;
+  let lastRefreshFailed = false;
 
   let listener: LoopbackListener | null = null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let inFlight: { generation: number; promise: Promise<void> } | null = null;
+  let lastFinishedAt: number | null = null;
+  let blockedUntil = 0;
   let lastPublished = '';
 
   function buildView(): PremiumView {
-    return { ...signedOutPremiumView, session, rememberedAcrossRestarts: remembered, lastSignInEnd, ended };
+    return {
+      session,
+      rememberedAcrossRestarts: remembered,
+      lastSignInEnd,
+      ended,
+      visible: visibleFlag === true || me?.admitted === true || status?.active === true,
+      me,
+      status,
+      fetchedAt,
+      lastRefreshFailed,
+      report: null,
+      reportedAccountId: null,
+    };
   }
 
   function publish(): void {
@@ -65,12 +99,56 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     deps.onChanged(view);
   }
 
-  function attemptIsCurrent(startedIn: number): boolean {
-    return startedIn === generation && session === 'signing-in';
+  function isoNow(): string {
+    return new Date(deps.now()).toISOString();
+  }
+
+  function clearTimer(): void {
+    if (timer !== null) clearTimeoutFn(timer);
+    timer = null;
+  }
+
+  function nextDelayMs(): number {
+    const wait = blockedUntil - deps.now();
+    return wait > 0 ? wait : PREMIUM_REFRESH_EVERY_MS;
+  }
+
+  function armTimer(): void {
+    clearTimer();
+    if (stopped) return;
+    timer = setTimeoutFn(() => {
+      timer = null;
+      void runFetch();
+    }, nextDelayMs());
+  }
+
+  function forgetSession(): void {
+    token = null;
+    me = null;
+    status = null;
+    fetchedAt = null;
+    lastRefreshFailed = false;
+    remembered = true;
+    deps.vault.clear();
+    deps.cache.clear();
+  }
+
+  function leaveSession(next: { ended: 'expired' | null }): void {
+    generation += 1;
+    session = 'signed-out';
+    ended = next.ended;
+    forgetSession();
+    armTimer();
+    publish();
+  }
+
+  function handleUnauthorized(startedIn: number): void {
+    if (startedIn !== generation || session !== 'signed-in') return;
+    leaveSession({ ended: 'expired' });
   }
 
   function endAttempt(startedIn: number, reason: PremiumSignInEnd): void {
-    if (!attemptIsCurrent(startedIn)) return;
+    if (startedIn !== generation || session !== 'signing-in') return;
     const open = listener;
     listener = null;
     open?.close();
@@ -81,16 +159,120 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     publish();
   }
 
+  function attemptIsCurrent(startedIn: number): boolean {
+    return startedIn === generation && session === 'signing-in';
+  }
+
+  function bearer(startedIn: number): string | null {
+    const held = token;
+    if (held === null || startedIn !== generation || session !== 'signed-in') return null;
+    return held.token;
+  }
+
+  function noteFailure(result: { ok: false; reason: string; retryAfterSec?: number }): void {
+    if (result.reason === 'bad-response') {
+      deps.log.warn({ scope: 'premium', event: 'status.unreadable' });
+      return;
+    }
+    if (result.reason === 'rate-limited') {
+      const waitMs = result.retryAfterSec === undefined ? BACKOFF_DEFAULT_MS : result.retryAfterSec * 1000;
+      blockedUntil = deps.now() + Math.min(waitMs, BACKOFF_CAP_MS);
+      deps.log.warn({ scope: 'premium', event: 'status.refresh_failed', status: 429 });
+      return;
+    }
+    deps.log.warn({ scope: 'premium', event: 'status.refresh_failed', status: 'unreachable' });
+  }
+
+  async function endOnUnauthorized<T>(startedIn: number, request: Promise<FetchResult<T>>): Promise<FetchResult<T>> {
+    const result = await request;
+    if (!result.ok && result.reason === 'unauthorized') handleUnauthorized(startedIn);
+    return result;
+  }
+
+  async function doFetch(startedIn: number): Promise<void> {
+    const visibilityRequest = deps.api.fetchVisibility();
+    let statusRequest: ReturnType<PremiumApi['fetchStatus']> | null = null;
+    let meRequest: ReturnType<PremiumApi['fetchMe']> | null = null;
+    if (session === 'signed-in') {
+      const bearerToken = bearer(startedIn);
+      if (bearerToken !== null) {
+        statusRequest = endOnUnauthorized(startedIn, deps.api.fetchStatus(bearerToken));
+        meRequest = endOnUnauthorized(startedIn, deps.api.fetchMe(bearerToken));
+      }
+    }
+    const [visibility, statusResult, meResult] = await Promise.all([visibilityRequest, statusRequest, meRequest]);
+    if (startedIn !== generation) return;
+
+    let learned = false;
+    if (visibility.ok) {
+      visibleFlag = visibility.visible;
+      learned = true;
+    } else {
+      noteFailure(visibility);
+    }
+
+    if (statusResult !== null && meResult !== null) {
+      if (statusResult.ok) {
+        status = statusResult.value;
+        fetchedAt = isoNow();
+        learned = true;
+      } else {
+        noteFailure(statusResult);
+      }
+      if (meResult.ok) {
+        me = meResult.value;
+        learned = true;
+      } else {
+        noteFailure(meResult);
+      }
+      lastRefreshFailed = !statusResult.ok || !meResult.ok;
+    }
+
+    if (learned) deps.cache.write({ fetchedAt: fetchedAt ?? isoNow(), status, me, visible: visibleFlag });
+    publish();
+  }
+
+  function runFetch(): Promise<void> {
+    if (inFlight !== null && inFlight.generation === generation) return inFlight.promise;
+    const startedIn = generation;
+    const entry: { generation: number; promise: Promise<void> } = {
+      generation: startedIn,
+      promise: Promise.resolve(),
+    };
+    entry.promise = doFetch(startedIn)
+      .catch(() => {
+        deps.log.warn({ scope: 'premium', event: 'status.refresh_failed', status: 'unreachable' });
+      })
+      .finally(() => {
+        if (inFlight === entry) inFlight = null;
+        if (startedIn !== generation) return;
+        lastFinishedAt = deps.now();
+        armTimer();
+      });
+    inFlight = entry;
+    return entry.promise;
+  }
+
+  function fetchNow(): void {
+    if (deps.now() < blockedUntil) {
+      armTimer();
+      return;
+    }
+    void runFetch();
+  }
+
   function completeSignIn(startedIn: number, granted: StoredSession): void {
     if (!attemptIsCurrent(startedIn)) return;
     listener = null;
     remembered = deps.vault.store(granted) === 'persisted';
+    token = granted;
     generation += 1;
     session = 'signed-in';
     lastSignInEnd = null;
     ended = null;
     deps.log.info({ scope: 'premium', event: 'signin.ended', reason: 'completed' });
     publish();
+    fetchNow();
   }
 
   async function awaitCallback(
@@ -164,8 +346,21 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     start() {
       if (!stopped) return;
       stopped = false;
-      if (deps.vault.load() !== null) session = 'signed-in';
+      const stored = deps.vault.load();
+      const cached = deps.cache.read();
+      if (cached !== null) visibleFlag = cached.visible;
+      if (stored !== null) {
+        token = stored;
+        session = 'signed-in';
+        remembered = true;
+        if (cached !== null) {
+          status = cached.status;
+          me = cached.me;
+          fetchedAt = cached.status === null ? null : cached.fetchedAt;
+        }
+      }
       publish();
+      void runFetch();
     },
 
     stop() {
@@ -174,6 +369,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       const open = listener;
       listener = null;
       open?.close();
+      clearTimer();
       if (session === 'signing-in') session = 'signed-out';
     },
 
@@ -185,6 +381,18 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       if (session !== 'signing-in') return false;
       endAttempt(generation, 'cancelled');
       return true;
+    },
+
+    refresh() {
+      if (inFlight !== null && inFlight.generation === generation) {
+        return inFlight.promise.then((): PremiumActionResult => ({ ok: true }));
+      }
+      const now = deps.now();
+      if (now < blockedUntil) return Promise.resolve({ ok: false, reason: 'too-soon' });
+      if (lastFinishedAt !== null && now - lastFinishedAt < PREMIUM_REFRESH_FLOOR_MS) {
+        return Promise.resolve({ ok: false, reason: 'too-soon' });
+      }
+      return runFetch().then((): PremiumActionResult => ({ ok: true }));
     },
   };
 }
