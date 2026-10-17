@@ -60,7 +60,7 @@ function OpenMiniMenuItem() {
  * it. A default `Button` pads 10px across and 6px down, which draws a rectangle wider than tall
  * and leaves a glyph off-centre in it.
  */
-export const SHELL_ICON_BUTTON_CLASS = 'inline-grid size-[30px] place-items-center px-0 py-0';
+export const SHELL_ICON_BUTTON_CLASS = cn('inline-grid', 'size-[30px]', 'place-items-center', 'px-0', 'py-0');
 
 function ShellIconButton({
   icon,
