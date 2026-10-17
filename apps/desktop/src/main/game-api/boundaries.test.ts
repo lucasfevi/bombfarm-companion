@@ -34,6 +34,10 @@ const ONLINE_PLAYERS_TRANSPORT_FILE = join(DESKTOP_MAIN, 'online-players/online-
  *  session token) to the same API host, so it may POST; exempted by file for the host, the socket
  *  and the verb, and asserted below to import nothing from the game API. */
 const PREMIUM_TRANSPORT_FILE = join(DESKTOP_MAIN, 'premium/premium-transport.ts');
+/** The Premium sign-in's one-shot callback listener: the only file that may import `node:http`,
+ *  because it is a server, not a client. Asserted below to bind the loopback address and to make
+ *  no outbound request. */
+const PREMIUM_LISTENER_FILE = join(DESKTOP_MAIN, 'premium/loopback-listener.ts');
 const SESSION_TOKEN_FILE_FILE = join(DESKTOP_MAIN, 'game-api/session-token-file.ts');
 const REQUEST_FILE = join(GAME_API_SRC, 'request.ts');
 /** The one write surface. It may name `POST` and exactly the six write routes below, and nothing
@@ -281,6 +285,8 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
     // which this pattern's static-only shape let straight through with 21/21 tests still green.
     const importPattern =
       /(?:from\s+['"](node:https|node:http|undici|axios)['"]|require\(\s*['"](node:https|node:http|undici|axios)['"]\s*\)|import\(\s*['"](node:https|node:http|undici|axios)['"]\s*\))/;
+    const importPatternWithoutHttp =
+      /(?:from\s+['"](node:https|undici|axios)['"]|require\(\s*['"](node:https|undici|axios)['"]\s*\)|import\(\s*['"](node:https|undici|axios)['"]\s*\))/;
     const fetchPattern = /\bfetch\s*\(/;
     const offenders: string[] = [];
     for (const file of scannedFiles) {
@@ -294,7 +300,8 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
         continue;
       }
       const text = readFileSync(file, 'utf8');
-      if (importPattern.test(text) || fetchPattern.test(text)) {
+      const imports = file === PREMIUM_LISTENER_FILE ? importPatternWithoutHttp : importPattern;
+      if (imports.test(text) || fetchPattern.test(text)) {
         offenders.push(file);
       }
     }
@@ -365,6 +372,37 @@ describe('Guard 2 — the premium transport', () => {
   it('red state demonstrated: the import pattern catches a game-api import', () => {
     expect(gameApiImport.test("import { x } from '../game-api/request.js';")).toBe(true);
     expect(gameApiImport.test("import { x } from '@bombfarm/game-api';")).toBe(true);
+  });
+});
+
+describe('Guard 2 — the premium callback listener', () => {
+  const text = readFileSync(PREMIUM_LISTENER_FILE, 'utf8');
+  const httpImport = /from\s+['"]node:http['"]/;
+  const bindsLoopback = /\.listen\(\s*0\s*,\s*'127\.0\.0\.1'/;
+  const outbound = /\b(?:fetch|request)\s*\(/;
+
+  it('imports node:http and binds the loopback address (sanity — its exemption is not vacuous)', () => {
+    expect(text).toMatch(httpImport);
+    expect(text).toMatch(bindsLoopback);
+  });
+
+  it('makes no outbound request', () => {
+    expect(text).not.toMatch(outbound);
+  });
+
+  it('is the only non-test file in the desktop main tree that imports node:http', () => {
+    const importers = [...walkTsFiles(DESKTOP_MAIN)]
+      .filter((file) => !isTestFile(file))
+      .filter((file) => /(?:from\s+['"]node:http['"]|require\(\s*['"]node:http['"]|import\(\s*['"]node:http['"])/.test(readFileSync(file, 'utf8')));
+    expect(importers).toEqual([PREMIUM_LISTENER_FILE]);
+  });
+
+  it('red state demonstrated: the guards catch a wildcard bind, a localhost bind and an outbound call', () => {
+    expect(bindsLoopback.test("server.listen(0, '0.0.0.0');")).toBe(false);
+    expect(bindsLoopback.test("server.listen(0, 'localhost');")).toBe(false);
+    expect(bindsLoopback.test('server.listen(0);')).toBe(false);
+    expect(outbound.test("http.request({ host: 'example.test' });")).toBe(true);
+    expect(outbound.test("await fetch('x');")).toBe(true);
   });
 });
 
