@@ -146,6 +146,20 @@ describe('secrets stay out of logs and views', () => {
     }
   });
 
+  it('through a sign-out, including one the API never answers', async () => {
+    const h = createHarness({
+      vault: createFakeVault(session(SECRETS.token)),
+      api: (real) => ({ ...real, signOut: () => Promise.reject(new Error(SECRETS.token)) }),
+    });
+    h.service.start();
+    await settle();
+
+    await h.service.signOut();
+
+    expect(h.log.events()).toContain('signout.unreachable');
+    expectClean(h);
+  });
+
   it('logs only literal events under the premium scope', async () => {
     const h = createHarness();
     h.service.start();

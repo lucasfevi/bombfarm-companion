@@ -10,7 +10,8 @@ type EventName =
   | 'callbackDeclined'
   | 'timeout'
   | 'exchangeRefused'
-  | 'unauthorized';
+  | 'unauthorized'
+  | 'signOut';
 
 const STATES: State[] = ['signed-out', 'signing-in', 'signed-in'];
 const EVENTS: EventName[] = [
@@ -21,6 +22,7 @@ const EVENTS: EventName[] = [
   'timeout',
   'exchangeRefused',
   'unauthorized',
+  'signOut',
 ];
 
 /** The only transitions the session may make. Every pair not listed here must leave the session where it is. */
@@ -32,6 +34,8 @@ const TABLE: Partial<Record<`${State}|${EventName}`, State>> = {
   'signing-in|timeout': 'signed-out',
   'signing-in|exchangeRefused': 'signed-out',
   'signed-in|unauthorized': 'signed-out',
+  'signed-in|signOut': 'signed-out',
+  'signing-in|signOut': 'signed-out',
 };
 
 async function arrive(state: State): Promise<Harness> {
@@ -63,6 +67,9 @@ async function apply(h: Harness, event: EventName): Promise<void> {
     case 'exchangeRefused':
       h.stub.on('token', { status: 400 });
       listener?.finish({ kind: 'code', code: SECRETS.code });
+      break;
+    case 'signOut':
+      await h.service.signOut();
       break;
     case 'unauthorized':
       h.stub.on('status', { status: 401 });

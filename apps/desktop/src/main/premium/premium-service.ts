@@ -37,6 +37,7 @@ export interface PremiumService {
   getView(): PremiumView;
   signIn(): Promise<PremiumActionResult>;
   cancelSignIn(): boolean;
+  signOut(): Promise<PremiumView>;
   refresh(reason: 'open' | 'button'): Promise<PremiumActionResult>;
 }
 
@@ -369,6 +370,21 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     return { ok: true };
   }
 
+  async function signOut(): Promise<PremiumView> {
+    if (session === 'signing-in') endAttempt(generation, 'cancelled');
+    const held = token;
+    if (session === 'signed-in' && held !== null) {
+      const sent = deps.api.signOut(held.token);
+      leaveSession({ ended: null });
+      try {
+        await sent;
+      } catch {
+        deps.log.warn({ scope: 'premium', event: 'signout.unreachable' });
+      }
+    }
+    return buildView();
+  }
+
   return {
     start() {
       if (!stopped) return;
@@ -403,6 +419,8 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     getView: buildView,
 
     signIn,
+
+    signOut,
 
     cancelSignIn() {
       if (session !== 'signing-in') return false;
