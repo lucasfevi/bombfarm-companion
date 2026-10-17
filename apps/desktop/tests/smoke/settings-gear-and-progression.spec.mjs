@@ -162,6 +162,40 @@ test.describe('top bar — the Settings gear and the Progression tab', () => {
     await expect(progression).toHaveAttribute('aria-current', 'page');
   });
 
+  test('the Skill Tree page sits below its switch, leaving the tab drawn once and pressable, in both directions twice', async () => {
+    await strip(page).nth(PROGRESSION_TAB_INDEX).click();
+    const skillsTab = pageTab(page, 'skillsNavLabel');
+    const collectionsTab = pageTab(page, 'collectionsNavLabel');
+
+    for (let round = 0; round < 2; round += 1) {
+      await skillsTab.click();
+      await expect(page.getByTestId('skills-view')).toBeVisible({ timeout: 20_000 });
+      await expect(skillsTab).toHaveAttribute('aria-selected', 'true');
+
+      // The page's own panel title is the same words in a different case; it must not share the
+      // tab's box. The screen's top edge is the line it may not cross.
+      const geometry = await page.evaluate(() => {
+        const group = document.querySelector('[data-testid="progression-page"] [role="group"]');
+        const view = document.querySelector('[data-testid="skills-view"]');
+        if (!group || !view) return null;
+        return {
+          tablists: group.querySelectorAll('[role="tablist"]').length,
+          switchBottom: group.getBoundingClientRect().bottom,
+          viewTop: view.getBoundingClientRect().top,
+        };
+      });
+      expect(geometry, 'the switch and the page are both on screen').not.toBeNull();
+      expect(geometry.tablists).toBe(1);
+      expect(geometry.viewTop, 'the Skill Tree page starts under the switch').toBeGreaterThanOrEqual(geometry.switchBottom);
+      await expect(page.getByRole('tab', { name: en('skillsNavLabel'), exact: true })).toHaveCount(1);
+
+      await collectionsTab.click();
+      await expect(page.getByTestId('collections-view')).toBeVisible({ timeout: 20_000 });
+      await expect(page.getByTestId('skills-view')).toHaveCount(0);
+      await expect(collectionsTab).toHaveAttribute('aria-selected', 'true');
+    }
+  });
+
   test('with the actions folded behind the overflow button the gear is still a visible button of its own', async () => {
     await resize(app, page, ACTIONS_COLLAPSED_WINDOW);
 

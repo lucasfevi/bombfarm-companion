@@ -111,4 +111,23 @@ describe('the Skill Tree | Collections switch', () => {
     await press(tabNamed('Skill Tree'));
     expect(onPageChange).toHaveBeenCalledWith('skills');
   });
+
+  it('draws the Skill Tree in a box of its own below the switch, so its absolutely placed screen cannot cover it', async () => {
+    await show('skills');
+    const view = container.querySelector('[data-testid="skills-view"]');
+    const group = container.querySelector('[role="group"]');
+    const body = container.querySelector('[data-testid="progression-body"]');
+    expect(view?.parentElement).toBe(body);
+    expect(body?.classList.contains('relative')).toBe(true);
+    expect(body?.contains(group)).toBe(false);
+    expect(group?.contains(view)).toBe(false);
+  });
+
+  it('keeps exactly one switch, with one Skill Tree tab, on either page', async () => {
+    for (const page of ['skills', 'collections'] as const) {
+      await show(page);
+      expect(container.querySelectorAll('[role="tablist"]')).toHaveLength(1);
+      expect(tabs().filter((tab) => tab.textContent.trim() === 'Skill Tree')).toHaveLength(1);
+    }
+  });
 });

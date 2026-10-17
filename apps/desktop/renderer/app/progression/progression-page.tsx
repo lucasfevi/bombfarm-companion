@@ -35,7 +35,13 @@ export function ProgressionPage({
           </Tabs.List>
         </Tabs.Root>
       </div>
-      {page === 'skills' ? <SkillsView /> : <CollectionsView />}
+      {/* The Skill Tree fills whatever box it sits in with `absolute inset-0`, which it used to
+          get from the shell's own region. Under the switch it would still resolve against that
+          region, cover the switch and draw its panel title across the tab. This box is what it
+          fills now: the room below the switch, and nothing above it. */}
+      <div data-testid="progression-body" className="relative flex min-h-0 flex-1 flex-col">
+        {page === 'skills' ? <SkillsView /> : <CollectionsView />}
+      </div>
     </div>
   );
 }
