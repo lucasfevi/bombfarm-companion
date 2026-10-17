@@ -12,6 +12,7 @@ import {
   readReportBody,
   readSessionTokenBody,
   readSignInRequestBody,
+  signedOutPremiumView,
 } from './premium.js';
 
 const STATUS_BODY = {
@@ -319,4 +320,22 @@ describe('isSteamId64', () => {
       expect(isSteamId64(value)).toBe(false);
     },
   );
+});
+
+describe('signedOutPremiumView', () => {
+  it('is a signed-out view that is remembered, hidden and carries nothing else', () => {
+    expect(signedOutPremiumView).toEqual({
+      session: 'signed-out',
+      rememberedAcrossRestarts: true,
+      lastSignInEnd: null,
+      ended: null,
+      visible: false,
+      me: null,
+      status: null,
+      fetchedAt: null,
+      lastRefreshFailed: false,
+      report: null,
+      reportedAccountId: null,
+    });
+  });
 });
