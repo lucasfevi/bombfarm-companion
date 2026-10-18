@@ -68,6 +68,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
   let session: Session = 'signed-out';
   let generation = 0;
   let stopped = true;
+  let halted = false;
   let token: StoredSession | null = null;
   let remembered = true;
   let lastSignInEnd: PremiumSignInEnd | null = null;
@@ -308,7 +309,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
   }
 
   async function reportAccount(): Promise<void> {
-    if (session !== 'signed-in') return;
+    if (halted || session !== 'signed-in') return;
     const startedIn = generation;
     const identity = deps.readGameIdentity();
     if (identity === null) {
@@ -455,6 +456,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
   }
 
   async function manage(): Promise<PremiumActionResult> {
+    if (halted) return { ok: false, reason: 'unavailable' };
     if (session !== 'signed-in') return { ok: false, reason: 'signed-out' };
     const startedIn = generation;
     const bearerToken = await bearer(startedIn);
@@ -482,6 +484,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     start() {
       if (!stopped) return;
       stopped = false;
+      halted = false;
       const stored = deps.vault.load();
       const cached = deps.cache.read();
       if (cached !== null) visibleFlag = cached.visible;
@@ -502,6 +505,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
 
     stop() {
       stopped = true;
+      halted = true;
       generation += 1;
       const open = listener;
       listener = null;
@@ -525,6 +529,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     },
 
     refresh() {
+      if (halted) return Promise.resolve({ ok: false, reason: 'unavailable' });
       if (inFlight !== null && inFlight.generation === generation) {
         return inFlight.promise.then((): PremiumActionResult => ({ ok: true }));
       }
