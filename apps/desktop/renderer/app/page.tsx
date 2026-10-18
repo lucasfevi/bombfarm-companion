@@ -202,6 +202,9 @@ function HomePageContent({
 }) {
   const t = useCopy();
   const { lang } = useLocale();
+  const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
+  const premiumEnabled = environment?.premiumEnabled === true;
+  const premiumTabShown = usePremiumVisible(premiumEnabled);
   // The caption cluster is subtracted before the bar is judged: it sits at the end of the same
   // row and never shrinks, so the room the tabs and actions are competing for is what is left
   // after it.
@@ -216,15 +219,13 @@ function HomePageContent({
   const openOptimizerTab = useCallback(() => {
     setActiveNavId('optimizer');
   }, [setActiveNavId]);
-  const premiumVisible = usePremiumVisible();
   useEffect(() => {
-    const next = screenWhenPremiumVisibility(activeNavId, premiumVisible);
+    const next = screenWhenPremiumVisibility(activeNavId, premiumTabShown);
     if (next !== activeNavId) setActiveNavId(next);
-  }, [activeNavId, premiumVisible, setActiveNavId]);
+  }, [activeNavId, premiumTabShown, setActiveNavId]);
   const openSettings = useCallback(() => {
     setActiveNavId('settings');
   }, [setActiveNavId]);
-  const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
   const [consent, setConsent] = useState<ConsentRecord | null>(null);
   const [consentForceOpen, setConsentForceOpen] = useState(false);
@@ -345,7 +346,7 @@ function HomePageContent({
   // The Live tab wears the game's state at its corner — the same words the strip's game cell says.
   const liveMark = liveTabMark(status, t);
   const activeStripId = stripIdForScreen(activeNavId);
-  const navItems = navItemsFor(t, { premium: premiumVisible }).map((item) => (item.id === 'live' ? { ...item, mark: liveMark } : item));
+  const navItems = navItemsFor(t, { premium: premiumTabShown }).map((item) => (item.id === 'live' ? { ...item, mark: liveMark } : item));
 
   return (
     <AccountHeroPeekStats>
@@ -467,7 +468,7 @@ function HomePageContent({
                 onUsagePingEnabledChange={onUsagePingEnabledChange}
                 persistWarning={usagePingWarning}
               />
-              <PremiumSection />
+              {premiumEnabled ? <PremiumSection /> : null}
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
               <UpdatesSection
                 status={updateStatus}
@@ -493,7 +494,7 @@ function HomePageContent({
             <PvpView />
           ) : activeNavId === 'skills' || activeNavId === 'collections' ? (
             <ProgressionPage page={activeNavId} onPageChange={setActiveNavId} />
-          ) : activeNavId === 'premium' ? (
+          ) : activeNavId === 'premium' && premiumTabShown ? (
             <PremiumScreen />
           ) : activeNavId === 'account' ? (
             <AccountView

@@ -40,7 +40,22 @@ describe('what mounting a Premium surface asks the main process', () => {
   it('never refreshes when only the tab visibility is read', async () => {
     const { usePremiumVisible } = await import('./use-premium');
 
-    expect(usePremiumVisible()).toBe(signedOutPremiumView.visible);
+    expect(usePremiumVisible(true)).toBe(signedOutPremiumView.visible);
     expect(invoked).not.toContain('premium:refresh');
+  });
+
+  it('reads the status once and subscribes when Premium is on', async () => {
+    const { usePremiumVisible } = await import('./use-premium');
+
+    usePremiumVisible(true);
+
+    expect(invoked).toEqual(['premium:get']);
+  });
+
+  it('invokes no premium channel and reports the tab hidden when Premium is off', async () => {
+    const { usePremiumVisible } = await import('./use-premium');
+
+    expect(usePremiumVisible(false)).toBe(false);
+    expect(invoked).toEqual([]);
   });
 });

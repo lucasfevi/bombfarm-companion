@@ -62,15 +62,19 @@ describe('page.tsx routes every nav item', () => {
   });
 
   it('renders the Premium tab on the Premium item and reads only its visibility in the shell', () => {
-    expect(source).toContain("activeNavId === 'premium' ? (");
+    expect(source).toContain("activeNavId === 'premium' && premiumTabShown ? (");
     expect(source).toContain('<PremiumScreen />');
-    expect(source).toContain('navItemsFor(t, { premium: premiumVisible })');
-    expect(source).toContain('const premiumVisible = usePremiumVisible();');
+    expect(source).toContain('navItemsFor(t, { premium: premiumTabShown })');
+  });
+
+  it('mounts the Premium hooks only once the environment says Premium is on', () => {
+    expect(source).toContain('const premiumEnabled = environment?.premiumEnabled === true;');
+    expect(source).toContain('const premiumTabShown = usePremiumVisible(premiumEnabled);');
   });
 
   it('moves to Settings when the active Premium tab hides', () => {
     expect(source).toMatch(
-      /const next = screenWhenPremiumVisibility\(activeNavId, premiumVisible\);\s*if \(next !== activeNavId\) setActiveNavId\(next\);/,
+      /const next = screenWhenPremiumVisibility\(activeNavId, premiumTabShown\);\s*if \(next !== activeNavId\) setActiveNavId\(next\);/,
     );
   });
 
@@ -84,12 +88,11 @@ describe('page.tsx routes every nav item', () => {
     expect(diagnostics).toBeGreaterThan(premium);
   });
 
-  it('renders the Premium section unconditionally, not behind the tab visibility', () => {
+  it('gates the Premium section by the flavor switch, not by the tab visibility', () => {
     const at = source.indexOf('<PremiumSection />');
-    const before = source.slice(0, at).split('\n').slice(-3).join('\n');
     const line = source.slice(source.lastIndexOf('\n', at) + 1, source.indexOf('\n', at));
 
-    expect(line.trim()).toBe('<PremiumSection />');
-    expect(before).not.toMatch(/premiumVisible|&&|\?\s*$/);
+    expect(line.trim()).toBe('{premiumEnabled ? <PremiumSection /> : null}');
+    expect(line).not.toContain('premiumTabShown');
   });
 });
