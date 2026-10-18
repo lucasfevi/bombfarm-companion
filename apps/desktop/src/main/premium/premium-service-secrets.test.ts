@@ -220,6 +220,22 @@ describe('secrets stay out of logs and views', () => {
     expect(JSON.stringify({ ...view, reportedAccountId: null })).not.toContain(SECRETS.accountId);
   });
 
+  it('through Manage Premium, opened or refused, for the hand-off URL', async () => {
+    const h = createHarness({ vault: createFakeVault(session(SECRETS.token)) });
+    h.service.start();
+    await settle();
+
+    await h.service.manage();
+    h.stub.on('handOff', { status: 200, body: { url: 'http://manage.invalid/enter/handoff-fixture-84fd19', expiresAt: 'x' } });
+    await h.service.manage();
+    h.stub.on('handOff', { status: 401 });
+    await h.service.manage();
+
+    expect(h.opened).toEqual([SECRETS.handOffUrl]);
+    expect(h.log.events()).toContain('handoff.failed');
+    expectClean(h);
+  });
+
   it('logs only literal events under the premium scope', async () => {
     const h = createHarness();
     h.service.start();

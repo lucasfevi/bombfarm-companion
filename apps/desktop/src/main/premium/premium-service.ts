@@ -47,6 +47,7 @@ export interface PremiumService {
   cancelSignIn(): boolean;
   signOut(): Promise<PremiumView>;
   refresh(reason: 'open' | 'button'): Promise<PremiumActionResult>;
+  manage(): Promise<PremiumActionResult>;
   noteAccountChanged(): void;
 }
 
@@ -453,6 +454,30 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     return buildView();
   }
 
+  async function manage(): Promise<PremiumActionResult> {
+    if (session !== 'signed-in') return { ok: false, reason: 'signed-out' };
+    const startedIn = generation;
+    const bearerToken = await bearer(startedIn);
+    if (bearerToken === null) return { ok: false, reason: 'signed-out' };
+    const handOff = await deps.api.requestHandOff(bearerToken);
+    if (!stillSignedIn(startedIn)) return { ok: false, reason: 'signed-out' };
+    if (!handOff.ok && handOff.reason === 'unauthorized') {
+      handleUnauthorized(startedIn);
+      return { ok: false, reason: 'signed-out' };
+    }
+    if (!handOff.ok || !isHttps(handOff.url)) {
+      deps.log.warn({ scope: 'premium', event: 'handoff.failed', reason: handOff.ok ? 'bad-response' : handOff.reason });
+      return { ok: false, reason: 'failed' };
+    }
+    try {
+      await deps.openExternal(handOff.url);
+    } catch {
+      deps.log.warn({ scope: 'premium', event: 'handoff.failed', reason: 'browser-unavailable' });
+      return { ok: false, reason: 'failed' };
+    }
+    return { ok: true };
+  }
+
   return {
     start() {
       if (!stopped) return;
@@ -490,6 +515,8 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     signIn,
 
     signOut,
+
+    manage,
 
     cancelSignIn() {
       if (session !== 'signing-in') return false;
