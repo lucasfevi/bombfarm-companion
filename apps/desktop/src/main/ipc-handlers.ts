@@ -10,6 +10,7 @@ import {
   EMPTY_FORGE_HISTORY,
   EMPTY_PVP_HISTORY,
   emptyMarketSnapshotView,
+  emptyGamePingView,
   emptyOnlinePlayersView,
   initialUpdateStatus,
   isIpcChannel,
@@ -40,6 +41,7 @@ import {
   type MarketQuoteResult,
   type MarketQuoteTarget,
   type MarketSnapshotView,
+  type GamePingView,
   type OnlinePlayersView,
   type MiniLiveLayoutView,
   type PvpFilmView,
@@ -77,6 +79,10 @@ export interface UpdateServicePort {
   check(): Promise<UpdateStatus>;
   download(): Promise<UpdateStatus>;
   installOnRestart(): UpdateStatus;
+}
+
+export interface GamePingServicePort {
+  getView(): GamePingView;
 }
 
 export interface OnlinePlayersServicePort {
@@ -177,6 +183,7 @@ export interface IpcHandlerDeps<Image extends ClipboardImageLike = ClipboardImag
   getUpdateService: () => UpdateServicePort | null;
   getMarketService: () => MarketServicePort | null;
   getOnlinePlayersService: () => OnlinePlayersServicePort | null;
+  getGamePingService: () => GamePingServicePort | null;
   getForgeService: () => ForgeServicePort | null;
   getForgeHistory: () => ForgeHistoryPort | null;
   getForgeInjector: () => InjectorPort | null;
@@ -357,6 +364,7 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.getUpdateService()?.installOnRestart() ?? preServiceUpdateStatus(),
     'market:getSnapshot': () => deps.getMarketService()?.getView() ?? emptyMarketSnapshotView(),
     'onlinePlayers:get': () => deps.getOnlinePlayersService()?.getView() ?? emptyOnlinePlayersView,
+    'gamePing:get': () => deps.getGamePingService()?.getView() ?? emptyGamePingView,
     'market:refreshItem': refreshMarketItem,
     'market:check': checkMarketNow,
     'forge:start': (request: ForgeStartRequest): ForgeStartResult =>

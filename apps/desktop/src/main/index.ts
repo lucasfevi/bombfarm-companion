@@ -82,6 +82,9 @@ import {
 import { marketCachePath } from './market/market-cache.js';
 import { createMarketService, type MarketService } from './market/market-service.js';
 import { marketHttpGet } from './market/market-transport.js';
+import { offlineGamePingProbe } from './game-ping/game-ping-offline.js';
+import { createGamePingService, type GamePingService } from './game-ping/game-ping-service.js';
+import { gamePingProbe } from './game-ping/game-ping-transport.js';
 import { offlineOnlinePlayersGet } from './online-players/online-players-offline.js';
 import { createOnlinePlayersService, type OnlinePlayersService } from './online-players/online-players-service.js';
 import { onlinePlayersHttpGet } from './online-players/online-players-transport.js';
@@ -144,6 +147,7 @@ let liveFastPublisher: LiveFastPublisher | null = null;
 let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
 let onlinePlayersService: OnlinePlayersService | null = null;
+let gamePingService: GamePingService | null = null;
 let forgeService: ForgeService | null = null;
 let forgeHistory: ForgeHistory | null = null;
 let applyService: ApplyService | null = null;
@@ -339,6 +343,7 @@ function registerIpcHandlers(): void {
       getUpdateService: () => updateService,
       getMarketService: () => marketService,
       getOnlinePlayersService: () => onlinePlayersService,
+      getGamePingService: () => gamePingService,
       getForgeService: () => forgeService,
       getForgeHistory: () => forgeHistory,
       getForgeInjector: () => forgeInjector,
@@ -1135,6 +1140,14 @@ async function bootstrap(): Promise<void> {
     },
   });
 
+  gamePingService = createGamePingService({
+    ping: currentAccountSource() === 'fixture' ? offlineGamePingProbe : gamePingProbe,
+    log,
+    onChanged: (view) => {
+      emitEvent('gamePing:changed', view);
+    },
+  });
+
   registerIpcHandlers();
   registerRendererProtocol(path.join(__dirname, '../../renderer/out'));
   await createMainWindow();
@@ -1172,6 +1185,7 @@ async function bootstrap(): Promise<void> {
   marketService.start();
   log.info({ scope: 'main', event: 'market.started' });
   onlinePlayersService.start();
+  gamePingService.start();
 }
 
 function resolveBootEnv(): AppEnv {
@@ -1284,6 +1298,10 @@ if (!gotLock) {
         stopOnlinePlayersService: () => {
           onlinePlayersService?.stop();
           onlinePlayersService = null;
+        },
+        stopGamePingService: () => {
+          gamePingService?.stop();
+          gamePingService = null;
         },
         releaseForgeService: () => {
           forgeService = null;

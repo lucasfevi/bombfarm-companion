@@ -22,6 +22,10 @@ export const ptBR: Copy = {
   gameFeedStaleTip: 'O jogo está aberto, mas nada chega dele há {age}',
   gameFeedStaleNoAgeTip: 'O jogo está aberto, mas nada está chegando dele',
   gameFeedNotRunningTip: 'Nenhum processo do jogo encontrado — o app continua procurando sozinho',
+  // gamePing* — o tempo de ida e volta até o servidor do jogo, ao lado da conexão com o jogo.
+  gamePingLabel: 'Ping',
+  gamePingTip: 'Tempo de ida e volta deste computador até o servidor do jogo. Números altos ou instáveis indicam que a sua rede é o elo fraco.',
+  gamePingUnreachableTip: 'O servidor do jogo não respondeu a uma tentativa de conexão.',
   // onlinePlayers* — a contagem ao lado da conexão com o jogo, na ponta esquerda da barra de status.
   onlinePlayersLabel: 'Jogadores',
   onlinePlayersTip: 'Jogadores online no jogo agora, como o servidor conta. Atualiza a cada poucos minutos.',
