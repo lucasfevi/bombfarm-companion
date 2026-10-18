@@ -87,10 +87,11 @@ export function forgeQueueReducer(state: ForgeQueueState, action: ForgeQueueActi
       };
     }
     case 'addMany':
-      return action.pieces.reduce(
-        (folded, piece) => forgeQueueReducer(folded, { kind: 'add', itemId: piece.itemId, target: piece.target }),
-        state,
-      );
+      return action.pieces.reduce((folded, piece) => {
+        const existing = folded.pieces.find((queued) => queued.itemId === piece.itemId);
+        if (existing !== undefined && existing.target > piece.target) return folded;
+        return forgeQueueReducer(folded, { kind: 'add', itemId: piece.itemId, target: piece.target });
+      }, state);
     case 'remove': {
       if (state.active?.itemId === action.itemId) return state;
       const pieces = without(state.pieces, action.itemId);
