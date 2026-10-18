@@ -83,4 +83,13 @@ describe('page.tsx routes every nav item', () => {
     expect(premium).toBeGreaterThan(usage);
     expect(diagnostics).toBeGreaterThan(premium);
   });
+
+  it('renders the Premium section unconditionally, not behind the tab visibility', () => {
+    const at = source.indexOf('<PremiumSection />');
+    const before = source.slice(0, at).split('\n').slice(-3).join('\n');
+    const line = source.slice(source.lastIndexOf('\n', at) + 1, source.indexOf('\n', at));
+
+    expect(line.trim()).toBe('<PremiumSection />');
+    expect(before).not.toMatch(/premiumVisible|&&|\?\s*$/);
+  });
 });

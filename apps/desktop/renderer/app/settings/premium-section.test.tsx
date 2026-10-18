@@ -137,6 +137,13 @@ describe('the Premium section of Settings', () => {
     ).not.toContain(en.settingsPremiumGameAccountLabel);
   });
 
+  it('leaves the game account line out rather than print an empty id when the linked account id is unknown', () => {
+    const html = text(render({ ...signedIn, report: { kind: 'linked' }, reportedAccountId: null }));
+
+    expect(html).not.toContain(en.settingsPremiumGameAccountLabel);
+    expect(html).not.toContain('is linked');
+  });
+
   it('speaks Portuguese under the Portuguese locale and leaks no English', () => {
     const html = text(render({ ...signedIn, report: { kind: 'linked' }, reportedAccountId: '4242' }, 'pt-BR'));
 

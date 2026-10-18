@@ -190,6 +190,12 @@ describe('how the main bootstrap drives the premium service', () => {
     expect(source).toMatch(/premium = createElectronPremium\([\s\S]*?\n\s*premium\.start\(\);/);
   });
 
+  it('keeps the service off the network when the account source is the offline fixture', () => {
+    const call = /createElectronPremium\(\{([\s\S]*?)\n {2}\}\);/.exec(source)?.[1] ?? '';
+
+    expect(call).toContain("offline: currentAccountSource() === 'fixture'");
+  });
+
   it('tells the service about an account change beside the account:changed event', () => {
     const notifier = /createAccountNotifier\(\{[\s\S]*?emit: \(view\) => \{([\s\S]*?)\n\s*\},/.exec(source)?.[1] ?? '';
 

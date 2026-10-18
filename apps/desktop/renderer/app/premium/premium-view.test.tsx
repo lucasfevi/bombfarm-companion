@@ -211,6 +211,14 @@ describe('the Premium tab when signed in', () => {
   });
 });
 
+describe('the unreachable banner in Portuguese', () => {
+  it('reads as a sentence once the age is filled in', () => {
+    const html = text(render(signedIn({}, { lastRefreshFailed: true }), 'pt-BR'));
+
+    expect(html).toContain('Mostrando o último status, atualizado há 5m.');
+  });
+});
+
 describe('what the Premium tab never says', () => {
   const states: [string, PremiumView][] = [
     ['signed out', { ...signedOutPremiumView, visible: true }],

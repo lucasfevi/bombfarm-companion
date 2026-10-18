@@ -9,8 +9,8 @@ const METHOD_COPY_KEY = {
   steam: 'settingsPremiumMethodSteam',
 } as const satisfies Record<PremiumSignInMethod, keyof Copy>;
 
-function reportSentence(t: Copy, report: PremiumReportOutcome, accountId: string | null): string {
-  if (report.kind === 'linked') return sub(t.settingsPremiumReportLinked, { id: accountId ?? '' });
+function reportSentence(t: Copy, report: PremiumReportOutcome, accountId: string | null): string | null {
+  if (report.kind === 'linked') return accountId === null ? null : sub(t.settingsPremiumReportLinked, { id: accountId });
   if (report.kind === 'not-sent') return t.settingsPremiumReportNotReadable;
   if (report.kind === 'refused') {
     if (report.reason === 'steam_mismatch') return t.settingsPremiumReportSteamMismatch;
@@ -41,6 +41,10 @@ export function PremiumSectionView({
 }) {
   const t = useCopy();
   const message = messageFor(t, view);
+  const reportLine =
+    view.session === 'signed-in' && view.report !== null
+      ? reportSentence(t, view.report, view.reportedAccountId)
+      : null;
   const methods = (view.me?.methods ?? []).map((method) => t[METHOD_COPY_KEY[method]]);
 
   return (
@@ -75,12 +79,7 @@ export function PremiumSectionView({
       >
         {message}
       </Banner>
-      {view.session === 'signed-in' && view.report !== null ? (
-        <SettingsRow
-          label={t.settingsPremiumGameAccountLabel}
-          help={reportSentence(t, view.report, view.reportedAccountId)}
-        />
-      ) : null}
+      {reportLine === null ? null : <SettingsRow label={t.settingsPremiumGameAccountLabel} help={reportLine} />}
     </SettingsSection>
   );
 }
