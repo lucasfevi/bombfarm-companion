@@ -191,6 +191,7 @@ describe('contracts IPC surface', () => {
       isPackaged: false,
       version: '0.0.0',
       accountSource: 'fixture',
+      premiumEnabled: true,
     };
     expect(info).toEqual({
       flavor: 'dev',
@@ -200,6 +201,7 @@ describe('contracts IPC surface', () => {
       isPackaged: false,
       version: '0.0.0',
       accountSource: 'fixture',
+      premiumEnabled: true,
     });
   });
 
@@ -213,6 +215,7 @@ describe('contracts IPC surface', () => {
       isPackaged: true,
       version: '1.2.3',
       accountSource: 'server',
+      premiumEnabled: false,
     };
     expect(info).toEqual({
       flavor: 'prod',
@@ -222,6 +225,7 @@ describe('contracts IPC surface', () => {
       isPackaged: true,
       version: '1.2.3',
       accountSource: 'server',
+      premiumEnabled: false,
     });
   });
 
@@ -235,6 +239,7 @@ describe('contracts IPC surface', () => {
       isPackaged: true,
       version: '0.0.0',
       accountSource: 'server',
+      premiumEnabled: false,
     };
     expect(env.version).toMatch(/^\d+\.\d+\.\d+/);
   });

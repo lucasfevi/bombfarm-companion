@@ -328,6 +328,7 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
         isPackaged: env.isPackaged,
         version: deps.appVersion(),
         accountSource: deps.accountSource(),
+        premiumEnabled: env.descriptor.premium,
       };
     },
     'app:ping': () => ({ ok: true as const, from: 'main' as const }),

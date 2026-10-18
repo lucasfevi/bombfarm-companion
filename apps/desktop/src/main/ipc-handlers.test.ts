@@ -342,9 +342,15 @@ describe('the environment a renderer is told about', () => {
       isPackaged: true,
       version: '1.2.3',
       accountSource: 'server',
+      premiumEnabled: false,
     });
     expect(f.spies.appVersion).toHaveBeenCalledTimes(1);
     expect(f.spies.accountSource).toHaveBeenCalledTimes(1);
+  });
+
+  it('tells the renderer Premium is on for the dev flavor and off for beta', async () => {
+    expect((await wired(DEV_ENV).handlers['app:getEnvironment']()).premiumEnabled).toBe(true);
+    expect((await wired(BETA_ENV).handlers['app:getEnvironment']()).premiumEnabled).toBe(false);
   });
 
   it('answers a ping from main itself, so the bridge can be proved end to end', () => {

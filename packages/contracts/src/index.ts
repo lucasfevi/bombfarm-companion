@@ -524,6 +524,7 @@ export interface AppEnvironmentInfo {
   isPackaged: boolean;
   version: string;
   accountSource: AccountSource;
+  premiumEnabled: boolean;
 }
 
 export interface IpcChannels {

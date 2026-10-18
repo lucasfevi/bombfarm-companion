@@ -25,7 +25,7 @@ function chooseHttp(offline: boolean, originOverride: string | null): PremiumHtt
   return offline ? offlinePremiumHttp : createPremiumHttp(PREMIUM_API_ORIGIN);
 }
 
-export function createElectronPremium(deps: {
+export interface ElectronPremiumDeps {
   readonly db: SqliteDb | null;
   readonly originOverride: string | null;
   readonly offline: boolean;
@@ -33,7 +33,13 @@ export function createElectronPremium(deps: {
   readonly locale: () => AppLocale;
   readonly log: LogPort;
   readonly onChanged: (view: PremiumView) => void;
-}): PremiumService {
+}
+
+export function createPremiumWhenEnabled(enabled: boolean, deps: ElectronPremiumDeps): PremiumService | null {
+  return enabled ? createElectronPremium(deps) : null;
+}
+
+export function createElectronPremium(deps: ElectronPremiumDeps): PremiumService {
   return createPremiumService({
     api: createPremiumApi(chooseHttp(deps.offline, deps.originOverride)),
     vault: createTokenVault(deps.db, createSafeStorageBox()),

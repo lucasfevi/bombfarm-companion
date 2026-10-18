@@ -187,13 +187,17 @@ describe('how the main bootstrap drives the premium service', () => {
   const source = readFileSync(resolve(__dirname, 'index.ts'), 'utf8');
 
   it('starts the service once bootstrap has built it', () => {
-    expect(source).toMatch(/premium = createElectronPremium\([\s\S]*?\n\s*premium\.start\(\);/);
+    expect(source).toMatch(/premium = createPremiumWhenEnabled\(env\.descriptor\.premium, \{[\s\S]*?\n\s*premium\?\.start\(\);/);
   });
 
   it('keeps the service off the network when the account source is the offline fixture', () => {
-    const call = /createElectronPremium\(\{([\s\S]*?)\n {2}\}\);/.exec(source)?.[1] ?? '';
+    const call = /createPremiumWhenEnabled\(env\.descriptor\.premium, \{([\s\S]*?)\n {2}\}\);/.exec(source)?.[1] ?? '';
 
     expect(call).toContain("offline: currentAccountSource() === 'fixture'");
+  });
+
+  it('builds the service only where the flavor turns Premium on', () => {
+    expect(source).not.toContain('createElectronPremium');
   });
 
   it('tells the service about an account change beside the account:changed event', () => {

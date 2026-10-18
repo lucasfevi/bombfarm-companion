@@ -86,7 +86,7 @@ import { marketHttpGet } from './market/market-transport.js';
 import { offlineOnlinePlayersGet } from './online-players/online-players-offline.js';
 import { createOnlinePlayersService, type OnlinePlayersService } from './online-players/online-players-service.js';
 import { onlinePlayersHttpGet } from './online-players/online-players-transport.js';
-import { createElectronPremium, type PremiumService } from './premium/index.js';
+import { createPremiumWhenEnabled, type PremiumService } from './premium/index.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 import {
@@ -1140,7 +1140,7 @@ async function bootstrap(): Promise<void> {
     },
   });
 
-  premium = createElectronPremium({
+  premium = createPremiumWhenEnabled(env.descriptor.premium, {
     db: accountOpen.db,
     originOverride: resolveAppEnv().premiumApiOriginOverride,
     offline: currentAccountSource() === 'fixture',
@@ -1193,7 +1193,7 @@ async function bootstrap(): Promise<void> {
   marketService.start();
   log.info({ scope: 'main', event: 'market.started' });
   onlinePlayersService.start();
-  premium.start();
+  premium?.start();
 }
 
 function resolveBootEnv(): AppEnv {
