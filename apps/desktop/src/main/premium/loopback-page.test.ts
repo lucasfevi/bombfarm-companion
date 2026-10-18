@@ -22,4 +22,15 @@ describe('the sign-in finished page', () => {
     expect(LOOPBACK_PAGE).toMatch(/<meta charset="utf-8">/);
     expect(LOOPBACK_PAGE).toMatch(/<style>/);
   });
+
+  it('titles the tab and marks the Portuguese block', () => {
+    expect(LOOPBACK_PAGE).toContain('<title>Signed in — Bomb Farm Companion</title>');
+    expect(LOOPBACK_PAGE).toContain('<html lang="en">');
+    expect(LOOPBACK_PAGE).toContain('lang="pt-BR"');
+  });
+
+  it('shows the final step of the approval flow with an inline check icon', () => {
+    expect(LOOPBACK_PAGE).toContain('Back to the app · De volta ao app');
+    expect(LOOPBACK_PAGE).toContain('<svg');
+  });
 });
