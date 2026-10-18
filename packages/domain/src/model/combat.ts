@@ -1,7 +1,8 @@
 import { BASE_BLAST_RANGE, EXTRA_RANGE_FRAC } from '../phase-wiki';
 import { cycleSecondsForHero } from './cadence';
+import { FUSE_FLOOR } from './plant-cycle';
 
-export { BASE_BLAST_RANGE };
+export { BASE_BLAST_RANGE, FUSE_FLOOR };
 import { POINT_GAIN, STAT_CAPS } from './rarity-constants';
 import type { Context, HeroSheet } from './types';
 
@@ -9,8 +10,6 @@ import type { Context, HeroSheet } from './types';
 export const GRID_SPEED_COEF = 0.0386;
 /** `eficiência_IA = 0.9` — wiki Combate AI-efficiency factor. */
 export const EFF_IA = 0.9;
-
-export const FUSE_FLOOR = 0.4; // "piso de 20% do ciclo" — 20% of the 2s base (CDR teto 80%)
 
 export function fuseSeconds(cdrPct: number): number {
   const cdr = clampCdrPct(cdrPct);

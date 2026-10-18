@@ -109,8 +109,12 @@ export {
   HOP_SPEED_PIVOT,
   REPLANT_HOP_CELLS,
   REPLANT_SHARE,
+  FUSE_HOP_KNEE_SEC,
+  FUSE_HOP_FLOOR_FACTOR,
   freeHopCells,
+  fuseHopFactor,
   hopSpeedFactor,
+  walkCycleOverheadSeconds,
   plantCycleSeconds,
   meanPlantCycleSeconds,
 } from './plant-cycle';
