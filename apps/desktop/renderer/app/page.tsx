@@ -208,7 +208,7 @@ function HomePageContent({
   // The caption cluster is subtracted before the bar is judged: it sits at the end of the same
   // row and never shrinks, so the room the tabs and actions are competing for is what is left
   // after it.
-  const density = useShellDensity(WINDOW_CONTROLS_WIDTH);
+  const density = useShellDensity(WINDOW_CONTROLS_WIDTH, premiumTabShown);
   const mainRef = useRef<HTMLElement | null>(null);
   const [activeNavId, setActiveNavId] = useTabScrollMemory(DEFAULT_NAV_ID, mainRef);
   useEffect(() => {

@@ -21,19 +21,19 @@ const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-ful
  *  (1319) — outside the range a font-rendering pass moves. */
 const FULL_WINDOW = 1600;
 /** Inside the band where the tabs are glyphs and everything else is untouched. 1060px of bar sits
- *  82px above `SHELL_BRAND_MARK_WIDTH` (978) and 259px below `SHELL_ICON_TABS_WIDTH` (1319) —
+ *  82px above `SHELL_PREMIUM_TAB_WIDTHS.brandMark` (978) and 259px below `SHELL_PREMIUM_TAB_WIDTHS.iconTabs` (1319) —
  *  comfortably inside the icon-tabs band on both sides. */
 const ICON_TABS_WINDOW = 1160;
 /** Inside the band where the brand has shrunk to its mark but the actions are still spelled out.
- *  880px of bar sits 27px above `SHELL_ACTIONS_COLLAPSE_WIDTH` (853) and 98px below
- *  `SHELL_BRAND_MARK_WIDTH` (978). */
+ *  880px of bar sits 27px above `SHELL_PREMIUM_TAB_WIDTHS.actionsCollapse` (853) and 98px below
+ *  `SHELL_PREMIUM_TAB_WIDTHS.brandMark` (978). */
 const BRAND_MARK_WINDOW = 980;
 /** `createMainWindow`'s own `minWidth` — the narrowest window a player can drag to. 860px of bar
- *  (960 minus the caption strip) sits 7px over `SHELL_ACTIONS_COLLAPSE_WIDTH` (853), so the
+ *  (960 minus the caption strip) sits 7px over `SHELL_PREMIUM_TAB_WIDTHS.actionsCollapse` (853), so the
  *  smallest real window is still in the brand-mark stage with every action in the bar. */
 const MIN_WINDOW = 960;
 /** In the "actions collapsed behind the overflow" stage: 760px of bar sits 93px under
- *  `SHELL_ACTIONS_COLLAPSE_WIDTH` (853). Below the real minimum, so reachable only by lifting it
+ *  `SHELL_PREMIUM_TAB_WIDTHS.actionsCollapse` (853). Below the real minimum, so reachable only by lifting it
  *  as `resize` does. */
 const ACTIONS_COLLAPSED_WINDOW = 860;
 /** Narrower still, reachable only by lifting the minimum as `resize` does. The glyph strip, the

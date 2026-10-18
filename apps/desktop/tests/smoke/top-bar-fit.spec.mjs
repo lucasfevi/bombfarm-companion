@@ -32,8 +32,8 @@ function pt(key) {
   return match[1];
 }
 
-async function launchApp() {
-  const premiumStub = await startPremiumVisibleStub();
+async function launchApp({ premiumVisible = true } = {}) {
+  const premiumStub = await startPremiumVisibleStub({ visible: premiumVisible });
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-top-bar-fit-'));
   const app = await electron.launch({
     executablePath: path.join(
@@ -63,7 +63,7 @@ async function launchApp() {
   await expect(consentModal).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('consent-accept').click();
   await expect(consentModal).toBeHidden({ timeout: 15_000 });
-  await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(10, { timeout: 30_000 });
+  await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(premiumVisible ? 10 : 9, { timeout: 30_000 });
 
   await switchLanguage(page, 'pt');
   await expect(page.locator('nav[aria-label="Main"] button').first()).toHaveText('Ao vivo');
@@ -171,6 +171,33 @@ test.describe('top bar — room for the tabs the bar is about to get', () => {
     expect(m.content + MARGIN, 'brand + strip + actions + gaps + margin past the content cap').toBeLessThanOrEqual(
       CONTENT_CAP,
     );
+  });
+});
+
+test.describe('top bar — the bar without the Premium tab', () => {
+  let app;
+  let page;
+  let premiumStub;
+
+  test.beforeAll(async () => {
+    ({ app, page, premiumStub } = await launchApp({ premiumVisible: false }));
+  });
+
+  test.afterAll(async () => {
+    await app?.close();
+    await premiumStub?.close();
+  });
+
+  test('measures the content the released thresholds were derived from', async () => {
+    await resize(app, page, WIDE_WINDOW);
+    const m = await measureBar(page);
+    report('worded, without the Premium tab', m);
+
+    expect(m.content).toBeGreaterThan(1196);
+    expect(m.content).toBeLessThan(1200);
+    expect(m.overlap.brandNav, 'the tabs ran into the brand').toBeGreaterThanOrEqual(0);
+    expect(m.overlap.navActions, 'the actions ran into the tabs').toBeGreaterThanOrEqual(m.navToActionsGap - 0.5);
+    await expect(page.locator('nav[aria-label="Main"] button').filter({ hasText: 'Premium' })).toHaveCount(0);
   });
 });
 
