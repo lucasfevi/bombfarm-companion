@@ -1143,6 +1143,7 @@ async function bootstrap(): Promise<void> {
   premium = createElectronPremium({
     db: accountOpen.db,
     originOverride: resolveAppEnv().premiumApiOriginOverride,
+    offline: currentAccountSource() === 'fixture',
     readGameIdentity: createGrantedGameIdentityReader({
       readConsent: () => consentStore?.read() ?? initialConsent(),
       readIdentity: (consent) =>

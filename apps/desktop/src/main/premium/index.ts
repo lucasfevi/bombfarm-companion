@@ -5,8 +5,9 @@ import { startLoopbackListener } from './loopback-listener.js';
 import { createPkce, createState } from './pkce.js';
 import { createPremiumApi } from './premium-api.js';
 import { createPremiumCache } from './premium-cache.js';
+import { offlinePremiumHttp } from './premium-offline.js';
 import { createPremiumService, type GameIdentity, type PremiumService } from './premium-service.js';
-import { PREMIUM_API_ORIGIN, createPremiumHttp } from './premium-transport.js';
+import { PREMIUM_API_ORIGIN, createPremiumHttp, type PremiumHttp } from './premium-transport.js';
 import { createTokenVault, type SecretBox } from './token-vault.js';
 
 export type { PremiumService } from './premium-service.js';
@@ -19,15 +20,21 @@ export function createSafeStorageBox(): SecretBox {
   };
 }
 
+function chooseHttp(offline: boolean, originOverride: string | null): PremiumHttp {
+  if (originOverride !== null) return createPremiumHttp(originOverride);
+  return offline ? offlinePremiumHttp : createPremiumHttp(PREMIUM_API_ORIGIN);
+}
+
 export function createElectronPremium(deps: {
   readonly db: SqliteDb | null;
   readonly originOverride: string | null;
+  readonly offline: boolean;
   readonly readGameIdentity: () => GameIdentity | null;
   readonly log: LogPort;
   readonly onChanged: (view: PremiumView) => void;
 }): PremiumService {
   return createPremiumService({
-    api: createPremiumApi(createPremiumHttp(deps.originOverride ?? PREMIUM_API_ORIGIN)),
+    api: createPremiumApi(chooseHttp(deps.offline, deps.originOverride)),
     vault: createTokenVault(deps.db, createSafeStorageBox()),
     cache: createPremiumCache(deps.db),
     openExternal: (url) => shell.openExternal(url),

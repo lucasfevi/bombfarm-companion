@@ -182,3 +182,18 @@ describe('the step bodies the quit handler binds to the names the order is asser
     expect(unbound).toEqual([]);
   });
 });
+
+describe('how the main bootstrap drives the premium service', () => {
+  const source = readFileSync(resolve(__dirname, 'index.ts'), 'utf8');
+
+  it('starts the service once bootstrap has built it', () => {
+    expect(source).toMatch(/premium = createElectronPremium\([\s\S]*?\n\s*premium\.start\(\);/);
+  });
+
+  it('tells the service about an account change beside the account:changed event', () => {
+    const notifier = /createAccountNotifier\(\{[\s\S]*?emit: \(view\) => \{([\s\S]*?)\n\s*\},/.exec(source)?.[1] ?? '';
+
+    expect(notifier).toContain("emitEvent('account:changed', view)");
+    expect(notifier).toContain('premium?.noteAccountChanged()');
+  });
+});

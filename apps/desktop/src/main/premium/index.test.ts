@@ -33,7 +33,7 @@ function requestedUrls(): string[] {
   return electron.fetch.mock.calls.map((call) => String(call[0]));
 }
 
-function build(originOverride: string | null) {
+function build(originOverride: string | null, offline = false) {
   const records: Record<string, unknown>[] = [];
   const views: PremiumView[] = [];
   const keep = (record: Record<string, unknown>): void => {
@@ -42,6 +42,7 @@ function build(originOverride: string | null) {
   const service = createElectronPremium({
     db: null,
     originOverride,
+    offline,
     readGameIdentity: () => null,
     log: { info: keep, warn: keep, error: keep },
     onChanged: (view) => {
@@ -85,6 +86,35 @@ describe('which origin the service talks to', () => {
     service.stop();
 
     expect(requestedUrls()).toEqual(['http://127.0.0.1:4555/v1/premium/visibility']);
+  });
+});
+
+describe('which origin the service talks to in offline mode', () => {
+  it('stays off the network and ends sign-in as unreachable when no override is given', async () => {
+    const { service } = build(null, true);
+
+    service.start();
+    await settle();
+
+    expect(service.getView().visible).toBe(false);
+    expect(await service.signIn()).toEqual({ ok: false, reason: 'failed' });
+    service.stop();
+
+    expect(electron.fetch).not.toHaveBeenCalled();
+    expect(electron.openExternal).not.toHaveBeenCalled();
+    expect(service.getView().lastSignInEnd).toBe('unreachable');
+  });
+
+  it('lets the override win', async () => {
+    electron.fetch.mockResolvedValue(json(200, { visible: true }));
+    const { service } = build('http://127.0.0.1:4555', true);
+
+    service.start();
+    await settle();
+    service.stop();
+
+    expect(requestedUrls()).toEqual(['http://127.0.0.1:4555/v1/premium/visibility']);
+    expect(service.getView().visible).toBe(true);
   });
 });
 

@@ -43,7 +43,7 @@ export function buildAppEnv(deps: {
   userDataOverride?: string | undefined;
   rendererUrlOverride?: string | undefined;
   /** Where the Premium API calls go instead of the real host, honoured only when
-   * `isPackaged === false` and only for `http://127.0.0.1:<port>` with no path — a packaged
+   * `isPackaged === false` and only for `http://127.0.0.1:<port>` with no path - a packaged
    * build must never be pointable at another host, since it sends the sign-in token there. */
   premiumApiOriginOverride?: string | undefined;
 }): AppEnv {
