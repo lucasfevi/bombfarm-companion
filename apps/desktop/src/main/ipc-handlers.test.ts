@@ -57,6 +57,7 @@ const BETA_ENV: AppEnv = {
   appId: 'net.bombfarm.companion.beta',
   productName: 'Bomb Farm Companion (Beta)',
   userDataPath: '/user-data/beta',
+  premiumApiOriginOverride: null,
   envConflict: null,
 };
 
@@ -68,6 +69,7 @@ const DEV_ENV: AppEnv = {
   appId: 'net.bombfarm.companion.dev',
   productName: 'Bomb Farm Companion (Dev)',
   userDataPath: '/user-data/dev',
+  premiumApiOriginOverride: null,
   envConflict: null,
 };
 
