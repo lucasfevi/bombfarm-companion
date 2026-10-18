@@ -9,6 +9,7 @@ import type { ScopeState } from './hero-scope';
 import { resolveHeroScope } from './hero-scope';
 import { planTargetPhase } from './target-phase';
 import { teamPlanPvpSquadSlots } from './combat-window';
+import { resolvePriorityOrder } from './priority-order';
 
 /**
  * What a plan was computed from: the inputs and the controls as they stood when the run began.
@@ -156,7 +157,7 @@ function planningAccountView(inputs: TeamPlanInputs): AccountView {
   return view;
 }
 
-export const CONTROL_FIELDS = ['forgeFloor', 'objective', 'allowedChanges', 'ignoreFieldCrowding', 'aurasAtCap', 'targetPhase', 'pvpSquadSlots', 'farmSet'] as const;
+export const CONTROL_FIELDS = ['forgeFloor', 'objective', 'allowedChanges', 'ignoreFieldCrowding', 'aurasAtCap', 'targetPhase', 'pvpSquadSlots', 'farmSet', 'priorityOrder'] as const;
 export type ControlField = (typeof CONTROL_FIELDS)[number];
 
 type ControlsView = {
@@ -173,6 +174,8 @@ type ControlsView = {
   /** The set a Set farm plan collects. Absent rather than `null` under every other objective, so
    *  adding the control left every other plan's signature as it was. */
   farmSet?: string | null;
+  /** The gearing order, comma-joined, in priority mode. Absent in team mode, like `farmSet`. */
+  priorityOrder?: string;
   scopeByHeroId: Record<string, ScopeState>;
 };
 
@@ -188,6 +191,9 @@ function planningControlsView(inputs: TeamPlanInputs, controls: TeamPlanControls
     targetPhase: planTargetPhase(inputs, controls),
     pvpSquadSlots: controls.objective === 'pvp' ? teamPlanPvpSquadSlots(inputs) : null,
     ...(controls.objective === 'setFarm' ? { farmSet: controls.farmSet } : {}),
+    ...(controls.priorityMode
+      ? { priorityOrder: resolvePriorityOrder(inputs.heroes, controls.scopeByHeroId, controls.priorityOrder).join(',') }
+      : {}),
     scopeByHeroId,
   };
 }

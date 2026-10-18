@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { TeamPlanPerHeroRow } from '@bombfarm/domain/team-plan/types';
 import {
   DEFAULT_TEAM_PLAN_RESULT_SORT,
+  effectiveResultSort,
   firstResultSortDirection,
   normalizeTeamPlanResultSort,
   sortTeamPlanResultRows,
@@ -75,6 +76,12 @@ describe('sortTeamPlanResultRows', () => {
     expect(names(sortTeamPlanResultRows([zed, abe], { key: 'delta', direction: 'desc' }))).toEqual(['Abe', 'Zed']);
   });
 
+  it('orders by the gearing order of a priority plan, first hero first', () => {
+    const order = ['3', '1', '2'];
+    expect(names(sortTeamPlanResultRows(ROWS, { key: 'priority', direction: 'asc' }, order))).toEqual(['Bram', 'Cora', 'Ajax']);
+    expect(names(sortTeamPlanResultRows(ROWS, { key: 'priority', direction: 'desc' }, order))).toEqual(['Ajax', 'Cora', 'Bram']);
+  });
+
   it('never reorders the rows it was given', () => {
     const input = [...ROWS];
     sortTeamPlanResultRows(input, { key: 'delta', direction: 'desc' });
@@ -107,5 +114,13 @@ describe('normalizeTeamPlanResultSort', () => {
 
   it.each([null, undefined, 'delta', 42, [], { key: 'power', direction: 'desc' }])('reads %j as the default', (value) => {
     expect(normalizeTeamPlanResultSort(value)).toEqual(DEFAULT_TEAM_PLAN_RESULT_SORT);
+  });
+});
+
+describe('effectiveResultSort', () => {
+  it('reads a gearing-order sort as the default on a team-wide plan', () => {
+    expect(effectiveResultSort({ key: 'priority', direction: 'asc' }, undefined)).toBe(DEFAULT_TEAM_PLAN_RESULT_SORT);
+    expect(effectiveResultSort({ key: 'priority', direction: 'asc' }, ['a'])).toEqual({ key: 'priority', direction: 'asc' });
+    expect(effectiveResultSort({ key: 'delta', direction: 'desc' }, undefined)).toEqual({ key: 'delta', direction: 'desc' });
   });
 });

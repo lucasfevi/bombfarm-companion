@@ -296,3 +296,18 @@ describe('buildTeamPlanInput under the windowed objectives', () => {
     expect(unread.pvpSquadSlots).toBeNull();
   });
 });
+
+describe('buildTeamPlanInput priority order', () => {
+  const roster = [hero('a'), hero('b'), hero('c', false), hero('d')];
+
+  it('sends no order while the board is team-wide', () => {
+    const input = buildTeamPlanInput(inputs({ heroes: roster }), { ...DEFAULT_TEAM_PLAN_CONTROLS, priorityOrder: ['d'] });
+    expect(input.priorityOrder).toBeUndefined();
+  });
+
+  it('sends the Optimize heroes in gearing order, keyed the way the plan keys heroes', () => {
+    const controls: TeamPlanControls = { ...DEFAULT_TEAM_PLAN_CONTROLS, priorityMode: true, priorityOrder: ['d', 'c', 'b'] };
+    const input = buildTeamPlanInput(inputs({ heroes: roster }), controls);
+    expect(input.priorityOrder).toEqual(['src-d', 'src-b', 'src-a']);
+  });
+});

@@ -60,6 +60,8 @@ export function selectTeamPlanControls(state: PlannerStore): TeamPlanControls {
     targetPhaseChosen: state.targetPhaseChosen,
     gatePhase: state.gatePhase,
     farmSet: state.farmSet,
+    priorityMode: state.priorityMode,
+    priorityOrder: state.priorityOrder,
   };
 }
 

@@ -177,11 +177,9 @@ test.describe('shell measure — one scrollbar, two columns, capped and centred 
   test('keeps the earnings and map panels side by side down to the smallest window, in both languages', async () => {
     await expectSideBySideAtMinimumWidth('English');
 
-    // Same technique as `i18n.spec.mjs` — the nav carries no test ids by design, so it is indexed.
-    // Settings is the last entry; addressed as such rather than by number, because a nav that
-    // gains a tab moves every number after it and this spec then clicks the wrong screen.
+    // Settings is the gear at the end of the bar's actions, not a tab in the nav.
     await resize(app, page, 1280, 800);
-    await page.locator('nav[aria-label="Main"] button').last().click();
+    await page.getByTestId('shell-settings').click();
     const select = page.getByRole('combobox', { name: 'App language' });
     await select.waitFor({ state: 'visible', timeout: 10_000 });
     await select.click();
@@ -213,8 +211,8 @@ test.describe('shell measure — one scrollbar, two columns, capped and centred 
   });
 
   test('holds the settings sections to their own measure instead of letting them span the window', async () => {
-    // Settings is the last entry — see the note above on why it is not addressed by number.
-    await page.locator('nav[aria-label="Main"] button').last().click();
+    // Settings is the gear at the end of the bar's actions.
+    await page.getByTestId('shell-settings').click();
     await expect(page.getByTestId('settings-view')).toBeVisible({ timeout: 15_000 });
 
     for (const width of [MIN_WINDOW.width, MAX_CONTENT, 2560]) {
@@ -257,7 +255,7 @@ test.describe('shell measure — one scrollbar, two columns, capped and centred 
   }
 
   test('a tab taller than the region ends as far above the status strip as it starts below the header', async () => {
-    await page.locator('nav[aria-label="Main"] button').last().click();
+    await page.getByTestId('shell-settings').click();
     await expect(page.getByTestId('settings-view')).toBeVisible({ timeout: 15_000 });
     for (const size of [MIN_WINDOW, { width: 1280, height: 800 }]) {
       await resize(app, page, size.width, size.height);

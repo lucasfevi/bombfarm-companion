@@ -94,7 +94,7 @@ async function acceptConsent(page) {
 /** The shipped Switch keeps no test id of its own, so the control is reached the way a reader
  *  would: the one switch on the screen whose name is the Forge setting's label. */
 async function turnOnForgeWrites(page) {
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByTestId('shell-settings').click();
   const forgeSwitch = page.getByRole('switch', { name: en('settingsForgeWritesLabel') });
   await expect(forgeSwitch).toBeVisible({ timeout: 15_000 });
   await forgeSwitch.click();

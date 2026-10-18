@@ -19,6 +19,7 @@ import {
   normalizeAurasAtCap,
   normalizeFarmSet,
   normalizeGatePhase,
+  normalizePriorityOrder,
   type ScopeState,
   type TeamPlanControls,
 } from '@bombfarm/team-plan/core';
@@ -99,6 +100,8 @@ function normalizeOptimizerView(value: unknown): OptimizerView {
     targetPhaseChosen: normalizeTargetPhaseChosen(raw.targetPhaseChosen),
     gatePhase: normalizeGatePhase(raw.gatePhase),
     farmSet: normalizeFarmSet(raw.farmSet),
+    priorityMode: typeof raw.priorityMode === 'boolean' ? raw.priorityMode : DEFAULT_OPTIMIZER_VIEW.priorityMode,
+    priorityOrder: normalizePriorityOrder(raw.priorityOrder),
   };
 }
 

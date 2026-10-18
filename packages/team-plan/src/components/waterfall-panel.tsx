@@ -179,7 +179,14 @@ export function WaterfallPanel({
           </div>
         </div>
       </Tooltip.Provider>
-      {plan.requiresFullPlan ? (
+      {plan.priorityOrder !== undefined && plan.planDps < plan.currentDps ? (
+        <p className="m-0 mt-2 text-center text-[12px] text-warn" role="status">
+          {withDeltaPlaceholder(
+            t.teamPlanPriorityBelowToday,
+            <AbbreviatedNumber value={plan.currentDps - plan.planDps} lang={lang} precision={precision} />,
+          )}
+        </p>
+      ) : plan.requiresFullPlan ? (
         <p className="m-0 mt-2 text-center text-[12px] text-muted" role="status">
           {withDeltaPlaceholder(
             copy.gearDipNote,

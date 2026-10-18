@@ -4,6 +4,7 @@ import type { TeamPlanInputs } from './team-plan-inputs';
 import type { TeamPlanControls } from './team-plan-controls';
 import { resolveHeroScope } from './hero-scope';
 import { planTargetPhase } from './target-phase';
+import { resolvePriorityOrder } from './priority-order';
 
 export function buildTeamPlanInput(
   inputs: TeamPlanInputs,
@@ -88,5 +89,13 @@ export function buildTeamPlanInput(
     targetPhase: planTargetPhase(inputs, controls),
     // Read under the duel objective only: the room seats this many. Null plans for the top house.
     pvpSquadSlots: inputs.pvpSquadSlots,
+    ...(controls.priorityMode ? { priorityOrder: priorityOrderForInput(inputs, controls) } : {}),
   };
+}
+
+function priorityOrderForInput(inputs: TeamPlanInputs, controls: TeamPlanControls): string[] {
+  const keyById = new Map(inputs.heroes.map((hero) => [hero.id, hero.sourceId ?? hero.id]));
+  return resolvePriorityOrder(inputs.heroes, controls.scopeByHeroId, controls.priorityOrder).map(
+    (heroId) => keyById.get(heroId) ?? heroId,
+  );
 }

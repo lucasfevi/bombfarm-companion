@@ -22,6 +22,7 @@ import { TeamPlanToolbar } from './team-plan-toolbar';
 import { PlanChangesPanel } from './plan-changes-panel';
 import { useOptimizeAction } from './use-optimize-action';
 import { ScopeList } from './scope-list';
+import { PriorityModeSwitch } from './priority-mode-switch';
 import { TeamPlanOptimizingModal } from './team-plan-optimizing-modal';
 import { WaterfallPanel } from './waterfall-panel';
 import { HeroDeltaTable, type HeroDeltaRowsView } from './hero-delta-table';
@@ -64,6 +65,8 @@ export type TeamPlanScreenActions = {
   setTargetPhase: (value: number | null) => void;
   setGatePhase: (value: number | null) => void;
   setFarmSet: (value: string | null) => void;
+  setPriorityMode: (value: boolean) => void;
+  setPriorityOrder: (order: readonly string[]) => void;
   startRun: (runId: string) => void;
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   applyPlan: (runId: string, plan: TeamPlan) => void;
@@ -168,7 +171,16 @@ export function TeamPlanScreenView({
         setupFields={slots.setupFields}
         {...(objectives !== undefined ? { objectives } : {})}
       />
-      <ScopeList t={t} lang={lang} heroes={heroes} scopeByHeroId={controls.scopeByHeroId} onScope={actions.setScope} />
+      <ScopeList
+        t={t}
+        lang={lang}
+        heroes={heroes}
+        scopeByHeroId={controls.scopeByHeroId}
+        onScope={actions.setScope}
+        priorityOrder={controls.priorityMode ? controls.priorityOrder : null}
+        onPriorityOrder={actions.setPriorityOrder}
+        headerAction={<PriorityModeSwitch t={t} value={controls.priorityMode} onChange={actions.setPriorityMode} />}
+      />
     </>
   );
 

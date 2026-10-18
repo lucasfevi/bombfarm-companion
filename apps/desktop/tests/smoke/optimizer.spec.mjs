@@ -93,7 +93,6 @@ function navButton(page, index) {
 const FARM_TAB_INDEX = 1;
 const FORGE_TAB_INDEX = 4;
 const OPTIMIZER_TAB_INDEX = 5;
-const SETTINGS_TAB_INDEX = 10;
 
 async function openOptimizer(page) {
   await navButton(page, OPTIMIZER_TAB_INDEX).click();
@@ -345,7 +344,7 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
   });
 
   test('Portuguese, per-card scope change clears the plan, and the choice survives a relaunch', async () => {
-    await navButton(page, SETTINGS_TAB_INDEX).click();
+    await page.getByTestId('shell-settings').click();
     const select = page.getByRole('combobox', { name: en('settingsLanguageLabel') });
     await expect(select).toBeVisible({ timeout: 10_000 });
     await select.click();
@@ -396,7 +395,7 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
     // nothing to do with the worker-fallback mechanism under test here. This continues on the app
     // `Portuguese, per-card scope change…` relaunched — no relaunch of its own is needed, since
     // the worker knob is read live by `createOptimizerWorker()` on the next press.
-    await navButton(page, SETTINGS_TAB_INDEX).click();
+    await page.getByTestId('shell-settings').click();
     const select = page.getByRole('combobox', { name: pt('settingsLanguageLabel') });
     await expect(select).toBeVisible({ timeout: 10_000 });
     await select.click();
