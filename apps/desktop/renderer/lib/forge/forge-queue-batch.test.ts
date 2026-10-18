@@ -34,6 +34,12 @@ describe('the five verdicts', () => {
     expect(batch).toMatchObject({ adding: 1, retargeted: 1, queued: 0 });
   });
 
+  it('a piece queued at a higher target is queued, never lowered', () => {
+    const queue = queueWith([['a', 14]]);
+    const batch = planForgeQueueBatch([{ itemId: 'a', to: 13 }], queue, upgrades([['a', 8]]));
+    expect(batch).toMatchObject({ toAdd: [], adding: 0, queued: 1, retargeted: 0 });
+  });
+
   it('a piece nowhere in the queue is add, and lands in toAdd at the plan target', () => {
     const batch = planForgeQueueBatch([{ itemId: 'a', to: 12 }], EMPTY_FORGE_QUEUE, upgrades([['a', 8]]));
     expect(batch.toAdd).toEqual([{ itemId: 'a', target: 12 }]);
@@ -68,7 +74,7 @@ describe('counts and order', () => {
   });
 
   it('toAdd keeps the forge list order, not the queue order', () => {
-    const queue = queueWith([['b', 20]]);
+    const queue = queueWith([['b', 10]]);
     const batch = planForgeQueueBatch(
       [
         { itemId: 'b', to: 12 },

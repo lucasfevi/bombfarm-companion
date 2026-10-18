@@ -42,7 +42,7 @@ export function planForgeQueueBatch(
       continue;
     }
     const existing = queuedById.get(itemId);
-    if (queue.active?.itemId === itemId || existing?.target === to) {
+    if (queue.active?.itemId === itemId || (existing !== undefined && existing.target >= to)) {
       queued += 1;
       continue;
     }
