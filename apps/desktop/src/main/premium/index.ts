@@ -1,0 +1,41 @@
+import { safeStorage, shell } from 'electron';
+import type { PremiumView } from '@bombfarm/contracts';
+import type { LogPort, SqliteDb } from '../storage/index.js';
+import { startLoopbackListener } from './loopback-listener.js';
+import { createPkce, createState } from './pkce.js';
+import { createPremiumApi } from './premium-api.js';
+import { createPremiumCache } from './premium-cache.js';
+import { createPremiumService, type GameIdentity, type PremiumService } from './premium-service.js';
+import { PREMIUM_API_ORIGIN, createPremiumHttp } from './premium-transport.js';
+import { createTokenVault, type SecretBox } from './token-vault.js';
+
+export type { PremiumService } from './premium-service.js';
+
+export function createSafeStorageBox(): SecretBox {
+  return {
+    isAvailable: () => safeStorage.isEncryptionAvailable(),
+    encrypt: (plain) => safeStorage.encryptString(plain),
+    decrypt: (cipher) => safeStorage.decryptString(cipher),
+  };
+}
+
+export function createElectronPremium(deps: {
+  readonly db: SqliteDb | null;
+  readonly originOverride: string | null;
+  readonly readGameIdentity: () => GameIdentity | null;
+  readonly log: LogPort;
+  readonly onChanged: (view: PremiumView) => void;
+}): PremiumService {
+  return createPremiumService({
+    api: createPremiumApi(createPremiumHttp(deps.originOverride ?? PREMIUM_API_ORIGIN)),
+    vault: createTokenVault(deps.db, createSafeStorageBox()),
+    cache: createPremiumCache(deps.db),
+    openExternal: (url) => shell.openExternal(url),
+    readGameIdentity: deps.readGameIdentity,
+    startListener: startLoopbackListener,
+    pkce: { createPkce, createState },
+    now: () => Date.now(),
+    log: deps.log,
+    onChanged: deps.onChanged,
+  });
+}

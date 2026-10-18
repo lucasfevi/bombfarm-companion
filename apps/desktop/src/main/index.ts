@@ -52,7 +52,8 @@ import { createLiveConsentGate } from './game-api/live-consent-gate.js';
 import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
 import { createWindowLayoutStore, type WindowLayoutStore } from './game-api/window-layout-store.js';
 import { companionUserAgent, createNodeHttpsTransport } from './game-api/https-transport.js';
-import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
+import { createGrantedGameIdentityReader } from './game-api/granted-game-identity.js';
+import { readGameIdentity, readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
 import { createTriggeredRefresh, type TriggeredRefresh } from './game-api/triggered-refresh.js';
 import { createLiveFastPublisher, type LiveFastPublisher } from './live-source/live-fast-publisher.js';
 import {
@@ -85,6 +86,7 @@ import { marketHttpGet } from './market/market-transport.js';
 import { offlineOnlinePlayersGet } from './online-players/online-players-offline.js';
 import { createOnlinePlayersService, type OnlinePlayersService } from './online-players/online-players-service.js';
 import { onlinePlayersHttpGet } from './online-players/online-players-transport.js';
+import { createElectronPremium, type PremiumService } from './premium/index.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 import {
@@ -144,6 +146,7 @@ let liveFastPublisher: LiveFastPublisher | null = null;
 let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
 let onlinePlayersService: OnlinePlayersService | null = null;
+let premium: PremiumService | null = null;
 let forgeService: ForgeService | null = null;
 let forgeHistory: ForgeHistory | null = null;
 let applyService: ApplyService | null = null;
@@ -339,7 +342,7 @@ function registerIpcHandlers(): void {
       getUpdateService: () => updateService,
       getMarketService: () => marketService,
       getOnlinePlayersService: () => onlinePlayersService,
-      getPremiumService: () => null,
+      getPremiumService: () => premium,
       getForgeService: () => forgeService,
       getForgeHistory: () => forgeHistory,
       getForgeInjector: () => forgeInjector,
@@ -963,6 +966,7 @@ async function bootstrap(): Promise<void> {
     accountRefresh,
     emit: (view) => {
       emitEvent('account:changed', view);
+      premium?.noteAccountChanged();
     },
   });
 
@@ -1136,6 +1140,20 @@ async function bootstrap(): Promise<void> {
     },
   });
 
+  premium = createElectronPremium({
+    db: accountOpen.db,
+    originOverride: resolveAppEnv().premiumApiOriginOverride,
+    readGameIdentity: createGrantedGameIdentityReader({
+      readConsent: () => consentStore?.read() ?? initialConsent(),
+      readIdentity: (consent) =>
+        readGameIdentity(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged })),
+    }),
+    log,
+    onChanged: (view) => {
+      emitEvent('premium:changed', view);
+    },
+  });
+
   registerIpcHandlers();
   registerRendererProtocol(path.join(__dirname, '../../renderer/out'));
   await createMainWindow();
@@ -1173,6 +1191,7 @@ async function bootstrap(): Promise<void> {
   marketService.start();
   log.info({ scope: 'main', event: 'market.started' });
   onlinePlayersService.start();
+  premium.start();
 }
 
 function resolveBootEnv(): AppEnv {
@@ -1285,6 +1304,10 @@ if (!gotLock) {
         stopOnlinePlayersService: () => {
           onlinePlayersService?.stop();
           onlinePlayersService = null;
+        },
+        stopPremium: () => {
+          premium?.stop();
+          premium = null;
         },
         releaseForgeService: () => {
           forgeService = null;

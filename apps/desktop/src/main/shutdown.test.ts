@@ -79,6 +79,12 @@ describe('the quit order every committing producer depends on', () => {
     expect(late).toEqual([]);
   });
 
+  it('stops premium before either store handle it writes to is closed', () => {
+    const late = STORE_CLOSES.filter((close) => !ranBefore(ran, 'stopPremium', close));
+
+    expect(late).toEqual([]);
+  });
+
   it('tears the live source down before the observation recorder it writes to is closed', () => {
     expect(ranBefore(ran, 'teardownLiveSource', 'closeObservationCapture')).toBe(true);
   });
@@ -145,6 +151,7 @@ describe('the step bodies the quit handler binds to the names the order is asser
   const expectedCall: Partial<Record<ShutdownStep, string>> = {
     stopGameReader: 'gameReader?.stop()',
     stopAccountRefresh: 'accountRefresh?.stop()',
+    stopPremium: 'premium?.stop()',
     teardownLiveSource: 'liveSource?.teardown()',
     stopObservationMarkWatch: 'observationMarkWatch?.stop()',
     closeObservationCapture: 'observationCapture?.close()',
