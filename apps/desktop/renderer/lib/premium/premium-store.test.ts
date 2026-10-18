@@ -42,7 +42,7 @@ describe('the premium store reducer', () => {
 describe('the premium store', () => {
   it('starts signed out and reads the current view once on start', async () => {
     const { bridge, invoke } = fakeBridge({ 'premium:get': signedIn });
-    const store = createPremiumStore(bridge);
+    const store = createPremiumStore(() => bridge);
 
     expect(store.getState().view).toBe(signedOutPremiumView);
     store.start();
@@ -55,7 +55,7 @@ describe('the premium store', () => {
 
   it('follows the changed event and tells its subscribers', async () => {
     const { bridge, push } = fakeBridge({ 'premium:get': signedOutPremiumView });
-    const store = createPremiumStore(bridge);
+    const store = createPremiumStore(() => bridge);
     const seen: PremiumView[] = [];
     store.subscribe((state) => seen.push(state.view));
     store.start();
@@ -69,7 +69,7 @@ describe('the premium store', () => {
 
   it('stops telling a subscriber once it has unsubscribed', async () => {
     const { bridge, push } = fakeBridge({ 'premium:get': signedOutPremiumView });
-    const store = createPremiumStore(bridge);
+    const store = createPremiumStore(() => bridge);
     const listener = vi.fn();
     const unsubscribe = store.subscribe(listener);
     store.start();
@@ -89,7 +89,7 @@ describe('the premium store', () => {
     ['manage', 'premium:manage', { ok: true }],
   ] as const)('%s invokes its channel once and returns the answer', async (action, channel, reply) => {
     const { bridge, invoke } = fakeBridge({ [channel]: reply });
-    const store = createPremiumStore(bridge);
+    const store = createPremiumStore(() => bridge);
 
     expect(await store.actions[action]()).toEqual(reply);
 
@@ -98,7 +98,7 @@ describe('the premium store', () => {
 
   it('cancels a sign-in through its channel once', async () => {
     const { bridge, invoke } = fakeBridge({ 'premium:cancelSignIn': true });
-    const store = createPremiumStore(bridge);
+    const store = createPremiumStore(() => bridge);
 
     expect(await store.actions.cancelSignIn()).toBe(true);
 
@@ -107,7 +107,7 @@ describe('the premium store', () => {
 
   it('signs out through its channel once and takes the view it answers with', async () => {
     const { bridge, invoke } = fakeBridge({ 'premium:signOut': signedOutPremiumView });
-    const store = createPremiumStore(bridge);
+    const store = createPremiumStore(() => bridge);
     store.start();
 
     await store.actions.signOut();
@@ -118,13 +118,13 @@ describe('the premium store', () => {
 
   it('answers unavailable when a channel call throws', async () => {
     const invoke = vi.fn(() => Promise.reject(new Error('no handler')));
-    const store = createPremiumStore({ invoke, on: () => () => undefined });
+    const store = createPremiumStore(() => ({ invoke, on: () => () => undefined }));
 
     expect(await store.actions.refresh()).toEqual({ ok: false, reason: 'unavailable' });
   });
 
   it('answers unavailable and stays signed out without a bridge', async () => {
-    const store = createPremiumStore(undefined);
+    const store = createPremiumStore(() => undefined);
     store.start();
 
     expect(await store.actions.signIn()).toEqual({ ok: false, reason: 'unavailable' });

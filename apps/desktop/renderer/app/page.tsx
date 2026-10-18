@@ -26,7 +26,7 @@ import type { ConsentRecord } from '@bombfarm/game-api';
 import { CopyProvider, useCopy, useLocale } from '../lib/copy';
 import { useTabScrollMemory } from '../lib/use-tab-scroll-memory';
 import { navItemsFor } from './nav-items';
-import { screenForStripId, stripIdForScreen } from './nav-screen';
+import { screenForStripId, screenWhenPremiumVisibility, stripIdForScreen } from './nav-screen';
 import { ScreenBoundary } from './screen-boundary';
 import { DataNoticesBanner } from './data-notices-banner';
 import { useDataNotices } from '../lib/account/use-data-notices';
@@ -64,6 +64,9 @@ import { ForgeSection } from './settings/forge-section';
 import { GameSection } from './settings/game-section';
 import { UsageSection } from './settings/usage-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
+import { PremiumSection } from './settings/premium-section';
+import { PremiumScreen } from './premium/premium-view';
+import { usePremiumVisible } from '../lib/premium/use-premium';
 import { LanguageSection } from './settings/language-section';
 import { MarketSection } from './settings/market-section';
 import { SupportSection } from './settings/support-section';
@@ -213,6 +216,11 @@ function HomePageContent({
   const openOptimizerTab = useCallback(() => {
     setActiveNavId('optimizer');
   }, [setActiveNavId]);
+  const premiumVisible = usePremiumVisible();
+  useEffect(() => {
+    const next = screenWhenPremiumVisibility(activeNavId, premiumVisible);
+    if (next !== activeNavId) setActiveNavId(next);
+  }, [activeNavId, premiumVisible, setActiveNavId]);
   const openSettings = useCallback(() => {
     setActiveNavId('settings');
   }, [setActiveNavId]);
@@ -337,7 +345,7 @@ function HomePageContent({
   // The Live tab wears the game's state at its corner — the same words the strip's game cell says.
   const liveMark = liveTabMark(status, t);
   const activeStripId = stripIdForScreen(activeNavId);
-  const navItems = navItemsFor(t).map((item) => (item.id === 'live' ? { ...item, mark: liveMark } : item));
+  const navItems = navItemsFor(t, { premium: premiumVisible }).map((item) => (item.id === 'live' ? { ...item, mark: liveMark } : item));
 
   return (
     <AccountHeroPeekStats>
@@ -459,6 +467,7 @@ function HomePageContent({
                 onUsagePingEnabledChange={onUsagePingEnabledChange}
                 persistWarning={usagePingWarning}
               />
+              <PremiumSection />
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
               <UpdatesSection
                 status={updateStatus}
@@ -484,6 +493,8 @@ function HomePageContent({
             <PvpView />
           ) : activeNavId === 'skills' || activeNavId === 'collections' ? (
             <ProgressionPage page={activeNavId} onPageChange={setActiveNavId} />
+          ) : activeNavId === 'premium' ? (
+            <PremiumScreen />
           ) : activeNavId === 'account' ? (
             <AccountView
               marketQuoteCurrency={marketQuoteCurrency}

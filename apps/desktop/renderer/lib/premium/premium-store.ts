@@ -44,7 +44,7 @@ export interface PremiumStore extends SharedStore<PremiumState> {
 
 const UNAVAILABLE: PremiumActionResult = { ok: false, reason: 'unavailable' };
 
-export function createPremiumStore(bridge: PremiumBridge | undefined): PremiumStore {
+export function createPremiumStore(getBridge: () => PremiumBridge | undefined): PremiumStore {
   let pushed: ((view: PremiumView) => void) | null = null;
 
   const store = createSharedStore<PremiumState, PremiumArrival>({
@@ -54,6 +54,7 @@ export function createPremiumStore(bridge: PremiumBridge | undefined): PremiumSt
       pushed = (view) => {
         dispatch({ kind: 'pushed', view });
       };
+      const bridge = getBridge();
       if (!bridge) return;
       const issuedAt = initialPremiumState.applied;
       bridge
@@ -68,15 +69,19 @@ export function createPremiumStore(bridge: PremiumBridge | undefined): PremiumSt
     },
   });
 
+  const withBridge = <T>(call: (bridge: PremiumBridge) => Promise<T>, fallback: T): Promise<T> => {
+    const bridge = getBridge();
+    return bridge ? call(bridge) : Promise.resolve(fallback);
+  };
+
   const act = (call: (b: PremiumBridge) => Promise<PremiumActionResult>): Promise<PremiumActionResult> =>
-    bridge ? call(bridge).catch(() => UNAVAILABLE) : Promise.resolve(UNAVAILABLE);
+    withBridge((bridge) => call(bridge).catch(() => UNAVAILABLE), UNAVAILABLE);
 
   const actions: PremiumActions = {
     signIn: () => act((b) => b.invoke('premium:signIn')),
-    cancelSignIn: () => (bridge ? bridge.invoke('premium:cancelSignIn').catch(() => false) : Promise.resolve(false)),
+    cancelSignIn: () => withBridge((bridge) => bridge.invoke('premium:cancelSignIn').catch(() => false), false),
     signOut: async () => {
-      if (!bridge) return;
-      const view = await bridge.invoke('premium:signOut').catch(() => null);
+      const view = await withBridge((bridge) => bridge.invoke('premium:signOut').catch(() => null), null);
       if (view !== null) pushed?.(view);
     },
     refresh: () => act((b) => b.invoke('premium:refresh')),

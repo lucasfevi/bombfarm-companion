@@ -4,7 +4,7 @@ import { createLazySingleton } from '../shared-store';
 import { createPremiumStore, type PremiumActions, type PremiumBridge, type PremiumState } from './premium-store';
 
 const sharedStore = createLazySingleton(() =>
-  createPremiumStore((window as unknown as { bfc?: PremiumBridge }).bfc),
+  createPremiumStore(() => (window as unknown as { bfc?: PremiumBridge }).bfc),
 );
 
 function useSharedState(): PremiumState {

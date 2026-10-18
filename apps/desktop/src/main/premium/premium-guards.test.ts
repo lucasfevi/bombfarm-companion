@@ -1,4 +1,4 @@
-import { join, resolve, sep } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { guardScanner, type FileEntry } from '../guard-scan';
 
@@ -144,5 +144,92 @@ describe('premium URLs never go through external navigation', () => {
     expect(routesThroughExternalNavigation("import { applyExternalNavigationPolicy } from '../external-navigation.js';")).toBe(true);
     expect(routesThroughExternalNavigation('const verdict = decideNavigation(url, origin);')).toBe(true);
     expect(routesThroughExternalNavigation("import { shell } from 'electron';\nvoid shell.openExternal(url);")).toBe(false);
+  });
+});
+
+const RENDERER_ROOT = resolve(MAIN_ROOT, '..', '..', 'renderer');
+const PREMIUM_STORE_FILE = 'lib/premium/use-premium.ts';
+const FULL_HOOK_IMPORTERS: ReadonlySet<string> = new Set(['app/premium/premium-view.tsx', 'app/settings/premium-section.tsx']);
+const VISIBILITY_HOOK_IMPORTERS: ReadonlySet<string> = new Set(['app/page.tsx']);
+
+function rendererPath(path: string): string {
+  return relative(RENDERER_ROOT, path).split(sep).join('/');
+}
+
+function readsPremiumOutsideItsSurface(file: FileEntry): boolean {
+  const where = rendererPath(file.path);
+  return importsOf(file.source).some((statement) => {
+    if (/(^|\/)premium-store(\.js)?$/.test(statement.specifier)) return where !== PREMIUM_STORE_FILE;
+    if (!/(^|\/)use-premium(\.js)?$/.test(statement.specifier)) return false;
+    const wantsFull = /\busePremium\b/.test(statement.names);
+    const wantsVisibility = /\busePremiumVisible\b/.test(statement.names);
+    if (wantsFull && !FULL_HOOK_IMPORTERS.has(where)) return true;
+    if (wantsVisibility && !VISIBILITY_HOOK_IMPORTERS.has(where)) return true;
+    return !wantsFull && !wantsVisibility;
+  });
+}
+
+const rendererFiles = (): FileEntry[] => readAll(RENDERER_ROOT, ['.ts', '.tsx']);
+
+describe('only the Premium surface and its Settings section read the Premium status', () => {
+  it('scanned the renderer sources, including the files the rule allows', () => {
+    const paths = rendererFiles().map((file) => rendererPath(file.path));
+    expect(paths.length).toBeGreaterThan(100);
+    for (const allowed of [...FULL_HOOK_IMPORTERS, ...VISIBILITY_HOOK_IMPORTERS, PREMIUM_STORE_FILE]) {
+      expect(paths).toContain(allowed);
+    }
+  });
+
+  it('no renderer file outside them imports the premium hook or its store', () => {
+    const offenders = rendererFiles()
+      .filter(readsPremiumOutsideItsSurface)
+      .map((file) => rendererPath(file.path));
+    expect(offenders).toEqual([]);
+  });
+
+  it('is not vacuous: the surface, its section and the shell each do import the hook', () => {
+    const importers = rendererFiles()
+      .filter((file) => importsOf(file.source).some((statement) => /(^|\/)use-premium(\.js)?$/.test(statement.specifier)))
+      .map((file) => rendererPath(file.path))
+      .sort();
+    expect(importers).toEqual(['app/page.tsx', 'app/premium/premium-view.tsx', 'app/settings/premium-section.tsx']);
+  });
+
+  it('the shell asks only whether the tab is visible', () => {
+    const page = rendererFiles().find((file) => rendererPath(file.path) === 'app/page.tsx');
+    const statement = importsOf(page?.source ?? '').find((entry) => /use-premium/.test(entry.specifier));
+    expect(statement?.names.replace(/[{}\s]/g, '')).toBe('usePremiumVisible');
+  });
+
+  it('catches the shapes it exists to catch', () => {
+    const fixture = (where: string, source: string): FileEntry => ({ path: join(RENDERER_ROOT, ...where.split('/')), source });
+    expect(
+      readsPremiumOutsideItsSurface(fixture('app/farm/farm-view.tsx', "import { usePremium } from '../../lib/premium/use-premium';")),
+    ).toBe(true);
+    expect(
+      readsPremiumOutsideItsSurface(fixture('app/farm/farm-view.tsx', "import { usePremiumVisible } from '../../lib/premium/use-premium';")),
+    ).toBe(true);
+    expect(
+      readsPremiumOutsideItsSurface(fixture('app/page.tsx', "import { usePremium } from '../lib/premium/use-premium';")),
+    ).toBe(true);
+    expect(
+      readsPremiumOutsideItsSurface(fixture('app/farm/farm-view.tsx', "import { createPremiumStore } from '../../lib/premium/premium-store';")),
+    ).toBe(true);
+    expect(
+      readsPremiumOutsideItsSurface(fixture('app/farm/farm-view.tsx', "import * as premium from '../../lib/premium/use-premium';")),
+    ).toBe(true);
+  });
+
+  it('lets the allowed importers and prose through', () => {
+    const fixture = (where: string, source: string): FileEntry => ({ path: join(RENDERER_ROOT, ...where.split('/')), source });
+    expect(
+      readsPremiumOutsideItsSurface(fixture('app/premium/premium-view.tsx', "import { usePremium } from '../../lib/premium/use-premium';")),
+    ).toBe(false);
+    expect(
+      readsPremiumOutsideItsSurface(fixture('app/page.tsx', "import { usePremiumVisible } from '../lib/premium/use-premium';")),
+    ).toBe(false);
+    expect(
+      readsPremiumOutsideItsSurface(fixture('app/farm/farm-view.tsx', "// import { usePremium } from '../../lib/premium/use-premium';\nconst x = 1;")),
+    ).toBe(false);
   });
 });

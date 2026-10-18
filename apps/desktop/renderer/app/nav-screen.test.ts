@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { navItemsFor } from './nav-items';
-import { screenForStripId, stripIdForScreen } from './nav-screen';
+import { screenForStripId, screenWhenPremiumVisibility, stripIdForScreen } from './nav-screen';
 import { STRINGS } from '../lib/copy';
 
 describe('the strip item lit for a screen', () => {
@@ -14,13 +14,13 @@ describe('the strip item lit for a screen', () => {
   });
 
   it('lights every other tab on its own screen', () => {
-    for (const id of ['live', 'farm', 'heroes', 'inventory', 'forge', 'optimizer', 'pvp', 'account']) {
+    for (const id of ['live', 'farm', 'heroes', 'inventory', 'forge', 'optimizer', 'pvp', 'premium', 'account']) {
       expect(stripIdForScreen(id)).toBe(id);
     }
   });
 
   it('lights a real strip item for every screen the strip can open', () => {
-    const stripIds = navItemsFor(STRINGS.en).map((item) => item.id);
+    const stripIds = navItemsFor(STRINGS.en, { premium: true }).map((item) => item.id);
     for (const id of stripIds) {
       expect(stripIds).toContain(stripIdForScreen(screenForStripId(id, 'skills')));
       expect(stripIds).toContain(stripIdForScreen(screenForStripId(id, 'collections')));
@@ -40,5 +40,22 @@ describe('the screen a pressed strip item opens', () => {
   it('opens every other tab on its own screen', () => {
     expect(screenForStripId('farm', 'collections')).toBe('farm');
     expect(screenForStripId('account', 'skills')).toBe('account');
+  });
+});
+
+describe('the screen the app shows when the Premium tab appears or disappears', () => {
+  it('moves to Settings when Premium is the active screen and hides', () => {
+    expect(screenWhenPremiumVisibility('premium', false)).toBe('settings');
+  });
+
+  it('stays on Premium while it is visible', () => {
+    expect(screenWhenPremiumVisibility('premium', true)).toBe('premium');
+  });
+
+  it('never moves the player off any other screen', () => {
+    for (const id of ['live', 'farm', 'settings', 'skills', 'collections', 'account']) {
+      expect(screenWhenPremiumVisibility(id, false)).toBe(id);
+      expect(screenWhenPremiumVisibility(id, true)).toBe(id);
+    }
   });
 });

@@ -8,10 +8,10 @@ import {
 } from './shell-density';
 
 describe('shellDensityFor', () => {
-  it('pins the widths measured off the nine-tab bar with the gear', () => {
-    expect(SHELL_ICON_TABS_WIDTH).toBe(1238);
-    expect(SHELL_BRAND_MARK_WIDTH).toBe(942);
-    expect(SHELL_ACTIONS_COLLAPSE_WIDTH).toBe(817);
+  it('pins the widths measured off the ten-tab bar with the gear and the Premium tab', () => {
+    expect(SHELL_ICON_TABS_WIDTH).toBe(1319);
+    expect(SHELL_BRAND_MARK_WIDTH).toBe(978);
+    expect(SHELL_ACTIONS_COLLAPSE_WIDTH).toBe(853);
   });
 
   it('gives up a tab label first, then the brand words, and the actions last', () => {

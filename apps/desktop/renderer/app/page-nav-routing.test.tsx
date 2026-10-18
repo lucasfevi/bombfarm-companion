@@ -16,7 +16,7 @@ const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8');
 const ROUTED_BY_ID = /activeNavId === '(\w+)'/g;
 
 describe('page.tsx routes every nav item', () => {
-  const stripIds = navItemsFor(STRINGS.en).map((item) => item.id);
+  const stripIds = navItemsFor(STRINGS.en, { premium: true }).map((item) => item.id);
   const screenIds = [...stripIds.filter((id) => id !== 'progression'), 'skills', 'collections', 'settings'];
   const routed = [...new Set([...source.matchAll(ROUTED_BY_ID)].map((match) => match[1]))];
 
@@ -59,5 +59,28 @@ describe('page.tsx routes every nav item', () => {
 
   it('lets the holdings inventory column lead to the Inventory tab', () => {
     expect(source).toMatch(/onOpenInventory=\{\(\) => \{\s*setActiveNavId\('inventory'\);/);
+  });
+
+  it('renders the Premium tab on the Premium item and reads only its visibility in the shell', () => {
+    expect(source).toContain("activeNavId === 'premium' ? (");
+    expect(source).toContain('<PremiumScreen />');
+    expect(source).toContain('navItemsFor(t, { premium: premiumVisible })');
+    expect(source).toContain('const premiumVisible = usePremiumVisible();');
+  });
+
+  it('moves to Settings when the active Premium tab hides', () => {
+    expect(source).toMatch(
+      /const next = screenWhenPremiumVisibility\(activeNavId, premiumVisible\);\s*if \(next !== activeNavId\) setActiveNavId\(next\);/,
+    );
+  });
+
+  it('mounts the Premium section in Settings after Usage and before Diagnostics', () => {
+    const usage = source.indexOf('<UsageSection');
+    const premium = source.indexOf('<PremiumSection />');
+    const diagnostics = source.indexOf('<DiagnosticsSection');
+
+    expect(usage).toBeGreaterThan(0);
+    expect(premium).toBeGreaterThan(usage);
+    expect(diagnostics).toBeGreaterThan(premium);
   });
 });

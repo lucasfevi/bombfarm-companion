@@ -1,8 +1,8 @@
 /**
  * How much room the top bar really has, measured in a real window. The density constants in
  * `packages/ui/src/shell-density.ts` are sums of these numbers, so this spec is where they come
- * from: Portuguese (the binding language), the bar as shipped, then the same bar with the two
- * tabs the next change will add standing in for them.
+ * from: Portuguese (the binding language), with the Premium tab in the strip because that is the
+ * widest bar the app ships, then the same bar with one more short tab standing in for the next.
  */
 import { test, expect, _electron as electron } from '@playwright/test';
 import fs from 'node:fs';
@@ -10,6 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { switchLanguage } from './shell-control.mjs';
+import { startPremiumVisibleStub } from './premium-visible-stub.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
@@ -32,6 +33,7 @@ function pt(key) {
 }
 
 async function launchApp() {
+  const premiumStub = await startPremiumVisibleStub();
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-top-bar-fit-'));
   const app = await electron.launch({
     executablePath: path.join(
@@ -50,6 +52,7 @@ async function launchApp() {
       BFC_FIXTURE_ACCOUNT_FILE: ACCOUNT_FULL_FIXTURE,
       BFC_LIVE_SOURCE: 'replay',
       BFC_USER_DATA_DIR: userDataDir,
+      BFC_PREMIUM_API_ORIGIN: premiumStub.origin,
       BFC_TOKEN_PATH_OVERRIDE: path.join(desktopRoot, 'tests', 'smoke', '.no-such-session.cfg'),
     },
   });
@@ -60,11 +63,11 @@ async function launchApp() {
   await expect(consentModal).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('consent-accept').click();
   await expect(consentModal).toBeHidden({ timeout: 15_000 });
-  await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(9, { timeout: 30_000 });
+  await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(10, { timeout: 30_000 });
 
   await switchLanguage(page, 'pt');
   await expect(page.locator('nav[aria-label="Main"] button').first()).toHaveText('Ao vivo');
-  return { app, page };
+  return { app, page, premiumStub };
 }
 
 async function resize(app, page, width, height = 800) {
@@ -119,54 +122,50 @@ function report(label, m) {
 test.describe('top bar — room for the tabs the bar is about to get', () => {
   let app;
   let page;
+  let premiumStub;
 
   test.beforeAll(async () => {
-    ({ app, page } = await launchApp());
+    ({ app, page, premiumStub } = await launchApp());
   });
 
   test.afterAll(async () => {
     await app?.close();
+    await premiumStub?.close();
   });
 
-  test('the bar as shipped fits the content cap with a margin and nothing overlaps', async () => {
+  test('the bar as shipped, Premium tab included, fits the content cap with a margin and nothing overlaps', async () => {
     await resize(app, page, WIDE_WINDOW);
     const m = await measureBar(page);
-    report('worded, as shipped', m);
+    report('worded, with the Premium tab', m);
 
     expect(m.overlap.brandNav, 'the tabs ran into the brand').toBeGreaterThanOrEqual(0);
     expect(m.overlap.navActions, 'the actions ran into the tabs').toBeGreaterThanOrEqual(m.navToActionsGap - 0.5);
     expect(m.content + MARGIN).toBeLessThanOrEqual(CONTENT_CAP);
     await expect(page.getByTestId('shell-settings')).toBeVisible();
+    await expect(page.locator('nav[aria-label="Main"] button').nth(8)).toHaveText('Premium');
   });
 
-  test('two more worded tabs, one Premium and one short one, still fit with the margin', async () => {
+  test('one more short worded tab beside the Premium tab still fits with the margin', async () => {
     await resize(app, page, WIDE_WINDOW);
-    await page.evaluate(
-      ({ premium, short }) => {
-        const nav = document.querySelector('nav[aria-label="Main"]');
-        const buttons = [...nav.querySelectorAll('button')];
-        const donor = buttons.find((el) => el.getAttribute('aria-current') !== 'page');
-        const first = donor.cloneNode(true);
-        first.textContent = premium;
-        first.setAttribute('data-stand-in', 'premium');
-        const second = donor.cloneNode(true);
-        second.style.boxSizing = 'border-box';
-        second.style.minWidth = `${short}px`;
-        second.style.width = `${short}px`;
-        second.setAttribute('data-stand-in', 'short');
-        buttons[buttons.length - 1].before(first, second);
-      },
-      { premium: 'Premium', short: SHORT_TAB_WIDTH },
-    );
+    await page.evaluate((short) => {
+      const nav = document.querySelector('nav[aria-label="Main"]');
+      const buttons = [...nav.querySelectorAll('button')];
+      const donor = buttons.find((el) => el.getAttribute('aria-current') !== 'page');
+      const standIn = donor.cloneNode(true);
+      standIn.style.boxSizing = 'border-box';
+      standIn.style.minWidth = `${short}px`;
+      standIn.style.width = `${short}px`;
+      standIn.setAttribute('data-stand-in', 'short');
+      buttons[buttons.length - 1].before(standIn);
+    }, SHORT_TAB_WIDTH);
     await page.waitForTimeout(100);
     const m = await measureBar(page);
-    report('worded, with two stand-in tabs', m);
+    report('worded, with the Premium tab and one stand-in tab', m);
 
-    const [premiumWidth, shortWidth] = await page.evaluate(() =>
-      ['premium', 'short'].map((id) => document.querySelector(`[data-stand-in="${id}"]`).getBoundingClientRect().width),
+    const shortWidth = await page.evaluate(
+      () => document.querySelector('[data-stand-in="short"]').getBoundingClientRect().width,
     );
     expect(shortWidth).toBeCloseTo(SHORT_TAB_WIDTH, 0);
-    expect(premiumWidth).toBeGreaterThan(0);
 
     expect(m.overlap.brandNav, 'the tabs ran into the brand').toBeGreaterThanOrEqual(0);
     expect(m.content + MARGIN, 'brand + strip + actions + gaps + margin past the content cap').toBeLessThanOrEqual(
@@ -178,13 +177,15 @@ test.describe('top bar — room for the tabs the bar is about to get', () => {
 test.describe('top bar — the same sums at each density stage', () => {
   let app;
   let page;
+  let premiumStub;
 
   test.beforeAll(async () => {
-    ({ app, page } = await launchApp());
+    ({ app, page, premiumStub } = await launchApp());
   });
 
   test.afterAll(async () => {
     await app?.close();
+    await premiumStub?.close();
   });
 
   for (const [label, width] of [
@@ -205,13 +206,15 @@ test.describe('top bar — the same sums at each density stage', () => {
 test.describe('top bar — which control is current', () => {
   let app;
   let page;
+  let premiumStub;
 
   test.beforeAll(async () => {
-    ({ app, page } = await launchApp());
+    ({ app, page, premiumStub } = await launchApp());
   });
 
   test.afterAll(async () => {
     await app?.close();
+    await premiumStub?.close();
   });
 
   test('Progression stays current on its Collections page, and the gear alone is current on Settings', async () => {
@@ -228,7 +231,7 @@ test.describe('top bar — which control is current', () => {
     await page.getByTestId('shell-settings').click();
     await expect(page.getByTestId('settings-view')).toBeVisible({ timeout: 20_000 });
     await expect(current).toHaveCount(0);
-    await expect(strip).toHaveCount(9);
+    await expect(strip).toHaveCount(10);
     await expect(page.getByTestId('shell-settings')).toHaveAttribute('aria-current', 'page');
   });
 });
