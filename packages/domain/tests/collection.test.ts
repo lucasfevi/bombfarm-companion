@@ -118,6 +118,37 @@ describe('where the game applies each axis — measured on one account, two read
   });
 });
 
+describe('the cooldown stat point on a Collections account — measured on the game’s own sheet', () => {
+  // One epic ★3 hero, birth cooldown 5.782% (×1.75 for the stars = 10.119 naked), gear taking the
+  // zero-point sheet to 24.747% with the Collections cooldown of 8.53% already on it. The game's
+  // sheet read 32.654% with 36 points and the 80% cap with 252; a 33-point respec moved it
+  // 26.74% → 34.03%, 0.2209 a point.
+  const NAKED_CDR = 5.782277088391102 * 1.75;
+  const COLLECTION = { ...NO_COLLECTION, cdrPct: 8.53 };
+  const GEARED_CDR = 24.747137055231512 / (1 + COLLECTION.cdrPct / 100);
+  const perPoint = 0.02 * NAKED_CDR * (1 + COLLECTION.cdrPct / 100);
+  const sheetAt = (points: number) => applyCollection({ ...emptySheet(), cdr: GEARED_CDR + points * 0.02 * NAKED_CDR }, COLLECTION, 0).cdr;
+
+  it('36 points read 32.65% on the sheet, and the collection scales the points with the rest', () => {
+    expect(sheetAt(36)).toBeCloseTo(32.654, 2);
+    expect(sheetAt(36) - sheetAt(0)).toBeCloseTo(36 * perPoint, 10);
+  });
+
+  it('a point is worth 0.02 of the naked roll times the collection: 0.2196, measured 0.2209 over 33 points', () => {
+    expect(perPoint).toBeCloseTo(0.2209, 2);
+    expect(Math.abs(33 * perPoint - (34.03 - 26.74))).toBeLessThan(0.1);
+  });
+
+  it('252 points land on the 80% cap to 0.15 of a point, so the Optimizer can price the floor when the points are there', () => {
+    expect(Math.abs(sheetAt(252) - 80)).toBeLessThan(0.15);
+    expect(sheetAt(253)).toBeGreaterThan(80);
+  });
+});
+
+function emptySheet() {
+  return { attack: 0, energy: 0, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 0 };
+}
+
 const EXPORT_FILE = 'save-20260914-20heroes-phase101.json';
 
 describe('a roster with Collections inverts to the same points it was built from', () => {

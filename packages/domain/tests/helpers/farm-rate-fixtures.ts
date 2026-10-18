@@ -101,6 +101,7 @@ export function loadFarmRateFixture(
       teamCoinPct: tree.teamCoinPct ?? 0,
       luckFlatPct: tree.luckFlatPct,
       xpMult: tree.xpMult,
+      ...(tree.collection === undefined ? {} : { collection: tree.collection }),
     },
     // The farm-rate module never reads this field — it prices the auras itself, over the rotation
     // (`farmTeamBuffs`). It is filled from the capture's own deployed line-up so a suite that
