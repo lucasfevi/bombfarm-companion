@@ -1149,6 +1149,7 @@ async function bootstrap(): Promise<void> {
       readIdentity: (consent) =>
         readGameIdentity(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged })),
     }),
+    locale: () => currentSettings.locale,
     log,
     onChanged: (view) => {
       emitEvent('premium:changed', view);

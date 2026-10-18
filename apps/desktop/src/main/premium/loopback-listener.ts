@@ -1,6 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
 import http from 'node:http';
-import { LOOPBACK_PAGE } from './loopback-page.js';
 
 export type LoopbackResult =
   | { kind: 'code'; code: string }
@@ -17,6 +16,7 @@ export interface LoopbackListener {
 export interface LoopbackListenerOptions {
   readonly expectedState: string;
   readonly timeoutMs: number;
+  readonly page: string;
   readonly createServer?: typeof http.createServer;
   readonly scheduler?: { readonly setTimeout: typeof setTimeout; readonly clearTimeout: typeof clearTimeout };
 }
@@ -87,7 +87,7 @@ export function startLoopbackListener(opts: LoopbackListenerOptions): Promise<Lo
         return;
       }
       res.writeHead(200, { ...COMMON_HEADERS, 'content-type': 'text/html; charset=utf-8' });
-      res.end(LOOPBACK_PAGE);
+      res.end(opts.page);
       finish(declined || code === null ? { kind: 'declined' } : { kind: 'code', code });
     });
 

@@ -1,8 +1,9 @@
 import http from 'node:http';
 import net from 'node:net';
 import { describe, expect, it, vi } from 'vitest';
-import { PREMIUM_SIGN_IN_TIMEOUT_MS } from '@bombfarm/contracts';
+import { PREMIUM_SIGN_IN_TIMEOUT_MS, type AppLocale } from '@bombfarm/contracts';
 import { startLoopbackListener } from './loopback-listener.js';
+import { loopbackPage } from './loopback-page.js';
 import {
   REDIRECT_URI,
   SECRETS,
@@ -75,7 +76,9 @@ describe('starting a sign-in', () => {
     ]);
     expect(REDIRECT_URI).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/callback$/);
     expect(h.opened).toEqual([SECRETS.approvalUrl]);
-    expect(h.listeners.options).toEqual([{ expectedState: SECRETS.state, timeoutMs: PREMIUM_SIGN_IN_TIMEOUT_MS }]);
+    expect(h.listeners.options).toEqual([
+      { expectedState: SECRETS.state, timeoutMs: PREMIUM_SIGN_IN_TIMEOUT_MS, page: loopbackPage('en') },
+    ]);
     expect(lastView(h).session).toBe('signing-in');
   });
 
@@ -348,6 +351,32 @@ describe('stopping', () => {
     await settle();
 
     expect(h.views).toHaveLength(before);
+  });
+});
+
+describe('the page the browser lands on', () => {
+  it.each(['en', 'pt-BR'] as const)('is the %s page when the app is in that language', async (locale) => {
+    const h = createHarness({ locale: () => locale });
+    await h.service.signIn();
+    expect(h.listeners.options[0]?.page).toBe(loopbackPage(locale));
+  });
+
+  it('reads the language once per attempt, so a later change does not touch a running attempt', async () => {
+    let current: AppLocale = 'pt-BR';
+    const read = vi.fn(() => current);
+    const h = createHarness({ locale: read });
+    await h.service.signIn();
+    current = 'en';
+    await settle();
+
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(h.listeners.options[0]?.page).toBe(loopbackPage('pt-BR'));
+
+    h.service.cancelSignIn();
+    await settle();
+    await h.service.signIn();
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(h.listeners.options[1]?.page).toBe(loopbackPage('en'));
   });
 });
 

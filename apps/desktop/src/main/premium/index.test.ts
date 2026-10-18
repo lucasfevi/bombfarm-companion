@@ -44,6 +44,7 @@ function build(originOverride: string | null, offline = false) {
     originOverride,
     offline,
     readGameIdentity: () => null,
+    locale: () => 'en',
     log: { info: keep, warn: keep, error: keep },
     onChanged: (view) => {
       views.push(view);

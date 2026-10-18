@@ -3,6 +3,7 @@ import {
   PREMIUM_REFRESH_EVERY_MS,
   PREMIUM_REFRESH_FLOOR_MS,
   PREMIUM_SIGN_IN_TIMEOUT_MS,
+  type AppLocale,
   type PremiumActionResult,
   type PremiumMe,
   type PremiumReportOutcome,
@@ -12,6 +13,7 @@ import {
 } from '@bombfarm/contracts';
 import type { LogPort } from '../storage/index.js';
 import type { LoopbackListener, startLoopbackListener } from './loopback-listener.js';
+import { loopbackPage } from './loopback-page.js';
 import type { FetchResult, PremiumApi } from './premium-api.js';
 import type { PremiumCache } from './premium-cache.js';
 import type { createPkce, createState } from './pkce.js';
@@ -32,6 +34,7 @@ export interface PremiumServiceDeps {
   openExternal(url: string): Promise<void>;
   readGameIdentity(): GameIdentity | null;
   startListener: typeof startLoopbackListener;
+  locale(): AppLocale;
   pkce: { createPkce: typeof createPkce; createState: typeof createState };
   now(): number;
   scheduler?: { readonly setTimeout: typeof setTimeout; readonly clearTimeout: typeof clearTimeout };
@@ -406,7 +409,11 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
 
     let active: LoopbackListener;
     try {
-      active = await deps.startListener({ expectedState: state, timeoutMs: PREMIUM_SIGN_IN_TIMEOUT_MS });
+      active = await deps.startListener({
+        expectedState: state,
+        timeoutMs: PREMIUM_SIGN_IN_TIMEOUT_MS,
+        page: loopbackPage(deps.locale()),
+      });
     } catch {
       endAttempt(startedIn, 'port-unavailable');
       return { ok: false, reason: 'failed' };

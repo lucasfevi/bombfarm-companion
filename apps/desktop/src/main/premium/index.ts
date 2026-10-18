@@ -1,5 +1,5 @@
 import { safeStorage, shell } from 'electron';
-import type { PremiumView } from '@bombfarm/contracts';
+import type { AppLocale, PremiumView } from '@bombfarm/contracts';
 import type { LogPort, SqliteDb } from '../storage/index.js';
 import { startLoopbackListener } from './loopback-listener.js';
 import { createPkce, createState } from './pkce.js';
@@ -30,6 +30,7 @@ export function createElectronPremium(deps: {
   readonly originOverride: string | null;
   readonly offline: boolean;
   readonly readGameIdentity: () => GameIdentity | null;
+  readonly locale: () => AppLocale;
   readonly log: LogPort;
   readonly onChanged: (view: PremiumView) => void;
 }): PremiumService {
@@ -40,6 +41,7 @@ export function createElectronPremium(deps: {
     openExternal: (url) => shell.openExternal(url),
     readGameIdentity: deps.readGameIdentity,
     startListener: startLoopbackListener,
+    locale: deps.locale,
     pkce: { createPkce, createState },
     now: () => Date.now(),
     log: deps.log,

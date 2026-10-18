@@ -1,4 +1,4 @@
-import type { PremiumView } from '@bombfarm/contracts';
+import type { AppLocale, PremiumView } from '@bombfarm/contracts';
 import type { LogPort } from '../storage/index.js';
 import type { LoopbackListener, LoopbackResult, startLoopbackListener } from './loopback-listener.js';
 import { createPremiumApi, type PremiumApi } from './premium-api.js';
@@ -338,6 +338,7 @@ export interface HarnessOptions {
   cache?: SpiedCache;
   listener?: (clock: FakeClock) => typeof startLoopbackListener;
   api?: (real: PremiumApi) => PremiumApi;
+  locale?: () => AppLocale;
 }
 
 export function createHarness(options: HarnessOptions = {}): Harness {
@@ -367,6 +368,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     },
     readGameIdentity: () => identity.current,
     startListener: options.listener === undefined ? listeners.start : options.listener(clock),
+    locale: options.locale ?? (() => 'en'),
     pkce: {
       createPkce: () => ({ verifier: SECRETS.verifier, challenge: 'challenge-fixture' }),
       createState: () => SECRETS.state,

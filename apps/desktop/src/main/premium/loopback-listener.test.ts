@@ -1,10 +1,10 @@
 import http from 'node:http';
 import net from 'node:net';
 import { afterEach, describe, expect, it } from 'vitest';
-import { LOOPBACK_PAGE } from './loopback-page.js';
 import { startLoopbackListener, type LoopbackListener } from './loopback-listener.js';
 
 const STATE = 'state-value-for-tests';
+const PAGE = '<!doctype html><title>page handed to the listener</title>';
 
 interface Reply {
   status: number;
@@ -59,6 +59,7 @@ async function start(timeoutMs = 60_000, scheduler?: Scheduler): Promise<Loopbac
   const listener = await startLoopbackListener({
     expectedState: STATE,
     timeoutMs,
+    page: PAGE,
     ...(scheduler === undefined ? {} : { scheduler }),
   });
   open.push(listener);
@@ -82,7 +83,7 @@ describe('startLoopbackListener', () => {
       created = http.createServer(handler);
       return created;
     }) as unknown as typeof http.createServer;
-    const listener = await startLoopbackListener({ expectedState: STATE, timeoutMs: 60_000, createServer: capturing });
+    const listener = await startLoopbackListener({ expectedState: STATE, timeoutMs: 60_000, page: PAGE, createServer: capturing });
     open.push(listener);
 
     const address = (created as http.Server | null)?.address() as net.AddressInfo | null | undefined;
@@ -99,7 +100,7 @@ describe('startLoopbackListener', () => {
     expect(reply.headers['cache-control']).toBe('no-store');
     expect(reply.headers['referrer-policy']).toBe('no-referrer');
     expect(reply.headers['content-type']).toBe('text/html; charset=utf-8');
-    expect(reply.body).toBe(LOOPBACK_PAGE);
+    expect(reply.body).toBe(PAGE);
     await expect(listener.result).resolves.toEqual({ kind: 'code', code: 'abc' });
     expect(await connectOnce(listener.redirectUri)).toBe('refused');
   });
@@ -228,7 +229,7 @@ describe('startLoopbackListener', () => {
     }) as unknown as typeof http.createServer;
 
     await expect(
-      startLoopbackListener({ expectedState: STATE, timeoutMs: 1000, createServer: failing }),
+      startLoopbackListener({ expectedState: STATE, timeoutMs: 1000, page: PAGE, createServer: failing }),
     ).rejects.toThrow('EADDRINUSE');
   });
 });

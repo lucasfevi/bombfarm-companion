@@ -1,9 +1,38 @@
-export const LOOPBACK_PAGE = `<!doctype html>
-<html lang="en">
+import type { AppLocale } from '@bombfarm/contracts';
+
+interface PageWords {
+  readonly lang: AppLocale;
+  readonly title: string;
+  readonly caption: string;
+  readonly heading: string;
+  readonly line: string;
+}
+
+const WORDS: Record<AppLocale, PageWords> = {
+  en: {
+    lang: 'en',
+    title: 'Signed in — Bomb Farm Companion',
+    caption: 'Back to the app',
+    heading: 'You are signed in',
+    line: 'Return to the desktop app. You can close this tab.',
+  },
+  'pt-BR': {
+    lang: 'pt-BR',
+    title: 'Conectado — Bomb Farm Companion',
+    caption: 'De volta ao app',
+    heading: 'Você está conectado',
+    line: 'Volte para o app de desktop. Você pode fechar esta aba.',
+  },
+};
+
+export function loopbackPage(locale: AppLocale): string {
+  const words = WORDS[locale];
+  return `<!doctype html>
+<html lang="${words.lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Signed in — Bomb Farm Companion</title>
+<title>${words.title}</title>
 <style>
 :root {
   color-scheme: dark;
@@ -59,7 +88,6 @@ main {
 .check { display: block; margin: 0 0 16px; }
 h1 { margin: 0 0 8px; font-size: 24px; font-weight: 700; line-height: 1.25; }
 p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted); }
-hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
 </style>
 </head>
 <body>
@@ -69,22 +97,16 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
 <span class="bar"></span>
 <span class="dot">2</span>
 <span class="bar"></span>
-<span class="step"><span class="dot current">3</span><span class="caption">Back to the app · De volta ao app</span></span>
+<span class="step"><span class="dot current">3</span><span class="caption">${words.caption}</span></span>
 </div>
 <svg class="check" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
 <circle cx="20" cy="20" r="18.5" stroke="oklch(72% 0.14 150)" stroke-width="2"/>
 <path d="M12 20.5l6 6 11-12.5" stroke="oklch(72% 0.14 150)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
-<section lang="en">
-<h1>You are signed in</h1>
-<p>Return to the desktop app. You can close this tab.</p>
-</section>
-<hr>
-<section lang="pt-BR">
-<h1>Você está conectado</h1>
-<p>Volte para o app de desktop. Você pode fechar esta aba.</p>
-</section>
+<h1>${words.heading}</h1>
+<p>${words.line}</p>
 </main>
 </body>
 </html>
 `;
+}
