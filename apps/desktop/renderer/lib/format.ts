@@ -56,6 +56,13 @@ export function formatGainPct(gainPct: number, locale: AppLocale): string {
   }).format(gainPct / 100);
 }
 
+/** A calendar date from an ISO-8601 instant, spelled out per locale; anything unparsable is printed as given. */
+export function formatDate(iso: string, locale: AppLocale): string {
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return iso;
+  return new Date(ms).toLocaleDateString(BCP47_BY_LOCALE[locale], { dateStyle: 'long' });
+}
+
 /** Whole-number DPS, thousands-grouped per locale. */
 export function formatDps(dps: number, locale: AppLocale): string {
   return Math.round(dps).toLocaleString(BCP47_BY_LOCALE[locale]);

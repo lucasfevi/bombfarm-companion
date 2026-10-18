@@ -18,7 +18,16 @@ export interface AppEnv {
   appId: string;
   productName: string;
   userDataPath: string;
+  premiumApiOriginOverride: string | null;
   envConflict: { requested: string; effective: AppFlavor } | null;
+}
+
+const LOOPBACK_ORIGIN = /^http:\/\/127\.0\.0\.1:(\d{1,5})$/;
+
+function loopbackOriginOrNull(raw: string | undefined): string | null {
+  const match = raw === undefined ? null : LOOPBACK_ORIGIN.exec(raw);
+  const port = match === null ? 0 : Number(match[1]);
+  return port >= 1 && port <= 65_535 ? (raw ?? null) : null;
 }
 
 export function buildAppEnv(deps: {
@@ -33,6 +42,10 @@ export function buildAppEnv(deps: {
    * ignored (never trusted) once the app is packaged, regardless of who set it. */
   userDataOverride?: string | undefined;
   rendererUrlOverride?: string | undefined;
+  /** Where the Premium API calls go instead of the real host, honoured only when
+   * `isPackaged === false` and only for `http://127.0.0.1:<port>` with no path - a packaged
+   * build must never be pointable at another host, since it sends the sign-in token there. */
+  premiumApiOriginOverride?: string | undefined;
 }): AppEnv {
   const { flavor, envConflict } = resolveRuntimeFlavor({
     raw: deps.rawFlavor,
@@ -56,6 +69,7 @@ export function buildAppEnv(deps: {
     appId: descriptor.appId,
     productName: descriptor.productName,
     userDataPath,
+    premiumApiOriginOverride: deps.isPackaged ? null : loopbackOriginOrNull(deps.premiumApiOriginOverride),
     envConflict,
   };
 }
@@ -90,6 +104,7 @@ export function resolveAppEnv(): AppEnv {
     nodeEnv: process.env.NODE_ENV,
     userDataOverride: process.env.BFC_USER_DATA_DIR,
     rendererUrlOverride: process.env.BFC_RENDERER_URL,
+    premiumApiOriginOverride: process.env.BFC_PREMIUM_API_ORIGIN,
   });
   return cachedEnv;
 }

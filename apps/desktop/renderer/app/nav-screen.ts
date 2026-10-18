@@ -13,3 +13,10 @@ export function stripIdForScreen(screenId: string): string | undefined {
 export function screenForStripId(stripId: string, rememberedPage: ProgressionPageId): string {
   return stripId === PROGRESSION_NAV_ID ? rememberedPage : stripId;
 }
+
+export const PREMIUM_NAV_ID = 'premium';
+
+/** Premium is the one tab that can disappear under the player; Settings is where its sign-in lives. */
+export function screenWhenPremiumVisibility(screenId: string, premiumVisible: boolean): string {
+  return screenId === PREMIUM_NAV_ID && !premiumVisible ? 'settings' : screenId;
+}

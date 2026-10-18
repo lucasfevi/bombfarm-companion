@@ -11,28 +11,29 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { switchLanguage } from './shell-control.mjs';
+import { startPremiumVisibleStub } from './premium-visible-stub.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
 const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-full.json');
 
-/** Wide enough to spell every word in the bar. 1500px of bar sits 262px over the whole-bar sum
- *  (1238) — outside the range a font-rendering pass moves. */
+/** Wide enough to spell every word in the bar. 1500px of bar sits 181px over the whole-bar sum
+ *  (1319) — outside the range a font-rendering pass moves. */
 const FULL_WINDOW = 1600;
 /** Inside the band where the tabs are glyphs and everything else is untouched. 1060px of bar sits
- *  118px above `SHELL_BRAND_MARK_WIDTH` (942) and 178px below `SHELL_ICON_TABS_WIDTH` (1238) —
+ *  82px above `SHELL_PREMIUM_TAB_WIDTHS.brandMark` (978) and 259px below `SHELL_PREMIUM_TAB_WIDTHS.iconTabs` (1319) —
  *  comfortably inside the icon-tabs band on both sides. */
 const ICON_TABS_WINDOW = 1160;
 /** Inside the band where the brand has shrunk to its mark but the actions are still spelled out.
- *  880px of bar sits 63px above `SHELL_ACTIONS_COLLAPSE_WIDTH` (817) and 62px below
- *  `SHELL_BRAND_MARK_WIDTH` (942). */
+ *  880px of bar sits 27px above `SHELL_PREMIUM_TAB_WIDTHS.actionsCollapse` (853) and 98px below
+ *  `SHELL_PREMIUM_TAB_WIDTHS.brandMark` (978). */
 const BRAND_MARK_WINDOW = 980;
 /** `createMainWindow`'s own `minWidth` — the narrowest window a player can drag to. 860px of bar
- *  (960 minus the caption strip) sits 43px over `SHELL_ACTIONS_COLLAPSE_WIDTH` (817), so the
+ *  (960 minus the caption strip) sits 7px over `SHELL_PREMIUM_TAB_WIDTHS.actionsCollapse` (853), so the
  *  smallest real window is still in the brand-mark stage with every action in the bar. */
 const MIN_WINDOW = 960;
-/** In the "actions collapsed behind the overflow" stage: 760px of bar sits 57px under
- *  `SHELL_ACTIONS_COLLAPSE_WIDTH` (817). Below the real minimum, so reachable only by lifting it
+/** In the "actions collapsed behind the overflow" stage: 760px of bar sits 93px under
+ *  `SHELL_PREMIUM_TAB_WIDTHS.actionsCollapse` (853). Below the real minimum, so reachable only by lifting it
  *  as `resize` does. */
 const ACTIONS_COLLAPSED_WINDOW = 860;
 /** Narrower still, reachable only by lifting the minimum as `resize` does. The glyph strip, the
@@ -40,7 +41,9 @@ const ACTIONS_COLLAPSED_WINDOW = 860;
  *  keeps a clearance above that point and sits on the 20px grid the loop below steps on. */
 const NARROWEST_MEASURED = 780;
 
+/** The bar is measured with the Premium tab in it: that is the widest strip the app ships. */
 async function launchApp() {
+  const premiumStub = await startPremiumVisibleStub();
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-top-bar-'));
   const app = await electron.launch({
     executablePath: path.join(
@@ -59,6 +62,7 @@ async function launchApp() {
       BFC_FIXTURE_ACCOUNT_FILE: ACCOUNT_FULL_FIXTURE,
       BFC_LIVE_SOURCE: 'replay',
       BFC_USER_DATA_DIR: userDataDir,
+      BFC_PREMIUM_API_ORIGIN: premiumStub.origin,
       // SAFETY, as in the sibling specs: points the session-token read away from the real
       // %APPDATA% session file so nothing here can issue a live authenticated request.
       BFC_TOKEN_PATH_OVERRIDE: path.join(desktopRoot, 'tests', 'smoke', '.no-such-session.cfg'),
@@ -71,7 +75,7 @@ async function launchApp() {
   await expect(consentModal).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('consent-accept').click();
   await expect(consentModal).toBeHidden({ timeout: 15_000 });
-  await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(9, { timeout: 30_000 });
+  await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(10, { timeout: 30_000 });
 
   // Portuguese, because it is the binding language: its tab words and its action labels are the
   // longest either language puts in the bar, so a width that fits here fits in English too. The
@@ -79,7 +83,7 @@ async function launchApp() {
   await switchLanguage(page, 'pt');
   await expect(page.locator('nav[aria-label="Main"] button').first()).toHaveText('Ao vivo');
 
-  return { app, page };
+  return { app, page, premiumStub };
 }
 
 /** Resizes the real `BrowserWindow` — Playwright's Electron support has no viewport emulation —
@@ -161,13 +165,15 @@ function tabs(page) {
 test.describe('top bar — degrades as the window narrows, and never overlaps itself', () => {
   let app;
   let page;
+  let premiumStub;
 
   test.beforeAll(async () => {
-    ({ app, page } = await launchApp());
+    ({ app, page, premiumStub } = await launchApp());
   });
 
   test.afterAll(async () => {
     await app?.close();
+    await premiumStub?.close();
   });
 
   test('brand, tabs and actions stay in their own lanes at every width the bar is drawn at', async () => {
@@ -296,7 +302,7 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
     await resize(app, page, NARROWEST_MEASURED);
     const rendered = await tabs(page);
 
-    expect(rendered).toHaveLength(9);
+    expect(rendered).toHaveLength(10);
     const active = rendered.filter((tab) => tab.active);
     expect(active).toHaveLength(1);
     expect(active[0].text, 'the current screen lost its name').not.toBe('');
@@ -329,6 +335,7 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
       'optimizer-view',
       'pvp-view',
       'skills-view',
+      'premium-view',
       'account-view',
     ];
 

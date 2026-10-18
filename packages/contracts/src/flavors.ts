@@ -12,6 +12,7 @@ export interface FlavorDescriptor {
   outputDir: string;
   updateChannel: UpdateChannel | null;
   logLevel: { console: 'debug' | false; file: 'debug' | 'info' };
+  premium: boolean;
 }
 
 export const APP_FLAVORS = ['dev', 'beta', 'prod'] as const satisfies readonly AppFlavor[];
@@ -27,6 +28,7 @@ export const FLAVORS: Readonly<Record<AppFlavor, FlavorDescriptor>> = {
     outputDir: 'release/dev',
     updateChannel: null,
     logLevel: { console: 'debug', file: 'debug' },
+    premium: true,
   },
   beta: {
     flavor: 'beta',
@@ -38,6 +40,7 @@ export const FLAVORS: Readonly<Record<AppFlavor, FlavorDescriptor>> = {
     outputDir: 'release/beta',
     updateChannel: 'beta',
     logLevel: { console: false, file: 'info' },
+    premium: false,
   },
   prod: {
     flavor: 'prod',
@@ -49,6 +52,7 @@ export const FLAVORS: Readonly<Record<AppFlavor, FlavorDescriptor>> = {
     outputDir: 'release/prod',
     updateChannel: 'latest',
     logLevel: { console: false, file: 'info' },
+    premium: false,
   },
 };
 
