@@ -50,6 +50,8 @@ export function TeamPlanPage({
   const setGatePhase = usePlannerStore((state) => state.setGatePhase);
   const setFarmSet = usePlannerStore((state) => state.setFarmSet);
   const setMapSize = usePlannerStore((state) => state.setFarmMapSize);
+  const setPriorityMode = usePlannerStore((state) => state.setPriorityMode);
+  const setPriorityOrder = usePlannerStore((state) => state.setPriorityOrder);
   const startRun = usePlannerStore((state) => state.startRun);
   const resolveRun = usePlannerStore((state) => state.resolveRun);
   const applyPlan = usePlannerStore((state) => state.applyPlan);
@@ -80,6 +82,8 @@ export function TeamPlanPage({
         setGatePhase,
         setFarmSet,
         setMapSize,
+        setPriorityMode,
+        setPriorityOrder,
         startRun,
         resolveRun,
         applyPlan,

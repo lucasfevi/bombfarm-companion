@@ -639,7 +639,7 @@ test.describe('deconstruct smoke', () => {
       await expect(burn).toBeDisabled();
       await expect(burn).toHaveAttribute('data-reason', 'fixture');
 
-      await page.getByRole('button', { name: 'Settings', exact: true }).click();
+      await page.getByTestId('shell-settings').click();
       const forgeSwitch = page.getByRole('switch', { name: en('settingsForgeWritesLabel') });
       await expect(forgeSwitch).toBeVisible({ timeout: 15_000 });
       await forgeSwitch.click();

@@ -11,6 +11,7 @@ import type { TeamPlanScreenCopy } from '../copy';
 import { buildGearFlowRows, groupGearFlowRows, removedRowsByOriginHero } from '../model/gear-flow-rows';
 import {
   TEAM_PLAN_RESULT_SORT_KEYS,
+  effectiveResultSort,
   firstResultSortDirection,
   sortTeamPlanResultRows,
   type TeamPlanResultSort,
@@ -23,6 +24,7 @@ import type { HeroGearFlow } from './hero-proposed-gear';
 /** Exhaustive by construction: a new sort key is a compile error here, not a blank option. */
 const SORT_KEY_LABEL = {
   name: 'teamPlanResultSortName',
+  priority: 'teamPlanResultSortPriority',
   delta: 'teamPlanResultSortDelta',
   deltaPct: 'teamPlanResultSortDeltaPct',
   after: 'teamPlanResultSortAfter',
@@ -91,8 +93,12 @@ export function HeroDeltaTable({
     return map;
   }, [plan, inventoryItems]);
 
-  const { openHeroIds, onOpenHeroIdsChange, sort, onSortChange } = rowsView;
-  const rows = useMemo(() => sortTeamPlanResultRows(plan.perHero, sort), [plan.perHero, sort]);
+  const { openHeroIds, onOpenHeroIdsChange, onSortChange } = rowsView;
+  const sort = effectiveResultSort(rowsView.sort, plan.priorityOrder);
+  const rows = useMemo(
+    () => sortTeamPlanResultRows(plan.perHero, sort, plan.priorityOrder),
+    [plan.perHero, sort, plan.priorityOrder],
+  );
 
   const firstHeroId = rows[0]?.heroId;
   const openValue = useMemo(
@@ -105,7 +111,7 @@ export function HeroDeltaTable({
       <Tooltip.Provider delay={200} closeDelay={80}>
         <div className={panelHClass}>
           <h2 className={panelTitleClass}>{t.teamPlanHeroDeltaTitle}</h2>
-          <ResultSortControl t={t} sort={sort} onSortChange={onSortChange} />
+          <ResultSortControl t={t} sort={sort} onSortChange={onSortChange} offerPriority={plan.priorityOrder !== undefined} />
         </div>
         <Accordion.Root multiple value={openValue} onValueChange={onOpenHeroIdsChange} className={accordionStackClass}>
           {rows.map((row) => (
@@ -132,10 +138,12 @@ function ResultSortControl({
   t,
   sort,
   onSortChange,
+  offerPriority,
 }: {
   t: TeamPlanScreenCopy;
   sort: TeamPlanResultSort;
   onSortChange: (next: TeamPlanResultSort) => void;
+  offerPriority: boolean;
 }) {
   const ascending = sort.direction === 'asc';
   const directionLabel = ascending ? t.teamPlanResultSortAscending : t.teamPlanResultSortDescending;
@@ -151,7 +159,7 @@ function ResultSortControl({
         aria-label={t.teamPlanResultSortLabel}
         className={inventorySortSelectClass}
       >
-        {TEAM_PLAN_RESULT_SORT_KEYS.map((key) => (
+        {TEAM_PLAN_RESULT_SORT_KEYS.filter((key) => offerPriority || key !== 'priority').map((key) => (
           <option key={key} value={key}>
             {t[SORT_KEY_LABEL[key]]}
           </option>

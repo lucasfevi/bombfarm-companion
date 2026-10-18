@@ -194,6 +194,12 @@ export function OptimizerScreen({
       setFarmSet: (value: string | null) => {
         onControlChange({ kind: 'farmSet', value });
       },
+      setPriorityMode: (value: boolean) => {
+        onControlChange({ kind: 'priorityMode', value });
+      },
+      setPriorityOrder: (value: readonly string[]) => {
+        onControlChange({ kind: 'priorityOrder', value });
+      },
       startRun: (runId: string) => {
         actions.startRun(runId, liveSignatureRef.current, heroesRef.current, basisRef.current);
       },

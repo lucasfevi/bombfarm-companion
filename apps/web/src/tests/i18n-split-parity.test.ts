@@ -597,6 +597,10 @@ const KEYS_ADDED: readonly string[] = [
   // notes and its clear-time line and slow-clear warning, the ledger's row label, and the
   // front-page card's headline unit. One line, as above.
   'teamPlanObjectiveOptionSet', 'teamPlanObjectiveHintSetFarm', 'teamPlanSetupSectionBodySetFarm', 'teamPlanTotalGainValueSetFarm', 'teamPlanGearDipNoteSetFarm', 'teamPlanPhaseHintNoneSetFarm', 'teamPlanFarmSetLabel', 'teamPlanFarmSetAria', 'teamPlanFarmSetPlaceholder', 'teamPlanFarmSetOption', 'teamPlanFarmSetOptionLocked', 'teamPlanFarmSetHint', 'teamPlanFarmSetNeeded', 'teamPlanFarmSetNeedsMaxPhase', 'teamPlanScoredPhaseSetSearched', 'teamPlanScoredPhaseSetUnfarmable', 'teamPlanScoredPhaseClearTime', 'teamPlanScoredPhaseSlowClear', 'teamPlanChangesControlFarmSet', 'homeCardOptimizerHeadlineSetFarm',
+  // The Optimizer's priority order (2026-10-16): the scope board's switch, its explanation and the
+  // cards' rank and arrow labels, the result sort, the run line, the below-today note and the
+  // ledger's row with its two values. One line, as above.
+  'teamPlanPriorityLabel', 'teamPlanPriorityAria', 'teamPlanPriorityTip', 'teamPlanPriorityRankAria', 'teamPlanPriorityMoveUpAria', 'teamPlanPriorityMoveDownAria', 'teamPlanResultSortPriority', 'teamPlanRunSeedPriority', 'teamPlanPriorityBelowToday', 'teamPlanChangesControlPriorityOrder', 'teamPlanChangesPriorityTeamWide', 'teamPlanChangesPriorityOneAtATime',
   'teamPlanChangesScope',
   'teamPlanChangesGroupBreaks',
   'teamPlanChangesHeroRemovedUsed',
@@ -1080,9 +1084,7 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanResultSortLabel', 'teamPlanResultSortName', 'teamPlanResultSortDelta', 'teamPlanResultSortDeltaPct', 'teamPlanResultSortAfter', 'teamPlanResultSortBefore', 'teamPlanResultSortLevel', 'teamPlanResultSortAscending', 'teamPlanResultSortDescending',
   // The Items panel's two editable slot grids (2026-09-29) name themselves with this plus the
   // compare side, so current gear and the clone are told apart by name rather than by position.
-  'slotEditor', 'siteMenuAria', 'siteMenuLanguage',
-  // The map-size control on the Farm board and the Optimizer, and its line in the plan's ledger of changes. One line for the cap.
-  'farmRankingMapSizeLabel', 'farmRankingMapSizeClassic', 'farmRankingMapSizeCompact', 'farmRankingMapSizeTip', 'farmRankingMapSizeTipDetected', 'teamPlanMapSizeLabel', 'teamPlanMapSizeClassic', 'teamPlanMapSizeCompact', 'teamPlanMapSizeHint', 'teamPlanMapSizeHintDetected', 'teamPlanChangesFieldMapSize',
+  'slotEditor', 'siteMenuAria', 'siteMenuLanguage', 'farmRankingMapSizeLabel', 'farmRankingMapSizeClassic', 'farmRankingMapSizeCompact', 'farmRankingMapSizeTip', 'farmRankingMapSizeTipDetected', 'teamPlanMapSizeLabel', 'teamPlanMapSizeClassic', 'teamPlanMapSizeCompact', 'teamPlanMapSizeHint', 'teamPlanMapSizeHintDetected', 'teamPlanChangesFieldMapSize',
 ];
 
 /**

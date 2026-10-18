@@ -8,25 +8,33 @@ import type { ScopeState } from '../core/hero-scope';
 import type { TeamPlanCopy } from '../copy';
 import { ScopeHeroCard } from './scope-hero-card';
 
+function columnCopy(scope: ScopeState, t: TeamPlanCopy): { title: string; tip: string } {
+  if (scope === 'optimize') return { title: t.teamPlanScopeOptimize, tip: t.teamPlanScopeOptimizeTip };
+  if (scope === 'donate') return { title: t.teamPlanScopeDonate, tip: t.teamPlanScopeDonateTip };
+  return { title: t.teamPlanScopeLeaveAlone, tip: t.teamPlanScopeLeaveAloneTip };
+}
+
 export function ScopeColumn({
   scope,
-  title,
-  tip,
   heroes,
   scopeByHeroId,
   t,
   lang,
   onScope,
+  priorityById,
+  onShiftPriority,
 }: {
   scope: ScopeState;
-  title: string;
-  tip: string;
   heroes: HeroRecord[];
   scopeByHeroId: Record<string, ScopeState>;
   t: TeamPlanCopy;
   lang: Lang;
   onScope: (heroId: string, scope: ScopeState) => void;
+  /** Each hero's place in the gearing order — set on the Optimize column in priority mode. */
+  priorityById?: ReadonlyMap<string, { rank: number; count: number }>;
+  onShiftPriority?: (heroId: string, delta: number) => void;
 }) {
+  const { title, tip } = columnCopy(scope, t);
   const { setNodeRef, isOver } = useDroppable({
     id: scope,
     data: { type: 'column', scope },
@@ -65,6 +73,8 @@ export function ScopeColumn({
               t={t}
               lang={lang}
               onScope={onScope}
+              priority={priorityById?.get(hero.id)}
+              onShiftPriority={onShiftPriority}
             />
           ))
         )}

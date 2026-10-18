@@ -475,3 +475,42 @@ describe('gatePhase and the duel squad', () => {
     expect(isPvpObjectiveUnavailable({ heroes: heroes.slice(0, 9), pvpSquadSlots: null }, { scopeByHeroId: {} })).toBe(false);
   });
 });
+
+describe('applyTeamPlanControlChange priority order', () => {
+  const context = { heroes: [], farmChosenPhase: null, phase: null };
+
+  it('clears the plan when the mode flips, and does nothing when it is already set', () => {
+    const on = applyTeamPlanControlChange(DEFAULT_TEAM_PLAN_CONTROLS, { kind: 'priorityMode', value: true }, context);
+    expect(on).toEqual({ controls: { ...DEFAULT_TEAM_PLAN_CONTROLS, priorityMode: true }, clearsPlan: true });
+    expect(applyTeamPlanControlChange(DEFAULT_TEAM_PLAN_CONTROLS, { kind: 'priorityMode', value: false }, context)).toBeNull();
+  });
+
+  it('clears the plan on a new order only while the mode is on', () => {
+    const order = { kind: 'priorityOrder', value: ['b', 'a'] } as const;
+    expect(applyTeamPlanControlChange(DEFAULT_TEAM_PLAN_CONTROLS, order, context)?.clearsPlan).toBe(false);
+    const on = { ...DEFAULT_TEAM_PLAN_CONTROLS, priorityMode: true };
+    expect(applyTeamPlanControlChange(on, order, context)).toEqual({
+      controls: { ...on, priorityOrder: ['b', 'a'] },
+      clearsPlan: true,
+    });
+    expect(applyTeamPlanControlChange({ ...on, priorityOrder: ['b', 'a'] }, order, context)).toBeNull();
+  });
+});
+
+describe('computeTeamPlanInputSignature priority order', () => {
+  const roster = [minimalHero({ id: 'a', updatedAt: 1 }), minimalHero({ id: 'b', updatedAt: 1 })];
+
+  it('ignores the stored order while the board is team-wide', () => {
+    const base = computeTeamPlanInputSignature(inputs({ heroes: roster }), DEFAULT_TEAM_PLAN_CONTROLS);
+    const ordered = computeTeamPlanInputSignature(inputs({ heroes: roster }), { ...DEFAULT_TEAM_PLAN_CONTROLS, priorityOrder: ['b'] });
+    expect(ordered).toBe(base);
+  });
+
+  it('differs when the mode or the gearing order changes', () => {
+    const on = { ...DEFAULT_TEAM_PLAN_CONTROLS, priorityMode: true };
+    const team = computeTeamPlanInputSignature(inputs({ heroes: roster }), DEFAULT_TEAM_PLAN_CONTROLS);
+    const ab = computeTeamPlanInputSignature(inputs({ heroes: roster }), { ...on, priorityOrder: ['a', 'b'] });
+    const ba = computeTeamPlanInputSignature(inputs({ heroes: roster }), { ...on, priorityOrder: ['b', 'a'] });
+    expect(new Set([team, ab, ba]).size).toBe(3);
+  });
+});

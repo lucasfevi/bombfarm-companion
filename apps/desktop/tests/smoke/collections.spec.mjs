@@ -1,9 +1,9 @@
 /**
- * The Collections tab, end to end in the real app: the replayed live source serves the committed
+ * The Collections page, end to end in the real app: the replayed live source serves the committed
  * synthetic Collections body through the same decoder the real tap uses, main keeps it in the
- * account database, and the tab draws the ten bonus tiles and a row for every book — then opens
+ * account database, and the page draws the ten bonus tiles and a row for every book — then opens
  * one book's detail. The unit tests under `renderer/app/collections` and `renderer/lib/collections`
- * prove each piece; only a launched window proves they were wired to each other. A Collections tab
+ * prove each piece; only a launched window proves they were wired to each other. A Collections page
  * that stays empty while the app has been served the state is the failure this file exists to
  * catch.
  */
@@ -27,7 +27,7 @@ const COLLECTIONS_FIXTURE = path.join(
   'collections-state.json',
 );
 
-const COLLECTIONS_TAB_INDEX = 8;
+const PROGRESSION_TAB_INDEX = 7;
 
 function electronExecutable() {
   return path.join(
@@ -92,14 +92,16 @@ function navButton(page, index) {
   return page.locator('nav[aria-label="Main"] button').nth(index);
 }
 
-/** Every test opens the tab itself: a retried test runs in a fresh worker whose `beforeAll`
- *  relaunched the app on the Live tab, so nothing may lean on the previous test's navigation. */
+/** Every test opens the page itself: a retried test runs in a fresh worker whose `beforeAll`
+ *  relaunched the app on the Live tab, so nothing may lean on the previous test's navigation.
+ *  Collections is a page of the Progression tab, reached through the tab and then its page switch. */
 async function openCollections(page) {
-  await navButton(page, COLLECTIONS_TAB_INDEX).click();
+  await navButton(page, PROGRESSION_TAB_INDEX).click();
+  await page.getByRole('tab', { name: en('collectionsNavLabel'), exact: true }).click();
   await page.waitForSelector('[data-testid="collections-view"]', { timeout: 20_000 });
 }
 
-test.describe('Collections tab — the state the replayed tap served, drawn as bonuses and books', () => {
+test.describe('Collections page — the state the replayed tap served, drawn as bonuses and books', () => {
   /** @type {import('@playwright/test').ElectronApplication} */
   let app;
   /** @type {import('@playwright/test').Page} */
@@ -124,8 +126,8 @@ test.describe('Collections tab — the state the replayed tap served, drawn as b
     fs.rmSync(runDir, { recursive: true, force: true });
   });
 
-  test('the tab is named Collections and draws the ten bonus tiles and a row for every book', async () => {
-    await expect(navButton(page, COLLECTIONS_TAB_INDEX)).toHaveAccessibleName(en('collectionsNavLabel'));
+  test('the Collections page draws the ten bonus tiles and a row for every book', async () => {
+    await expect(navButton(page, PROGRESSION_TAB_INDEX)).toHaveAccessibleName(en('progressionNavLabel'));
     await openCollections(page);
 
     const { sets } = fixtureBody();

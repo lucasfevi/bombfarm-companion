@@ -22,6 +22,7 @@ export function attachTeamPlanPersistence(store: Store): () => void {
       ignoreFieldCrowding: state.ignoreFieldCrowding,
       targetPhase: selectTeamPlanScoredPhase(state),
       farmSet: state.objective === 'setFarm' ? state.farmSet : null,
+      priorityMode: state.priorityMode,
       plan: state.plan,
     });
   });
@@ -36,9 +37,10 @@ export function attachTeamPlanPersistence(store: Store): () => void {
         state.ignoreFieldCrowding,
         selectTeamPlanScoredPhase(state),
         state.objective === 'setFarm' ? state.farmSet : null,
+        state.priorityMode,
         state.booted,
       ] as const,
-    ([, , , , , , , booted]) => {
+    ([, , , , , , , , booted]) => {
       if (!booted) return;
       writer.schedule();
     },

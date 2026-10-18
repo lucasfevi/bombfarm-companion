@@ -32,6 +32,7 @@ describe('seedStartLabel', () => {
     ['greedyHeroDps', teamPlanEn.teamPlanRunSeedGreedyHeroDps],
     ['greedySlotValue', teamPlanEn.teamPlanRunSeedGreedySlotValue],
     ['bestItemFirst', teamPlanEn.teamPlanRunSeedBestItemFirst],
+    ['priority', teamPlanEn.teamPlanRunSeedPriority],
   ] as const)('resolves %s to its own label', (seedUsed, expected) => {
     expect(seedStartLabel(teamPlanEn, seedUsed)).toBe(expected);
   });

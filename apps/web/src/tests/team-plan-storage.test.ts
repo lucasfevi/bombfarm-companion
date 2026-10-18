@@ -58,6 +58,7 @@ function sampleEnvelope(targetPhase: number | null = null): TeamPlanEnvelope {
     ignoreFieldCrowding: false,
     targetPhase,
     farmSet: null,
+    priorityMode: false,
     plan: samplePlan(),
   };
 }
@@ -140,6 +141,17 @@ describe('team plan envelope storage', () => {
   it('reads an envelope written before the set control existed as one with no set', () => {
     localStorage.setItem(TEAM_PLAN_KEY, envelopeWithout('farmSet'));
     expect(loadTeamPlanEnvelope()).toEqual(sampleEnvelope());
+  });
+
+  it('reads an envelope written before priority order existed as a team-wide plan', () => {
+    localStorage.setItem(TEAM_PLAN_KEY, envelopeWithout('priorityMode'));
+    expect(loadTeamPlanEnvelope()).toEqual(sampleEnvelope());
+  });
+
+  it('round-trips a plan geared one hero at a time', () => {
+    const envelope: TeamPlanEnvelope = { ...sampleEnvelope(), priorityMode: true };
+    expect(saveTeamPlanEnvelope(envelope)).toBe(true);
+    expect(loadTeamPlanEnvelope()).toEqual(envelope);
   });
 
   it('removes the key on request and returns false when the write fails', () => {
