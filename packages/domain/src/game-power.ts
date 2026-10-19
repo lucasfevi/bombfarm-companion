@@ -33,8 +33,12 @@ const ENERGY_BRACKET_PER_ENERGY = 0.008;
 const ENERGY_BRACKET_CEILING = 6;
 const BLOCKS_PER_ALCANCE = 0.5;
 
-/** The highest cooldown reduction the formula has been checked against; past it, it is extrapolated. */
-export const GAME_POWER_CDR_CHECKED_MAX_PCT = 17.85;
+/**
+ * The highest rune-free cooldown the formula has been checked against; past it, it is extrapolated.
+ * A hero at the 80% cap on a live read scores its stored Power exactly at 76.64%, and its spent
+ * points then reconcile with its level to the point.
+ */
+export const GAME_POWER_CDR_CHECKED_MAX_PCT = 76.64;
 
 export type GamePowerInput = {
   readonly sheet: SheetStats;
