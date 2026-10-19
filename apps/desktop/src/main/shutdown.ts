@@ -23,6 +23,7 @@ export const SHUTDOWN_STEPS = [
   'stopMarketService',
   'stopOnlinePlayersService',
   'stopGamePingService',
+  'stopPremium',
   'releaseForgeService',
   'releaseForgeInjector',
   'releaseApplyService',

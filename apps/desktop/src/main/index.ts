@@ -52,7 +52,8 @@ import { createLiveConsentGate } from './game-api/live-consent-gate.js';
 import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
 import { createWindowLayoutStore, type WindowLayoutStore } from './game-api/window-layout-store.js';
 import { companionUserAgent, createNodeHttpsTransport } from './game-api/https-transport.js';
-import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
+import { createGrantedGameIdentityReader } from './game-api/granted-game-identity.js';
+import { readGameIdentity, readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
 import { createTriggeredRefresh, type TriggeredRefresh } from './game-api/triggered-refresh.js';
 import { createLiveFastPublisher, type LiveFastPublisher } from './live-source/live-fast-publisher.js';
 import {
@@ -88,6 +89,7 @@ import { gamePingProbe } from './game-ping/game-ping-transport.js';
 import { offlineOnlinePlayersGet } from './online-players/online-players-offline.js';
 import { createOnlinePlayersService, type OnlinePlayersService } from './online-players/online-players-service.js';
 import { onlinePlayersHttpGet } from './online-players/online-players-transport.js';
+import { createPremiumWhenEnabled, type PremiumService } from './premium/index.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 import {
@@ -148,6 +150,7 @@ let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
 let onlinePlayersService: OnlinePlayersService | null = null;
 let gamePingService: GamePingService | null = null;
+let premium: PremiumService | null = null;
 let forgeService: ForgeService | null = null;
 let forgeHistory: ForgeHistory | null = null;
 let applyService: ApplyService | null = null;
@@ -344,6 +347,7 @@ function registerIpcHandlers(): void {
       getMarketService: () => marketService,
       getOnlinePlayersService: () => onlinePlayersService,
       getGamePingService: () => gamePingService,
+      getPremiumService: () => premium,
       getForgeService: () => forgeService,
       getForgeHistory: () => forgeHistory,
       getForgeInjector: () => forgeInjector,
@@ -967,6 +971,7 @@ async function bootstrap(): Promise<void> {
     accountRefresh,
     emit: (view) => {
       emitEvent('account:changed', view);
+      premium?.noteAccountChanged();
     },
   });
 
@@ -1148,6 +1153,22 @@ async function bootstrap(): Promise<void> {
     },
   });
 
+  premium = createPremiumWhenEnabled(env.descriptor.premium, {
+    db: accountOpen.db,
+    originOverride: resolveAppEnv().premiumApiOriginOverride,
+    offline: currentAccountSource() === 'fixture',
+    readGameIdentity: createGrantedGameIdentityReader({
+      readConsent: () => consentStore?.read() ?? initialConsent(),
+      readIdentity: (consent) =>
+        readGameIdentity(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged })),
+    }),
+    locale: () => currentSettings.locale,
+    log,
+    onChanged: (view) => {
+      emitEvent('premium:changed', view);
+    },
+  });
+
   registerIpcHandlers();
   registerRendererProtocol(path.join(__dirname, '../../renderer/out'));
   await createMainWindow();
@@ -1186,6 +1207,7 @@ async function bootstrap(): Promise<void> {
   log.info({ scope: 'main', event: 'market.started' });
   onlinePlayersService.start();
   gamePingService.start();
+  premium?.start();
 }
 
 function resolveBootEnv(): AppEnv {
@@ -1302,6 +1324,10 @@ if (!gotLock) {
         stopGamePingService: () => {
           gamePingService?.stop();
           gamePingService = null;
+        },
+        stopPremium: () => {
+          premium?.stop();
+          premium = null;
         },
         releaseForgeService: () => {
           forgeService = null;

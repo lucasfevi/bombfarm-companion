@@ -26,7 +26,7 @@ import type { ConsentRecord } from '@bombfarm/game-api';
 import { CopyProvider, useCopy, useLocale } from '../lib/copy';
 import { useTabScrollMemory } from '../lib/use-tab-scroll-memory';
 import { navItemsFor } from './nav-items';
-import { screenForStripId, stripIdForScreen } from './nav-screen';
+import { screenForStripId, screenWhenPremiumVisibility, stripIdForScreen } from './nav-screen';
 import { ScreenBoundary } from './screen-boundary';
 import { DataNoticesBanner } from './data-notices-banner';
 import { useDataNotices } from '../lib/account/use-data-notices';
@@ -65,6 +65,9 @@ import { ForgeSection } from './settings/forge-section';
 import { GameSection } from './settings/game-section';
 import { UsageSection } from './settings/usage-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
+import { PremiumSection } from './settings/premium-section';
+import { PremiumScreen } from './premium/premium-view';
+import { usePremiumVisible } from '../lib/premium/use-premium';
 import { LanguageSection } from './settings/language-section';
 import { MarketSection } from './settings/market-section';
 import { SupportSection } from './settings/support-section';
@@ -200,10 +203,13 @@ function HomePageContent({
 }) {
   const t = useCopy();
   const { lang } = useLocale();
+  const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
+  const premiumEnabled = environment?.premiumEnabled === true;
+  const premiumTabShown = usePremiumVisible(premiumEnabled);
   // The caption cluster is subtracted before the bar is judged: it sits at the end of the same
   // row and never shrinks, so the room the tabs and actions are competing for is what is left
   // after it.
-  const density = useShellDensity(WINDOW_CONTROLS_WIDTH);
+  const density = useShellDensity(WINDOW_CONTROLS_WIDTH, premiumTabShown);
   const mainRef = useRef<HTMLElement | null>(null);
   const [activeNavId, setActiveNavId] = useTabScrollMemory(DEFAULT_NAV_ID, mainRef);
   useEffect(() => {
@@ -214,10 +220,13 @@ function HomePageContent({
   const openOptimizerTab = useCallback(() => {
     setActiveNavId('optimizer');
   }, [setActiveNavId]);
+  useEffect(() => {
+    const next = screenWhenPremiumVisibility(activeNavId, premiumTabShown);
+    if (next !== activeNavId) setActiveNavId(next);
+  }, [activeNavId, premiumTabShown, setActiveNavId]);
   const openSettings = useCallback(() => {
     setActiveNavId('settings');
   }, [setActiveNavId]);
-  const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
   const [consent, setConsent] = useState<ConsentRecord | null>(null);
   const [consentForceOpen, setConsentForceOpen] = useState(false);
@@ -338,7 +347,7 @@ function HomePageContent({
   // The Live tab wears the game's state at its corner — the same words the strip's game cell says.
   const liveMark = liveTabMark(status, t);
   const activeStripId = stripIdForScreen(activeNavId);
-  const navItems = navItemsFor(t).map((item) => (item.id === 'live' ? { ...item, mark: liveMark } : item));
+  const navItems = navItemsFor(t, { premium: premiumTabShown }).map((item) => (item.id === 'live' ? { ...item, mark: liveMark } : item));
 
   return (
     <AccountHeroPeekStats>
@@ -461,6 +470,7 @@ function HomePageContent({
                 onUsagePingEnabledChange={onUsagePingEnabledChange}
                 persistWarning={usagePingWarning}
               />
+              {premiumEnabled ? <PremiumSection /> : null}
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
               <UpdatesSection
                 status={updateStatus}
@@ -486,6 +496,8 @@ function HomePageContent({
             <PvpView />
           ) : activeNavId === 'skills' || activeNavId === 'collections' ? (
             <ProgressionPage page={activeNavId} onPageChange={setActiveNavId} />
+          ) : activeNavId === 'premium' && premiumTabShown ? (
+            <PremiumScreen />
           ) : activeNavId === 'account' ? (
             <AccountView
               marketQuoteCurrency={marketQuoteCurrency}

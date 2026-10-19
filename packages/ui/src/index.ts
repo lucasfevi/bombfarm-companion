@@ -50,6 +50,7 @@ export {
   SHELL_ACTIONS_COLLAPSE_WIDTH,
   SHELL_BRAND_MARK_WIDTH,
   SHELL_ICON_TABS_WIDTH,
+  SHELL_PREMIUM_TAB_WIDTHS,
   type ShellDensity,
 } from './shell-density';
 export { SegmentedToggle } from './segmented-toggle';

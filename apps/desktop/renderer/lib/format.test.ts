@@ -14,6 +14,7 @@ import {
   formatAge,
   formatCapturedAt,
   formatCount,
+  formatDate,
   formatDps,
   formatEnergyPercent,
   formatGainPct,
@@ -172,5 +173,16 @@ describe('finiteNumber', () => {
     expect(finiteNumber('not a number')).toBeNull();
     expect(finiteNumber(null)).toBeNull();
     expect(finiteNumber(undefined)).toBeNull();
+  });
+});
+
+describe('formatDate (both locales)', () => {
+  it('spells the date out in the chosen language', () => {
+    expect(formatDate('2026-11-12T12:00:00.000Z', 'en')).toBe('November 12, 2026');
+    expect(formatDate('2026-11-12T12:00:00.000Z', 'pt-BR')).toBe('12 de novembro de 2026');
+  });
+
+  it('prints something it cannot parse exactly as given', () => {
+    expect(formatDate('soon', 'en')).toBe('soon');
   });
 });

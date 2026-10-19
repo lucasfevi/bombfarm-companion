@@ -23,6 +23,7 @@ const MATRIX: Record<
     updateChannel: string | null;
     consoleLogLevel: 'debug' | false;
     fileLogLevel: 'debug' | 'info';
+    premium: boolean;
   }
 > = {
   dev: {
@@ -35,6 +36,7 @@ const MATRIX: Record<
     updateChannel: null,
     consoleLogLevel: 'debug',
     fileLogLevel: 'debug',
+    premium: true,
   },
   beta: {
     appId: 'net.bombfarm.companion.beta',
@@ -46,6 +48,7 @@ const MATRIX: Record<
     updateChannel: 'beta',
     consoleLogLevel: false,
     fileLogLevel: 'info',
+    premium: false,
   },
   prod: {
     appId: 'net.bombfarm.companion',
@@ -57,6 +60,7 @@ const MATRIX: Record<
     updateChannel: 'latest',
     consoleLogLevel: false,
     fileLogLevel: 'info',
+    premium: false,
   },
 };
 
@@ -82,8 +86,17 @@ describe('FLAVORS matrix', () => {
       expect(descriptor.updateChannel).toBe(expected.updateChannel);
       expect(descriptor.logLevel.console).toBe(expected.consoleLogLevel);
       expect(descriptor.logLevel.file).toBe(expected.fileLogLevel);
+      expect(descriptor.premium).toBe(expected.premium);
     });
   }
+});
+
+describe('Premium switch', () => {
+  it('is on only in the dev flavor', () => {
+    expect(getFlavorDescriptor('dev').premium).toBe(true);
+    expect(getFlavorDescriptor('beta').premium).toBe(false);
+    expect(getFlavorDescriptor('prod').premium).toBe(false);
+  });
 });
 
 describe('getFlavorDescriptor', () => {

@@ -33,6 +33,17 @@ const ONLINE_PLAYERS_TRANSPORT_FILE = join(DESKTOP_MAIN, 'online-players/online-
 /** The ping readout's one socket: a bare TCP handshake with the game host that writes nothing
  *  and closes at once. It is the only file that may import `node:net`. */
 const GAME_PING_TRANSPORT_FILE = join(DESKTOP_MAIN, 'game-ping/game-ping-transport.ts');
+/** The Premium sign-in's one socket. It carries the desktop's own bearer token (never the game's
+ *  session token) to the same API host, so it may POST; exempted by file for the host, the socket
+ *  and the verb, and asserted below to import nothing from the game API. */
+const PREMIUM_TRANSPORT_FILE = join(DESKTOP_MAIN, 'premium/premium-transport.ts');
+/** The Premium API client names the verb for each call it hands the transport, so it may carry
+ *  the `POST` literal; it names no host and reaches no socket, which Guards 1 and 2 still enforce. */
+const PREMIUM_API_FILE = join(DESKTOP_MAIN, 'premium/premium-api.ts');
+/** The Premium sign-in's one-shot callback listener: the only file that may import `node:http`,
+ *  because it is a server, not a client. Asserted below to bind the loopback address and to make
+ *  no outbound request. */
+const PREMIUM_LISTENER_FILE = join(DESKTOP_MAIN, 'premium/loopback-listener.ts');
 const SESSION_TOKEN_FILE_FILE = join(DESKTOP_MAIN, 'game-api/session-token-file.ts');
 const REQUEST_FILE = join(GAME_API_SRC, 'request.ts');
 /** The one write surface. It may name `POST` and exactly the six write routes below, and nothing
@@ -120,7 +131,11 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
   it('contains no PUT/PATCH/DELETE HTTP method literal anywhere, and a POST literal only in write-request.ts — including one assembled via string concatenation', () => {
     const offenders = sourceFiles
       .map((file) => {
-        const mayPost = file === WRITE_REQUEST_FILE || file === USAGE_PING_TRANSPORT_FILE;
+        const mayPost =
+          file === WRITE_REQUEST_FILE ||
+          file === USAGE_PING_TRANSPORT_FILE ||
+          file === PREMIUM_TRANSPORT_FILE ||
+          file === PREMIUM_API_FILE;
         const methodPattern = mayPost ? /['"](PUT|PATCH|DELETE)['"]/ : /['"](POST|PUT|PATCH|DELETE)['"]/;
         return { file, match: methodPattern.exec(foldStringConcatenation(readFileSync(file, 'utf8'))) };
       })
@@ -139,11 +154,15 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
     expect(new Set(pathLiterals), `write-request.ts may name exactly ${JSON.stringify(WRITE_ROUTE_PATHS)}. Found: ${JSON.stringify(pathLiterals)}`).toEqual(new Set(WRITE_ROUTE_PATHS));
   });
 
-  it('no file other than write-request.ts and the usage ping transport contains a POST literal, and only write-request.ts names a write route', () => {
+  it('no file other than write-request.ts and the usage ping, premium transport and premium client contains a POST literal, and only write-request.ts names a write route', () => {
     const offenders = sourceFiles.filter((file) => {
       if (file === WRITE_REQUEST_FILE) return false;
       const text = foldStringConcatenation(readFileSync(file, 'utf8'));
-      const posts = /['"]POST['"]/.test(text) && file !== USAGE_PING_TRANSPORT_FILE;
+      const posts =
+        /['"]POST['"]/.test(text) &&
+        file !== USAGE_PING_TRANSPORT_FILE &&
+        file !== PREMIUM_TRANSPORT_FILE &&
+        file !== PREMIUM_API_FILE;
       return posts || WRITE_ROUTE_PATHS.some((route) => text.includes(route));
     });
     expect(offenders, `Only write-request.ts may POST to the game or name a write route. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
@@ -165,7 +184,11 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
       const allowed = new Set([
         'app.bombfarm.net',
         ...(file === MARKET_TRANSPORT_FILE ? [MARKET_SNAPSHOT_HOST] : []),
-        ...(file === USAGE_PING_TRANSPORT_FILE || file === ONLINE_PLAYERS_TRANSPORT_FILE ? [USAGE_PING_HOST] : []),
+        ...(file === USAGE_PING_TRANSPORT_FILE ||
+        file === ONLINE_PLAYERS_TRANSPORT_FILE ||
+        file === PREMIUM_TRANSPORT_FILE
+          ? [USAGE_PING_HOST]
+          : []),
       ]);
       for (const pattern of hostPatterns) {
         const re = new RegExp(pattern);
@@ -274,6 +297,8 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
     // which this pattern's static-only shape let straight through with 21/21 tests still green.
     const importPattern =
       /(?:from\s+['"](node:https|node:http|undici|axios)['"]|require\(\s*['"](node:https|node:http|undici|axios)['"]\s*\)|import\(\s*['"](node:https|node:http|undici|axios)['"]\s*\))/;
+    const importPatternWithoutHttp =
+      /(?:from\s+['"](node:https|undici|axios)['"]|require\(\s*['"](node:https|undici|axios)['"]\s*\)|import\(\s*['"](node:https|undici|axios)['"]\s*\))/;
     const fetchPattern = /\bfetch\s*\(/;
     const offenders: string[] = [];
     for (const file of scannedFiles) {
@@ -281,12 +306,14 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
         file === HTTPS_TRANSPORT_FILE ||
         file === MARKET_TRANSPORT_FILE ||
         file === USAGE_PING_TRANSPORT_FILE ||
-        file === ONLINE_PLAYERS_TRANSPORT_FILE
+        file === ONLINE_PLAYERS_TRANSPORT_FILE ||
+        file === PREMIUM_TRANSPORT_FILE
       ) {
         continue;
       }
       const text = readFileSync(file, 'utf8');
-      if (importPattern.test(text) || fetchPattern.test(text)) {
+      const imports = file === PREMIUM_LISTENER_FILE ? importPatternWithoutHttp : importPattern;
+      if (imports.test(text) || fetchPattern.test(text)) {
         offenders.push(file);
       }
     }
@@ -319,9 +346,10 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
       (file) =>
         file !== USAGE_PING_TRANSPORT_FILE &&
         file !== ONLINE_PLAYERS_TRANSPORT_FILE &&
+        file !== PREMIUM_TRANSPORT_FILE &&
         readFileSync(file, 'utf8').includes(USAGE_PING_HOST),
     );
-    expect(offenders, `Only the usage ping and online-players transports name the API host. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+    expect(offenders, `Only the usage ping, online-players and premium transports name the API host. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 
   it('the online-players transport names the API host, reaches the network, and sets no HTTP method, so it can only ever GET', () => {
@@ -352,6 +380,110 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
 // -------------------------------------------------------------------------------------------
 // Guard 3 — no unconsented path.
 // -------------------------------------------------------------------------------------------
+
+describe('Guard 2 — the premium transport', () => {
+  const text = readFileSync(PREMIUM_TRANSPORT_FILE, 'utf8');
+  const gameApiImport = /from\s+['"](@bombfarm\/game-api|[^'"]*game-api\/[^'"]*|[^'"]*session-token[^'"]*)['"]/;
+
+  it('names the API host, reaches the network and POSTs (sanity — each exemption is not vacuous)', () => {
+    expect(text).toContain(USAGE_PING_HOST);
+    expect(text).toMatch(/\bfetch\s*\(/);
+    expect(/['"]POST['"]/.test(text)).toBe(true);
+  });
+
+  it('never imports the game API or the session token', () => {
+    expect(text).not.toMatch(gameApiImport);
+  });
+
+  it('red state demonstrated: the import pattern catches a game-api import', () => {
+    expect(gameApiImport.test("import { x } from '../game-api/request.js';")).toBe(true);
+    expect(gameApiImport.test("import { x } from '@bombfarm/game-api';")).toBe(true);
+  });
+});
+
+describe('Guard 2 — the premium API client', () => {
+  const text = readFileSync(PREMIUM_API_FILE, 'utf8');
+
+  it('names the POST verb (sanity — its exemption is not vacuous)', () => {
+    expect(/['"]POST['"]/.test(text)).toBe(true);
+  });
+
+  it('names no host, reaches no network and imports nothing from the game API', () => {
+    expect(text).not.toContain(USAGE_PING_HOST);
+    expect(text).not.toMatch(/\bfetch\s*\(/);
+    expect(text).not.toMatch(/from\s+['"](node:https?|undici|axios)['"]/);
+    expect(text).not.toMatch(/from\s+['"](@bombfarm\/game-api|[^'"]*game-api\/[^'"]*|[^'"]*session-token[^'"]*)['"]/);
+  });
+});
+
+describe('Guard 2 — the premium transport and client keep their secrets out of logs', () => {
+  const logging = /console\s*\.|from\s+['"][^'"]*(?:\/log|logger|log-)[^'"]*['"]|LogPort|createLogger|electron-log/;
+  const files = [PREMIUM_TRANSPORT_FILE, PREMIUM_API_FILE];
+
+  it('scans both files (sanity — the guard is not vacuous)', () => {
+    expect(files).toHaveLength(2);
+    for (const file of files) expect(readFileSync(file, 'utf8').length).toBeGreaterThan(0);
+  });
+
+  it('neither file imports a logger or names console', () => {
+    for (const file of files) expect(readFileSync(file, 'utf8'), file).not.toMatch(logging);
+  });
+
+  it('red state demonstrated: the guard catches a console call and each logger import shape', () => {
+    expect(logging.test('console.log(token);')).toBe(true);
+    expect(logging.test("import type { LogPort } from '../storage/index.js';")).toBe(true);
+    expect(logging.test("import { log } from '../logger.js';")).toBe(true);
+    expect(logging.test("import log from 'electron-log';")).toBe(true);
+    expect(logging.test("import type { StoredSession } from './token-vault.js';")).toBe(false);
+  });
+});
+
+describe('Guard 2 — the premium callback listener', () => {
+  const text = readFileSync(PREMIUM_LISTENER_FILE, 'utf8');
+  const constantTimeCompare = /timingSafeEqual\s*\(/;
+  const operatorCompare =
+    /(?:get\(\s*['"]state['"]\s*\)|expectedState)\s*(?:===|!==|==|!=)|(?:===|!==|==|!=)\s*(?:opts\.)?expectedState/;
+  const httpImport = /from\s+['"]node:http['"]/;
+  const bindsLoopback = /\.listen\(\s*0\s*,\s*'127\.0\.0\.1'/;
+  const outbound = /\b(?:fetch|request)\s*\(/;
+
+  it('imports node:http and binds the loopback address (sanity — its exemption is not vacuous)', () => {
+    expect(text).toMatch(httpImport);
+    expect(text).toMatch(bindsLoopback);
+  });
+
+  it('makes no outbound request', () => {
+    expect(text).not.toMatch(outbound);
+  });
+
+  it('compares the state in constant time', () => {
+    expect(text).toMatch(constantTimeCompare);
+    expect(text).not.toMatch(operatorCompare);
+  });
+
+  it('red state demonstrated: the guard catches an operator compare of the state', () => {
+    expect(operatorCompare.test("if (url.searchParams.get('state') !== opts.expectedState) {")).toBe(true);
+    expect(operatorCompare.test('return received === expectedState;')).toBe(true);
+    expect(operatorCompare.test('return left.length === right.length;')).toBe(false);
+    expect(constantTimeCompare.test('return timingSafeEqual(left, right);')).toBe(true);
+    expect(constantTimeCompare.test('return left === right;')).toBe(false);
+  });
+
+  it('is the only non-test file in the desktop main tree that imports node:http', () => {
+    const importers = [...walkTsFiles(DESKTOP_MAIN)]
+      .filter((file) => !isTestFile(file))
+      .filter((file) => /(?:from\s+['"]node:http['"]|require\(\s*['"]node:http['"]|import\(\s*['"]node:http['"])/.test(readFileSync(file, 'utf8')));
+    expect(importers).toEqual([PREMIUM_LISTENER_FILE]);
+  });
+
+  it('red state demonstrated: the guards catch a wildcard bind, a localhost bind and an outbound call', () => {
+    expect(bindsLoopback.test("server.listen(0, '0.0.0.0');")).toBe(false);
+    expect(bindsLoopback.test("server.listen(0, 'localhost');")).toBe(false);
+    expect(bindsLoopback.test('server.listen(0);')).toBe(false);
+    expect(outbound.test("http.request({ host: 'example.test' });")).toBe(true);
+    expect(outbound.test("await fetch('x');")).toBe(true);
+  });
+});
 
 describe('Guard 3 — no path to the network or the token file bypasses consent', () => {
   const allFiles = [...walkTsFiles(GAME_API_SRC), ...walkTsFiles(DESKTOP_MAIN)];

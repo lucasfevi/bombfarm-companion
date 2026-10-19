@@ -15,6 +15,7 @@ import {
   getFlavorDescriptor,
   IPC_CHANNELS,
   liveGap,
+  signedOutPremiumView,
   type AccountView,
   type AppLocale,
   type AccountSource,
@@ -28,6 +29,8 @@ import {
   type MarketQuoteCurrency,
   type MarketQuoteTarget,
   type MarketSnapshotView,
+  type PremiumActionResult,
+  type PremiumView,
   type SettingsWriteResult,
   type UpdateStatus,
 } from '@bombfarm/contracts';
@@ -55,6 +58,7 @@ const BETA_ENV: AppEnv = {
   appId: 'net.bombfarm.companion.beta',
   productName: 'Bomb Farm Companion (Beta)',
   userDataPath: '/user-data/beta',
+  premiumApiOriginOverride: null,
   envConflict: null,
 };
 
@@ -66,6 +70,7 @@ const DEV_ENV: AppEnv = {
   appId: 'net.bombfarm.companion.dev',
   productName: 'Bomb Farm Companion (Dev)',
   userDataPath: '/user-data/dev',
+  premiumApiOriginOverride: null,
   envConflict: null,
 };
 
@@ -149,6 +154,14 @@ function fakes() {
       check: vi.fn(() => Promise.resolve(updateStatus('checking'))),
       download: vi.fn(() => Promise.resolve(updateStatus('downloading'))),
       installOnRestart: vi.fn(() => updateStatus('ready')),
+    },
+    premiumService: {
+      getView: vi.fn(() => PREMIUM_VIEW),
+      signIn: vi.fn(() => Promise.resolve<PremiumActionResult>({ ok: false, reason: 'already-signed-in' })),
+      cancelSignIn: vi.fn(() => true),
+      signOut: vi.fn(() => Promise.resolve(signedOutPremiumView)),
+      refresh: vi.fn((_reason: 'open' | 'button') => Promise.resolve<PremiumActionResult>({ ok: false, reason: 'too-soon' })),
+      manage: vi.fn(() => Promise.resolve<PremiumActionResult>({ ok: true })),
     },
     marketService: {
       getView: vi.fn(() => ADOPTED_SNAPSHOT),
@@ -249,6 +262,7 @@ function wired(env: AppEnv = BETA_ENV) {
     getMarketService: () => f.marketService,
     getOnlinePlayersService: () => ({ getView: () => ONLINE_PLAYERS_VIEW }),
     getGamePingService: () => ({ getView: () => GAME_PING_VIEW }),
+    getPremiumService: () => f.premiumService,
     getForgeService: () => f.forgeService,
     getForgeHistory: () => f.forgeHistory,
     getForgeInjector: () => f.forgeInjector,
@@ -296,6 +310,7 @@ function bare(env: AppEnv = BETA_ENV) {
     getMarketService: () => null,
     getOnlinePlayersService: () => null,
     getGamePingService: () => null,
+    getPremiumService: () => null,
     getForgeService: () => null,
     getForgeHistory: () => null,
     getForgeInjector: () => null,
@@ -330,9 +345,15 @@ describe('the environment a renderer is told about', () => {
       isPackaged: true,
       version: '1.2.3',
       accountSource: 'server',
+      premiumEnabled: false,
     });
     expect(f.spies.appVersion).toHaveBeenCalledTimes(1);
     expect(f.spies.accountSource).toHaveBeenCalledTimes(1);
+  });
+
+  it('tells the renderer Premium is on for the dev flavor and off for beta', async () => {
+    expect((await wired(DEV_ENV).handlers['app:getEnvironment']()).premiumEnabled).toBe(true);
+    expect((await wired(BETA_ENV).handlers['app:getEnvironment']()).premiumEnabled).toBe(false);
   });
 
   it('answers a ping from main itself, so the bridge can be proved end to end', () => {
@@ -630,6 +651,35 @@ const COLLECTIONS_VIEW: CollectionsView = { snapshot: null, capturedAt: '2026-10
 
 const GAME_PING_VIEW = { latencyMs: 187 };
 const ONLINE_PLAYERS_VIEW = { reading: { at: 1_790_727_000, players: 2537 } };
+
+const PREMIUM_VIEW: PremiumView = { ...signedOutPremiumView, session: 'signed-in', visible: true };
+
+describe('the premium channels', () => {
+  it('serve a signed-out view and the specified fallbacks before the service is built', async () => {
+    const { handlers } = bare();
+    expect(handlers['premium:get']()).toEqual(signedOutPremiumView);
+    expect(await handlers['premium:signIn']()).toEqual({ ok: false, reason: 'unavailable' });
+    expect(handlers['premium:cancelSignIn']()).toBe(false);
+    expect(await handlers['premium:signOut']()).toEqual(signedOutPremiumView);
+    expect(await handlers['premium:refresh']()).toEqual({ ok: false, reason: 'unavailable' });
+    expect(await handlers['premium:manage']()).toEqual({ ok: false, reason: 'unavailable' });
+  });
+
+  it('call the service and return its result', async () => {
+    const { f, handlers } = wired();
+    expect(handlers['premium:get']()).toBe(PREMIUM_VIEW);
+    expect(await handlers['premium:signIn']()).toEqual({ ok: false, reason: 'already-signed-in' });
+    expect(f.premiumService.signIn).toHaveBeenCalledTimes(1);
+    expect(handlers['premium:cancelSignIn']()).toBe(true);
+    expect(f.premiumService.cancelSignIn).toHaveBeenCalledTimes(1);
+    expect(await handlers['premium:signOut']()).toEqual(signedOutPremiumView);
+    expect(f.premiumService.signOut).toHaveBeenCalledTimes(1);
+    expect(await handlers['premium:refresh']()).toEqual({ ok: false, reason: 'too-soon' });
+    expect(f.premiumService.refresh).toHaveBeenCalledWith('button');
+    expect(await handlers['premium:manage']()).toEqual({ ok: true });
+    expect(f.premiumService.manage).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('the online-players count', () => {
   it('serves the reading main holds', () => {

@@ -19,6 +19,10 @@ describe('Icon', () => {
     expect(html).toContain(utility);
   });
 
+  it('renders the star glyph as an svg', () => {
+    expect(renderIcon({ name: 'star' })).toContain('<svg');
+  });
+
   it('defaults omitted size to size-4 (sm)', () => {
     const html = renderIcon({ name: 'chevron-down' });
     expect(html).toContain('size-4');
