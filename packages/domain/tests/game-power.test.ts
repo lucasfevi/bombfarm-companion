@@ -156,6 +156,36 @@ const ANCHORS: readonly Anchor[] = [
     },
     power: 305726.57689256856,
   },
+  {
+    label: 'cooldown-44-percent-lv367-ampla20',
+    explosaoAmpla: 20,
+    stats: {
+      dmg: 372191.14740922383,
+      energia: 17354.700876585404,
+      speed: 130.84885001756535,
+      luck: 1.3411105227424578,
+      crit_chance: 0.9334232568592175,
+      crit_dmg: 10.555315943161622,
+      penetration: 145.7122784533955,
+      cooldown_reduction: 0.44512117510791965,
+    },
+    power: 316952472.4649361,
+  },
+  {
+    label: 'cooldown-55-percent-lv344-ampla20',
+    explosaoAmpla: 20,
+    stats: {
+      dmg: 322661.14553570905,
+      energia: 16038.511902935707,
+      speed: 101.71889704218609,
+      luck: 1.0063043100290496,
+      crit_chance: 0.7257905281672781,
+      crit_dmg: 10.271214478372007,
+      penetration: 88.43068438286035,
+      cooldown_reduction: 0.5524821212640956,
+    },
+    power: 177676270.69182333,
+  },
 ];
 
 function inputOf(anchor: Anchor): GamePowerInput {

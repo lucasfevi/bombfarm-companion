@@ -98,9 +98,9 @@ describe('powerAxisSpec', () => {
     expect([spec.lo, spec.hi, spec.cap]).toEqual([lo, hi, cap]);
   });
 
-  it('only cooldown carries a checked bound, at 17.85%', () => {
+  it('only cooldown carries a checked bound, at 76.64%', () => {
     for (const axis of GAME_POWER_AXES) {
-      expect(powerAxisSpec(INPUT, axis).checkedMax, axis).toBe(axis === 'cdr' ? 17.85 : null);
+      expect(powerAxisSpec(INPUT, axis).checkedMax, axis).toBe(axis === 'cdr' ? 76.64 : null);
     }
   });
 
@@ -126,11 +126,11 @@ describe('powerChartSeries', () => {
     }
   });
 
-  it('cooldown is checked up to 17.85% and extrapolated from there to the 80% cap', () => {
+  it('cooldown is checked up to 76.64% and extrapolated from there to the 80% cap', () => {
     const series = powerChartSeries(INPUT, powerAxisSpec(INPUT, 'cdr'));
     expect(series.solid[0]!.x).toBe(0);
-    expect(series.solid.at(-1)?.x).toBe(17.85);
-    expect(series.extrapolated[0]!.x).toBe(17.85);
+    expect(series.solid.at(-1)?.x).toBe(76.64);
+    expect(series.extrapolated[0]!.x).toBe(76.64);
     expect(series.extrapolated.at(-1)?.x).toBe(80);
   });
 
@@ -179,10 +179,10 @@ describe('powerReading', () => {
     expect(reading.delta).toBe(point!.power - gamePower(INPUT));
   });
 
-  it('says a cooldown past 17.85% is extrapolated, and one at it is not', () => {
+  it('says a cooldown past 76.64% is extrapolated, and one at it is not', () => {
     const spec = powerAxisSpec(INPUT, 'cdr');
-    expect(powerReading(INPUT, spec, 17.85).extrapolated).toBe(false);
-    expect(powerReading(INPUT, spec, 17.9).extrapolated).toBe(true);
+    expect(powerReading(INPUT, spec, 76.64).extrapolated).toBe(false);
+    expect(powerReading(INPUT, spec, 76.7).extrapolated).toBe(true);
   });
 
   it('crit damage also reads Power at capped crit chance', () => {
@@ -423,9 +423,10 @@ describe('stat-point markers', () => {
   });
 
   it('a cooldown marker past the checked bound says it is extrapolated', () => {
-    const spec = powerAxisSpec(INPUT, 'cdr', DELTA);
-    const [, fifty] = powerPointMarkers(INPUT, spec, DELTA) as [PowerPointMarker, PowerPointMarker];
-    expect(fifty.x).toBeGreaterThan(17.85);
+    const nearCap = withGamePowerAxis(INPUT, 'cdr', 62);
+    const spec = powerAxisSpec(nearCap, 'cdr', DELTA);
+    const [, fifty] = powerPointMarkers(nearCap, spec, DELTA) as [PowerPointMarker, PowerPointMarker];
+    expect(fifty.x).toBeGreaterThan(76.64);
     expect(fifty.reading.extrapolated).toBe(true);
     expect(powerPointsLegend([fifty], 'pt', heroCopyFor('pt'))).toMatch(/^\+50 pontos: [\d.]+M \(\+[\d,]+%, extrapolado\)$/);
   });

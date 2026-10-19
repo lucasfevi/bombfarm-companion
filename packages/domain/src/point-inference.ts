@@ -9,6 +9,7 @@ import { POINT_GAIN, STAT_CAPS } from './model/rarity-constants';
 import { composeAttack, starsMult, sumGearBonuses } from './gear/catalog';
 import type { Loadout, SheetOtherPct, SheetStats } from './gear/types';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
+import { gamePower } from './game-power';
 import { flatAddsOutsideRune, runeSheetMultipliers, stripRuneMultipliers, type HeroRune } from './runes';
 import { collectionSheetPct, stripCollection } from './collection';
 
@@ -51,6 +52,12 @@ export type InferSpentPointsInput = {
    * past the budget, which is exactly how every runed hero on the first live read was blocked.
    */
   runes?: readonly HeroRune[] | undefined;
+  /**
+   * The game's stored, rune-free Power for the hero and the Explosão Ampla level it was scored at.
+   * A sheet clamps cooldown at its cap, which hides how many points sit past it; Power does not
+   * carry that clamp, so it pins the count back down.
+   */
+  power?: { readonly stored: number; readonly explosaoAmplaLevel: number } | undefined;
 };
 
 function poolFactor(percent: number): number {
@@ -85,6 +92,25 @@ export function spentPointsOf(pts: Record<SheetKey, number>): number {
  */
 export function pointsExceedLevel(pts: Record<SheetKey, number>, level: number): boolean {
   return spentPointsOf(pts) > level;
+}
+
+/**
+ * The cooldown points a capped sheet hides, read off the stored Power: the sheet with no cooldown
+ * scores `rest`, so Power / rest is `1 / (1 − cdr)` and gives the rune-free cooldown the game
+ * scored. `null` unless that lands on a whole number of points — a Power figure from before a
+ * game patch, or any sheet the formula does not describe, does not.
+ */
+function cdrPointsHiddenByCap(
+  power: NonNullable<InferSpentPointsInput['power']>,
+  runeFree: SheetStats,
+  solve: (cdrPct: number) => number,
+): number | null {
+  if (!(power.stored > 0)) return null;
+  const rest = gamePower({ sheet: { ...runeFree, cdr: 0 }, explosaoAmplaLevel: power.explosaoAmplaLevel });
+  const cdrPct = (1 - rest / power.stored) * 100;
+  if (!Number.isFinite(cdrPct) || cdrPct <= runeFree.cdr) return null;
+  const points = solve(cdrPct);
+  return Math.abs(points - Math.round(points)) <= POINT_INFERENCE_EPS ? Math.round(points) : null;
 }
 
 export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceResult {
@@ -176,6 +202,24 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
   const observed = input.sheet;
   if (observed.critChance >= STAT_CAPS.critChance - CAP_EPS && raw.critChance < 0) raw.critChance = 0;
   if (observed.cdr >= STAT_CAPS.cdr - CAP_EPS && raw.cdr < 0) raw.cdr = 0;
+
+  if (observed.cdr >= STAT_CAPS.cdr - CAP_EPS && input.power) {
+    const hidden = cdrPointsHiddenByCap(
+      input.power,
+      runeFree,
+      (cdrPct) =>
+        solveShared(
+          stripCollection({ ...runeFree, cdr: cdrPct }, collectionSheetPct(tree.collection), tree.critDmgPct).cdr - cdrFlat,
+          baseCdr,
+          bonuses.cdrPct,
+          0,
+          POINT_GAIN.cdrPctOfBase,
+        ),
+    );
+    const otherPoints = SHEET_KEYS.filter((key) => key !== 'cdr').reduce((sum, key) => sum + Math.max(0, Math.round(raw[key])), 0);
+    const budgetLeft = Math.max(0, level - statPointsAvailable) - otherPoints;
+    if (hidden !== null && hidden >= raw.cdr && hidden <= budgetLeft) raw.cdr = hidden;
+  }
 
   const issues: PointInferenceIssue[] = [];
   const pts = {} as Record<SheetKey, number>;
