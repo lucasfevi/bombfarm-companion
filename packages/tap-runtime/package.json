@@ -16,7 +16,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "frida": "^17.17.0"
+    "frida": "^17.23.3"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

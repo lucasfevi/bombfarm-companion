@@ -57,6 +57,7 @@ import type { LogPort } from './log-port.js';
 import { MapFold, NO_MAP_ACCOUNT_BOOSTS, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
 import { PhaseEconomyCheck, wikiPhaseEconomyBaseline } from './phase-economy-check.js';
 import { RuntimePort } from './runtime.js';
+import { DetachLedger } from './detach-ledger.js';
 import { ensureWritableTempDir } from './temp-dir.js';
 import {
   createHookCandidateSource,
@@ -272,7 +273,12 @@ export interface TapHandle {
   start(): void;
   teardown(): Promise<void>;
   pollNow(): void;
+  /** Waits for any session detach still running. Only the real tap has any. */
+  drainDetaches?(timeoutMs: number): Promise<boolean>;
 }
+
+/** How long quitting waits for the agent to leave the game before exiting anyway. */
+export const QUIT_DETACH_DRAIN_MS = 5_000;
 
 /** One PVP body as the tap saw it: which of the two it is, the parsed object, and the bytes
  *  themselves — a film is handed on as it came, never re-serialised. */
@@ -326,18 +332,20 @@ function createProcessLister(isPackaged: boolean): ProcessLister {
   return {
     async list(processName: string): Promise<readonly TapTargetProcess[]> {
       try {
-        const script = `${gameProcessQuery(processName, { isPackaged })} | Select-Object Id,ProcessName | ConvertTo-Json -Compress`;
+        const startMs = "@{n='StartMs';e={try{([DateTimeOffset]$_.StartTime).ToUnixTimeMilliseconds()}catch{$null}}}";
+        const script = `${gameProcessQuery(processName, { isPackaged })} | Select-Object Id,ProcessName,${startMs} | ConvertTo-Json -Compress`;
         const out = await runPowerShellAsync(script);
         if (!out) return [];
         const parsed: unknown = JSON.parse(out);
         const rows = Array.isArray(parsed) ? parsed : [parsed];
         return rows
-          .map((row) => {
-            const record = row as { Id?: unknown; ProcessName?: unknown };
+          .map((row): TapTargetProcess => {
+            const record = row as { Id?: unknown; ProcessName?: unknown; StartMs?: unknown };
             const name = typeof record.ProcessName === 'string' ? record.ProcessName : processName;
-            return { pid: Number(record.Id), name };
+            const startedAtMs = typeof record.StartMs === 'number' ? record.StartMs : null;
+            return { pid: Number(record.Id), name, startedAtMs };
           })
-          .filter((candidate): candidate is TapTargetProcess => Number.isFinite(candidate.pid) && candidate.pid > 0);
+          .filter((candidate) => Number.isFinite(candidate.pid) && candidate.pid > 0);
       } catch {
         return [];
       }
@@ -451,6 +459,7 @@ function createDefaultTapFactory(deps: {
   readonly observer?: ObservationCapture;
 }): (onEvent: (event: LiveEvent) => void, onHttpBody: (body: Buffer, atMs: number) => void) => TapHandle {
   const ring = deps.ring;
+  const detaches = new DetachLedger();
 
   const capture = createFrameCapture({
     isPackaged: deps.isPackaged,
@@ -483,6 +492,7 @@ function createDefaultTapFactory(deps: {
       log: deps.log,
       ring,
       capture,
+      detaches,
       ...(deps.observer !== undefined
         ? { onObservedFrame: (wire: Record<string, unknown>, atMs: number) => deps.observer?.frame(wire, atMs) }
         : {}),
@@ -498,6 +508,7 @@ function createDefaultTapFactory(deps: {
       pollNow: () => {
         tap.pollNow();
       },
+      drainDetaches: (timeoutMs) => tap.drainDetaches(timeoutMs),
     };
   };
 }
@@ -1051,8 +1062,12 @@ export class LiveSource {
     }
   }
 
+  /** The quit path: unlike {@link forceDetach}, it also waits out a detach the tap stopped waiting
+   *  on, because the process ends next and would orphan the agent inside the game. */
   async teardown(): Promise<void> {
     await this.#tap.teardown();
+    const drained = (await this.#tap.drainDetaches?.(QUIT_DETACH_DRAIN_MS)) ?? true;
+    if (!drained) this.#log.warn({ scope: 'live-source', event: 'tap.quit_detach_unfinished' });
   }
 
   // The tap itself only ever raises 'frame' or 'currency' — 'fastUpdate' is a channel this class's

@@ -32,7 +32,7 @@ import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
 import { createIpcDispatch, createIpcHandlers, defaultLiveView } from './ipc-handlers.js';
 import { createEventEmitter } from './event-emitter.js';
 import { createRedactingTokenReader } from './redacting-token-reader.js';
-import { shutdownInOrder } from './shutdown.js';
+import { LIVE_SOURCE_RELEASE_DEADLINE_MS, settleWithin, shutdownInOrder } from './shutdown.js';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { fuseSecondsForCdr } from './domain-edge.js';
@@ -1191,9 +1191,12 @@ async function bootstrap(): Promise<void> {
   // once on mount and that read has usually already happened by now, against a service that did
   // not exist yet.
   try {
-    updateService = await createElectronUpdateService((status) => {
-      emitEvent('updates:changed', status);
-    });
+    updateService = await createElectronUpdateService(
+      (status) => {
+        emitEvent('updates:changed', status);
+      },
+      releaseLiveSource,
+    );
     updateService.start();
   } catch (error: unknown) {
     log.error({ scope: 'main', event: 'updates.unavailable', error: String(error) });
@@ -1223,6 +1226,27 @@ function resolveBootEnv(): AppEnv {
     throw error;
   }
 }
+
+/**
+ * Detaches the tap from the game and waits for it, within a deadline. The agent runs inside the
+ * game's own process: an app that exits with the detach still in flight leaves it orphaned there,
+ * and the game has crashed seconds later every time that was observed. So quitting, and handing
+ * over to the update installer, both come through here first.
+ */
+async function releaseLiveSource(): Promise<void> {
+  const releasing = liveSource;
+  liveSource = null;
+  if (!releasing) return;
+  const outcome = await settleWithin(releasing.teardown(), LIVE_SOURCE_RELEASE_DEADLINE_MS, {
+    setTimeout: (callback, ms) => setTimeout(callback, ms),
+    clearTimeout: (handle) => {
+      clearTimeout(handle as ReturnType<typeof setTimeout>);
+    },
+  });
+  log.info({ scope: 'main', event: 'live_source.released', outcome });
+}
+
+let liveSourceReleasedForQuit = false;
 
 const env = resolveBootEnv();
 registerRendererSchemeAsPrivileged();
@@ -1280,7 +1304,15 @@ if (!gotLock) {
     app.quit();
   });
 
-  app.on('before-quit', () => {
+  app.on('before-quit', (event) => {
+    if (!liveSourceReleasedForQuit && liveSource) {
+      event.preventDefault();
+      liveSourceReleasedForQuit = true;
+      void releaseLiveSource().finally(() => {
+        app.quit();
+      });
+      return;
+    }
     shutdownInOrder({
       onStepFailed: (step, error) => {
         log.error({ scope: 'main', event: 'shutdown.step_failed', step, error: String(error) });

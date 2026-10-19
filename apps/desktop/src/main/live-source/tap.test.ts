@@ -8,7 +8,17 @@ import type { LogPort as HookCacheLogPort } from './hook-cache.js';
 import { RuntimePort } from './runtime.js';
 import type { TapInterceptor, TapReadEvent, TapRuntime, TapSession } from './runtime.js';
 import type { FrameCapture } from './frame-capture.js';
-import { createHookCandidateSource, SESSION_DETACH_TIMEOUT_MS, Tap } from './tap.js';
+import { DetachLedger } from './detach-ledger.js';
+import {
+  createHookCandidateSource,
+  DETACH_SETTLE_WAIT_MS,
+  GAME_WARMUP_MS,
+  REATTACH_BACKOFF_MS,
+  SESSION_DETACH_TIMEOUT_MS,
+  STALENESS_THRESHOLD_MS,
+  Tap,
+  VALIDATION_WINDOW_MS,
+} from './tap.js';
 import type {
   Clock,
   HookCandidateResolution,
@@ -159,6 +169,7 @@ interface HarnessOptions {
   readonly onObservedFrame?: (wire: Record<string, unknown>, atMs: number) => void;
   /** Replaces the recording consumer below, for the cases that need one that misbehaves. */
   readonly onHttpBody?: (body: Buffer, atMs: number) => void;
+  readonly detaches?: DetachLedger;
 }
 
 function createHarness(options: HarnessOptions = {}) {
@@ -194,6 +205,7 @@ function createHarness(options: HarnessOptions = {}) {
     log: sharedLog,
     pollIntervalMs: options.pollIntervalMs ?? 1_000,
     ...(options.onObservedFrame !== undefined ? { onObservedFrame: options.onObservedFrame } : {}),
+    ...(options.detaches !== undefined ? { detaches: options.detaches } : {}),
   });
 
   return {
@@ -223,7 +235,7 @@ describe('Tap: validation timeout at 20s when the hook never fires', () => {
     await clock.advance(0);
     expect(runtime.sessions).toHaveLength(1);
 
-    await clock.advance(20_000);
+    await clock.advance(VALIDATION_WINDOW_MS + REATTACH_BACKOFF_MS[0]);
 
     expect(candidates.invalidated).toEqual([{ pid: 111, buildId: 'build-cache-hit' }]);
     expect(runtime.sessions.length).toBeGreaterThanOrEqual(2);
@@ -413,10 +425,7 @@ describe('Tap: fresh-discovery escalation widens the candidate window', () => {
 
     tap.start();
     await clock.advance(0);
-    await clock.advance(20_000);
-    await clock.advance(20_000);
-    await clock.advance(20_000);
-    await clock.advance(20_000);
+    for (const backoffMs of REATTACH_BACKOFF_MS) await clock.advance(VALIDATION_WINDOW_MS + backoffMs);
 
     expect(candidates.resolveCalls.map((call) => call.maxCandidates)).toEqual([4, 8, 16, 32, 32]);
   });
@@ -433,7 +442,7 @@ describe('Tap: fresh-discovery escalation widens the candidate window', () => {
 
     tap.start();
     await clock.advance(0);
-    await clock.advance(20_000);
+    await clock.advance(VALIDATION_WINDOW_MS + REATTACH_BACKOFF_MS[0]);
 
     const session = runtime.sessions[runtime.sessions.length - 1];
     if (!session) throw new Error('test setup: no session');
@@ -462,7 +471,7 @@ describe('Tap: fresh-discovery escalation widens the candidate window', () => {
 
     tap.start();
     await clock.advance(0);
-    await clock.advance(20_000);
+    await clock.advance(VALIDATION_WINDOW_MS + REATTACH_BACKOFF_MS[0]);
 
     candidates.resolveResult = {
       addresses: [0x9000, 0x9001, 0x9002, 0x9003],
@@ -470,8 +479,8 @@ describe('Tap: fresh-discovery escalation widens the candidate window', () => {
       buildId: 'build-new',
       accessDenied: false,
     };
-    await clock.advance(20_000);
-    await clock.advance(20_000);
+    await clock.advance(VALIDATION_WINDOW_MS + REATTACH_BACKOFF_MS[1]);
+    await clock.advance(VALIDATION_WINDOW_MS + REATTACH_BACKOFF_MS[2]);
 
     expect(candidates.resolveCalls.map((call) => call.maxCandidates)).toEqual([4, 8, 16, 8]);
   });
@@ -483,7 +492,7 @@ describe('Tap: fresh-discovery escalation widens the candidate window', () => {
 
     tap.start();
     await clock.advance(0);
-    await clock.advance(20_000);
+    await clock.advance(VALIDATION_WINDOW_MS + REATTACH_BACKOFF_MS[0]);
 
     expect(candidates.invalidated).toEqual([{ pid: 7_005, buildId: 'build-cache' }]);
     expect(candidates.resolveCalls.map((call) => call.maxCandidates)).toEqual([4, 4]);
@@ -1451,5 +1460,165 @@ describe('Tap: an empty hook discovery backs off instead of giving up on the pid
       failures: 1,
       retryInMs: 15_000,
     });
+  });
+});
+
+describe('Tap: re-injecting into a pid it tore itself off backs off', () => {
+  async function liveThenSilent(pid: number) {
+    const harness = createHarness();
+    harness.processes.processes = [{ pid, name: PROCESS_NAME }];
+    harness.candidates.resolveResult = { addresses: [0x6000], fromCache: true, buildId: 'b', accessDenied: false };
+    harness.tap.start();
+    await harness.clock.advance(0);
+    harness.runtime.sessions[0]?.interceptorsByAddress.get(0x6000)?.fire({ ctx: 'conn', bytes: snapFrameBytes() });
+    expect(harness.tap.getCurrency().kind).toBe('live');
+    return harness;
+  }
+
+  it('does not re-attach to a silent game until the first backoff step has passed', async () => {
+    const { tap, clock, runtime } = await liveThenSilent(9_101);
+
+    await clock.advance(STALENESS_THRESHOLD_MS + 15_000);
+    expect(tap.getCurrency()).toMatchObject({ kind: 'gap', reason: 'hookSilent' });
+    const sessionsAtSilence = runtime.sessions.length;
+
+    await clock.advance(REATTACH_BACKOFF_MS[0] - 1_000);
+    expect(runtime.sessions).toHaveLength(sessionsAtSilence);
+
+    await clock.advance(1_000);
+    expect(runtime.sessions).toHaveLength(sessionsAtSilence + 1);
+  });
+
+  it('waits longer after each consecutive failed re-attach, and says so in the log', async () => {
+    const { clock, runtime, infos } = await liveThenSilent(9_102);
+
+    await clock.advance(STALENESS_THRESHOLD_MS + 15_000);
+    for (const backoffMs of REATTACH_BACKOFF_MS.slice(0, 3)) await clock.advance(backoffMs + VALIDATION_WINDOW_MS);
+
+    const holds = infos.filter((record) => record.event === 'tap.reattach_held_off');
+    expect(holds.map((record) => record.retryInMs)).toEqual([...REATTACH_BACKOFF_MS.slice(0, 4)]);
+    expect(holds.map((record) => record.cause)).toEqual(['hookSilent', 'validationTimeout', 'validationTimeout', 'validationTimeout']);
+    expect(runtime.sessions).toHaveLength(4);
+  });
+
+  it('attaches to a different game process straight away, whatever the hold on the old one', async () => {
+    const { clock, processes, runtime } = await liveThenSilent(9_103);
+
+    await clock.advance(STALENESS_THRESHOLD_MS + 15_000);
+    const sessionsAtSilence = runtime.sessions.length;
+    processes.processes = [{ pid: 9_104, name: PROCESS_NAME }];
+    await clock.advance(1_000);
+
+    expect(runtime.sessions).toHaveLength(sessionsAtSilence + 1);
+    expect(runtime.sessions.at(-1)?.pid).toBe(9_104);
+  });
+});
+
+describe('Tap: never injects while a previous detach of the same pid is still running', () => {
+  it('holds the attach until the stuck detach settles, then attaches', async () => {
+    const { tap, clock, processes, candidates, runtime, warnings } = createHarness();
+    processes.processes = [{ pid: 9_201, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
+
+    tap.start();
+    await clock.advance(0);
+    const first = runtime.sessions[0];
+    if (!first) throw new Error('test setup: no session');
+    let release: (() => void) | undefined;
+    first.detach = () => {
+      first.detachCount += 1;
+      return new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    };
+
+    await clock.advance(VALIDATION_WINDOW_MS + SESSION_DETACH_TIMEOUT_MS + REATTACH_BACKOFF_MS[0] + DETACH_SETTLE_WAIT_MS);
+    expect(runtime.sessions).toHaveLength(1);
+    expect(warnings).toContainEqual(expect.objectContaining({ event: 'tap.attach_deferred_detach_pending', pid: 9_201 }));
+
+    release?.();
+    await flushMicrotasks();
+    await clock.advance(DETACH_SETTLE_WAIT_MS);
+    expect(runtime.sessions).toHaveLength(2);
+  });
+
+  it('makes a replacement tap wait on the detach its predecessor started', async () => {
+    const detaches = new DetachLedger();
+    const old = createHarness({ detaches });
+    old.processes.processes = [{ pid: 9_202, name: PROCESS_NAME }];
+    old.candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
+    old.tap.start();
+    await old.clock.advance(0);
+    const session = old.runtime.sessions[0];
+    if (!session) throw new Error('test setup: no session');
+    session.detach = () => new Promise<void>(() => undefined);
+    const teardown = old.tap.teardown();
+    await old.clock.advance(SESSION_DETACH_TIMEOUT_MS);
+    await teardown;
+
+    const replacement = createHarness({ detaches });
+    replacement.processes.processes = [{ pid: 9_202, name: PROCESS_NAME }];
+    replacement.candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
+    replacement.tap.start();
+    await replacement.clock.advance(DETACH_SETTLE_WAIT_MS * 3);
+
+    expect(replacement.runtime.sessions).toHaveLength(0);
+  });
+
+  it('drainDetaches waits out a detach that teardown stopped waiting on', async () => {
+    const { tap, clock, processes, candidates, runtime } = createHarness();
+    processes.processes = [{ pid: 9_203, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
+    tap.start();
+    await clock.advance(0);
+    const session = runtime.sessions[0];
+    if (!session) throw new Error('test setup: no session');
+    let release: (() => void) | undefined;
+    session.detach = () =>
+      new Promise<void>((resolve) => {
+        release = resolve;
+      });
+
+    const teardown = tap.teardown();
+    await clock.advance(SESSION_DETACH_TIMEOUT_MS);
+    await teardown;
+
+    let drained: boolean | undefined;
+    void tap.drainDetaches(5_000).then((value) => {
+      drained = value;
+    });
+    await flushMicrotasks();
+    expect(drained).toBeUndefined();
+
+    release?.();
+    await flushMicrotasks();
+    await flushMicrotasks();
+    expect(drained).toBe(true);
+  });
+});
+
+describe('Tap: leaves a game that has only just started alone', () => {
+  it('waits until the game is old enough before injecting, then attaches', async () => {
+    const { tap, clock, processes, candidates, runtime, infos } = createHarness();
+    processes.processes = [{ pid: 9_301, name: PROCESS_NAME, startedAtMs: 0 }];
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
+
+    tap.start();
+    await clock.advance(GAME_WARMUP_MS - 1_000);
+    expect(runtime.sessions).toHaveLength(0);
+    expect(infos.filter((record) => record.event === 'tap.waiting_for_game_start')).toHaveLength(1);
+
+    await clock.advance(1_000);
+    expect(runtime.sessions).toHaveLength(1);
+  });
+
+  it('attaches at once to a game whose start time Windows would not give', async () => {
+    const { tap, clock, processes, candidates, runtime } = createHarness();
+    processes.processes = [{ pid: 9_302, name: PROCESS_NAME, startedAtMs: null }];
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null, accessDenied: false };
+
+    tap.start();
+    await clock.advance(0);
+    expect(runtime.sessions).toHaveLength(1);
   });
 });

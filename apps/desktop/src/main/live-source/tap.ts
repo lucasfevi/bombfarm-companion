@@ -1,5 +1,6 @@
 import type { LiveCurrency, LiveEvent, LiveGapExtra, LiveGapReason } from '@bombfarm/contracts';
 import { liveGap } from '@bombfarm/contracts';
+import { DetachLedger } from './detach-ledger.js';
 import type { FrameCapture } from './frame-capture.js';
 import { discoverHookCandidates, parsePe, READ_HOOK_ANCHORS } from './image-scan.js';
 import type { ParsedPe } from './image-scan.js';
@@ -19,6 +20,8 @@ import { TlsConnections, type FrameRingPort, type TapEvent } from './tls-stream.
 export interface TapTargetProcess {
   readonly pid: number;
   readonly name: string;
+  /** Epoch ms the process started, when Windows would say. */
+  readonly startedAtMs?: number | null;
 }
 
 export interface ProcessLister {
@@ -81,6 +84,29 @@ export const SESSION_DETACH_TIMEOUT_MS = 2_000;
 
 const DEFAULT_POLL_INTERVAL_MS = 5_000;
 
+/** A game younger than this is left alone: injecting while it is still loading its modules and
+ *  opening its first connections is the riskiest moment to put an agent in it, and nothing is
+ *  lost by waiting — there is no live traffic to read yet. */
+export const GAME_WARMUP_MS = 30_000;
+
+/** How long an attach waits on a previous detach of the same pid before giving up for this poll. */
+export const DETACH_SETTLE_WAIT_MS = 10_000;
+
+/** How long the tap stands down before re-injecting into a pid it just tore itself off — after a
+ *  silent hook or a failed validation — indexed by how many such teardowns ran back to back and
+ *  plateauing at the last entry. Every re-injection is a full agent load and unload inside the
+ *  running game, which is where its crashes happened, so a game that stays silent (a menu, a
+ *  lost connection) must not be re-injected every minute for hours. */
+export const REATTACH_BACKOFF_MS = [5_000, 30_000, 120_000, 300_000] as const;
+
+/** A self-initiated teardown this long after the previous one starts a new streak. */
+export const REATTACH_STREAK_RESET_MS = 600_000;
+
+function reattachBackoffMs(streak: number): number {
+  const index = Math.min(Math.max(streak, 1) - 1, REATTACH_BACKOFF_MS.length - 1);
+  return REATTACH_BACKOFF_MS[index] ?? REATTACH_BACKOFF_MS[0];
+}
+
 /** Candidate-window widths tried across consecutive fresh-discovery validation failures: the
  *  happy path always starts at the first entry, and each further failure moves one step right,
  *  plateauing at the last entry instead of growing without bound. */
@@ -127,6 +153,9 @@ export interface TapDeps {
   /** Fed the wire object every decoded tick was built from, so the keys the decoded tick does not
    *  model survive past the decoder. Optional for the same reason as {@link ring}. */
   readonly onObservedFrame?: (wire: Record<string, unknown>, atMs: number) => void;
+  /** Shared by every tap the app builds, so a replacement tap still waits on its predecessor's
+   *  detach. Defaults to a ledger of this tap's own. */
+  readonly detaches?: DetachLedger;
 }
 
 function chooseTarget(candidates: readonly TapTargetProcess[]): TapTargetProcess {
@@ -139,6 +168,7 @@ function chooseTarget(candidates: readonly TapTargetProcess[]): TapTargetProcess
 export class Tap {
   readonly #deps: TapDeps;
   readonly #log: LogPort;
+  readonly #detaches: DetachLedger;
 
   #started = false;
   #stopped = false;
@@ -188,11 +218,20 @@ export class Tap {
   #discoveryEscalationLevel = 0;
   #discoveryEscalationBuildId: string | null = null;
 
+  #reattachHold: {
+    readonly pid: number;
+    readonly streak: number;
+    readonly lastAtMs: number;
+    readonly notBeforeMs: number;
+  } | null = null;
+  #warmupLoggedPid: number | null = null;
+
   #currency: LiveCurrency;
 
   constructor(deps: TapDeps) {
     this.#deps = deps;
     this.#log = deps.log ?? NOOP_LOG_PORT;
+    this.#detaches = deps.detaches ?? new DetachLedger();
     this.#currency = liveGap('neverAttached', this.#nowIso());
   }
 
@@ -221,6 +260,13 @@ export class Tap {
     if (this.#attachPromise) await this.#attachPromise;
     await this.#teardownSession();
     this.#activePid = null;
+  }
+
+  /** Waits, up to `timeoutMs`, for every detach still running — including any a teardown already
+   *  stopped waiting on. For quitting, where the process is about to end and an unfinished detach
+   *  would leave the agent orphaned inside the game. */
+  drainDetaches(timeoutMs: number): Promise<boolean> {
+    return this.#detaches.settle(null, timeoutMs, this.#deps.clock);
   }
 
   #nowIso(): string {
@@ -321,6 +367,10 @@ export class Tap {
         this.#reportGap('clientNotStreaming');
       } else {
         const target = chooseTarget(found);
+        if (this.#isWarmingUp(target) || this.#isHeldOff(target.pid)) {
+          this.#schedulePoll(this.#deps.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS);
+          return;
+        }
         this.#log.info({
           scope: 'live-source',
           event: 'tap.target_selected',
@@ -334,6 +384,34 @@ export class Tap {
     if (!this.#isStopped()) {
       this.#schedulePoll(this.#deps.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS);
     }
+  }
+
+  #isWarmingUp(target: TapTargetProcess): boolean {
+    const startedAtMs = target.startedAtMs;
+    if (startedAtMs === undefined || startedAtMs === null) return false;
+    const ageMs = this.#deps.clock.now() - startedAtMs;
+    if (ageMs >= GAME_WARMUP_MS) return false;
+    if (this.#warmupLoggedPid !== target.pid) {
+      this.#warmupLoggedPid = target.pid;
+      this.#log.info({ scope: 'live-source', event: 'tap.waiting_for_game_start', pid: target.pid, ageMs });
+    }
+    this.#reportGap('clientNotStreaming');
+    return true;
+  }
+
+  #isHeldOff(pid: number): boolean {
+    const hold = this.#reattachHold;
+    return hold?.pid === pid && this.#deps.clock.now() < hold.notBeforeMs;
+  }
+
+  #holdOffReattach(pid: number, cause: 'hookSilent' | 'validationTimeout'): void {
+    const now = this.#deps.clock.now();
+    const previous = this.#reattachHold;
+    const continuing = previous?.pid === pid && now - previous.lastAtMs < REATTACH_STREAK_RESET_MS;
+    const streak = continuing ? previous.streak + 1 : 1;
+    const backoffMs = reattachBackoffMs(streak);
+    this.#reattachHold = { pid, streak, lastAtMs: now, notBeforeMs: now + backoffMs };
+    this.#log.info({ scope: 'live-source', event: 'tap.reattach_held_off', pid, cause, streak, retryInMs: backoffMs });
   }
 
   async #attemptAttach(pid: number): Promise<void> {
@@ -353,6 +431,15 @@ export class Tap {
     if (resolution.kind === 'unavailable') {
       this.#reportGap('runtimeUnavailable', { likelyQuarantine: resolution.likelyQuarantine });
       return;
+    }
+
+    if (this.#detaches.isPending(pid)) {
+      const settled = await this.#detaches.settle(pid, DETACH_SETTLE_WAIT_MS, this.#deps.clock);
+      if (this.#isStopped()) return;
+      if (!settled) {
+        this.#log.warn({ scope: 'live-source', event: 'tap.attach_deferred_detach_pending', pid });
+        return;
+      }
     }
 
     const retry = this.#discoveryRetry;
@@ -561,7 +648,6 @@ export class Tap {
     this.#activePid = null;
     if (fromCache) {
       this.#deps.candidates.invalidate(pid, buildId);
-      await this.#attemptAttach(pid);
     } else {
       this.#reportGap('attachFailed');
       this.#discoveryEscalationLevel += 1;
@@ -572,8 +658,8 @@ export class Tap {
         buildId,
         maxCandidates: this.#currentDiscoveryWidth(),
       });
-      await this.#attemptAttach(pid);
     }
+    this.#holdOffReattach(pid, 'validationTimeout');
   }
 
   #scheduleStalenessCheck(): void {
@@ -608,8 +694,10 @@ export class Tap {
   }
 
   async #handleHookSilent(): Promise<void> {
+    const pid = this.#activePid;
     await this.#teardownSession();
     this.#activePid = null;
+    if (pid !== null) this.#holdOffReattach(pid, 'hookSilent');
     this.#reportGap('hookSilent');
   }
 
@@ -643,32 +731,15 @@ export class Tap {
     }
   }
 
-  #detachSessionWithTimeout(session: TapSession): Promise<void> {
-    return new Promise((resolve) => {
-      let settled = false;
-      const finish = (): void => {
-        if (settled) return;
-        settled = true;
-        resolve();
-      };
-
-      const timer = this.#deps.clock.setTimeout(() => {
-        this.#log.info({ scope: 'live-source', event: 'tap.session_detach_timed_out', pid: session.pid });
-        finish();
-      }, SESSION_DETACH_TIMEOUT_MS);
-
-      session.detach().then(
-        () => {
-          this.#deps.clock.clearTimeout(timer);
-          finish();
-        },
-        (error: unknown) => {
-          this.#deps.clock.clearTimeout(timer);
-          this.#log.info({ scope: 'live-source', event: 'tap.session_detach_failed', pid: session.pid, error: String(error) });
-          finish();
-        },
-      );
+  /** Stops waiting after {@link SESSION_DETACH_TIMEOUT_MS}, but the detach stays in the ledger
+   *  until it really settles, so the next attach to this pid still waits for it. */
+  async #detachSessionWithTimeout(session: TapSession): Promise<void> {
+    const detaching = session.detach().catch((error: unknown) => {
+      this.#log.info({ scope: 'live-source', event: 'tap.session_detach_failed', pid: session.pid, error: String(error) });
     });
+    this.#detaches.track(session.pid, detaching);
+    const settled = await this.#detaches.settle(session.pid, SESSION_DETACH_TIMEOUT_MS, this.#deps.clock);
+    if (!settled) this.#log.info({ scope: 'live-source', event: 'tap.session_detach_timed_out', pid: session.pid });
   }
 }
 

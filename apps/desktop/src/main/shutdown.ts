@@ -64,6 +64,28 @@ export interface ShutdownDeps {
   onStepFailed: (step: ShutdownStep, error: unknown) => void;
 }
 
+/** The longest quitting waits for the tap to leave the game. Past it the app exits anyway: a
+ *  wedged instrumentation runtime must never make the app impossible to close. */
+export const LIVE_SOURCE_RELEASE_DEADLINE_MS = 8_000;
+
+/** Resolves once `task` settles or `deadlineMs` passes, whichever is first; never rejects. */
+export function settleWithin(
+  task: Promise<unknown>,
+  deadlineMs: number,
+  timers: { setTimeout(callback: () => void, ms: number): unknown; clearTimeout(handle: unknown): void },
+): Promise<'settled' | 'deadline'> {
+  return new Promise((resolve) => {
+    const timer = timers.setTimeout(() => {
+      resolve('deadline');
+    }, deadlineMs);
+    const finish = (): void => {
+      timers.clearTimeout(timer);
+      resolve('settled');
+    };
+    task.then(finish, finish);
+  });
+}
+
 export function shutdownInOrder(deps: ShutdownDeps): void {
   for (const step of SHUTDOWN_STEPS) {
     try {

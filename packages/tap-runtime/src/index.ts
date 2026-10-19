@@ -47,9 +47,16 @@ export interface FridaScript {
   post(message: unknown, data?: Buffer | null): void;
 }
 
+export interface FridaCrash {
+  readonly summary?: string;
+}
+
 export interface FridaSession {
   createScript(source: string, options?: { readonly runtime?: unknown }): Promise<FridaScript>;
   detach(): Promise<void>;
+  /** Fires once when the session ends for any reason — `process-terminated` among them, which is
+   *  the only record this app gets of the game dying under it. */
+  readonly detached?: { connect(handler: (reason: string, crash: FridaCrash | null) => void): void };
 }
 
 interface ReadPayload {
@@ -112,6 +119,7 @@ class FridaTapSession implements TapSession {
   readonly #script: FridaScript;
   readonly #listeners: Map<number, (event: TapReadEvent) => void>;
   readonly #log: LogPort;
+  readonly #ended: () => boolean;
   #detached = false;
 
   constructor(
@@ -120,12 +128,14 @@ class FridaTapSession implements TapSession {
     script: FridaScript,
     listeners: Map<number, (event: TapReadEvent) => void>,
     log: LogPort,
+    ended: () => boolean,
   ) {
     this.pid = pid;
     this.#session = session;
     this.#script = script;
     this.#listeners = listeners;
     this.#log = log;
+    this.#ended = ended;
   }
 
   installInterceptor(address: number): TapInterceptor {
@@ -140,6 +150,7 @@ class FridaTapSession implements TapSession {
   }
 
   async #teardown(): Promise<void> {
+    if (this.#ended()) return;
     try {
       await this.#script.unload();
     } catch (error) {
@@ -169,6 +180,17 @@ export class FridaTapRuntime implements TapRuntime {
 
   async attach(pid: number): Promise<TapSession> {
     const session = await this.#attach(pid);
+    let ended = false;
+    session.detached?.connect((reason, crash) => {
+      ended = true;
+      this.#log.info({
+        scope: 'tap-runtime',
+        event: 'session.detached',
+        pid,
+        reason,
+        ...(crash?.summary !== undefined ? { crash: crash.summary } : {}),
+      });
+    });
 
     let script: FridaScript;
     try {
@@ -217,7 +239,7 @@ export class FridaTapRuntime implements TapRuntime {
       throw error;
     }
 
-    return new FridaTapSession(pid, session, script, listeners, this.#log);
+    return new FridaTapSession(pid, session, script, listeners, this.#log, () => ended);
   }
 }
 

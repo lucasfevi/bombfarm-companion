@@ -23,6 +23,7 @@ function harness(
     isPackaged?: boolean;
     onCheck?: () => Promise<unknown>;
     onDownload?: () => Promise<unknown>;
+    beforeInstall?: () => Promise<void>;
   } = {},
 ) {
   const handlers: Handlers = {};
@@ -81,6 +82,7 @@ function harness(
     currentVersion: '1.2.3',
     channel: options.channel === undefined ? 'beta' : options.channel,
     isPackaged: options.isPackaged ?? true,
+    ...(options.beforeInstall !== undefined ? { beforeInstall: options.beforeInstall } : {}),
   });
 
   return { service, handlers, emitted, logged, calls, applied, timers, cancelled };
@@ -344,5 +346,44 @@ describe('unavailableUpdateService', () => {
     service.start();
     service.stop();
     expect(service.getStatus()).toEqual(status);
+  });
+});
+
+describe('createUpdateService: the installer waits for what quitting must finish first', () => {
+  function readyHarness(beforeInstall: () => Promise<void>) {
+    const h = harness({ beforeInstall });
+    h.service.start();
+    h.handlers['update-available']?.({ version: '1.3.0' });
+    h.handlers['update-downloaded']?.({ version: '1.3.0' });
+    return h;
+  }
+
+  it('launches the installer only once beforeInstall has settled', async () => {
+    let release: (() => void) | undefined;
+    const h = readyHarness(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        }),
+    );
+
+    h.service.installOnRestart();
+    await Promise.resolve();
+    expect(h.calls.quitAndInstall).toBe(0);
+
+    release?.();
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(h.calls.quitAndInstall).toBe(1);
+  });
+
+  it('still installs when beforeInstall fails, and installs once however often it is asked', async () => {
+    const h = readyHarness(() => Promise.reject(new Error('detach failed')));
+
+    h.service.installOnRestart();
+    h.service.installOnRestart();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(h.calls.quitAndInstall).toBe(1);
+    expect(h.logged).toContainEqual(expect.objectContaining({ event: 'update.before_install_failed' }));
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { FridaTapRuntime } from './index.js';
-import type { FridaMessage, FridaScript, FridaSession, TapReadEvent } from './index.js';
+import type { FridaCrash, FridaMessage, FridaScript, FridaSession, TapReadEvent } from './index.js';
 
 function createFakeScript(options: { failLoad?: boolean } = {}): {
   script: FridaScript;
@@ -49,9 +49,16 @@ function createFakeScript(options: { failLoad?: boolean } = {}): {
 function createFakeSession(script: FridaScript, options: { failCreateScript?: boolean } = {}): {
   session: FridaSession;
   detachCalls: number;
+  endSession: (reason: string, crash: FridaCrash | null) => void;
 } {
   let detachCalls = 0;
+  let detachedHandler: ((reason: string, crash: FridaCrash | null) => void) | null = null;
   const session: FridaSession = {
+    detached: {
+      connect: (handler) => {
+        detachedHandler = handler;
+      },
+    },
     createScript: () =>
       options.failCreateScript ? Promise.reject(new Error('createScript failed')) : Promise.resolve(script),
     detach: () => {
@@ -64,6 +71,7 @@ function createFakeSession(script: FridaScript, options: { failCreateScript?: bo
     get detachCalls() {
       return detachCalls;
     },
+    endSession: (reason, crash) => detachedHandler?.(reason, crash),
   };
 }
 
@@ -294,5 +302,41 @@ describe('TapSession.detach', () => {
     expect(log.info).toHaveBeenCalledWith(
       expect.objectContaining({ scope: 'tap-runtime', event: 'session.script_unload_failed', pid: 1 }),
     );
+  });
+});
+
+describe('FridaTapSession: a session that ends on its own', () => {
+  it('logs why it ended, with the crash summary when there is one', async () => {
+    const fake = createFakeScript();
+    const fakeSession = createFakeSession(fake.script);
+    const infos: Record<string, unknown>[] = [];
+    const runtime = new FridaTapRuntime({
+      attach: () => Promise.resolve(fakeSession.session),
+      log: { info: (record) => infos.push(record) },
+    });
+    await runtime.attach(77);
+
+    fakeSession.endSession('process-terminated', { summary: 'access violation' });
+
+    expect(infos).toContainEqual({
+      scope: 'tap-runtime',
+      event: 'session.detached',
+      pid: 77,
+      reason: 'process-terminated',
+      crash: 'access violation',
+    });
+  });
+
+  it('skips unloading a script whose session is already gone', async () => {
+    const fake = createFakeScript();
+    const fakeSession = createFakeSession(fake.script);
+    const runtime = new FridaTapRuntime({ attach: () => Promise.resolve(fakeSession.session) });
+    const tapSession = await runtime.attach(78);
+
+    fakeSession.endSession('process-terminated', null);
+    await tapSession.detach();
+
+    expect(fake.unloadCalls).toBe(0);
+    expect(fakeSession.detachCalls).toBe(0);
   });
 });
