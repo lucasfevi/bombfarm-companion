@@ -129,6 +129,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'SHELL_ACTIONS_COLLAPSE_WIDTH',
   'SHELL_BRAND_MARK_WIDTH',
   'SHELL_ICON_TABS_WIDTH',
+  'SHELL_PREMIUM_TAB_WIDTHS',
   'Select',
   // `SelectMultiple` (2026-08-27): its own component rather than a `multiple?: boolean` branch on
   // `Select` — the two disagree on the type of `value` and on what a change is, and a union that

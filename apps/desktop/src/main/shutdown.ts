@@ -22,6 +22,7 @@ export const SHUTDOWN_STEPS = [
   'stopLiveFastPublisher',
   'stopMarketService',
   'stopOnlinePlayersService',
+  'stopPremium',
   'releaseForgeService',
   'releaseForgeInjector',
   'releaseApplyService',

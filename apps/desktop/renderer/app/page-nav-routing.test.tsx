@@ -16,7 +16,7 @@ const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8');
 const ROUTED_BY_ID = /activeNavId === '(\w+)'/g;
 
 describe('page.tsx routes every nav item', () => {
-  const stripIds = navItemsFor(STRINGS.en).map((item) => item.id);
+  const stripIds = navItemsFor(STRINGS.en, { premium: true }).map((item) => item.id);
   const screenIds = [...stripIds.filter((id) => id !== 'progression'), 'skills', 'collections', 'settings'];
   const routed = [...new Set([...source.matchAll(ROUTED_BY_ID)].map((match) => match[1]))];
 
@@ -59,5 +59,40 @@ describe('page.tsx routes every nav item', () => {
 
   it('lets the holdings inventory column lead to the Inventory tab', () => {
     expect(source).toMatch(/onOpenInventory=\{\(\) => \{\s*setActiveNavId\('inventory'\);/);
+  });
+
+  it('renders the Premium tab on the Premium item and reads only its visibility in the shell', () => {
+    expect(source).toContain("activeNavId === 'premium' && premiumTabShown ? (");
+    expect(source).toContain('<PremiumScreen />');
+    expect(source).toContain('navItemsFor(t, { premium: premiumTabShown })');
+  });
+
+  it('mounts the Premium hooks only once the environment says Premium is on', () => {
+    expect(source).toContain('const premiumEnabled = environment?.premiumEnabled === true;');
+    expect(source).toContain('const premiumTabShown = usePremiumVisible(premiumEnabled);');
+  });
+
+  it('moves to Settings when the active Premium tab hides', () => {
+    expect(source).toMatch(
+      /const next = screenWhenPremiumVisibility\(activeNavId, premiumTabShown\);\s*if \(next !== activeNavId\) setActiveNavId\(next\);/,
+    );
+  });
+
+  it('mounts the Premium section in Settings after Usage and before Diagnostics', () => {
+    const usage = source.indexOf('<UsageSection');
+    const premium = source.indexOf('<PremiumSection />');
+    const diagnostics = source.indexOf('<DiagnosticsSection');
+
+    expect(usage).toBeGreaterThan(0);
+    expect(premium).toBeGreaterThan(usage);
+    expect(diagnostics).toBeGreaterThan(premium);
+  });
+
+  it('gates the Premium section by the flavor switch, not by the tab visibility', () => {
+    const at = source.indexOf('<PremiumSection />');
+    const line = source.slice(source.lastIndexOf('\n', at) + 1, source.indexOf('\n', at));
+
+    expect(line.trim()).toBe('{premiumEnabled ? <PremiumSection /> : null}');
+    expect(line).not.toContain('premiumTabShown');
   });
 });

@@ -71,6 +71,7 @@ test.describe('app boot smoke', () => {
         isPackaged: false,
         version: expect.stringMatching(/^\d+\.\d+\.\d+/),
         accountSource: 'fixture',
+        premiumEnabled: true,
       });
 
       // `badgeLabel` above is this spec's claim about the build. Whether the bar draws that badge

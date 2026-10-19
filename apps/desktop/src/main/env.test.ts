@@ -239,6 +239,48 @@ describe('buildAppEnv', () => {
   });
 });
 
+describe('premiumApiOriginOverride (BFC_PREMIUM_API_ORIGIN)', () => {
+  const unpackaged = { ...baseDeps, rawFlavor: 'dev', isPackaged: false } as const;
+
+  it('is the given origin when unpackaged and a 127.0.0.1 http origin with a port', () => {
+    const env = buildAppEnv({ ...unpackaged, premiumApiOriginOverride: 'http://127.0.0.1:4555' });
+    expect(env.premiumApiOriginOverride).toBe('http://127.0.0.1:4555');
+  });
+
+  it('is null when packaged, whatever the value', () => {
+    const env = buildAppEnv({
+      ...baseDeps,
+      rawFlavor: 'beta',
+      isPackaged: true,
+      bakedFlavor: 'beta',
+      premiumApiOriginOverride: 'http://127.0.0.1:4555',
+    });
+    expect(env.premiumApiOriginOverride).toBeNull();
+  });
+
+  it.each([
+    ['another host over https', 'https://example.test'],
+    ['localhost by name', 'http://localhost:1'],
+    ['a path', 'http://127.0.0.1:1/path'],
+    ['a trailing slash', 'http://127.0.0.1:4555/'],
+    ['https on the loopback address', 'https://127.0.0.1:4555'],
+    ['no port', 'http://127.0.0.1'],
+    ['port zero', 'http://127.0.0.1:0'],
+    ['a port above 65535', 'http://127.0.0.1:65536'],
+    ['credentials in front of the host', 'http://user@127.0.0.1:4555'],
+    ['a query', 'http://127.0.0.1:4555?x=1'],
+    ['a host that only starts with the loopback address', 'http://127.0.0.1.example.test:4555'],
+    ['garbage', 'not a url'],
+    ['an empty string', ''],
+  ])('is null when unpackaged but the value is %s', (_name, value) => {
+    expect(buildAppEnv({ ...unpackaged, premiumApiOriginOverride: value }).premiumApiOriginOverride).toBeNull();
+  });
+
+  it('is null when absent', () => {
+    expect(buildAppEnv(unpackaged).premiumApiOriginOverride).toBeNull();
+  });
+});
+
 describe('resolveAppEnv', () => {
   it('returns the same object on repeated calls', async () => {
     vi.resetModules();
@@ -260,6 +302,22 @@ describe('resolveAppEnv', () => {
         delete process.env.BFC_USER_DATA_DIR;
       } else {
         process.env.BFC_USER_DATA_DIR = previous;
+      }
+    }
+  });
+
+  it('threads process.env.BFC_PREMIUM_API_ORIGIN through as the premiumApiOriginOverride', async () => {
+    vi.resetModules();
+    const previous = process.env.BFC_PREMIUM_API_ORIGIN;
+    process.env.BFC_PREMIUM_API_ORIGIN = 'http://127.0.0.1:4555';
+    try {
+      const { resolveAppEnv: resolveFresh } = await import('./env.js');
+      expect(resolveFresh().premiumApiOriginOverride).toBe('http://127.0.0.1:4555');
+    } finally {
+      if (previous === undefined) {
+        delete process.env.BFC_PREMIUM_API_ORIGIN;
+      } else {
+        process.env.BFC_PREMIUM_API_ORIGIN = previous;
       }
     }
   });

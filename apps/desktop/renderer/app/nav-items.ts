@@ -3,7 +3,10 @@ import type { Copy } from '../lib/copy';
 
 /** Every tab carries a glyph as well as a word: the top bar draws the glyph alone once the window
  *  is too narrow to spell its tabs, and a tab without one would keep its label and overflow. */
-export function navItemsFor(t: Copy): { id: string; label: string; icon: IconName }[] {
+export function navItemsFor(
+  t: Copy,
+  { premium }: { premium: boolean },
+): { id: string; label: string; icon: IconName }[] {
   return [
     { id: 'live', label: t.liveNavLabel, icon: 'signal' },
     { id: 'farm', label: t.farmNavLabel, icon: 'map' },
@@ -15,6 +18,7 @@ export function navItemsFor(t: Copy): { id: string; label: string; icon: IconNam
     { id: 'pvp', label: t.pvpNavLabel, icon: 'sword' },
     // The skill tree and the collections share this tab: both are permanent, account-wide bonuses.
     { id: 'progression', label: t.progressionNavLabel, icon: 'graph' },
+    ...(premium ? [{ id: 'premium', label: t.premiumNavLabel, icon: 'star' as const }] : []),
     { id: 'account', label: t.accountNavLabel, icon: 'user' },
   ];
 }

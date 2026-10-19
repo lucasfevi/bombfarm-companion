@@ -138,7 +138,12 @@ const GUARD_1_EXCLUDE = (path: string): boolean =>
   // storage/test-support.ts is a test HELPER, not a `.test.ts`, so `isTestFile` above misses it:
   // every importer is a suite and nothing in the shipped bundle reaches it, so its English throw
   // messages address a developer whose Node build cannot open the store — never a player.
-  path.endsWith(join('storage', 'test-support.ts'));
+  path.endsWith(join('storage', 'test-support.ts')) ||
+  // premium/loopback-page.ts is the static page a browser tab shows once Premium sign-in
+  // finishes. It is served from main, outside the renderer's copy layer, and says the same two
+  // sentences in both languages at once (not the app's current locale), so there is no locale to
+  // pick; its words are pinned by loopback-page.test.ts.
+  path.endsWith(join('premium', 'loopback-page.ts'));
 
 describe('Guard 1 — no player-facing literal outside the i18n source', () => {
   // What this rule CANNOT catch, stated rather than glossed: a one-word
@@ -169,6 +174,19 @@ describe('Guard 1 — no player-facing literal outside the i18n source', () => {
         'matter what language the player chose — main already speaks in codes ' +
         '(AccountStoreReason, SectionStatus, …); a new English sentence here is a regression.',
     ).toEqual([]);
+  });
+
+  it('the sign-in finished page exclusion is load-bearing and covers that one file only', () => {
+    const excluded = readAll(MAIN_ROOT, ['.ts']).filter(
+      (file) => GUARD_1_EXCLUDE(file.path) && file.path.endsWith(join('premium', 'loopback-page.ts')),
+    );
+    expect(excluded).toHaveLength(1);
+    expect(findProseLiterals(excluded[0]?.source ?? '')).not.toEqual([]);
+    const otherPremiumFiles = readAll(join(MAIN_ROOT, 'premium'), ['.ts']).filter(
+      (file) => !GUARD_1_EXCLUDE(file.path),
+    );
+    expect(otherPremiumFiles.length).toBeGreaterThan(0);
+    expect(otherPremiumFiles.flatMap((file) => findProseLiterals(file.source))).toEqual([]);
   });
 
   it('red state demonstrated (.tsx): inlining one string is caught, by path and by value', () => {

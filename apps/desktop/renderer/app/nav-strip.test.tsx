@@ -14,7 +14,7 @@ function activeProps(screenId: string): { activeId?: string } {
 function currentTabs(screenId: string): string[] {
   const html = renderToStaticMarkup(
     createElement(AppShell, {
-      items: navItemsFor(STRINGS.en),
+      items: navItemsFor(STRINGS.en, { premium: false }),
       ...activeProps(screenId),
       children: 'body',
     }),

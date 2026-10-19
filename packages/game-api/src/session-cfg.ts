@@ -15,7 +15,12 @@ import { SessionToken } from './session.js';
 export type SessionCfgParseReason = 'no_auth_section' | 'no_token' | 'no_account_id';
 
 export type SessionCfgParseResult =
-  | { readonly ok: true; readonly accountId: string; readonly token: SessionToken }
+  | {
+      readonly ok: true;
+      readonly accountId: string;
+      readonly steamId64: string | null;
+      readonly token: SessionToken;
+    }
   | { readonly ok: false; readonly reason: SessionCfgParseReason };
 
 /** `;` starts a comment for the remainder of a line, but only outside a quoted value. */
@@ -77,5 +82,8 @@ export function parseSessionCfg(text: string): SessionCfgParseResult {
     return { ok: false, reason: 'no_account_id' };
   }
 
-  return { ok: true, accountId, token: SessionToken.create(rawToken) };
+  const rawSteamId = fields.steam_id64;
+  const steamId64 = typeof rawSteamId === 'string' && rawSteamId.length > 0 ? rawSteamId : null;
+
+  return { ok: true, accountId, steamId64, token: SessionToken.create(rawToken) };
 }
