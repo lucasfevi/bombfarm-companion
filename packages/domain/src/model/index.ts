@@ -84,6 +84,22 @@ export {
   cycleSecondsForHero,
 } from './cadence';
 export {
+  type BattleField,
+  FIELD_COLUMNS,
+  CLASSIC_FIELD,
+  COMPACT_FIELD,
+  fieldCells,
+  classicEquivalentStanding,
+  meanCellDistance,
+  classicDistanceOn,
+  fieldWalkSpeedCells,
+  type MapSize,
+  MAP_SIZES,
+  battleFieldFor,
+  mapSizeOfCells,
+  isMapSize,
+} from './clear-time';
+export {
   FUSE_CYCLE_OVERHEAD_SEC,
   WALK_CYCLE_OVERHEAD_SEC,
   FREE_HOP_BASE_CELLS,
@@ -93,8 +109,12 @@ export {
   HOP_SPEED_PIVOT,
   REPLANT_HOP_CELLS,
   REPLANT_SHARE,
+  FUSE_HOP_KNEE_SEC,
+  FUSE_HOP_FLOOR_FACTOR,
   freeHopCells,
+  fuseHopFactor,
   hopSpeedFactor,
+  walkCycleOverheadSeconds,
   plantCycleSeconds,
   meanPlantCycleSeconds,
 } from './plant-cycle';

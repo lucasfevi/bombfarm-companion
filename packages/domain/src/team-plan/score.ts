@@ -154,6 +154,7 @@ export function scoreHeroLoadout(
     cycleSecsHouseIdx: farm.cycleSecsHouseIdx,
     cycleSecsLevel: farm.cycleSecsLevel,
     ...(farm.windowSecs !== undefined ? { windowSecs: farm.windowSecs } : {}),
+    ...(farm.field !== undefined ? { field: farm.field } : {}),
   });
 
   const deriveResult = derive({

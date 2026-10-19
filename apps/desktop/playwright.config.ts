@@ -26,6 +26,7 @@ export default defineConfig({
         'account-view.spec.mjs',
         'consent-modal.spec.mjs',
         'settings-controls.spec.mjs',
+        'premium.spec.mjs',
         'farm-board.spec.mjs',
         'auto-recompute.spec.mjs',
         'i18n.spec.mjs',

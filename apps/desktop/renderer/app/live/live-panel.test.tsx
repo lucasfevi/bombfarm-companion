@@ -392,7 +392,7 @@ function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
 }
 
 function map(economy: LiveMap['economy']): LiveMap {
-  return { phase: 21, healthFraction: 0.56, propsAlive: 27, propsTotal: 50, economy };
+  return { phase: 21, healthFraction: 0.56, propsAlive: 27, propsTotal: 50, mapSize: null, economy };
 }
 
 function renderLive(earningsValue: LiveEarnings | null, mapValue: LiveMap | null) {

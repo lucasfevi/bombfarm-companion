@@ -65,7 +65,13 @@ export function sessionCfgPath(deps: SessionCfgPathDeps = {}): string {
 export type SessionTokenFileReason = 'not_found' | 'unreadable' | SessionCfgParseReason;
 
 export type SessionTokenFileResult =
-  | { readonly ok: true; readonly accountId: string; readonly token: SessionToken; readonly mtimeMs: number }
+  | {
+      readonly ok: true;
+      readonly accountId: string;
+      readonly steamId64?: string | null;
+      readonly token: SessionToken;
+      readonly mtimeMs: number;
+    }
   | { readonly ok: false; readonly reason: SessionTokenFileReason };
 
 /**
@@ -97,5 +103,20 @@ export function readSessionToken(
     return { ok: false, reason: parsed.reason };
   }
 
-  return { ok: true, accountId: parsed.accountId, token: parsed.token, mtimeMs };
+  return { ok: true, accountId: parsed.accountId, steamId64: parsed.steamId64, token: parsed.token, mtimeMs };
+}
+
+export interface GameIdentity {
+  readonly accountId: string;
+  readonly steamId64: string | null;
+}
+
+export function readGameIdentity(
+  consent: GrantedConsent,
+  fs: FsPort = nodeFsPort,
+  filePath: string = sessionCfgPath(),
+): GameIdentity | null {
+  const result = readSessionToken(consent, fs, filePath);
+  if (!result.ok) return null;
+  return { accountId: result.accountId, steamId64: result.steamId64 ?? null };
 }

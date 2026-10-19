@@ -319,3 +319,17 @@ describe('the signature and the ledger agree by construction', () => {
     expect(describePlanChanges(basis, now, null).counted > 0).toBe(moved);
   });
 });
+
+describe('the map the plan was scored on', () => {
+  it('a move to the compact map is a change the plan depends on, read as rows', () => {
+    const ledger = describePlanChanges(basis, { ...basis, inputs: inputs({ farmMapSize: 'compact' }) }, null);
+    expect(ledger.counted).toBe(1);
+    expect(ledger.other.map((c) => c.detail)).toEqual([{ field: 'accountField', name: 'farmMapSize', before: 16, after: 11 }]);
+  });
+
+  it('naming the classic map leaves a plan stored before the map could be picked unchanged', () => {
+    const named = { ...basis, inputs: inputs({ farmMapSize: 'classic' }) };
+    expect(planBasisSignature(named.inputs, named.controls)).toBe(planBasisSignature(basis.inputs, basis.controls));
+    expect(describePlanChanges(basis, named, null).counted).toBe(0);
+  });
+});

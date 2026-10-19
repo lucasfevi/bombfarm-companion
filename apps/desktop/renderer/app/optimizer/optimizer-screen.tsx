@@ -31,6 +31,7 @@ import type { TeamPlanEmptyStateKind, TeamPlanResultSort } from '@bombfarm/team-
 import type { TeamPlanRunnerHandle, TeamPlanRunStatus } from '@bombfarm/team-plan/runner';
 import type { AccountSource } from '@bombfarm/contracts';
 import type { TeamPlan, TeamPlanAllowedChanges, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
+import type { MapSize } from '@bombfarm/domain/model';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { TeamAuraId } from '@bombfarm/domain/team-buffs';
 import { itemName } from '@bombfarm/domain/game-labels';
@@ -49,6 +50,7 @@ type OptimizerScreenActionsIn = {
   applyPlan: (runId: string, plan: TeamPlan) => void;
   clearPlan: () => void;
   openHeroes: (heroIds: readonly string[]) => void;
+  setMapSize: (mapSize: MapSize) => void;
 };
 
 export function OptimizerScreen({
@@ -60,6 +62,7 @@ export function OptimizerScreen({
   setResultSort,
   planState,
   runner,
+  mapSizeDetected,
   actions,
   forgeWritesEnabled,
   accountSource,
@@ -75,6 +78,7 @@ export function OptimizerScreen({
   setResultSort: (next: TeamPlanResultSort) => void;
   planState: OptimizerPlanState;
   runner: TeamPlanRunnerHandle;
+  mapSizeDetected: boolean;
   actions: OptimizerScreenActionsIn;
   forgeWritesEnabled: boolean;
   accountSource: AccountSource | null;
@@ -147,6 +151,7 @@ export function OptimizerScreen({
       isStale,
       openHeroIds: planState.openHeroIds,
       resultSort,
+      mapSizeDetected,
     }),
     [
       inputs,
@@ -159,6 +164,7 @@ export function OptimizerScreen({
       isStale,
       planState.openHeroIds,
       resultSort,
+      mapSizeDetected,
     ],
   );
 
@@ -201,6 +207,7 @@ export function OptimizerScreen({
       applyPlan: actions.applyPlan,
       clearPlan: actions.clearPlan,
       setOpenHeroIds: actions.openHeroes,
+      setMapSize: actions.setMapSize,
       setResultSort,
     }),
     [onControlChange, actions, setResultSort],

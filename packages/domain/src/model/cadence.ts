@@ -6,7 +6,8 @@
  * copies of itself clearing the band's props. That keeps everything the field does to a cycle —
  * hops shortening as the map fills, the head walked in, a starved tail where most of the field has
  * nothing to bomb — and leaves out only what the hero's damage would change about the field's
- * pace, which {@link REFERENCE_HITS_TO_KILL} fixes. Fuse, walk speed and band are the only inputs.
+ * pace, which {@link REFERENCE_HITS_TO_KILL} fixes. Fuse, walk speed, band and field are the only
+ * inputs.
  *
  * Validated against two accounts' nine-hero fields at the same 100-prop band: plants per second on
  * the field land within ~15% for most heroes and within 20% for all 22, the accounts' means off
@@ -14,7 +15,7 @@
  * each measured cycle keeps its own hop; this reads ×1.23 for a `w = 3.4` hero.
  */
 import { PROPS_POR_ATO, propCountForAto } from '../phase-wiki';
-import { simulateClear } from './clear-time';
+import { type BattleField, CLASSIC_FIELD, simulateClear } from './clear-time';
 
 export const REFERENCE_FIELD_HEROES = 9;
 
@@ -45,21 +46,26 @@ const CYCLE_CACHE_LIMIT = 8192;
 const cycleCache = new Map<string, number>();
 
 /**
- * Seconds per bomb over a whole clear of the band's props, head and starved tail included.
- * `Infinity` when the hero cannot move, which keeps a degenerate hero at zero throughput.
+ * Seconds per bomb over a whole clear of the band's props on `field`, head and starved tail
+ * included. `Infinity` when the hero cannot move, which keeps a degenerate hero at zero throughput.
  */
-export function cycleSecondsForHero(fuseSecs: number, walkSpeedCells: number, ato: number = FIRST_ATO): number {
+export function cycleSecondsForHero(
+  fuseSecs: number,
+  walkSpeedCells: number,
+  ato: number = FIRST_ATO,
+  field: BattleField = CLASSIC_FIELD,
+): number {
   if (!(walkSpeedCells > 0) || !Number.isFinite(walkSpeedCells)) return Infinity;
-  const key = `${fuseSecs}|${walkSpeedCells}|${atoIndex(ato)}`;
+  const key = `${fuseSecs}|${walkSpeedCells}|${atoIndex(ato)}|${field.columns}x${field.rows}`;
   const cached = cycleCache.get(key);
   if (cached !== undefined) return cached;
   if (cycleCache.size >= CYCLE_CACHE_LIMIT) cycleCache.clear();
-  const cycle = referenceFieldCycle(fuseSecs, walkSpeedCells, ato);
+  const cycle = referenceFieldCycle(fuseSecs, walkSpeedCells, ato, field);
   cycleCache.set(key, cycle);
   return cycle;
 }
 
-function referenceFieldCycle(fuseSecs: number, walkSpeedCells: number, ato: number): number {
+function referenceFieldCycle(fuseSecs: number, walkSpeedCells: number, ato: number, field: BattleField): number {
   const clear = simulateClear(
     [
       {
@@ -74,6 +80,7 @@ function referenceFieldCycle(fuseSecs: number, walkSpeedCells: number, ato: numb
     ],
     REFERENCE_PROP,
     propCountForAto(ato),
+    field,
   );
   const rate = clear.plantRateByHero[0] ?? 0;
   return rate > 0 ? 1 / rate : Infinity;

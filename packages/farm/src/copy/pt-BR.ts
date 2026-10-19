@@ -149,6 +149,12 @@ export const farmPtBR: FarmCopy = {
   farmRankingPassTip:
     "+{gold}% de ouro, +{xp}% de XP e +{drop}% de chance de drop, sempre ativos. Com o Passe, o Bônus de Retorno é +{returnPass}% em vez de +{returnBase}%.",
   farmRankingPassTipDetected: "Lido da sua conta.",
+  farmRankingMapSizeLabel: "Tamanho do mapa",
+  farmRankingMapSizeClassic: "Clássico",
+  farmRankingMapSizeCompact: "Compacto",
+  farmRankingMapSizeTip:
+    "Clássico é o mapa 19 × 16. Compacto é o mapa 19 × 11 do visual novo do jogo (F8). Uma onda nasce com os mesmos props nos dois, então no compacto eles ficam mais próximos e mais deles caem em cada explosão; os heróis andam mais devagar nele, então atravessar qualquer um dos mapas leva o mesmo tempo.",
+  farmRankingMapSizeTipDetected: "Lido do jogo enquanto ele está aberto. Escolha o outro mapa para sobrepor.",
   farmRankingBoostLabel: "Boost",
   farmRankingBoostGold: "Ouro",
   farmRankingBoostXp: "XP",

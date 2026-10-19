@@ -1,4 +1,4 @@
-import { LIVE_DISPLAY_REFRESH_MS, type FieldCountdown, type LiveDamage, type LiveEarnings, type LiveEvent, type LiveHeroEnergy, type LiveView, type RecoveryCountdown, type RotationSnapshot } from '@bombfarm/contracts';
+import { LIVE_DISPLAY_REFRESH_MS, type FieldCountdown, type LiveDamage, type LiveEarnings, type LiveEvent, type LiveHeroEnergy, type LiveMap, type LiveView, type RecoveryCountdown, type RotationSnapshot } from '@bombfarm/contracts';
 import { describe, expect, it } from 'vitest';
 import {
   createLiveFastPublisher,
@@ -228,6 +228,20 @@ describe('createLiveFastPublisher — publishes only when the fast channel actua
     fireTick();
     expect(emitted).toHaveLength(3);
     expect(emitted[2]).toMatchObject({ type: 'fastUpdate', damage: current });
+  });
+
+  it('a change of field alone republishes the map, with every other map figure unchanged', () => {
+    const fieldOf = (mapSize: LiveMap['mapSize']): LiveMap => ({ phase: 61, healthFraction: 1, propsAlive: 75, propsTotal: 75, mapSize, economy: null });
+    let current = fieldOf('classic');
+    const { publisher, emitted, fireTick } = harness(() => view({ map: current }));
+    publisher.start();
+    fireTick();
+
+    current = fieldOf('compact');
+    fireTick();
+
+    expect(emitted).toHaveLength(2);
+    expect(emitted[1]).toMatchObject({ type: 'fastUpdate', map: { mapSize: 'compact' } });
   });
 
   it('a new damage object with identical content does not republish', () => {

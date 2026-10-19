@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { GrantedConsent } from '@bombfarm/game-api';
+import type { ConsentRecord, GrantedConsent } from '@bombfarm/game-api';
 import { SessionToken } from '@bombfarm/game-api';
-import { readSessionToken, sessionCfgPath, type FsPort } from './session-token-file.js';
+import { readGameIdentity, readSessionToken, sessionCfgPath, type FsPort, type GameIdentity } from './session-token-file.js';
 
 const GRANTED: GrantedConsent = { decision: 'granted', grantedAt: '2026-08-12T13:15:38.000Z', textVersion: 1 };
 
@@ -157,5 +157,66 @@ describe('readSessionToken — absorbs a throwing FsPort into a named result, ne
     const fs = throwingFsPort();
     expect(() => readSessionToken(GRANTED, fs, sessionCfgPath())).not.toThrow();
     expect(readSessionToken(GRANTED, fs, sessionCfgPath())).toEqual({ ok: false, reason: 'not_found' });
+  });
+});
+
+describe('readSessionToken — the SteamID beside the account id', () => {
+  const path = 'C:/fake/session.cfg';
+
+  it('carries steam_id64 through, and null when the file has none', () => {
+    const withSteam = fakeFsPort({
+      [path]: { text: '[auth]\naccount_id=486\nsteam_id64=76561198000000000\ntoken="tok"', mtimeMs: 1 },
+    });
+    const withoutSteam = fakeFsPort({ [path]: { text: REAL_SHAPE, mtimeMs: 1 } });
+    const first = readSessionToken(GRANTED, withSteam, path);
+    const second = readSessionToken(GRANTED, withoutSteam, path);
+    expect(first.ok && first.steamId64).toBe('76561198000000000');
+    expect(second.ok && second.steamId64).toBeNull();
+  });
+});
+
+describe('readGameIdentity — the two ids and never the token', () => {
+  const path = 'C:/fake/session.cfg';
+
+  it('returns exactly the account id and the SteamID', () => {
+    const fs = fakeFsPort({
+      [path]: { text: '[auth]\naccount_id=486\nsteam_id64="76561198000000000"\ntoken="tok"', mtimeMs: 1 },
+    });
+    const identity = readGameIdentity(GRANTED, fs, path);
+    expect(identity).toEqual({ accountId: '486', steamId64: '76561198000000000' });
+    expect(Object.keys(identity ?? {}).sort()).toEqual(['accountId', 'steamId64']);
+  });
+
+  it('returns a null SteamID when the file has none', () => {
+    const fs = fakeFsPort({ [path]: { text: REAL_SHAPE, mtimeMs: 1 } });
+    expect(readGameIdentity(GRANTED, fs, path)).toEqual({ accountId: '486', steamId64: null });
+  });
+
+  it('returns null when the file is missing, unreadable or malformed', () => {
+    const unreadable: FsPort = {
+      statSync: () => ({ mtimeMs: 1 }),
+      readFileSync: () => {
+        throw new Error('EACCES');
+      },
+    };
+    const malformed = fakeFsPort({ [path]: { text: '[auth]\naccount_id=486', mtimeMs: 1 } });
+    expect(readGameIdentity(GRANTED, fakeFsPort({}), path)).toBeNull();
+    expect(readGameIdentity(GRANTED, unreadable, path)).toBeNull();
+    expect(readGameIdentity(GRANTED, malformed, path)).toBeNull();
+  });
+
+  it('has a result type of exactly the two ids', () => {
+    const exact: [keyof GameIdentity] extends ['accountId' | 'steamId64']
+      ? ['accountId' | 'steamId64'] extends [keyof GameIdentity]
+        ? true
+        : never
+      : never = true;
+    expect(exact).toBe(true);
+  });
+
+  it('cannot be called without a granted consent', () => {
+    const declined: ConsentRecord = { decision: 'declined', textVersion: 1 };
+    // @ts-expect-error a consent that is not statically granted is refused at compile time
+    expect(readGameIdentity(declined, fakeFsPort({}), path)).toBeNull();
   });
 });

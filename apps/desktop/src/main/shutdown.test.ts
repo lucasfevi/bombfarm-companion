@@ -79,6 +79,12 @@ describe('the quit order every committing producer depends on', () => {
     expect(late).toEqual([]);
   });
 
+  it('stops premium before either store handle it writes to is closed', () => {
+    const late = STORE_CLOSES.filter((close) => !ranBefore(ran, 'stopPremium', close));
+
+    expect(late).toEqual([]);
+  });
+
   it('tears the live source down before the observation recorder it writes to is closed', () => {
     expect(ranBefore(ran, 'teardownLiveSource', 'closeObservationCapture')).toBe(true);
   });
@@ -145,6 +151,7 @@ describe('the step bodies the quit handler binds to the names the order is asser
   const expectedCall: Partial<Record<ShutdownStep, string>> = {
     stopGameReader: 'gameReader?.stop()',
     stopAccountRefresh: 'accountRefresh?.stop()',
+    stopPremium: 'premium?.stop()',
     teardownLiveSource: 'liveSource?.teardown()',
     stopObservationMarkWatch: 'observationMarkWatch?.stop()',
     closeObservationCapture: 'observationCapture?.close()',
@@ -214,5 +221,30 @@ describe('settleWithin', () => {
     const outcome = settleWithin(new Promise(() => undefined), 1_000, timers);
     timers.fireAll();
     await expect(outcome).resolves.toBe('deadline');
+  });
+});
+
+describe('how the main bootstrap drives the premium service', () => {
+  const source = readFileSync(resolve(__dirname, 'index.ts'), 'utf8');
+
+  it('starts the service once bootstrap has built it', () => {
+    expect(source).toMatch(/premium = createPremiumWhenEnabled\(env\.descriptor\.premium, \{[\s\S]*?\n\s*premium\?\.start\(\);/);
+  });
+
+  it('keeps the service off the network when the account source is the offline fixture', () => {
+    const call = /createPremiumWhenEnabled\(env\.descriptor\.premium, \{([\s\S]*?)\n {2}\}\);/.exec(source)?.[1] ?? '';
+
+    expect(call).toContain("offline: currentAccountSource() === 'fixture'");
+  });
+
+  it('builds the service only where the flavor turns Premium on', () => {
+    expect(source).not.toContain('createElectronPremium');
+  });
+
+  it('tells the service about an account change beside the account:changed event', () => {
+    const notifier = /createAccountNotifier\(\{[\s\S]*?emit: \(view\) => \{([\s\S]*?)\n\s*\},/.exec(source)?.[1] ?? '';
+
+    expect(notifier).toContain("emitEvent('account:changed', view)");
+    expect(notifier).toContain('premium?.noteAccountChanged()');
   });
 });

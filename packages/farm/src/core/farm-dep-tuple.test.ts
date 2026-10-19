@@ -100,12 +100,13 @@ const TUPLE_MEMBERS: readonly TupleMember[] = [
   { index: 22, name: 'farmBoost.xp', change: (i) => ({ ...i, farmBoost: { gold: false, xp: true, drop: false } }) },
   { index: 23, name: 'farmBoost.drop', change: (i) => ({ ...i, farmBoost: { gold: false, xp: false, drop: true } }) },
   { index: 24, name: 'treeXpMult', change: (i) => ({ ...i, treeXpMult: 2.35 }) },
+  { index: 25, name: 'farmMapSize', change: (i) => ({ ...i, farmMapSize: 'compact' }) },
 ];
 
 describe('readFarmDepTuple', () => {
-  it('has exactly 25 members, one per named member of the table below', () => {
-    expect(readFarmDepTuple(baseInputs())).toHaveLength(25);
-    expect(TUPLE_MEMBERS).toHaveLength(25);
+  it('has exactly 26 members, one per named member of the table below', () => {
+    expect(readFarmDepTuple(baseInputs())).toHaveLength(26);
+    expect(TUPLE_MEMBERS).toHaveLength(26);
     expect(TUPLE_MEMBERS.map((member) => member.index)).toEqual(
       TUPLE_MEMBERS.map((_, position) => position),
     );

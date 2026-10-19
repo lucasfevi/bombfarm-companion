@@ -12,7 +12,7 @@
 import type { EconomyBoost, ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { AurasAtCap } from '@bombfarm/domain/team-buffs';
-import type { Collection } from '@bombfarm/domain/model';
+import type { Collection, MapSize } from '@bombfarm/domain/model';
 
 export type FarmInputs = {
   heroes: readonly HeroRecord[];
@@ -59,4 +59,6 @@ export type FarmInputs = {
    * the domain's frozen `NO_AURAS_AT_CAP` and never a fresh `[]`.
    */
   aurasAtCap: AurasAtCap;
+  /** The map the account farms on. Absent reads as the classic map. */
+  farmMapSize?: MapSize;
 };

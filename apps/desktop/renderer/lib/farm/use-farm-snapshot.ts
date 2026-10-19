@@ -146,6 +146,7 @@ function snapshotControls(inputs: FarmInputs): FarmControls {
     farmPoolOverrides: inputs.farmPoolOverrides,
     farmReturnBonus: inputs.farmReturnBonus,
     aurasAtCap: inputs.aurasAtCap,
+    farmMapSize: inputs.farmMapSize ?? 'classic',
   };
 }
 

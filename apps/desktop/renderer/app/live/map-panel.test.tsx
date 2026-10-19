@@ -31,7 +31,7 @@ afterEach(() => {
 const ECONOMY: LiveMapEconomy = { xpPerProp: 310, averageGoldPerProp: 1_337, averageGoldPerClear: 100_275 };
 
 function liveMap(overrides: Partial<LiveMap> = {}): LiveMap {
-  return { phase: 61, healthFraction: 0.5, propsAlive: 22, propsTotal: 75, economy: ECONOMY, ...overrides };
+  return { phase: 61, healthFraction: 0.5, propsAlive: 22, propsTotal: 75, mapSize: null, economy: ECONOMY, ...overrides };
 }
 
 function html(map: LiveMap | null): string {

@@ -12,8 +12,8 @@ import {
   type FarmSnapshotState,
 } from './farm-snapshot-store';
 
-const CONTROLS: FarmControls = { farmPoolOverrides: {}, farmReturnBonus: 'off', aurasAtCap: [] };
-const OTHER_CONTROLS: FarmControls = { farmPoolOverrides: {}, farmReturnBonus: 'on', aurasAtCap: [] };
+const CONTROLS: FarmControls = { farmPoolOverrides: {}, farmReturnBonus: 'off', aurasAtCap: [], farmMapSize: 'classic' };
+const OTHER_CONTROLS: FarmControls = { farmPoolOverrides: {}, farmReturnBonus: 'on', aurasAtCap: [], farmMapSize: 'classic' };
 
 const BOARD = { rows: [], reason: null } as FarmRankingResult;
 const INPUTS = {} as FarmInputs;

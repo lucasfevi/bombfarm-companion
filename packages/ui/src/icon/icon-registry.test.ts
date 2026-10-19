@@ -45,6 +45,9 @@ import { uiIconRegistry } from './ui-registry';
 // like each set's book of pages, chosen over a bookmark (a saved place) and a stack of cards
 // (read as an inventory beside the archive box) so it reads as a book at the glyph-only widths;
 // the budget moved to 36 with it.
+// Desktop Premium tab (2026-10-17): star — the Premium tab's glyph, a five-point outline from the same
+// set as the graph, sword and hammer beside it, chosen over reusing `check-circle` (which already
+// means "done" in the chrome) and a filled star (read as a rating); the budget moved to 37 with it.
 const MIGRATED_UI_NAMES = [
   'window',
   'signal',
@@ -58,6 +61,7 @@ const MIGRATED_UI_NAMES = [
   'sword',
   'graph',
   'book-open',
+  'star',
   'ellipsis-horizontal',
   'layout-grid',
   'layout-list',
@@ -85,8 +89,8 @@ const MIGRATED_UI_NAMES = [
 ] as const;
 
 describe('icon registries — budget and membership', () => {
-  it('keeps uiIconRegistry within the 36-entry budget', () => {
-    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(36);
+  it('keeps uiIconRegistry within the 37-entry budget', () => {
+    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(37);
   });
 
   it('maps exactly the declared ui-chrome glyphs', () => {

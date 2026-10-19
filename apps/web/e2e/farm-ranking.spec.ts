@@ -353,6 +353,35 @@ test.describe('Farm Ranking board', () => {
     await expect(goldCell()).toHaveText(withPass);
   });
 
+  test('the compact map reprices gold/hr and survives a reload', async ({ page }) => {
+    await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
+    await page.goto('/farm');
+
+    const topRowTestId = await rows(page).first().getAttribute('data-testid');
+    const goldCell = () =>
+      table(page)
+        .locator(`[data-testid="${topRowTestId}"]`)
+        .locator('[data-testid^="farm-row-gold-"]');
+    const mapSize = page.getByTestId('farm-map-size');
+    const compact = mapSize.getByRole('button', { name: 'Compact', exact: true });
+
+    await expect(mapSize).toHaveAttribute('data-map-size', 'classic');
+    const classic = (await goldCell().textContent()) ?? '';
+
+    await compact.click();
+    await expect(compact).toHaveAttribute('aria-pressed', 'true');
+    await expect(goldCell()).not.toHaveText(classic);
+    const onCompact = (await goldCell().textContent()) ?? '';
+
+    const stored = await page.evaluate(() => localStorage.getItem('bf-hp-phases-view-v1'));
+    expect(JSON.parse(stored ?? '{}')).toMatchObject({ farmMapSize: 'compact' });
+    await page.addInitScript((value) => localStorage.setItem('bf-hp-phases-view-v1', value), stored!);
+
+    await page.reload();
+    await expect(mapSize).toHaveAttribute('data-map-size', 'compact');
+    await expect(goldCell()).toHaveText(onCompact);
+  });
+
   // 8. Zero enabled.
   test('disabling every hero shows the empty state and renders no numeric cell', async ({
     page,

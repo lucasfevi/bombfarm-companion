@@ -14,6 +14,7 @@ import type { OptimizeAction } from './use-optimize-action';
 import { AllowedChangesField } from './allowed-changes-field';
 import { ForgeFloorField } from './forge-floor-field';
 import { IgnoreCrowdingField } from './ignore-crowding-field';
+import { MapSizeField } from './map-size-field';
 import { GatePhaseField } from './gate-phase-field';
 import { FarmSetField } from './farm-set-field';
 import { ObjectiveField } from './objective-field';
@@ -127,6 +128,14 @@ export function TeamPlanToolbar({
                 value={data.controls.ignoreFieldCrowding}
                 onChange={actions.setIgnoreFieldCrowding}
               />
+              {actions.setMapSize === undefined ? null : (
+                <MapSizeField
+                  t={t}
+                  value={data.inputs.farmMapSize ?? 'classic'}
+                  detected={data.mapSizeDetected ?? false}
+                  onChange={actions.setMapSize}
+                />
+              )}
               {setupFields}
             </div>
           </div>
