@@ -46,7 +46,15 @@
  */
 
 import { BASE_BLAST_RANGE, EXTRA_RANGE_FRAC, SHATTER_FRAC } from '../phase-wiki';
-import { REPLANT_HOP_CELLS, freeHopCells, hopSpeedFactor, meanPlantCycleSeconds, plantCycleSeconds } from './plant-cycle';
+import {
+  REPLANT_HOP_CELLS,
+  freeHopCells,
+  fuseHopFactor,
+  hopSpeedFactor,
+  meanPlantCycleSeconds,
+  plantCycleSeconds,
+  walkCycleOverheadSeconds,
+} from './plant-cycle';
 
 /**
  * The battlefield grid a wave is cleared on. Every field is 19 columns wide. The classic look
@@ -325,6 +333,8 @@ export function simulateClear(
   const hitsPerPlantFull = new Array<number>(heroCount).fill(0);
   const hitsPerPlantCap = active.map((hero) => HITS_PER_PLANT_CAP_BASE + HITS_PER_PLANT_CAP_PER_CELL * hero.blastCells);
   const speedFactor = active.map((hero) => hopSpeedFactor(hero.walkSpeedCells));
+  const fuseHop = active.map((hero) => fuseHopFactor(hero.fuseSecs));
+  const walkOverhead = active.map((hero) => walkCycleOverheadSeconds(hero.fuseSecs));
   const replantCycle = active.map((hero) => plantCycleSeconds(hero.fuseSecs, hero.walkSpeedCells, REPLANT_HOP_CELLS));
   const killsPerHit = new Array<number>(heroCount).fill(0);
   // The same per-type and per-mix figures for the hits the extra cells land, `null` for a hero
@@ -395,13 +405,10 @@ export function simulateClear(
     const n = Math.max(1, standing - (chunk - 1) / 2);
     const propsKilled = propCount - n;
 
-    let freeHop = freeHopCells(classicEquivalentStanding(n, field));
+    const densityHop = freeHopCells(classicEquivalentStanding(n, field));
     let activeShare = Math.min(1, (ACTIVE_PER_PROP * n + ACTIVE_EXTRA) / squad);
-    if (propsKilled < HEAD_RAMP_PROPS) {
-      const ramp = Math.max(0, propsKilled) / HEAD_RAMP_PROPS;
-      freeHop = Math.max(freeHop, headHop * (1 - ramp) + freeHop * ramp);
-      activeShare *= HEAD_RAMP_START + (1 - HEAD_RAMP_START) * ramp;
-    }
+    const headRamp = propsKilled < HEAD_RAMP_PROPS ? Math.max(0, propsKilled) / HEAD_RAMP_PROPS : null;
+    if (headRamp !== null) activeShare *= HEAD_RAMP_START + (1 - HEAD_RAMP_START) * headRamp;
     const densityHits = (HITS_PER_PLANT_CLUSTER * n) / cells;
 
     // Per-hero cadence at this density; only the miss term depends on the kill rate itself.
@@ -422,7 +429,12 @@ export function simulateClear(
       }
       shardKillsPerHit[h] = mixKillsPerHit(shardKillsPerHitByType[h], share, standingTypes, standingCount);
       extraShardKillsPerHit[h] = mixKillsPerHit(extraShardKillsPerHitByType[h], share, standingTypes, standingCount);
-      plantRate[h] = (hero.presence * activeShare) / meanPlantCycleSeconds(hero.fuseSecs, hero.walkSpeedCells, freeHop * speedFactor[h], replantCycle[h]);
+      // The walk in from the last wave is as long whatever the fuse; only the free hop shrinks.
+      let freeHop = densityHop * fuseHop[h];
+      if (headRamp !== null) freeHop = Math.max(freeHop, headHop * (1 - headRamp) + freeHop * headRamp);
+      plantRate[h] =
+        (hero.presence * activeShare) /
+        meanPlantCycleSeconds(hero.fuseSecs, hero.walkSpeedCells, freeHop * speedFactor[h], replantCycle[h], walkOverhead[h]);
       hitsPerPlantFull[h] = densityHits * (hero.blastCells - 1);
       hitsPerPlantExtra[h] = densityHits * extraCells[h];
     }

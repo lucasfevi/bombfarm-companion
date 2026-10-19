@@ -93,6 +93,7 @@ export function loadTeamPlanFarmFixture(
       teamCoinPct: tree.teamCoinPct ?? 0,
       luckFlatPct: tree.luckFlatPct,
       xpMult: tree.xpMult,
+      ...(tree.collection === undefined ? {} : { collection: tree.collection }),
     },
     teamBuffs: computeTeamBuffsFromDeployed(heroes),
     context: {

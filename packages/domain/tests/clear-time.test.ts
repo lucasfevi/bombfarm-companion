@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  COMPACT_FIELD,
   expectedHitsToKill,
   simulateClear,
   FIRST_KILL_SEC,
@@ -156,6 +157,17 @@ describe('simulateClear', () => {
         }
       }
     }
+  });
+
+  it('a hero at the cooldown floor plants ×1.6–2.2 as often as at a 1.35 s fuse among eight others, where the hop curve alone said ×1.14 (measured ×2.09)', () => {
+    const props = mixAt(2_000_000);
+    const others = Array.from({ length: 8 }, () => hero({ fuseSecs: 1.5, walkSpeedCells: 3.2, critChance: 1, critMult: 12, hitNoCrit: 500_000 }));
+    const rateAt = (fuseSecs: number) =>
+      simulateClear([...others, hero({ fuseSecs, walkSpeedCells: 4.486, critChance: 1, critMult: 12, hitNoCrit: 500_000 })], props, 100, COMPACT_FIELD)
+        .plantRateByHero[8];
+    const gain = rateAt(0.4) / rateAt(1.347);
+    expect(gain).toBeGreaterThan(1.6);
+    expect(gain).toBeLessThan(2.2);
   });
 
   it('a squad that cannot damage anything never clears', () => {
