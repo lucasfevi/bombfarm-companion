@@ -1,5 +1,23 @@
 # @bombfarm/web
 
+## 0.31.1
+
+### Patch Changes
+
+- a02367b: The privacy policy now says, in English and Portuguese, that a Premium account with a linked game
+  account also keeps that account's player name and when it was last seen: filled in once when the
+  link is made from the name the usage count already recorded, kept current by the same hourly
+  message, and no longer updated while the usage count is off. The developer can see it in the same
+  private dashboard as the other Premium records, and it is deleted with the link. The page's date
+  moves to 2026-10-19.
+- Updated dependencies [d9b6421]
+  - @bombfarm/domain@1.14.1
+  - @bombfarm/hero@0.7.3
+  - @bombfarm/account@0.3.19
+  - @bombfarm/farm@1.5.1
+  - @bombfarm/game-art@0.8.8
+  - @bombfarm/team-plan@0.8.1
+
 ## 0.31.0
 
 ### Minor Changes

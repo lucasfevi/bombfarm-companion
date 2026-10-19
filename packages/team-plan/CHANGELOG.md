@@ -1,5 +1,15 @@
 # @bombfarm/team-plan
 
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [d9b6421]
+  - @bombfarm/domain@1.14.1
+  - @bombfarm/hero@0.7.3
+  - @bombfarm/farm@1.5.1
+  - @bombfarm/game-art@0.8.8
+
 ## 0.8.0
 
 ### Minor Changes
