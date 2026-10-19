@@ -10,6 +10,7 @@ import {
   STAT_CAPS,
   passagemBastaoFieldPulse,
   type AbilityMods,
+  type BattleField,
   type Context,
   type HeroSheet,
   type PointValue,
@@ -101,6 +102,8 @@ export type AdvisorPipelineInput = {
    */
   houseCycleSecsHouseIdx?: number | null;
   houseCycleSecsLevel?: number | null;
+  /** See {@link Context.field}. */
+  field?: BattleField;
   phase: number | null;
   mitigationPct: number;
   /**
@@ -310,6 +313,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     cycleSecs: houseCycleSecs,
     cycleSecsHouseIdx: houseCycleSecsHouseIdx,
     cycleSecsLevel: houseCycleSecsLevel,
+    ...(input.field !== undefined ? { field: input.field } : {}),
   });
   const rest = context.restSeconds;
 

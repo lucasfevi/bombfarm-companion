@@ -140,12 +140,33 @@ describe('phases slice', () => {
     expect(usePlannerStore.getState().farmBoost).toEqual({ gold: false, xp: true, drop: true });
   });
 
+  it('setFarmMapSize persists, skips an equal write, and hydrates back', () => {
+    expect(usePlannerStore.getState().farmMapSize).toBe('classic');
+    usePlannerStore.getState().setFarmMapSize('compact');
+    expect(loadPhasesView().farmMapSize).toBe('compact');
+
+    localStorage.clear();
+    usePlannerStore.getState().setFarmMapSize('compact');
+    expect(localStorage.getItem('bf-hp-phases-view-v1')).toBeNull();
+
+    usePlannerStore.getState().hydratePhasesView({});
+    expect(usePlannerStore.getState().farmMapSize).toBe('classic');
+    usePlannerStore.getState().hydratePhasesView({ farmMapSize: 'compact' });
+    expect(usePlannerStore.getState().farmMapSize).toBe('compact');
+  });
+
+  it('changing the map keeps the rest of the stored view', () => {
+    usePlannerStore.getState().setFarmReturnBonus('on');
+    usePlannerStore.getState().setFarmMapSize('compact');
+    expect(loadPhasesView()).toMatchObject({ farmReturnBonus: 'on', farmMapSize: 'compact' });
+  });
+
   it('the persisted payload never carries the ephemeral fields', () => {
     // No setPhasesViewPhase call in this test, so the phase is still unchosen — `phase`
     // itself is correctly omitted here too (see the "omits phase while unchosen" test below).
     usePlannerStore.getState().setFarmReturnBonus('on');
     const raw = JSON.parse(localStorage.getItem('bf-hp-phases-view-v1')!) as Record<string, unknown>;
-    expect(Object.keys(raw).sort()).toEqual(['farmBoost', 'farmPass', 'farmPool', 'farmReturnBonus']);
+    expect(Object.keys(raw).sort()).toEqual(['farmBoost', 'farmMapSize', 'farmPass', 'farmPool', 'farmReturnBonus']);
   });
 
   it('omits phase while unchosen, so a later write cannot freeze the auto-select onto phase 1', () => {

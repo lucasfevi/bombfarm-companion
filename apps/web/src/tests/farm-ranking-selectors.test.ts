@@ -13,6 +13,7 @@ import {
   selectFarmPass,
   selectFarmXpBonusUnknown,
   selectFarmXpPerPropMult,
+  buildAccount,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
 import { selectAccountShared } from '@/shared/stores/selectors/account-selectors';
 import { normalizeAccount } from '@/shared/lib/account-shared';
@@ -271,6 +272,10 @@ describe('selectFarmRankingRows', () => {
     it('farmBoost', () => {
       expectRecompute(() => usePlannerStore.getState().setFarmBoost({ gold: false, xp: true, drop: false }));
     });
+
+    it('farmMapSize', () => {
+      expectRecompute(() => usePlannerStore.getState().setFarmMapSize('compact'));
+    });
   });
 });
 
@@ -448,6 +453,35 @@ describe('the Pass reaches the board', () => {
     const withPass = goldPerHour();
     expect(bare).toBeGreaterThan(0);
     expect(withPass / bare).toBeCloseTo(1 + PASS_ADDS.gold[1] - PASS_ADDS.gold[0], 6);
+  });
+});
+
+describe('the map size reaches the board', () => {
+  beforeEach(() => {
+    resetPlannerStoreForTests();
+  });
+
+  afterEach(() => {
+    resetPlannerStoreForTests();
+  });
+
+  const goldPerHour = (phase: number) =>
+    selectFarmRankingRows(usePlannerStore.getState()).rows.find((row) => row.phase === phase)!.goldPerHour;
+
+  it("the compact map raises the board's gold per hour", () => {
+    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
+    const classic = goldPerHour(5);
+    usePlannerStore.getState().setFarmMapSize('compact');
+    expect(goldPerHour(5)).toBeGreaterThan(classic);
+  });
+
+  it('naming the classic map prices the board exactly as the default does', () => {
+    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
+    const unset = goldPerHour(5);
+    usePlannerStore.getState().setFarmMapSize('compact');
+    usePlannerStore.getState().setFarmMapSize('classic');
+    expect(goldPerHour(5)).toBe(unset);
+    expect(buildAccount(usePlannerStore.getState())).not.toHaveProperty('field');
   });
 });
 

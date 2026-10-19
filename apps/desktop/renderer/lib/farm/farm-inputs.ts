@@ -12,6 +12,7 @@ import { canonicalStringify } from '@bombfarm/contracts';
 import type { AccountView } from '@bombfarm/contracts';
 import { NO_ECONOMY_BOOST, type EconomyBoost, type ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import { passActive } from '@bombfarm/domain/import-save';
+import type { MapSize } from '@bombfarm/domain/model';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { NO_AURAS_AT_CAP, type AurasAtCap } from '@bombfarm/domain/team-buffs';
 import { readFarmDepTuple, type FarmInputs } from '@bombfarm/farm/core';
@@ -32,6 +33,8 @@ export type FarmControls = {
   readonly farmPoolOverrides: Record<string, boolean>;
   readonly farmReturnBonus: ReturnBonusMode;
   readonly aurasAtCap: AurasAtCap;
+  /** The field the board is priced on — the player's pick, else the one the game is drawing. */
+  readonly farmMapSize: MapSize;
 };
 
 /** One shared reference, so a screen that never touched the controls hands the compute the same
@@ -41,6 +44,7 @@ export const DEFAULT_FARM_CONTROLS: FarmControls = Object.freeze({
   farmPoolOverrides: Object.freeze({}) as Record<string, boolean>,
   farmReturnBonus: 'off' as const,
   aurasAtCap: NO_AURAS_AT_CAP,
+  farmMapSize: 'classic' as const,
 });
 
 /**
@@ -116,6 +120,7 @@ export function buildFarmInputs(
     farmPass: passActive(account.vipUntil, nowMs),
     farmBoost: boost,
     aurasAtCap: controls.aurasAtCap,
+    farmMapSize: controls.farmMapSize,
   };
 }
 

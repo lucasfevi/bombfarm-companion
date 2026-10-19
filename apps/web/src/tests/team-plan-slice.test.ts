@@ -5,7 +5,7 @@ import { attachInventoryPersistence } from '@/shared/stores/persistence/persist-
 import { attachTeamPlanScopePersistence } from '@/shared/stores/persistence/persist-team-plan-scope';
 import { AUTOSAVE_MS } from '@/shared/stores/persistence/debounced-writer';
 import { hydratePlannerStore } from '@/shared/stores/hydrate-planner-store';
-import { selectTeamPlanIsStale } from '@/shared/stores/selectors/team-plan-selectors';
+import { selectTeamPlanInputs, selectTeamPlanIsStale } from '@/shared/stores/selectors/team-plan-selectors';
 import { selectLiveTeamPlanInputSignature } from '@/shared/stores/slices/team-plan-slice';
 import { buildDefaultScopeMap, resolveHeroScope } from '@/shared/stores/team-plan/types';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
@@ -418,6 +418,17 @@ describe('team-plan slice', () => {
     const signature = selectLiveTeamPlanInputSignature(usePlannerStore.getState());
     usePlannerStore.setState({ planInputSignature: signature });
     usePlannerStore.getState().setForgeFloor(11);
+    expect(selectTeamPlanIsStale(usePlannerStore.getState())).toBe(true);
+  });
+
+  it('the plan reads the map size the Farm board stores, and a change of map leaves a stored plan stale', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a')], 'a');
+    usePlannerStore.getState().hydrateInventory({ version: 1, importedAt: 1, items: [] }, 10);
+    expect(selectTeamPlanInputs(usePlannerStore.getState()).farmMapSize).toBe('classic');
+    const signature = selectLiveTeamPlanInputSignature(usePlannerStore.getState());
+    usePlannerStore.setState({ planInputSignature: signature });
+    usePlannerStore.getState().setFarmMapSize('compact');
+    expect(selectTeamPlanInputs(usePlannerStore.getState()).farmMapSize).toBe('compact');
     expect(selectTeamPlanIsStale(usePlannerStore.getState())).toBe(true);
   });
 

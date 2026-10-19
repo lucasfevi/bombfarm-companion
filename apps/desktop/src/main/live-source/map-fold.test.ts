@@ -125,6 +125,39 @@ describe('MapFold: a figure a tick omits is carried, not blanked', () => {
   });
 });
 
+describe('MapFold: which field the game is drawing', () => {
+  it('reads a 304-cell grid as the classic field and a 209-cell grid as the compact one', () => {
+    const fold = makeFold();
+    fold.consumeTick(baseTick({ phase: 61, kinds: grid(304, 10) }), 1);
+    expect(fold.current?.mapSize).toBe('classic');
+
+    fold.consumeTick(baseTick({ phase: 61, kinds: grid(209, 10) }), 2);
+    expect(fold.current?.mapSize).toBe('compact');
+  });
+
+  it('reports no field until a tick has carried a grid', () => {
+    const fold = makeFold();
+    fold.consumeTick(baseTick({ phase: 61 }), 1);
+    expect(fold.current?.mapSize).toBeNull();
+  });
+
+  it('keeps the last field through a tick that omits kinds or carries a grid neither field has', () => {
+    const fold = makeFold();
+    fold.consumeTick(baseTick({ phase: 61, kinds: grid(209, 10) }), 1);
+    fold.consumeTick(baseTick({ phase: 61 }), 2);
+    fold.consumeTick(baseTick({ phase: 61, kinds: [] }), 3);
+    expect(fold.current?.mapSize).toBe('compact');
+  });
+
+  it('forgets the field on a reset', () => {
+    const fold = makeFold();
+    fold.consumeTick(baseTick({ phase: 61, kinds: grid(209, 10) }), 1);
+    fold.reset();
+    fold.consumeTick(baseTick({ phase: 61 }), 1);
+    expect(fold.current?.mapSize).toBeNull();
+  });
+});
+
 describe('MapFold: sequence guard and reset', () => {
   it('ignores a tick whose sequence has already been seen', () => {
     const fold = makeFold();
@@ -327,7 +360,7 @@ describe('MapFold against the committed capture', () => {
       fold.consumeTick(tick, index + 1);
     });
 
-    expect(fold.current).toMatchObject({ phase: 61, propsAlive: 75, propsTotal: 75 });
+    expect(fold.current).toMatchObject({ phase: 61, propsAlive: 75, propsTotal: 75, mapSize: 'classic' });
   });
 
   it('holds health inside [0, 1] on every tick, and reports full health on the fresh map', () => {

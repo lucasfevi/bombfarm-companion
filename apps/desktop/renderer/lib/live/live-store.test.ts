@@ -540,6 +540,23 @@ describe('createLiveStore — earnings pass straight through, never folded or de
     expect(notifications[0]?.earnings).toEqual(earnings({ goldBalance: 2 }));
   });
 
+  it('a fastUpdate that changes only the field the map is drawn on still produces a notification', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const notifications: LiveModel[] = [];
+    const mapOn = (mapSize: LiveMap['mapSize']): LiveMap => ({ phase: 61, healthFraction: 1, propsAlive: 75, propsTotal: 75, mapSize, economy: null });
+
+    store.start();
+    resolveNextGet(liveView({ field: [], recovery: [], onFieldHeroIds: [], map: mapOn('classic') }));
+    await flushMicrotasks();
+    store.subscribe((model) => notifications.push(model));
+
+    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: null, map: mapOn('compact'), damage: null });
+
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0]?.map?.mapSize).toBe('compact');
+  });
+
   it('a fastUpdate differing only in the trend series still notifies, so the chart keeps moving', async () => {
     const { bridge, emit, resolveNextGet } = fakeBridge();
     const store = createLiveStore({ bridge });

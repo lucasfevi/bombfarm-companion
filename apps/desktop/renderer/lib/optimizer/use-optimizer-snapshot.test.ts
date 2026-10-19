@@ -181,6 +181,64 @@ describe('the snapshot store computes once and does not follow the live account'
   });
 });
 
+describe('the map size is an input of the snapshot', () => {
+  it('opening on the compact map builds the inputs on it', () => {
+    const { store, open } = createOptimizerStore();
+    const opened = viewAtLevel(10);
+    open(opened.view, opened.key, null, undefined, undefined, 'compact');
+    const state = store.getState();
+    if (state.status !== 'ready') throw new Error('expected ready');
+    expect(state.inputs.farmMapSize).toBe('compact');
+  });
+
+  it('a change of map re-takes the snapshot from the account already frozen, not the live one, and leaves any plan alone', () => {
+    const { store, planStore, open, setMapSize, startRun, applyPlan } = createOptimizerStore();
+    const opened = viewAtLevel(10);
+    open(opened.view, opened.key, 7);
+    startRun('r1', 'sig-1', [], EMPTY_BASIS);
+    applyPlan('r1', { gain: 1 } as never);
+    const planBefore = planStore.getState();
+
+    setMapSize('compact');
+    const state = store.getState();
+    if (state.status !== 'ready') throw new Error('expected ready');
+    expect(state.inputs.farmMapSize).toBe('compact');
+    expect(state.sourceKey).toBe(opened.key);
+    expect(state.farmChosenPhase).toBe(7);
+    expect(state.inputs.heroes[0]?.level).toBe(10);
+    expect(planStore.getState()).toBe(planBefore);
+  });
+
+  it('naming the map the snapshot is already on changes nothing', () => {
+    const { store, open, setMapSize } = createOptimizerStore();
+    const opened = viewAtLevel(10);
+    open(opened.view, opened.key, null);
+    const before = store.getState();
+    setMapSize('classic');
+    expect(store.getState()).toBe(before);
+  });
+
+  it('before the tab ever opened a change of map takes nothing, and the first snapshot is taken on it', () => {
+    const { store, open, setMapSize } = createOptimizerStore();
+    setMapSize('compact');
+    expect(store.getState()).toEqual({ status: 'idle' });
+
+    const opened = viewAtLevel(10);
+    open(opened.view, opened.key, null, undefined, undefined, 'compact');
+    const state = store.getState();
+    if (state.status !== 'ready') throw new Error('expected ready');
+    expect(state.inputs.farmMapSize).toBe('compact');
+  });
+
+  it('a snapshot is stale against a live map it was not taken on, and fresh against its own', () => {
+    const { store, open } = createOptimizerStore();
+    const opened = viewAtLevel(10);
+    open(opened.view, opened.key, null, undefined, undefined, 'compact');
+    expect(optimizerSnapshotStale(store.getState(), opened.view, undefined, undefined, 'compact')).toBe(false);
+    expect(optimizerSnapshotStale(store.getState(), opened.view)).toBe(true);
+  });
+});
+
 describe('the lifecycle actions reach the plan store', () => {
   it('startRun, resolveRun, applyPlan, openHeroes and clearPlan each dispatch into it', () => {
     const { planStore, startRun, resolveRun, applyPlan, openHeroes, clearPlan } = createOptimizerStore();

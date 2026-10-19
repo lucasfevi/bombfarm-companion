@@ -78,6 +78,7 @@ import {
   PASSAGEM_BASTAO_CAPPED_PULSE,
   passagemBastaoFieldPulse,
   passagemBastaoPresence,
+  type BattleField,
   type Context,
   type HeroSheet,
   type EffectiveDeltas,
@@ -776,11 +777,11 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
   const walkSpeedCells = sheet.speed * GRID_SPEED_COEF;
   const plantsPerSecByAto = Object.freeze(
     PROPS_POR_ATO.map((_, index) => {
-      const cycle = cycleSecondsForHero(fuseSecs, walkSpeedCells, index + 1);
+      const cycle = cycleSecondsForHero(fuseSecs, walkSpeedCells, index + 1, basis.context.field);
       return Number.isFinite(cycle) && cycle > 0 ? 1 / cycle : 0;
     }),
   );
-  const cycleSecs = cycleSecondsForHero(fuseSecs, walkSpeedCells);
+  const cycleSecs = cycleSecondsForHero(fuseSecs, walkSpeedCells, FIRST_ATO, basis.context.field);
   const plantsPerSec = plantsPerSecByAto[FIRST_ATO - 1];
   const field = fieldSeconds(sheet, basis.context);
   const uptime = (100 * field) / (field + basis.context.restSeconds) / 100;
@@ -877,6 +878,9 @@ export type SquadFarmFacts = {
    * `account.slots ?? DEFAULT_CASA_SLOTS`. Never the field cap; see {@link fieldSlots}.
    */
   houseSlots: number;
+  /** The account's field, the one its rows price the clear on unless {@link FarmRateOptions.field}
+   *  names another. Absent, the classic field. */
+  field?: BattleField;
   /**
    * `Σ uptime` over enabled heroes (fractions) — the UNCONSTRAINED on-field expectation, i.e.
    * what the roster would sustain given unlimited parallel House recovery. Kept as the Sorte and
@@ -958,7 +962,7 @@ function houseSlotDemand(hero: HeroFarmFacts): number {
  *  {@link FarmAccount.aurasAtCap}. Narrower than the whole record so a caller holding only
  *  account-level farm terms (the Team Plan) can supply them without fabricating a `context` and a
  *  `teamBuffs` snapshot that nothing here would look at. */
-export type SquadFarmAccount = Pick<AccountShared, 'slots' | 'fieldSlots' | 'tree'> & { aurasAtCap?: AurasAtCap };
+export type SquadFarmAccount = Pick<AccountShared, 'slots' | 'fieldSlots' | 'tree' | 'field'> & { aurasAtCap?: AurasAtCap };
 
 export function computeSquadFarmFacts(
   heroFacts: readonly HeroFarmFacts[],
@@ -1008,6 +1012,7 @@ export function computeSquadFarmFacts(
     xpMult,
     apprenticeXpMult: apprenticeXpMult(apprenticeCarriers),
     fortunaAura: teamAuraOverRotation(fortunaCarriers, FORTUNA_AURA_CAP),
+    ...(account.field !== undefined ? { field: account.field } : {}),
   };
 }
 
@@ -1308,6 +1313,8 @@ export type FarmRateOptions = {
    * Off by default: this is the caller opting out of a term, never a correction to it.
    */
   ignoreFieldCrowding?: boolean;
+  /** The grid each clear is priced on. Default the classic field. */
+  field?: BattleField;
 };
 
 export type FarmRateRow = {
@@ -1519,7 +1526,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
         ...(hero.shatterChance ? { shatterChance: hero.shatterChance } : {}),
       };
     });
-    const clear = simulateClear(clearHeroes, propTypes, propCount);
+    const clear = simulateClear(clearHeroes, propTypes, propCount, options.field ?? squad.field);
     if (Number.isFinite(clear.clearSecs) && clear.clearSecs > 0) {
       const rate = (level.probability * propCount) / clear.clearSecs;
       clearRateSum += rate;
@@ -1639,13 +1646,16 @@ export function computeFarmRateTable(squad: SquadFarmFacts, options: FarmRateOpt
 export function computeFarmRates(
   input: FarmFactsInput & FarmRateOptions,
 ): { heroFacts: HeroFarmFacts[]; squad: SquadFarmFacts; rows: FarmRateRow[] } {
-  const heroFacts = computeHeroFarmFacts(input);
-  const squad = computeSquadFarmFacts(heroFacts, input.account);
+  const field = input.field ?? input.account.field;
+  const account = field === undefined ? input.account : { ...input.account, field };
+  const heroFacts = computeHeroFarmFacts({ ...input, account });
+  const squad = computeSquadFarmFacts(heroFacts, account);
   const rows = computeFarmRateTable(squad, {
     returnBonus: input.returnBonus,
     pass: input.pass,
     boost: input.boost,
     maxPhase: input.maxPhase,
+    ...(field !== undefined ? { field } : {}),
   });
   return { heroFacts, squad, rows };
 }

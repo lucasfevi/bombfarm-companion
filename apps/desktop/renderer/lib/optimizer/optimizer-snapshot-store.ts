@@ -76,7 +76,7 @@ export type OptimizerComputeOutcome =
   | { readonly ok: false; readonly reason: OptimizerSnapshotUnavailableReason };
 
 /**
- * Four arrivals; two carry a `sourceKey` — the `accountChangeKey` of the `AccountView` a snapshot
+ * Five arrivals; two carry a `sourceKey` — the `accountChangeKey` of the `AccountView` a snapshot
  * was taken from — and the Farm phase the mapper should be given. Both are user-initiated.
  */
 export type OptimizerSnapshotArrival =
@@ -85,11 +85,14 @@ export type OptimizerSnapshotArrival =
   /** The player asked for the live account to be adopted. */
   | { readonly kind: 'refresh'; readonly sourceKey: string; readonly farmChosenPhase: number | null }
   /**
-   * A pinned no-op, present only so all four arrivals match the Farm store's vocabulary and its
+   * A pinned no-op, present only so these arrivals match the Farm store's vocabulary and its
    * test: the optimizer's controls are not inputs of the snapshot — they meet the account only
    * inside the screen's Optimize press — so a control change must never re-take it.
    */
   | { readonly kind: 'controls' }
+  /** The map size moved — picked on this screen or the Farm one, or switched in the game. Unlike
+   *  the controls it IS an input of the snapshot, so it re-takes it from the account in hand. */
+  | { readonly kind: 'mapSize' }
   /** A compute finished. */
   | {
       readonly kind: 'computed';
@@ -126,7 +129,8 @@ export function settledSnapshot(state: OptimizerSnapshotState): OptimizerSettled
  * 2. `refresh` ⇒ adopts the view it was handed. Nothing to do only when a snapshot for that exact
  *    account and Farm phase is already on screen.
  * 3. `controls` ⇒ always a no-op — pinned by the test.
- * 4. `computed` ⇒ **discarded** unless the state is still waiting for exactly this compute — the
+ * 4. `mapSize` ⇒ recomputes for the account and Farm phase already held; nothing held, nothing to do.
+ * 5. `computed` ⇒ **discarded** unless the state is still waiting for exactly this compute — the
  *    same latest-wins rule the account seam's own reducer follows.
  */
 export function acceptOptimizer(
@@ -166,6 +170,15 @@ export function acceptOptimizer(
 
     case 'controls':
       return state;
+
+    case 'mapSize':
+      if (state.status === 'idle' || state.status === 'computing') return state;
+      return {
+        status: 'computing',
+        sourceKey: state.sourceKey,
+        farmChosenPhase: state.farmChosenPhase,
+        previous: settledSnapshot(state),
+      };
 
     case 'computed': {
       if (state.status !== 'computing') return state;

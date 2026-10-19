@@ -84,6 +84,22 @@ export {
   cycleSecondsForHero,
 } from './cadence';
 export {
+  type BattleField,
+  FIELD_COLUMNS,
+  CLASSIC_FIELD,
+  COMPACT_FIELD,
+  fieldCells,
+  classicEquivalentStanding,
+  meanCellDistance,
+  classicDistanceOn,
+  fieldWalkSpeedCells,
+  type MapSize,
+  MAP_SIZES,
+  battleFieldFor,
+  mapSizeOfCells,
+  isMapSize,
+} from './clear-time';
+export {
   FUSE_CYCLE_OVERHEAD_SEC,
   WALK_CYCLE_OVERHEAD_SEC,
   FREE_HOP_BASE_CELLS,

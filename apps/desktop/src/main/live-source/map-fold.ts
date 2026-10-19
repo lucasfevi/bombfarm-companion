@@ -1,5 +1,6 @@
-import type { LiveMap, LiveMapEconomy, LiveTick } from '@bombfarm/contracts';
+import type { LiveMap, LiveMapEconomy, LiveMapSize, LiveTick } from '@bombfarm/contracts';
 import type { EconomyBoost } from '@bombfarm/domain/farm-rate';
+import { mapSizeOfCells } from '@bombfarm/domain/model';
 
 /** The wire reports room health and per-prop health as a byte, `255` meaning full. */
 const WIRE_HEALTH_FULL = 255;
@@ -51,6 +52,7 @@ export class MapFold {
   #phase: number | undefined;
   #healthFraction: number | null = null;
   #propsAlive: number | null = null;
+  #mapSize: LiveMapSize | null = null;
   #boosts: MapAccountBoosts = NO_MAP_ACCOUNT_BOOSTS;
   #returnWindow = false;
   #wikiFacts: { readonly key: string; readonly facts: MapWikiFacts | null } | null = null;
@@ -65,7 +67,10 @@ export class MapFold {
 
     if (tick.phase !== undefined) this.#phase = tick.phase;
     if (tick.roomHp !== undefined) this.#healthFraction = clampFraction(tick.roomHp / WIRE_HEALTH_FULL);
-    if (tick.kinds !== undefined) this.#propsAlive = countPropsAlive(tick.kinds);
+    if (tick.kinds !== undefined) {
+      this.#propsAlive = countPropsAlive(tick.kinds);
+      this.#mapSize = mapSizeOfCells(tick.kinds.length) ?? this.#mapSize;
+    }
     this.#returnWindow = (tick.bonusMultiplier ?? 1) > 1;
   }
 
@@ -83,6 +88,7 @@ export class MapFold {
     this.#phase = undefined;
     this.#healthFraction = null;
     this.#propsAlive = null;
+    this.#mapSize = null;
     this.#returnWindow = false;
     this.#wikiFacts = null;
   }
@@ -97,6 +103,7 @@ export class MapFold {
       healthFraction: this.#healthFraction,
       propsAlive: this.#propsAlive,
       propsTotal: facts?.propsTotal ?? null,
+      mapSize: this.#mapSize,
       economy: facts?.economy ?? null,
     };
   }

@@ -67,7 +67,7 @@ describe('skillsPricingKey', () => {
     expect(skillsPricingKey(first.inputs, first.state, 51, windows)).toBe(skillsPricingKey(second.inputs, second.state, 51, windows));
   });
 
-  it('moves with the phase, the tree levels and the farm controls', () => {
+  it('moves with the phase, the tree levels, the farm controls and the map size', () => {
     const { inputs, state } = offlineInputs();
     const windows = { gatePhase: 50, pvp: null };
     const base = skillsPricingKey(inputs, state, 51, windows);
@@ -75,6 +75,7 @@ describe('skillsPricingKey', () => {
     expect(skillsPricingKey(inputs, { ...state, levels: { ...state.levels, X99: 1 } }, 51, windows)).not.toBe(base);
     expect(skillsPricingKey({ ...inputs, farmReturnBonus: 'on' }, state, 51, windows)).not.toBe(base);
     expect(skillsPricingKey({ ...inputs, farmPass: true }, state, 51, windows)).not.toBe(base);
+    expect(skillsPricingKey({ ...inputs, farmMapSize: 'compact' }, state, 51, windows)).not.toBe(base);
     expect(skillsPricingKey(inputs, state, 51, { ...windows, gatePhase: 60 })).not.toBe(base);
     expect(skillsPricingKey(inputs, state, 51, { ...windows, pvp: { windowSecs: PVP_WINDOW_SECS, heroIds: ['a'], phase: 120 } })).not.toBe(base);
   });

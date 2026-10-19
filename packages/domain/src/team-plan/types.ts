@@ -7,6 +7,7 @@ import type { Loadout, PointAlloc, SheetStats } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import type {
   AbilityMods,
+  BattleField,
   Context,
   EffectiveDeltas,
   HeroSheet,
@@ -71,6 +72,8 @@ export type FarmContext = {
    */
   windowSecs?: number;
   critFlatAtFullPresence?: number;
+  /** The grid the squad farms on. Absent, the classic field. */
+  field?: BattleField;
 };
 
 export type HeroPlanContext = {
@@ -277,6 +280,9 @@ export type TeamPlanAccountInput = {
   boost?: EconomyBoost | undefined;
   /** The Farm board's Return Bonus switch, priced the same way. Absent reads as off. */
   returnBonus?: ReturnBonusMode | undefined;
+  /** The grid the account farms on — the game's redesigned look plays a smaller one. Absent, the
+   *  classic field. */
+  field?: BattleField;
 };
 
 /**

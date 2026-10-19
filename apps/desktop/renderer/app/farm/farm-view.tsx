@@ -6,8 +6,10 @@
  * `apps/web`'s two connectors are theirs.
  *
  * Nothing here recomputes on a live tick. The board is computed from the account as it stood when
- * the screen opened, and the only things that move it are the two compute inputs and an explicit
- * Refresh — see `lib/farm/farm-snapshot-store.ts`. A snapshot the live account has moved past is
+ * the screen opened, and the only things that move it are the compute inputs and an explicit
+ * Refresh — see `lib/farm/farm-snapshot-store.ts`. The map size is one of those inputs even when
+ * it is read from the game: the game switching field is a change of what the board prices, not a
+ * tick. A snapshot the live account has moved past is
  * LABELLED and left alone; an unlabelled stale number is the failure this screen exists to avoid.
  * That label is a state of the always-present refresh control beside the board's heading, so the
  * age of the numbers is readable before they go out of date rather than only after.
@@ -34,6 +36,7 @@ import {
 import { HeroPickerDialogView, type HeroPickerSlotProps } from '@bombfarm/hero/components';
 import { buildRosterAccount, computeFarmXpPerPropMult, deriveFarmPoolEntries } from '@bombfarm/farm/core';
 import { NO_ECONOMY_BOOST, type ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import type { MapSize } from '@bombfarm/domain/model';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { TeamAuraId } from '@bombfarm/domain/team-buffs';
 import { withAuraAtCap } from '@bombfarm/team-plan/core';
@@ -42,10 +45,17 @@ import { useAccountView } from '../../lib/account/use-account-view';
 import { buildAccountRoster } from '../../lib/account/account-roster';
 import { useAccountReadRequest } from '../../lib/account/use-account-read-request';
 import { DEFAULT_FARM_CONTROLS, type FarmControls } from '../../lib/farm/farm-inputs';
-import { loadFarmView, saveFarmView } from '../../lib/farm/farm-view-storage';
+import {
+  effectiveMapSize,
+  isMapSizeDetected,
+  loadFarmView,
+  mapSizeOverrideFor,
+  saveFarmView,
+} from '../../lib/farm/farm-view-storage';
 import { settledBoard, type FarmSettledBoard } from '../../lib/farm/farm-snapshot-store';
 import { useFarmSnapshot } from '../../lib/farm/use-farm-snapshot';
 import { useFarmTableHeight } from '../../lib/farm/use-farm-table-height';
+import { useLiveMapSize } from '../../lib/live/use-live-map-size';
 import { farmScreenCopy, useFarmCopy } from '../screen-copy';
 import { useScreenRefreshRegistration } from '../../lib/refresh/screen-refresh-store';
 
@@ -58,7 +68,9 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
   const account = useAccountView();
   const { state, stale, hasAccount, open, refresh, setControls } = useFarmSnapshot();
 
-  const [controls, setLocalControls] = useState<FarmControls>(DEFAULT_FARM_CONTROLS);
+  const [controls, setLocalControls] = useState<Omit<FarmControls, 'farmMapSize'>>(DEFAULT_FARM_CONTROLS);
+  const [mapSizeOverride, setMapSizeOverride] = useState<MapSize | null>(null);
+  const liveMapSize = useLiveMapSize();
   const [phase, setPhase] = useState(DEFAULT_PHASE);
   const [phaseChosen, setPhaseChosen] = useState(false);
   const [activeHeroId, setActiveHeroId] = useState<string | null>(null);
@@ -71,6 +83,7 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
       farmReturnBonus: stored.farmReturnBonus,
       aurasAtCap: stored.aurasAtCap,
     });
+    setMapSizeOverride(stored.farmMapSizeOverride);
     if (stored.selectedPhase !== null) {
       setPhase(stored.selectedPhase);
       setPhaseChosen(true);
@@ -82,8 +95,14 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
   // from the best map on every load, and persisting it would freeze today's best as tomorrow's.
   useEffect(() => {
     if (!storageReady) return;
-    saveFarmView({ ...controls, selectedPhase: phaseChosen ? phase : null });
-  }, [storageReady, controls, phase, phaseChosen]);
+    saveFarmView({ ...controls, selectedPhase: phaseChosen ? phase : null, farmMapSizeOverride: mapSizeOverride });
+  }, [storageReady, controls, phase, phaseChosen, mapSizeOverride]);
+
+  const computeControls = useMemo<FarmControls>(
+    () => ({ ...controls, farmMapSize: effectiveMapSize(mapSizeOverride, liveMapSize) }),
+    [controls, mapSizeOverride, liveMapSize],
+  );
+  const mapSizeDetected = isMapSizeDetected(mapSizeOverride, liveMapSize);
 
   // `open` is re-created whenever the LIVE account moves, which is every few seconds. Read
   // through a ref so the effect below is not woken by a tick it must not act on.
@@ -97,15 +116,15 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
     if (!storageReady || !hasAccount) return;
     if (openedRef.current) {
       scheduleAfterPaint(() => {
-        setControls(controls);
+        setControls(computeControls);
       });
       return;
     }
     openedRef.current = true;
     scheduleAfterPaint(() => {
-      openRef.current(controls);
+      openRef.current(computeControls);
     });
-  }, [storageReady, hasAccount, controls, setControls]);
+  }, [storageReady, hasAccount, computeControls, setControls]);
 
   // Re-solving alone would answer the press from the account the renderer already holds, which
   // the background cycle need not have moved since the board last took it. So the press also asks
@@ -113,9 +132,9 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
   // that is already committed even when no new read is allowed to start.
   const adoptLive = useCallback(() => {
     scheduleAfterPaint(() => {
-      refresh(controls);
+      refresh(computeControls);
     });
-  }, [refresh, controls]);
+  }, [refresh, computeControls]);
   const { state: readState, request: onRefresh } = useAccountReadRequest(adoptLive);
 
   const setFarmHeroEnabled = useCallback((heroId: string, enabled: boolean) => {
@@ -134,6 +153,13 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
       previous.farmReturnBonus === mode ? previous : { ...previous, farmReturnBonus: mode },
     );
   }, []);
+
+  const setFarmMapSize = useCallback(
+    (pick: MapSize) => {
+      setMapSizeOverride(mapSizeOverrideFor(pick, liveMapSize));
+    },
+    [liveMapSize],
+  );
 
   const setAuraAtCap = useCallback((auraId: TeamAuraId, atCap: boolean) => {
     setLocalControls((previous) => {
@@ -162,6 +188,7 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
       syncDefaultPhaseSelection,
       setFarmHeroEnabled,
       setFarmReturnBonus,
+      setFarmMapSize,
       setAuraAtCap,
       onSelectHero,
       onOpenOptimizer,
@@ -171,6 +198,7 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
       syncDefaultPhaseSelection,
       setFarmHeroEnabled,
       setFarmReturnBonus,
+      setFarmMapSize,
       setAuraAtCap,
       onSelectHero,
       onOpenOptimizer,
@@ -251,7 +279,7 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
       ) : null}
       <FarmScreen
         snapshot={settled}
-        view={{ phase, phaseChosen, activeHeroId, tableScrollportHeightPx }}
+        view={{ phase, phaseChosen, activeHeroId, tableScrollportHeightPx, mapSizeDetected }}
         actions={screenActions}
       />
     </div>
@@ -263,6 +291,7 @@ type FarmScreenActions = {
   syncDefaultPhaseSelection: (phase: number) => void;
   setFarmHeroEnabled: (heroId: string, enabled: boolean) => void;
   setFarmReturnBonus: (mode: ReturnBonusMode) => void;
+  setFarmMapSize: (mapSize: MapSize) => void;
   setAuraAtCap: (auraId: TeamAuraId, atCap: boolean) => void;
   onSelectHero: (hero: HeroRecord) => void;
   onOpenOptimizer: () => void;
@@ -284,6 +313,7 @@ function FarmScreen({
     phaseChosen: boolean;
     activeHeroId: string | null;
     tableScrollportHeightPx: number;
+    mapSizeDetected: boolean;
   };
   actions: FarmScreenActions;
 }) {
@@ -316,13 +346,15 @@ function FarmScreen({
       returnBonus: inputs.farmReturnBonus,
       pass: inputs.farmPass ?? false,
       boost: inputs.farmBoost ?? NO_ECONOMY_BOOST,
+      mapSize: inputs.farmMapSize ?? 'classic',
+      mapSizeDetected: view.mapSizeDetected,
       maxPhase: inputs.maxPhase,
       fieldSlots: inputs.fieldSlots,
       currentPhase: view.phase,
       phasesViewPhaseChosen: view.phaseChosen,
       tableScrollportHeightPx: view.tableScrollportHeightPx,
     }),
-    [board, heroes, inputs, poolEntries, view.phase, view.phaseChosen, view.tableScrollportHeightPx],
+    [board, heroes, inputs, poolEntries, view.phase, view.phaseChosen, view.tableScrollportHeightPx, view.mapSizeDetected],
   );
 
   const boardActions = useMemo<FarmRankingBoardActions>(
@@ -331,6 +363,7 @@ function FarmScreen({
       syncDefaultPhaseSelection: actions.syncDefaultPhaseSelection,
       setFarmHeroEnabled: actions.setFarmHeroEnabled,
       setFarmReturnBonus: actions.setFarmReturnBonus,
+      setFarmMapSize: actions.setFarmMapSize,
       openOptimizer: actions.onOpenOptimizer,
     }),
     [actions],

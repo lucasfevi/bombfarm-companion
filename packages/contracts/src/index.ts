@@ -160,6 +160,7 @@ export type {
   LiveLootPop,
   LiveMap,
   LiveMapEconomy,
+  LiveMapSize,
   LiveTick,
   LiveTickHero,
   LiveView,

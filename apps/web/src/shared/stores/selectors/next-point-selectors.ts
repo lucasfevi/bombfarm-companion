@@ -111,6 +111,7 @@ function readDraftBasisDepTuple(state: PlannerStore) {
     state.houseLevel,
     state.slots,
     state.maxPhase,
+    state.farmMapSize,
   ] as const;
 }
 
@@ -290,6 +291,7 @@ function readNextPointDepTuple(state: PlannerStore) {
     state.farmReturnBonus,
     state.farmPass,
     state.farmBoost,
+    state.farmMapSize,
     pipeline,
   ] as const;
 }
