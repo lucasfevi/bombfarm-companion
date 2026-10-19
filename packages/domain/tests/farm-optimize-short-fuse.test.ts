@@ -15,7 +15,12 @@ function carrierBasis(basis: HeroFarmBasis, shortFuseRank: number): HeroFarmBasi
   const sheetCdr = BASE_SHEET_CDR + abilityMods({ pavio_curto: shortFuseRank }).sheetCdrFlat;
   const effective = { ...basis.effective, cdr: sheetCdr };
   const effectiveDelta = { ...basis.effectiveDelta, cdr: CDR_PER_POINT };
-  return { ...basis, effective, effectiveDelta, auraFree: { ...basis.auraFree, effective, effectiveDelta } };
+  return {
+    ...basis,
+    effective,
+    effectiveDelta,
+    ...(basis.auraFree ? { auraFree: { ...basis.auraFree, effective, effectiveDelta } } : {}),
+  };
 }
 
 function cdrPointsBought(shortFuseRank: number, heroId: string): number {
