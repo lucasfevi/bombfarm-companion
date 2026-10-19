@@ -1,5 +1,19 @@
 # @bombfarm/domain
 
+## 1.14.0
+
+### Minor Changes
+
+- 72fd307: A hero near the cooldown cap now plants as fast as it really does. Measured on one hero respecced to the 80% cap on the compact map, its bomb goes off before the other heroes' blasts have cleared its neighbours, so its next target stands beside it: it hopped 0.57 of its usual distance in every density band and spent less time walking around live blasts, and its plant cycle halved where the model said it would shorten by a seventh. The Farm board and the Optimizer now shrink a hero's hop and its walking overhead as its fuse falls below 1.3 s, down to that measured share at the 0.40 s floor; a hero with a longer fuse is priced exactly as before. Cooldown reduction past about 35% is worth more plants than it was, and the Optimizer's point split can move toward it on heroes that walk fast.
+- fb25bb8: The Farm board and the Optimizer can price the game's smaller map. The game's redesigned look, its Graphics upgrade option, plays on a 19 × 11 map instead of the classic 19 × 16, and a new Map size control beside Pass on the Farm board, and in the Optimizer's setup bar, switches between Classic and Compact. Both screens share the one setting, so their gold and XP per hour agree. The web planner remembers your choice. The desktop app reads the map from the game while it is open and follows it, and picking the other map overrides that until you pick the game's map again. The Optimizer's list of what changed since the plan names the map when it moves.
+
+  On the compact map a wave spawns the same props as on the classic one, so they stand closer together and more of them fall under each blast. Heroes also walk it more slowly — measured at 0.85 of their classic speed, so crossing either map takes as long — and each hero plants a little less often. Put together, the same squad earns about 6–9% more gold and XP per hour on the compact map. A back-to-back measurement on one account came out 5% faster per wave, within that run's noise. Cooldown reduction is worth slightly less on the compact map than on the classic one, and walk speed slightly more.
+
+### Patch Changes
+
+- Updated dependencies [fb25bb8]
+  - @bombfarm/contracts@0.16.0
+
 ## 1.13.0
 
 ### Minor Changes

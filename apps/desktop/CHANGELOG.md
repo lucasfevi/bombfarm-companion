@@ -1,5 +1,35 @@
 # @bombfarm/desktop
 
+## 0.31.0
+
+### Minor Changes
+
+- fb25bb8: The Farm board and the Optimizer can price the game's smaller map. The game's redesigned look, its Graphics upgrade option, plays on a 19 × 11 map instead of the classic 19 × 16, and a new Map size control beside Pass on the Farm board, and in the Optimizer's setup bar, switches between Classic and Compact. Both screens share the one setting, so their gold and XP per hour agree. The web planner remembers your choice. The desktop app reads the map from the game while it is open and follows it, and picking the other map overrides that until you pick the game's map again. The Optimizer's list of what changed since the plan names the map when it moves.
+
+  On the compact map a wave spawns the same props as on the classic one, so they stand closer together and more of them fall under each blast. Heroes also walk it more slowly — measured at 0.85 of their classic speed, so crossing either map takes as long — and each hero plants a little less often. Put together, the same squad earns about 6–9% more gold and XP per hour on the compact map. A back-to-back measurement on one account came out 5% faster per wave, within that run's noise. Cooldown reduction is worth slightly less on the compact map than on the classic one, and walk speed slightly more.
+
+- 3a00859: The status bar now shows a Ping next to Connected: how long a connection to the game's server takes from your computer, in milliseconds, refreshed every 15 seconds. It shows a dash when the server does not answer.
+
+### Patch Changes
+
+- 30337e0: Adding an Optimizer plan to the forge queue no longer lowers a piece you already queued higher. Queue some pieces to +14, switch the forge floor to +13 and queue again, and the +14 pieces stay at +14 instead of dropping to +13. Pressing Add to queue on a single piece still sets its target exactly.
+- 9a3c49a: The app is much less likely to crash the game. When it quits, or restarts to install an update, it now waits for its reader to leave the game first, where before it could exit halfway through and take the game down with it. It never loads a second copy of the reader into the game while the first is still leaving, it waits until a newly launched game has finished starting before attaching, and when the game goes quiet it re-attaches less and less often instead of every minute. The log now records why each attachment ended, including when the game itself closed or crashed.
+- Updated dependencies [72fd307]
+- Updated dependencies [9a3c49a]
+- Updated dependencies [fb25bb8]
+- Updated dependencies [9a3c49a]
+  - @bombfarm/domain@1.14.0
+  - @bombfarm/tap-runtime@0.2.2
+  - @bombfarm/farm@1.5.0
+  - @bombfarm/team-plan@0.8.0
+  - @bombfarm/contracts@0.16.0
+  - @bombfarm/account@0.3.18
+  - @bombfarm/game-api@0.8.3
+  - @bombfarm/game-art@0.8.7
+  - @bombfarm/hero@0.7.2
+  - @bombfarm/game-data@0.0.25
+  - @bombfarm/pricing@0.4.7
+
 ## 0.30.0
 
 ### Minor Changes
