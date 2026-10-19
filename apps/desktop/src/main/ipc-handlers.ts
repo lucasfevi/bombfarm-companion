@@ -10,6 +10,7 @@ import {
   EMPTY_FORGE_HISTORY,
   EMPTY_PVP_HISTORY,
   emptyMarketSnapshotView,
+  emptyGamePingView,
   emptyOnlinePlayersView,
   initialUpdateStatus,
   isIpcChannel,
@@ -41,6 +42,7 @@ import {
   type MarketQuoteResult,
   type MarketQuoteTarget,
   type MarketSnapshotView,
+  type GamePingView,
   type OnlinePlayersView,
   type PremiumActionResult,
   type PremiumView,
@@ -82,6 +84,10 @@ export interface UpdateServicePort {
   check(): Promise<UpdateStatus>;
   download(): Promise<UpdateStatus>;
   installOnRestart(): UpdateStatus;
+}
+
+export interface GamePingServicePort {
+  getView(): GamePingView;
 }
 
 export interface OnlinePlayersServicePort {
@@ -191,6 +197,7 @@ export interface IpcHandlerDeps<Image extends ClipboardImageLike = ClipboardImag
   getUpdateService: () => UpdateServicePort | null;
   getMarketService: () => MarketServicePort | null;
   getOnlinePlayersService: () => OnlinePlayersServicePort | null;
+  getGamePingService: () => GamePingServicePort | null;
   getPremiumService: () => PremiumServicePort | null;
   getForgeService: () => ForgeServicePort | null;
   getForgeHistory: () => ForgeHistoryPort | null;
@@ -373,6 +380,7 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.getUpdateService()?.installOnRestart() ?? preServiceUpdateStatus(),
     'market:getSnapshot': () => deps.getMarketService()?.getView() ?? emptyMarketSnapshotView(),
     'onlinePlayers:get': () => deps.getOnlinePlayersService()?.getView() ?? emptyOnlinePlayersView,
+    'gamePing:get': () => deps.getGamePingService()?.getView() ?? emptyGamePingView,
     'premium:get': () => deps.getPremiumService()?.getView() ?? signedOutPremiumView,
     'premium:signIn': (): Promise<PremiumActionResult> | PremiumActionResult =>
       deps.getPremiumService()?.signIn() ?? premiumUnavailable,

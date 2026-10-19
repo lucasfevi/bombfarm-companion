@@ -30,6 +30,9 @@ const USAGE_PING_HOST = 'api.bombfarm-companion.app';
  *  usage ping posts to; it carries no identity and reads nothing from the account. Exempted by
  *  file for the host and the socket only — its GET-only shape is asserted below. */
 const ONLINE_PLAYERS_TRANSPORT_FILE = join(DESKTOP_MAIN, 'online-players/online-players-transport.ts');
+/** The ping readout's one socket: a bare TCP handshake with the game host that writes nothing
+ *  and closes at once. It is the only file that may import `node:net`. */
+const GAME_PING_TRANSPORT_FILE = join(DESKTOP_MAIN, 'game-ping/game-ping-transport.ts');
 /** The Premium sign-in's one socket. It carries the desktop's own bearer token (never the game's
  *  session token) to the same API host, so it may POST; exempted by file for the host, the socket
  *  and the verb, and asserted below to import nothing from the game API. */
@@ -354,6 +357,20 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
     expect(text, 'sanity: the transport must name the host it reads').toContain(USAGE_PING_HOST);
     expect(text, 'sanity: its exemption is not vacuous').toMatch(/\bfetch\s*\(/);
     expect(/\bmethod\s*:/.test(foldStringConcatenation(text)), 'the online-players transport must never set a method').toBe(false);
+    expect(text, 'it must never import the game API or the session token').not.toMatch(
+      /from\s+['"](@bombfarm\/game-api|[^'"]*game-api\/[^'"]*|[^'"]*session-token[^'"]*)['"]/,
+    );
+  });
+
+  it('only game-ping-transport.ts imports node:net, and it writes nothing to the socket', () => {
+    const netPattern = /(?:from\s+['"]node:net['"]|require\(\s*['"]node:net['"]\s*\)|import\(\s*['"]node:net['"]\s*\))/;
+    const offenders = scannedFiles.filter((file) => file !== GAME_PING_TRANSPORT_FILE && netPattern.test(readFileSync(file, 'utf8')));
+    expect(offenders, 'game-ping-transport.ts is the only node:net importer. Offenders: ' + JSON.stringify(offenders)).toEqual([]);
+
+    const text = readFileSync(GAME_PING_TRANSPORT_FILE, 'utf8');
+    expect(text, 'sanity: the transport must import node:net').toMatch(netPattern);
+    expect(text, 'sanity: it must name the host it probes').toContain('app.bombfarm.net');
+    expect(text, 'a handshake probe never writes').not.toMatch(/\.(write|end|pipe)\s*\(/);
     expect(text, 'it must never import the game API or the session token').not.toMatch(
       /from\s+['"](@bombfarm\/game-api|[^'"]*game-api\/[^'"]*|[^'"]*session-token[^'"]*)['"]/,
     );

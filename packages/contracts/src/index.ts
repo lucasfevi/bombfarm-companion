@@ -5,6 +5,7 @@ import type { UpdateStatus } from './update.js';
 import type { MarketQuoteCurrency, MarketQuoteResult, MarketQuoteTarget, MarketSnapshotView } from './market.js';
 import { DEFAULT_MARKET_QUOTE_CURRENCY } from './market.js';
 import type { OnlinePlayersView } from './online-players.js';
+import type { GamePingView } from './game-ping.js';
 import type { PremiumActionResult, PremiumView } from './premium.js';
 import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
 import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
@@ -185,6 +186,8 @@ export {
   isMarketQuoteCurrency,
   isMarketQuoteTarget,
 } from './market.js';
+export type { GamePingView } from './game-ping.js';
+export { GAME_PING_CHECK_MS, emptyGamePingView } from './game-ping.js';
 export type { OnlinePlayersReading, OnlinePlayersView } from './online-players.js';
 export {
   ONLINE_PLAYERS_CHECK_MS,
@@ -597,6 +600,9 @@ export interface IpcChannels {
   /** How many players the game's server counts right now — the number the status strip prints.
    *  Empty until the first reading lands, and again once the one held is too old to show. */
   'onlinePlayers:get': { args: []; result: OnlinePlayersView };
+  /** The last measured round trip to the project's own API, in milliseconds — `null` before the
+   *  first check lands and whenever the last one failed. */
+  'gamePing:get': { args: []; result: GamePingView };
   /** The first channel to carry an argument. Its target is re-validated in main with
    *  `isMarketQuoteTarget` before anything acts on it — the renderer is not trusted to have sent
    *  a well-formed one. */
@@ -714,6 +720,7 @@ export const IPC_CHANNELS = [
   'updates:installOnRestart',
   'market:getSnapshot',
   'onlinePlayers:get',
+  'gamePing:get',
   'market:refreshItem',
   'market:check',
   'forge:start',
@@ -748,6 +755,7 @@ export type IpcEventChannel =
   | 'updates:changed'
   | 'market:changed'
   | 'onlinePlayers:changed'
+  | 'gamePing:changed'
   | 'settings:changed'
   | 'forge:event'
   | 'apply:event'
@@ -780,6 +788,8 @@ export interface IpcEvents {
   /** Fired when the count, or whether one is shown at all, changed — a check that read the same
    *  number again does not fire it. */
   'onlinePlayers:changed': OnlinePlayersView;
+  /** Fired when a check measured a different round trip, or failed after succeeding. */
+  'gamePing:changed': GamePingView;
   /** Fired whenever main adopts new settings — persisted or not, since a locale or always-on-top
    *  change applies for the session either way — so every window follows without a relaunch. */
   'settings:changed': AppSettings;
@@ -815,6 +825,7 @@ export const IPC_EVENT_CHANNELS = [
   'updates:changed',
   'market:changed',
   'onlinePlayers:changed',
+  'gamePing:changed',
   'settings:changed',
   'forge:event',
   'apply:event',

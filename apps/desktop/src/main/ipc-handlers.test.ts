@@ -10,6 +10,7 @@ import {
   EMPTY_FORGE_HISTORY,
   EMPTY_PVP_HISTORY,
   emptyMarketSnapshotView,
+  emptyGamePingView,
   emptyOnlinePlayersView,
   getFlavorDescriptor,
   IPC_CHANNELS,
@@ -260,6 +261,7 @@ function wired(env: AppEnv = BETA_ENV) {
     getUpdateService: () => f.updateService,
     getMarketService: () => f.marketService,
     getOnlinePlayersService: () => ({ getView: () => ONLINE_PLAYERS_VIEW }),
+    getGamePingService: () => ({ getView: () => GAME_PING_VIEW }),
     getPremiumService: () => f.premiumService,
     getForgeService: () => f.forgeService,
     getForgeHistory: () => f.forgeHistory,
@@ -307,6 +309,7 @@ function bare(env: AppEnv = BETA_ENV) {
     getUpdateService: () => null,
     getMarketService: () => null,
     getOnlinePlayersService: () => null,
+    getGamePingService: () => null,
     getPremiumService: () => null,
     getForgeService: () => null,
     getForgeHistory: () => null,
@@ -646,6 +649,7 @@ describe('updates', () => {
 
 const COLLECTIONS_VIEW: CollectionsView = { snapshot: null, capturedAt: '2026-10-02T12:00:00.000Z' };
 
+const GAME_PING_VIEW = { latencyMs: 187 };
 const ONLINE_PLAYERS_VIEW = { reading: { at: 1_790_727_000, players: 2537 } };
 
 const PREMIUM_VIEW: PremiumView = { ...signedOutPremiumView, session: 'signed-in', visible: true };
@@ -684,6 +688,16 @@ describe('the online-players count', () => {
 
   it('serves an empty view before the service is built', () => {
     expect(bare().handlers['onlinePlayers:get']()).toEqual(emptyOnlinePlayersView);
+  });
+});
+
+describe('the api latency', () => {
+  it('serves the measurement main holds', () => {
+    expect(wired().handlers['gamePing:get']()).toBe(GAME_PING_VIEW);
+  });
+
+  it('serves an empty view before the service is built', () => {
+    expect(bare().handlers['gamePing:get']()).toEqual(emptyGamePingView);
   });
 });
 

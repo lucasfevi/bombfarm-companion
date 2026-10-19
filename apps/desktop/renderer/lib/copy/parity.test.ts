@@ -64,6 +64,7 @@ import { ptBR } from './pt-BR';
 // is a lone question mark, the pvpSquadUnknownMark precedent.
 // liveDurationUnderMinute / liveDurationMinutes / liveDurationHoursMinutes: "min" and "h" abbreviate
 // the same words in both languages, around placeholders and a less-than sign — no words of their own.
+// gamePingLabel: "Ping" is the word pt-BR players use for network latency.
 // heroesSortRoll: "Roll" is the owner's chosen pt-BR word for the birth roll too.
 // applyModalCallEquip: three placeholders around two arrows — no words, the same
 // inventoryDetailSetSlot precedent.
@@ -71,6 +72,7 @@ import { ptBR } from './pt-BR';
 // both languages. settingsPremiumMethodDiscord / Google / Steam: the names of the sign-in services,
 // printed as their owners spell them in every language.
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
+  'gamePingLabel',
   'ageShortSeconds',
   'liveMapXpPerPropLabel',
   'liveEarningsXpPerPropLabel',

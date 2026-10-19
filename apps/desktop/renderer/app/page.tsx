@@ -44,6 +44,7 @@ import { InventoryView } from './inventory/inventory-view';
 import { ForgeQueueBar, isForgeQueueShown } from './forge/forge-queue-bar';
 import { FeedsRail } from './feeds-rail';
 import { GameFeed, liveTabMark } from './game-feed';
+import { GamePingFeed } from './game-ping-feed';
 import { OnlinePlayersFeed } from './online-players-feed';
 import { PassFeed } from './pass-feed';
 import { useFeeds } from '../lib/feeds/use-feeds';
@@ -377,6 +378,7 @@ function HomePageContent({
         status={
           <>
             <GameFeed status={status} />
+            <GamePingFeed />
             <OnlinePlayersFeed />
             <PassFeed />
           </>
