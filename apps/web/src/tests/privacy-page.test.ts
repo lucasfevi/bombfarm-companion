@@ -32,8 +32,8 @@ describe('privacy page', () => {
   }
 
   it('dates the policy in each language', () => {
-    expect(render('en')).toContain('Last updated October 13, 2026');
-    expect(render('pt')).toContain('Atualizada em 13 de outubro de 2026');
+    expect(render('en')).toContain('Last updated October 19, 2026');
+    expect(render('pt')).toContain('Atualizada em 19 de outubro de 2026');
   });
 
   it('says a Premium sign-in keeps only the account id, never an email, in each language', () => {
@@ -44,6 +44,13 @@ describe('privacy page', () => {
   it('says who can see the account records, and where, in each language', () => {
     expect(render('en')).toContain('in a private dashboard that only the developer can sign in to. It runs on Vercel');
     expect(render('pt')).toContain('num painel privado em que só o desenvolvedor consegue entrar. Ele roda na Vercel');
+  });
+
+  it('says a linked game account keeps its player name, refreshed only while the usage count is on, in each language', () => {
+    expect(render('en')).toContain('With a linked game account we also keep its player name and when it was last seen.');
+    expect(render('en')).toContain('is off, no name is sent and the stored one is no longer updated.');
+    expect(render('pt')).toContain('Com uma conta do jogo vinculada, guardamos também o nome de jogador dela');
+    expect(render('pt')).toContain('estiver desligada, nenhum nome é enviado e o nome guardado deixa de ser atualizado.');
   });
 
   it('the two languages carry the same sections, paragraph for paragraph', () => {
