@@ -47,6 +47,7 @@ async function loadUpdaterPort(): Promise<UpdaterPort> {
 
 export async function createElectronUpdateService(
   emit: (status: UpdateStatus) => void,
+  beforeInstall?: () => Promise<void>,
 ): Promise<UpdateService> {
   const env = resolveAppEnv();
   const channel = env.descriptor.updateChannel;
@@ -68,6 +69,7 @@ export async function createElectronUpdateService(
     currentVersion: app.getVersion(),
     channel,
     isPackaged: app.isPackaged,
+    ...(beforeInstall !== undefined ? { beforeInstall } : {}),
   });
 }
 

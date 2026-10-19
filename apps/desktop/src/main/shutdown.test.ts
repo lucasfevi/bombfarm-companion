@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { SHUTDOWN_STEPS, shutdownInOrder, type ShutdownStep } from './shutdown.js';
+import { settleWithin, SHUTDOWN_STEPS, shutdownInOrder, type ShutdownStep } from './shutdown.js';
 
 interface Recording {
   ran: ShutdownStep[];
@@ -173,5 +173,46 @@ describe('the step bodies the quit handler binds to the names the order is asser
     const unbound = SHUTDOWN_STEPS.filter((step) => !new RegExp(`\\n\\s*${step}: \\(\\) => \\{`).test(source));
 
     expect(unbound).toEqual([]);
+  });
+});
+
+describe('settleWithin', () => {
+  function manualTimers() {
+    const pending = new Map<number, () => void>();
+    let next = 1;
+    return {
+      setTimeout: (callback: () => void) => {
+        pending.set(next, callback);
+        return next++;
+      },
+      clearTimeout: (handle: unknown) => {
+        pending.delete(handle as number);
+      },
+      fireAll: () => {
+        for (const callback of pending.values()) callback();
+        pending.clear();
+      },
+      get size() {
+        return pending.size;
+      },
+    };
+  }
+
+  it('reports settled when the task finishes first, and clears its timer', async () => {
+    const timers = manualTimers();
+    await expect(settleWithin(Promise.resolve(), 1_000, timers)).resolves.toBe('settled');
+    expect(timers.size).toBe(0);
+  });
+
+  it('treats a rejected task as settled rather than rejecting', async () => {
+    const timers = manualTimers();
+    await expect(settleWithin(Promise.reject(new Error('x')), 1_000, timers)).resolves.toBe('settled');
+  });
+
+  it('gives up at the deadline on a task that never settles', async () => {
+    const timers = manualTimers();
+    const outcome = settleWithin(new Promise(() => undefined), 1_000, timers);
+    timers.fireAll();
+    await expect(outcome).resolves.toBe('deadline');
   });
 });
