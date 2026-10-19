@@ -44,6 +44,9 @@ export interface UpdateServiceDeps {
   /** An unpackaged run has no installer to replace, so `electron-updater` cannot work there
    *  regardless of channel. */
   readonly isPackaged: boolean;
+  /** Awaited before the installer is launched: the installer force-closes the app within a
+   *  second or two of starting, which would cut short anything quitting still had to finish. */
+  readonly beforeInstall?: () => Promise<void>;
 }
 
 export interface UpdateService {
@@ -64,6 +67,7 @@ export function createUpdateService(deps: UpdateServiceDeps): UpdateService {
   let cancelInterval: (() => void) | null = null;
   let checkInFlight = false;
   let downloadInFlight = false;
+  let installRequested = false;
 
   function set(patch: Partial<UpdateStatus>): UpdateStatus {
     status = { ...status, ...patch };
@@ -151,7 +155,20 @@ export function createUpdateService(deps: UpdateServiceDeps): UpdateService {
       return status;
     }
     deps.log.info({ scope: 'updater', event: 'update.installing', version: status.availableVersion });
-    deps.updater.quitAndInstall();
+    const beforeInstall = deps.beforeInstall;
+    if (beforeInstall === undefined) {
+      deps.updater.quitAndInstall();
+      return status;
+    }
+    if (installRequested) return status;
+    installRequested = true;
+    void beforeInstall()
+      .catch((error: unknown) => {
+        deps.log.warn({ scope: 'updater', event: 'update.before_install_failed', error: String(error) });
+      })
+      .finally(() => {
+        deps.updater.quitAndInstall();
+      });
     return status;
   }
 

@@ -14,6 +14,7 @@ import type {
   DomainLang,
   LiveDiagnosticsDumpReason,
   LiveGapReason,
+  PremiumSignInEnd,
   SettingsWriteReason,
   UpdateErrorReason,
 } from '@bombfarm/contracts';
@@ -68,6 +69,19 @@ export const UPDATE_ERROR_REASON_COPY_KEY = {
   'no-release': 'settingsUpdatesReasonNoRelease',
   unknown: 'settingsUpdatesReasonUnknown',
 } as const satisfies Record<UpdateErrorReason, CopyKey>;
+
+/** Every `PremiumSignInEnd` (`@bombfarm/contracts`), mapped exhaustively. A cancelled attempt is
+ *  the player's own doing and says nothing. Read by `app/settings/premium-section.tsx`. */
+export const PREMIUM_SIGN_IN_END_COPY_KEY = {
+  cancelled: null,
+  'timed-out': 'settingsPremiumEndTimedOut',
+  declined: 'settingsPremiumEndDeclined',
+  refused: 'settingsPremiumEndRefused',
+  unreachable: 'settingsPremiumEndUnreachable',
+  'bad-response': 'settingsPremiumEndBadResponse',
+  'port-unavailable': 'settingsPremiumEndPortUnavailable',
+  'browser-unavailable': 'settingsPremiumEndBrowserUnavailable',
+} as const satisfies Record<PremiumSignInEnd, CopyKey | null>;
 
 /**
  * Every `LiveGapReason` (`@bombfarm/contracts`), mapped exhaustively — a new reason is a compile

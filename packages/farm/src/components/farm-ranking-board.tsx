@@ -5,6 +5,7 @@ import { Banner, EmptyState, InfoTip, Panel } from '@bombfarm/ui';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import type { EconomyBoost, ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { MapSize } from '@bombfarm/domain/model';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { FarmCopy } from '../copy';
 import type { FarmPoolEntry, FarmRankingResult } from '../core';
@@ -24,6 +25,7 @@ import { FarmRankingFilters } from './farm-ranking-filters';
 import { FarmRotationPool } from './farm-rotation-pool';
 import { FarmBoost } from './farm-boost';
 import { FarmPass } from './farm-pass';
+import { FarmMapSize } from './farm-map-size';
 import { FarmReturnBonus } from './farm-return-bonus';
 import { FarmRankingTable } from './farm-ranking-table';
 import { FarmOptimizeButton } from './farm-optimize-button';
@@ -47,6 +49,10 @@ export type FarmRankingBoardData = {
   pass?: boolean;
   /** The Boosts running. Omitted, the board draws no Boost control. */
   boost?: EconomyBoost;
+  /** The map the board prices. Omitted, the board draws no map control. */
+  mapSize?: MapSize;
+  /** {@link mapSize} was read from the game rather than picked. Omitted, false. */
+  mapSizeDetected?: boolean;
   /** No save is imported, so XP/hr is priced without the account's XP bonuses. Omitted, false. */
   xpBonusUnknown?: boolean;
   maxPhase: number | null;
@@ -75,6 +81,7 @@ export type FarmRankingBoardActions = {
   setFarmPass?: (pass: boolean) => void;
   /** Omitted where the Boosts are read from the game: the control then shows their state only. */
   setFarmBoost?: (boost: EconomyBoost) => void;
+  setFarmMapSize?: (mapSize: MapSize) => void;
   /** The Optimize button — routing to the host's Optimizer screen is the host's. */
   openOptimizer: () => void;
 };
@@ -105,6 +112,8 @@ export function FarmRankingBoardView({
     returnBonus,
     pass = false,
     boost,
+    mapSize,
+    mapSizeDetected = false,
     xpBonusUnknown = false,
     maxPhase,
     fieldSlots,
@@ -119,6 +128,7 @@ export function FarmRankingBoardView({
     setFarmReturnBonus,
     setFarmPass,
     setFarmBoost,
+    setFarmMapSize,
     openOptimizer,
   } = actions;
 
@@ -234,6 +244,9 @@ export function FarmRankingBoardView({
             <FarmReturnBonus value={returnBonus} onChange={setFarmReturnBonus} t={t} />
             <FarmPass pass={pass} onPassChange={setFarmPass} t={t} />
             {boost ? <FarmBoost boost={boost} onBoostChange={setFarmBoost} t={t} /> : null}
+            {mapSize !== undefined && setFarmMapSize !== undefined ? (
+              <FarmMapSize mapSize={mapSize} onMapSizeChange={setFarmMapSize} detected={mapSizeDetected} t={t} />
+            ) : null}
             {slots?.controls}
             <FarmOptimizeButton t={t} onOpenOptimizer={openOptimizer} />
           </div>

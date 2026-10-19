@@ -229,11 +229,33 @@ describe('the account XP multiplier reaches the board', () => {
   });
 });
 
+describe('the map size reaches the board', () => {
+  const inputsOn = (farmMapSize: 'classic' | 'compact') =>
+    required(buildFarmInputs(viewOf(basePayload()), { ...DEFAULT_FARM_CONTROLS, farmMapSize }), 'expected inputs');
+
+  it('is carried onto the inputs as the controls name it', () => {
+    expect(inputsOn('compact').farmMapSize).toBe('compact');
+    expect(inputsOn('classic').farmMapSize).toBe('classic');
+  });
+
+  it('the compact map raises the board’s gold per hour, and lowers it on no map', () => {
+    const classic = computeFarmRanking(inputsOn('classic')).rows;
+    const compact = computeFarmRanking(inputsOn('compact')).rows;
+    const priced = classic.filter((row) => row.goldPerHour > 0);
+    expect(priced.length).toBeGreaterThan(0);
+    for (const row of priced) {
+      const match = required(compact[row.phase - 1] ?? null, `expected a row for phase ${String(row.phase)}`);
+      expect(match.goldPerHour).toBeGreaterThanOrEqual(row.goldPerHour);
+    }
+    expect(priced.some((row) => (compact[row.phase - 1]?.goldPerHour ?? 0) > row.goldPerHour)).toBe(true);
+  });
+});
+
 describe('the controls are passed through verbatim, by reference', () => {
   it('farmPoolOverrides keeps its identity — the package compares that member with Object.is', () => {
     const overrides = { h1: false };
     const aurasAtCap = ['brecha'] as const;
-    const controls = { farmPoolOverrides: overrides, farmReturnBonus: 'on' as const, aurasAtCap };
+    const controls = { farmPoolOverrides: overrides, farmReturnBonus: 'on' as const, aurasAtCap, farmMapSize: 'classic' as const };
     const inputs = required(buildFarmInputs(viewOf(basePayload()), controls), 'expected inputs');
     expect(inputs.farmPoolOverrides).toBe(overrides);
     expect(inputs.farmReturnBonus).toBe('on');

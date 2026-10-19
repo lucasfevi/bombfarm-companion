@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { DEFAULT_FARM_VIEW, loadFarmView, saveFarmView } from './farm-view-storage';
+import {
+  DEFAULT_FARM_VIEW,
+  effectiveMapSize,
+  isMapSizeDetected,
+  loadFarmView,
+  mapSizeOverrideFor,
+  saveFarmMapSizeOverride,
+  saveFarmView,
+} from './farm-view-storage';
 
 const KEY = 'bfc-farm-view';
 
@@ -39,6 +47,7 @@ describe('farm view preferences', () => {
       farmReturnBonus: 'on' as const,
       aurasAtCap: ['grito_guerra', 'passagem_bastao'] as const,
       selectedPhase: 7,
+      farmMapSizeOverride: 'compact' as const,
     };
     saveFarmView(view);
     expect(loadFarmView()).toEqual(view);
@@ -95,5 +104,46 @@ describe('farm view preferences', () => {
   it('normalises a partial record into a whole one', () => {
     entries.set(KEY, JSON.stringify({ selectedPhase: 12 }));
     expect(loadFarmView()).toEqual({ ...DEFAULT_FARM_VIEW, selectedPhase: 12 });
+  });
+
+  it('reads an older stored view without a map size as following the game', () => {
+    entries.set(KEY, JSON.stringify({ farmReturnBonus: 'on', selectedPhase: 12 }));
+    expect(loadFarmView().farmMapSizeOverride).toBeNull();
+  });
+
+  it.each(['huge', 209, true])('drops a stored map size of %s', (value) => {
+    entries.set(KEY, JSON.stringify({ farmMapSizeOverride: value }));
+    expect(loadFarmView().farmMapSizeOverride).toBeNull();
+  });
+
+  it('writes the map size alone and leaves the rest of the view as it was', () => {
+    const view = { ...DEFAULT_FARM_VIEW, farmReturnBonus: 'on' as const, selectedPhase: 30 };
+    saveFarmView(view);
+    saveFarmMapSizeOverride('compact');
+    expect(loadFarmView()).toEqual({ ...view, farmMapSizeOverride: 'compact' });
+  });
+});
+
+describe('the map size the Farm board and the Optimizer price on', () => {
+  it('is the player’s pick over the game’s, the game’s with no pick, and the classic field with neither', () => {
+    expect(effectiveMapSize('classic', 'compact')).toBe('classic');
+    expect(effectiveMapSize(null, 'compact')).toBe('compact');
+    expect(effectiveMapSize(null, null)).toBe('classic');
+  });
+
+  it('reads as detected only while it follows a game that is showing a map', () => {
+    expect(isMapSizeDetected(null, 'compact')).toBe(true);
+    expect(isMapSizeDetected('compact', 'compact')).toBe(false);
+    expect(isMapSizeDetected(null, null)).toBe(false);
+  });
+
+  it('picking the size the game is drawing clears the pick, so a later switch in the game is followed', () => {
+    expect(mapSizeOverrideFor('compact', 'compact')).toBeNull();
+    expect(mapSizeOverrideFor('classic', 'compact')).toBe('classic');
+  });
+
+  it('keeps the pick when no game is showing a map', () => {
+    expect(mapSizeOverrideFor('compact', null)).toBe('compact');
+    expect(mapSizeOverrideFor('classic', null)).toBe('classic');
   });
 });

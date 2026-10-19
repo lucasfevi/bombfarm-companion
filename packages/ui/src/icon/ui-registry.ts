@@ -32,7 +32,7 @@ import {
   VscChromeMinimize,
   VscChromeRestore,
 } from 'react-icons/vsc';
-import { PiGraph, PiHammer, PiSortAscending, PiSortDescending, PiSword } from 'react-icons/pi';
+import { PiGraph, PiHammer, PiSortAscending, PiSortDescending, PiStar, PiSword } from 'react-icons/pi';
 import type { IconGlyph } from './types';
 
 export const uiIconRegistry = {
@@ -73,6 +73,10 @@ export const uiIconRegistry = {
   // the one mark that means "a book of pages", which is what each set's collection is. Drawn from
   // the same solid set as the tabs around it.
   'book-open': HiMiniBookOpen,
+  // The Premium tab. A five-point star outline from the same Phosphor set as `graph`, `sword` and
+  // `hammer`, so it keeps their line weight beside them in the strip; `check-circle` already means
+  // "done" elsewhere in the chrome and a filled star reads as a rating.
+  star: PiStar,
   // The top bar's overflow trigger — the secondary actions, once they no longer fit beside the tabs
   'ellipsis-horizontal': HiMiniEllipsisHorizontal,
   // Inventory layout toggle — cards

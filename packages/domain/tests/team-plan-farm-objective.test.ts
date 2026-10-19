@@ -36,6 +36,7 @@ import { buildHeroPlanContexts } from '@bombfarm/domain/team-plan/hero-context';
 import { createScoreMemo, scoreHeroLoadout } from '@bombfarm/domain/team-plan/score';
 import { TEAM_BUFF_ABILITY_IDS, zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { runTeamPlan } from '@bombfarm/domain/team-plan';
+import { COMPACT_FIELD } from '@bombfarm/domain/model';
 import { PASS_ADDS } from '@bombfarm/domain/phase-wiki';
 import type { Loadout, PointAlloc } from '@bombfarm/domain/gear/types';
 import type {
@@ -507,5 +508,24 @@ describe('a farm-mode plan does not lower the gold/hr it was chosen for', () => 
     const after = goldPerHourWithLoadouts(fixture, result.plan.proposedLoadouts);
     expect(before).toBeGreaterThan(0);
     expect(after).toBeGreaterThanOrEqual(before * (1 - 1e-9));
+  });
+});
+
+describe('the map the plan is scored on reaches the farm objective', () => {
+  const file = 'save-20260828-4heroes-postpatch.json';
+
+  it('a compact-map account prices its squad above the classic one, through the phase sweep and every hero score', () => {
+    const fixture = loadTeamPlanFarmFixture(file);
+    const classic = bridgeFor(fixture.teamPlanInput);
+    const compact = bridgeFor({
+      ...fixture.teamPlanInput,
+      account: { ...fixture.teamPlanInput.account, field: COMPACT_FIELD },
+    });
+    expect(compact.objective.phaseOptions.field).toBe(COMPACT_FIELD);
+    expect(classic.objective.phaseOptions.field).toBeUndefined();
+    const classicResult = evaluateFarmObjective(classic.objective, classic.loadouts, classic.pts, undefined);
+    const compactResult = evaluateFarmObjective(compact.objective, compact.loadouts, compact.pts, undefined);
+    expect(compactResult.objective).toBeGreaterThan(classicResult.objective);
+    expect(compactResult.facts[0].cycleSecs).not.toBe(classicResult.facts[0].cycleSecs);
   });
 });

@@ -32,7 +32,7 @@ import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
 import { createIpcDispatch, createIpcHandlers, defaultLiveView } from './ipc-handlers.js';
 import { createEventEmitter } from './event-emitter.js';
 import { createRedactingTokenReader } from './redacting-token-reader.js';
-import { shutdownInOrder } from './shutdown.js';
+import { LIVE_SOURCE_RELEASE_DEADLINE_MS, settleWithin, shutdownInOrder } from './shutdown.js';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { fuseSecondsForCdr } from './domain-edge.js';
@@ -52,7 +52,8 @@ import { createLiveConsentGate } from './game-api/live-consent-gate.js';
 import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
 import { createWindowLayoutStore, type WindowLayoutStore } from './game-api/window-layout-store.js';
 import { companionUserAgent, createNodeHttpsTransport } from './game-api/https-transport.js';
-import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
+import { createGrantedGameIdentityReader } from './game-api/granted-game-identity.js';
+import { readGameIdentity, readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
 import { createTriggeredRefresh, type TriggeredRefresh } from './game-api/triggered-refresh.js';
 import { createLiveFastPublisher, type LiveFastPublisher } from './live-source/live-fast-publisher.js';
 import {
@@ -82,9 +83,13 @@ import {
 import { marketCachePath } from './market/market-cache.js';
 import { createMarketService, type MarketService } from './market/market-service.js';
 import { marketHttpGet } from './market/market-transport.js';
+import { offlineGamePingProbe } from './game-ping/game-ping-offline.js';
+import { createGamePingService, type GamePingService } from './game-ping/game-ping-service.js';
+import { gamePingProbe } from './game-ping/game-ping-transport.js';
 import { offlineOnlinePlayersGet } from './online-players/online-players-offline.js';
 import { createOnlinePlayersService, type OnlinePlayersService } from './online-players/online-players-service.js';
 import { onlinePlayersHttpGet } from './online-players/online-players-transport.js';
+import { createPremiumWhenEnabled, type PremiumService } from './premium/index.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 import {
@@ -144,6 +149,8 @@ let liveFastPublisher: LiveFastPublisher | null = null;
 let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
 let onlinePlayersService: OnlinePlayersService | null = null;
+let gamePingService: GamePingService | null = null;
+let premium: PremiumService | null = null;
 let forgeService: ForgeService | null = null;
 let forgeHistory: ForgeHistory | null = null;
 let applyService: ApplyService | null = null;
@@ -339,6 +346,8 @@ function registerIpcHandlers(): void {
       getUpdateService: () => updateService,
       getMarketService: () => marketService,
       getOnlinePlayersService: () => onlinePlayersService,
+      getGamePingService: () => gamePingService,
+      getPremiumService: () => premium,
       getForgeService: () => forgeService,
       getForgeHistory: () => forgeHistory,
       getForgeInjector: () => forgeInjector,
@@ -962,6 +971,7 @@ async function bootstrap(): Promise<void> {
     accountRefresh,
     emit: (view) => {
       emitEvent('account:changed', view);
+      premium?.noteAccountChanged();
     },
   });
 
@@ -1135,6 +1145,30 @@ async function bootstrap(): Promise<void> {
     },
   });
 
+  gamePingService = createGamePingService({
+    ping: currentAccountSource() === 'fixture' ? offlineGamePingProbe : gamePingProbe,
+    log,
+    onChanged: (view) => {
+      emitEvent('gamePing:changed', view);
+    },
+  });
+
+  premium = createPremiumWhenEnabled(env.descriptor.premium, {
+    db: accountOpen.db,
+    originOverride: resolveAppEnv().premiumApiOriginOverride,
+    offline: currentAccountSource() === 'fixture',
+    readGameIdentity: createGrantedGameIdentityReader({
+      readConsent: () => consentStore?.read() ?? initialConsent(),
+      readIdentity: (consent) =>
+        readGameIdentity(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged })),
+    }),
+    locale: () => currentSettings.locale,
+    log,
+    onChanged: (view) => {
+      emitEvent('premium:changed', view);
+    },
+  });
+
   registerIpcHandlers();
   registerRendererProtocol(path.join(__dirname, '../../renderer/out'));
   await createMainWindow();
@@ -1157,9 +1191,12 @@ async function bootstrap(): Promise<void> {
   // once on mount and that read has usually already happened by now, against a service that did
   // not exist yet.
   try {
-    updateService = await createElectronUpdateService((status) => {
-      emitEvent('updates:changed', status);
-    });
+    updateService = await createElectronUpdateService(
+      (status) => {
+        emitEvent('updates:changed', status);
+      },
+      releaseLiveSource,
+    );
     updateService.start();
   } catch (error: unknown) {
     log.error({ scope: 'main', event: 'updates.unavailable', error: String(error) });
@@ -1172,6 +1209,8 @@ async function bootstrap(): Promise<void> {
   marketService.start();
   log.info({ scope: 'main', event: 'market.started' });
   onlinePlayersService.start();
+  gamePingService.start();
+  premium?.start();
 }
 
 function resolveBootEnv(): AppEnv {
@@ -1187,6 +1226,27 @@ function resolveBootEnv(): AppEnv {
     throw error;
   }
 }
+
+/**
+ * Detaches the tap from the game and waits for it, within a deadline. The agent runs inside the
+ * game's own process: an app that exits with the detach still in flight leaves it orphaned there,
+ * and the game has crashed seconds later every time that was observed. So quitting, and handing
+ * over to the update installer, both come through here first.
+ */
+async function releaseLiveSource(): Promise<void> {
+  const releasing = liveSource;
+  liveSource = null;
+  if (!releasing) return;
+  const outcome = await settleWithin(releasing.teardown(), LIVE_SOURCE_RELEASE_DEADLINE_MS, {
+    setTimeout: (callback, ms) => setTimeout(callback, ms),
+    clearTimeout: (handle) => {
+      clearTimeout(handle as ReturnType<typeof setTimeout>);
+    },
+  });
+  log.info({ scope: 'main', event: 'live_source.released', outcome });
+}
+
+let liveSourceReleasedForQuit = false;
 
 const env = resolveBootEnv();
 registerRendererSchemeAsPrivileged();
@@ -1244,7 +1304,15 @@ if (!gotLock) {
     app.quit();
   });
 
-  app.on('before-quit', () => {
+  app.on('before-quit', (event) => {
+    if (!liveSourceReleasedForQuit && liveSource) {
+      event.preventDefault();
+      liveSourceReleasedForQuit = true;
+      void releaseLiveSource().finally(() => {
+        app.quit();
+      });
+      return;
+    }
     shutdownInOrder({
       onStepFailed: (step, error) => {
         log.error({ scope: 'main', event: 'shutdown.step_failed', step, error: String(error) });
@@ -1284,6 +1352,14 @@ if (!gotLock) {
         stopOnlinePlayersService: () => {
           onlinePlayersService?.stop();
           onlinePlayersService = null;
+        },
+        stopGamePingService: () => {
+          gamePingService?.stop();
+          gamePingService = null;
+        },
+        stopPremium: () => {
+          premium?.stop();
+          premium = null;
         },
         releaseForgeService: () => {
           forgeService = null;

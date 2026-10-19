@@ -55,6 +55,7 @@ describe('phases-view-storage', () => {
         farmReturnBonus: 'off',
         farmPass: false,
         farmBoost: { gold: false, xp: false, drop: false },
+        farmMapSize: 'classic',
       });
     });
 
@@ -70,6 +71,7 @@ describe('phases-view-storage', () => {
         farmReturnBonus: 'on',
         farmPass: true,
         farmBoost: { gold: false, xp: false, drop: false },
+        farmMapSize: 'classic',
       });
     });
 
@@ -79,7 +81,7 @@ describe('phases-view-storage', () => {
       vi.stubGlobal('localStorage', memoryLocalStorage());
       localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmObjective":"chests"}');
       const view = loadPhasesView();
-      expect(view).toEqual({ phase: 1, farmPool: {}, farmReturnBonus: 'off', farmPass: false, farmBoost: { gold: false, xp: false, drop: false } });
+      expect(view).toEqual({ phase: 1, farmPool: {}, farmReturnBonus: 'off', farmPass: false, farmBoost: { gold: false, xp: false, drop: false }, farmMapSize: 'classic' });
       expect('farmObjective' in view).toBe(false);
     });
 
@@ -171,6 +173,22 @@ describe('phases-view-storage', () => {
       expect(loadPhasesView().farmBoost).toEqual({ gold: false, xp: true, drop: false });
       localStorage.setItem('bf-hp-phases-view-v1', '{"farmBoost":[true]}');
       expect(loadPhasesView().farmBoost).toEqual({ gold: false, xp: false, drop: false });
+    });
+
+    it('an older stored view without a map reads as classic', () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
+      localStorage.setItem('bf-hp-phases-view-v1', '{"phase":40,"farmReturnBonus":"on"}');
+      expect(loadPhasesView().farmMapSize).toBe('classic');
+    });
+
+    it('the compact map round-trips, and an unrecognized map reads as classic', () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
+      savePhasesView({ farmMapSize: 'compact' });
+      expect(loadPhasesView().farmMapSize).toBe('compact');
+      for (const raw of ['"small"', '209', 'null', '{}']) {
+        localStorage.setItem('bf-hp-phases-view-v1', `{"farmMapSize":${raw}}`);
+        expect(loadPhasesView().farmMapSize).toBe('classic');
+      }
     });
 
     it('defaultPhasesView() omits phase/farmPool/farmReturnBonus so an untouched payload stays byte-identical', () => {

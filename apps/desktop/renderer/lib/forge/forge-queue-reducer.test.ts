@@ -219,12 +219,17 @@ describe('adding a batch at once (addMany)', () => {
     expect(batched).toBe(twoWaiting);
   });
 
-  it('retargets a piece already queued at another target, in place', () => {
+  it('raises a piece already queued at a lower target, in place', () => {
     const batched = forgeQueueReducer(twoWaiting, { kind: 'addMany', pieces: [{ itemId: 'b', target: 10 }] });
     expect(batched.pieces).toEqual([
       { itemId: 'a', target: 12 },
       { itemId: 'b', target: 10 },
     ]);
+  });
+
+  it('never lowers a piece already queued at a higher target', () => {
+    const batched = forgeQueueReducer(twoWaiting, { kind: 'addMany', pieces: [{ itemId: 'a', target: 9 }] });
+    expect(batched).toBe(twoWaiting);
   });
 
   it('leaves the piece in flight alone regardless of the target the batch carries for it', () => {

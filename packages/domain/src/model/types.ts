@@ -1,3 +1,4 @@
+import type { BattleField } from './clear-time';
 import type { RarityKey } from './rarity-constants';
 
 export interface HeroSheet {
@@ -28,6 +29,8 @@ export interface Context {
    * energy past what the window can spend earns nothing. Absent, the horizon is infinite.
    */
   windowSecs?: number;
+  /** The grid the bomb cycle is priced on. Absent, the classic field. */
+  field?: BattleField;
 }
 
 export type StatKey = 'energy' | 'attack' | 'critDmg' | 'speed' | 'critChance' | 'penetration' | 'cdr';

@@ -6,6 +6,7 @@ import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanAllowedChanges, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { MapSize } from '@bombfarm/domain/model';
 import type { TeamPlanInputs, TeamPlanControls, ScopeState, TeamPlanRunStatus, PlanBasis } from '../core';
 import { describePlanChanges } from '../core';
 import type { TeamPlanScreenCopy } from '../copy';
@@ -48,6 +49,8 @@ export type TeamPlanScreenData = {
   openHeroIds: readonly string[] | null;
   /** The order the result rows are drawn in. Held by the host so it outlives the screen. */
   resultSort: TeamPlanResultSort;
+  /** `inputs.farmMapSize` was read from the game rather than picked. Omitted, false. */
+  mapSizeDetected?: boolean;
 };
 
 export type TeamPlanScreenActions = {
@@ -56,6 +59,9 @@ export type TeamPlanScreenActions = {
   setObjective: (value: TeamPlanObjective) => void;
   setAllowedChanges: (value: TeamPlanAllowedChanges) => void;
   setIgnoreFieldCrowding: (value: boolean) => void;
+  /** The map the plan and the Farm board are priced on — an input the host owns, not a plan
+   *  control. Omitted, the setup bar draws no map control. */
+  setMapSize?: (value: MapSize) => void;
   setTargetPhase: (value: number | null) => void;
   setGatePhase: (value: number | null) => void;
   setFarmSet: (value: string | null) => void;

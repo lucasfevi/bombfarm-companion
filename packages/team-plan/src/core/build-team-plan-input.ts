@@ -1,5 +1,5 @@
 import type { TeamPlanInput } from '@bombfarm/domain/team-plan/types';
-import { collectionSheetPct } from '@bombfarm/domain/model';
+import { battleFieldFor, collectionSheetPct } from '@bombfarm/domain/model';
 import type { TeamPlanInputs } from './team-plan-inputs';
 import type { TeamPlanControls } from './team-plan-controls';
 import { resolveHeroScope } from './hero-scope';
@@ -62,6 +62,7 @@ export function buildTeamPlanInput(
       pass: inputs.farmPass,
       boost: inputs.farmBoost,
       returnBonus: inputs.farmReturnBonus,
+      ...(inputs.farmMapSize === 'compact' ? { field: battleFieldFor('compact') } : {}),
     },
     // Must match the scope board: missing keys use battleAllowed defaults (Donate when
     // disabled), never a hard-coded Optimize — that silently scored Donate-looking heroes.

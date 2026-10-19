@@ -23,6 +23,12 @@ const hero = (): HeroSheet => ({
 });
 
 describe('fieldTimeInWindow', () => {
+  it('fields nothing with no window to field in, or no field time to spend', () => {
+    expect(fieldTimeInWindow(40, 60, 0)).toBe(0);
+    expect(fieldTimeInWindow(0, 60, 60)).toBe(0);
+    expect(windowedDamage(10, 0, 60, 60)).toBe(0);
+  });
+
   it('does not grow once field time already covers the window', () => {
     expect(fieldTimeInWindow(70, 60, 60)).toBe(60);
     expect(fieldTimeInWindow(80, 60, 60)).toBe(60);

@@ -10,12 +10,14 @@ import {
   EMPTY_FORGE_HISTORY,
   EMPTY_PVP_HISTORY,
   emptyMarketSnapshotView,
+  emptyGamePingView,
   emptyOnlinePlayersView,
   initialUpdateStatus,
   isIpcChannel,
   isMarketQuoteTarget,
   liveGap,
   NO_BOOST_AXES,
+  signedOutPremiumView,
   type AccountReadResult,
   type AccountSource,
   type AccountView,
@@ -40,7 +42,10 @@ import {
   type MarketQuoteResult,
   type MarketQuoteTarget,
   type MarketSnapshotView,
+  type GamePingView,
   type OnlinePlayersView,
+  type PremiumActionResult,
+  type PremiumView,
   type MiniLiveLayoutView,
   type PvpFilmView,
   type PvpHistoryResult,
@@ -49,6 +54,8 @@ import {
   type WindowStateView,
 } from '@bombfarm/contracts';
 import { initialConsent, summarizePvpFilm, type ConsentEvent } from '@bombfarm/game-api';
+
+const premiumUnavailable: PremiumActionResult = { ok: false, reason: 'unavailable' };
 
 export type IpcHandlers = {
   [C in IpcInvokeChannel]: (...args: IpcInvokeArgs<C>) => IpcInvokeResult<C> | Promise<IpcInvokeResult<C>>;
@@ -79,8 +86,21 @@ export interface UpdateServicePort {
   installOnRestart(): UpdateStatus;
 }
 
+export interface GamePingServicePort {
+  getView(): GamePingView;
+}
+
 export interface OnlinePlayersServicePort {
   getView(): OnlinePlayersView;
+}
+
+export interface PremiumServicePort {
+  getView(): PremiumView;
+  signIn(): Promise<PremiumActionResult>;
+  cancelSignIn(): boolean;
+  signOut(): Promise<PremiumView>;
+  refresh(reason: 'open' | 'button'): Promise<PremiumActionResult>;
+  manage(): Promise<PremiumActionResult>;
 }
 
 export interface MarketServicePort {
@@ -177,6 +197,8 @@ export interface IpcHandlerDeps<Image extends ClipboardImageLike = ClipboardImag
   getUpdateService: () => UpdateServicePort | null;
   getMarketService: () => MarketServicePort | null;
   getOnlinePlayersService: () => OnlinePlayersServicePort | null;
+  getGamePingService: () => GamePingServicePort | null;
+  getPremiumService: () => PremiumServicePort | null;
   getForgeService: () => ForgeServicePort | null;
   getForgeHistory: () => ForgeHistoryPort | null;
   getForgeInjector: () => InjectorPort | null;
@@ -313,6 +335,7 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
         isPackaged: env.isPackaged,
         version: deps.appVersion(),
         accountSource: deps.accountSource(),
+        premiumEnabled: env.descriptor.premium,
       };
     },
     'app:ping': () => ({ ok: true as const, from: 'main' as const }),
@@ -357,6 +380,17 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.getUpdateService()?.installOnRestart() ?? preServiceUpdateStatus(),
     'market:getSnapshot': () => deps.getMarketService()?.getView() ?? emptyMarketSnapshotView(),
     'onlinePlayers:get': () => deps.getOnlinePlayersService()?.getView() ?? emptyOnlinePlayersView,
+    'gamePing:get': () => deps.getGamePingService()?.getView() ?? emptyGamePingView,
+    'premium:get': () => deps.getPremiumService()?.getView() ?? signedOutPremiumView,
+    'premium:signIn': (): Promise<PremiumActionResult> | PremiumActionResult =>
+      deps.getPremiumService()?.signIn() ?? premiumUnavailable,
+    'premium:cancelSignIn': () => deps.getPremiumService()?.cancelSignIn() ?? false,
+    'premium:signOut': (): Promise<PremiumView> | PremiumView =>
+      deps.getPremiumService()?.signOut() ?? signedOutPremiumView,
+    'premium:refresh': (): Promise<PremiumActionResult> | PremiumActionResult =>
+      deps.getPremiumService()?.refresh('button') ?? premiumUnavailable,
+    'premium:manage': (): Promise<PremiumActionResult> | PremiumActionResult =>
+      deps.getPremiumService()?.manage() ?? premiumUnavailable,
     'market:refreshItem': refreshMarketItem,
     'market:check': checkMarketNow,
     'forge:start': (request: ForgeStartRequest): ForgeStartResult =>

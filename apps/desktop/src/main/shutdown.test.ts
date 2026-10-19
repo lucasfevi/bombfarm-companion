@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { SHUTDOWN_STEPS, shutdownInOrder, type ShutdownStep } from './shutdown.js';
+import { settleWithin, SHUTDOWN_STEPS, shutdownInOrder, type ShutdownStep } from './shutdown.js';
 
 interface Recording {
   ran: ShutdownStep[];
@@ -79,6 +79,12 @@ describe('the quit order every committing producer depends on', () => {
     expect(late).toEqual([]);
   });
 
+  it('stops premium before either store handle it writes to is closed', () => {
+    const late = STORE_CLOSES.filter((close) => !ranBefore(ran, 'stopPremium', close));
+
+    expect(late).toEqual([]);
+  });
+
   it('tears the live source down before the observation recorder it writes to is closed', () => {
     expect(ranBefore(ran, 'teardownLiveSource', 'closeObservationCapture')).toBe(true);
   });
@@ -145,6 +151,7 @@ describe('the step bodies the quit handler binds to the names the order is asser
   const expectedCall: Partial<Record<ShutdownStep, string>> = {
     stopGameReader: 'gameReader?.stop()',
     stopAccountRefresh: 'accountRefresh?.stop()',
+    stopPremium: 'premium?.stop()',
     teardownLiveSource: 'liveSource?.teardown()',
     stopObservationMarkWatch: 'observationMarkWatch?.stop()',
     closeObservationCapture: 'observationCapture?.close()',
@@ -173,5 +180,71 @@ describe('the step bodies the quit handler binds to the names the order is asser
     const unbound = SHUTDOWN_STEPS.filter((step) => !new RegExp(`\\n\\s*${step}: \\(\\) => \\{`).test(source));
 
     expect(unbound).toEqual([]);
+  });
+});
+
+describe('settleWithin', () => {
+  function manualTimers() {
+    const pending = new Map<number, () => void>();
+    let next = 1;
+    return {
+      setTimeout: (callback: () => void) => {
+        pending.set(next, callback);
+        return next++;
+      },
+      clearTimeout: (handle: unknown) => {
+        pending.delete(handle as number);
+      },
+      fireAll: () => {
+        for (const callback of pending.values()) callback();
+        pending.clear();
+      },
+      get size() {
+        return pending.size;
+      },
+    };
+  }
+
+  it('reports settled when the task finishes first, and clears its timer', async () => {
+    const timers = manualTimers();
+    await expect(settleWithin(Promise.resolve(), 1_000, timers)).resolves.toBe('settled');
+    expect(timers.size).toBe(0);
+  });
+
+  it('treats a rejected task as settled rather than rejecting', async () => {
+    const timers = manualTimers();
+    await expect(settleWithin(Promise.reject(new Error('x')), 1_000, timers)).resolves.toBe('settled');
+  });
+
+  it('gives up at the deadline on a task that never settles', async () => {
+    const timers = manualTimers();
+    const outcome = settleWithin(new Promise(() => undefined), 1_000, timers);
+    timers.fireAll();
+    await expect(outcome).resolves.toBe('deadline');
+  });
+});
+
+describe('how the main bootstrap drives the premium service', () => {
+  const source = readFileSync(resolve(__dirname, 'index.ts'), 'utf8');
+
+  it('starts the service once bootstrap has built it', () => {
+    expect(source).toMatch(/premium = createPremiumWhenEnabled\(env\.descriptor\.premium, \{[\s\S]*?\n\s*premium\?\.start\(\);/);
+  });
+
+  it('keeps the service off the network when the account source is the offline fixture', () => {
+    const call = /createPremiumWhenEnabled\(env\.descriptor\.premium, \{([\s\S]*?)\n {2}\}\);/.exec(source)?.[1] ?? '';
+
+    expect(call).toContain("offline: currentAccountSource() === 'fixture'");
+  });
+
+  it('builds the service only where the flavor turns Premium on', () => {
+    expect(source).not.toContain('createElectronPremium');
+  });
+
+  it('tells the service about an account change beside the account:changed event', () => {
+    const notifier = /createAccountNotifier\(\{[\s\S]*?emit: \(view\) => \{([\s\S]*?)\n\s*\},/.exec(source)?.[1] ?? '';
+
+    expect(notifier).toContain("emitEvent('account:changed', view)");
+    expect(notifier).toContain('premium?.noteAccountChanged()');
   });
 });

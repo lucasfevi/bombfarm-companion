@@ -1,6 +1,6 @@
 {
   "name": "@bombfarm/tap-runtime",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "type": "module",
   "exports": {
@@ -16,7 +16,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "frida": "^17.17.0"
+    "frida": "^17.23.3"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

@@ -2,6 +2,7 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import type { HeroRune } from '@bombfarm/domain/runes';
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
+import { battleFieldFor, CLASSIC_FIELD } from '@bombfarm/domain/model';
 import type { TeamPlanInputs } from './team-plan-inputs';
 import type { TeamPlanControls } from './team-plan-controls';
 import type { ScopeState } from './hero-scope';
@@ -116,12 +117,15 @@ export const ACCOUNT_FIELDS = [
   'farmBoostGold',
   'farmBoostXp',
   'farmBoostDrop',
+  'farmMapSize',
 ] as const;
 export type AccountField = (typeof ACCOUNT_FIELDS)[number];
 
 /** The switches ride as 1/0 so the ledger can diff every account field the same way. An absent
- *  Return Bonus or Boost is off, as in a basis stored before either was read. */
-type AccountView = Record<TreeAxis, number> & Record<AccountField, number | null>;
+ *  Return Bonus or Boost is off, as in a basis stored before either was read. The map rides as
+ *  its row count, and only when it is not the classic one, so a plan solved before the map could
+ *  be picked keeps the signature it was stored with. */
+type AccountView = Record<TreeAxis, number> & Partial<Record<AccountField, number | null>>;
 
 function accountFieldValue(inputs: TeamPlanInputs, field: AccountField): number | null {
   switch (field) {
@@ -135,6 +139,8 @@ function accountFieldValue(inputs: TeamPlanInputs, field: AccountField): number 
       return inputs.farmBoost?.xp ? 1 : 0;
     case 'farmBoostDrop':
       return inputs.farmBoost?.drop ? 1 : 0;
+    case 'farmMapSize':
+      return battleFieldFor(inputs.farmMapSize ?? 'classic').rows;
     default:
       return inputs[field];
   }
@@ -143,7 +149,11 @@ function accountFieldValue(inputs: TeamPlanInputs, field: AccountField): number 
 function planningAccountView(inputs: TeamPlanInputs): AccountView {
   const view = {} as AccountView;
   for (const axis of TREE_AXES) view[axis] = inputs[axis];
-  for (const field of ACCOUNT_FIELDS) view[field] = accountFieldValue(inputs, field);
+  for (const field of ACCOUNT_FIELDS) {
+    const value = accountFieldValue(inputs, field);
+    if (field === 'farmMapSize' && value === CLASSIC_FIELD.rows) continue;
+    view[field] = value;
+  }
   return view;
 }
 
@@ -470,7 +480,9 @@ export function describePlanChanges(basis: PlanBasis, now: PlanBasis, plan: Team
     if (accountBefore[axis] !== accountAfter[axis]) out.push(change({ kind: 'account' }, { field: 'tree', axis, before: accountBefore[axis], after: accountAfter[axis] }, 'plan'));
   }
   for (const name of ACCOUNT_FIELDS) {
-    if (accountBefore[name] !== accountAfter[name]) out.push(change({ kind: 'account' }, { field: 'accountField', name, before: accountBefore[name], after: accountAfter[name] }, 'plan'));
+    const before = accountFieldValue(basis.inputs, name);
+    const after = accountFieldValue(now.inputs, name);
+    if (before !== after) out.push(change({ kind: 'account' }, { field: 'accountField', name, before, after }, 'plan'));
   }
 
   const controlsBefore = planningControlsView(basis.inputs, basis.controls);

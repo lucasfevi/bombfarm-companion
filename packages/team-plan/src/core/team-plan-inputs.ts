@@ -1,6 +1,6 @@
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { InventorySnapshot } from '@bombfarm/domain/inventory';
-import type { Collection } from '@bombfarm/domain/model';
+import type { Collection, MapSize } from '@bombfarm/domain/model';
 import type { EconomyBoost, ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 
 export type TeamPlanInputs = {
@@ -34,6 +34,8 @@ export type TeamPlanInputs = {
   farmBoost?: EconomyBoost | undefined;
   /** The farm board's Return Bonus switch, for the same reason. Absent reads as off. */
   farmReturnBonus?: ReturnBonusMode | undefined;
+  /** The farm board's map, for the same reason. Absent reads as the classic map. */
+  farmMapSize?: MapSize | undefined;
   /** Already resolved by the host: the farm screen's phase when the player chose one there, else
    *  null. Web: `phasesViewPhaseChosen ? phasesViewPhase : null`. Desktop: the Farm view
    *  storage's `selectedPhase`. Resolved here because the "chosen" flag is each host's own. */

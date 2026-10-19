@@ -2,6 +2,7 @@ import type { StateCreator } from 'zustand';
 import {
   savePhasesView,
   type EconomyBoost,
+  type MapSize,
   type PhasesViewState,
   type ReturnBonusMode,
 } from '@/shared/lib/phases-view-storage';
@@ -23,6 +24,8 @@ export type PhasesSlice = {
   /** The Boosts running, per axis — persisted beside the Pass. Every axis off is the domain's
    *  frozen `NO_ECONOMY_BOOST`, never a fresh object. */
   farmBoost: EconomyBoost;
+  /** The battle field's size — one account-level setting the Farm board and the Optimizer share. */
+  farmMapSize: MapSize;
   /**
    * EPHEMERAL — the planner's Combat tab asking about a phase other than the one the app would
    * choose on its own (`selectCombatPhase`). `null` while no such pick is in force. Never
@@ -47,6 +50,7 @@ export type PhasesSlice = {
   setFarmReturnBonus: (mode: ReturnBonusMode) => void;
   setFarmPass: (pass: boolean) => void;
   setFarmBoost: (boost: EconomyBoost) => void;
+  setFarmMapSize: (mapSize: MapSize) => void;
   /** `null` clears the pick and hands the planner back to `selectCombatPhase`'s own answer. */
   setPlannerPhaseOverride: (phase: number | null) => void;
   setTeamAuraSwitch: (buffId: TeamAuraId, enabled: boolean) => void;
@@ -78,6 +82,7 @@ export const createPhasesSlice: StateCreator<
       farmReturnBonus: state.farmReturnBonus,
       farmPass: state.farmPass,
       farmBoost: state.farmBoost,
+      farmMapSize: state.farmMapSize,
     });
   }
 
@@ -88,6 +93,7 @@ export const createPhasesSlice: StateCreator<
     farmReturnBonus: 'off',
     farmPass: false,
     farmBoost: NO_ECONOMY_BOOST,
+    farmMapSize: 'classic',
     plannerPhaseOverride: null,
     teamAuraSwitches: noTeamAuraSwitches(),
 
@@ -99,6 +105,7 @@ export const createPhasesSlice: StateCreator<
         farmReturnBonus: view.farmReturnBonus ?? 'off',
         farmPass: view.farmPass ?? false,
         farmBoost: view.farmBoost ?? NO_ECONOMY_BOOST,
+        farmMapSize: view.farmMapSize ?? 'classic',
       });
     },
 
@@ -151,6 +158,12 @@ export const createPhasesSlice: StateCreator<
       const current = get().farmBoost;
       if (current.gold === boost.gold && current.xp === boost.xp && current.drop === boost.drop) return;
       set({ farmBoost: { gold: boost.gold, xp: boost.xp, drop: boost.drop } });
+      persistPhasesView(get());
+    },
+
+    setFarmMapSize: (mapSize) => {
+      if (get().farmMapSize === mapSize) return;
+      set({ farmMapSize: mapSize });
       persistPhasesView(get());
     },
 

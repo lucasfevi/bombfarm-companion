@@ -1,4 +1,4 @@
-import type { AbilityMods, Context } from './model';
+import type { AbilityMods, BattleField, Context } from './model';
 import type { HeroContext } from './shims/storage';
 import { combineDrainRate } from './drain';
 import { resolveHouseRestSeconds } from './model/house';
@@ -78,6 +78,8 @@ export type FarmContextForHeroInput = {
   cycleSecsLevel?: number | null;
   /** See {@link Context.windowSecs}. */
   windowSecs?: number;
+  /** See {@link Context.field}. */
+  field?: BattleField;
 };
 
 /** Shared per-hero farm `Context` — the one drain path for advisor + team-plan scorer. */
@@ -100,5 +102,6 @@ export function farmContextForHero(input: FarmContextForHeroInput): Context {
     ato: effectiveFarmAto(input.phase),
     drainMult: combineDrainRate(input.mods.drainMult, input.teamDrainMult),
     ...(input.windowSecs !== undefined ? { windowSecs: input.windowSecs } : {}),
+    ...(input.field !== undefined ? { field: input.field } : {}),
   };
 }

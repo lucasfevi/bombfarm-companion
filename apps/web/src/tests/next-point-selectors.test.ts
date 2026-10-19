@@ -126,6 +126,21 @@ describe('next-point-selectors', () => {
     });
   });
 
+  describe('a change of map', () => {
+    it('reprices the pool, the edited hero and the ranking on the compact field', () => {
+      activateHero([farmHero('a'), farmHero('b')], 'a');
+      usePlannerStore.getState().setRankMode('farm');
+      const pool = selectFarmPoolBases(usePlannerStore.getState());
+      const draft = selectDraftFarmBasis(usePlannerStore.getState());
+      const ranking = selectNextPointRanking(usePlannerStore.getState());
+      usePlannerStore.getState().setFarmMapSize('compact');
+      expect(selectFarmPoolBases(usePlannerStore.getState())).not.toBe(pool);
+      expect(selectDraftFarmBasis(usePlannerStore.getState())).not.toBe(draft);
+      expect(selectNextPointRanking(usePlannerStore.getState())).not.toBe(ranking);
+      expect(buildAccount(usePlannerStore.getState()).field).toEqual({ columns: 19, rows: 11 });
+    });
+  });
+
   describe('composed bases equal the whole-pool extraction when the draft equals the stored record', () => {
     it('rankNextPointForFarm produces the SAME rows/phase whether the pool is spliced or extracted directly', () => {
       const heroes = [farmHero('a'), farmHero('b', { attack: 150 }), farmHero('c', { attack: 90 })];

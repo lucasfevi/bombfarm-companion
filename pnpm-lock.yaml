@@ -530,8 +530,8 @@ importers:
   packages/tap-runtime:
     dependencies:
       frida:
-        specifier: ^17.17.0
-        version: 17.17.0
+        specifier: ^17.23.3
+        version: 17.23.3
     devDependencies:
       typescript:
         specifier: ^5.8.3
@@ -4176,8 +4176,8 @@ packages:
       react-dom:
         optional: true
 
-  frida@17.17.0:
-    resolution: {integrity: sha512-6R20Qx9nxdx9jPo55K2q3uNO/8MU/FWUvZfPnv466JMRuANPsiR5GogpFuHWhOd5X8XcQLdVWoPgZHnDCcxApQ==}
+  frida@17.23.3:
+    resolution: {integrity: sha512-h3UPc770oHxdHY6GX24kxESGTSMGNo/Sa3PtMcGKfGp/TNoBu+Lv+ufSmtyhx59+8N5n6La1aTWEU86aqBCZrg==}
     engines: {node: '>=16'}
 
   fromentries@1.3.2:
@@ -10908,7 +10908,7 @@ snapshots:
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
-  frida@17.17.0:
+  frida@17.23.3:
     dependencies:
       bindings: 1.5.0
       minimatch: 10.2.5

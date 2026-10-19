@@ -80,6 +80,7 @@ function toFarmInputs(state: PlannerStore): FarmInputs {
     farmReturnBonus: state.farmReturnBonus,
     farmPass: state.farmPass,
     farmBoost: state.farmBoost,
+    farmMapSize: state.farmMapSize,
     // This app offers no control for it: the board prices every aura as the pool sustains it.
     aurasAtCap: NO_AURAS_AT_CAP,
   };
@@ -173,6 +174,7 @@ export function selectFarmPoolEntries(state: PlannerStore): FarmPoolEntry[] {
 export const selectFarmReturnBonus = (state: PlannerStore) => state.farmReturnBonus;
 export const selectFarmPass = (state: PlannerStore) => state.farmPass;
 export const selectFarmBoost = (state: PlannerStore) => state.farmBoost;
+export const selectFarmMapSize = (state: PlannerStore) => state.farmMapSize;
 export const selectFarmXpBonusUnknown = (state: PlannerStore) =>
   state.importedAt === null && state.treeXpMult === 1;
 

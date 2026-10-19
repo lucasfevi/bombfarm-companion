@@ -57,6 +57,12 @@ export const teamPlanPageEn = {
     'Gear only. No point resets, so no respec cost either.',
   teamPlanIgnoreCrowdingLabel: 'Keep every hero geared',
   teamPlanIgnoreCrowdingAria: 'Score as if the field always had room, and fill every empty slot',
+  teamPlanMapSizeLabel: 'Map size',
+  teamPlanMapSizeClassic: 'Classic',
+  teamPlanMapSizeCompact: 'Compact',
+  teamPlanMapSizeHint:
+    "The map the plan is scored on, the Farm board's own. Compact is the game's redesigned look (F8): the same props closer together, so more fall under each blast, and heroes walk it more slowly, so crossing either map takes as long.",
+  teamPlanMapSizeHintDetected: 'Read from the game while it is open. Pick the other map to override it.',
   teamPlanIgnoreCrowdingHintOff:
     'The field seats a limited number of heroes, so a hero taking more field time crowds the others out. The plan prices that, which is why it can ask you to remove gear.',
   teamPlanIgnoreCrowdingHintOn:

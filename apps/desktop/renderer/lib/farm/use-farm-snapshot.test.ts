@@ -13,7 +13,7 @@ import { settledBoard } from './farm-snapshot-store';
 import { createFarmSnapshotStore, farmBoardStale } from './use-farm-snapshot';
 import { skillTotals } from '../account/skill-totals.test-support';
 
-const CONTROLS: FarmControls = { farmPoolOverrides: {}, farmReturnBonus: 'off', aurasAtCap: [] };
+const CONTROLS: FarmControls = { farmPoolOverrides: {}, farmReturnBonus: 'off', aurasAtCap: [], farmMapSize: 'classic' };
 const XP_BOOST = { gold: false, xp: true, drop: false };
 
 function fidelityAt(capturedAt: string): AccountFidelity {
@@ -134,7 +134,7 @@ describe('the snapshot store computes once and does not follow the live account'
     const opened = viewAtLevel(10);
     open(opened.view, opened.key, CONTROLS);
 
-    setControls({ farmPoolOverrides: {}, farmReturnBonus: 'on', aurasAtCap: [] });
+    setControls({ farmPoolOverrides: {}, farmReturnBonus: 'on', aurasAtCap: [], farmMapSize: 'classic' });
     const state = store.getState();
     expect(state.status).toBe('ready');
     if (state.status !== 'ready') throw new Error('expected ready');
@@ -145,7 +145,7 @@ describe('the snapshot store computes once and does not follow the live account'
 
   it('setControls before the screen ever opened does nothing — there is no frozen account yet', () => {
     const { store, setControls } = createFarmSnapshotStore();
-    setControls({ farmPoolOverrides: {}, farmReturnBonus: 'on', aurasAtCap: [] });
+    setControls({ farmPoolOverrides: {}, farmReturnBonus: 'on', aurasAtCap: [], farmMapSize: 'classic' });
     expect(store.getState()).toEqual({ status: 'idle' });
   });
 
@@ -204,6 +204,29 @@ describe('the running Boosts are frozen with the snapshot', () => {
   });
 });
 
+describe('the map size is a compute input', () => {
+  it('a change of map recomputes the board against the frozen account, and the board carries it', () => {
+    const { store, open, setControls } = createFarmSnapshotStore();
+    const opened = viewAtLevel(10);
+    open(opened.view, opened.key, CONTROLS);
+    const classicBoard = settledBoard(store.getState())?.board;
+
+    setControls({ ...CONTROLS, farmMapSize: 'compact' });
+    const after = store.getState();
+    if (after.status !== 'ready') throw new Error('expected ready');
+    expect(after.sourceKey).toBe(opened.key);
+    expect(after.inputs.farmMapSize).toBe('compact');
+    expect(after.board).not.toBe(classicBoard);
+  });
+
+  it('a board on the compact map does not read stale against the same live account', () => {
+    const { store, open } = createFarmSnapshotStore();
+    const opened = viewAtLevel(10);
+    open(opened.view, opened.key, { ...CONTROLS, farmMapSize: 'compact' });
+    expect(farmBoardStale(store.getState(), viewAtLevel(10).view)).toBe(false);
+  });
+});
+
 describe('a snapshot is stale when the BOARD would compute differently, not when any byte moved', () => {
   function opened() {
     const store = createFarmSnapshotStore();
@@ -238,7 +261,7 @@ describe('a snapshot is stale when the BOARD would compute differently, not when
 
   it('changing a compute input does not make the live account look stale', () => {
     const { store, setControls } = opened();
-    setControls({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'on', aurasAtCap: [] });
+    setControls({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'on', aurasAtCap: [], farmMapSize: 'classic' });
     const live = viewOf(payloadWithGold(10, '5000'));
     expect(farmBoardStale(store.getState(), live.view)).toBe(false);
   });
@@ -314,7 +337,7 @@ describe('a settled board is dated by the account read behind it, never by the c
 
     // The player toggles a hero out of the rotation pool. The board is computed again against the
     // frozen account — a genuinely new compute, over data nobody re-read.
-    setControls({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'off', aurasAtCap: [] });
+    setControls({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'off', aurasAtCap: [], farmMapSize: 'classic' });
 
     const after = settledBoard(store.getState());
     expect(after?.board).not.toBe(boardBefore);

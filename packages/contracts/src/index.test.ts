@@ -53,6 +53,7 @@ const IPC_CHANNEL_LIST = [
   'updates:installOnRestart',
   'market:getSnapshot',
   'onlinePlayers:get',
+  'gamePing:get',
   'market:refreshItem',
   'market:check',
   'forge:start',
@@ -71,6 +72,12 @@ const IPC_CHANNEL_LIST = [
   'collections:get',
   'collections:refresh',
   'clipboard:writeImage',
+  'premium:get',
+  'premium:signIn',
+  'premium:cancelSignIn',
+  'premium:signOut',
+  'premium:refresh',
+  'premium:manage',
 ] as const;
 
 const IPC_EVENT_CHANNEL_LIST = [
@@ -81,12 +88,14 @@ const IPC_EVENT_CHANNEL_LIST = [
   'updates:changed',
   'market:changed',
   'onlinePlayers:changed',
+  'gamePing:changed',
   'settings:changed',
   'forge:event',
   'apply:event',
   'deconstruct:event',
   'pvp:changed',
   'collections:changed',
+  'premium:changed',
   'window:changed',
 ] as const;
 
@@ -122,6 +131,13 @@ describe('contracts IPC surface', () => {
     expect(isIpcChannel('deconstruct:start')).toBe(true);
     expect(isIpcChannel('deconstruct:inject')).toBe(true);
     expect(isIpcChannel('deconstruct:event')).toBe(false);
+    expect(isIpcChannel('premium:get')).toBe(true);
+    expect(isIpcChannel('premium:signIn')).toBe(true);
+    expect(isIpcChannel('premium:cancelSignIn')).toBe(true);
+    expect(isIpcChannel('premium:signOut')).toBe(true);
+    expect(isIpcChannel('premium:refresh')).toBe(true);
+    expect(isIpcChannel('premium:manage')).toBe(true);
+    expect(isIpcChannel('premium:changed')).toBe(false);
     expect(isIpcChannel('apply:preflight')).toBe(false);
     expect(isIpcChannel('not-a-channel')).toBe(false);
   });
@@ -132,6 +148,8 @@ describe('contracts IPC surface', () => {
     expect(isIpcEventChannel('account:changed')).toBe(true);
     expect(isIpcEventChannel('apply:event')).toBe(true);
     expect(isIpcEventChannel('deconstruct:event')).toBe(true);
+    expect(isIpcEventChannel('premium:changed')).toBe(true);
+    expect(isIpcEventChannel('premium:get')).toBe(false);
     expect(isIpcEventChannel('not-an-event')).toBe(false);
   });
 
@@ -175,6 +193,7 @@ describe('contracts IPC surface', () => {
       isPackaged: false,
       version: '0.0.0',
       accountSource: 'fixture',
+      premiumEnabled: true,
     };
     expect(info).toEqual({
       flavor: 'dev',
@@ -184,6 +203,7 @@ describe('contracts IPC surface', () => {
       isPackaged: false,
       version: '0.0.0',
       accountSource: 'fixture',
+      premiumEnabled: true,
     });
   });
 
@@ -197,6 +217,7 @@ describe('contracts IPC surface', () => {
       isPackaged: true,
       version: '1.2.3',
       accountSource: 'server',
+      premiumEnabled: false,
     };
     expect(info).toEqual({
       flavor: 'prod',
@@ -206,6 +227,7 @@ describe('contracts IPC surface', () => {
       isPackaged: true,
       version: '1.2.3',
       accountSource: 'server',
+      premiumEnabled: false,
     });
   });
 
@@ -219,6 +241,7 @@ describe('contracts IPC surface', () => {
       isPackaged: true,
       version: '0.0.0',
       accountSource: 'server',
+      premiumEnabled: false,
     };
     expect(env.version).toMatch(/^\d+\.\d+\.\d+/);
   });

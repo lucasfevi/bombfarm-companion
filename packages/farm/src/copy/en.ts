@@ -144,6 +144,12 @@ export const farmEn = {
   farmRankingPassTip:
     "+{gold}% gold, +{xp}% XP and +{drop}% drop chance, always on. With the Pass the Return Bonus is +{returnPass}% instead of +{returnBase}%.",
   farmRankingPassTipDetected: "Read from your account.",
+  farmRankingMapSizeLabel: "Map size",
+  farmRankingMapSizeClassic: "Classic",
+  farmRankingMapSizeCompact: "Compact",
+  farmRankingMapSizeTip:
+    "Classic is the 19 × 16 map. Compact is the 19 × 11 map of the game's redesigned look (F8). A wave spawns the same props on both, so they stand closer on the compact map and more fall under each blast; heroes walk it more slowly, so crossing either map takes as long.",
+  farmRankingMapSizeTipDetected: "Read from the game while it is open. Pick the other map to override it.",
   farmRankingBoostLabel: "Boost",
   farmRankingBoostGold: "Gold",
   farmRankingBoostXp: "XP",

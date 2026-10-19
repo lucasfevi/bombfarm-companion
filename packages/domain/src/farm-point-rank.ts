@@ -26,7 +26,7 @@ import {
   type ResolvedFarmObjective,
   type FarmObjectiveScales,
 } from './farm-optimize-objective';
-import { RANK_STATS, STAT_LABELS, type PointValue, type RankStatKey } from './model';
+import { RANK_STATS, STAT_LABELS, type BattleField, type PointValue, type RankStatKey } from './model';
 import type { SheetKey } from './planner-constants';
 
 export { computeHeroFarmBases, type HeroFarmBasis } from './farm-rate';
@@ -84,6 +84,8 @@ export type FarmPointRankInput = {
   pass?: boolean;
   /** Default none, matching the estimator and the Farm board. */
   boost?: EconomyBoost | undefined;
+  /** Default the classic field, matching the estimator and the Farm board. */
+  field?: BattleField;
 };
 
 function emptyResult(
@@ -106,6 +108,7 @@ export function rankNextPointForFarm(input: FarmPointRankInput): FarmPointRankRe
     returnBonus: input.returnBonus,
     pass: input.pass,
     boost: input.boost,
+    field: input.field,
     exhaustive: true,
   };
 

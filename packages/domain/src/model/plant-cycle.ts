@@ -65,8 +65,37 @@ export const HOP_SPEED_EXPONENT = 0.53;
 /** Cells per second at which the hop is {@link freeHopCells}'s density mean — the fit's centre. */
 export const HOP_SPEED_PIVOT = 3;
 
+/** The fuse at the 80% cooldown-reduction cap: a fifth of the 2 s base. */
+export const FUSE_FLOOR = 0.4;
+
+/**
+ * A hero near the cooldown floor hops shorter: its bomb goes off before the other crosses have
+ * cleared its neighbours, so its next target stands beside it. Two points on one hero at the same
+ * walk speed and density mix, from 30-minute captures of each build held out of band, not in this
+ * repo: the full free hop at a 1.32–1.47 s fuse (its hops moved with walk speed there, not with
+ * the fuse), and {@link FUSE_HOP_FLOOR_FACTOR} of it in every density band at the floor. The
+ * line between them is the simplest curve through both.
+ */
+export const FUSE_HOP_KNEE_SEC = 1.3;
+export const FUSE_HOP_FLOOR_FACTOR = 0.57;
+
 export function freeHopCells(standing: number): number {
   return FREE_HOP_BASE_CELLS + FREE_HOP_SQRT_CELLS / Math.sqrt(Math.max(1, standing));
+}
+
+export function fuseHopFactor(fuseSecs: number): number {
+  if (fuseSecs >= FUSE_HOP_KNEE_SEC) return 1;
+  const depth = (FUSE_HOP_KNEE_SEC - Math.max(FUSE_FLOOR, fuseSecs)) / (FUSE_HOP_KNEE_SEC - FUSE_FLOOR);
+  return 1 - (1 - FUSE_HOP_FLOOR_FACTOR) * depth;
+}
+
+/**
+ * The walk overhead shrinks with the hop — its detours and dodges are part of the path walked.
+ * The same hero's overhead past `hop / w` fell from the 0.58 s mean to 0.34 s at the floor,
+ * where {@link WALK_CYCLE_OVERHEAD_SEC} × {@link FUSE_HOP_FLOOR_FACTOR} reads 0.33.
+ */
+export function walkCycleOverheadSeconds(fuseSecs: number): number {
+  return WALK_CYCLE_OVERHEAD_SEC * fuseHopFactor(fuseSecs);
 }
 
 /**
@@ -94,23 +123,24 @@ const FREE_HOP_SUFFIX_SUMS: readonly number[] = Object.freeze(
  *
  * Closed form, because the clear calls this for every hero at every step: the multipliers are
  * ascending, so the fuse-bound hops are exactly the first `k`, and the walk-bound rest sum to
- * `hop/w × (suffix sum) + overhead` each. `replantCycle` depends on the hero alone, so a caller
- * pricing one hero at many counts passes it in.
+ * `hop/w × (suffix sum) + overhead` each. `replantCycle` and `walkOverheadSecs` depend on the
+ * hero alone, so a caller pricing one hero at many counts passes them in.
  */
 export function meanPlantCycleSeconds(
   fuseSecs: number,
   walkSpeedCells: number,
   meanFreeHop: number,
   replantCycle: number = plantCycleSeconds(fuseSecs, walkSpeedCells, REPLANT_HOP_CELLS),
+  walkOverheadSecs: number = WALK_CYCLE_OVERHEAD_SEC,
 ): number {
   const fuseBound = fuseSecs + FUSE_CYCLE_OVERHEAD_SEC;
   const walkPerMultiplier = meanFreeHop / walkSpeedCells;
-  const threshold = (fuseBound - WALK_CYCLE_OVERHEAD_SEC) / walkPerMultiplier;
+  const threshold = (fuseBound - walkOverheadSecs) / walkPerMultiplier;
   let fuseBoundHops = 0;
   while (fuseBoundHops < FREE_HOP_SHAPE.length && FREE_HOP_SHAPE[fuseBoundHops] <= threshold) fuseBoundHops++;
   const walkBoundHops = FREE_HOP_SHAPE.length - fuseBoundHops;
   const free =
     fuseBoundHops * fuseBound +
-    (walkBoundHops > 0 ? walkPerMultiplier * FREE_HOP_SUFFIX_SUMS[fuseBoundHops] + walkBoundHops * WALK_CYCLE_OVERHEAD_SEC : 0);
+    (walkBoundHops > 0 ? walkPerMultiplier * FREE_HOP_SUFFIX_SUMS[fuseBoundHops] + walkBoundHops * walkOverheadSecs : 0);
   return ((1 - REPLANT_SHARE) * free) / FREE_HOP_SHAPE.length + REPLANT_SHARE * replantCycle;
 }

@@ -22,11 +22,19 @@ import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { AccountView } from '@bombfarm/contracts';
 import { NO_ECONOMY_BOOST, type EconomyBoost, type ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import type { MapSize } from '@bombfarm/domain/model';
 import { createLazySingleton, createSharedStore, type SharedStore } from '../shared-store';
 import { useAccountView } from '../account/use-account-view';
 import { useLiveBoost } from '../live/use-live-boost';
+import { useLiveMapSize } from '../live/use-live-map-size';
 import { oldestCaptureOf } from '../account/account-facts';
-import { loadFarmView } from '../farm/farm-view-storage';
+import {
+  effectiveMapSize,
+  isMapSizeDetected,
+  loadFarmView,
+  mapSizeOverrideFor,
+  saveFarmMapSizeOverride,
+} from '../farm/farm-view-storage';
 import { buildOptimizerInputs, optimizerDepKey } from './optimizer-inputs';
 import { createOptimizerWorker } from './optimizer-worker';
 import {
@@ -50,6 +58,7 @@ export interface OptimizerSnapshotActions {
     farmChosenPhase: number | null,
     boost?: EconomyBoost,
     returnBonus?: ReturnBonusMode,
+    mapSize?: MapSize,
   ) => void;
   /** The player asked for the live account. Adopts it. */
   readonly refresh: (
@@ -58,7 +67,11 @@ export interface OptimizerSnapshotActions {
     farmChosenPhase: number | null,
     boost?: EconomyBoost,
     returnBonus?: ReturnBonusMode,
+    mapSize?: MapSize,
   ) => void;
+  /** The map size moved. Re-takes the snapshot from the account already frozen; a no-op when the
+   *  snapshot is already priced on it. */
+  readonly setMapSize: (mapSize: MapSize) => void;
   readonly startRun: (runId: string, signature: string, heroes: readonly HeroRecord[], basis: PlanBasis) => void;
   readonly resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   readonly applyPlan: (runId: string, plan: TeamPlan) => void;
@@ -77,6 +90,8 @@ export function createOptimizerStore(): {
   let frozenBoost: EconomyBoost = NO_ECONOMY_BOOST;
   /** Frozen beside it too: the Farm screen's Return Bonus switch. */
   let frozenReturnBonus: ReturnBonusMode = 'off';
+  /** And the map size the Farm screen resolves. */
+  let frozenMapSize: MapSize = 'classic';
   let dispatchArrival: ((arrival: OptimizerSnapshotArrival) => void) | null = null;
 
   const store = createSharedStore<OptimizerSnapshotState, OptimizerSnapshotArrival>({
@@ -121,7 +136,7 @@ export function createOptimizerStore(): {
     const view = frozenView;
     if (view === null) return;
 
-    const built = buildOptimizerInputs(view, farmChosenPhase, frozenBoost, frozenReturnBonus);
+    const built = buildOptimizerInputs(view, farmChosenPhase, frozenBoost, frozenReturnBonus, frozenMapSize);
     const outcome: OptimizerComputeOutcome =
       built === null
         ? { ok: false, reason: 'incomplete-account' }
@@ -136,10 +151,12 @@ export function createOptimizerStore(): {
     farmChosenPhase: number | null,
     boost: EconomyBoost,
     returnBonus: ReturnBonusMode,
+    mapSize: MapSize,
   ): void {
     frozenView = view;
     frozenBoost = boost;
     frozenReturnBonus = returnBonus;
+    frozenMapSize = mapSize;
     dispatch({ kind, sourceKey, farmChosenPhase });
     computeIfOwed(sourceKey, farmChosenPhase);
   }
@@ -148,12 +165,19 @@ export function createOptimizerStore(): {
     store,
     planStore,
     runner,
-    open: (view, sourceKey, farmChosenPhase, boost = NO_ECONOMY_BOOST, returnBonus = 'off') => {
-      if (!openOwesSnapshot(store.getState(), view, farmChosenPhase, boost, returnBonus)) return;
-      adopt('begin', view, sourceKey, farmChosenPhase, boost, returnBonus);
+    open: (view, sourceKey, farmChosenPhase, boost = NO_ECONOMY_BOOST, returnBonus = 'off', mapSize = 'classic') => {
+      if (!openOwesSnapshot(store.getState(), view, farmChosenPhase, boost, returnBonus, mapSize)) return;
+      adopt('begin', view, sourceKey, farmChosenPhase, boost, returnBonus, mapSize);
     },
-    refresh: (view, sourceKey, farmChosenPhase, boost = NO_ECONOMY_BOOST, returnBonus = 'off') => {
-      adopt('refresh', view, sourceKey, farmChosenPhase, boost, returnBonus);
+    refresh: (view, sourceKey, farmChosenPhase, boost = NO_ECONOMY_BOOST, returnBonus = 'off', mapSize = 'classic') => {
+      adopt('refresh', view, sourceKey, farmChosenPhase, boost, returnBonus, mapSize);
+    },
+    setMapSize: (mapSize) => {
+      if (mapSize === frozenMapSize) return;
+      frozenMapSize = mapSize;
+      dispatch({ kind: 'mapSize' });
+      const state = store.getState();
+      if (state.status === 'computing') computeIfOwed(state.sourceKey, state.farmChosenPhase);
     },
     startRun: (runId, signature, heroes, basis) => {
       dispatchPlan({ kind: 'startRun', runId, signature, heroes, basis });
@@ -195,10 +219,11 @@ export function optimizerSnapshotStale(
   liveView: AccountView | null,
   liveBoost: EconomyBoost = NO_ECONOMY_BOOST,
   liveReturnBonus: ReturnBonusMode = 'off',
+  liveMapSize: MapSize = 'classic',
 ): boolean {
   const settled = settledSnapshot(state);
   if (settled === null || liveView === null) return false;
-  const live = buildOptimizerInputs(liveView, settled.inputs.farmChosenPhase, liveBoost, liveReturnBonus);
+  const live = buildOptimizerInputs(liveView, settled.inputs.farmChosenPhase, liveBoost, liveReturnBonus, liveMapSize);
   const liveDepKey = live === null ? LIVE_ACCOUNT_INCOMPLETE : optimizerDepKey(live.inputs);
   return optimizerDepKey(settled.inputs) !== liveDepKey;
 }
@@ -216,10 +241,11 @@ export function openOwesSnapshot(
   farmChosenPhase: number | null,
   liveBoost: EconomyBoost = NO_ECONOMY_BOOST,
   liveReturnBonus: ReturnBonusMode = 'off',
+  liveMapSize: MapSize = 'classic',
 ): boolean {
   if (state.status !== 'ready') return true;
   if (state.farmChosenPhase !== farmChosenPhase) return true;
-  return optimizerSnapshotStale(state, liveView, liveBoost, liveReturnBonus);
+  return optimizerSnapshotStale(state, liveView, liveBoost, liveReturnBonus, liveMapSize);
 }
 
 export interface OptimizerSnapshotHook {
@@ -231,6 +257,11 @@ export interface OptimizerSnapshotHook {
   readonly stale: boolean;
   /** Whether an account has been read at all — until it has, `open` and `refresh` do nothing. */
   readonly hasAccount: boolean;
+  /** The map size the Farm screen prices on: the player's pick, else the game's, else classic. */
+  readonly mapSize: MapSize;
+  readonly mapSizeDetected: boolean;
+  /** Writes the Farm screen's own setting — the two screens share one map size. */
+  readonly setMapSize: (pick: MapSize) => void;
   readonly runner: TeamPlanRunnerHandle;
   readonly open: () => void;
   readonly refresh: () => void;
@@ -244,6 +275,9 @@ export interface OptimizerSnapshotHook {
 export function useOptimizerSnapshot(): OptimizerSnapshotHook {
   const account = useAccountView();
   const liveBoost = useLiveBoost();
+  const liveMapSize = useLiveMapSize();
+  const [mapSizeOverride, setMapSizeOverride] = useState<MapSize | null>(() => loadFarmView().farmMapSizeOverride);
+  const mapSize = effectiveMapSize(mapSizeOverride, liveMapSize);
 
   // Seeded from the store rather than from the initial state: on a remount the snapshot (and any
   // plan) is already in hand, and reading it only in the effect below would paint one committed
@@ -276,14 +310,27 @@ export function useOptimizerSnapshot(): OptimizerSnapshotHook {
   const open = useCallback(() => {
     if (liveView === null || liveKey === null) return;
     const farm = loadFarmView();
-    sharedOptimizerStore().open(liveView, liveKey, farm.selectedPhase, liveBoost, farm.farmReturnBonus);
-  }, [liveView, liveKey, liveBoost]);
+    sharedOptimizerStore().open(liveView, liveKey, farm.selectedPhase, liveBoost, farm.farmReturnBonus, mapSize);
+  }, [liveView, liveKey, liveBoost, mapSize]);
 
   const refresh = useCallback(() => {
     if (liveView === null || liveKey === null) return;
     const farm = loadFarmView();
-    sharedOptimizerStore().refresh(liveView, liveKey, farm.selectedPhase, liveBoost, farm.farmReturnBonus);
-  }, [liveView, liveKey, liveBoost]);
+    sharedOptimizerStore().refresh(liveView, liveKey, farm.selectedPhase, liveBoost, farm.farmReturnBonus, mapSize);
+  }, [liveView, liveKey, liveBoost, mapSize]);
+
+  useEffect(() => {
+    sharedOptimizerStore().setMapSize(mapSize);
+  }, [mapSize]);
+
+  const setMapSize = useCallback(
+    (pick: MapSize) => {
+      const override = mapSizeOverrideFor(pick, liveMapSize);
+      setMapSizeOverride(override);
+      saveFarmMapSizeOverride(override);
+    },
+    [liveMapSize],
+  );
 
   const startRun = useCallback((runId: string, signature: string, heroes: readonly HeroRecord[], basis: PlanBasis) => {
     sharedOptimizerStore().startRun(runId, signature, heroes, basis);
@@ -305,11 +352,13 @@ export function useOptimizerSnapshot(): OptimizerSnapshotHook {
     sharedOptimizerStore().openHeroes(heroIds);
   }, []);
 
+  const mapSizeDetected = isMapSizeDetected(mapSizeOverride, liveMapSize);
+
   // The Return Bonus switch lives on the Farm screen, so it can only have moved while this tab was
   // unmounted; reading it per recompute is enough.
   const stale = useMemo(
-    () => optimizerSnapshotStale(state, liveView, liveBoost, loadFarmView().farmReturnBonus),
-    [state, liveView, liveBoost],
+    () => optimizerSnapshotStale(state, liveView, liveBoost, loadFarmView().farmReturnBonus, mapSize),
+    [state, liveView, liveBoost, mapSize],
   );
 
   return useMemo(
@@ -318,6 +367,9 @@ export function useOptimizerSnapshot(): OptimizerSnapshotHook {
       planState,
       stale,
       hasAccount: liveKey !== null,
+      mapSize,
+      mapSizeDetected,
+      setMapSize,
       runner: sharedOptimizerStore().runner,
       open,
       refresh,
@@ -327,6 +379,21 @@ export function useOptimizerSnapshot(): OptimizerSnapshotHook {
       clearPlan,
       openHeroes,
     }),
-    [state, planState, stale, liveKey, open, refresh, startRun, resolveRun, applyPlan, clearPlan, openHeroes],
+    [
+      state,
+      planState,
+      stale,
+      liveKey,
+      mapSize,
+      mapSizeDetected,
+      setMapSize,
+      open,
+      refresh,
+      startRun,
+      resolveRun,
+      applyPlan,
+      clearPlan,
+      openHeroes,
+    ],
   );
 }
