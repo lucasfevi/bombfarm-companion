@@ -49,7 +49,7 @@ describe('Short Fuse and the cooldown-reduction cap in the farm respec', () => {
     }
   });
 
-  it('a rank-20 carrier buys at least the cooldown points its flat bonus replaces fewer, most of them exactly that', () => {
+  it('a rank-20 carrier saves at least the cooldown points its flat bonus covers, and most heroes save exactly that many', () => {
     const replaced = abilityMods({ pavio_curto: SHORT_FUSE_RANK }).sheetCdrFlat / CDR_PER_POINT;
     const pointsToCapWithout = (STAT_CAPS.cdr - BASE_SHEET_CDR) / CDR_PER_POINT;
     const capBound = cdrBuyers.filter((basis) => cdrPointsBought(0, basis.heroId) === pointsToCapWithout);
