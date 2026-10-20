@@ -88,7 +88,7 @@ export const en = {
         "Premium account data is stored by Supabase in its own database in the eastern United States, separate from the usage data above. The Premium account website runs on Vercel, and our server on DigitalOcean, as above. Discord, Google and Steam confirm who you are when you sign in with them. Stripe processes payments and holds your payment details.",
         "Focus NFe (only if we issue tax invoices) receives your CPF, the amount and the date to issue the Brazilian service invoice (NFS-e), which also goes to the city tax authority.",
         "GitHub stores an encrypted copy of the Premium database each night, kept for 90 days, so we can recover from a failure.",
-        "Supabase, Vercel, DigitalOcean and GitHub act only on our instructions; Stripe, Discord, Google and Steam also act under their own privacy policies. Most of them are outside Brazil, so this is an international transfer of your data. Only the developer can look up Premium account records, including a linked game account's player name, in the same private dashboard described above, to answer support requests.",
+        "Supabase, Vercel, DigitalOcean, GitHub and Focus NFe act only on our instructions; Stripe, Discord, Google and Steam also act under their own privacy policies. Most of them are outside Brazil, so this is an international transfer of your data. Only the developer can look up Premium account records, including a linked game account's player name, in the same private dashboard described above, to answer support requests; every change made there is logged with its reason.",
       ],
     },
     {
@@ -219,7 +219,7 @@ export const pt: typeof en = {
         "Os dados das contas Premium são guardados pela Supabase num banco de dados próprio no leste dos Estados Unidos, separado dos dados de uso descritos acima. O site da conta Premium roda na Vercel, e o nosso servidor na DigitalOcean, como acima. Discord, Google e Steam confirmam quem você é quando você entra com eles. A Stripe processa os pagamentos e guarda os dados de pagamento.",
         "A Focus NFe (só se emitirmos notas fiscais) recebe o seu CPF, o valor e a data para emitir a nota fiscal de serviço (NFS-e), que também vai para a prefeitura.",
         "O GitHub guarda toda noite uma cópia criptografada do banco de dados Premium, mantida por 90 dias, para podermos recuperar falhas.",
-        "Supabase, Vercel, DigitalOcean e GitHub atuam apenas conforme as nossas instruções; Stripe, Discord, Google e Steam também seguem as próprias políticas de privacidade. A maioria fica fora do Brasil, então isso envolve transferência internacional dos seus dados. Só o desenvolvedor pode consultar os registros das contas Premium, incluindo o nome de jogador de uma conta do jogo vinculada, no mesmo painel privado descrito acima, para atender pedidos de suporte.",
+        "Supabase, Vercel, DigitalOcean, GitHub e Focus NFe atuam apenas conforme as nossas instruções; Stripe, Discord, Google e Steam também seguem as próprias políticas de privacidade. A maioria fica fora do Brasil, então isso envolve transferência internacional dos seus dados. Só o desenvolvedor pode consultar os registros das contas Premium, incluindo o nome de jogador de uma conta do jogo vinculada, no mesmo painel privado descrito acima, para atender pedidos de suporte; toda alteração feita ali fica registrada com o motivo.",
       ],
     },
     {

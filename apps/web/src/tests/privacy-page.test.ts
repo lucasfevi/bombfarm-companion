@@ -96,6 +96,24 @@ describe('privacy page', () => {
     expect(pt).toContain('Os registros que a lei nos obriga a guardar permanecem, com a sua identidade trocada por códigos. O tempo de Premium restante é perdido.');
   });
 
+  it('names every processor and the support log, in each language', () => {
+    expect(render('en')).toContain('Supabase, Vercel, DigitalOcean, GitHub and Focus NFe act only on our instructions');
+    expect(render('pt')).toContain('Supabase, Vercel, DigitalOcean, GitHub e Focus NFe atuam apenas conforme as nossas instruções');
+    expect(render('en')).toContain('to answer support requests; every change made there is logged with its reason.');
+    expect(render('pt')).toContain('para atender pedidos de suporte; toda alteração feita ali fica registrada com o motivo.');
+  });
+
+  it('says what Premium records and anti-abuse codes cover, in each language', () => {
+    const en = render('en');
+    expect(en).toContain('your Premium periods');
+    expect(en).toContain('the same account, SteamID, game account, card or CPF');
+    expect(en).toContain('refund or chargeback');
+    const pt = render('pt');
+    expect(pt).toContain('os seus períodos de Premium');
+    expect(pt).toContain('a mesma conta, SteamID, conta do jogo, cartão ou CPF');
+    expect(pt).toContain('reembolso ou contestação');
+  });
+
   it('the two languages carry the same sections, paragraph for paragraph', () => {
     const shape = (lang: Lang) => STRINGS[lang].privacySections.map((section) => section.p.length);
     expect(shape('pt')).toEqual(shape('en'));
