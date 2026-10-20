@@ -1,3 +1,5 @@
+'use client';
+
 import type { ReactNode } from 'react';
 import { appNavItemRecipe, appNavRootClass } from './app-nav.recipe';
 import { cn } from './cn';
