@@ -161,7 +161,7 @@ describe('the free hop follows walk speed times fuse at one shared exponent', ()
     expect(meanPlantCycleSeconds(1.347, w, hop)).toBeCloseTo(1.94, 1);
   });
 
-  it('the clear reads the shrink: the floor is worth ×1.7 over a 1.35 s fuse on the compact field, where the hop curve alone said ×1.14 (measured ×2.09 on plants per field-second)', () => {
+  it('the clear reads the shorter hop: the floor is worth over ×1.6 against a 1.35 s fuse on the compact field (measured ×2.09 on plants per field-second)', () => {
     const gain = cycleSecondsForHero(1.347, 4.486, 3, COMPACT_FIELD) / cycleSecondsForHero(FUSE_FLOOR, 4.486, 3, COMPACT_FIELD);
     expect(gain).toBeGreaterThan(1.6);
     expect(gain).toBeLessThan(2.2);

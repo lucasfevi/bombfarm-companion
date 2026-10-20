@@ -26,7 +26,8 @@ measurement below comes from both fields, and each agrees between them before it
   the same pair to within 0.07 s.
 - The free hop between props runs 3.8–4.1 cells on a full map, rising to ~4.9 with under ten props
   standing, and it **grows with walk speed** as `w^0.53` — within each account alone, not only
-  between them. A faster hero reaches for farther targets.
+  between them. A faster hero reaches for farther targets. (Superseded by the 2026-10-20
+  amendment below: the hop follows walk speed times fuse.)
 - Only 8–10% of plants re-bomb from within a cell, on a field needing 2.4 hits per kill and on one
   needing 5.9 alike. The clear model had assumed `1 − 1 ÷ hits`, 60–80%.
 - With five or more props standing every hero on the field plants at its full cycle. Under five,
@@ -38,7 +39,8 @@ measurement below comes from both fields, and each agrees between them before it
 ## Decision
 
 `model/plant-cycle.ts` holds the one cycle, `max(fuse + 0.47, hop ÷ w + 0.58)`. It is averaged over
-a measured spread of free hops around `(3.77 + 2.93 ÷ √n) × (w ÷ 3)^0.53`, with 9% of plants
+a measured spread of free hops around `(3.77 + 2.93 ÷ √n) × (w ÷ 3)^0.53` (now `(w · fuse ÷ 4.83)^0.38`,
+see the amendment below), with 9% of plants
 re-planting from a cell away. The spread is ten decile multipliers, because the cycle is convex in
 the hop and a single mean hop understates what cooldown buys on the short ones.
 
@@ -79,3 +81,18 @@ The histogram, its density exponent, `CYCLE_LATENCY_SEC` and `HOP1_CYCLE_SEC` ar
   diff, including the optimizer phases, the frontier, the plateaus, the next-point goldens and the
   anchor. The two-stage phase screen's known misses retired themselves: the two sweeps now agree on
   every state the corpus visits.
+
+## Amendment — 2026-10-20
+
+The free hop follows walk speed **times fuse**: `(3.77 + 2.93 ÷ √n) × (w · fuse ÷ 4.83)^0.38`, one
+exponent shared by both factors, pivoting at 3 cells/s and a 1.61 s fuse. Walk speed and fuse
+measured the same exponent — 0.38 ± 0.04 and 0.38 ± 0.01 in a within-hero A/B, 0.40 ± 0.03 across
+the farm fields, 0.36–0.37 on duel replays — with no trend across density bands, and the power law
+holds through the cooldown cap. Measured on frame captures of two accounts' farm fields and on
+stored PVP duel replays, held out of band, not in this repo. It replaces the earlier `w^0.53` and
+the linear fuse knee on the hop, which held the hop flat above a 1.3 s fuse where hops still move.
+
+The walk overhead keeps that knee: 0.58 s from a 1.3 s fuse up, falling linearly to ×0.57 at the
+floor. It does not depend on walk speed. The duel cadence multiplier, defined against the farm
+cadence, was refitted with it. One two-stage screen miss returned with this change and is held to
+the documented cost bound rather than exact agreement.
