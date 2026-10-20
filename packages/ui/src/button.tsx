@@ -1,12 +1,14 @@
 import type { ComponentProps } from 'react';
 import { Button as BaseButton } from '@base-ui/react/button';
-import { buttonRecipe, type ButtonVariant } from './button.recipe';
+import { buttonRecipe, type ButtonSize, type ButtonTone, type ButtonVariant } from './button.recipe';
 import { cn } from './cn';
 
 type BaseButtonProps = ComponentProps<typeof BaseButton>;
 
 export type ButtonProps = Omit<BaseButtonProps, 'className' | 'title'> & {
   variant?: ButtonVariant;
+  tone?: ButtonTone;
+  size?: ButtonSize;
   className?: string;
 };
 
@@ -15,6 +17,6 @@ export type ButtonProps = Omit<BaseButtonProps, 'className' | 'title'> & {
  * semantics delegated to Base UI) and dresses it with the `buttonRecipe` cva
  * table. Caller `className` is merged last-wins via `cn()`.
  */
-export function Button({ variant, className, ...props }: ButtonProps) {
-  return <BaseButton className={cn(buttonRecipe({ variant }), className)} {...props} />;
+export function Button({ variant, tone, size, className, ...props }: ButtonProps) {
+  return <BaseButton className={cn(buttonRecipe({ variant, tone, size }), className)} {...props} />;
 }

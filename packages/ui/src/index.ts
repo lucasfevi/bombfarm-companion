@@ -214,7 +214,12 @@ export { SiteFooter, type SiteFooterProps } from './site-footer';
 export { PageFrame, PageSection, type PageFrameProps, type PageSectionProps } from './page-frame';
 export { ConfirmDialog, type ConfirmDialogProps } from './confirm-dialog';
 
-export { buttonRecipe, type ButtonVariant } from './button.recipe';
+export {
+  buttonRecipe,
+  type ButtonSize,
+  type ButtonTone,
+  type ButtonVariant,
+} from './button.recipe';
 export { chipRecipe, type ChipVariant } from './chip.recipe';
 export { barRecipe, type BarVariant } from './bar.recipe';
 export {
