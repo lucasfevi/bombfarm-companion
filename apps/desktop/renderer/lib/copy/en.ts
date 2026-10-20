@@ -1509,7 +1509,7 @@ export const en = {
   farmAurasAtCapLabel: 'Auras 100% uptime',
   farmAurasAtCapHint: 'Each lit aura is priced as if your squad’s carriers kept it up 100% of the time, never past its cap; Baton Pass at your best carrier’s rank. No carrier, no change. Unlit, an aura counts for the share of the time its carriers are on the field.',
   optimizerAurasAtCapLabel: 'Auras 100% uptime',
-  optimizerAurasAtCapHint: 'Each lit aura is scored as if the roster’s carriers kept it up 100% of the time, never past its cap; Baton Pass at the best carrier’s rank. No carrier, no change. Unlit, an aura counts for the share of the time its carriers are on the field.',
+  optimizerAurasAtCapHint: 'Each lit aura is scored as if the squad’s carriers kept it up 100% of the time, never past its cap; Baton Pass at the best carrier’s rank. No carrier, no change. Unlit, an aura counts for the share of the time its carriers are on the field.',
 
   // hero*/gear*/import*/roster*/switch*/mode*/rank* — hero-identity vocabulary the farm screen's
   // roster surfaces read as one structural contract. Named exactly as that contract names them.

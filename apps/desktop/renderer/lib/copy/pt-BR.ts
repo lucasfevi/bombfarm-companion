@@ -1442,7 +1442,7 @@ export const ptBR: Copy = {
   farmAurasAtCapLabel: 'Auras com 100% de uptime',
   farmAurasAtCapHint: 'Cada aura acesa é calculada como se os portadores do seu esquadrão a mantivessem 100% do tempo, nunca acima do teto; a Passagem de Bastão no rank do seu melhor portador. Sem portador, nada muda. Apagada, a aura conta pela fração do tempo em que seus portadores estão em campo.',
   optimizerAurasAtCapLabel: 'Auras com 100% de uptime',
-  optimizerAurasAtCapHint: 'Cada aura acesa é pontuada como se os portadores do elenco a mantivessem 100% do tempo, nunca acima do teto; a Passagem de Bastão no rank do melhor portador. Sem portador, nada muda. Apagada, a aura conta pela fração do tempo em que seus portadores estão em campo.',
+  optimizerAurasAtCapHint: 'Cada aura acesa é pontuada como se os portadores do esquadrão a mantivessem 100% do tempo, nunca acima do teto; a Passagem de Bastão no rank do melhor portador. Sem portador, nada muda. Apagada, a aura conta pela fração do tempo em que seus portadores estão em campo.',
 
   heroAvatarCol: 'Avatar',
   heroBattleActive: 'Ativado',
