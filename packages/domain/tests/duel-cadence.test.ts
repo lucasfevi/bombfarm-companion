@@ -12,7 +12,7 @@ import {
 } from '@bombfarm/domain/model';
 import { sustainedDpsWithFuse } from '@bombfarm/domain/model/combat';
 import { optimizeBuild } from '@bombfarm/domain/points-reopt';
-import { ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
+import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 
 const fastCapped: HeroSheet = {
   rarity: 'Lendária',
@@ -33,16 +33,7 @@ const fastCappedDelta: EffectiveDeltas = {
   critChance: 0.6,
   critDmg: 5,
   penetration: 0.5,
-  cdr: 0.6,
-};
-const fastCappedPts: Record<SheetKey, number> = {
-  ...ZERO_PTS(),
-  attack: 100,
-  energy: 20,
-  speed: 20,
-  critChance: 40,
-  critDmg: 100,
-  cdr: 20,
+  cdr: 0.2,
 };
 const fastCappedLevel = 300;
 
@@ -97,10 +88,18 @@ describe('the duel cadence in the combat model', () => {
   });
 
   it('a duel build on a fast hero at the crit cap puts more points into cooldown than the farm cadence did', () => {
+    const highCooldown: HeroSheet = { ...fastCapped, cdr: 65 };
     const build = (context: Context) =>
-      optimizeBuild({ pts: fastCappedPts, effective: fastCapped, effectiveDelta: fastCappedDelta, context, level: fastCappedLevel });
+      optimizeBuild({ pts: ZERO_PTS(), effective: highCooldown, effectiveDelta: fastCappedDelta, context, level: fastCappedLevel });
     const atGate = build(gateClear);
     const inDuel = build(duel);
     expect(inDuel.pts.cdr).toBeGreaterThan(atGate.pts.cdr);
+  });
+
+  it('a duel build far from the cooldown cap still spends nothing on cooldown at a realistic per-point gain', () => {
+    const build = (context: Context) =>
+      optimizeBuild({ pts: ZERO_PTS(), effective: fastCapped, effectiveDelta: fastCappedDelta, context, level: fastCappedLevel });
+    expect(build(duel).pts.cdr).toBe(0);
+    expect(build(gateClear).pts.cdr).toBe(0);
   });
 });
