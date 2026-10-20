@@ -23,7 +23,12 @@ export default function Page() {
           />
         }
         actions={<span>Header actions</span>}
-        compactActions={<span>Header compact actions</span>}
+        compactActions={
+          <ui.DetailsMenu.Root label="Site menu">
+            <ui.DetailsMenu.Item render={<a href="/reports" />}>Reports link</ui.DetailsMenu.Item>
+            <ui.DetailsMenu.Item>Sign out button</ui.DetailsMenu.Item>
+          </ui.DetailsMenu.Root>
+        }
       />
       <ui.Panel data-testid="server-panel">server panel</ui.Panel>
       <ui.Select aria-label="Fixture select" defaultValue="a">

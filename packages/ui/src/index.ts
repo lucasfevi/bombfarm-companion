@@ -206,7 +206,7 @@ export { FileDropZone, type FileDropZoneProps } from './file-drop-zone';
 export { fileDropZoneRecipe } from './file-drop-zone.recipe';
 export { Banner, type BannerProps } from './banner';
 export { Dialog } from './dialog';
-export { Menu } from './menu';
+export { Menu, DetailsMenu } from './menu';
 export { SiteHeader, type SiteHeaderProps } from './site-header';
 export { siteHeaderBrandClass } from './site-header.recipe';
 export { ConfirmDialog, type ConfirmDialogProps } from './confirm-dialog';

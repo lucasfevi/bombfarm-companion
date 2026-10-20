@@ -59,7 +59,15 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(html).toContain('>Acme</a>');
     expect(html).toMatch(/<div class="max-sm:order-3 max-sm:w-full[^"]*"><nav aria-label="Header sections"/);
     expect(html).toMatch(/<div class="flex flex-nowrap[^"]*max-sm:hidden"><span>Header actions<\/span><\/div>/);
-    expect(html).toMatch(/<div class="order-2 ml-auto sm:hidden"><span>Header compact actions<\/span><\/div>/);
+    expect(html).toMatch(/<div class="order-2 ml-auto sm:hidden"><details class="relative inline-block"/);
+  });
+
+  it('prerenders the disclosure menu closed, with its labelled summary and its items', () => {
+    const html = readPage('index.html');
+    expect(html).toMatch(/<details class="relative inline-block"><summary aria-label="Site menu"/);
+    expect(html).not.toMatch(/<details[^>]*\sopen/);
+    expect(html).toMatch(/<a href="\/reports" class="[^"]*">Reports link<\/a>/);
+    expect(html).toMatch(/<button type="button" class="[^"]*">Sign out button<\/button>/);
   });
 
   it.each([
