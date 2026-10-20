@@ -13,6 +13,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const globalsCss = resolve(here, '../app/globals.css');
 const uiRoot = resolve(here, '../../../../packages/ui');
 
+function stripComments(css: string): string {
+  return css.replace(/\/\*[\s\S]*?\*\//g, '');
+}
+
 function resolveImport(specifier: string, fromFile: string): string | undefined {
   if (specifier.startsWith('.')) return resolve(dirname(fromFile), specifier);
   const prefix = '@bombfarm/ui/';
@@ -31,7 +35,7 @@ function reachableCss(entry: string): string[] {
     const file = queue.pop() as string;
     if (seen.has(file) || !existsSync(file)) continue;
     seen.add(file);
-    const css = readFileSync(file, 'utf8');
+    const css = stripComments(readFileSync(file, 'utf8'));
     for (const match of css.matchAll(/@import\s+['"]([^'"]+)['"]/g)) {
       const next = resolveImport(match[1], file);
       if (next) queue.push(next);
@@ -44,7 +48,7 @@ describe('document scrollbar gutter', () => {
   it('the document keeps a stable scrollbar gutter', () => {
     const rule = /(^|[}\s])html\s*\{[^}]*scrollbar-gutter\s*:\s*stable\s*;?[^}]*\}/;
     const withRule = reachableCss(globalsCss).filter((file) =>
-      rule.test(readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')),
+      rule.test(stripComments(readFileSync(file, 'utf8'))),
     );
     expect(withRule).not.toEqual([]);
   });
