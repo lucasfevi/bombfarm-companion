@@ -53,6 +53,46 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(html).toMatch(/<[^>]*role="combobox"[^>]*aria-label="Fixture select"/);
   });
 
+  it('prerenders the site header with its brand, nav strip and both action branches', () => {
+    const html = readPage('index.html');
+    expect(html).toMatch(/<header class="sticky top-0 z-30[^"]*"><div class="mx-auto flex max-w-app[^"]*">/);
+    expect(html).toMatch(
+      /<a href="\/" class="flex items-center gap-2\.5 no-underline max-sm:order-1"><svg[^>]*class="size-8\.5 shrink-0"[^>]*>.*?<\/svg><div><div class="text-sm leading-1\.1 font-bold text-ink">Acme<\/div><div class="text-\[11px\] tracking-\[0\.04em\] text-muted uppercase">Planner<\/div><\/div><\/a>/,
+    );
+    expect(html).toContain('fill="#17100c"');
+    expect(html).toMatch(/<div class="max-sm:order-3 max-sm:w-full[^"]*"><nav aria-label="Header sections"/);
+    expect(html).toMatch(/<div class="flex flex-nowrap[^"]*max-sm:hidden"><span>Header actions<\/span><\/div>/);
+    expect(html).toMatch(/<div class="order-2 ml-auto sm:hidden"><details class="relative inline-block"/);
+  });
+
+  it('prerenders the site footer frame with its legal paragraph and trailing links', () => {
+    const html = readPage('index.html');
+    expect(html).toMatch(/<footer class="mx-auto mt-5 max-w-app px-4"><div class="flex flex-wrap[^"]*border-t border-line py-3">/);
+    expect(html).toMatch(/<p class="m-0 flex min-w-0 flex-1[^"]*"><span>Acme legal line<\/span><\/p>/);
+    expect(html).toMatch(/<div class="flex max-w-full shrink-0[^"]*"><a href="\/terms">Terms link<\/a><\/div>/);
+  });
+
+  it('prerenders the page frame with its slots in order and both section measures', () => {
+    const html = readPage('index.html');
+    expect(html).toContain(
+      '<div class="flex min-h-screen flex-col"><p>Frame header</p><p>Frame notice</p><div class="relative flex-1">',
+    );
+    expect(html).toContain(
+      '<div class="mx-auto grid max-w-app grid-cols-1 gap-3 px-4 pt-3">Default section</div>',
+    );
+    expect(html).toContain(
+      '<div class="mx-auto grid max-w-settings grid-cols-1 gap-3 px-4 pt-3">Settings section</div></div><p>Frame footer</p><p>Frame overlay</p></div>',
+    );
+  });
+
+  it('prerenders the disclosure menu closed, with its labelled summary and its items', () => {
+    const html = readPage('index.html');
+    expect(html).toMatch(/<details class="relative inline-block"><summary aria-label="Site menu"/);
+    expect(html).not.toMatch(/<details[^>]*\sopen/);
+    expect(html).toMatch(/<a href="\/reports" class="[^"]*">Reports link<\/a>/);
+    expect(html).toMatch(/<button type="button" class="[^"]*">Sign out button<\/button>/);
+  });
+
   it.each([
     ['Accordion', ['Accordion trigger one', 'Accordion trigger two', 'Accordion panel one']],
     ['Collapsible', ['Collapsible trigger', 'Collapsible panel text']],

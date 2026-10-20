@@ -81,6 +81,43 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `AppNav` | `<nav>` + `<button>` | segmented nav pill: `items` (`{id, label, active}`), `ariaLabel` (default `'Main'`), `onSelect`; optional `renderItem` render prop lets a caller substitute its own element (the web supplies a Next `<Link>`) for the default `<button type="button">`; renders no `<nav>` at all when `items` is empty — extracted verbatim from the web's former `site-header.tsx` nav + `site-nav-link.tsx` | `app-nav.recipe.ts` |
 | `SegmentedToggle` | `<div role="group">` + `<button>` | generic bordered flush button group: `options` (`{id, label}`), `value`, `onChange`, `ariaLabel`; no language semantics (DS-09) — extracted verbatim from the web's former inline PT/EN control | `segmented-toggle.recipe.ts` |
 | `AppShell` | `<header>`/`<main>`/`<footer>` | desktop-only top-bar shell (used solely by `apps/desktop/renderer/app/page.tsx`): sticky header (brand `title`/`badge` lockup, an `AppNav` pill built from `items`/`activeId`/`onNavigate`, and a right-hand `actions` slot), a single scrolling `<main>`, and a slim status strip (`status`/`progress`/`version`). Same top-bar shape as the web's `SiteHeader`, replacing the desktop's earlier icon-rail sidebar. `draggable`/`overlayInset` are implemented for a later custom-title-bar task and default off | `AppShell.recipe.ts` |
+| `SiteHeader` | `<header>` | sticky site bar from slots: `brand`, `nav`, `actions`, `compactActions`; `className`. Below 640px the nav drops into its own scrolling row and `compactActions` replace `actions`, by CSS alone. Server-safe — see **Site shell** below | `site-header.recipe.ts` |
+| `DetailsMenu` | native `<details>` / `<summary>` | compound `Root` (`label` names the trigger, `trigger` replaces the ellipsis glyph)/`Item` (`render` dresses a link)/`Separator`/`GroupLabel`; opens and closes with JavaScript off, wears the `Menu` popup chrome — see **Site shell** below | `menu.recipe.ts` |
+| `SiteFooter` | `<footer>` | `legal` (wrapped in a `<p>`, phrasing content only) on the left, `trailing` on the right; with no `legal` the trailing cluster sits at the end of the row | `site-footer.recipe.ts` |
+| `PageFrame` | `<div>` | page skeleton in one column: `header`, `notices`, `children` (the body, growing to fill), `footer`, `overlays` (rendered last) | `page-frame.recipe.ts` |
+| `PageSection` | `<div>` | one section of the body; `measure`: `default` (full app width) | `settings` (the narrower settings column); other `div` props pass through | `page-frame.recipe.ts` + `panel-field.recipe.ts` |
+| `BrandMark` | inline `<svg>` | the five-shape logo mark; `size` (default 34), `tone`: `default` | `web` (the site favicon's three colours on the same shapes) | inline |
+| `BrandLockup` | fragment | mark beside a `title` and an optional uppercase `tag`; `mark` replaces the default mark (for an image component). Renders as the children of the consumer's own link, so any router's link works | `brand-lockup.recipe.ts` |
+
+### Site shell
+
+The pieces a content site's pages are framed with. All of them render from a server component.
+
+- **`SiteHeader`** takes `brand`, `nav`, `actions` and `compactActions`. With no `compact` prop it
+  renders both action branches and lets CSS pick: below 640px the nav moves into its own full-width
+  strip and `compactActions` replace `actions`; from 640px up the reverse. Needing no script to lay
+  out is the point. A consumer that already chooses the branch in JavaScript (a media hook) passes
+  `compact`: once it is defined only the matching branch is rendered and no class hides the other.
+  `siteHeaderBrandClass` is the class for the consumer's brand link, so the link keeps the router's
+  own `Link` and the header stays router-agnostic. The one client piece is the nav strip, a small
+  island that centres the active item on mount and again whenever `navRecenterKey` changes (pass
+  the pathname plus the language, say).
+- **`DetailsMenu`** is the compact-actions menu for a header that must work with scripting off.
+  It is the native disclosure element dressed like `Menu`: same popup, item, separator and group
+  label classes, and a trigger that wears the default button with the native marker hidden. Its
+  limits come with the element: no roving focus, no typeahead, no dismissal on outside press or
+  Escape, and the panel stays open after an item is chosen until the trigger is pressed again.
+  Reach for `Menu` whenever a script is available.
+- **`SiteFooter`** rules a line above its row and wraps `legal` in a `<p>`, so `legal` takes
+  phrasing content only.
+- **`PageFrame`** orders `header`, `notices` (banners and dialogs between header and body), the
+  body, `footer` and `overlays` (a toast, last). **`PageSection`** is one block of that body;
+  `measure="settings"` narrows it to the settings column.
+- **`BrandLockup`** draws inside the consumer's link rather than owning one.
+- **`@bombfarm/ui/site-shell.css`** carries `html { scrollbar-gutter: stable }`, so the page does
+  not shift sideways when content grows past the viewport and a scrollbar appears. It is opt-in,
+  imported once beside `styles.css`: a shell that scrolls the document wants it, while a
+  viewport-locked shell like `AppShell`, which scrolls inside `<main>`, must not take it.
 
 ### Game art (`packages/game-art/src/`)
 

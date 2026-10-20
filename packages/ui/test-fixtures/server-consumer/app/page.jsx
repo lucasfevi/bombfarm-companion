@@ -11,6 +11,42 @@ export default function Page() {
           <li key={name}>{name}</li>
         ))}
       </ul>
+      <ui.SiteHeader
+        brand={
+          <a href="/" className={ui.siteHeaderBrandClass}>
+            <ui.BrandLockup title="Acme" tag="Planner" />
+          </a>
+        }
+        nav={
+          <ui.AppNav
+            ariaLabel="Header sections"
+            items={[
+              { id: 'reports', label: 'Reports', active: true },
+              { id: 'billing', label: 'Billing', active: false },
+            ]}
+          />
+        }
+        actions={<span>Header actions</span>}
+        compactActions={
+          <ui.DetailsMenu.Root label="Site menu">
+            <ui.DetailsMenu.Item render={<a href="/reports" />}>Reports link</ui.DetailsMenu.Item>
+            <ui.DetailsMenu.Item>Sign out button</ui.DetailsMenu.Item>
+          </ui.DetailsMenu.Root>
+        }
+      />
+      <ui.SiteFooter
+        legal={<span>Acme legal line</span>}
+        trailing={<a href="/terms">Terms link</a>}
+      />
+      <ui.PageFrame
+        header={<p>Frame header</p>}
+        notices={<p>Frame notice</p>}
+        footer={<p>Frame footer</p>}
+        overlays={<p>Frame overlay</p>}
+      >
+        <ui.PageSection>Default section</ui.PageSection>
+        <ui.PageSection measure="settings">Settings section</ui.PageSection>
+      </ui.PageFrame>
       <ui.Panel data-testid="server-panel">server panel</ui.Panel>
       <ui.Select aria-label="Fixture select" defaultValue="a">
         <option value="a">Alpha</option>

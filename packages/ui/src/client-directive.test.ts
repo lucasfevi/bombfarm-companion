@@ -275,3 +275,39 @@ describe('packages/ui/src modules and the barrel', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+function findNextImports(filePath: string, text: string): string[] {
+  const kind = filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+  const source = ts.createSourceFile(filePath, text, ts.ScriptTarget.Latest, true, kind);
+  return importedSpecifiers(source).filter((specifier) => specifier === 'next' || specifier.startsWith('next/'));
+}
+
+describe('findNextImports', () => {
+  const find = (text: string) => findNextImports('a.tsx', text);
+
+  it.each(['next', 'next/link', 'next/navigation', 'next/image'])('reports an import of %s', (specifier) => {
+    expect(find(`import X from '${specifier}';\n`)).toEqual([specifier]);
+  });
+
+  it('reports re-exports and dynamic imports of next', () => {
+    expect(find(`export { default } from 'next/link';\n`)).toEqual(['next/link']);
+    expect(find(`export const f = () => import('next/dynamic');\n`)).toEqual(['next/dynamic']);
+  });
+
+  it('does not report packages that merely start with next', () => {
+    expect(find(`import a from 'next-themes';\nimport b from './next/link';\n`)).toEqual([]);
+  });
+});
+
+describe('packages/ui/src modules and the router', () => {
+  const root = dirname(fileURLToPath(import.meta.url));
+
+  it('never import next or a next subpath', () => {
+    const offenders = listModules(root).flatMap((path) =>
+      findNextImports(path, readFileSync(path, 'utf8')).map(
+        (specifier) => `${relative(root, path).replaceAll(sep, '/')}: ${specifier}`,
+      ),
+    );
+    expect(offenders).toEqual([]);
+  });
+});
