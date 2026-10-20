@@ -95,6 +95,24 @@ export default function Page() {
           <ui.Tabs.Panel value="two">Tab panel two</ui.Tabs.Panel>
         </ui.Tabs.Panels>
       </ui.Tabs.Root>
+      <ui.Banner tone="info" layout="flush" title="Fixture banner title">Fixture banner text</ui.Banner>
+      <ui.EmptyState size="inline" title="Fixture empty title" description="Fixture empty description" />
+      <ui.DataTable.Root>
+        <ui.DataTable.Table>
+          <ui.DataTable.Head>
+            <ui.DataTable.Row>
+              <ui.DataTable.Header sortable col="name" sortKey="name" sortDir="asc" sortHref="/fixture-records?sort=name&dir=desc">
+                Fixture sort name
+              </ui.DataTable.Header>
+            </ui.DataTable.Row>
+          </ui.DataTable.Head>
+          <ui.DataTable.Body>
+            <ui.DataTable.Row>
+              <ui.DataTable.Cell>Fixture sort cell</ui.DataTable.Cell>
+            </ui.DataTable.Row>
+          </ui.DataTable.Body>
+        </ui.DataTable.Table>
+      </ui.DataTable.Root>
     </main>
   );
 }

@@ -148,6 +148,24 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(html).toMatch(/<button type="button" class="[^"]*">Sign out button<\/button>/);
   });
 
+  it('prerenders the info banner in its flush layout with a title and text', () => {
+    const html = readPage('index.html');
+    expect(html).toMatch(/<div role="status" class="[^"]*border-line[^"]*bg-bg-2[^"]*">/);
+    expect(html).toContain('>Fixture banner title</h2>');
+    expect(html).toMatch(/<p class="[^"]*">Fixture banner text<\/p>/);
+  });
+
+  it('prerenders the inline empty state without an icon block', () => {
+    const html = readPage('index.html');
+    expect(html).toContain('<div class="flex flex-col items-center gap-1 px-3 py-4 text-center"><h2 class="text-[13px] font-semibold text-ink">Fixture empty title</h2>');
+    expect(html).toContain('<p class="m-0 max-w-prose text-[13px] text-muted">Fixture empty description</p>');
+  });
+
+  it('prerenders the sort-link table header as an anchor inside an aria-sort th', () => {
+    const html = readPage('index.html');
+    expect(html).toMatch(/<th[^>]*aria-sort="ascending"[^>]*><a href="\/fixture-records\?sort=name&(?:amp;)?dir=desc"[^>]*><span>Fixture sort name<\/span>/);
+  });
+
   it.each([
     ['Accordion', ['Accordion trigger one', 'Accordion trigger two', 'Accordion panel one']],
     ['Collapsible', ['Collapsible trigger', 'Collapsible panel text']],
