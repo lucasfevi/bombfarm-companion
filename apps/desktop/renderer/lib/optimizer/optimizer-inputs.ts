@@ -11,7 +11,7 @@
  */
 import { phaseLine } from '@bombfarm/domain/phases';
 import { passActive } from '@bombfarm/domain/import-save';
-import { NO_ECONOMY_BOOST, type EconomyBoost, type ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import { NO_ECONOMY_BOOST, passBonusOf, withPassBonus, type EconomyBoost, type ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
 import type { MapSize } from '@bombfarm/domain/model';
 import type { AccountView } from '@bombfarm/contracts';
@@ -110,7 +110,7 @@ export function buildOptimizerInputs(
     houseCycleSecsLevel: houseLevel,
     maxPhase: account.maxPhase ?? null,
     farmPass: passActive(account.vipUntil, nowMs),
-    farmBoost: boost,
+    farmBoost: withPassBonus(boost, passBonusOf(account.passBonus, nowMs)),
     farmReturnBonus: returnBonus,
     farmMapSize: mapSize,
     farmChosenPhase,

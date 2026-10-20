@@ -180,8 +180,20 @@ export type EconomyMultipliers = {
   dropAdd: number;
 };
 
-/** Which Boosts are running, one per axis. */
-export type EconomyBoost = { readonly gold: boolean; readonly xp: boolean; readonly drop: boolean };
+/** The adds of the timed gold and XP bonus the game labels "Pass Bonus", as fractions. */
+export type PassBonus = { readonly gold: number; readonly xp: number };
+
+/**
+ * The timed bonuses in force: which Boosts are running, one per axis, and the Pass Bonus when one
+ * is. They travel as one value because every pricing layer already threads the Boost through, and
+ * a second parameter nothing is forced to supply would price the board without it, silently.
+ */
+export type EconomyBoost = {
+  readonly gold: boolean;
+  readonly xp: boolean;
+  readonly drop: boolean;
+  readonly passBonus?: PassBonus | undefined;
+};
 
 export const NO_ECONOMY_BOOST: EconomyBoost = Object.freeze({ gold: false, xp: false, drop: false });
 
@@ -189,6 +201,20 @@ export const NO_ECONOMY_BOOST: EconomyBoost = Object.freeze({ gold: false, xp: f
 export function economyBoostOf(axes: readonly LiveBoostAxis[]): EconomyBoost {
   if (axes.length === 0) return NO_ECONOMY_BOOST;
   return { gold: axes.includes('gold'), xp: axes.includes('xp'), drop: axes.includes('drop') };
+}
+
+/** The account's Pass Bonus as an add, `undefined` once `until` (unix seconds) has passed. */
+export function passBonusOf(
+  wire: { readonly until: number; readonly gold: number; readonly xp: number } | null | undefined,
+  nowMs: number,
+): PassBonus | undefined {
+  if (wire == null || wire.until * 1000 <= nowMs) return undefined;
+  return { gold: wire.gold, xp: wire.xp };
+}
+
+/** `boost` with the Pass Bonus set — the live Boosts come from the running game, the bonus from the account. */
+export function withPassBonus(boost: EconomyBoost, passBonus: PassBonus | undefined): EconomyBoost {
+  return passBonus === undefined ? boost : { ...boost, passBonus };
 }
 
 /**
@@ -202,7 +228,9 @@ export type EconomyInput = { returnBonus: ReturnBonusMode; pass: boolean; boost?
 
 /**
  * Gold and XP multipliers are `1 + Σ adds`, one sum: the Return Bonus add (whose rate depends on
- * the Pass), the Pass's always-on add, and a running Boost. Measured on a live capture,
+ * the Pass), the Pass's always-on add, a running Boost and the Pass Bonus. The game states the
+ * Pass Bonus as stacking on top of the Pass and Boosts; that it sums rather than multiplies is
+ * assumed from how every other term composes, not yet measured. Measured on a live capture,
  * window/bare gold was 2.15/1.15 and XP 2.30/1.30 on a Pass account. The drop terms are the data
  * values assumed additive with luck — unmeasured.
  */
@@ -212,8 +240,8 @@ export function economyMultipliers(input: EconomyInput): EconomyMultipliers {
   const boost = input.boost ?? NO_ECONOMY_BOOST;
   const boostAdd = (on: boolean) => (on ? BOOST_ADD : 0);
   return {
-    gold: 1 + returnAdd + PASS_ADDS.gold[side] + boostAdd(boost.gold),
-    xp: 1 + returnAdd + PASS_ADDS.xp[side] + boostAdd(boost.xp),
+    gold: 1 + returnAdd + PASS_ADDS.gold[side] + boostAdd(boost.gold) + (boost.passBonus?.gold ?? 0),
+    xp: 1 + returnAdd + PASS_ADDS.xp[side] + boostAdd(boost.xp) + (boost.passBonus?.xp ?? 0),
     dropAdd: PASS_ADDS.drop[side] + boostAdd(boost.drop),
   };
 }

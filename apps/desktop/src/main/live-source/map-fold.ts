@@ -17,7 +17,7 @@ export interface MapAccountBoosts {
   readonly collectionGoldPct: number;
   /** The account owns the Pass right now — its always-on gold and XP add apply on every map. */
   readonly pass: boolean;
-  /** The Boosts running, per axis. Absent, none. */
+  /** The Boosts running, per axis, and the Pass Bonus. Absent, none. */
   readonly boost?: EconomyBoost;
   /** The field heroes' XP-rune multiplier, weighted equally across them. Absent, `1`. */
   readonly xpRuneMix?: number;
@@ -124,6 +124,8 @@ export class MapFold {
       boost?.gold ?? false,
       boost?.xp ?? false,
       boost?.drop ?? false,
+      boost?.passBonus?.gold ?? 0,
+      boost?.passBonus?.xp ?? 0,
       boosts.xpRuneMix ?? 1,
       boosts.apprenticeXpMult ?? 1,
       this.#returnWindow,
