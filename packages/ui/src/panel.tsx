@@ -7,6 +7,8 @@ export type PanelProps = ComponentPropsWithoutRef<'section'> & {
   need?: boolean;
   aligned?: boolean;
   unverified?: boolean;
+  /** `visible` lets content such as a popover spill out of the panel instead of scrolling inside it. */
+  overflow?: 'visible';
 };
 
 /**
@@ -14,10 +16,10 @@ export type PanelProps = ComponentPropsWithoutRef<'section'> & {
  * unverified; `need` is retained as a no-op for call-site compatibility).
  * Required state uses `FieldRequired` text only — never a warn outline.
  */
-export function Panel({ focus, need, aligned, unverified, className, ...props }: PanelProps) {
+export function Panel({ focus, need, aligned, unverified, overflow, className, ...props }: PanelProps) {
   return (
     <section
-      className={cn(panelRecipe({ focus, need, aligned, unverified }), className)}
+      className={cn(panelRecipe({ focus, need, aligned, unverified, overflow }), className)}
       {...props}
     />
   );

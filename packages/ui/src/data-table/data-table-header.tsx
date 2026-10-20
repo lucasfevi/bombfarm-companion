@@ -22,6 +22,7 @@ export function DataTableHeader<T extends string>(props: DataTableHeaderProps<T>
       sortKey,
       sortDir,
       onSort,
+      sortHref,
       stopPropagation = false,
       align = 'left',
       className,
@@ -31,19 +32,13 @@ export function DataTableHeader<T extends string>(props: DataTableHeaderProps<T>
       ...thProps
     } = props;
     const active = sortKey === col;
-    const button = (
-      <button
-        type="button"
-        className={cn(
-          dataTableHeadButtonClass,
-          active ? 'text-accent' : 'text-inherit hover:text-ink',
-          headAlignClass(align),
-        )}
-        onClick={(event) => {
-          if (stopPropagation) event.stopPropagation();
-          onSort(col);
-        }}
-      >
+    const sortClass = cn(
+      dataTableHeadButtonClass,
+      active ? 'text-accent' : 'text-inherit hover:text-ink',
+      headAlignClass(align),
+    );
+    const label = (
+      <>
         <span>{children}</span>
         {active ? (
           sortDir === 'asc' ? (
@@ -54,8 +49,25 @@ export function DataTableHeader<T extends string>(props: DataTableHeaderProps<T>
         ) : (
           <SortIdleIcon />
         )}
-      </button>
+      </>
     );
+    const button =
+      typeof sortHref === 'string' ? (
+        <a href={sortHref} className={sortClass}>
+          {label}
+        </a>
+      ) : (
+        <button
+          type="button"
+          className={sortClass}
+          onClick={(event) => {
+            if (stopPropagation) event.stopPropagation();
+            onSort?.(col);
+          }}
+        >
+          {label}
+        </button>
+      );
 
     return (
       <th

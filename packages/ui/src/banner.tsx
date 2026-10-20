@@ -2,6 +2,8 @@ import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import {
   setupBannerDangerTitleClass,
   setupBannerEmbeddedClass,
+  setupBannerFlushClass,
+  setupBannerInfoTitleClass,
   setupBannerOkTitleClass,
   setupBannerPClass,
   setupBannerRecipe,
@@ -12,8 +14,8 @@ import { cn } from './cn';
 
 export type BannerProps = Omit<ComponentPropsWithoutRef<'div'>, 'title'> & {
   tone?: NonNullable<SetupBannerVariant['tone']>;
-  /** Page-centered (default) vs full-width in a stage / dialog. */
-  layout?: 'page' | 'embedded';
+  /** Page-centered (default), full-width in a stage / dialog, or full-width with no outer margin. */
+  layout?: 'page' | 'embedded' | 'flush';
   title?: ReactNode;
 };
 
@@ -21,10 +23,11 @@ const TITLE_CLASS = {
   warn: setupBannerTitleClass,
   ok: setupBannerOkTitleClass,
   danger: setupBannerDangerTitleClass,
+  info: setupBannerInfoTitleClass,
 } as const;
 
 /**
- * Status / warning banner — dresses `setupBannerRecipe` (warn | ok | danger).
+ * Status / warning banner — dresses `setupBannerRecipe` (warn | ok | danger | info).
  * Presentation-only; callers own copy and actions.
  */
 export function Banner({
@@ -45,6 +48,7 @@ export function Banner({
       className={cn(
         setupBannerRecipe({ tone }),
         layout === 'embedded' && setupBannerEmbeddedClass,
+        layout === 'flush' && setupBannerFlushClass,
         className,
       )}
       {...props}

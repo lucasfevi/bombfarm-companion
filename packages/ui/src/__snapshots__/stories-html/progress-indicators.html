@@ -1,0 +1,53 @@
+<!-- story: Default -->
+<div>
+<div class="min-h-[50vh] bg-bg p-4 font-sans text-ink antialiased">
+<div class="flex flex-col gap-4">
+<span class="flex items-center gap-3" aria-live="polite">
+<span class="size-2 flex-none rounded-full bg-up shadow-[0_0_0_3px_color-mix(in_oklch,var(--up)_22%,transparent)]" aria-hidden="true">
+</span>
+<span class="tabular-nums">Connected</span>
+</span>
+<span class="flex items-center gap-3">
+<span class="size-2 flex-none rounded-full bg-warn" aria-hidden="true">
+</span>
+<span class="tabular-nums">Degraded</span>
+</span>
+<span class="flex items-center gap-3">
+<span class="size-2 flex-none rounded-full bg-down" aria-hidden="true">
+</span>
+<span class="tabular-nums">Offline</span>
+</span>
+<span class="flex items-center gap-3">
+<span class="size-2 flex-none rounded-full bg-muted" aria-hidden="true">
+</span>
+<span class="tabular-nums">Idle</span>
+</span>
+<ol aria-label="Setup progress" class="m-0 flex list-none items-center justify-center gap-2 p-0 text-xs">
+<li data-step="done" class="flex items-center gap-2 text-ink">
+<span aria-hidden="true" class="inline-flex size-[22px] items-center justify-center rounded-full border font-mono text-[11px] font-semibold border-up bg-[color-mix(in_oklch,var(--up)_18%,var(--surface))] text-up">1</span>
+<span class="sr-only whitespace-nowrap sm:not-sr-only">Choose</span>
+<span aria-hidden="true" class="h-px w-6 sm:w-12 bg-up">
+</span>
+</li>
+<li data-step="current" aria-current="step" class="flex items-center gap-2 text-ink font-bold">
+<span aria-hidden="true" class="inline-flex size-[22px] items-center justify-center rounded-full border font-mono text-[11px] font-semibold border-accent bg-accent text-accent-ink">2</span>
+<span class="sr-only whitespace-nowrap sm:not-sr-only">Review</span>
+<span aria-hidden="true" class="h-px w-6 sm:w-12 bg-line">
+</span>
+</li>
+<li data-step="next" class="flex items-center gap-2 text-muted">
+<span aria-hidden="true" class="inline-flex size-[22px] items-center justify-center rounded-full border font-mono text-[11px] font-semibold border-line text-muted">3</span>
+<span class="sr-only whitespace-nowrap sm:not-sr-only">Finish</span>
+</li>
+</ol>
+<form method="get" action="/records" class="inline-flex">
+<input type="hidden" value="name" name="sort">
+<div class="inline-flex h-8 shrink-0 overflow-hidden rounded-sm border border-line" role="group" aria-label="Range">
+<button type="submit" name="range" value="day" aria-pressed="false" class="cursor-pointer border-0 px-2.25 text-[11px] font-bold tracking-[0.03em] bg-transparent">Day</button>
+<button type="submit" name="range" value="week" aria-pressed="true" class="cursor-pointer border-0 px-2.25 text-[11px] font-bold tracking-[0.03em] bg-accent text-accent-ink">Week</button>
+<button type="submit" name="range" value="month" aria-pressed="false" class="cursor-pointer border-0 px-2.25 text-[11px] font-bold tracking-[0.03em] bg-transparent">Month</button>
+</div>
+</form>
+</div>
+</div>
+</div>

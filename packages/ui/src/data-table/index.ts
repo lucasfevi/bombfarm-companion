@@ -18,6 +18,7 @@ export type {
   DataTableHeaderAlign,
   DataTableHeaderStaticProps,
   DataTableHeaderSortableProps,
+  DataTableHeaderSortLinkProps,
   DataTableHeaderProps,
   DataTableCellProps,
   DataTableRowHeaderProps,

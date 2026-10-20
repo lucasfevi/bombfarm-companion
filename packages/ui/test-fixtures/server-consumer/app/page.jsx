@@ -51,6 +51,22 @@ export default function Page() {
       <ui.Select aria-label="Fixture select" defaultValue="a">
         <option value="a">Alpha</option>
       </ui.Select>
+      <ui.TextInput aria-label="Fixture text input" placeholder="Type here" />
+      <ui.TextArea aria-label="Fixture text area" defaultValue="Draft body" aria-invalid />
+      <ui.TextLink href="/fixture-help">Fixture help link</ui.TextLink>
+      <ui.Pagination page={2} pageCount={3} hrefFor={(page) => `/fixture-page/${page}`} />
+      <ui.DefinitionList items={[{ term: 'Fixture term', detail: 'Fixture detail' }]} />
+      <ui.TitledList title="Fixture list" items={['Fixture item']} empty="Fixture empty" />
+      <ui.Disclosure summary="Fixture summary">Fixture disclosure body</ui.Disclosure>
+      <ui.StatusDot tone="live" label="Fixture status" live />
+      <ui.StepProgress label="Fixture steps" steps={['Fixture one', 'Fixture two']} current={1} />
+      <ui.SegmentedToggleForm name="fixture-range" value="b" ariaLabel="Fixture range" options={[{ id: 'a', label: 'Fixture A' }, { id: 'b', label: 'Fixture B' }]} />
+      <ui.Skeleton shape="rows" rows={2} label="Fixture loading" />
+      <ui.ErrorScreen title="Fixture error" message="Fixture error message" action={<a href="/fixture-retry">Retry</a>} />
+      <ui.NativeSelect aria-label="Fixture native select" defaultValue="b">
+        <option value="a">Alpha native</option>
+        <option value="b">Beta native</option>
+      </ui.NativeSelect>
       <ui.Accordion.Root defaultValue={['first']}>
         <ui.Accordion.Item value="first">
           <ui.Accordion.Header>
@@ -79,6 +95,24 @@ export default function Page() {
           <ui.Tabs.Panel value="two">Tab panel two</ui.Tabs.Panel>
         </ui.Tabs.Panels>
       </ui.Tabs.Root>
+      <ui.Banner tone="info" layout="flush" title="Fixture banner title">Fixture banner text</ui.Banner>
+      <ui.EmptyState size="inline" title="Fixture empty title" description="Fixture empty description" />
+      <ui.DataTable.Root>
+        <ui.DataTable.Table>
+          <ui.DataTable.Head>
+            <ui.DataTable.Row>
+              <ui.DataTable.Header sortable col="name" sortKey="name" sortDir="asc" sortHref="/fixture-records?sort=name&dir=desc">
+                Fixture sort name
+              </ui.DataTable.Header>
+            </ui.DataTable.Row>
+          </ui.DataTable.Head>
+          <ui.DataTable.Body>
+            <ui.DataTable.Row>
+              <ui.DataTable.Cell>Fixture sort cell</ui.DataTable.Cell>
+            </ui.DataTable.Row>
+          </ui.DataTable.Body>
+        </ui.DataTable.Table>
+      </ui.DataTable.Root>
     </main>
   );
 }
