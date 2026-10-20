@@ -82,11 +82,11 @@ describe('the Power panel on a live account read', () => {
     expect(misses.length).toBeGreaterThan(10);
   });
 
-  it('the highest rune-free cooldown this read checks is the bound the chart draws solid to', () => {
+  it('every rune-free cooldown this read checks sits inside the bound the chart draws solid to', () => {
     const cooldowns = fixture.heroes.map(
       (hero) => gamePowerInputWithoutRunes(panelInput(hero), runesOf(hero), { critDmgPct: treeCritDmgPct }).sheet.cdr,
     );
-    expect(Math.max(...cooldowns)).toBeCloseTo(GAME_POWER_CDR_CHECKED_MAX_PCT, 2);
+    expect(Math.max(...cooldowns)).toBeLessThanOrEqual(GAME_POWER_CDR_CHECKED_MAX_PCT);
   });
 
   it.each([10, 50])(

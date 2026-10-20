@@ -803,7 +803,10 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     let pointIssues: PointInferenceIssue[] = [];
     if (statsRaw && pointsInvertible && birth !== undefined && tree !== null) {
       const sheet = saveSheetUnits(statsRaw);
-      const inferred = inferSpentPoints({ birth, level, stars, sheetOther, loadout, tree, sheet, statPointsAvailable, runes });
+      const inferred = inferSpentPoints({ birth, level, stars, sheetOther, loadout, tree, sheet, statPointsAvailable,
+        runes,
+        power: power > 0 ? { stored: power, explosaoAmplaLevel: abilities.explosao_ampla ?? 0 } : undefined,
+      });
       pts = inferred.pts;
       pointIssues = inferred.issues;
       if (inferred.issues.length > 0) {

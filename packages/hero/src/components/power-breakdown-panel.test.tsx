@@ -247,14 +247,14 @@ describe('PowerBreakdownPanel', () => {
     expect(query('[data-power-chart="critDmg"] [data-series="capped-crit"]')).toBeTruthy();
   });
 
-  it('a cooldown past 17.85% says it is extrapolated', () => {
+  it('a cooldown past 76.64% says it is extrapolated', () => {
     render(RUNED);
     click('[data-power-row="cooldown"]');
     expect(container.querySelector('[data-testid="power-readout-extrapolated"]')).toBeNull();
     expect(query('[data-power-chart="cdr"] [data-series="extrapolated"]')).toBeTruthy();
     press(query('[data-power-chart="cdr"] [role="slider"]'), 'End');
     expect(query('[data-testid="power-readout-extrapolated"]').textContent).toBe(
-      'Past the highest cooldown checked (17.85%), this is extrapolated.',
+      'Past the highest cooldown checked (76.64%), this is extrapolated.',
     );
   });
 
