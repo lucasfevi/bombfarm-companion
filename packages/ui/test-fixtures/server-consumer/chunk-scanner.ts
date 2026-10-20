@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 // `Symbol.for("motionComponentSymbol")` is a string literal in motion's runtime, so it survives
@@ -16,4 +16,19 @@ export function chunksContainingMotion(distDir: string, chunks: readonly string[
   return chunks.filter((chunk) =>
     readFileSync(path.join(distDir, chunk), 'utf8').includes(MOTION_MARKER),
   );
+}
+
+const CHUNK_REQUEST = /\.e\((\d+)\)/g;
+
+export function lazilyRequestedChunks(distDir: string, chunks: readonly string[]): string[] {
+  const available = readdirSync(path.join(distDir, 'static', 'chunks')).filter((name) => name.endsWith('.js'));
+  const requested = new Set<string>();
+  for (const chunk of chunks) {
+    const source = readFileSync(path.join(distDir, chunk), 'utf8');
+    for (const match of source.matchAll(CHUNK_REQUEST)) {
+      const file = available.find((name) => name.startsWith(`${match[1]}-`) || name.startsWith(`${match[1]}.`));
+      if (file) requested.add(`static/chunks/${file}`);
+    }
+  }
+  return [...requested];
 }

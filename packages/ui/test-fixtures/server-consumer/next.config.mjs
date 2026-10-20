@@ -9,5 +9,5 @@ export default {
   outputFileTracingRoot: path.resolve(here, '../../../..'),
   reactStrictMode: true,
   eslint: { ignoreDuringBuilds: true },
-  experimental: { cpus: cappedWorkers(2, 'next:build') },
+  experimental: { cpus: cappedWorkers(2, 'next:build'), optimizePackageImports: ['@bombfarm/ui'] },
 };

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import * as barrel from '../../src/index';
-import { chunksContainingMotion, loadedChunks } from './chunk-scanner';
+import { chunksContainingMotion, lazilyRequestedChunks, loadedChunks } from './chunk-scanner';
 
 const fixtureDir = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(fixtureDir, '.next');
@@ -62,17 +62,18 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     for (const text of content) expect(html).toContain(text);
   });
 
-  it('can see motion in the chunks a page that needs the tooltip loads', () => {
+  it('reaches motion through the lazily requested chunks of a page that needs the tooltip', () => {
     const chunks = loadedChunks(distDir, 'tooltip-nav.html');
     expect(chunks.length).toBeGreaterThan(0);
-    expect(chunksContainingMotion(distDir, chunks)).not.toEqual([]);
+    const lazy = lazilyRequestedChunks(distDir, chunks);
+    expect(lazy.length).toBeGreaterThan(0);
+    expect(chunksContainingMotion(distDir, lazy)).not.toEqual([]);
   });
 
-  it('scans the chunks a plain nav page loads', () => {
+  it('loads no motion on a page whose nav has only plain items', () => {
     const chunks = loadedChunks(distDir, 'plain-nav.html');
     expect(chunks.length).toBeGreaterThan(0);
     expect(readPage('plain-nav.html')).toContain('<nav aria-label="Main"');
-    const withMotion = chunksContainingMotion(distDir, chunks);
-    console.info(`plain-nav motion chunks: ${withMotion.length === 0 ? 'none' : withMotion.join(', ')}`);
+    expect(chunksContainingMotion(distDir, chunks)).toEqual([]);
   });
 });
