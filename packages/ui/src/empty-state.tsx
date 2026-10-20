@@ -9,6 +9,8 @@ export interface EmptyStateProps extends PropsWithChildren {
   action?: ReactNode;
   /** Heading tag for `title` — defaults to `h2` so it nests correctly under different pages. */
   headingLevel?: 2 | 3 | 4;
+  /** `inline` is a compact form for inside a panel or list: paragraph-scale type, no icon. */
+  size?: 'default' | 'inline';
   className?: string | undefined;
 }
 
@@ -29,10 +31,22 @@ export function EmptyState({
   description,
   action,
   headingLevel = 2,
+  size = 'default',
   className,
   children,
 }: EmptyStateProps) {
   const Heading = HEADING_TAG[headingLevel];
+
+  if (size === 'inline') {
+    return (
+      <div className={cn('flex flex-col items-center gap-1 px-3 py-4 text-center', className)}>
+        <Heading className="text-[13px] font-semibold text-ink">{title}</Heading>
+        {description ? <p className="m-0 max-w-prose text-[13px] text-muted">{description}</p> : null}
+        {children}
+        {action ? <div className="mt-1">{action}</div> : null}
+      </div>
+    );
+  }
 
   return (
     <div className={cn('flex flex-col items-center gap-2 px-6 py-10 text-center', className)}>
