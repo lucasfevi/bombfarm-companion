@@ -42,12 +42,12 @@ const duel: Context = { ...gateClear, combat: 'duel' };
 const farm: Context = { restSeconds: 600, mitigation: 0.2, blastRange: 1, ato: 3, drainMult: 1 };
 
 describe('duelCadenceMultiplier', () => {
-  it('reads ×1.55 at the fuse floor, ×1.27 at 1.0 s, ×1.20 at 1.34 s, ×1.12 at 1.8 s and ×1.10 at the 2 s base', () => {
-    expect(duelCadenceMultiplier(0.4)).toBeCloseTo(1.5496, 3);
-    expect(duelCadenceMultiplier(1.0)).toBeCloseTo(1.2736, 3);
-    expect(duelCadenceMultiplier(1.34)).toBeCloseTo(1.1962, 3);
-    expect(duelCadenceMultiplier(1.8)).toBe(1.123);
-    expect(duelCadenceMultiplier(2.0)).toBeCloseTo(1.098, 3);
+  it('reads ×1.49 at the fuse floor, ×1.25 at 1.0 s, ×1.18 at 1.34 s, ×1.115 at 1.8 s and ×1.09 at the 2 s base', () => {
+    expect(duelCadenceMultiplier(0.4)).toBeCloseTo(1.4928, 3);
+    expect(duelCadenceMultiplier(1.0)).toBeCloseTo(1.2497, 3);
+    expect(duelCadenceMultiplier(1.34)).toBeCloseTo(1.1807, 3);
+    expect(duelCadenceMultiplier(1.8)).toBe(1.115);
+    expect(duelCadenceMultiplier(2.0)).toBeCloseTo(1.0924, 3);
   });
 
   it('holds flat outside the 0.4–2.0 s fuse range it was fitted on', () => {

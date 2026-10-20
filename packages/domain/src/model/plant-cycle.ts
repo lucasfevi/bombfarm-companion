@@ -56,46 +56,47 @@ export const REPLANT_HOP_CELLS = 1;
 export const REPLANT_SHARE = 0.09;
 
 /**
- * Faster heroes pick farther targets: the free hop scales as `(w / HOP_SPEED_PIVOT) ^
- * HOP_SPEED_EXPONENT`. Fitted over 19 heroes on the two fields (`w` 2.4–5.0), and the slope is
- * positive inside each account alone, so it is speed and not a difference between the accounts. A
- * hero's walk time therefore falls as `w ^ −0.47`, not `1 / w`.
+ * The free hop goes as `(w × fuse) ^ HOP_SPEED_EXPONENT`: faster heroes pick farther targets, and
+ * a short fuse leaves the next target standing beside the last one. Walk speed and fuse carry the
+ * same exponent — 0.38 ± 0.04 and 0.38 ± 0.01 in a within-hero eight-arm A/B, 0.40 ± 0.03 across
+ * the farm fields, 0.36–0.37 on duel replays — with no trend across density bands, and the same
+ * power law holds through the cooldown cap (hops ×0.60–0.64 at the 0.40 s floor). Measured on frame
+ * captures of two accounts' farm fields and on stored PVP duel replays, held out of band, not in
+ * this repo. One constant for both factors so they cannot drift apart.
  */
-export const HOP_SPEED_EXPONENT = 0.53;
+export const HOP_SPEED_EXPONENT = 0.38;
 /** Cells per second at which the hop is {@link freeHopCells}'s density mean — the fit's centre. */
 export const HOP_SPEED_PIVOT = 3;
+/** The fuse at which the hop is {@link freeHopCells}'s density mean — the fit's centre. */
+export const HOP_FUSE_PIVOT_SEC = 1.61;
 
 /** The fuse at the 80% cooldown-reduction cap: a fifth of the 2 s base. */
 export const FUSE_FLOOR = 0.4;
 
 /**
- * A hero near the cooldown floor hops shorter: its bomb goes off before the other crosses have
- * cleared its neighbours, so its next target stands beside it. Two points on one hero at the same
- * walk speed and density mix, from 30-minute captures of each build held out of band, not in this
- * repo: the full free hop at a 1.32–1.47 s fuse (its hops moved with walk speed there, not with
- * the fuse), and {@link FUSE_HOP_FLOOR_FACTOR} of it in every density band at the floor. The
- * line between them is the simplest curve through both.
+ * The walk overhead past `hop / w` is 0.58 s down to a 1.3 s fuse and falls linearly to ×0.57 of
+ * that at the floor: the same hero's overhead read 0.34 s there. It does not depend on walk speed.
  */
-export const FUSE_HOP_KNEE_SEC = 1.3;
-export const FUSE_HOP_FLOOR_FACTOR = 0.57;
+const WALK_OVERHEAD_KNEE_SEC = 1.3;
+const WALK_OVERHEAD_FLOOR_FACTOR = 0.57;
 
 export function freeHopCells(standing: number): number {
   return FREE_HOP_BASE_CELLS + FREE_HOP_SQRT_CELLS / Math.sqrt(Math.max(1, standing));
 }
 
+/** See {@link hopSpeedFactor} for the `exp(k × ln x)` form. */
 export function fuseHopFactor(fuseSecs: number): number {
-  if (fuseSecs >= FUSE_HOP_KNEE_SEC) return 1;
-  const depth = (FUSE_HOP_KNEE_SEC - Math.max(FUSE_FLOOR, fuseSecs)) / (FUSE_HOP_KNEE_SEC - FUSE_FLOOR);
-  return 1 - (1 - FUSE_HOP_FLOOR_FACTOR) * depth;
+  return Math.exp(HOP_SPEED_EXPONENT * Math.log(Math.max(FUSE_FLOOR, fuseSecs) / HOP_FUSE_PIVOT_SEC));
 }
 
-/**
- * The walk overhead shrinks with the hop — its detours and dodges are part of the path walked.
- * The same hero's overhead past `hop / w` fell from the 0.58 s mean to 0.34 s at the floor,
- * where {@link WALK_CYCLE_OVERHEAD_SEC} × {@link FUSE_HOP_FLOOR_FACTOR} reads 0.33.
- */
+function walkOverheadFuseFactor(fuseSecs: number): number {
+  if (fuseSecs >= WALK_OVERHEAD_KNEE_SEC) return 1;
+  const depth = (WALK_OVERHEAD_KNEE_SEC - Math.max(FUSE_FLOOR, fuseSecs)) / (WALK_OVERHEAD_KNEE_SEC - FUSE_FLOOR);
+  return 1 - (1 - WALK_OVERHEAD_FLOOR_FACTOR) * depth;
+}
+
 export function walkCycleOverheadSeconds(fuseSecs: number): number {
-  return WALK_CYCLE_OVERHEAD_SEC * fuseHopFactor(fuseSecs);
+  return WALK_CYCLE_OVERHEAD_SEC * walkOverheadFuseFactor(fuseSecs);
 }
 
 /**
