@@ -48,23 +48,31 @@ describe('privacy page', () => {
     expect(render('pt')).toContain('e só depois de fazer login. Essa consulta roda na Vercel, no leste dos Estados Unidos');
   });
 
-  it('says a linked game account keeps the player name the signed-in desktop app reports, whatever the usage count setting, in each language', () => {
+  it('says a linked game account keeps the player name and last-seen time the signed-in desktop app reports, whatever the usage count setting, in each language', () => {
     const en = render('en');
     expect(en).toContain('Apart from the player name described below, nothing else from the game is sent');
     expect(en).toContain('With a linked game account we also keep its player name and when it was last seen.');
     expect(en).toContain(
-      asHtml("While you are signed in to Premium in the desktop app, it reports your game account's player name together with the game account it is linked to; we store the name and keep it current from that report."),
+      asHtml("While you are signed in to Premium in the desktop app, it reports your game account's player name together with the game account it is linked to."),
     );
-    expect(en).toContain('Names stored before the app sent this report are cleared and filled in again from it.');
-    expect(en).toContain('in the usage count” does not affect the stored name.');
+    expect(en).toContain(
+      'We store that name, and the time of the latest report as when the account was last seen, and keep both current from that report.',
+    );
+    expect(en).toContain('Names and last-seen times stored before the app sent this report are cleared and filled in again from it.');
+    expect(en).toContain('in the usage count” does not affect them.');
+    expect(en).not.toContain('kept current from that same hourly message');
     const pt = render('pt');
     expect(pt).toContain('Além do nome de jogador descrito abaixo, nada mais do jogo é enviado');
     expect(pt).toContain('Com uma conta do jogo vinculada, guardamos também o nome de jogador dela');
     expect(pt).toContain(
-      'Enquanto você estiver conectado à sua conta Premium no app, ele informa o nome de jogador da sua conta do jogo junto com a conta do jogo vinculada; guardamos o nome e o mantemos atualizado a partir dessa informação.',
+      'Enquanto você estiver conectado à sua conta Premium no app, ele informa o nome de jogador da sua conta do jogo junto com a conta do jogo vinculada.',
     );
-    expect(pt).toContain('Os nomes guardados antes de o app enviar essa informação são apagados e preenchidos de novo a partir dela.');
-    expect(pt).toContain('na contagem de uso” não afeta o nome guardado.');
+    expect(pt).toContain(
+      'Guardamos esse nome e, como a última vez em que a conta foi vista, o horário da informação mais recente, e mantemos os dois atualizados a partir dessa informação.',
+    );
+    expect(pt).toContain('Os nomes e horários guardados antes de o app enviar essa informação são apagados e preenchidos de novo a partir dela.');
+    expect(pt).toContain('na contagem de uso” não os afeta.');
+    expect(pt).not.toContain('mantido atualizado por essa mesma mensagem de hora em hora');
   });
 
   it('says what a purchase keeps and who handles the payment, in each language', () => {
