@@ -1,0 +1,145 @@
+<!-- story: Default -->
+<div>
+<div class="min-h-[50vh] bg-bg p-4 font-sans text-ink antialiased">
+<label class="block w-[120px] text-xs text-muted">
+<span>Multiplier</span>
+<div data-num="true" class="inline-flex min-h-[34px] w-full min-w-0 items-stretch overflow-hidden rounded-sm border border-line bg-bg">
+<div class="flex w-5 shrink-0 flex-col border-r border-line bg-bg-2">
+<button type="button" tabindex="-1" aria-label="Increment" class="flex flex-1 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted hover:bg-[color-mix(in_oklch,var(--accent)_18%,var(--bg-2))] hover:text-accent motion-safe:transition-[background-color,color] motion-safe:duration-[120ms]">
+<span class="inline-flex shrink-0 size-3.5" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M9.47 6.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 1 1-1.06 1.06L10 8.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06l4.25-4.25Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+</button>
+<button type="button" tabindex="-1" aria-label="Decrement" class="flex flex-1 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted hover:bg-[color-mix(in_oklch,var(--accent)_18%,var(--bg-2))] hover:text-accent motion-safe:transition-[background-color,color] motion-safe:duration-[120ms] border-t border-line">
+<span class="inline-flex shrink-0 size-3.5" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+</button>
+</div>
+<input data-num-input="true" class="min-w-0 flex-1 border-0 bg-transparent px-1.5 py-1.5 text-right text-[13px] text-ink tabular-nums outline-none [appearance:textfield] [&amp;::-webkit-inner-spin-button]:m-0 [&amp;::-webkit-inner-spin-button]:appearance-none [&amp;::-webkit-outer-spin-button]:m-0 [&amp;::-webkit-outer-spin-button]:appearance-none" step="0.05" type="number" value="1.25">
+</div>
+</label>
+</div>
+</div>
+
+<!-- story: IntegerStep -->
+<div>
+<div class="min-h-[50vh] bg-bg p-4 font-sans text-ink antialiased">
+<label class="block w-[96px] text-xs text-muted">
+<span>Level</span>
+<div data-num="true" class="inline-flex min-h-[34px] w-full min-w-0 items-stretch overflow-hidden rounded-sm border border-line bg-bg">
+<div class="flex w-5 shrink-0 flex-col border-r border-line bg-bg-2">
+<button type="button" tabindex="-1" aria-label="Increment" class="flex flex-1 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted hover:bg-[color-mix(in_oklch,var(--accent)_18%,var(--bg-2))] hover:text-accent motion-safe:transition-[background-color,color] motion-safe:duration-[120ms]">
+<span class="inline-flex shrink-0 size-3.5" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M9.47 6.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 1 1-1.06 1.06L10 8.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06l4.25-4.25Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+</button>
+<button type="button" tabindex="-1" aria-label="Decrement" class="flex flex-1 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted hover:bg-[color-mix(in_oklch,var(--accent)_18%,var(--bg-2))] hover:text-accent motion-safe:transition-[background-color,color] motion-safe:duration-[120ms] border-t border-line">
+<span class="inline-flex shrink-0 size-3.5" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+</button>
+</div>
+<input data-num-input="true" class="min-w-0 flex-1 border-0 bg-transparent px-1.5 py-1.5 text-right text-[13px] text-ink tabular-nums outline-none [appearance:textfield] [&amp;::-webkit-inner-spin-button]:m-0 [&amp;::-webkit-inner-spin-button]:appearance-none [&amp;::-webkit-outer-spin-button]:m-0 [&amp;::-webkit-outer-spin-button]:appearance-none" step="1" type="number" value="12">
+</div>
+</label>
+</div>
+</div>
+
+<!-- story: InFieldStack -->
+<div>
+<div class="min-h-[50vh] bg-bg p-4 font-sans text-ink antialiased">
+<div class="grid grid-cols-1 gap-0 [&amp;_[data-num]]:w-full [&amp;_[data-select]]:w-full [&amp;_input:not([data-num-input])]:w-full [&amp;_input:not([data-num-input])]:rounded-sm [&amp;_input:not([data-num-input])]:border [&amp;_input:not([data-num-input])]:border-line [&amp;_input:not([data-num-input])]:bg-bg [&amp;_input:not([data-num-input])]:px-2 [&amp;_input:not([data-num-input])]:py-1.5 [&amp;_input:not([data-num-input])]:text-[13px] [&amp;_input:not([data-num-input])]:tabular-nums [&amp;_label]:grid [&amp;_label]:grid-cols-[1fr_auto] [&amp;_label]:items-center [&amp;_label]:gap-x-2 [&amp;_label]:border-b [&amp;_label]:border-[color-mix(in_oklch,var(--line)_70%,transparent)] [&amp;_label]:py-1.5 [&amp;_label]:text-[13px] [&amp;_label]:text-ink [&amp;_label:last-child]:border-b-0 [&amp;_label>span]:col-start-1 [&amp;_label>span]:row-start-1 [&amp;_label>span]:flex [&amp;_label>span]:min-w-0 [&amp;_label>span]:flex-col [&amp;_label>span]:gap-0.5 [&amp;_label>span_[data-field-hint]]:text-[11px] [&amp;_label>span_[data-field-hint]]:font-normal [&amp;_label>span_[data-field-hint]]:normal-case [&amp;_label>span_[data-field-hint]]:text-muted [&amp;_label_[data-num]]:col-start-2 [&amp;_label_[data-num]]:row-start-1 [&amp;_label_[data-num]]:w-[96px] [&amp;_label_[data-select]]:col-start-2 [&amp;_label_[data-select]]:row-start-1 [&amp;_label_[data-select]]:w-[96px] [&amp;_label_[data-settings-value]]:col-start-2 [&amp;_label_[data-settings-value]]:row-start-1 [&amp;_label_[data-settings-value]]:justify-self-end [&amp;_label_[data-switch]]:col-start-2 [&amp;_label_[data-switch]]:row-start-1 [&amp;_label_[data-switch]]:flex-row [&amp;_label_[data-switch]]:justify-self-end max-w-sm">
+<label>
+<span>Total damage ×</span>
+<div data-num="true" class="inline-flex min-h-[34px] w-full min-w-0 items-stretch overflow-hidden rounded-sm border border-line bg-bg">
+<div class="flex w-5 shrink-0 flex-col border-r border-line bg-bg-2">
+<button type="button" tabindex="-1" aria-label="Increment" class="flex flex-1 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted hover:bg-[color-mix(in_oklch,var(--accent)_18%,var(--bg-2))] hover:text-accent motion-safe:transition-[background-color,color] motion-safe:duration-[120ms]">
+<span class="inline-flex shrink-0 size-3.5" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M9.47 6.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 1 1-1.06 1.06L10 8.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06l4.25-4.25Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+</button>
+<button type="button" tabindex="-1" aria-label="Decrement" class="flex flex-1 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted hover:bg-[color-mix(in_oklch,var(--accent)_18%,var(--bg-2))] hover:text-accent motion-safe:transition-[background-color,color] motion-safe:duration-[120ms] border-t border-line">
+<span class="inline-flex shrink-0 size-3.5" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+</button>
+</div>
+<input data-num-input="true" class="min-w-0 flex-1 border-0 bg-transparent px-1.5 py-1.5 text-right text-[13px] text-ink tabular-nums outline-none [appearance:textfield] [&amp;::-webkit-inner-spin-button]:m-0 [&amp;::-webkit-inner-spin-button]:appearance-none [&amp;::-webkit-outer-spin-button]:m-0 [&amp;::-webkit-outer-spin-button]:appearance-none" step="0.001" type="number" value="2.156">
+</div>
+</label>
+<label>
+<span>Crit chance +% base</span>
+<div data-num="true" class="inline-flex min-h-[34px] w-full min-w-0 items-stretch overflow-hidden rounded-sm border border-line bg-bg">
+<div class="flex w-5 shrink-0 flex-col border-r border-line bg-bg-2">
+<button type="button" tabindex="-1" aria-label="Increment" class="flex flex-1 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted hover:bg-[color-mix(in_oklch,var(--accent)_18%,var(--bg-2))] hover:text-accent motion-safe:transition-[background-color,color] motion-safe:duration-[120ms]">
+<span class="inline-flex shrink-0 size-3.5" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M9.47 6.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 1 1-1.06 1.06L10 8.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06l4.25-4.25Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+</button>
+<button type="button" tabindex="-1" aria-label="Decrement" class="flex flex-1 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted hover:bg-[color-mix(in_oklch,var(--accent)_18%,var(--bg-2))] hover:text-accent motion-safe:transition-[background-color,color] motion-safe:duration-[120ms] border-t border-line">
+<span class="inline-flex shrink-0 size-3.5" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+</button>
+</div>
+<input data-num-input="true" class="min-w-0 flex-1 border-0 bg-transparent px-1.5 py-1.5 text-right text-[13px] text-ink tabular-nums outline-none [appearance:textfield] [&amp;::-webkit-inner-spin-button]:m-0 [&amp;::-webkit-inner-spin-button]:appearance-none [&amp;::-webkit-outer-spin-button]:m-0 [&amp;::-webkit-outer-spin-button]:appearance-none" step="0.1" type="number" value="65.68">
+</div>
+</label>
+</div>
+</div>
+</div>
+
+<!-- story: InFieldInline -->
+<div>
+<div class="min-h-[50vh] bg-bg p-4 font-sans text-ink antialiased">
+<div class="grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-2 [&amp;_label]:flex [&amp;_label]:flex-col [&amp;_label]:gap-[3px] [&amp;_label]:text-[11px] [&amp;_label]:tracking-[0.03em] [&amp;_label]:text-muted [&amp;_label]:uppercase [&amp;_[data-num]]:w-full [&amp;_[data-select]]:w-full [&amp;_input:not([data-num-input])]:w-full [&amp;_input:not([data-num-input])]:rounded-sm [&amp;_input:not([data-num-input])]:border [&amp;_input:not([data-num-input])]:border-line [&amp;_input:not([data-num-input])]:bg-bg [&amp;_input:not([data-num-input])]:px-2 [&amp;_input:not([data-num-input])]:py-1.5 [&amp;_input:not([data-num-input])]:text-[13px] [&amp;_input:not([data-num-input])]:tabular-nums">
+<label>Multiplier<div data-num="true" class="inline-flex min-h-[34px] w-full min-w-0 items-stretch overflow-hidden rounded-sm border border-line bg-bg">
+<div class="flex w-5 shrink-0 flex-col border-r border-line bg-bg-2">
+<button type="button" tabindex="-1" aria-label="Increment" class="flex flex-1 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted hover:bg-[color-mix(in_oklch,var(--accent)_18%,var(--bg-2))] hover:text-accent motion-safe:transition-[background-color,color] motion-safe:duration-[120ms]">
+<span class="inline-flex shrink-0 size-3.5" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M9.47 6.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 1 1-1.06 1.06L10 8.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06l4.25-4.25Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+</button>
+<button type="button" tabindex="-1" aria-label="Decrement" class="flex flex-1 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted hover:bg-[color-mix(in_oklch,var(--accent)_18%,var(--bg-2))] hover:text-accent motion-safe:transition-[background-color,color] motion-safe:duration-[120ms] border-t border-line">
+<span class="inline-flex shrink-0 size-3.5" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+</button>
+</div>
+<input data-num-input="true" class="min-w-0 flex-1 border-0 bg-transparent px-1.5 py-1.5 text-right text-[13px] text-ink tabular-nums outline-none [appearance:textfield] [&amp;::-webkit-inner-spin-button]:m-0 [&amp;::-webkit-inner-spin-button]:appearance-none [&amp;::-webkit-outer-spin-button]:m-0 [&amp;::-webkit-outer-spin-button]:appearance-none" step="0.05" type="number" value="1.25">
+</div>
+</label>
+</div>
+</div>
+</div>

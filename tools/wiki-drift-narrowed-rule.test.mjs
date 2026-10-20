@@ -21,7 +21,7 @@ const HOSTNAME_PATTERN = 'wiki\\.bombfarm\\.net';
 function gitGrep(pattern, pathspecs, flags = '-nE') {
   let out;
   try {
-    out = execFileSync('git', ['grep', flags, pattern, '--', ...pathspecs], { cwd: root, encoding: 'utf8' });
+    out = execFileSync('git', ['grep', flags, pattern, '--', ...pathspecs, ':(exclude)**/__snapshots__/**'], { cwd: root, encoding: 'utf8' });
   } catch (err) {
     if (err.status === 1) return [];
     throw err;

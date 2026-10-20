@@ -26,7 +26,7 @@ function linesMatching(pattern) {
   try {
     out = execFileSync(
       'git',
-      ['grep', '-nE', pattern, '--', ...SCAN_ROOTS, ':(exclude)**/*.test.ts', ':(exclude)**/*.test.tsx'],
+      ['grep', '-nE', pattern, '--', ...SCAN_ROOTS, ':(exclude)**/*.test.ts', ':(exclude)**/*.test.tsx', ':(exclude)**/__snapshots__/**'],
       { cwd: root, encoding: 'utf8' },
     );
   } catch (err) {
