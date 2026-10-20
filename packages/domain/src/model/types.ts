@@ -29,9 +29,13 @@ export interface Context {
    * energy past what the window can spend earns nothing. Absent, the horizon is infinite.
    */
   windowSecs?: number;
+  /** A duel prices bombs on the duel cadence; absent, the farm cadence — a gate clear included. */
+  combat?: CombatKind;
   /** The grid the bomb cycle is priced on. Absent, the classic field. */
   field?: BattleField;
 }
+
+export type CombatKind = 'duel';
 
 export type StatKey = 'energy' | 'attack' | 'critDmg' | 'speed' | 'critChance' | 'penetration' | 'cdr';
 

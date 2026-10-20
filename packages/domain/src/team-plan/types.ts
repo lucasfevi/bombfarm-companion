@@ -8,6 +8,7 @@ import type { InventoryItem } from '../inventory';
 import type {
   AbilityMods,
   BattleField,
+  CombatKind,
   Context,
   EffectiveDeltas,
   HeroSheet,
@@ -71,6 +72,8 @@ export type FarmContext = {
    * nothing. Absent, the roster is a rotation and presence is duty.
    */
   windowSecs?: number;
+  /** See `Context.combat` — set for a duel only. */
+  combat?: CombatKind;
   critFlatAtFullPresence?: number;
   /** The grid the squad farms on. Absent, the classic field. */
   field?: BattleField;
