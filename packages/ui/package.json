@@ -58,6 +58,7 @@
     "happy-dom": "^20.0.0",
     "http-server": "^14.1.1",
     "motion": "^12.42.2",
+    "next": "15.5.20",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0",

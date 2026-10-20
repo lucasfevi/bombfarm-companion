@@ -1,0 +1,13 @@
+import { AppNav } from '@bombfarm/ui';
+
+export default function Page() {
+  return (
+    <AppNav
+      compact
+      items={[
+        { id: 'one', label: 'One', active: true },
+        { id: 'two', label: 'Two', active: false, icon: 'cog' },
+      ]}
+    />
+  );
+}
