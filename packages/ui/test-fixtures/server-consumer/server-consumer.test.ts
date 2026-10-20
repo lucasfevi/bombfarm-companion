@@ -64,6 +64,19 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(html).toContain('<a class="text-accent underline-offset-2 hover:underline" href="/fixture-help">Fixture help link</a>');
   });
 
+  it('prerenders the skeleton as a labelled busy region of hidden pulsing rows', () => {
+    const html = readPage('index.html');
+    expect(html).toContain('<div role="status" aria-busy="true" aria-label="Fixture loading"><div class="flex flex-col gap-2" aria-hidden="true">');
+    expect(html).toContain('motion-safe:animate-pulse');
+  });
+
+  it('prerenders the error screen with its message and retry slot', () => {
+    const html = readPage('index.html');
+    expect(html).toContain('<h2 class="text-lg font-semibold text-ink">Fixture error</h2>');
+    expect(html).toContain('<p class="m-0 max-w-prose text-sm text-muted">Fixture error message</p>');
+    expect(html).toContain('<div class="mt-2"><a href="/fixture-retry">Retry</a></div>');
+  });
+
   it('prerenders the native select with its options and the chosen one selected', () => {
     const html = readPage('index.html');
     expect(html).toMatch(/<select[^>]*class="w-full rounded-sm border border-line bg-bg-2 px-3 py-2 text-sm[^"]*"[^>]*aria-label="Fixture native select"/);
