@@ -86,6 +86,8 @@ export function readFarmDepTuple(inputs: FarmInputs) {
     (inputs.farmBoost ?? NO_ECONOMY_BOOST).gold,
     (inputs.farmBoost ?? NO_ECONOMY_BOOST).xp,
     (inputs.farmBoost ?? NO_ECONOMY_BOOST).drop,
+    inputs.farmBoost?.passBonus?.gold ?? 0,
+    inputs.farmBoost?.passBonus?.xp ?? 0,
     inputs.treeXpMult,
     inputs.farmMapSize ?? 'classic',
   ] as const;

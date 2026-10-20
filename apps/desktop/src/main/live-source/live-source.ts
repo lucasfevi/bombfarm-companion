@@ -41,8 +41,8 @@ import {
   type RosterHeroAbilities,
 } from '@bombfarm/domain/live';
 import { collectionFromSave } from '@bombfarm/domain/model';
-import { economyBoostOf, economyMultipliers } from '@bombfarm/domain/farm-rate';
-import { passActive } from '@bombfarm/domain/import-save';
+import { economyBoostOf, economyMultipliers, passBonusOf, withPassBonus } from '@bombfarm/domain/farm-rate';
+import { passActive, readPassBonus, type PassBonusWire } from '@bombfarm/domain/import-save';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { readHeroRunes, runeXpMultiplier } from '@bombfarm/domain/runes';
 import { apprenticeXpMult } from '@bombfarm/domain/team-buffs';
@@ -712,6 +712,7 @@ export class LiveSource {
   #teamCoinPct: number | undefined;
   #collectionGoldPct: number | undefined;
   #vipUntil: number | undefined;
+  #passBonus: PassBonusWire | null = null;
   /** `undefined` means no binding has been observed yet, the state a `null` read from the store
    *  must never be mistaken for — see {@link #trackAccountBinding}. */
   #lastBinding: string | undefined;
@@ -858,6 +859,7 @@ export class LiveSource {
     this.#teamCoinPct = readTeamCoinPct(view.payload.skills) ?? this.#teamCoinPct;
     this.#collectionGoldPct = readCollectionGoldPct(view.payload.skills) ?? this.#collectionGoldPct;
     this.#vipUntil = readVipUntil(view.payload.account) ?? this.#vipUntil;
+    this.#passBonus = readPassBonus(view.payload.account) ?? this.#passBonus;
     this.#xpRuneMults = readXpRuneMults(view.payload.heroes) ?? this.#xpRuneMults;
     this.#apprenticeRanks = readApprenticeRanks(view.payload.heroes) ?? this.#apprenticeRanks;
     this.#accountBoosts = {
@@ -1113,7 +1115,7 @@ export class LiveSource {
   #repriceMap(): void {
     this.#accountBoosts = {
       ...this.#accountBoosts,
-      boost: economyBoostOf(this.#boosts),
+      boost: withPassBonus(economyBoostOf(this.#boosts), passBonusOf(this.#passBonus, this.#now())),
       xpRuneMix: this.#fieldXpRuneMix,
       apprenticeXpMult: this.#fieldApprenticeXpMult,
     };

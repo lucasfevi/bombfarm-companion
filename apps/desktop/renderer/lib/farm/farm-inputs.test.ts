@@ -170,6 +170,42 @@ describe('the Pass is read from the account, never from the controls', () => {
   });
 });
 
+describe('the Pass Bonus is read from the account and rides inside the Boost', () => {
+  const NOW_MS = Date.parse('2026-10-19T12:00:00Z');
+  const withBonus = (until: number | undefined) => {
+    const base = basePayload();
+    const bonus = until === undefined ? {} : { bonus_passe_ate: until, bonus_passe_ouro: 0.25, bonus_passe_xp: 0.15 };
+    const payload = { ...base, account: { ...base.account, ...bonus } };
+    return required(buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS, NO_ECONOMY_BOOST, NOW_MS), 'expected inputs');
+  };
+
+  it('is carried as the wire adds while its expiry is in the future', () => {
+    expect(withBonus(NOW_MS / 1000 + 3600).farmBoost?.passBonus).toEqual({ gold: 0.25, xp: 0.15 });
+  });
+
+  it('is absent once expired or when the account carries none', () => {
+    expect(withBonus(NOW_MS / 1000 - 1).farmBoost?.passBonus).toBeUndefined();
+    expect(withBonus(undefined).farmBoost).toBe(NO_ECONOMY_BOOST);
+  });
+
+  it('raises gold/hr and XP/hr on the board', () => {
+    const payload = { ...basePayload(), skills: { totals: skillTotals({ dmg_static: 1.5, xp_mult: 2 }) } };
+    const until = NOW_MS / 1000 + 3600;
+    const account = { ...payload.account, bonus_passe_ate: until, bonus_passe_ouro: 0.25, bonus_passe_xp: 0.15 };
+    const on = required(buildFarmInputs(viewOf({ ...payload, account }), DEFAULT_FARM_CONTROLS, NO_ECONOMY_BOOST, NOW_MS), 'expected inputs');
+    const off = required(buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS, NO_ECONOMY_BOOST, NOW_MS), 'expected inputs');
+    const offRows = computeFarmRanking(off).rows;
+    const onRows = computeFarmRanking(on).rows;
+    const priced = offRows.filter((row) => (row.xpPerHour ?? 0) > 0 && row.goldPerHour > 0);
+    expect(priced.length).toBeGreaterThan(0);
+    for (const row of priced) {
+      const match = required(onRows[row.phase - 1] ?? null, `expected a row for phase ${String(row.phase)}`);
+      expect(match.goldPerHour / row.goldPerHour).toBeCloseTo(1.25, 6);
+      expect((match.xpPerHour ?? 0) / (row.xpPerHour ?? 1)).toBeCloseTo(1.15, 6);
+    }
+  });
+});
+
 describe('the running Boosts are read from the game, never from the account', () => {
   const XP_BOOST = { gold: false, xp: true, drop: false };
 

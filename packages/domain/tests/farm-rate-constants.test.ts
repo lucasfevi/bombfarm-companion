@@ -13,6 +13,9 @@ import {
   economyMultipliers,
   FORTUNA_AURA_CAP,
   normalizeStoredReturnBonus,
+  NO_ECONOMY_BOOST,
+  passBonusOf,
+  withPassBonus,
 } from '@bombfarm/domain/farm-rate';
 import {
   COMPACT_FIELD,
@@ -234,6 +237,33 @@ describe('economyMultipliers — one additive sum per axis', () => {
     const bare = economyMultipliers({ returnBonus: 'off', pass: false });
     const window = economyMultipliers({ returnBonus: 'on', pass: false });
     expect([window.gold, window.xp, bare.gold, bare.xp]).toEqual([1.5, 1.5, 1, 1]);
+  });
+});
+
+describe('the Pass Bonus joins the same additive sum on gold and XP, never on drops', () => {
+  const passBonus = { gold: 0.25, xp: 0.15 };
+  const boost = withPassBonus({ gold: true, xp: true, drop: true }, passBonus);
+
+  it('sits on top of the Pass, a running Boost and the Return Bonus', () => {
+    const all = economyMultipliers({ returnBonus: 'on', pass: true, boost });
+    expect(all.gold).toBeCloseTo(1 + RETURN_BONUS_ADD_VIP + PASS_ADDS.gold[1] + 1 + 0.25, 12);
+    expect(all.xp).toBeCloseTo(1 + RETURN_BONUS_ADD_VIP + PASS_ADDS.xp[1] + 1 + 0.15, 12);
+  });
+
+  it('alone it is 1 + its own add, with the drop add untouched', () => {
+    const alone = economyMultipliers({ returnBonus: 'off', pass: false, boost: withPassBonus(NO_ECONOMY_BOOST, passBonus) });
+    expect(alone).toEqual({ gold: 1.25, xp: 1.15, dropAdd: 0 });
+  });
+
+  it('is running only until its expiry, and is read as an add from the wire fraction', () => {
+    const wire = { until: 1_800_000_000, gold: 0.25, xp: 0.15 };
+    expect(passBonusOf(wire, wire.until * 1000 - 1)).toEqual(passBonus);
+    expect(passBonusOf(wire, wire.until * 1000)).toBeUndefined();
+    expect(passBonusOf(null, 0)).toBeUndefined();
+  });
+
+  it('withPassBonus hands back the same boost when there is none to add', () => {
+    expect(withPassBonus(NO_ECONOMY_BOOST, undefined)).toBe(NO_ECONOMY_BOOST);
   });
 });
 
