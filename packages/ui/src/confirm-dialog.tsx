@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, type ReactNode } from 'react';
+import { useId, useRef, useState, type ReactNode } from 'react';
 import { Button } from './button';
 import { Dialog } from './dialog';
 import { Icon } from './icon';
@@ -27,6 +27,11 @@ export type ConfirmDialogProps = {
   onConfirm: () => void;
   /** When true, confirm button uses primary variant (default). Set false for neutral confirms. */
   destructive?: boolean;
+  /** `danger` dresses the confirm button in the danger tone. */
+  tone?: 'danger';
+  /** The label of an acknowledgement checkbox. Confirm stays disabled until it is ticked, and it
+   *  starts unticked every time the dialog opens. */
+  requireAck?: ReactNode;
 };
 
 /**
@@ -45,7 +50,18 @@ export function ConfirmDialog({
   closeLabel,
   onConfirm,
   destructive = true,
+  tone,
+  requireAck,
 }: ConfirmDialogProps) {
+  const [acked, setAcked] = useState(false);
+  const [wasOpen, setWasOpen] = useState(open);
+  const ackRef = useRef<HTMLInputElement>(null);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (!open) setAcked(false);
+  }
+  const needsAck = requireAck != null && requireAck !== false;
+
   function handleConfirm() {
     onConfirm();
     onOpenChange(false);
@@ -59,7 +75,9 @@ export function ConfirmDialog({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Backdrop />
-        <Dialog.Popup className={confirmDialogPopupRecipe({ size })} aria-describedby={describedBy}>
+        <Dialog.Popup className={confirmDialogPopupRecipe({ size })} aria-describedby={describedBy}
+          initialFocus={needsAck ? ackRef : undefined}
+        >
           {/* The close sits in the popup's own corner rather than inside the padding, so it
               reads as the box's control and the title keeps the full line. */}
           <span className="absolute top-2 right-2">
@@ -80,6 +98,18 @@ export function ConfirmDialog({
               {children}
             </div>
           ) : null}
+          {needsAck ? (
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                ref={ackRef}
+                type="checkbox"
+                className="mt-1"
+                checked={acked}
+                onChange={(event) => setAcked(event.target.checked)}
+              />
+              <span>{requireAck}</span>
+            </label>
+          ) : null}
           <div className={dialogActionsClass}>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               {cancelLabel}
@@ -87,6 +117,8 @@ export function ConfirmDialog({
             <Button
               type="button"
               variant={destructive ? 'primary' : 'default'}
+              tone={tone}
+              disabled={needsAck && !acked}
               onClick={handleConfirm}
             >
               {confirmLabel}
