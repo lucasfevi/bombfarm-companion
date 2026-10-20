@@ -85,12 +85,12 @@ describe('privacy page', () => {
 
   it('says how long purchase records and anti-abuse codes are kept, and what deletion does to them, in each language', () => {
     const en = render('en');
-    expect(en).toContain('are kept for six years after the payment, because the law requires it.');
+    expect(en).toContain('are kept for six years after the payment — or, for a subscription or pass, six years after it ends — because the law requires it.');
     expect(en).toContain('kept for two years after they are placed, even after you delete your account');
     expect(en).toContain('once you have no active subscription.');
     expect(en).toContain('Records we must keep by law stay, with your identity replaced by codes. Any remaining Premium time is lost.');
     const pt = render('pt');
-    expect(pt).toContain('ficam guardados por seis anos após o pagamento, porque a lei exige.');
+    expect(pt).toContain('ficam guardados por seis anos após o pagamento — ou, no caso de uma assinatura ou passe, seis anos após o fim — porque a lei exige.');
     expect(pt).toContain('por dois anos depois de criados, mesmo depois que você exclui a conta');
     expect(pt).toContain('desde que não tenha assinatura ativa.');
     expect(pt).toContain('Os registros que a lei nos obriga a guardar permanecem, com a sua identidade trocada por códigos. O tempo de Premium restante é perdido.');

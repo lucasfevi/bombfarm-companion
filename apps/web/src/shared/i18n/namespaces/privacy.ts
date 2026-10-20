@@ -96,7 +96,7 @@ export const en = {
       p: [
         "Temporary sign-in codes are deleted within a day of expiring. A session is deleted within a day of expiring, of going unused for too long, or of you signing out.",
         "Your account, sign-ins and game account link are kept until you delete your account. The player name and last-seen time kept with a link are deleted along with it.",
-        "Payment, refund, chargeback and tax-invoice records are kept for six years after the payment, because the law requires it.",
+        "Payment, refund, chargeback and tax-invoice records are kept for six years after the payment — or, for a subscription or pass, six years after it ends — because the law requires it.",
         "The anti-abuse codes are kept for two years after they are placed, even after you delete your account, as one-way codes that cannot be turned back into your data.",
         "Nightly encrypted copies are deleted after 90 days.",
       ],
@@ -227,7 +227,7 @@ export const pt: typeof en = {
       p: [
         "Códigos temporários de acesso são apagados em até um dia depois de expirarem. Uma sessão é apagada em até um dia depois de expirar, de ficar sem uso por tempo demais ou de você sair.",
         "A sua conta, as formas de entrar e o vínculo com a conta do jogo ficam guardados até você excluir a conta. O nome de jogador e o horário da última vez em que a conta foi vista, guardados com um vínculo, são apagados junto com ele.",
-        "Registros de pagamento, reembolso, contestação e nota fiscal ficam guardados por seis anos após o pagamento, porque a lei exige.",
+        "Registros de pagamento, reembolso, contestação e nota fiscal ficam guardados por seis anos após o pagamento — ou, no caso de uma assinatura ou passe, seis anos após o fim — porque a lei exige.",
         "Os códigos contra abuso ficam guardados por dois anos depois de criados, mesmo depois que você exclui a conta, como códigos de mão única que não podem ser convertidos de volta nos seus dados.",
         "As cópias noturnas criptografadas são apagadas após 90 dias.",
       ],
