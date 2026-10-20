@@ -42,6 +42,7 @@ const TITLE_IS_CONTENT = new Set([
   'BrandLockup',
   'ConfirmDialog',
   'EmptyState',
+  'ErrorScreen',
   'PanelHeader',
   'SettingsSection',
   'Tooltip.StatusBody',
