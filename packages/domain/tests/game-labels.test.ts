@@ -363,11 +363,11 @@ describe('abilityReadoutText', () => {
     expect(abilityReadoutText(ownAbilityReadout('veia_ouro', 20), 'en', format)).toBe('+40.0% gold');
   });
 
-  it('a second blast reads as its chance and the share of the hit; an execute as its threshold and no damage', () => {
+  it('a second blast reads as its chance and the share of the hit; Mercy as its threshold and no measurable damage effect', () => {
     expect(abilityReadoutText(ownAbilityReadout('detonacao_dupla', 20), 'en', format)).toBe('50.0% chance of a 2nd blast (50% dmg)');
     expect(abilityReadoutText(ownAbilityReadout('detonacao_dupla', 20), 'pt', format)).toBe('50.0% de chance de 2ª explosão (50% do dano)');
-    expect(abilityReadoutText(ownAbilityReadout('misericordia', 20), 'pt', format)).toBe('executa < 15.0% HP (sem dano medido)');
-    expect(abilityReadoutText(ownAbilityReadout('misericordia', 20), 'en', format)).toBe('executes < 15.0% HP (no damage measured)');
+    expect(abilityReadoutText(ownAbilityReadout('misericordia', 20), 'pt', format)).toBe('limiar de 15.0% HP (sem efeito de dano mensurável)');
+    expect(abilityReadoutText(ownAbilityReadout('misericordia', 20), 'en', format)).toBe('15.0% HP threshold (no measurable damage effect)');
   });
 
   it('an unmodelled readout is a dash', () => {

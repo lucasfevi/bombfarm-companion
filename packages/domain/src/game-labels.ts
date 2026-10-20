@@ -374,7 +374,7 @@ const ABILITY_READOUT_UNITS: Record<AbilityReadoutKind, Bilingual> = {
   critDmgPct: { pt: '+{value}% de dano crítico', en: '+{value}% crit damage' },
   rangeCells: { pt: '+{value} de alcance', en: '+{value} range' },
   secondBlast: { pt: '{value}% de chance de 2ª explosão ({share}% do dano)', en: '{value}% chance of a 2nd blast ({share}% dmg)' },
-  execute: { pt: 'executa < {value}% HP (sem dano medido)', en: 'executes < {value}% HP (no damage measured)' },
+  execute: { pt: 'limiar de {value}% HP (sem efeito de dano mensurável)', en: '{value}% HP threshold (no measurable damage effect)' },
   shatter: { pt: '{value}% de chance de estilhaçar ({share}% do golpe nos 4 lados)', en: '{value}% chance to shatter ({share}% of the hit to 4 sides)' },
   gateAttackPct: { pt: '+{value}% em portões', en: '+{value}% on gates' },
   packDmgPctPerAlly: { pt: '+{value}% de dano por aliado', en: '+{value}% dmg per ally' },

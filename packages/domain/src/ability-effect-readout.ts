@@ -28,7 +28,7 @@ export type AbilityEffectReadout =
   | { kind: 'rangeCells'; value: number }
   /** Detonação Dupla — the chance of a second blast, and the share of the hit it deals. */
   | { kind: 'secondBlast'; chancePct: number; blastPct: number }
-  /** Misericórdia — the game's execute threshold; it adds no damage the app can measure. */
+  /** Misericórdia — the threshold the game publishes; it has no damage effect the app can measure. */
   | { kind: 'execute'; thresholdPct: number }
   /** Estilhaços — the chance a destroyed rock shatters, and the share of the hit each shard deals. */
   | { kind: 'shatter'; chancePct: number; shardHitPct: number }
