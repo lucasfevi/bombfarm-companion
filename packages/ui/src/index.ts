@@ -42,6 +42,7 @@ export type { WindowControlsLabels, WindowControlsProps } from './window-control
 export { WINDOW_CONTROLS_WIDTH } from './window-controls.recipe';
 export { BrandMark } from './brand-mark';
 export type { BrandMarkProps } from './brand-mark';
+export { BrandLockup, type BrandLockupProps } from './brand-lockup';
 export { AppNav, type AppNavItemMark } from './app-nav';
 export type { AppNavItem, AppNavProps } from './app-nav';
 export {

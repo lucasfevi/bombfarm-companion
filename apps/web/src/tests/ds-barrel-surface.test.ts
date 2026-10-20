@@ -121,6 +121,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'SiteHeader',
   'siteHeaderBrandClass',
   'SiteFooter',
+  'BrandLockup',
   'PageFrame',
   'PageSection',
   'MetricScoreboard',

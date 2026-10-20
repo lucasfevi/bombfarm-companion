@@ -29,6 +29,8 @@
     "./banner": "./src/banner.tsx",
     "./bar": "./src/bar.tsx",
     "./bar.recipe": "./src/bar.recipe.ts",
+    "./brand-lockup": "./src/brand-lockup.tsx",
+    "./brand-lockup.recipe": "./src/brand-lockup.recipe.ts",
     "./brand-mark": "./src/brand-mark.tsx",
     "./button": "./src/button.tsx",
     "./button.recipe": "./src/button.recipe.ts",

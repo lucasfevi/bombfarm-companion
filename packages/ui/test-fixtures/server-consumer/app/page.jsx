@@ -12,7 +12,11 @@ export default function Page() {
         ))}
       </ul>
       <ui.SiteHeader
-        brand={<a href="/" className={ui.siteHeaderBrandClass}>Acme</a>}
+        brand={
+          <a href="/" className={ui.siteHeaderBrandClass}>
+            <ui.BrandLockup title="Acme" tag="Planner" />
+          </a>
+        }
         nav={
           <ui.AppNav
             ariaLabel="Header sections"

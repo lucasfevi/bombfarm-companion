@@ -56,7 +56,10 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
   it('prerenders the site header with its brand, nav strip and both action branches', () => {
     const html = readPage('index.html');
     expect(html).toMatch(/<header class="sticky top-0 z-30[^"]*"><div class="mx-auto flex max-w-app[^"]*">/);
-    expect(html).toContain('>Acme</a>');
+    expect(html).toMatch(
+      /<a href="\/" class="flex items-center gap-2\.5 no-underline max-sm:order-1"><svg[^>]*class="size-8\.5 shrink-0"[^>]*>.*?<\/svg><div><div class="text-sm leading-1\.1 font-bold text-ink">Acme<\/div><div class="text-\[11px\] tracking-\[0\.04em\] text-muted uppercase">Planner<\/div><\/div><\/a>/,
+    );
+    expect(html).toContain('fill="#17100c"');
     expect(html).toMatch(/<div class="max-sm:order-3 max-sm:w-full[^"]*"><nav aria-label="Header sections"/);
     expect(html).toMatch(/<div class="flex flex-nowrap[^"]*max-sm:hidden"><span>Header actions<\/span><\/div>/);
     expect(html).toMatch(/<div class="order-2 ml-auto sm:hidden"><details class="relative inline-block"/);
