@@ -287,7 +287,7 @@ function squadsForFixture(filename: string): NamedSquad[] {
 }
 
 /** The one corpus state the screen misses: its opener at 51 screens above world 3's peak at 27,
- *  which sits outside the ±10 refine window. Widening the window to reach it cost +40–90% per
+ *  which sits outside the ±10 refine window, for 1.0% of gold/hr. Widening the window to reach it cost +40–90% per
  *  sweep, so the state is held to the documented cost bound instead of exact agreement. */
 const KNOWN_SCREEN_MISS = { filename: 'save-20260831-13heroes-soulbound.json', squad: 'current build', objective: 'gold', fromMaxPhase: 51 };
 const SCREEN_MISS_COST_BOUND = 0.016;
@@ -308,7 +308,7 @@ describe('the soulbound capture’s current build under gold — the corpus’s 
     it(`the screen settles on world 6 where the full sweep finds world 3, and costs under 1.6% of gold/hr — maxPhase ${maxPhase}`, () => {
       const reference = bestFarmPhase(squad, OBJECTIVES.gold, UNIT_SCALES, { maxPhase, exhaustive: true })!;
       const twoStage = bestFarmPhase(squad, OBJECTIVES.gold, UNIT_SCALES, { maxPhase })!;
-      expect(twoStage.phase).not.toBe(reference.phase);
+      expect([twoStage.phase, reference.phase]).toEqual([51, 27]);
       expect(twoStage.value).toBeLessThanOrEqual(reference.value);
       expect(twoStage.value).toBeGreaterThanOrEqual(reference.value * (1 - SCREEN_MISS_COST_BOUND));
     });

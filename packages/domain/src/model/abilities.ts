@@ -4,7 +4,7 @@
 // own points (1/level, same budget shown as "Pontos a Distribuir" in game).
 // Ability effects are FLAT game units applied outside the sheet (confirmed by
 // Ponta de Diamante "+1 de Penetração (pontos)" matching observed sheets).
-import { EXTRA_RANGE_FRAC, SHATTER_FRAC } from '../phase-wiki';
+import { EXTRA_RANGE_FRAC, SECOND_BLAST_FRAC, SHATTER_FRAC } from '../phase-wiki';
 import { critFactor } from './combat';
 import { MATILHA_PER_RANK_PER_ALLY } from './matilha';
 import { PASSAGEM_BASTAO_PER_RANK } from './passagem-bastao';
@@ -60,8 +60,11 @@ export type AbilityEffect =
    */
   | { kind: 'teamCritDmgFlat'; perLevel: number }
   | { kind: 'rangeCells'; perLevel: number }
-  | { kind: 'secondBlastPct'; perLevel: number } // chance of 2nd blast at 50% dmg
-  | { kind: 'executePct'; perLevel: number } // executes rock below threshold
+  /** Detonação Dupla — chance % per level that a bomb blasts a second time, for
+   *  `SECOND_BLAST_FRAC` of each hit, on the props the first blast left standing. */
+  | { kind: 'secondBlastPct'; perLevel: number }
+  /** Misericórdia — the game's execute threshold, % of HP per level. Not a combat mod: see the row. */
+  | { kind: 'executePct'; perLevel: number }
   /** Estilhaços — chance % per level that a rock this hero destroys shatters, hitting each rock on
    *  its four sides for `SHATTER_FRAC` of the killing hit. Paid per kill, so it lives in the clear
    *  (`model/clear-time.ts`), not in a per-bomb damage figure. */
@@ -137,9 +140,8 @@ export const ABILITIES: AbilityDef[] = [
   // pool his gear multiplies ~5×. Before the patch it multiplied the roll (×21 at rank 20), and
   // that pre-patch capture is registered as such.
   { id: 'ponta_diamante', name: 'Ponta de Diamante', max: 20, effectText: '+1 Penetração (pontos)/nível', effect: { kind: 'penetrationPp', perLevel: 1, onSheet: true } },
-  // Live wiki `per_level` 0.0125 → 0.0075 between the 2026-09-02 and 2026-09-12 pulls (15% of
-  // HP at cap, was 25%). The same wiki edit records the 2026-09-01 semantics: below the threshold
-  // the rock is destroyed — which is what `executePct` always priced.
+  // No execute was seen on any farm hit: rocks a rank-20 carrier left below the threshold survived,
+  // measured on frame captures of two accounts, held out of band, not in this repo.
   { id: 'misericordia', name: 'Misericórdia', max: 20, effectText: 'executa rocha < 0.75%/nível', effect: { kind: 'executePct', perLevel: 0.75 } },
   { id: 'explosao_ampla', name: 'Explosão Ampla', max: 20, effectText: `+1 célula de raio da explosão a cada 10 níveis (sobe nos níveis 10 e 20); as células extras causam ${EXTRA_RANGE_FRAC * 100}% do dano`, effect: { kind: 'rangeCells', perLevel: 0.1 } },
   { id: 'contra_relogio', name: 'Contra o Relógio', max: 20, effectText: '+2% Ataque em fase de tempo/nível', effect: { kind: 'gateAttackPct', perLevel: 2 } },
@@ -247,7 +249,10 @@ export interface AbilityMods {
   sheetCdrFlat: number;
   /** Cells of blast reach past the base 1 — always whole, see {@link wholeRangeCells}. */
   rangeCells: number;
-  dmgMult: number; // second blast + execute
+  /** Detonação Dupla's second blast as an expectation: `1 + secondBlastChance × SECOND_BLAST_FRAC`. */
+  dmgMult: number;
+  /** Detonação Dupla — the chance, 0..1, that a bomb blasts a second time. */
+  secondBlastChance: number;
   /** Estilhaços — percent chance a rock this hero destroys shatters, 0..100. */
   shatterChancePct: number;
   gateAttackMult: number; // applies only inside timed phases (self ability, Contra o Relógio)
@@ -276,6 +281,7 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
     sheetCdrFlat: 0,
     rangeCells: 0,
     dmgMult: 1,
+    secondBlastChance: 0,
     shatterChancePct: 0,
     gateAttackMult: 1,
     bossDmgMult: 1,
@@ -309,11 +315,13 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
       case 'rangeCells':
         mods.rangeCells += wholeRangeCells(effect.perLevel, count);
         break;
-      case 'secondBlastPct':
-        mods.dmgMult *= 1 + ((effect.perLevel * count) / 100) * 0.5;
+      case 'secondBlastPct': {
+        const chance = (effect.perLevel * count) / 100;
+        mods.secondBlastChance = Math.min(1, mods.secondBlastChance + chance);
+        mods.dmgMult *= 1 + chance * SECOND_BLAST_FRAC;
         break;
+      }
       case 'executePct':
-        mods.dmgMult *= 1 / (1 - (effect.perLevel * count) / 100);
         break;
       case 'shatterPct':
         mods.shatterChancePct = Math.min(100, mods.shatterChancePct + effect.perLevel * count);

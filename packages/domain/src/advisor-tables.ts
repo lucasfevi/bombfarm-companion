@@ -6,7 +6,7 @@
  */
 import { gateDamage, type Context, type HeroSheet, type ReoptResult } from './model';
 import { GATES } from './planner-constants';
-import { PROPS, hitsToKill, oneshotGapPct, propHp } from './phases';
+import { PROPS, hitsToKillWithSecondBlast, oneshotGapPct, propHp } from './phases';
 import { shouldRecommendReset } from './reset-advice';
 
 export type PropHtkRow = {
@@ -24,13 +24,18 @@ export type GateRow = {
   dmg: number;
 };
 
-export function propHtkRows(stoneHp: number, avgHit: number, targetProp: string | null): PropHtkRow[] {
+export function propHtkRows(
+  stoneHp: number,
+  avgHit: number,
+  targetProp: string | null,
+  secondBlastChance = 0,
+): PropHtkRow[] {
   return PROPS.map((prop) => {
     const hitPoints = propHp(stoneHp, prop.hpMult);
     return {
       name: prop.name,
       hp: hitPoints,
-      hits: hitsToKill(avgHit, hitPoints),
+      hits: hitsToKillWithSecondBlast(avgHit, hitPoints, secondBlastChance),
       oneshotGapPct: oneshotGapPct(avgHit, hitPoints),
       highlight: targetProp != null && prop.name === targetProp,
     };

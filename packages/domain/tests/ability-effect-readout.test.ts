@@ -38,19 +38,16 @@ describe('ownAbilityReadout — the model’s own arithmetic read back', () => {
     expect(readout.kind === 'rangeCells' && readout.value).toBeCloseTo(1, 12);
   });
 
-  it('Detonação Dupla reads as its chance and the multiplier abilityMods applies', () => {
+  it('Detonação Dupla reads as its chance and the share of the hit its second blast deals', () => {
     expect(ownAbilityReadout('detonacao_dupla', 20)).toEqual({
       kind: 'secondBlast',
-      chancePct: 50,
-      dmgMult: abilityMods({ detonacao_dupla: 20 }).dmgMult,
+      chancePct: abilityMods({ detonacao_dupla: 20 }).secondBlastChance * 100,
+      blastPct: 50,
     });
   });
 
-  it('Misericórdia reads as its execute threshold and the multiplier abilityMods applies', () => {
-    const readout = ownAbilityReadout('misericordia', 20);
-    expect(readout.kind).toBe('execute');
-    expect(readout.kind === 'execute' && readout.thresholdPct).toBeCloseTo(15, 9);
-    expect(readout.kind === 'execute' && readout.dmgMult).toBe(abilityMods({ misericordia: 20 }).dmgMult);
+  it('Misericórdia reads as its execute threshold and claims no damage multiplier', () => {
+    expect(ownAbilityReadout('misericordia', 20)).toEqual({ kind: 'execute', thresholdPct: 15 });
   });
 
   it('Contra o Relógio reads as gate attack, never as attack', () => {

@@ -45,7 +45,8 @@
  * function of every input; integrating a fractional count to zero would take unbounded time.
  */
 
-import { BASE_BLAST_RANGE, EXTRA_RANGE_FRAC, SHATTER_FRAC } from '../phase-wiki';
+import { BASE_BLAST_RANGE, EXTRA_RANGE_FRAC, SECOND_BLAST_FRAC, SHATTER_FRAC } from '../phase-wiki';
+import { hitsToKillWithSecondBlast } from '../phases';
 import {
   REPLANT_HOP_CELLS,
   freeHopCells,
@@ -197,6 +198,8 @@ export type ClearHero = {
   critMult: number;
   /** Estilhaços: the chance, 0..1, that a rock this hero destroys shatters. Absent means none. */
   shatterChance?: number;
+  /** Detonação Dupla: the chance, 0..1, that a blast strikes again. Absent means none. */
+  secondBlastChance?: number;
 };
 
 export type ClearPropType = {
@@ -239,8 +242,18 @@ function unclearable(heroCount: number): ClearResult {
  * `c*(k) = ceil((hp − k × hit) / (crit − hit))` of them were crits, so each term is a binomial
  * lower tail. Exact, and cheap: at most `ceil(hp / hit)` terms. Past {@link CRIT_ROLL_MAX_HITS}
  * the sum is replaced by `hp / E[hit]`, which the central limit theorem makes accurate there.
+ *
+ * With a `secondBlastChance` one hit is one bomb's blast, second blast included
+ * ({@link expectedHitsWithSecondBlast}).
  */
-export function expectedHitsToKill(hp: number, hitNoCrit: number, critChance: number, critMult: number): number {
+export function expectedHitsToKill(
+  hp: number,
+  hitNoCrit: number,
+  critChance: number,
+  critMult: number,
+  secondBlastChance = 0,
+): number {
+  if (secondBlastChance > 0) return expectedHitsWithSecondBlast(hp, hitNoCrit, critChance, critMult, Math.min(1, secondBlastChance));
   if (!(hitNoCrit > 0) || !Number.isFinite(hitNoCrit)) return Infinity;
   if (!(hp > 0)) return 0;
   const p = Math.min(1, Math.max(0, critChance));
@@ -271,6 +284,52 @@ export function expectedHitsToKill(hp: number, hitNoCrit: number, critChance: nu
     }
     firstTerm *= p;
     if (firstTerm < 1e-15) break;
+  }
+  return expected;
+}
+
+/**
+ * {@link expectedHitsToKill} when each blast, with chance `s`, strikes again for
+ * {@link SECOND_BLAST_FRAC} of the hit, rolling its own crit. The second blast lands only on a
+ * prop the first left standing, which never changes the count, so `E[blasts] = Σ P(alive)` over
+ * every damage state a blast sequence can reach is exact. Damage is a whole number of half hits
+ * (`i` non-crit, `j` crit halves), and every blast adds to both counts, so walking `i` then `j`
+ * upward visits each state after all of its predecessors.
+ */
+function expectedHitsWithSecondBlast(hp: number, hitNoCrit: number, critChance: number, critMult: number, s: number): number {
+  if (!(hitNoCrit > 0) || !Number.isFinite(hitNoCrit)) return Infinity;
+  if (!(hp > 0)) return 0;
+  const p = Math.min(1, Math.max(0, critChance));
+  const cm = Math.max(1, critMult);
+  if (p >= 1) return hitsToKillWithSecondBlast(hitNoCrit * cm, hp, s);
+  if (p <= 0 || cm <= 1) return hitsToKillWithSecondBlast(hitNoCrit, hp, s);
+  if (Math.ceil(hp / hitNoCrit) > CRIT_ROLL_MAX_HITS) {
+    return hp / (hitNoCrit * (1 - p + p * cm) * (1 + s * SECOND_BLAST_FRAC));
+  }
+
+  const units = 1 / SECOND_BLAST_FRAC;
+  const aliveBelow = hp / (hitNoCrit * SECOND_BLAST_FRAC) - 1e-12;
+  const rows = Math.ceil(aliveBelow) + 2 * units + 2;
+  const cols = Math.ceil(aliveBelow / cm) + 2 * units + 2;
+  const reach = new Float64Array(rows * cols);
+  reach[0] = 1;
+  const q = 1 - p;
+  const steps: ReadonlyArray<readonly [number, number, number]> = [
+    [units, 0, q * (1 - s)],
+    [units + 1, 0, q * s * q],
+    [units, 1, q * s * p],
+    [0, units, p * (1 - s)],
+    [1, units, p * s * q],
+    [0, units + 1, p * s * p],
+  ];
+  let expected = 0;
+  for (let i = 0; i < aliveBelow; i++) {
+    for (let j = 0; i + j * cm < aliveBelow; j++) {
+      const mass = reach[i * cols + j];
+      if (mass === 0) continue;
+      expected += mass;
+      for (const [di, dj, probability] of steps) reach[(i + di) * cols + (j + dj)] += mass * probability;
+    }
   }
   return expected;
 }
@@ -320,7 +379,9 @@ export function simulateClear(
   const squad = active.reduce((sum, hero) => sum + hero.presence, 0);
 
   const hitsToKill = active.map((hero) =>
-    props.map((prop) => expectedHitsToKill(prop.hp, hero.hitNoCrit, hero.critChance, hero.critMult)),
+    props.map((prop) =>
+      expectedHitsToKill(prop.hp, hero.hitNoCrit, hero.critChance, hero.critMult, hero.secondBlastChance ?? 0),
+    ),
   );
   if (hitsToKill.every((row) => row.every((hits) => !Number.isFinite(hits)))) return unclearable(heroes.length);
 
@@ -342,7 +403,17 @@ export function simulateClear(
   const extraCells = active.map((hero) => Math.max(0, hero.blastCells - BASE_BLAST_CELLS));
   const extraKillsPerHitByType = active.map((hero, h) =>
     extraCells[h] > 0
-      ? props.map((prop) => 1 / expectedHitsToKill(prop.hp, hero.hitNoCrit * EXTRA_RANGE_FRAC, hero.critChance, hero.critMult))
+      ? props.map(
+          (prop) =>
+            1 /
+            expectedHitsToKill(
+              prop.hp,
+              hero.hitNoCrit * EXTRA_RANGE_FRAC,
+              hero.critChance,
+              hero.critMult,
+              hero.secondBlastChance ?? 0,
+            ),
+        )
       : null,
   );
   const extraKillsPerHit = new Array<number>(heroCount).fill(0);

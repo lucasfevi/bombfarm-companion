@@ -83,7 +83,7 @@ export function sheetStatShortLabel(stat: SheetKey, lang: Lang): string {
 }
 
 /**
- * An ability readout as the game would say it — "+20 crit points", "×1,09 de dano". The number
+ * An ability readout as the game would say it — "+20 crit points", "50% de chance de 2ª explosão". The number
  * is formatted by the caller so it keeps the reader's own separator convention.
  */
 export function abilityReadoutText(
@@ -98,11 +98,9 @@ export function abilityReadoutText(
     case 'secondBlast':
       return template
         .replace('{value}', formatNumber(readout.chancePct, decimals))
-        .replace('{mult}', formatNumber(readout.dmgMult, 2));
+        .replace('{share}', formatNumber(readout.blastPct, 0));
     case 'execute':
-      return template
-        .replace('{value}', formatNumber(readout.thresholdPct, decimals))
-        .replace('{mult}', formatNumber(readout.dmgMult, 2));
+      return template.replace('{value}', formatNumber(readout.thresholdPct, decimals));
     case 'shatter':
       return template
         .replace('{value}', formatNumber(readout.chancePct, decimals))
@@ -340,8 +338,7 @@ const SHEET_STAT_SHORT_LABELS: Record<SheetKey, Bilingual> = {
 type AbilityReadoutKind = Exclude<AbilityEffectReadout['kind'], 'none'>;
 
 /** How many decimals each readout's leading figure prints with: Marcha's per-level step is
- *  0.185%, Fantasma's 0.05%; a radius is whole cells; the rest move in whole or half units. A
- *  multiplier always prints with two. */
+ *  0.185%, Fantasma's 0.05%; a radius is whole cells; the rest move in whole or half units. */
 const ABILITY_READOUT_DECIMALS: Record<AbilityReadoutKind, number> = {
   attackPct: 0,
   speedPct: 2,
@@ -376,8 +373,8 @@ const ABILITY_READOUT_UNITS: Record<AbilityReadoutKind, Bilingual> = {
   penetrationPoints: { pt: '+{value}% de penetração', en: '+{value}% penetration' },
   critDmgPct: { pt: '+{value}% de dano crítico', en: '+{value}% crit damage' },
   rangeCells: { pt: '+{value} de alcance', en: '+{value} range' },
-  secondBlast: { pt: '{value}% de chance (×{mult} dano)', en: '{value}% chance (×{mult} dmg)' },
-  execute: { pt: 'executa < {value}% HP (×{mult} dano)', en: 'executes < {value}% HP (×{mult} dmg)' },
+  secondBlast: { pt: '{value}% de chance de 2ª explosão ({share}% do dano)', en: '{value}% chance of a 2nd blast ({share}% dmg)' },
+  execute: { pt: 'executa < {value}% HP (sem dano medido)', en: 'executes < {value}% HP (no damage measured)' },
   shatter: { pt: '{value}% de chance de estilhaçar ({share}% do golpe nos 4 lados)', en: '{value}% chance to shatter ({share}% of the hit to 4 sides)' },
   gateAttackPct: { pt: '+{value}% em portões', en: '+{value}% on gates' },
   packDmgPctPerAlly: { pt: '+{value}% de dano por aliado', en: '+{value}% dmg per ally' },

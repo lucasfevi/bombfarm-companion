@@ -39,13 +39,13 @@ export type CombatMults = {
   /**
    * What every single blast carries: `packMult × (1 + extra)`. The number a damage popup shows
    * is the sheet attack through mitigation times this — Detonação Dupla's second blast is a
-   * separate popup, and Misericórdia's execute is a rock destroyed, not a larger hit.
+   * separate popup.
    */
   hitMult: number;
   /**
-   * Expected damage per bomb, relative to the sheet attack: `hitMult × abilities`, where
-   * `abilities` is `AbilityMods.dmgMult` — the second-blast chance and the execute threshold as
-   * expectations. DPS, gate damage and hits-to-kill read this; a printed hit never does.
+   * Expected damage per bomb, relative to the sheet attack: `hitMult × AbilityMods.dmgMult`, the
+   * second blast as an expectation — exact where the target always survives the first blast. DPS,
+   * gate, boss and duel damage read this; a printed hit and hits-to-kill never do.
    */
   dmgMult: number;
 };
