@@ -215,6 +215,7 @@ export {
   PREMIUM_REFRESH_EVERY_MS,
   PREMIUM_REFRESH_FLOOR_MS,
   PREMIUM_SIGN_IN_TIMEOUT_MS,
+  REPORTED_PLAYER_NAME_MAX_LENGTH,
   isSteamId64,
   readHandOffBody,
   readPremiumMeBody,
@@ -223,6 +224,7 @@ export {
   readReportBody,
   readSessionTokenBody,
   readSignInRequestBody,
+  reportablePlayerName,
   signedOutPremiumView,
 } from './premium.js';
 export type {

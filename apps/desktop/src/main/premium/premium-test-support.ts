@@ -351,7 +351,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
   const opened: string[] = [];
   const views: PremiumView[] = [];
   const identity: { current: GameIdentity | null } = {
-    current: { accountId: SECRETS.accountId, steamId64: SECRETS.steamId64 },
+    current: { accountId: SECRETS.accountId, steamId64: SECRETS.steamId64, playerName: null },
   };
   let openingFails = false;
   const realApi = createPremiumApi(stub.http);

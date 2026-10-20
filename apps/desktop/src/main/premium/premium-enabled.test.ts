@@ -32,7 +32,7 @@ function deps() {
     db: null,
     originOverride: null,
     offline: false,
-    readGameIdentity: () => null,
+    readGameIdentity: vi.fn(() => null),
     locale: () => 'en' as const,
     log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
     onChanged: vi.fn(),
@@ -45,13 +45,18 @@ beforeEach(() => {
 });
 
 describe('building the Premium service per flavor', () => {
-  it.each(['beta', 'prod'] as const)('creates no service and no transport in the %s flavor', (flavor) => {
-    const service = createPremiumWhenEnabled(FLAVORS[flavor].premium, deps());
+  it.each(['beta', 'prod'] as const)(
+    'creates no service and no transport, and reads no game identity or name, in the %s flavor',
+    (flavor) => {
+      const built = deps();
+      const service = createPremiumWhenEnabled(FLAVORS[flavor].premium, built);
 
-    expect(service).toBeNull();
-    expect(transport.createPremiumHttp).not.toHaveBeenCalled();
-    expect(electron.fetch).not.toHaveBeenCalled();
-  });
+      expect(service).toBeNull();
+      expect(transport.createPremiumHttp).not.toHaveBeenCalled();
+      expect(electron.fetch).not.toHaveBeenCalled();
+      expect(built.readGameIdentity).not.toHaveBeenCalled();
+    },
+  );
 
   it('creates the service and its transport in the dev flavor', () => {
     const service = createPremiumWhenEnabled(FLAVORS.dev.premium, deps());

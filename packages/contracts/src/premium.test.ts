@@ -4,6 +4,7 @@ import {
   PREMIUM_REFRESH_EVERY_MS,
   PREMIUM_REFRESH_FLOOR_MS,
   PREMIUM_SIGN_IN_TIMEOUT_MS,
+  REPORTED_PLAYER_NAME_MAX_LENGTH,
   isSteamId64,
   readHandOffBody,
   readPremiumMeBody,
@@ -12,6 +13,7 @@ import {
   readReportBody,
   readSessionTokenBody,
   readSignInRequestBody,
+  reportablePlayerName,
   signedOutPremiumView,
 } from './premium.js';
 
@@ -304,8 +306,36 @@ describe('readReportBody', () => {
 });
 
 describe('game-account report fields', () => {
-  it('lists exactly the two the API accepts', () => {
-    expect(GAME_ACCOUNT_REPORT_FIELDS).toEqual(['account_id', 'steam_id64']);
+  it('lists exactly the three the API accepts', () => {
+    expect(GAME_ACCOUNT_REPORT_FIELDS).toEqual(['account_id', 'steam_id64', 'player_name']);
+  });
+});
+
+describe('reportablePlayerName', () => {
+  it('passes a name through trimmed', () => {
+    expect(reportablePlayerName('  Lucas ')).toBe('Lucas');
+  });
+
+  it('accepts one character and exactly the maximum', () => {
+    expect(reportablePlayerName('L')).toBe('L');
+    const longest = 'x'.repeat(REPORTED_PLAYER_NAME_MAX_LENGTH);
+    expect(reportablePlayerName(longest)).toBe(longest);
+    expect(REPORTED_PLAYER_NAME_MAX_LENGTH).toBe(64);
+  });
+
+  it('measures the trimmed name, so padding never pushes a valid one over', () => {
+    const longest = 'x'.repeat(REPORTED_PLAYER_NAME_MAX_LENGTH);
+    expect(reportablePlayerName(`  ${longest}  `)).toBe(longest);
+  });
+
+  it.each([
+    ['no name', null],
+    ['an empty name', ''],
+    ['a blank name', '   '],
+    ['a name one over the maximum', 'x'.repeat(65)],
+    ['a name whose astral characters take it over the maximum in UTF-16 units', '😀'.repeat(33)],
+  ])('answers null for %s', (_name, value) => {
+    expect(reportablePlayerName(value)).toBeNull();
   });
 });
 

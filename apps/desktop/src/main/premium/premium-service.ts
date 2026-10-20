@@ -3,6 +3,7 @@ import {
   PREMIUM_REFRESH_EVERY_MS,
   PREMIUM_REFRESH_FLOOR_MS,
   PREMIUM_SIGN_IN_TIMEOUT_MS,
+  reportablePlayerName,
   type AppLocale,
   type PremiumActionResult,
   type PremiumMe,
@@ -25,6 +26,7 @@ const BACKOFF_CAP_MS = 3_600_000;
 export interface GameIdentity {
   readonly accountId: string;
   readonly steamId64: string | null;
+  readonly playerName: string | null;
 }
 
 export interface PremiumServiceDeps {
@@ -84,7 +86,8 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
   let report: PremiumReportOutcome | null = null;
   let reportedAccountId: string | null = null;
   let reportedPair: string | null = null;
-  let reportingPair: string | null = null;
+  let reportedName: string | null = null;
+  let reporting: string | null = null;
 
   let listener: LoopbackListener | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -151,7 +154,8 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     report = null;
     reportedAccountId = null;
     reportedPair = null;
-    reportingPair = null;
+    reportedName = null;
+    reporting = null;
     remembered = true;
     deps.vault.clear();
     deps.cache.clear();
@@ -328,19 +332,22 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       publish();
       return;
     }
+    const playerName = reportablePlayerName(identity.playerName);
     const pair = JSON.stringify([accountId, steamId64]);
-    if (pair === reportedPair) {
+    const nameIsCurrent = playerName === null || playerName === reportedName;
+    if (pair === reportedPair && nameIsCurrent) {
       report = { kind: 'linked' };
       reportedAccountId = accountId;
       publish();
       return;
     }
-    if (pair === reportingPair) return;
-    reportingPair = pair;
+    const attempt = JSON.stringify([accountId, steamId64, playerName]);
+    if (attempt === reporting) return;
+    reporting = attempt;
     try {
       const bearerToken = await bearer(startedIn);
       if (bearerToken === null) return;
-      const outcome = await deps.api.reportGameAccount(bearerToken, { accountId, steamId64 });
+      const outcome = await deps.api.reportGameAccount(bearerToken, { accountId, steamId64, playerName });
       if (startedIn !== generation) return;
       if (outcome.kind === 'unauthorized') {
         handleUnauthorized(startedIn);
@@ -348,7 +355,10 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       }
       report = outcome;
       reportedAccountId = accountId;
-      if (outcome.kind === 'linked') reportedPair = pair;
+      if (outcome.kind === 'linked') {
+        reportedPair = pair;
+        reportedName = playerName;
+      }
       deps.log.info({
         scope: 'premium',
         event: 'report.outcome',
@@ -357,7 +367,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       });
       publish();
     } finally {
-      if (reportingPair === pair) reportingPair = null;
+      if (reporting === attempt) reporting = null;
     }
   }
 
