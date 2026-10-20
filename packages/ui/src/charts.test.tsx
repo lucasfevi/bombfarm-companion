@@ -136,6 +136,27 @@ describe('LineChart', () => {
     expect(shown).toEqual(['d0', 'd3', 'd6', 'd9']);
   });
 
+  it('keeps the newest label when the step does not land on it', () => {
+    const labels = Array.from({ length: 9 }, (_, index) => `d${String(index)}`);
+    const html = line({ labels, maxXLabels: 4, series: [{ label: 'A', values: labels.map((_, index) => index) }] });
+    const shown = [...html.matchAll(/text-anchor="middle"[^>]*>(d\d)</g)].map((match) => match[1]);
+    expect(shown).toEqual(['d2', 'd5', 'd8']);
+  });
+
+  it('aims the y axis at tickCount intervals', () => {
+    expect(line().match(/<line /g)).toHaveLength(5);
+    expect(line({ tickCount: 2 }).match(/<line /g)).toHaveLength(3);
+    expect(bar([0, 5, 10], { tickCount: 2 }).match(/<line /g)).toHaveLength(3);
+  });
+
+  it('wraps a fifth series back to the first series token', () => {
+    const html = line({
+      series: [1, 2, 3, 4, 5].map((n) => ({ label: `S${String(n)}`, values: [n, n + 1, n + 2] })),
+    });
+    const strokes = [...html.matchAll(/<path d="[^"]+" fill="none" stroke="([^"]+)"/g)].map((match) => match[1]);
+    expect(strokes).toEqual([1, 2, 3, 4, 1].map((n) => `var(--color-series-${String(n)})`));
+  });
+
   it('adds a legend only when there is more than one series, unless asked', () => {
     expect(line()).not.toContain('<ul');
     const two = line({ series: [ONE[0], { label: 'Returning', values: [1, 2, 3] }] });
@@ -169,6 +190,14 @@ describe('LineChart', () => {
 });
 
 describe('AreaChart', () => {
+  it('server-renders the whole fixed-viewBox graphic', () => {
+    const html = area();
+    expect(html).toMatch(/^<div[^>]*><div class="relative"><svg viewBox="0 0 640 230" role="img" aria-label="Daily visitors"/);
+    expect(paths(html)).toEqual(['M44 204 L330 108 L616 12 L616 204 L44 204 Z', 'M44 204 L330 108 L616 12']);
+    expect(html).toContain('>Wed</text></svg>');
+    expect(html).not.toContain('aria-busy');
+  });
+
   it('adds a fill closed down to the baseline at 20% of the series colour', () => {
     const html = area();
     expect(paths(html)).toEqual(['M44 204 L330 108 L616 12 L616 204 L44 204 Z', 'M44 204 L330 108 L616 12']);
@@ -181,6 +210,15 @@ describe('AreaChart', () => {
 });
 
 describe('BarChart', () => {
+  it('server-renders the whole fixed-viewBox graphic', () => {
+    const html = bar([0, 5, 10]);
+    expect(html).toMatch(/^<div[^>]*><div class="relative"><svg viewBox="0 0 640 230" role="img" aria-label="Daily visitors"/);
+    expect(paths(html)).toHaveLength(2);
+    expect(html).toContain('<rect x="119.33" y="203"');
+    expect(html).toContain('>Wed</text></svg>');
+    expect(html).not.toContain('aria-busy');
+  });
+
   it('draws one bar per reading with only the top corners rounded', () => {
     expect(paths(bar([0, 5, 10]))).toEqual([
       'M310 204 V112 A4 4 0 0 1 314 108 H346 A4 4 0 0 1 350 112 V204 Z',
@@ -193,6 +231,15 @@ describe('BarChart', () => {
     expect(d).toMatch(/^M\S+ 204 V\S+ A\S+ \S+ 0 0 1/);
     const radius = Number(/A([\d.]+) /.exec(d ?? '')?.[1]);
     expect(radius).toBeLessThanOrEqual(4);
+  });
+
+  it('shrinks the radius to the bar height for a bar shorter than the cap', () => {
+    expect(paths(bar([1, 1000], { labels: ['a', 'b'] }))[0]).toBe(
+      'M167 204 V204 A0.19 0.19 0 0 1 167.19 203.81 H206.81 A0.19 0.19 0 0 1 207 204 V204 Z',
+    );
+    expect(paths(bar([20, 1000], { labels: ['a', 'b'] }))[0]).toBe(
+      'M167 204 V204 A3.84 3.84 0 0 1 170.84 200.16 H203.16 A3.84 3.84 0 0 1 207 204 V204 Z',
+    );
   });
 
   it('draws a zero as a one pixel baseline in the line colour', () => {
@@ -230,7 +277,16 @@ describe('module boundaries', () => {
   const dir = dirname(fileURLToPath(import.meta.url));
   const source = (file: string) => readFileSync(join(dir, file), 'utf8');
 
-  it.each(['line-chart.tsx', 'area-chart.tsx', 'bar-chart.tsx', 'chart-frame.tsx', 'chart-grid.tsx', 'chart-legend.tsx'])(
+  it.each([
+    'line-chart.tsx',
+    'area-chart.tsx',
+    'bar-chart.tsx',
+    'chart-frame.tsx',
+    'chart-grid.tsx',
+    'chart-legend.tsx',
+    'chart-model.ts',
+    'chart-scale.ts',
+  ])(
     '%s is server-safe: no directive, no hooks, no handlers',
     (file) => {
       const text = source(file);

@@ -86,6 +86,7 @@ export function ChartPointer({ width, height, plotTop, plotBottom, xs, tooltips,
       {activeX === undefined || tooltip === undefined ? null : (
         <div
           data-chart-tooltip
+          aria-live="polite"
           className={cn(TOOLTIP_CLASS, activeX / width > 0.6 ? '-ml-3 -translate-x-full' : 'ml-3')}
           style={{ left: `${String((activeX / width) * 100)}%`, top: `${String((plotTop / height) * 100)}%` }}
         >
