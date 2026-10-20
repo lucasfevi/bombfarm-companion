@@ -58,6 +58,9 @@ export default function Page() {
       <ui.DefinitionList items={[{ term: 'Fixture term', detail: 'Fixture detail' }]} />
       <ui.TitledList title="Fixture list" items={['Fixture item']} empty="Fixture empty" />
       <ui.Disclosure summary="Fixture summary">Fixture disclosure body</ui.Disclosure>
+      <ui.StatusDot tone="live" label="Fixture status" live />
+      <ui.StepProgress label="Fixture steps" steps={['Fixture one', 'Fixture two']} current={1} />
+      <ui.SegmentedToggleForm name="fixture-range" value="b" ariaLabel="Fixture range" options={[{ id: 'a', label: 'Fixture A' }, { id: 'b', label: 'Fixture B' }]} />
       <ui.Skeleton shape="rows" rows={2} label="Fixture loading" />
       <ui.ErrorScreen title="Fixture error" message="Fixture error message" action={<a href="/fixture-retry">Retry</a>} />
       <ui.NativeSelect aria-label="Fixture native select" defaultValue="b">

@@ -79,6 +79,16 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(html).toMatch(/<details class="[^"]*"><summary class="[^"]*">Fixture summary<\/summary><div class="pt-2.5 pb-1">Fixture disclosure body<\/div><\/details>/);
   });
 
+  it('prerenders the status dot, step progress and form toggle', () => {
+    const html = readPage('index.html');
+    expect(html).toContain('<span class="flex items-center gap-3" aria-live="polite">');
+    expect(html).toContain('<span class="tabular-nums">Fixture status</span>');
+    expect(html).toContain('<ol aria-label="Fixture steps"');
+    expect(html).toContain('data-step="current" aria-current="step"');
+    expect(html).toContain('<button type="submit" value="b" aria-pressed="true"');
+    expect(html).toContain('name="fixture-range">Fixture B</button>');
+  });
+
   it('prerenders the skeleton as a labelled busy region of hidden pulsing rows', () => {
     const html = readPage('index.html');
     expect(html).toContain('<div role="status" aria-busy="true" aria-label="Fixture loading"><div class="flex flex-col gap-2" aria-hidden="true">');

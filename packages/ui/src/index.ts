@@ -56,6 +56,9 @@ export {
 } from './shell-density';
 export { SegmentedToggle } from './segmented-toggle';
 export type { SegmentedToggleOption, SegmentedToggleProps } from './segmented-toggle';
+export { SegmentedToggleForm, type SegmentedToggleFormProps } from './segmented-toggle-form';
+export { StatusDot, type StatusDotProps, type StatusDotTone } from './status-dot';
+export { StepProgress, type StepProgressProps } from './step-progress';
 export { ActionChip, type ActionChipProps, type ActionChipTone } from './action-chip';
 export { EmptyState, type EmptyStateProps } from './empty-state';
 export { Skeleton, type SkeletonProps } from './skeleton';
