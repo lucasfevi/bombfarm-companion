@@ -35,6 +35,7 @@ export const panelRecipe = cva(panelBaseClass, {
     need: { true: panelNeedClass, false: '' },
     aligned: { true: panelAlignedClass, false: '' },
     unverified: { true: panelUnverifiedClass, false: '' },
+    overflow: { visible: 'max-[720px]:overflow-visible' },
   },
   defaultVariants: { focus: false, need: false, aligned: false, unverified: false },
 });
