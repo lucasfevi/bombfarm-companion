@@ -94,6 +94,15 @@ describe('priceSkillTree', () => {
     expect(after.goldPerHourDelta / before.goldPerHourDelta).toBeCloseTo(boosted.baseline.goldPerHour / plain.baseline.goldPerHour, 6);
   });
 
+  it('prices the baseline under the timed Pass Bonus exactly as the farm board does', () => {
+    const boost = { gold: false, xp: false, drop: false, passBonus: { gold: 0.25, xp: 0.15 } };
+    const priced = price({ boost });
+    const board = computeFarmRates({ heroes, account, enabledHeroIds, returnBonus: 'off', boost, maxPhase: account.maxPhase ?? null });
+    const row = computeFarmRateRow(phase, board.squad, { returnBonus: 'off', boost, maxPhase: account.maxPhase ?? null });
+    expect(priced.baseline.goldPerHour).toBeCloseTo(row!.goldPerHour, 6);
+    expect(priced.baseline.goldPerHour).toBeGreaterThan(price().baseline.goldPerHour);
+  });
+
   it('gives a coin node a positive gold gain and no combat delta, a luck node nothing on either', () => {
     const pricing = price();
     const byId = new Map(pricing.gains.map((gain) => [gain.id, gain]));
