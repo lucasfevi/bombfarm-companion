@@ -113,6 +113,19 @@ export default function Page() {
           </ui.DataTable.Body>
         </ui.DataTable.Table>
       </ui.DataTable.Root>
+      <ui.LineChart
+        labels={['Mon', 'Tue', 'Wed']}
+        ariaLabel="Fixture line chart"
+        empty="Fixture line empty"
+        series={[{ label: 'Fixture visitors', values: [0, 5, 10] }]}
+      />
+      <ui.BarChart
+        labels={['Mon', 'Tue', 'Wed']}
+        ariaLabel="Fixture bar chart"
+        empty="Fixture bar empty"
+        series={[{ label: 'Fixture visitors', values: [0, 5, 10] }]}
+        table={{ summary: 'Fixture chart table', labelHeading: 'Fixture day' }}
+      />
     </main>
   );
 }
