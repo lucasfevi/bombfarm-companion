@@ -117,7 +117,7 @@ export function ConfirmDialog({
             <Button
               type="button"
               variant={destructive ? 'primary' : 'default'}
-              tone={tone}
+              {...(tone ? { tone } : {})}
               disabled={needsAck && !acked}
               onClick={handleConfirm}
             >
