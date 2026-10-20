@@ -120,6 +120,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'DetailsMenu',
   'SiteHeader',
   'siteHeaderBrandClass',
+  'SiteFooter',
   'MetricScoreboard',
   'NOTIFICATION_BUFFER_LIMIT',
   'NotificationCenter',

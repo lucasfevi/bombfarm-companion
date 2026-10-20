@@ -62,6 +62,13 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(html).toMatch(/<div class="order-2 ml-auto sm:hidden"><details class="relative inline-block"/);
   });
 
+  it('prerenders the site footer frame with its legal paragraph and trailing links', () => {
+    const html = readPage('index.html');
+    expect(html).toMatch(/<footer class="mx-auto mt-5 max-w-app px-4"><div class="flex flex-wrap[^"]*border-t border-line py-3">/);
+    expect(html).toMatch(/<p class="m-0 flex min-w-0 flex-1[^"]*"><span>Acme legal line<\/span><\/p>/);
+    expect(html).toMatch(/<div class="flex max-w-full shrink-0[^"]*"><a href="\/terms">Terms link<\/a><\/div>/);
+  });
+
   it('prerenders the disclosure menu closed, with its labelled summary and its items', () => {
     const html = readPage('index.html');
     expect(html).toMatch(/<details class="relative inline-block"><summary aria-label="Site menu"/);

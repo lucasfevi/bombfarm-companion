@@ -209,6 +209,7 @@ export { Dialog } from './dialog';
 export { Menu, DetailsMenu } from './menu';
 export { SiteHeader, type SiteHeaderProps } from './site-header';
 export { siteHeaderBrandClass } from './site-header.recipe';
+export { SiteFooter, type SiteFooterProps } from './site-footer';
 export { ConfirmDialog, type ConfirmDialogProps } from './confirm-dialog';
 
 export { buttonRecipe, type ButtonVariant } from './button.recipe';

@@ -30,6 +30,10 @@ export default function Page() {
           </ui.DetailsMenu.Root>
         }
       />
+      <ui.SiteFooter
+        legal={<span>Acme legal line</span>}
+        trailing={<a href="/terms">Terms link</a>}
+      />
       <ui.Panel data-testid="server-panel">server panel</ui.Panel>
       <ui.Select aria-label="Fixture select" defaultValue="a">
         <option value="a">Alpha</option>
