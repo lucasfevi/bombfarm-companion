@@ -26,14 +26,14 @@ export function marginalFuseSeconds(cdrPct: number): number {
  * Duel heroes plant faster than the farm cadence predicts, and the gap widens as the fuse
  * shortens: duel bombs/s = farm bombs/s × {@link DUEL_CADENCE_SCALE} × (fuse /
  * {@link DUEL_CADENCE_PIVOT_FUSE}) ^ {@link DUEL_CADENCE_EXPONENT}. Fitted on 283 stored PVP duel
- * replays (4,900 hero-duels), 10-fold held out by replay, held out of band, not in this repo:
- * exponent 95% CI [−0.239, −0.190]; held-out per-hero rms at a sub-1.1 s fuse 12.5% against the
- * farm model's 29.5%. Walk speed adds nothing once the fuse is in. Valid for a 0.4–2.0 s fuse,
- * rooms at act 3–4, classic field — so the fuse is clamped to that range.
+ * replays (4,900 hero-duels), 10-fold held out by replay, held out of band, not in this repo, and
+ * relative to the farm cadence whose free hop follows walk speed × fuse — so a refit of that hop
+ * moves these. Walk speed adds nothing once the fuse is in. Valid for a 0.4–2.0 s fuse, rooms at
+ * act 3–4, classic field — so the fuse is clamped to that range.
  */
-export const DUEL_CADENCE_SCALE = 1.123;
+export const DUEL_CADENCE_SCALE = 1.115;
 export const DUEL_CADENCE_PIVOT_FUSE = 1.8;
-export const DUEL_CADENCE_EXPONENT = -0.214;
+export const DUEL_CADENCE_EXPONENT = -0.194;
 export const DUEL_CADENCE_FUSE_MAX = 2;
 
 /** `exp(k × ln x)` rather than `Math.pow`, for the same bit-identical goldens as `hopSpeedFactor`. */

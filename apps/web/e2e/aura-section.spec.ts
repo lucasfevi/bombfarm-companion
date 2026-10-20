@@ -72,10 +72,11 @@ async function promisedDeltaPct(row: Locator): Promise<number> {
 
 /**
  * Both figures print integers (the strip's tooltip and the Combat row), so the observed move
- * carries each one's rounding on top of the row's one-decimal display precision.
+ * carries each one's rounding on top of the row's one-decimal display precision. The rounding is
+ * relative to each figure, so it scales the ratio `after / before`, not the move alone.
  */
 function moveTolerancePct(before: number, after: number): number {
-  return 0.05 + 100 * (0.5 / before + 0.5 / after);
+  return 0.05 + 100 * (after / before) * (0.5 / before + 0.5 / after);
 }
 
 async function energyRankingText(page: Page): Promise<string> {

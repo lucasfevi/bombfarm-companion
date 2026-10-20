@@ -22,8 +22,9 @@ import {
   FREE_HOP_SHAPE,
   FUSE_CYCLE_OVERHEAD_SEC,
   FUSE_FLOOR,
-  FUSE_HOP_FLOOR_FACTOR,
-  FUSE_HOP_KNEE_SEC,
+  HOP_FUSE_PIVOT_SEC,
+  HOP_SPEED_EXPONENT,
+  HOP_SPEED_PIVOT,
   WALK_CYCLE_OVERHEAD_SEC,
   classicEquivalentStanding,
   fieldWalkSpeedCells,
@@ -107,52 +108,60 @@ describe('FREE_HOP_SHAPE — a spread around the density mean, not a second mean
   });
 });
 
-describe('the free hop shrinks as the fuse approaches the cooldown floor', () => {
-  it('a hero at the cooldown floor hops 0.57 of its free hop', () => {
-    expect(fuseHopFactor(FUSE_FLOOR)).toBe(FUSE_HOP_FLOOR_FACTOR);
-    expect(fuseHopFactor(FUSE_FLOOR)).toBe(0.57);
-    expect(fuseHopFactor(0.1)).toBe(FUSE_HOP_FLOOR_FACTOR);
-  });
-
-  it('a hero at a 1.3 s fuse hops its full free hop, and so does every longer fuse', () => {
-    expect(fuseHopFactor(FUSE_HOP_KNEE_SEC)).toBe(1);
-    expect(fuseHopFactor(1.32)).toBe(1);
-    expect(fuseHopFactor(1.47)).toBe(1);
-    expect(fuseHopFactor(2)).toBe(1);
-  });
-
-  it('falls on the line between the two measured points, halfway at a 0.85 s fuse', () => {
-    expect(fuseHopFactor(0.85)).toBeCloseTo((1 + FUSE_HOP_FLOOR_FACTOR) / 2, 12);
-    let previous = 0;
-    for (const fuse of [0.4, 0.6, 0.8, 1, 1.2, 1.3]) {
-      expect(fuseHopFactor(fuse)).toBeGreaterThanOrEqual(previous);
-      previous = fuseHopFactor(fuse);
+describe('the free hop follows walk speed times fuse at one shared exponent', () => {
+  it('hop scales with w·ft at a shared exponent: (w·ft / 4.83) ^ 0.38', () => {
+    for (const w of [2.4, 3, 4.5, 5]) {
+      for (const fuse of [0.4, 0.9, 1.34, 1.61, 2]) {
+        const expected = Math.pow((w * fuse) / (HOP_SPEED_PIVOT * HOP_FUSE_PIVOT_SEC), HOP_SPEED_EXPONENT);
+        expect(hopSpeedFactor(w) * fuseHopFactor(fuse)).toBeCloseTo(expected, 12);
+      }
     }
+    expect(HOP_SPEED_EXPONENT).toBe(0.38);
   });
 
-  it('the walk overhead shrinks with the hop: 0.33 s at the floor, measured 0.34', () => {
-    expect(walkCycleOverheadSeconds(FUSE_FLOOR)).toBeCloseTo(0.33, 2);
+  it('trading walk speed for fuse at a constant product leaves the hop unchanged', () => {
+    expect(hopSpeedFactor(4) * fuseHopFactor(0.8)).toBeCloseTo(hopSpeedFactor(2) * fuseHopFactor(1.6), 12);
+  });
+
+  it('reads 0.589 at the floor, 0.927 at 1.32 s, 1 at 1.61 s and 1.086 at the 2 s base', () => {
+    expect(fuseHopFactor(FUSE_FLOOR)).toBeCloseTo(0.589, 3);
+    expect(fuseHopFactor(0.1)).toBe(fuseHopFactor(FUSE_FLOOR));
+    expect(fuseHopFactor(1.32)).toBeCloseTo(0.927, 3);
+    expect(fuseHopFactor(1.61)).toBe(1);
+    expect(fuseHopFactor(2)).toBeCloseTo(1.086, 3);
+  });
+
+  it('a hero hops farther at a 1.6 s fuse than at 1.3 s', () => {
+    expect(fuseHopFactor(1.6)).toBeGreaterThan(fuseHopFactor(1.3));
+  });
+
+  it('the walk overhead keeps its knee: 0.58 s from a 1.3 s fuse up, falling linearly to 0.33 s at the floor', () => {
+    expect(walkCycleOverheadSeconds(2)).toBe(WALK_CYCLE_OVERHEAD_SEC);
+    expect(walkCycleOverheadSeconds(1.6)).toBe(WALK_CYCLE_OVERHEAD_SEC);
     expect(walkCycleOverheadSeconds(1.3)).toBe(WALK_CYCLE_OVERHEAD_SEC);
+    expect(walkCycleOverheadSeconds(0.85)).toBeCloseTo(WALK_CYCLE_OVERHEAD_SEC * (1 + 0.57) / 2, 12);
+    expect(walkCycleOverheadSeconds(FUSE_FLOOR)).toBeCloseTo(WALK_CYCLE_OVERHEAD_SEC * 0.57, 12);
+    expect(walkCycleOverheadSeconds(0.1)).toBe(walkCycleOverheadSeconds(FUSE_FLOOR));
   });
 
   it('reproduces the measured hero at the floor: a 1.05 s cycle at a hundred standing on the compact field, measured 1.04', () => {
     const classicWalk = 4.486;
     const w = fieldWalkSpeedCells(classicWalk, COMPACT_FIELD);
     const hop = freeHopCells(classicEquivalentStanding(100, COMPACT_FIELD)) * hopSpeedFactor(w) * fuseHopFactor(FUSE_FLOOR);
-    expect(hop).toBeCloseTo(2.64, 1);
+    expect(hop).toBeCloseTo(2.6, 1);
     const cycle = meanPlantCycleSeconds(FUSE_FLOOR, w, hop, plantCycleSeconds(FUSE_FLOOR, w, 1), walkCycleOverheadSeconds(FUSE_FLOOR));
     expect(cycle).toBeGreaterThan(1.0);
     expect(cycle).toBeLessThan(1.1);
   });
 
-  it('the same hero at its 1.35 s fuse keeps its full hop: a 2.0 s cycle, measured 2.15 between plants', () => {
+  it('the same hero at its 1.35 s fuse: a 4.1-cell hop and a 1.94 s cycle, measured 2.15 between plants', () => {
     const w = fieldWalkSpeedCells(4.486, COMPACT_FIELD);
     const hop = freeHopCells(classicEquivalentStanding(100, COMPACT_FIELD)) * hopSpeedFactor(w) * fuseHopFactor(1.347);
-    expect(hop).toBeCloseTo(4.57, 1);
-    expect(meanPlantCycleSeconds(1.347, w, hop)).toBeCloseTo(2.0, 1);
+    expect(hop).toBeCloseTo(4.12, 1);
+    expect(meanPlantCycleSeconds(1.347, w, hop)).toBeCloseTo(1.94, 1);
   });
 
-  it('the clear reads the shrink: the floor is worth ×1.7 over a 1.35 s fuse on the compact field, where the hop curve alone said ×1.14 (measured ×2.09 on plants per field-second)', () => {
+  it('the clear reads the shorter hop: the floor is worth over ×1.6 against a 1.35 s fuse on the compact field (measured ×2.09 on plants per field-second)', () => {
     const gain = cycleSecondsForHero(1.347, 4.486, 3, COMPACT_FIELD) / cycleSecondsForHero(FUSE_FLOOR, 4.486, 3, COMPACT_FIELD);
     expect(gain).toBeGreaterThan(1.6);
     expect(gain).toBeLessThan(2.2);
