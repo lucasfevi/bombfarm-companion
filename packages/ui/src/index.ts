@@ -69,6 +69,8 @@ export { RankControl } from './rank-control';
 export { AbilityCard, type AbilityCardProps } from './ability-card';
 export { Panel, type PanelProps } from './panel';
 export { PanelHeader, type PanelHeaderProps } from './panel-header';
+export { TextInput, type TextInputProps } from './text-input';
+export { TextArea, type TextAreaProps } from './text-area';
 export { Fields, type FieldsProps, type FieldsLayout } from './fields';
 export { FactTile, type FactTileProps } from './fact-tile';
 export { type FactTileSize } from './fact-tile.recipe';

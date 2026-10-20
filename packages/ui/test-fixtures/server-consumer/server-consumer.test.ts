@@ -53,6 +53,12 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(html).toMatch(/<[^>]*role="combobox"[^>]*aria-label="Fixture select"/);
   });
 
+  it('prerenders the text input and text area as plain form controls', () => {
+    const html = readPage('index.html');
+    expect(html).toMatch(/<input[^>]*class="w-full rounded-sm border border-line bg-bg-2 px-3 py-2 text-sm[^"]*"[^>]*placeholder="Type here"/);
+    expect(html).toMatch(/<textarea[^>]*aria-invalid="true"[^>]*>Draft body<\/textarea>/);
+  });
+
   it('prerenders the site header with its brand, nav strip and both action branches', () => {
     const html = readPage('index.html');
     expect(html).toMatch(/<header class="sticky top-0 z-30[^"]*"><div class="mx-auto flex max-w-app[^"]*">/);

@@ -103,6 +103,8 @@
     "./stepper.recipe": "./src/stepper.recipe.ts",
     "./switch": "./src/switch.tsx",
     "./switch.recipe": "./src/switch.recipe.ts",
+    "./text-area": "./src/text-area.tsx",
+    "./text-input": "./src/text-input.tsx",
     "./tabs": "./src/tabs/index.ts",
     "./toast": "./src/toast.tsx",
     "./toast-queue": "./src/toast-queue.ts",

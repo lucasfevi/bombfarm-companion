@@ -83,6 +83,11 @@ export const fieldLabelClass =
   'flex flex-col gap-[3px] text-[11px] tracking-[0.03em] text-muted uppercase';
 export const fieldControlClass =
   'w-full rounded-sm border border-line bg-bg px-2 py-1.5 text-[13px] tabular-nums';
+export const fieldFocusVisibleClass =
+  'focus-visible:ring-2 focus-visible:ring-[color-mix(in_oklch,var(--accent)_45%,transparent)]';
+export const fieldPlaceholderClass = 'placeholder:text-muted';
+export const fieldInvalidClass = 'aria-invalid:border-down focus:aria-invalid:border-down';
+export const textFieldClass = `w-full rounded-sm border border-line bg-bg-2 px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none ${fieldFocusVisibleClass} ${fieldPlaceholderClass} ${fieldInvalidClass}`;
 export const stackLabelClass = 'grid grid-cols-[1fr_auto] items-center gap-2 text-[13px] text-ink';
 
 export const treeKeysClass =

@@ -51,6 +51,8 @@ export default function Page() {
       <ui.Select aria-label="Fixture select" defaultValue="a">
         <option value="a">Alpha</option>
       </ui.Select>
+      <ui.TextInput aria-label="Fixture text input" placeholder="Type here" />
+      <ui.TextArea aria-label="Fixture text area" defaultValue="Draft body" aria-invalid />
       <ui.Accordion.Root defaultValue={['first']}>
         <ui.Accordion.Item value="first">
           <ui.Accordion.Header>
