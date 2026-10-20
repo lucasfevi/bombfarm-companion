@@ -80,6 +80,20 @@ describe('priceSkillTree', () => {
     console.info(`priced ${pricing.gains.length} nodes over ${heroes.length} heroes in ${elapsed.toFixed(0)} ms`);
   });
 
+  it('prices the baseline under a running gold Boost exactly as the farm board does, and scales a coin node with it', () => {
+    const boost = { gold: true, xp: false, drop: false };
+    const boosted = price({ boost });
+    const board = computeFarmRates({ heroes, account, enabledHeroIds, returnBonus: 'off', boost, maxPhase: account.maxPhase ?? null });
+    const row = computeFarmRateRow(phase, board.squad, { returnBonus: 'off', boost, maxPhase: account.maxPhase ?? null });
+    const plain = price();
+    expect(boosted.baseline.goldPerHour).toBeCloseTo(row!.goldPerHour, 6);
+    expect(boosted.baseline.goldPerHour).toBeGreaterThan(plain.baseline.goldPerHour);
+    const coinId = boosted.gains.find((gain) => gain.goldPerHourDelta > 0 && gain.gateDpsDelta === 0)?.id;
+    const before = plain.gains.find((gain) => gain.id === coinId)!;
+    const after = boosted.gains.find((gain) => gain.id === coinId)!;
+    expect(after.goldPerHourDelta / before.goldPerHourDelta).toBeCloseTo(boosted.baseline.goldPerHour / plain.baseline.goldPerHour, 6);
+  });
+
   it('gives a coin node a positive gold gain and no combat delta, a luck node nothing on either', () => {
     const pricing = price();
     const byId = new Map(pricing.gains.map((gain) => [gain.id, gain]));

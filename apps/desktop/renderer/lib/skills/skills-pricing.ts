@@ -47,6 +47,7 @@ export function priceSkillsView(
     enabledHeroIds: resolveEnabledHeroIds(inputs),
     returnBonus: inputs.farmReturnBonus,
     pass: inputs.farmPass ?? false,
+    ...(inputs.farmBoost !== undefined ? { boost: inputs.farmBoost } : {}),
     phase,
     totals,
     state,

@@ -4,6 +4,7 @@ import {
   computeHeroFarmBases,
   computeSquadFarmFacts,
   heroFactsFromBasis,
+  type EconomyBoost,
   type FarmAccount,
   type HeroFarmBasis,
   type ReturnBonusMode,
@@ -50,6 +51,8 @@ export type SkillTreePricingInput = {
   readonly enabledHeroIds: readonly string[] | null;
   readonly returnBonus: ReturnBonusMode;
   readonly pass?: boolean;
+  /** The Boosts running, as the board prices them; none when absent. */
+  readonly boost?: EconomyBoost;
   /** The phase the account is farming; a node is worth what it is worth here. */
   readonly phase: number;
   /** The tree as the roster stands. */
@@ -135,10 +138,12 @@ type GoldModel = {
   readonly account: FarmAccount;
 };
 
-function goldPerHourOf(model: GoldModel, phase: number, factor: number, returnBonus: ReturnBonusMode, pass: boolean): number {
+type Economy = { readonly returnBonus: ReturnBonusMode; readonly pass: boolean; readonly boost: EconomyBoost | undefined };
+
+function goldPerHourOf(model: GoldModel, phase: number, factor: number, economy: Economy): number {
   const facts = model.bases.map((basis) => heroFactsFromBasis(scaleAttack(basis, factor), basis.pts));
   const squad = computeSquadFarmFacts(facts, model.account);
-  const row = computeFarmRateRow(phase, squad, { returnBonus, pass, maxPhase: model.account.maxPhase ?? null });
+  const row = computeFarmRateRow(phase, squad, { ...economy, maxPhase: model.account.maxPhase ?? null });
   return row && Number.isFinite(row.goldPerHour) ? row.goldPerHour : 0;
 }
 
@@ -287,7 +292,8 @@ export function priceSkillTree(input: SkillTreePricingInput): SkillTreePricing {
   const baseAccount = accountForTotals(input.account, input.totals, baseFieldSlots);
 
   const baseGold = goldModelFor(input, baseAccount);
-  const goldAt = (model: GoldModel, factor: number) => goldPerHourOf(model, input.phase, factor, input.returnBonus, input.pass ?? false);
+  const economy: Economy = { returnBonus: input.returnBonus, pass: input.pass ?? false, boost: input.boost };
+  const goldAt = (model: GoldModel, factor: number) => goldPerHourOf(model, input.phase, factor, economy);
   const baseGoldByFactor = new Map(factors.map((factor) => [factor, goldAt(baseGold, factor)]));
   const baselineGold = goldAt(baseGold, 1);
 
