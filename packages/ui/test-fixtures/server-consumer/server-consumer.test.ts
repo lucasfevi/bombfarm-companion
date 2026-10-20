@@ -71,6 +71,14 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(html).toContain('href="/fixture-page/3" rel="next">Next</a>');
   });
 
+  it('prerenders the definition list, titled list and disclosure', () => {
+    const html = readPage('index.html');
+    expect(html).toContain('<div class="contents"><dt class="text-muted">Fixture term</dt><dd class="m-0 min-w-0 break-words">Fixture detail</dd></div>');
+    expect(html).toContain('<section aria-label="Fixture list"');
+    expect(html).toContain('>Fixture item</li>');
+    expect(html).toMatch(/<details class="[^"]*"><summary class="[^"]*">Fixture summary<\/summary><div class="pt-2.5 pb-1">Fixture disclosure body<\/div><\/details>/);
+  });
+
   it('prerenders the skeleton as a labelled busy region of hidden pulsing rows', () => {
     const html = readPage('index.html');
     expect(html).toContain('<div role="status" aria-busy="true" aria-label="Fixture loading"><div class="flex flex-col gap-2" aria-hidden="true">');

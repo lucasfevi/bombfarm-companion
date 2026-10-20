@@ -45,6 +45,7 @@ const TITLE_IS_CONTENT = new Set([
   'ErrorScreen',
   'PanelHeader',
   'SettingsSection',
+  'TitledList',
   'Tooltip.StatusBody',
 ]);
 

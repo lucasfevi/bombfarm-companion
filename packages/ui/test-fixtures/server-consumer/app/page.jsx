@@ -55,6 +55,9 @@ export default function Page() {
       <ui.TextArea aria-label="Fixture text area" defaultValue="Draft body" aria-invalid />
       <ui.TextLink href="/fixture-help">Fixture help link</ui.TextLink>
       <ui.Pagination page={2} pageCount={3} hrefFor={(page) => `/fixture-page/${page}`} />
+      <ui.DefinitionList items={[{ term: 'Fixture term', detail: 'Fixture detail' }]} />
+      <ui.TitledList title="Fixture list" items={['Fixture item']} empty="Fixture empty" />
+      <ui.Disclosure summary="Fixture summary">Fixture disclosure body</ui.Disclosure>
       <ui.Skeleton shape="rows" rows={2} label="Fixture loading" />
       <ui.ErrorScreen title="Fixture error" message="Fixture error message" action={<a href="/fixture-retry">Retry</a>} />
       <ui.NativeSelect aria-label="Fixture native select" defaultValue="b">
