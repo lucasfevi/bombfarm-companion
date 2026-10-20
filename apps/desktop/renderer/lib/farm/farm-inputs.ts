@@ -10,7 +10,7 @@
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
 import { canonicalStringify } from '@bombfarm/contracts';
 import type { AccountView } from '@bombfarm/contracts';
-import { NO_ECONOMY_BOOST, type EconomyBoost, type ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import { NO_ECONOMY_BOOST, passBonusOf, withPassBonus, type EconomyBoost, type ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import { passActive } from '@bombfarm/domain/import-save';
 import type { MapSize } from '@bombfarm/domain/model';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
@@ -54,6 +54,7 @@ export const DEFAULT_FARM_CONTROLS: FarmControls = Object.freeze({
  * an invented one.
  *
  * `boost` is read from the running game, not from the account: the account read carries none.
+ * The Pass Bonus is the exception, read from the account and folded into it.
  */
 export function buildFarmInputs(
   view: AccountView,
@@ -118,7 +119,7 @@ export function buildFarmInputs(
     farmPoolOverrides: controls.farmPoolOverrides,
     farmReturnBonus: controls.farmReturnBonus,
     farmPass: passActive(account.vipUntil, nowMs),
-    farmBoost: boost,
+    farmBoost: withPassBonus(boost, passBonusOf(account.passBonus, nowMs)),
     aurasAtCap: controls.aurasAtCap,
     farmMapSize: controls.farmMapSize,
   };

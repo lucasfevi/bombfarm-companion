@@ -529,7 +529,7 @@ const KEYS_REMOVED: readonly string[] = [
  */
 const KEYS_ADDED: readonly string[] = [
   'itemLevelSearch', 'itemLevelEmpty',
-  'navHeroes', 'farmRankingPassLabel', 'farmRankingPassOn', 'farmRankingPassOff', 'farmRankingPassTip', 'farmRankingPassTipDetected',
+  'navHeroes', 'farmRankingPassLabel', 'farmRankingPassOn', 'farmRankingPassOff', 'farmRankingPassTip', 'farmRankingPassTipDetected', 'farmRankingPassBonusLabel', 'farmRankingPassBonusValue', 'farmRankingPassBonusTip',
   'farmRankingBoostLabel', 'farmRankingBoostGold', 'farmRankingBoostXp', 'farmRankingBoostDrop', 'farmRankingBoostTip', 'farmRankingBoostTipDetected', 'farmRankingXpNoImportLabel', 'farmRankingXpNoImportTip',
   // The Optimizer's ledger of what changed since the plan (2026-09-19, narrowed to breaking
   // changes only 2026-09-21): the notice that only said inputs had changed now lists every

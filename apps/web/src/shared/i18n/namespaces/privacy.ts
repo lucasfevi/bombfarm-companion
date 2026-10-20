@@ -75,15 +75,20 @@ export const en = {
         "Once you sign in on the desktop app, it can send us your game account id and the SteamID the game stores on your computer. We link them to your Premium account only if that SteamID matches the one you signed in with. Nothing else from the game is sent, and never your game session.",
         "With a linked game account we also keep its player name and when it was last seen. We fill them in once when the link is made, from the name the usage count above already recorded, and keep them current from that same hourly message. While “Include my account in the usage count” is off, no name is sent and the stored one is no longer updated.",
         "Sign-in sessions are random codes that keep you signed in. We store them only in a scrambled form that cannot be turned back into the code.",
-        "We use this data only to run your Premium account — performing our contract with you (LGPD art. 7, V). We send you no email.",
+        "Before your first purchase we ask for your country and, if you are in Brazil, your CPF. We need the CPF for Brazilian tax documents.",
+        "For each purchase we keep which Premium plan or pass you bought, when, the amount, whether you paid by card or boleto, the country that issued your card and the country of your billing address, any refund or chargeback, and Stripe's reference numbers for them. For cards we also keep Stripe's card fingerprint, a code that recognises the same card again without revealing its number. We also keep your Premium periods: when your Premium starts and ends, and why (subscription, pass or a grant from the developer).",
+        "We never see or store your card number. Payments are handled by Stripe, which collects your payment details, email and billing address and sends your receipts and payment emails. We send no email ourselves.",
+        "We use this data to run your Premium account and take payment — performing our contract with you (LGPD art. 7, V). We keep payment and tax records because the law requires it — legal obligation (art. 7, II).",
+        "To prevent abuse, after a 7-day withdrawal refund or a chargeback we keep codes that stop the same account, SteamID, game account, card or CPF from buying again — our legitimate interest (art. 7, IX). The developer can lift this on request.",
       ],
     },
     {
       title: "Where Premium data is stored and who else handles it",
       p: [
-        "Premium account data is stored by Supabase in its own database in the eastern United States, separate from the usage data above. The Premium account website runs on Vercel, and our server on DigitalOcean, as above. Discord, Google and Steam confirm who you are when you sign in with them.",
+        "Premium account data is stored by Supabase in its own database in the eastern United States, separate from the usage data above. The Premium account website runs on Vercel, and our server on DigitalOcean, as above. Discord, Google and Steam confirm who you are when you sign in with them. Stripe processes payments and holds your payment details.",
+        "Focus NFe (only if we issue tax invoices) receives your CPF, the amount and the date to issue the Brazilian service invoice (NFS-e), which also goes to the city tax authority.",
         "GitHub stores an encrypted copy of the Premium database each night, kept for 90 days, so we can recover from a failure.",
-        "Supabase, Vercel, DigitalOcean and GitHub act only on our instructions; Discord, Google and Steam also act under their own privacy policies. All of them are outside Brazil, so this is an international transfer of your data. Only the developer can look up Premium account records, including a linked game account's player name, in the same private dashboard described above, to answer support requests.",
+        "Supabase, Vercel, DigitalOcean, GitHub and Focus NFe act only on our instructions; Stripe, Discord, Google and Steam also act under their own privacy policies. Most of them are outside Brazil, so this is an international transfer of your data. Only the developer can look up Premium account records, including a linked game account's player name, in the same private dashboard described above, to answer support requests; every change made there is logged with its reason.",
       ],
     },
     {
@@ -91,13 +96,15 @@ export const en = {
       p: [
         "Temporary sign-in codes are deleted within a day of expiring. A session is deleted within a day of expiring, of going unused for too long, or of you signing out.",
         "Your account, sign-ins and game account link are kept until you delete your account. The player name and last-seen time kept with a link are deleted along with it.",
+        "Payment, refund, chargeback and tax-invoice records are kept for six years after the payment — or, for a subscription or pass, six years after it ends — because the law requires it.",
+        "The anti-abuse codes are kept for two years after they are placed, even after you delete your account, as one-way codes that cannot be turned back into your data.",
         "Nightly encrypted copies are deleted after 90 days.",
       ],
     },
     {
       title: "Deleting your Premium account",
       p: [
-        "You can delete your Premium account yourself on the Premium account website. Deletion signs you out everywhere and removes your sign-ins and game account link, with its player name; only the random account code remains, marked as deleted, with nothing that identifies you.",
+        "You can delete your Premium account yourself on the Premium account website once you have no active subscription. Deletion signs you out everywhere and removes your sign-ins and game account link, with its player name; only the random account code remains, marked as deleted, with nothing that identifies you. Records we must keep by law stay, with your identity replaced by codes. Any remaining Premium time is lost.",
         "A deleted account may still sit in the encrypted nightly copies for up to 90 days. So that a restore never brings it back, we note the deleted account's random code and the time of deletion outside the database, and delete it again if we ever restore a copy. That note holds nothing else.",
         "Your rights below apply to Premium data too; include one of your Premium account's sign-ins (for example your SteamID) in your email so we can find it.",
       ],
@@ -199,15 +206,20 @@ export const pt: typeof en = {
         "Depois que você entra no app, ele pode nos enviar o id da sua conta do jogo e o SteamID que o jogo guarda no seu computador. Só os vinculamos à sua conta Premium se esse SteamID for o mesmo com que você entrou. Nada mais do jogo é enviado, e nunca a sua sessão do jogo.",
         "Com uma conta do jogo vinculada, guardamos também o nome de jogador dela e quando ela foi vista pela última vez. Preenchemos esses dados uma vez, no momento do vínculo, a partir do nome que a contagem de uso descrita acima já registrou, e os mantemos atualizados por essa mesma mensagem de hora em hora. Enquanto “Incluir minha conta na contagem de uso” estiver desligada, nenhum nome é enviado e o nome guardado deixa de ser atualizado.",
         "As sessões de acesso são códigos aleatórios que mantêm você conectado. Guardamos só uma forma embaralhada deles, que não pode ser convertida de volta no código.",
-        "Usamos esses dados só para manter a sua conta Premium — execução do contrato com você (LGPD art. 7º, V). Não enviamos e-mails para você.",
+        "Antes da sua primeira compra, pedimos o seu país e, se você estiver no Brasil, o seu CPF. Precisamos do CPF para os documentos fiscais brasileiros.",
+        "De cada compra guardamos qual plano ou passe Premium você comprou, quando, o valor, se pagou com cartão ou boleto, o país emissor do cartão e o país do endereço de cobrança, qualquer reembolso ou contestação, e os números de referência da Stripe. Para cartões guardamos também a impressão digital do cartão da Stripe, um código que reconhece o mesmo cartão sem revelar o número. Guardamos ainda os seus períodos de Premium: quando o Premium começa e termina, e por quê (assinatura, passe ou concessão do desenvolvedor).",
+        "Nunca vemos nem guardamos o número do seu cartão. Os pagamentos são feitos pela Stripe, que coleta os dados de pagamento, o e-mail e o endereço de cobrança e envia os recibos e avisos de pagamento. Nós mesmos não enviamos e-mails.",
+        "Usamos esses dados para manter a sua conta Premium e receber o pagamento — execução do contrato com você (LGPD art. 7º, V). Guardamos os registros de pagamento e fiscais porque a lei exige — cumprimento de obrigação legal (art. 7º, II).",
+        "Para evitar abusos, depois de um reembolso de arrependimento em 7 dias ou de uma contestação, guardamos códigos que impedem a mesma conta, SteamID, conta do jogo, cartão ou CPF de comprar de novo — nosso legítimo interesse (art. 7º, IX). O desenvolvedor pode remover o bloqueio a pedido.",
       ],
     },
     {
       title: "Onde ficam os dados Premium e quem mais tem acesso",
       p: [
-        "Os dados das contas Premium são guardados pela Supabase num banco de dados próprio no leste dos Estados Unidos, separado dos dados de uso descritos acima. O site da conta Premium roda na Vercel, e o nosso servidor na DigitalOcean, como acima. Discord, Google e Steam confirmam quem você é quando você entra com eles.",
+        "Os dados das contas Premium são guardados pela Supabase num banco de dados próprio no leste dos Estados Unidos, separado dos dados de uso descritos acima. O site da conta Premium roda na Vercel, e o nosso servidor na DigitalOcean, como acima. Discord, Google e Steam confirmam quem você é quando você entra com eles. A Stripe processa os pagamentos e guarda os dados de pagamento.",
+        "A Focus NFe (só se emitirmos notas fiscais) recebe o seu CPF, o valor e a data para emitir a nota fiscal de serviço (NFS-e), que também vai para a prefeitura.",
         "O GitHub guarda toda noite uma cópia criptografada do banco de dados Premium, mantida por 90 dias, para podermos recuperar falhas.",
-        "Supabase, Vercel, DigitalOcean e GitHub atuam apenas conforme as nossas instruções; Discord, Google e Steam também seguem as próprias políticas de privacidade. Todos ficam fora do Brasil, então isso envolve transferência internacional dos seus dados. Só o desenvolvedor pode consultar os registros das contas Premium, incluindo o nome de jogador de uma conta do jogo vinculada, no mesmo painel privado descrito acima, para atender pedidos de suporte.",
+        "Supabase, Vercel, DigitalOcean, GitHub e Focus NFe atuam apenas conforme as nossas instruções; Stripe, Discord, Google e Steam também seguem as próprias políticas de privacidade. A maioria fica fora do Brasil, então isso envolve transferência internacional dos seus dados. Só o desenvolvedor pode consultar os registros das contas Premium, incluindo o nome de jogador de uma conta do jogo vinculada, no mesmo painel privado descrito acima, para atender pedidos de suporte; toda alteração feita ali fica registrada com o motivo.",
       ],
     },
     {
@@ -215,13 +227,15 @@ export const pt: typeof en = {
       p: [
         "Códigos temporários de acesso são apagados em até um dia depois de expirarem. Uma sessão é apagada em até um dia depois de expirar, de ficar sem uso por tempo demais ou de você sair.",
         "A sua conta, as formas de entrar e o vínculo com a conta do jogo ficam guardados até você excluir a conta. O nome de jogador e o horário da última vez em que a conta foi vista, guardados com um vínculo, são apagados junto com ele.",
+        "Registros de pagamento, reembolso, contestação e nota fiscal ficam guardados por seis anos após o pagamento — ou, no caso de uma assinatura ou passe, seis anos após o fim — porque a lei exige.",
+        "Os códigos contra abuso ficam guardados por dois anos depois de criados, mesmo depois que você exclui a conta, como códigos de mão única que não podem ser convertidos de volta nos seus dados.",
         "As cópias noturnas criptografadas são apagadas após 90 dias.",
       ],
     },
     {
       title: "Excluir a sua conta Premium",
       p: [
-        "Você mesmo pode excluir a sua conta Premium no site da conta Premium. A exclusão desconecta você de todos os lugares e remove as formas de entrar e o vínculo com a conta do jogo, com o nome de jogador; só o código aleatório da conta permanece, marcado como excluído, sem nada que identifique você.",
+        "Você mesmo pode excluir a sua conta Premium no site da conta Premium, desde que não tenha assinatura ativa. A exclusão desconecta você de todos os lugares e remove as formas de entrar e o vínculo com a conta do jogo, com o nome de jogador; só o código aleatório da conta permanece, marcado como excluído, sem nada que identifique você. Os registros que a lei nos obriga a guardar permanecem, com a sua identidade trocada por códigos. O tempo de Premium restante é perdido.",
         "Uma conta excluída pode continuar nas cópias noturnas criptografadas por até 90 dias. Para que uma restauração nunca a traga de volta, anotamos o código aleatório da conta excluída e o horário da exclusão fora do banco de dados, e a excluímos de novo se algum dia restaurarmos uma cópia. Essa anotação não contém mais nada.",
         "Os seus direitos descritos abaixo valem também para os dados Premium; inclua no e-mail uma das formas de entrar da conta Premium (por exemplo, o seu SteamID) para que possamos encontrá-la.",
       ],

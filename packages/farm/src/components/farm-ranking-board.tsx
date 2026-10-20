@@ -25,6 +25,7 @@ import { FarmRankingFilters } from './farm-ranking-filters';
 import { FarmRotationPool } from './farm-rotation-pool';
 import { FarmBoost } from './farm-boost';
 import { FarmPass } from './farm-pass';
+import { FarmPassBonus } from './farm-pass-bonus';
 import { FarmMapSize } from './farm-map-size';
 import { FarmReturnBonus } from './farm-return-bonus';
 import { FarmRankingTable } from './farm-ranking-table';
@@ -243,6 +244,7 @@ export function FarmRankingBoardView({
           <div className="flex flex-wrap items-start gap-3">
             <FarmReturnBonus value={returnBonus} onChange={setFarmReturnBonus} t={t} />
             <FarmPass pass={pass} onPassChange={setFarmPass} t={t} />
+            {boost?.passBonus ? <FarmPassBonus passBonus={boost.passBonus} t={t} /> : null}
             {boost ? <FarmBoost boost={boost} onBoostChange={setFarmBoost} t={t} /> : null}
             {mapSize !== undefined && setFarmMapSize !== undefined ? (
               <FarmMapSize mapSize={mapSize} onMapSizeChange={setFarmMapSize} detected={mapSizeDetected} t={t} />
