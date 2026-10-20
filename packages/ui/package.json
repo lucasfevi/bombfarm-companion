@@ -70,6 +70,7 @@
     "./menu.recipe": "./src/menu.recipe.ts",
     "./metric-scoreboard": "./src/metric-scoreboard.tsx",
     "./metric-scoreboard.recipe": "./src/metric-scoreboard.recipe.ts",
+    "./native-select": "./src/native-select.tsx",
     "./notification-center": "./src/notification-center.tsx",
     "./notification-center.recipe": "./src/notification-center.recipe.ts",
     "./num": "./src/num.tsx",

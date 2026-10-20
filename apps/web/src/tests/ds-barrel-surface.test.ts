@@ -117,6 +117,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'isIconName',
   'MAX_VISIBLE_TOASTS',
   'Menu',
+  'NativeSelect',
   'DetailsMenu',
   'SiteHeader',
   'siteHeaderBrandClass',

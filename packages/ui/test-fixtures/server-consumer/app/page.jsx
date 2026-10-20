@@ -53,6 +53,10 @@ export default function Page() {
       </ui.Select>
       <ui.TextInput aria-label="Fixture text input" placeholder="Type here" />
       <ui.TextArea aria-label="Fixture text area" defaultValue="Draft body" aria-invalid />
+      <ui.NativeSelect aria-label="Fixture native select" defaultValue="b">
+        <option value="a">Alpha native</option>
+        <option value="b">Beta native</option>
+      </ui.NativeSelect>
       <ui.Accordion.Root defaultValue={['first']}>
         <ui.Accordion.Item value="first">
           <ui.Accordion.Header>
