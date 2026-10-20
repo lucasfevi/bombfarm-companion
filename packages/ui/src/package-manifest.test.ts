@@ -80,6 +80,14 @@ const publicSpecifiers = [
   ]),
 ].sort();
 
+function listFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.name === 'node_modules') return [];
+    const file = path.join(dir, entry.name);
+    return entry.isDirectory() ? listFiles(file) : [file];
+  });
+}
+
 describe('@bombfarm/ui package.json sideEffects', () => {
   it('lists only CSS files, so every module can be tree-shaken', () => {
     const { sideEffects } = manifest;
@@ -87,6 +95,21 @@ describe('@bombfarm/ui package.json sideEffects', () => {
     const entries = sideEffects as string[];
     expect(entries.length).toBeGreaterThan(0);
     for (const entry of entries) expect(entry.endsWith('.css'), entry).toBe(true);
+  });
+
+  it('matches every stylesheet in the source tree and only existing files', () => {
+    const patterns = (manifest.sideEffects as string[]).map((entry) => {
+      const normalized = entry.replace(/^\.\//, '');
+      return normalized.includes('/') ? normalized : `**/${normalized}`;
+    });
+    const relativeFiles = (dir: string) =>
+      listFiles(dir).map((file) => path.relative(packageDir, file).split(path.sep).join('/'));
+    const matches = (file: string, pattern: string) => path.posix.matchesGlob(file, pattern);
+    const stylesheets = relativeFiles(srcDir).filter((file) => file.endsWith('.css'));
+    expect(stylesheets.length).toBeGreaterThan(0);
+    expect(stylesheets.filter((file) => !patterns.some((pattern) => matches(file, pattern)))).toEqual([]);
+    const allFiles = relativeFiles(packageDir);
+    expect(patterns.filter((pattern) => !allFiles.some((file) => matches(file, pattern)))).toEqual([]);
   });
 });
 

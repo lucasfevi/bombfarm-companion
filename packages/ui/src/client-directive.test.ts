@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, relative, sep } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
@@ -182,6 +182,96 @@ describe('packages/ui/src modules', () => {
         ({ reason }) => `${relative(root, path).replaceAll(sep, '/')}: ${reason}`,
       ),
     );
+    expect(offenders).toEqual([]);
+  });
+});
+
+const PACKAGE_NAME = '@bombfarm/ui';
+
+function importedSpecifiers(source: ts.SourceFile): string[] {
+  const specifiers: string[] = [];
+  const visit = (node: ts.Node): void => {
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier !== undefined &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      specifiers.push(node.moduleSpecifier.text);
+    }
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      node.arguments[0] !== undefined &&
+      ts.isStringLiteral(node.arguments[0])
+    ) {
+      specifiers.push(node.arguments[0].text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return specifiers;
+}
+
+function findBarrelImports(srcRoot: string, filePath: string, text: string): string[] {
+  const kind = filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+  const source = ts.createSourceFile(filePath, text, ts.ScriptTarget.Latest, true, kind);
+  const barrel = resolve(srcRoot, 'index');
+  return importedSpecifiers(source).filter((specifier) => {
+    if (specifier === PACKAGE_NAME) return true;
+    if (!specifier.startsWith('.')) return false;
+    const target = resolve(dirname(filePath), specifier).replace(/\.(?:[cm]?[jt]sx?)$/, '');
+    return target === resolve(srcRoot) || target === barrel;
+  });
+}
+
+describe('findBarrelImports', () => {
+  const srcRoot = resolve('/pkg/src');
+  const at = (file: string, specifier: string) =>
+    findBarrelImports(srcRoot, resolve(srcRoot, file), `import { X } from '${specifier}';\n`);
+
+  it.each([
+    ['dialog.tsx', './index'],
+    ['dialog.tsx', './index.ts'],
+    ['dialog.tsx', '.'],
+    ['dialog.tsx', './'],
+    ['accordion/accordion-root.tsx', '../index'],
+    ['accordion/accordion-root.tsx', '..'],
+    ['accordion/accordion-root.tsx', '../'],
+    ['dialog.tsx', PACKAGE_NAME],
+  ])('reports %s importing %s', (file, specifier) => {
+    expect(at(file, specifier)).toEqual([specifier]);
+  });
+
+  it.each([
+    ['dialog.tsx', './button'],
+    ['dialog.tsx', './accordion'],
+    ['accordion/accordion-root.tsx', './index'],
+    ['accordion/accordion-root.tsx', './accordion-item'],
+    ['accordion/accordion-root.tsx', '../button'],
+    ['dialog.tsx', `${PACKAGE_NAME}/button`],
+    ['dialog.tsx', 'react'],
+  ])('does not report %s importing %s', (file, specifier) => {
+    expect(at(file, specifier)).toEqual([]);
+  });
+
+  it('reports re-exports and dynamic imports of the barrel', () => {
+    const file = resolve(srcRoot, 'a.ts');
+    expect(findBarrelImports(srcRoot, file, `export * from './index';\n`)).toEqual(['./index']);
+    expect(findBarrelImports(srcRoot, file, `export const f = () => import('./index');\n`)).toEqual(['./index']);
+  });
+});
+
+describe('packages/ui/src modules and the barrel', () => {
+  const root = dirname(fileURLToPath(import.meta.url));
+
+  it('import their siblings by path, never through the package barrel', () => {
+    const offenders = listModules(root)
+      .filter((path) => resolve(path) !== resolve(root, 'index.ts'))
+      .flatMap((path) =>
+        findBarrelImports(root, path, readFileSync(path, 'utf8')).map(
+          (specifier) => `${relative(root, path).replaceAll(sep, '/')}: ${specifier}`,
+        ),
+      );
     expect(offenders).toEqual([]);
   });
 });
