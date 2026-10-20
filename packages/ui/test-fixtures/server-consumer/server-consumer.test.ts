@@ -69,6 +69,19 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(html).toMatch(/<div class="flex max-w-full shrink-0[^"]*"><a href="\/terms">Terms link<\/a><\/div>/);
   });
 
+  it('prerenders the page frame with its slots in order and both section measures', () => {
+    const html = readPage('index.html');
+    expect(html).toContain(
+      '<div class="flex min-h-screen flex-col"><p>Frame header</p><p>Frame notice</p><div class="relative flex-1">',
+    );
+    expect(html).toContain(
+      '<div class="mx-auto grid max-w-app grid-cols-1 gap-3 px-4 pt-3">Default section</div>',
+    );
+    expect(html).toContain(
+      '<div class="mx-auto grid max-w-settings grid-cols-1 gap-3 px-4 pt-3">Settings section</div></div><p>Frame footer</p><p>Frame overlay</p></div>',
+    );
+  });
+
   it('prerenders the disclosure menu closed, with its labelled summary and its items', () => {
     const html = readPage('index.html');
     expect(html).toMatch(/<details class="relative inline-block"><summary aria-label="Site menu"/);

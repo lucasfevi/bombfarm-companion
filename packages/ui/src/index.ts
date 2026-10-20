@@ -210,6 +210,7 @@ export { Menu, DetailsMenu } from './menu';
 export { SiteHeader, type SiteHeaderProps } from './site-header';
 export { siteHeaderBrandClass } from './site-header.recipe';
 export { SiteFooter, type SiteFooterProps } from './site-footer';
+export { PageFrame, PageSection, type PageFrameProps, type PageSectionProps } from './page-frame';
 export { ConfirmDialog, type ConfirmDialogProps } from './confirm-dialog';
 
 export { buttonRecipe, type ButtonVariant } from './button.recipe';
@@ -257,6 +258,7 @@ export {
   tipClass,
   warnClass,
   workspaceClass,
+  workspaceShellClass,
   type PanelVariant,
   type SetupBannerVariant,
 } from './panel-field.recipe';

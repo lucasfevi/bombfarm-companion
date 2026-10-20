@@ -34,6 +34,15 @@ export default function Page() {
         legal={<span>Acme legal line</span>}
         trailing={<a href="/terms">Terms link</a>}
       />
+      <ui.PageFrame
+        header={<p>Frame header</p>}
+        notices={<p>Frame notice</p>}
+        footer={<p>Frame footer</p>}
+        overlays={<p>Frame overlay</p>}
+      >
+        <ui.PageSection>Default section</ui.PageSection>
+        <ui.PageSection measure="settings">Settings section</ui.PageSection>
+      </ui.PageFrame>
       <ui.Panel data-testid="server-panel">server panel</ui.Panel>
       <ui.Select aria-label="Fixture select" defaultValue="a">
         <option value="a">Alpha</option>

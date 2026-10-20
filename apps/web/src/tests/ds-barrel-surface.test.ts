@@ -121,6 +121,8 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'SiteHeader',
   'siteHeaderBrandClass',
   'SiteFooter',
+  'PageFrame',
+  'PageSection',
   'MetricScoreboard',
   'NOTIFICATION_BUFFER_LIMIT',
   'NotificationCenter',
@@ -250,6 +252,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'useToast',
   'warnClass',
   'workspaceClass',
+  'workspaceShellClass',
 ].sort();
 
 describe('design-system barrel surface (frozen)', () => {
