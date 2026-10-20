@@ -64,6 +64,13 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(html).toContain('<a class="text-accent underline-offset-2 hover:underline" href="/fixture-help">Fixture help link</a>');
   });
 
+  it('prerenders the pagination as a nav of plain anchors', () => {
+    const html = readPage('index.html');
+    expect(html).toContain('<span class="text-muted tabular-nums">Page 2 of 3</span>');
+    expect(html).toContain('href="/fixture-page/1" rel="prev">Previous</a>');
+    expect(html).toContain('href="/fixture-page/3" rel="next">Next</a>');
+  });
+
   it('prerenders the skeleton as a labelled busy region of hidden pulsing rows', () => {
     const html = readPage('index.html');
     expect(html).toContain('<div role="status" aria-busy="true" aria-label="Fixture loading"><div class="flex flex-col gap-2" aria-hidden="true">');

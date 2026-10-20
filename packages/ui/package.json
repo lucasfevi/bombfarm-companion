@@ -109,6 +109,7 @@
     "./text-area": "./src/text-area.tsx",
     "./text-input": "./src/text-input.tsx",
     "./text-link": "./src/text-link.tsx",
+    "./pagination": "./src/pagination.tsx",
     "./tabs": "./src/tabs/index.ts",
     "./toast": "./src/toast.tsx",
     "./toast-queue": "./src/toast-queue.ts",

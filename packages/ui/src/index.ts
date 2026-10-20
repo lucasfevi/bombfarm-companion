@@ -75,6 +75,7 @@ export { NativeSelect, type NativeSelectProps } from './native-select';
 export { TextInput, type TextInputProps } from './text-input';
 export { TextArea, type TextAreaProps } from './text-area';
 export { TextLink, type TextLinkProps } from './text-link';
+export { Pagination, type PaginationProps } from './pagination';
 export { Fields, type FieldsProps, type FieldsLayout } from './fields';
 export { FactTile, type FactTileProps } from './fact-tile';
 export { type FactTileSize } from './fact-tile.recipe';
