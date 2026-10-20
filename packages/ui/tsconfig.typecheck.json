@@ -8,7 +8,8 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/dom-test-harness.ts",
+    "test-fixtures/**/*.ts",
     "vitest.config.ts"
   ],
-  "exclude": ["node_modules", "dist", "src/**/*.stories.ts", "src/**/*.stories.tsx"]
+  "exclude": ["node_modules", "dist", "test-fixtures/**/.next", "src/**/*.stories.ts", "src/**/*.stories.tsx"]
 }

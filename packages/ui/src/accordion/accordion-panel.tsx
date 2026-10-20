@@ -1,3 +1,5 @@
+'use client';
+
 import { useContext } from 'react';
 import { Accordion as BaseAccordion } from '@base-ui/react/accordion';
 import { AnimatePresence, motion } from 'motion/react';

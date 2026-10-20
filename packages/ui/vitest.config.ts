@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'node',
     // Capped here too, so a standalone `pnpm --filter` run is bounded — see vitest.workers.ts.
     maxWorkers: MAX_TEST_WORKERS,
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'test-fixtures/**/*.test.ts'],
   },
   esbuild: {
     jsx: 'automatic',

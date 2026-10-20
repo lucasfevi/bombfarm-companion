@@ -1,3 +1,5 @@
+'use client';
+
 import { useMemo, useState, type ReactNode } from 'react';
 import { Combobox } from '@base-ui/react/combobox';
 import { cn } from './cn';

@@ -290,6 +290,9 @@ importers:
       globals:
         specifier: ^16.3.0
         version: 16.5.0
+      happy-dom:
+        specifier: ^20.11.15
+        version: 20.11.15
       postcss:
         specifier: ^8.5.22
         version: 8.5.25
@@ -649,6 +652,9 @@ importers:
       motion:
         specifier: ^12.42.2
         version: 12.43.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      next:
+        specifier: 15.5.20
+        version: 15.5.20(@babel/core@7.29.7)(@playwright/test@1.61.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react:
         specifier: ^19.1.0
         version: 19.2.7

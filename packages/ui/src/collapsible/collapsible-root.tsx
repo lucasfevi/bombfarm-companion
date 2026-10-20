@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { Collapsible as BaseCollapsible } from '@base-ui/react/collapsible';
 import { MotionConfig } from 'motion/react';

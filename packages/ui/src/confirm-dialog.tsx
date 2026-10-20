@@ -1,7 +1,9 @@
 'use client';
 
 import { useId, type ReactNode } from 'react';
-import { Button, Dialog, Icon } from './index';
+import { Button } from './button';
+import { Dialog } from './dialog';
+import { Icon } from './icon';
 import { confirmDialogBodyClass, confirmDialogPopupRecipe } from './dialog.recipe';
 import {
   dialogActionsClass,

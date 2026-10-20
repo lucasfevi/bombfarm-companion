@@ -384,6 +384,34 @@ Semantics live on a wrapping `<span>`; the inner `react-icons` SVG is always dec
 
 Storybook gallery: [`packages/ui/src/icon.stories.tsx`](../packages/ui/src/icon.stories.tsx) (enum-driven UI chrome).
 
+## Using the package from a server-rendered Next.js app
+
+`@bombfarm/ui` ships TypeScript source, so a Next.js app needs two settings in `next.config`:
+
+```js
+export default {
+  transpilePackages: ['@bombfarm/ui'],
+  experimental: { optimizePackageImports: ['@bombfarm/ui'] },
+};
+```
+
+- **`transpilePackages`** compiles the package's `.ts`/`.tsx` source with the app.
+- **`experimental.optimizePackageImports`** (the key sits under `experimental` in Next 15.5) lets
+  Next rewrite barrel imports to the modules actually used. Without it, Next keeps every client
+  module the barrel reaches in any page that imports the barrel, so a page rendering a plain
+  `AppNav` still loads `motion`, the tooltip's animation library. With it, that page does not.
+- **Server components may import from the barrel.** Client modules carry `'use client'`, so
+  `import { AppNav } from '@bombfarm/ui'` works in a server component. Deep paths such as
+  `@bombfarm/ui/panel` resolve through the package's `exports` map.
+- **CSS is the only side effect.** Import `@bombfarm/ui/styles.css` explicitly, once, in the app's
+  root layout; importing components never pulls it in.
+- **`AppNav` loads its tooltip lazily**, only when an item is `compact` or otherwise needs one.
+  A plain nav ships no tooltip code.
+
+The executable example is the fixture under
+[`packages/ui/test-fixtures/server-consumer/`](../packages/ui/test-fixtures/server-consumer): a
+server-rendered app plus a test that builds it and checks which chunks a page loads.
+
 ## Companion reuse strategy (decided)
 
 No companion-repo changes happen in this wave — this is boundary preparation only.

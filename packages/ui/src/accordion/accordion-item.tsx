@@ -1,3 +1,5 @@
+'use client';
+
 import { Accordion as BaseAccordion } from '@base-ui/react/accordion';
 import { cn } from '../cn';
 import { accordionItemClass } from '../accordion.recipe';
