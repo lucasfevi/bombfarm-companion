@@ -42,8 +42,10 @@ describe('privacy page', () => {
   });
 
   it('says who can see the account records, and where, in each language', () => {
-    expect(render('en')).toContain('in a private dashboard that only the developer can sign in to. It runs on Vercel');
-    expect(render('pt')).toContain('num painel privado em que só o desenvolvedor consegue entrar. Ele roda na Vercel');
+    expect(render('en')).toContain('Only the developer, acting as the administrator, can look up the account records');
+    expect(render('en')).toContain('and only after signing in. That lookup runs on Vercel in the eastern United States');
+    expect(render('pt')).toContain('Só o desenvolvedor, como administrador, pode consultar os registros das contas');
+    expect(render('pt')).toContain('e só depois de fazer login. Essa consulta roda na Vercel, no leste dos Estados Unidos');
   });
 
   it('says a linked game account keeps its player name, refreshed only while the usage count is on, in each language', () => {
@@ -99,8 +101,8 @@ describe('privacy page', () => {
   it('names every processor and the support log, in each language', () => {
     expect(render('en')).toContain('Supabase, Vercel, DigitalOcean, GitHub and Focus NFe act only on our instructions');
     expect(render('pt')).toContain('Supabase, Vercel, DigitalOcean, GitHub e Focus NFe atuam apenas conforme as nossas instruções');
-    expect(render('en')).toContain('to answer support requests; every change made there is logged with its reason.');
-    expect(render('pt')).toContain('para atender pedidos de suporte; toda alteração feita ali fica registrada com o motivo.');
+    expect(render('en')).toContain('to answer support requests; every change made this way is logged with its reason.');
+    expect(render('pt')).toContain('para atender pedidos de suporte; toda alteração feita por esse acesso fica registrada com o motivo.');
   });
 
   it('says what Premium records and anti-abuse codes cover, in each language', () => {

@@ -39,7 +39,7 @@ export const en = {
       title: "Where it is stored and who else handles it",
       p: [
         "Messages arrive at a server we rent from DigitalOcean in New York, United States, and are stored in a database run by Supabase in the eastern United States. Both act only on our instructions. Because both are outside Brazil, providing this service transfers your data internationally.",
-        "Only the developer can look up the account records — game account id, player name, and when each account was first and last seen — in a private dashboard that only the developer can sign in to. It runs on Vercel in the eastern United States, which, like the two above, is outside Brazil and acts only on our instructions. The dashboard does not show installation codes.",
+        "Only the developer, acting as the administrator, can look up the account records — game account id, player name, and when each account was first and last seen — and only after signing in. That lookup runs on Vercel in the eastern United States, which, like the two above, is outside Brazil and acts only on our instructions. It does not show installation codes.",
         "We do not sell your data, share it with the game's makers, or use it for advertising.",
       ],
     },
@@ -88,7 +88,7 @@ export const en = {
         "Premium account data is stored by Supabase in its own database in the eastern United States, separate from the usage data above. The Premium account website runs on Vercel, and our server on DigitalOcean, as above. Discord, Google and Steam confirm who you are when you sign in with them. Stripe processes payments and holds your payment details.",
         "Focus NFe (only if we issue tax invoices) receives your CPF, the amount and the date to issue the Brazilian service invoice (NFS-e), which also goes to the city tax authority.",
         "GitHub stores an encrypted copy of the Premium database each night, kept for 90 days, so we can recover from a failure.",
-        "Supabase, Vercel, DigitalOcean, GitHub and Focus NFe act only on our instructions; Stripe, Discord, Google and Steam also act under their own privacy policies. Most of them are outside Brazil, so this is an international transfer of your data. Only the developer can look up Premium account records, including a linked game account's player name, in the same private dashboard described above, to answer support requests; every change made there is logged with its reason.",
+        "Supabase, Vercel, DigitalOcean, GitHub and Focus NFe act only on our instructions; Stripe, Discord, Google and Steam also act under their own privacy policies. Most of them are outside Brazil, so this is an international transfer of your data. Only the developer, acting as the administrator, can look up Premium account records, including a linked game account's player name, with the same signed-in access described above, to answer support requests; every change made this way is logged with its reason.",
       ],
     },
     {
@@ -170,7 +170,7 @@ export const pt: typeof en = {
       title: "Onde fica guardado e quem mais tem acesso",
       p: [
         "As mensagens chegam a um servidor que alugamos da DigitalOcean em Nova York, Estados Unidos, e são guardadas num banco de dados operado pela Supabase no leste dos Estados Unidos. As duas atuam apenas conforme as nossas instruções. Como ambas ficam fora do Brasil, prestar este serviço envolve transferência internacional dos seus dados.",
-        "Só o desenvolvedor pode consultar os registros das contas — o id da conta do jogo, o nome de jogador e quando cada conta foi vista pela primeira e pela última vez — num painel privado em que só o desenvolvedor consegue entrar. Ele roda na Vercel, no leste dos Estados Unidos, que, como as duas acima, fica fora do Brasil e atua apenas conforme as nossas instruções. O painel não mostra os códigos de instalação.",
+        "Só o desenvolvedor, como administrador, pode consultar os registros das contas — o id da conta do jogo, o nome de jogador e quando cada conta foi vista pela primeira e pela última vez — e só depois de fazer login. Essa consulta roda na Vercel, no leste dos Estados Unidos, que, como as duas acima, fica fora do Brasil e atua apenas conforme as nossas instruções. Ela não mostra os códigos de instalação.",
         "Não vendemos os seus dados, não os compartilhamos com os criadores do jogo e não os usamos para publicidade.",
       ],
     },
@@ -219,7 +219,7 @@ export const pt: typeof en = {
         "Os dados das contas Premium são guardados pela Supabase num banco de dados próprio no leste dos Estados Unidos, separado dos dados de uso descritos acima. O site da conta Premium roda na Vercel, e o nosso servidor na DigitalOcean, como acima. Discord, Google e Steam confirmam quem você é quando você entra com eles. A Stripe processa os pagamentos e guarda os dados de pagamento.",
         "A Focus NFe (só se emitirmos notas fiscais) recebe o seu CPF, o valor e a data para emitir a nota fiscal de serviço (NFS-e), que também vai para a prefeitura.",
         "O GitHub guarda toda noite uma cópia criptografada do banco de dados Premium, mantida por 90 dias, para podermos recuperar falhas.",
-        "Supabase, Vercel, DigitalOcean, GitHub e Focus NFe atuam apenas conforme as nossas instruções; Stripe, Discord, Google e Steam também seguem as próprias políticas de privacidade. A maioria fica fora do Brasil, então isso envolve transferência internacional dos seus dados. Só o desenvolvedor pode consultar os registros das contas Premium, incluindo o nome de jogador de uma conta do jogo vinculada, no mesmo painel privado descrito acima, para atender pedidos de suporte; toda alteração feita ali fica registrada com o motivo.",
+        "Supabase, Vercel, DigitalOcean, GitHub e Focus NFe atuam apenas conforme as nossas instruções; Stripe, Discord, Google e Steam também seguem as próprias políticas de privacidade. A maioria fica fora do Brasil, então isso envolve transferência internacional dos seus dados. Só o desenvolvedor, como administrador, pode consultar os registros das contas Premium, incluindo o nome de jogador de uma conta do jogo vinculada, com o mesmo acesso autenticado descrito acima, para atender pedidos de suporte; toda alteração feita por esse acesso fica registrada com o motivo.",
       ],
     },
     {
