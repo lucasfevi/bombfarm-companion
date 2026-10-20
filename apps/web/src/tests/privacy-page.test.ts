@@ -48,11 +48,23 @@ describe('privacy page', () => {
     expect(render('pt')).toContain('e só depois de fazer login. Essa consulta roda na Vercel, no leste dos Estados Unidos');
   });
 
-  it('says a linked game account keeps its player name, refreshed only while the usage count is on, in each language', () => {
-    expect(render('en')).toContain('With a linked game account we also keep its player name and when it was last seen.');
-    expect(render('en')).toContain('is off, no name is sent and the stored one is no longer updated.');
-    expect(render('pt')).toContain('Com uma conta do jogo vinculada, guardamos também o nome de jogador dela');
-    expect(render('pt')).toContain('estiver desligada, nenhum nome é enviado e o nome guardado deixa de ser atualizado.');
+  it('says a linked game account keeps the player name the signed-in desktop app reports, whatever the usage count setting, in each language', () => {
+    const en = render('en');
+    expect(en).toContain('Apart from the player name described below, nothing else from the game is sent');
+    expect(en).toContain('With a linked game account we also keep its player name and when it was last seen.');
+    expect(en).toContain(
+      asHtml("While you are signed in to Premium in the desktop app, it reports your game account's player name together with the game account it is linked to; we store the name and keep it current from that report."),
+    );
+    expect(en).toContain('Names stored before the app sent this report are cleared and filled in again from it.');
+    expect(en).toContain('in the usage count” does not affect the stored name.');
+    const pt = render('pt');
+    expect(pt).toContain('Além do nome de jogador descrito abaixo, nada mais do jogo é enviado');
+    expect(pt).toContain('Com uma conta do jogo vinculada, guardamos também o nome de jogador dela');
+    expect(pt).toContain(
+      'Enquanto você estiver conectado à sua conta Premium no app, ele informa o nome de jogador da sua conta do jogo junto com a conta do jogo vinculada; guardamos o nome e o mantemos atualizado a partir dessa informação.',
+    );
+    expect(pt).toContain('Os nomes guardados antes de o app enviar essa informação são apagados e preenchidos de novo a partir dela.');
+    expect(pt).toContain('na contagem de uso” não afeta o nome guardado.');
   });
 
   it('says what a purchase keeps and who handles the payment, in each language', () => {
