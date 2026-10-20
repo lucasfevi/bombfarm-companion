@@ -23,3 +23,14 @@ export const menuSeparatorClass = 'my-1 h-px shrink-0 bg-line';
  */
 export const menuRadioIndicatorClass =
   'grid size-3.5 shrink-0 place-items-center text-accent data-[unchecked]:invisible';
+
+export const detailsMenuRootClass = 'relative inline-block';
+
+export const detailsMenuSummaryClass =
+  'list-none [&::-webkit-details-marker]:hidden [&::marker]:content-none';
+
+export const detailsMenuPanelPositionClass = 'absolute right-0 top-full mt-1.5';
+
+/** A native disclosure has no highlighted item, so hover and keyboard focus stand in for it. */
+export const detailsMenuItemStateClass =
+  'hover:bg-[color-mix(in_oklch,var(--accent)_18%,var(--surface))] hover:text-accent focus-visible:bg-[color-mix(in_oklch,var(--accent)_18%,var(--surface))] focus-visible:text-accent';

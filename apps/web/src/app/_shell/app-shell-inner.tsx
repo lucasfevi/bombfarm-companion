@@ -16,8 +16,7 @@ import type { AccountImportData } from '@bombfarm/domain/import-save';
 import type { RequiredAccountField } from '@bombfarm/domain/account-required-fields';
 import { AccountMissingFieldsBanner } from '@/features/account';
 import { sub } from '@/shared/i18n';
-import { Toast } from '@bombfarm/ui';
-import { workspaceShellClass } from '@bombfarm/ui/panel-field.recipe';
+import { PageFrame, Toast } from '@bombfarm/ui';
 import { usePlannerStore, selectStrings, commitActiveHero, selectToast } from '@/shared/stores';
 
 export function AppShellInner({
@@ -78,38 +77,39 @@ export function AppShellInner({
 
   return (
     <PlannerHeroPeekStats>
-    <div className="flex min-h-screen flex-col">
-      <SiteHeader t={t} lang={lang} onImport={openImportDialog} onLangChange={setLang} />
+      <PageFrame
+        header={<SiteHeader t={t} lang={lang} onImport={openImportDialog} onLangChange={setLang} />}
+        notices={
+          <>
+            {showReferralNotice ? <ReferralNotice t={t} onDismiss={dismissReferralNotice} /> : null}
 
-      {showReferralNotice ? <ReferralNotice t={t} onDismiss={dismissReferralNotice} /> : null}
+            <AccountMissingFieldsBanner />
 
-      <AccountMissingFieldsBanner />
-
-      <ImportHeroesDialog
-        open={importDialogOpen}
-        onOpenChange={setImportDialogOpen}
-        existing={importExisting}
-        t={t}
-        lang={lang}
-        onImported={handleImported}
-      />
-
-      <div className={`${workspaceShellClass} flex-1`}>
+            <ImportHeroesDialog
+              open={importDialogOpen}
+              onOpenChange={setImportDialogOpen}
+              existing={importExisting}
+              t={t}
+              lang={lang}
+              onImported={handleImported}
+            />
+          </>
+        }
+        footer={<Footer t={t} />}
+        overlays={
+          /*
+           * Hosted here and not in the planner slot: that slot is `hidden` + `inert` on every section
+           * page, and a toast flashed from the header chip or the import dialog rendered into it
+           * unseen — the copy succeeded, and the player was told nothing.
+           */
+          <Toast message={toast} />
+        }
+      >
         {onSectionPage ? children : null}
         <div hidden={onSectionPage} aria-hidden={onSectionPage} inert={onSectionPage ? true : undefined}>
           {planner}
         </div>
-      </div>
-
-      <Footer t={t} />
-
-      {/*
-       * Hosted here and not in the planner slot: that slot is `hidden` + `inert` on every section
-       * page, and a toast flashed from the header chip or the import dialog rendered into it
-       * unseen — the copy succeeded, and the player was told nothing.
-       */}
-      <Toast message={toast} />
-    </div>
+      </PageFrame>
     </PlannerHeroPeekStats>
   );
 }

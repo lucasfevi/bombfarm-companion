@@ -9,16 +9,16 @@ import { REFERRAL_CODE } from '@/shared/referral';
 import { WIKI_URL } from '@bombfarm/domain/wiki-assets';
 import { useReferralCopy } from './use-referral-copy';
 
-import { Tooltip, buttonRecipe, cn } from '@bombfarm/ui';
+import { SiteFooter as DsSiteFooter, Tooltip, buttonRecipe, cn } from '@bombfarm/ui';
 
 export function Footer({ t }: { t: Strings }) {
   const versionLabel = getAppVersionLabel();
   const { codeRef, copy: copyReferral } = useReferralCopy(t);
 
   return (
-    <footer className="mx-auto mt-5 max-w-app px-4">
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-line py-3">
-        <p className="m-0 flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-normal text-muted">
+    <DsSiteFooter
+      legal={
+        <>
           <span>{t.disclaimer}</span>
           <span>
             {t.wikiArtCredit}{' '}
@@ -62,8 +62,10 @@ export function Footer({ t }: { t: Strings }) {
             </Tooltip.Provider>
             <span>{t.referralReward}</span>
           </span>
-        </p>
-        <div className="flex max-w-full shrink-0 flex-wrap items-center gap-x-3 gap-y-2">
+        </>
+      }
+      trailing={
+        <>
           <Link
             data-testid="footer-privacy-link"
             className="text-xs text-accent underline-offset-2 hover:underline"
@@ -83,8 +85,8 @@ export function Footer({ t }: { t: Strings }) {
             <BiCoffee size={16} aria-hidden="true" />
             {t.coffee}
           </a>
-        </div>
-      </div>
-    </footer>
+        </>
+      }
+    />
   );
 }

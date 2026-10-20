@@ -42,6 +42,7 @@ export type { WindowControlsLabels, WindowControlsProps } from './window-control
 export { WINDOW_CONTROLS_WIDTH } from './window-controls.recipe';
 export { BrandMark } from './brand-mark';
 export type { BrandMarkProps } from './brand-mark';
+export { BrandLockup, type BrandLockupProps } from './brand-lockup';
 export { AppNav, type AppNavItemMark } from './app-nav';
 export type { AppNavItem, AppNavProps } from './app-nav';
 export {
@@ -206,7 +207,11 @@ export { FileDropZone, type FileDropZoneProps } from './file-drop-zone';
 export { fileDropZoneRecipe } from './file-drop-zone.recipe';
 export { Banner, type BannerProps } from './banner';
 export { Dialog } from './dialog';
-export { Menu } from './menu';
+export { Menu, DetailsMenu } from './menu';
+export { SiteHeader, type SiteHeaderProps } from './site-header';
+export { siteHeaderBrandClass } from './site-header.recipe';
+export { SiteFooter, type SiteFooterProps } from './site-footer';
+export { PageFrame, PageSection, type PageFrameProps, type PageSectionProps } from './page-frame';
 export { ConfirmDialog, type ConfirmDialogProps } from './confirm-dialog';
 
 export { buttonRecipe, type ButtonVariant } from './button.recipe';
@@ -254,6 +259,7 @@ export {
   tipClass,
   warnClass,
   workspaceClass,
+  workspaceShellClass,
   type PanelVariant,
   type SetupBannerVariant,
 } from './panel-field.recipe';

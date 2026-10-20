@@ -74,6 +74,7 @@ function specifiersImportedByConsumers(): string[] {
 const publicSpecifiers = [
   ...new Set([
     `${PACKAGE}/styles.css`,
+    `${PACKAGE}/site-shell.css`,
     `${PACKAGE}/site-address`,
     ...publicModuleSpecifiers(),
     ...specifiersImportedByConsumers(),
@@ -119,6 +120,7 @@ describe('@bombfarm/ui exports map', () => {
     expect(publicSpecifiers).toContain(`${PACKAGE}/panel-field.recipe`);
     expect(publicSpecifiers).toContain(`${PACKAGE}/accordion`);
     expect(publicSpecifiers).toContain(`${PACKAGE}/styles.css`);
+    expect(publicSpecifiers).toContain(`${PACKAGE}/site-shell.css`);
   });
 
   it.each(publicSpecifiers)('resolves %s to an existing file with an extension', (specifier) => {
