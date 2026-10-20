@@ -31,6 +31,19 @@ function renderMenu(open?: boolean) {
 }
 
 describe('DetailsMenu', () => {
+  it('highlights an item on hover and on focus-visible like a Menu item under data-highlighted', () => {
+    const highlight = menuItemClass
+      .split(/[ ]+/)
+      .filter((token) => token.startsWith('data-[highlighted]:'))
+      .map((token) => token.slice('data-[highlighted]:'.length));
+    expect(highlight.length).toBeGreaterThan(0);
+    const rendered = renderMenu().querySelector('a')?.className.split(/[ ]+/) ?? [];
+    for (const utility of highlight) {
+      expect(rendered).toContain(`hover:${utility}`);
+      expect(rendered).toContain(`focus-visible:${utility}`);
+    }
+  });
+
   it('renders closed by default, as a details element with a labelled summary', () => {
     const root = renderMenu();
     const details = root.querySelector('details');
