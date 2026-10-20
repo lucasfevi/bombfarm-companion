@@ -165,6 +165,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'Tabs',
   'TextArea',
   'TextInput',
+  'TextLink',
   'Toast',
   'ToastItem',
   'ToastProvider',

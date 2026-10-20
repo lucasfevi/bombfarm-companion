@@ -59,6 +59,11 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(html).toMatch(/<textarea[^>]*aria-invalid="true"[^>]*>Draft body<\/textarea>/);
   });
 
+  it('prerenders the text link as a plain anchor', () => {
+    const html = readPage('index.html');
+    expect(html).toContain('<a class="text-accent underline-offset-2 hover:underline" href="/fixture-help">Fixture help link</a>');
+  });
+
   it('prerenders the native select with its options and the chosen one selected', () => {
     const html = readPage('index.html');
     expect(html).toMatch(/<select[^>]*class="w-full rounded-sm border border-line bg-bg-2 px-3 py-2 text-sm[^"]*"[^>]*aria-label="Fixture native select"/);

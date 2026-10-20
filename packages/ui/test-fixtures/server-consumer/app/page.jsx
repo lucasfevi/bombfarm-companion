@@ -53,6 +53,7 @@ export default function Page() {
       </ui.Select>
       <ui.TextInput aria-label="Fixture text input" placeholder="Type here" />
       <ui.TextArea aria-label="Fixture text area" defaultValue="Draft body" aria-invalid />
+      <ui.TextLink href="/fixture-help">Fixture help link</ui.TextLink>
       <ui.NativeSelect aria-label="Fixture native select" defaultValue="b">
         <option value="a">Alpha native</option>
         <option value="b">Beta native</option>
