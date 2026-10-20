@@ -33,7 +33,7 @@ describe('AuraCapChips — one press-toggle per team aura, named and lit like th
 
   it('each chip is a pressed button carrying the aura’s name as its accessible name, and the icon tile the Heroes screen draws', () => {
     expect(source).toContain('aria-pressed={atCap}');
-    expect(source).toContain("aria-label={sub(t.heroDetailAuraSwitchAria, { name })}");
+    expect(source).toContain("aria-label={sub(t.auraUptimeChipAria, { name })}");
     expect(source).toContain('<AbilityIcon code={auraId} size="sm"');
   });
 

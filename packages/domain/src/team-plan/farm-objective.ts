@@ -206,8 +206,7 @@ function priceField(
   fieldSlots: number,
   aurasAtCap: AurasAtCap | undefined,
 ): { auras: Record<TeamBuffId, number>; critFlatAtFullPresence: number; alliesByHeroId: Record<string, number> } {
-  // Held at both steps, as the estimator holds them (`priceFieldForAssignment`).
-  const atFullPresence = holdAurasAtCap(computeTeamBuffsOverRotation(squadContexts, null), aurasAtCap);
+  const atFullPresence = computeTeamBuffsOverRotation(squadContexts, null);
   const presence = squadContexts.map((ctx) =>
     presenceOf(
       scoreHeroLoadout(ctx, loadoutByHeroId[ctx.heroId] ?? {}, ctx.pts, atFullPresence, farm),
@@ -218,7 +217,7 @@ function priceField(
     alliesByHeroId[ctx.heroId] = alliesOverRotation(presence, index, fieldSlots);
   });
   return {
-    auras: holdAurasAtCap(computeTeamBuffsOverRotation(squadContexts, presence), aurasAtCap),
+    auras: holdAurasAtCap(computeTeamBuffsOverRotation(squadContexts, presence), aurasAtCap, atFullPresence),
     critFlatAtFullPresence: teamAuraLayer(atFullPresence).teamCritFlat,
     alliesByHeroId,
   };

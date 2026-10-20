@@ -137,7 +137,7 @@ export {
   PASSAGEM_BASTAO_WINDOW_SEC,
   PASSAGEM_BASTAO_COOLDOWN_SEC,
   PASSAGEM_BASTAO_CAP,
-  PASSAGEM_BASTAO_CAPPED_PULSE,
+  passagemBastaoHeldPulse,
   passagemBastaoPresence,
   passagemBastaoWindowPresence,
   passagemBastaoFieldPulse,

@@ -25,8 +25,9 @@ export function isSquadScope(scope: HeroPlanContext['scope']): boolean {
  * in the same form as the gold objective and the Farm board: the expected value of the CAPPED
  * sum over independently present carriers. Summing rank × duty and clamping afterwards, which
  * this did before, asserted that two part-time carriers of one capped aura keep it at the cap
- * the whole time — true of a staggered rotation, not of a hand-played one. `aurasAtCap` asserts
- * exactly that for the auras it names, on purpose (`TeamPlanInput.aurasAtCap`).
+ * the whole time — true of a staggered rotation, not of a hand-played one. `aurasAtCap` holds
+ * the auras it names at the fielded carriers' full-presence total instead, on purpose
+ * (`TeamPlanInput.aurasAtCap`).
  */
 export function computeRosterAuras(
   contexts: HeroPlanContext[],
@@ -36,5 +37,8 @@ export function computeRosterAuras(
   const presence = contexts.map((ctx) =>
     isSquadScope(ctx.scope) ? (dutyByHeroId[ctx.heroId] ?? 0) : 0,
   );
-  return holdAurasAtCap(computeTeamBuffsOverRotation(contexts, presence), aurasAtCap);
+  const totals = computeTeamBuffsOverRotation(contexts, presence);
+  if (aurasAtCap === undefined || aurasAtCap.length === 0) return totals;
+  const fielded = contexts.map((ctx) => (isSquadScope(ctx.scope) ? 1 : 0));
+  return holdAurasAtCap(totals, aurasAtCap, computeTeamBuffsOverRotation(contexts, fielded));
 }

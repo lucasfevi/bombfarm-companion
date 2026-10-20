@@ -13,7 +13,7 @@ import { requiresPointReset } from '../respec-cost';
 import type { PointAlloc } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { wikiPhaseLine } from '../phase-wiki';
-import { computeTeamBuffsOverRotation, holdAurasAtCap } from '../team-buffs';
+import { computeTeamBuffsOverRotation } from '../team-buffs';
 import { teamAuraLayer } from '../team-aura-layer';
 import { isSquadScope } from './auras';
 import { scopeOfHero } from './hero-context';
@@ -66,7 +66,7 @@ export function farmFromAccount(input: TeamPlanInput): FarmContext {
 
 function critFlatAtFullPresenceOf(input: TeamPlanInput): number {
   const carriers = input.heroes.filter((hero) => isSquadScope(scopeOfHero(hero, input.scopeByHeroId)));
-  const total = holdAurasAtCap(computeTeamBuffsOverRotation(carriers, null), input.aurasAtCap);
+  const total = computeTeamBuffsOverRotation(carriers, null);
   return teamAuraLayer(total).teamCritFlat;
 }
 
