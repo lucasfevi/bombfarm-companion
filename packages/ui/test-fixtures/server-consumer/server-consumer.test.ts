@@ -53,6 +53,15 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(html).toMatch(/<[^>]*role="combobox"[^>]*aria-label="Fixture select"/);
   });
 
+  it('prerenders the site header with its brand, nav strip and both action branches', () => {
+    const html = readPage('index.html');
+    expect(html).toMatch(/<header class="sticky top-0 z-30[^"]*"><div class="mx-auto flex max-w-app[^"]*">/);
+    expect(html).toContain('>Acme</a>');
+    expect(html).toMatch(/<div class="max-sm:order-3 max-sm:w-full[^"]*"><nav aria-label="Header sections"/);
+    expect(html).toMatch(/<div class="flex flex-nowrap[^"]*max-sm:hidden"><span>Header actions<\/span><\/div>/);
+    expect(html).toMatch(/<div class="order-2 ml-auto sm:hidden"><span>Header compact actions<\/span><\/div>/);
+  });
+
   it.each([
     ['Accordion', ['Accordion trigger one', 'Accordion trigger two', 'Accordion panel one']],
     ['Collapsible', ['Collapsible trigger', 'Collapsible panel text']],

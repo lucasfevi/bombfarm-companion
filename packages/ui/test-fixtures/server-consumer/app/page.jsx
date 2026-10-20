@@ -11,6 +11,20 @@ export default function Page() {
           <li key={name}>{name}</li>
         ))}
       </ul>
+      <ui.SiteHeader
+        brand={<a href="/" className={ui.siteHeaderBrandClass}>Acme</a>}
+        nav={
+          <ui.AppNav
+            ariaLabel="Header sections"
+            items={[
+              { id: 'reports', label: 'Reports', active: true },
+              { id: 'billing', label: 'Billing', active: false },
+            ]}
+          />
+        }
+        actions={<span>Header actions</span>}
+        compactActions={<span>Header compact actions</span>}
+      />
       <ui.Panel data-testid="server-panel">server panel</ui.Panel>
       <ui.Select aria-label="Fixture select" defaultValue="a">
         <option value="a">Alpha</option>
