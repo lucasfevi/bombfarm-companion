@@ -199,6 +199,21 @@ describe('scoreHeroLoadout', () => {
     deriveSpy.mockRestore();
   });
 
+  it('memo never serves a gate clear’s score to a duel over the same window', () => {
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const hero = extractHero(raw, 'Bellatrix', 42);
+    const account = accountFromFixture(raw);
+    const ctx = buildHeroPlanContext(heroInputFromExtract(hero), account, 'optimize')!;
+    const gate: FarmContext = { ...farmFromAccount(account), windowSecs: 60 };
+    const memo = createScoreMemo();
+    const auras = zeroTeamBuffs();
+    const atGate = scoreHeroLoadout(ctx, hero.loadout, ZERO_PTS(), auras, gate, memo);
+    const inDuel = scoreHeroLoadout(ctx, hero.loadout, ZERO_PTS(), auras, { ...gate, combat: 'duel' }, memo);
+    expect(inDuel.context.combat).toBe('duel');
+    expect(atGate.context.combat).toBeUndefined();
+    expect(inDuel.active).toBeGreaterThan(atGate.active);
+  });
+
   // Regression for the double-counted-points bug: `scoreHeroLoadout` used to compose its
   // `geared` sheet with the REAL `pts` and then hand that same `pts` to `derive()`, which
   // adds `pts * delta` on top — every spent point counted twice. With all combat multipliers

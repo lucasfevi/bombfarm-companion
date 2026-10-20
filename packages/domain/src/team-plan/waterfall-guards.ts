@@ -60,6 +60,7 @@ export function farmFromAccount(input: TeamPlanInput): FarmContext {
     cycleSecsLevel: input.account.cycleSecsLevel,
     critFlatAtFullPresence,
     ...(window ? { windowSecs: window.windowSecs } : {}),
+    ...(window?.combat !== undefined ? { combat: window.combat } : {}),
   };
 }
 

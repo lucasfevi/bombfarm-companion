@@ -10,6 +10,7 @@ import {
   type ReturnBonusMode,
 } from '../farm-rate';
 import { windowedDamage } from '../model/combat';
+import type { CombatKind } from '../model/types';
 import { wikiPhaseLine } from '../phase-wiki';
 import { phaseLine } from '../phases';
 import type { HeroRecord } from '../shims/storage';
@@ -188,9 +189,14 @@ type DpsModel = {
   readonly mitigationPct: number;
   readonly phase: number;
   readonly windowSecs: number;
+  readonly combat: CombatKind | undefined;
 };
 
-function dpsModelFor(input: SkillTreePricingInput, window: SkillCombatWindow | null | undefined): DpsModel | null {
+function dpsModelFor(
+  input: SkillTreePricingInput,
+  window: SkillCombatWindow | null | undefined,
+  combat?: CombatKind,
+): DpsModel | null {
   if (!window || !(window.windowSecs > 0)) return null;
   const selected = combatHeroes(input, window.heroIds);
   const withBirth = selected.filter((hero) => hero.birth !== undefined);
@@ -205,6 +211,7 @@ function dpsModelFor(input: SkillTreePricingInput, window: SkillCombatWindow | n
     mitigationPct: +((line?.mitig ?? 0.01) * 100).toFixed(2),
     phase,
     windowSecs: window.windowSecs,
+    combat,
   };
 }
 
@@ -245,6 +252,7 @@ function windowedTeamDpsOf(model: DpsModel, input: SkillTreePricingInput, totals
       cycleSecsHouseIdx: account.cycleSecsHouseIdx,
       cycleSecsLevel: account.cycleSecsLevel,
       windowSecs: model.windowSecs,
+      ...(model.combat !== undefined ? { combat: model.combat } : {}),
     },
     forgeFloor: 0,
     aurasAtCap: base.aurasAtCap,
@@ -298,7 +306,7 @@ export function priceSkillTree(input: SkillTreePricingInput): SkillTreePricing {
   const baselineGold = goldAt(baseGold, 1);
 
   const gateModel = dpsModelFor(input, input.gate);
-  const pvpModel = dpsModelFor(input, input.pvp);
+  const pvpModel = dpsModelFor(input, input.pvp, 'duel');
   const baselineGate = gateModel === null ? null : windowedTeamDpsOf(gateModel, input, input.totals, baseFieldSlots);
   const baselinePvp = pvpModel === null ? null : windowedTeamDpsOf(pvpModel, input, input.totals, baseFieldSlots);
   const combatDelta = (model: DpsModel | null, baseline: number | null, moves: boolean, totals: SkillTotals, fieldSlots: number) => {

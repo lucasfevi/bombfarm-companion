@@ -189,6 +189,15 @@ describe('priceSkillTree', () => {
     expect(ranked.baseline.gate?.dps).not.toBe(full.baseline.gate?.dps);
   });
 
+  it('prices the duel on the duel cadence: the same squad, phase and window out-damages a gate clear', () => {
+    const sameWindow = { ...gate, windowSecs: PVP_WINDOW_SECS };
+    const pricing = price({ gate: sameWindow, pvp: sameWindow });
+    const gateDps = pricing.baseline.gate!.dps!;
+    const duelDps = pricing.baseline.pvp!.dps!;
+    expect(duelDps / gateDps).toBeGreaterThan(1.09);
+    expect(duelDps / gateDps).toBeLessThan(1.55);
+  });
+
   it('does not invent a combat team when the PVP squad is empty', () => {
     const pricing = price({ pvp: null });
     expect(pricing.baseline.pvp).toBeNull();

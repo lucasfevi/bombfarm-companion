@@ -76,14 +76,14 @@ describe('resolveCombatWindow', () => {
   });
 
   it('a duel is always one minute in a room seating the squad’s slots, at the chosen phase or the account’s', () => {
-    expect(resolveCombatWindow({ ...input, objective: 'pvp', targetPhase: 220, pvpSquadSlots: 6 })).toEqual({ phase: 220, windowSecs: 60, fieldSlots: 6 });
-    expect(resolveCombatWindow({ ...input, objective: 'pvp', targetPhase: null, pvpSquadSlots: 4 })).toEqual({ phase: input.account.phase, windowSecs: 60, fieldSlots: 4 });
+    expect(resolveCombatWindow({ ...input, objective: 'pvp', targetPhase: 220, pvpSquadSlots: 6 })).toEqual({ phase: 220, windowSecs: 60, fieldSlots: 6, combat: 'duel' });
+    expect(resolveCombatWindow({ ...input, objective: 'pvp', targetPhase: null, pvpSquadSlots: 4 })).toEqual({ phase: input.account.phase, windowSecs: 60, fieldSlots: 4, combat: 'duel' });
     expect(planFieldSlots({ ...input, objective: 'pvp', targetPhase: null, pvpSquadSlots: 6 })).toBe(6);
   });
 
   it('with no squad slots read, a duel seats the top squad house’s nine', () => {
     expect(PVP_TOP_HOUSE_SQUAD_SLOTS).toBe(9);
-    expect(resolveCombatWindow({ ...input, objective: 'pvp', targetPhase: 220 })).toEqual({ phase: 220, windowSecs: 60, fieldSlots: 9 });
+    expect(resolveCombatWindow({ ...input, objective: 'pvp', targetPhase: 220 })).toEqual({ phase: 220, windowSecs: 60, fieldSlots: 9, combat: 'duel' });
     expect(planFieldSlots({ ...input, objective: 'pvp', targetPhase: null, pvpSquadSlots: null })).toBe(9);
   });
 
@@ -105,6 +105,13 @@ describe('resolveCombatWindow', () => {
     expect(gate.phase).toBe(60);
     expect(gate.mitigationPct).toBe((wikiPhaseLine(60)?.mitig ?? 0) * 100);
     expect(farmFromAccount({ ...input, objective: 'dps', targetPhase: 60 }).windowSecs).toBeUndefined();
+  });
+
+  it('only the duel marks its scoring context as a duel', () => {
+    expect(farmFromAccount({ ...input, objective: 'pvp', targetPhase: 220 }).combat).toBe('duel');
+    for (const objective of ['gateClear', 'dps', 'farm'] as const) {
+      expect(farmFromAccount({ ...input, objective, targetPhase: 60 }).combat).toBeUndefined();
+    }
   });
 });
 
