@@ -4,11 +4,11 @@ import {
   HOUSE_MAX_LEVEL,
   houseRestSeconds,
   PASSAGEM_BASTAO_CAP,
-  PASSAGEM_BASTAO_CAPPED_PULSE,
   PASSAGEM_BASTAO_COOLDOWN_SEC,
   PASSAGEM_BASTAO_PER_RANK,
   PASSAGEM_BASTAO_WINDOW_SEC,
   passagemBastaoFieldPulse,
+  passagemBastaoHeldPulse,
   passagemBastaoPresence,
   passagemBastaoWindowPresence,
 } from '@bombfarm/domain/model';
@@ -174,15 +174,33 @@ describe('passagemBastaoWindowPresence — the share of a timed window one carri
   });
 });
 
-describe('PASSAGEM_BASTAO_CAPPED_PULSE — the field held at the cap the whole time', () => {
-  it('is the one level a permanently-lit cap-rank carrier would produce', () => {
-    expect(PASSAGEM_BASTAO_CAPPED_PULSE).toEqual(passagemBastaoFieldPulse([{ rank: 20, presence: 1 }]));
-    expect(PASSAGEM_BASTAO_CAPPED_PULSE.levels).toEqual([{ mult: 1 + PASSAGEM_BASTAO_CAP, probability: 1 }]);
-    expect(PASSAGEM_BASTAO_CAPPED_PULSE.expectedMult).toBe(1 + PASSAGEM_BASTAO_CAP);
+describe('passagemBastaoHeldPulse — the best carrier lighting the field the whole time', () => {
+  it('a rank-20 carrier is the one level a permanently-lit cap-rank carrier would produce', () => {
+    expect(passagemBastaoHeldPulse([20])).toEqual(passagemBastaoFieldPulse([{ rank: 20, presence: 1 }]));
+    expect(passagemBastaoHeldPulse([20]).expectedMult).toBeCloseTo(1 + PASSAGEM_BASTAO_CAP, 12);
   });
 
-  it('is frozen, so no consumer can bend the cap it prices', () => {
-    expect(Object.isFrozen(PASSAGEM_BASTAO_CAPPED_PULSE)).toBe(true);
-    expect(Object.isFrozen(PASSAGEM_BASTAO_CAPPED_PULSE.levels)).toBe(true);
+  it('a rank-11 carrier is ×1.44, not the ×1.80 cap', () => {
+    expect(passagemBastaoHeldPulse([11]).levels).toHaveLength(1);
+    expect(passagemBastaoHeldPulse([11]).expectedMult).toBeCloseTo(1.44, 12);
+  });
+
+  it('several carriers hold the highest rank, never their sum', () => {
+    expect(passagemBastaoHeldPulse([4, 11, 7])).toEqual(passagemBastaoHeldPulse([11]));
+    expect(passagemBastaoHeldPulse([15, 15])).toEqual(passagemBastaoHeldPulse([15]));
+  });
+
+  it('a rank past the cap rank is clamped at the cap', () => {
+    expect(passagemBastaoHeldPulse([25])).toEqual(passagemBastaoHeldPulse([20]));
+  });
+
+  it('no carrier is no pulse', () => {
+    expect(passagemBastaoHeldPulse([])).toEqual(passagemBastaoFieldPulse([]));
+    expect(passagemBastaoHeldPulse([0, 0])).toEqual(passagemBastaoFieldPulse([]));
+  });
+
+  it('is frozen, so no consumer can bend the level it prices', () => {
+    expect(Object.isFrozen(passagemBastaoHeldPulse([11]))).toBe(true);
+    expect(Object.isFrozen(passagemBastaoHeldPulse([11]).levels)).toBe(true);
   });
 });

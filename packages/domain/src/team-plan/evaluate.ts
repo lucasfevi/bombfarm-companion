@@ -1,8 +1,8 @@
 import type { Loadout } from '../gear/types';
 import {
   alliesOverRotation,
-  PASSAGEM_BASTAO_CAPPED_PULSE,
   passagemBastaoFieldPulse,
+  passagemBastaoHeldPulse,
   passagemBastaoPresence,
   passagemBastaoWindowPresence,
   type PassagemBastaoCarrier,
@@ -99,8 +99,8 @@ function alliesByHeroId(
  * fielded carrier's pulse lights the whole field for its own share of wall clock, at the stint
  * length and duty its build sustains this round. A hero the player leaves alone still fields, so
  * its pulse counts; a donated one is out. Like the aura total it does not depend on which hero
- * is asking, so callers compute it once per round. Held at the cap instead, whatever the carriers
- * sustain, when `aurasAtCap` names the ability (`TeamPlanInput.aurasAtCap`).
+ * is asking, so callers compute it once per round. Lit by the best fielded carrier's rank the
+ * whole time instead when `aurasAtCap` names the ability (`TeamPlanInput.aurasAtCap`).
  */
 function computeFieldPulse(
   contexts: readonly HeroPlanContext[],
@@ -108,7 +108,11 @@ function computeFieldPulse(
   aurasAtCap: AurasAtCap | undefined,
   windowSecs: number | undefined,
 ): PassagemBastaoFieldPulse {
-  if (pulseHeldAtCap(aurasAtCap)) return PASSAGEM_BASTAO_CAPPED_PULSE;
+  if (pulseHeldAtCap(aurasAtCap)) {
+    return passagemBastaoHeldPulse(
+      contexts.flatMap((ctx) => (isSquadScope(ctx.scope) ? [ctx.abilities.passagem_bastao ?? 0] : [])),
+    );
+  }
   const carriers: PassagemBastaoCarrier[] = [];
   for (const ctx of contexts) {
     const rank = ctx.abilities.passagem_bastao ?? 0;

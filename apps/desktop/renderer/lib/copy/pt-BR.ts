@@ -1440,9 +1440,9 @@ export const ptBR: Copy = {
   skillsNodeAria: '{name}, nível {level} de {max}',
   // *AurasAtCap* — as fichas de aura no Farm e no Otimizador; ver o comentário em `en.ts`.
   farmAurasAtCapLabel: 'Auras com 100% de uptime',
-  farmAurasAtCapHint: 'Cada aura acesa é calculada como se mantivesse o campo inteiro no teto 100% do tempo, seja o que for que o seu rodízio sustentaria sozinho. Apagada, a aura conta pela fração do tempo em que seus portadores estão em campo.',
+  farmAurasAtCapHint: 'Cada aura acesa é calculada como se os portadores do seu esquadrão a mantivessem 100% do tempo, nunca acima do teto; a Passagem de Bastão no rank do seu melhor portador. Sem portador, nada muda. Apagada, a aura conta pela fração do tempo em que seus portadores estão em campo.',
   optimizerAurasAtCapLabel: 'Auras com 100% de uptime',
-  optimizerAurasAtCapHint: 'Cada aura acesa é pontuada como se mantivesse o campo inteiro no teto 100% do tempo, seja o que for que o elenco sustentaria sozinho. Apagada, a aura conta pela fração do tempo em que seus portadores estão em campo.',
+  optimizerAurasAtCapHint: 'Cada aura acesa é pontuada como se os portadores do esquadrão a mantivessem 100% do tempo, nunca acima do teto; a Passagem de Bastão no rank do melhor portador. Sem portador, nada muda. Apagada, a aura conta pela fração do tempo em que seus portadores estão em campo.',
 
   heroAvatarCol: 'Avatar',
   heroBattleActive: 'Ativado',

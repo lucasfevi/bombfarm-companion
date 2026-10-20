@@ -145,6 +145,7 @@ export const heroPtBR: HeroCopy = {
   heroDetailAurasTeamGroup: "Auras de time",
   heroDetailAuraOwnTag: "própria",
   heroDetailAuraSwitchAria: "Contar {name} no teto",
+  auraUptimeChipAria: "Contar {name} com 100% de uptime",
   heroDetailAuraDeltaIfOn: "+{value}% se ligada",
   heroDetailAuraDeltaIfOff: "−{value}% se desligada",
 

@@ -123,14 +123,20 @@ const NO_FIELD_PULSE: PassagemBastaoFieldPulse = Object.freeze({
 });
 
 /**
- * The field held at the cap for the whole of wall clock — what a surface that assumes the ability
- * is always up prices, whatever the pool's carriers would sustain on their own. One level, so the
- * Farm board's per-level hits-to-kill step reduces to the capped hit.
+ * The field lit by the squad's best carrier for the whole of wall clock — what a surface that
+ * assumes the ability is always up prices. A staggered rotation lights one carrier at a time, so
+ * the held level is the highest rank, not a sum: a rank-20 carrier is the measured ×1.80, a
+ * rank-11 one ×1.44. One level, so the Farm board's per-level hits-to-kill step reduces to that
+ * hit. No carrier, no pulse.
  */
-export const PASSAGEM_BASTAO_CAPPED_PULSE: PassagemBastaoFieldPulse = Object.freeze({
-  levels: Object.freeze([Object.freeze({ mult: 1 + PASSAGEM_BASTAO_CAP, probability: 1 })]),
-  expectedMult: 1 + PASSAGEM_BASTAO_CAP,
-});
+export function passagemBastaoHeldPulse(ranks: readonly number[]): PassagemBastaoFieldPulse {
+  const capRanks = Math.round(PASSAGEM_BASTAO_CAP / PASSAGEM_BASTAO_PER_RANK);
+  let best = 0;
+  for (const rank of ranks) if (rank > best) best = rank;
+  if (!(best > 0)) return NO_FIELD_PULSE;
+  const mult = 1 + PASSAGEM_BASTAO_PER_RANK * Math.min(capRanks, best);
+  return Object.freeze({ levels: Object.freeze([Object.freeze({ mult, probability: 1 })]), expectedMult: mult });
+}
 
 /**
  * Priced like the other team auras (`computeTeamBuffsOverRotation`): each carrier's pulse is up

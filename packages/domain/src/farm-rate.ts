@@ -75,8 +75,8 @@ import {
   cycleSecondsForHero,
   alliesOverRotation,
   matilhaMult,
-  PASSAGEM_BASTAO_CAPPED_PULSE,
   passagemBastaoFieldPulse,
+  passagemBastaoHeldPulse,
   passagemBastaoPresence,
   type BattleField,
   type Context,
@@ -360,9 +360,10 @@ export type HeroFarmFacts = {
 /**
  * Everything about the account a farm evaluation reads, minus the aura totals it prices itself,
  * plus one thing that is NOT a fact off the save: `aurasAtCap`, the caller's assumption that
- * the named team auras hold the field at their cap the whole time (`holdAurasAtCap`). It rides
- * on the account bag because it reaches both places the auras are priced — the layer every basis
- * is built at and the squad's entry pulse — through the one object both already receive.
+ * the named team auras are up the whole time at what the squad's carriers give
+ * (`holdAurasAtCap`). It rides on the account bag because it reaches both places the auras are
+ * priced — the layer every basis is built at and the squad's entry pulse — through the one object
+ * both already receive.
  */
 export type FarmAccount = Omit<AccountShared, 'teamBuffs'> & { aurasAtCap?: AurasAtCap };
 
@@ -665,9 +666,7 @@ function priceFieldForAssignment(
 ): FieldLayer {
   const fieldSlots = resolveFieldSlots(account);
   const carriers = bases.map((basis) => ({ abilities: basis.auraFree.abilities }));
-  // Held at both steps: a held Fôlego reaches every carrier's field seconds, so the presences
-  // the second step weights by must already see it.
-  const atFullPresence = holdAurasAtCap(computeTeamBuffsOverRotation(carriers, null), account.aurasAtCap);
+  const atFullPresence = computeTeamBuffsOverRotation(carriers, null);
   const atFullPresenceDrainMult = teamDrainMultFromTeamBuffs(atFullPresence);
   const presence = bases.map((basis) =>
     presenceAt(basis, basis.auraFree, ptsByHeroId?.get(basis.heroId) ?? basis.pts, atFullPresenceDrainMult),
@@ -677,7 +676,7 @@ function priceFieldForAssignment(
     alliesByHeroId.set(basis.heroId, alliesOverRotation(presence, index, fieldSlots));
   });
   return {
-    teamBuffs: holdAurasAtCap(computeTeamBuffsOverRotation(carriers, presence), account.aurasAtCap),
+    teamBuffs: holdAurasAtCap(computeTeamBuffsOverRotation(carriers, presence), account.aurasAtCap, atFullPresence),
     critFlatAtFullPresence: teamAuraLayer(atFullPresence).teamCritFlat,
     alliesByHeroId,
   };
@@ -944,8 +943,8 @@ export type SquadFarmFacts = {
    * of wall clock it holds each ({@link passagemBastaoFieldPulse}). A team aura that is up in
    * pulses, so it is priced as the auras are: each carrier's pulse present for its own share of
    * wall clock, overlaps summed and capped inside the expectation. Phase-independent, hence on
-   * the squad; the row layer prices every hero's hit through every level. The field held at its
-   * cap instead when the account's `aurasAtCap` names the ability.
+   * the squad; the row layer prices every hero's hit through every level. The field lit by the
+   * best carrier's rank the whole time instead when the account's `aurasAtCap` names the ability.
    */
   entryPulse: PassagemBastaoFieldPulse;
   /** `1 + max(0, tree.teamCoinPct) / 100`, times the Collections gold bonus. */
@@ -1010,7 +1009,7 @@ export function computeSquadFarmFacts(
   const meanFuseSecs = uptimeSum > 0 ? fuseWeightedSum / uptimeSum : 0;
 
   const entryPulse = pulseHeldAtCap(account.aurasAtCap)
-    ? PASSAGEM_BASTAO_CAPPED_PULSE
+    ? passagemBastaoHeldPulse(heroFacts.flatMap((hero) => (hero.passagemBastao ? [hero.passagemBastao.rank] : [])))
     : passagemBastaoFieldPulse(heroFacts.flatMap((hero) => (hero.passagemBastao ? [hero.passagemBastao] : [])));
 
   const teamCoinMult = (1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100) * collectionGoldMult(account.tree.collection);

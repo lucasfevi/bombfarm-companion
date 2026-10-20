@@ -33,7 +33,7 @@ const dotClass =
 
 /**
  * Every team aura the game has as one press-toggle each, lit with the switch's own accent while
- * a rotating surface prices it at its cap. The tile is the icon the Heroes screen draws for the
+ * a rotating surface prices it at 100% uptime of what the squad's carriers give. The tile is the icon the Heroes screen draws for the
  * same aura, so the six read as the auras themselves and not as six unnamed buttons; the name,
  * the effect and the cap sit behind hover and in the accessible name, since a chip has no room
  * for a word. Needs a `Tooltip.Provider` above it.
@@ -64,7 +64,7 @@ export function AuraCapChips({
             <Tooltip.Trigger
               type="button"
               aria-pressed={atCap}
-              aria-label={sub(t.heroDetailAuraSwitchAria, { name })}
+              aria-label={sub(t.auraUptimeChipAria, { name })}
               className={chipClass}
               data-testid={`aura-cap-${auraId}`}
               onClick={() => onToggle(auraId, !atCap)}
