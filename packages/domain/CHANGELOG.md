@@ -1,5 +1,20 @@
 # @bombfarm/domain
 
+## 1.15.0
+
+### Minor Changes
+
+- 36a0a4a: Heroes' trips between targets now lengthen with both walk speed and fuse: a faster hero, or one with a longer fuse, walks farther to its next bomb. Walk speed and cooldown are therefore priced more accurately on the Farm board, the Optimizer and the Skill Tree, and gold/hr figures shift slightly.
+- 54e4d0b: Mercy and Double Detonation are now priced the way the game deals them: Double Detonation's occasional second blast hits only what survived the first, for half damage, and Mercy adds no damage — so heroes carrying them no longer read higher damage than they deal.
+- 266f0f2: The Farm board, the Optimizer, Team Plan and the Live map now count the game's new timed Pass Bonus (+25% gold and +15% XP at the moment). The app reads the bonus and its expiry from your account, stacks it on top of the Pass, Boosts and the Return Bonus, and stops counting it when it runs out. Gold/hr and XP/hr were understated by that much while it was active.
+- e644ef6: PVP: the Optimizer and the Skill Tree now price a hero's cooldown on how fast heroes actually plant in duels, so fast-fuse heroes are valued higher. Heroes plant faster in a duel than on the farm, and the gap grows as the fuse shortens: about 1.49× the farm rate at the 0.4 s fuse floor, 1.25× at 1 s and 1.12× at 1.8 s. The duel objective now counts on that, so a hero already well into cooldown can be told to take it to the cap; a hero far from the cap keeps its points where they were. Gold and Gate clear are priced exactly as before.
+
+### Patch Changes
+
+- 6ae432b: Auras at 100% uptime now price what your squad's own carriers give — a rank-11 Baton Pass carrier is ×1.44, not the ×1.80 cap — and change nothing when the squad has no carrier.
+- d28b388: The Skill Tree's "Next to buy" gains now count a running gold Boost, as the Farm board does. With a Boost on, every node's gold per hour was priced against a baseline about half the Farm board's, so each gain read far too low.
+- bbcd719: A slower hero now reaches its next target later than the rest of the squad, after their bombs have thinned it, so each of its bombs catches fewer props. Speed is worth more to farming than before, and the Optimizer is more reluctant to trade it away. Under a gold or set-chest plan, each hero card now also shows what its point reset adds to the squad's rate, so a reset that trades damage or Speed for cooldown no longer reads as a pure loss.
+
 ## 1.14.1
 
 ### Patch Changes

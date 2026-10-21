@@ -1,5 +1,17 @@
 # @bombfarm/ui
 
+## 0.20.0
+
+### Minor Changes
+
+- 2809005: Add shared primitives for forms, feedback, lists and pagination: text input, text area and native select on one field chrome (with focus, placeholder and invalid recipe keys), a text link with a link-component slot, a skeleton, an error screen, a no-JavaScript pagination, definition and titled lists, a native disclosure, a status dot, a step progress, and a segmented toggle that submits as a form. Existing components gain options: a danger tone and medium size on the button, an info tone and flush layout on the banner, an inline size on the empty state, a danger tone and acknowledgement checkbox on the confirm dialog, a sort link on the data table header, and visible overflow on the panel.
+- adebf65: Add a server-safe site shell to the design system: a header with a CSS phone layout, a no-JavaScript disclosure menu, a footer, a page frame and section measure, a web-toned brand mark with a lockup, and an opt-in stylesheet that keeps the page scrollbar gutter stable.
+- 8f0c47a: Add an SVG chart kit: line, area and bar charts with a grid, a crosshair and a tooltip, drawn in a fixed viewBox so the server's first render is the whole chart. Pointer and keyboard handling is a small client layer over server-safe chart modules. Adds four chart series colour tokens, a nice-scale helper, a legend, and an optional table fallback.
+
+### Patch Changes
+
+- 1a902f5: Make the design-system package safe to import from React Server Components and tree-shakeable: client modules declare `'use client'`, only CSS is marked as a side effect, every module has an export path that carries its file extension, and the nav loads its tooltip only when an item needs one.
+
 ## 0.19.1
 
 ### Patch Changes

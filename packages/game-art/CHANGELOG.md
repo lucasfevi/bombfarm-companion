@@ -1,5 +1,23 @@
 # @bombfarm/game-art
 
+## 0.8.9
+
+### Patch Changes
+
+- Updated dependencies [6ae432b]
+- Updated dependencies [36a0a4a]
+- Updated dependencies [54e4d0b]
+- Updated dependencies [266f0f2]
+- Updated dependencies [e644ef6]
+- Updated dependencies [2809005]
+- Updated dependencies [adebf65]
+- Updated dependencies [d28b388]
+- Updated dependencies [bbcd719]
+- Updated dependencies [8f0c47a]
+- Updated dependencies [1a902f5]
+  - @bombfarm/domain@1.15.0
+  - @bombfarm/ui@0.20.0
+
 ## 0.8.8
 
 ### Patch Changes
