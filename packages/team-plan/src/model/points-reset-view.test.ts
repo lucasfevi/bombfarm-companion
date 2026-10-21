@@ -77,7 +77,20 @@ describe('pointsResetView', () => {
       row(),
     );
 
-    expect(view).toEqual({ before: SCORED_AT, after: PROPOSED, level: 109 });
+    expect(view).toEqual({ before: SCORED_AT, after: PROPOSED, level: 109, gainPct: null });
+  });
+
+  it('reports the reset gain as a share of the objective today', () => {
+    const scored = plan([
+      { heroId: '30140', ptsBefore: SCORED_AT, pts: PROPOSED, heroGainDpsPct: -11, rosterGainObjective: 5_000_000, resetCostGold: 109_000 },
+    ]);
+    scored.steps = [
+      { id: 'today', objective: 459_000_000, delta: 0 },
+      { id: 'gear', objective: 459_000_000, delta: 0 },
+      { id: 'respec', objective: 464_000_000, delta: 5_000_000 },
+    ];
+
+    expect(pointsResetView(scored, row())?.gainPct).toBeCloseTo((5_000_000 / 459_000_000) * 100, 9);
   });
 
   it('returns nothing for a hero the plan proposed no reset for', () => {

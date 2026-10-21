@@ -276,6 +276,7 @@ export function TeamPlanScreenView({
                     inventoryItems={inventoryItems}
                     rowsView={rowsView}
                     forgeQueueAction={slots.forgeQueueAction}
+                    respecGainLabel={objectiveCopy.respecGainLabel}
                   />
                 </div>
               </section>
