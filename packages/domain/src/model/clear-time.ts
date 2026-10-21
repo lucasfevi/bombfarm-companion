@@ -293,8 +293,9 @@ export function expectedHitsToKill(
  * {@link SECOND_BLAST_FRAC} of the hit, rolling its own crit. The second blast lands only on a
  * prop the first left standing, which never changes the count, so `E[blasts] = Σ P(alive)` over
  * every damage state a blast sequence can reach is exact. Damage is a whole number of half hits
- * (`i` non-crit, `j` crit halves), and every blast adds to both counts, so walking `i` then `j`
- * upward visits each state after all of its predecessors.
+ * (`i` non-crit, `j` crit halves), so a state's damage is `i + j × critMult` half hits and how
+ * likely a blast sequence is to reach it does not depend on the HP — only which states are alive
+ * does. One table per crit and second-blast chance, sorted by damage, answers every HP.
  */
 function expectedHitsWithSecondBlast(hp: number, hitNoCrit: number, critChance: number, critMult: number, s: number): number {
   if (!(hitNoCrit > 0) || !Number.isFinite(hitNoCrit)) return Infinity;
@@ -306,32 +307,64 @@ function expectedHitsWithSecondBlast(hp: number, hitNoCrit: number, critChance: 
   if (Math.ceil(hp / hitNoCrit) > CRIT_ROLL_MAX_HITS) {
     return hp / (hitNoCrit * (1 - p + p * cm) * (1 + s * SECOND_BLAST_FRAC));
   }
-
-  const units = 1 / SECOND_BLAST_FRAC;
+  const table = secondBlastTable(p, cm, s);
   const aliveBelow = hp / (hitNoCrit * SECOND_BLAST_FRAC) - 1e-12;
-  const rows = Math.ceil(aliveBelow) + 2 * units + 2;
-  const cols = Math.ceil(aliveBelow / cm) + 2 * units + 2;
+  let low = 0;
+  let high = table.damage.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (table.damage[mid] < aliveBelow) low = mid + 1;
+    else high = mid;
+  }
+  return table.cumulative[low];
+}
+
+type SecondBlastTable = { damage: Float64Array; cumulative: Float64Array };
+
+const SECOND_BLAST_TABLES = new Map<string, SecondBlastTable>();
+const SECOND_BLAST_TABLES_MAX = 512;
+const SECOND_BLAST_TABLE_HALF_HITS = (CRIT_ROLL_MAX_HITS + 1) / SECOND_BLAST_FRAC;
+
+function secondBlastTable(p: number, cm: number, s: number): SecondBlastTable {
+  const key = `${p}|${cm}|${s}`;
+  const cached = SECOND_BLAST_TABLES.get(key);
+  if (cached) return cached;
+  const units = 1 / SECOND_BLAST_FRAC;
+  const limit = SECOND_BLAST_TABLE_HALF_HITS;
+  const rows = Math.ceil(limit) + 2 * units + 2;
+  const cols = Math.ceil(limit / cm) + 2 * units + 2;
   const reach = new Float64Array(rows * cols);
   reach[0] = 1;
   const q = 1 - p;
-  const steps: ReadonlyArray<readonly [number, number, number]> = [
-    [units, 0, q * (1 - s)],
-    [units + 1, 0, q * s * q],
-    [units, 1, q * s * p],
-    [0, units, p * (1 - s)],
-    [1, units, p * s * q],
-    [0, units + 1, p * s * p],
+  const steps: ReadonlyArray<readonly [number, number]> = [
+    [units * cols, q * (1 - s)],
+    [(units + 1) * cols, q * s * q],
+    [units * cols + 1, q * s * p],
+    [units, p * (1 - s)],
+    [cols + units, p * s * q],
+    [units + 1, p * s * p],
   ];
-  let expected = 0;
-  for (let i = 0; i < aliveBelow; i++) {
-    for (let j = 0; i + j * cm < aliveBelow; j++) {
-      const mass = reach[i * cols + j];
+  const states: Array<{ damage: number; mass: number }> = [];
+  for (let i = 0; i < limit; i++) {
+    for (let j = 0; i + j * cm < limit; j++) {
+      const at = i * cols + j;
+      const mass = reach[at];
       if (mass === 0) continue;
-      expected += mass;
-      for (const [di, dj, probability] of steps) reach[(i + di) * cols + (j + dj)] += mass * probability;
+      states.push({ damage: i + j * cm, mass });
+      for (const [offset, probability] of steps) reach[at + offset] += mass * probability;
     }
   }
-  return expected;
+  states.sort((a, b) => a.damage - b.damage);
+  const damage = new Float64Array(states.length);
+  const cumulative = new Float64Array(states.length + 1);
+  for (let k = 0; k < states.length; k++) {
+    damage[k] = states[k].damage;
+    cumulative[k + 1] = cumulative[k] + states[k].mass;
+  }
+  if (SECOND_BLAST_TABLES.size >= SECOND_BLAST_TABLES_MAX) SECOND_BLAST_TABLES.clear();
+  const table = { damage, cumulative };
+  SECOND_BLAST_TABLES.set(key, table);
+  return table;
 }
 
 /** Kills per hit over the standing mix, for a per-type row; 0 for a hero without that row. */

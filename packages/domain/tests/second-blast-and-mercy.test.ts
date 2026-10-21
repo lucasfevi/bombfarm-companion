@@ -82,6 +82,12 @@ describe('Detonação Dupla in hits-to-kill', () => {
     expect(expectedHitsToKill(500, 1, 0.5, 3, 0.5)).toBeCloseTo(500 / (2 * 1.25), 9);
   });
 
+  it('answers the same however many other crit chances were priced in between', () => {
+    const first = expectedHitsToKill(7.3, 1, 0.35, 2.2, 0.5);
+    for (let n = 1; n <= 600; n++) expectedHitsToKill(7.3, 1, n / 601, 2.2, 0.5);
+    expect(expectedHitsToKill(7.3, 1, 0.35, 2.2, 0.5)).toBe(first);
+  });
+
   it('a hit that deals nothing never kills, and a rock with no HP takes no blast', () => {
     expect(hitsToKillWithSecondBlast(0, 10, 0.5)).toBe(Infinity);
     expect(hitsToKillWithSecondBlast(5, 0, 0.5)).toBe(0);
