@@ -3,7 +3,7 @@ import { abilityMods } from '@bombfarm/domain/model';
 import { expectedHitsToKill } from '@bombfarm/domain/model/clear-time';
 import { computeCombatMults } from '@bombfarm/domain/derive';
 import { computeFarmRates, computeHeroFarmFacts } from '@bombfarm/domain/farm-rate';
-import { hitsToKill, hitsToKillWithSecondBlast } from '@bombfarm/domain/phases';
+import { binomialCdfBelow, hitsToKill, hitsToKillWithSecondBlast } from '@bombfarm/domain/phases';
 import { SECOND_BLAST_FRAC } from '@bombfarm/domain/phase-wiki';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { loadFarmRateFixture, withAbilityLevels } from './helpers/farm-rate-fixtures';
@@ -80,6 +80,13 @@ describe('Detonação Dupla in hits-to-kill', () => {
     expect(hitsToKillWithSecondBlast(1, 500, 0.5)).toBeCloseTo(400, 9);
     expect(expectedHitsToKill(500, 1, 0, 2, 0.5)).toBeCloseTo(400, 9);
     expect(expectedHitsToKill(500, 1, 0.5, 3, 0.5)).toBeCloseTo(500 / (2 * 1.25), 9);
+  });
+
+  it('the binomial lower tail is empty below one, whole past the trials, and exact between', () => {
+    expect(binomialCdfBelow(4, 0.5, 0)).toBe(0);
+    expect(binomialCdfBelow(4, 0.5, 5)).toBe(1);
+    expect(binomialCdfBelow(4, 1, 3)).toBe(0);
+    expect(binomialCdfBelow(4, 0.5, 2)).toBeCloseTo(5 / 16, 12);
   });
 
   it('answers the same however many other crit chances were priced in between', () => {
