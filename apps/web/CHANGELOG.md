@@ -1,5 +1,57 @@
 # @bombfarm/web
 
+## 0.32.0
+
+### Minor Changes
+
+- 36a0a4a: Heroes' trips between targets now lengthen with both walk speed and fuse: a faster hero, or one with a longer fuse, walks farther to its next bomb. Walk speed and cooldown are therefore priced more accurately on the Farm board, the Optimizer and the Skill Tree, and gold/hr figures shift slightly.
+- 54e4d0b: Mercy and Double Detonation are now priced the way the game deals them: Double Detonation's occasional second blast hits only what survived the first, for half damage, and Mercy adds no damage — so heroes carrying them no longer read higher damage than they deal.
+
+### Patch Changes
+
+- 2721179: The privacy policy now says that the developer, acting as the administrator, can look up the
+  account records and the Premium account records, in English and Portuguese, instead of describing
+  a separate dashboard. Nothing it discloses changes: only the developer has that access, only after
+  signing in, for the same records and the same support purpose; it runs on Vercel in the eastern
+  United States, does not show installation codes, and every change made through it is logged with
+  its reason.
+
+  It also says where a linked game account's player name and last-seen time now come from: while you
+  are signed in to Premium in the desktop app, the app reports the name together with the linked game
+  account, and we store the name and the time of the latest report and keep both current from that
+  report instead of from the hourly usage message. Values stored before are cleared and filled in
+  again from that report, and turning off "Include my account in the usage count" no longer affects
+  them.
+
+- 609fa49: The privacy policy now describes Premium purchases, in English and Portuguese: the country (and, in
+  Brazil, the CPF) asked for before a first purchase, what each purchase keeps (plan or pass, date,
+  amount, card or boleto, card and billing-address country, refunds and chargebacks, Stripe's
+  reference numbers and card fingerprint), Premium periods, that we never see your card number and
+  that Stripe handles payment details and receipts, the legal bases, Stripe and the tax-invoice
+  service as processors, six years for payment and tax records, two years for the anti-abuse codes,
+  and what deleting an account does to them. Nothing changes for anyone who never creates a Premium
+  account. The page's date moves to 2026-10-20.
+- d28b388: The Skill Tree's "Next to buy" gains now count a running gold Boost, as the Farm board does. With a Boost on, every node's gold per hour was priced against a baseline about half the Farm board's, so each gain read far too low.
+- bbcd719: A slower hero now reaches its next target later than the rest of the squad, after their bombs have thinned it, so each of its bombs catches fewer props. Speed is worth more to farming than before, and the Optimizer is more reluctant to trade it away. Under a gold or set-chest plan, each hero card now also shows what its point reset adds to the squad's rate, so a reset that trades damage or Speed for cooldown no longer reads as a pure loss.
+- Updated dependencies [6ae432b]
+- Updated dependencies [36a0a4a]
+- Updated dependencies [54e4d0b]
+- Updated dependencies [266f0f2]
+- Updated dependencies [e644ef6]
+- Updated dependencies [2809005]
+- Updated dependencies [adebf65]
+- Updated dependencies [d28b388]
+- Updated dependencies [bbcd719]
+- Updated dependencies [8f0c47a]
+- Updated dependencies [1a902f5]
+  - @bombfarm/domain@1.15.0
+  - @bombfarm/hero@0.7.4
+  - @bombfarm/farm@1.5.2
+  - @bombfarm/ui@0.20.0
+  - @bombfarm/team-plan@0.8.2
+  - @bombfarm/account@0.3.20
+  - @bombfarm/game-art@0.8.9
+
 ## 0.31.1
 
 ### Patch Changes
