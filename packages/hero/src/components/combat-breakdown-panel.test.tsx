@@ -101,8 +101,8 @@ describe('CombatBreakdownPanel', () => {
     const html = render('en');
     expect(cardMarkup(html, 'fieldSeconds')).toMatch(/data-badge="folego_mineiro" data-on="false"/);
     expect(cardMarkup(html, 'attack')).toMatch(/data-badge="grito_guerra" data-on="false"/);
-    expect(cardMarkup(html, 'activeDps')).toMatch(/data-badge="misericordia" data-on="true"/);
-    expect(cardMarkup(html, 'dmg')).not.toMatch(/data-badge="misericordia"/);
+    expect(cardMarkup(html, 'critChance')).toMatch(/data-badge="olho_clinico" data-on="true"/);
+    expect(html).not.toMatch(/data-badge="misericordia"/);
   });
 
   it('the whole card is the one popover trigger, under a help cursor; its badges are labelled icons with no popover and no tab stop', () => {

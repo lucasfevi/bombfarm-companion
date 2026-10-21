@@ -3,7 +3,7 @@ import { findGateCandidate, type Context } from '@bombfarm/domain/model';
 import { applyGear, emptyLoadout, type Loadout, type SheetStats } from '@bombfarm/domain/gear';
 import { ZERO_PTS, GATES } from '@bombfarm/domain/planner-constants';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
-import { PROPS, propHp, hitsToKill, oneshotGapPct } from '@bombfarm/domain/phases';
+import { PROPS, propHp, hitsToKill, hitsToKillWithSecondBlast, oneshotGapPct } from '@bombfarm/domain/phases';
 import { gateDamage } from '@bombfarm/domain/model';
 import {
   computeAdvisorPipeline,
@@ -464,5 +464,42 @@ describe('computeAdvisorPipeline', () => {
   it('AdvisorPipelineResult has no optimizeBuild field — Tier 2 ships unwired', () => {
     const out = computeAdvisorPipeline(baseInput());
     expect('optimizeBuild' in out).toBe(false);
+  });
+});
+
+describe('computeAdvisorPipeline — hits-to-kill against the printed average hit', () => {
+  const phase = 40;
+
+  it('hp ÷ average hit reproduces every hits-to-kill row for a Misericórdia carrier', () => {
+    const out = computeAdvisorPipeline(baseInput({ abilities: { misericordia: 20 }, phase }));
+    expect(out.propRows.some((row) => row.hits > 1)).toBe(true);
+    for (const row of out.propRows) expect(row.hits, row.name).toBe(hitsToKill(out.avgHit, row.hp));
+    expect(out.bossHits).toBe(hitsToKill(out.avgHit, out.bossHp));
+  });
+
+  it('Misericórdia moves no figure the screen prints', () => {
+    const plain = computeAdvisorPipeline(baseInput({ phase }));
+    const mercy = computeAdvisorPipeline(baseInput({ abilities: { misericordia: 20 }, phase }));
+    expect([mercy.dps, mercy.active, mercy.avgHit, mercy.propRows, mercy.bossHits, mercy.gateRows]).toEqual([
+      plain.dps,
+      plain.active,
+      plain.avgHit,
+      plain.propRows,
+      plain.bossHits,
+      plain.gateRows,
+    ]);
+  });
+
+  it('a Detonação Dupla carrier prints one blast and prices its second blast in hits-to-kill and DPS', () => {
+    const plain = computeAdvisorPipeline(baseInput({ phase }));
+    const carrier = computeAdvisorPipeline(baseInput({ abilities: { detonacao_dupla: 20 }, phase }));
+    expect(carrier.avgHit).toBe(plain.avgHit);
+    expect(carrier.dps / plain.dps).toBeCloseTo(1.25, 12);
+    expect(carrier.gateRows[0]!.dmg / plain.gateRows[0]!.dmg).toBeCloseTo(1.25, 12);
+    for (const row of carrier.propRows) {
+      expect(row.hits, row.name).toBe(hitsToKillWithSecondBlast(carrier.avgHit, row.hp, 0.5));
+    }
+    expect(carrier.bossHits).toBe(hitsToKillWithSecondBlast(carrier.avgHit, carrier.bossHp, 0.5));
+    expect(carrier.bossHits).toBeLessThan(plain.bossHits);
   });
 });

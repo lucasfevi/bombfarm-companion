@@ -173,7 +173,7 @@ export interface PipelineFacts {
   context: Context;
   /**
    * What one blast carries — `packMult × (1 + extraDmgPct/100) × entryPulseMult`, the
-   * pipeline's `hitMult` with the pulse folded in. Never the second-blast / execute expectation:
+   * pipeline's `hitMult` with the pulse folded in. Never the second-blast expectation:
    * that is `mods.dmgMult`, a factor of `active` and `dps` and of no printed hit.
    */
   dmgMult: number;
