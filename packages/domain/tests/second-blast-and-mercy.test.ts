@@ -79,6 +79,26 @@ describe('Detonação Dupla in hits-to-kill', () => {
   it('far past the exact sum, a blast is worth one plus half a blast at its chance', () => {
     expect(hitsToKillWithSecondBlast(1, 500, 0.5)).toBeCloseTo(400, 9);
     expect(expectedHitsToKill(500, 1, 0, 2, 0.5)).toBeCloseTo(400, 9);
+    expect(expectedHitsToKill(500, 1, 0.5, 3, 0.5)).toBeCloseTo(500 / (2 * 1.25), 9);
+  });
+
+  it('a hit that deals nothing never kills, and a rock with no HP takes no blast', () => {
+    expect(hitsToKillWithSecondBlast(0, 10, 0.5)).toBe(Infinity);
+    expect(hitsToKillWithSecondBlast(5, 0, 0.5)).toBe(0);
+    expect(expectedHitsToKill(10, 0, 0.3, 2, 0.5)).toBe(Infinity);
+    expect(expectedHitsToKill(10, Infinity, 0.3, 2, 0.5)).toBe(Infinity);
+    expect(expectedHitsToKill(0, 5, 0.3, 2, 0.5)).toBe(0);
+  });
+
+  it('a certain second blast always lands half a hit more, and a chance past 1 is a certain one', () => {
+    expect(hitsToKillWithSecondBlast(1, 2.9, 1)).toBe(2);
+    expect(hitsToKillWithSecondBlast(1, 2.9, 3)).toBe(2);
+    expect(expectedHitsToKill(2.9, 1, 0, 2, 3)).toBe(2);
+  });
+
+  it('a hero that always crits, or whose crit adds nothing, prices its second blast on the one hit it deals', () => {
+    expect(expectedHitsToKill(5, 1, 1, 2, 0.5)).toBe(hitsToKillWithSecondBlast(2, 5, 0.5));
+    expect(expectedHitsToKill(5, 1, 0.4, 1, 0.5)).toBe(hitsToKillWithSecondBlast(1, 5, 0.5));
   });
 });
 

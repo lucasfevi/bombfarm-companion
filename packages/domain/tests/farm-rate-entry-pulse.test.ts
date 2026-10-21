@@ -127,7 +127,7 @@ describe('the basis carries the rank, the facts carry each carrier, the squad ca
       effective: basis.effective,
       effectiveDelta: basis.effectiveDelta,
       context: basis.context,
-      dmgMult: basis.dmgMult,
+      hitMult: basis.hitMult,
       adjustedLuckPct: basis.heroLuckPct,
       treeLuckFlatPct: 0,
     };
