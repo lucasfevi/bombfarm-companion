@@ -3,15 +3,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
 import { BiCoffee, BiCopy } from "react-icons/bi";
 import type { Strings, Lang } from "@/shared/i18n";
 import {
   AppNav,
+  BrandLockup,
   Button,
   SegmentedToggle,
+  SiteHeader as DsSiteHeader,
   Tooltip,
   buttonRecipe,
+  siteHeaderBrandClass,
 } from "@bombfarm/ui";
 import { REFERRAL_CODE } from "@/shared/referral";
 import { prefetchOnIntent } from "./prefetch-on-intent";
@@ -41,164 +43,148 @@ export function SiteHeader({
   const router = useRouter();
   const { codeRef, copy: copyReferral } = useReferralCopy(t);
   const phone = usePhoneHeader();
-  const navStripRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const strip = navStripRef.current;
-    const active = strip?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (!strip || !active) return;
-    strip.scrollLeft =
-      active.offsetLeft - (strip.clientWidth - active.offsetWidth) / 2;
-  }, [pathname, lang]);
 
   return (
-    <header className="sticky top-0 z-30 min-h-top border-b border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-4 py-2.5 backdrop-blur-[14px]">
-      <div className="mx-auto flex max-w-app flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 max-sm:contents">
-          <Link
-            href="/"
-            prefetch={false}
-            {...prefetchOnIntent(router, "/")}
-            className="flex items-center gap-2.5 no-underline max-sm:order-1"
-          >
-            <Image
-              src="/favicon.svg"
-              alt=""
-              width={34}
-              height={34}
-              className="size-8.5 shrink-0"
-              priority
-            />
-            <div>
-              <div className="text-sm leading-1.1 font-bold text-ink">
-                Bomb Farm
-              </div>
-              <div className="text-[11px] tracking-[0.04em] text-muted uppercase">
-                {t.appSuiteTag}
-              </div>
-            </div>
-          </Link>
-          {/* Below sm the tabs scroll inside their own row: the bar is never wider than the screen. */}
-          <div
-            ref={navStripRef}
-            className="max-sm:order-3 max-sm:w-full max-sm:overflow-x-auto max-sm:[scrollbar-width:none]"
-          >
-            <AppNav
-              className="whitespace-nowrap"
-              ariaLabel={t.siteNavAria}
-              items={NAV_SECTIONS.map((section) => ({
-                id: section,
-                label: t[SITE_SECTION_LABEL_KEY[section]],
-                active: isSiteSectionActive(section, pathname),
-              }))}
-              renderItem={(item, className) => (
-                <Link
-                  key={item.id}
-                  href={SITE_SECTION_HREF[item.id as SiteSection]}
-                  prefetch={false}
-                  {...prefetchOnIntent(
-                    router,
-                    SITE_SECTION_HREF[item.id as SiteSection]
-                  )}
-                  aria-current={item.active ? "page" : undefined}
-                  className={className}
-                >
-                  {item.label}
-                </Link>
-              )}
-            />
-          </div>
-        </div>
-        {phone ? (
-          <div className="order-2 ml-auto">
-            <SiteHeaderMenu
-              t={t}
-              lang={lang}
-              downloadActive={isSiteSectionActive("download", pathname)}
-              referralCodeRef={codeRef}
-              onCopyReferral={copyReferral}
-              onImport={onImport}
-              onLangChange={onLangChange}
-            />
-          </div>
-        ) : (
-          <div className="flex flex-nowrap items-center justify-end gap-1.5 max-sm:order-2 max-[720px]:flex-wrap max-[720px]:justify-start">
+    <DsSiteHeader
+      compact={phone}
+      navRecenterKey={`${pathname}${lang}`}
+      brand={
+        <Link
+          href="/"
+          prefetch={false}
+          {...prefetchOnIntent(router, "/")}
+          className={siteHeaderBrandClass}
+        >
+          <BrandLockup
+            mark={
+              <Image
+                src="/favicon.svg"
+                alt=""
+                width={34}
+                height={34}
+                className="size-8.5 shrink-0"
+                priority
+              />
+            }
+            title="Bomb Farm"
+            tag={t.appSuiteTag}
+          />
+        </Link>
+      }
+      nav={
+        <AppNav
+          className="whitespace-nowrap"
+          ariaLabel={t.siteNavAria}
+          items={NAV_SECTIONS.map((section) => ({
+            id: section,
+            label: t[SITE_SECTION_LABEL_KEY[section]],
+            active: isSiteSectionActive(section, pathname),
+          }))}
+          renderItem={(item, className) => (
             <Link
-              href={SITE_SECTION_HREF.download}
+              key={item.id}
+              href={SITE_SECTION_HREF[item.id as SiteSection]}
               prefetch={false}
-              {...prefetchOnIntent(router, SITE_SECTION_HREF.download)}
-              aria-current={
-                isSiteSectionActive("download", pathname) ? "page" : undefined
-              }
-              className={buttonRecipe({ variant: "primary" })}
-              data-testid="header-download-cta"
+              {...prefetchOnIntent(
+                router,
+                SITE_SECTION_HREF[item.id as SiteSection]
+              )}
+              aria-current={item.active ? "page" : undefined}
+              className={className}
             >
-              {t.downloadHeaderCta}
+              {item.label}
             </Link>
-            {onImport ? (
-              <Button type="button" onClick={onImport}>
-                {t.importHeroesBtn}
-              </Button>
-            ) : null}
-            {/* Code only — the tooltip carries the why, the footer the full copy. */}
-            <Tooltip.Provider delay={200} closeDelay={80}>
-              <Tooltip.Root>
-                <Tooltip.Trigger
-                  type="button"
-                  onClick={copyReferral}
-                  aria-label={t.referralTitle}
-                  data-testid="referral-topbar"
-                  className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-sm border border-line bg-bg-2 px-2 text-[11px] font-bold tracking-[0.06em] text-muted hover:border-accent hover:text-accent motion-safe:transition-[border-color,color] motion-safe:duration-[120ms]"
-                >
-                  <span ref={codeRef} className="font-mono">
-                    {REFERRAL_CODE}
-                  </span>
-                  <BiCopy size={13} aria-hidden="true" />
-                </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Positioner sideOffset={6}>
-                    <Tooltip.Popup>{t.referralTitle}</Tooltip.Popup>
-                  </Tooltip.Positioner>
-                </Tooltip.Portal>
-              </Tooltip.Root>
-            </Tooltip.Provider>
-            <Tooltip.Provider delay={200} closeDelay={80}>
-              <Tooltip.Root>
-                <Tooltip.Trigger
-                  render={
-                    <a
-                      className={buttonRecipe({ variant: "coffee" })}
-                      href="https://buymeacoffee.com/lucasfevi"
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={t.coffee}
-                    />
-                  }
-                >
-                  <BiCoffee size={16} aria-hidden="true" />
-                </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Positioner sideOffset={6}>
-                    <Tooltip.Popup>{t.coffee}</Tooltip.Popup>
-                  </Tooltip.Positioner>
-                </Tooltip.Portal>
-              </Tooltip.Root>
-            </Tooltip.Provider>
-            <SegmentedToggle
-              options={[
-                { id: "pt", label: "PT" },
-                { id: "en", label: "EN" },
-              ]}
-              value={lang}
-              onChange={(nextLang) => {
-                if (nextLang === "pt" || nextLang === "en")
-                  onLangChange(nextLang);
-              }}
-              ariaLabel="Language"
-            />
-          </div>
-        )}
-      </div>
-    </header>
+          )}
+        />
+      }
+      compactActions={
+        <SiteHeaderMenu
+          t={t}
+          lang={lang}
+          downloadActive={isSiteSectionActive("download", pathname)}
+          referralCodeRef={codeRef}
+          onCopyReferral={copyReferral}
+          onImport={onImport}
+          onLangChange={onLangChange}
+        />
+      }
+      actions={
+        <>
+          <Link
+            href={SITE_SECTION_HREF.download}
+            prefetch={false}
+            {...prefetchOnIntent(router, SITE_SECTION_HREF.download)}
+            aria-current={
+              isSiteSectionActive("download", pathname) ? "page" : undefined
+            }
+            className={buttonRecipe({ variant: "primary" })}
+            data-testid="header-download-cta"
+          >
+            {t.downloadHeaderCta}
+          </Link>
+          {onImport ? (
+            <Button type="button" onClick={onImport}>
+              {t.importHeroesBtn}
+            </Button>
+          ) : null}
+          {/* Code only — the tooltip carries the why, the footer the full copy. */}
+          <Tooltip.Provider delay={200} closeDelay={80}>
+            <Tooltip.Root>
+              <Tooltip.Trigger
+                type="button"
+                onClick={copyReferral}
+                aria-label={t.referralTitle}
+                data-testid="referral-topbar"
+                className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-sm border border-line bg-bg-2 px-2 text-[11px] font-bold tracking-[0.06em] text-muted hover:border-accent hover:text-accent motion-safe:transition-[border-color,color] motion-safe:duration-[120ms]"
+              >
+                <span ref={codeRef} className="font-mono">
+                  {REFERRAL_CODE}
+                </span>
+                <BiCopy size={13} aria-hidden="true" />
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Positioner sideOffset={6}>
+                  <Tooltip.Popup>{t.referralTitle}</Tooltip.Popup>
+                </Tooltip.Positioner>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </Tooltip.Provider>
+          <Tooltip.Provider delay={200} closeDelay={80}>
+            <Tooltip.Root>
+              <Tooltip.Trigger
+                render={
+                  <a
+                    className={buttonRecipe({ variant: "coffee" })}
+                    href="https://buymeacoffee.com/lucasfevi"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={t.coffee}
+                  />
+                }
+              >
+                <BiCoffee size={16} aria-hidden="true" />
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Positioner sideOffset={6}>
+                  <Tooltip.Popup>{t.coffee}</Tooltip.Popup>
+                </Tooltip.Positioner>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </Tooltip.Provider>
+          <SegmentedToggle
+            options={[
+              { id: "pt", label: "PT" },
+              { id: "en", label: "EN" },
+            ]}
+            value={lang}
+            onChange={(nextLang) => {
+              if (nextLang === "pt" || nextLang === "en")
+                onLangChange(nextLang);
+            }}
+            ariaLabel="Language"
+          />
+        </>
+      }
+    />
   );
 }

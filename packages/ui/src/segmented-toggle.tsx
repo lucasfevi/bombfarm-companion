@@ -1,3 +1,5 @@
+'use client';
+
 import { segmentedToggleItemRecipe, segmentedToggleRootClass } from './segmented-toggle.recipe';
 import { cn } from './cn';
 

@@ -40,15 +40,30 @@ export type DataTableHeaderSortableProps<T extends string> = HeaderBaseProps & {
   sortKey: T;
   sortDir: SortDir;
   onSort: (key: T) => void;
+  sortHref?: never;
   stopPropagation?: boolean;
   /** Drawn beside the sort button rather than inside it — an interactive glyph such as an
    *  `InfoTip` is itself a button, and a button may not nest in another. */
   aside?: ReactNode;
 };
 
+/** A sortable header that is a plain link to the sorted view, for a table sorted on the server. */
+export type DataTableHeaderSortLinkProps<T extends string> = HeaderBaseProps & {
+  sortable: true;
+  col: T;
+  sortKey: T;
+  sortDir: SortDir;
+  /** Where this column's sort lives; renders an anchor instead of a button. */
+  sortHref: string;
+  onSort?: never;
+  stopPropagation?: never;
+  aside?: ReactNode;
+};
+
 export type DataTableHeaderProps<T extends string = string> =
   | DataTableHeaderStaticProps
-  | DataTableHeaderSortableProps<T>;
+  | DataTableHeaderSortableProps<T>
+  | DataTableHeaderSortLinkProps<T>;
 
 export type DataTableCellProps = TdHTMLAttributes<HTMLTableCellElement> &
   DataTableCellVariants & {

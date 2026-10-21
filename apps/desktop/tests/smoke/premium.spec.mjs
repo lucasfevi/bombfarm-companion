@@ -20,13 +20,15 @@ const EN_COPY_PATH = path.join(desktopRoot, 'renderer', 'lib', 'copy', 'en.ts');
 const GAME_TOKEN = 'fixture-game-token-0123456789abcdef';
 const GAME_ACCOUNT_ID = '424242';
 const GAME_STEAM_ID = '76561198000000001';
+const GAME_PLAYER_NAME = 'Smoke Fixture Player';
 
 /**
  * Premium sign-in, status and hand-off, driven against a local stand-in for the API.
  *
  * Nothing here reaches a real host: the app is pointed at the stub through the unpackaged-only
  * origin override, the system browser is replaced by a recorder in the main process, and the game
- * session file is a fixture holding a known token, account id and SteamID. The browser's own job
+ * session file is a fixture holding a known token, account id and SteamID, beside an account fixture
+ * that names the same account and gives it a player name. The browser's own job
  * (following the approval and landing on the loopback callback) is done by the spec.
  *
  * The clock the app reads for its refresh floor is moved forward in the main process rather than
@@ -49,7 +51,7 @@ function electronExecutable() {
   );
 }
 
-async function launchApp({ userDataDir, sessionFile, origin }) {
+async function launchApp({ userDataDir, sessionFile, accountFile, origin }) {
   const app = await electron.launch({
     executablePath: electronExecutable(),
     args: [desktopRoot],
@@ -60,7 +62,7 @@ async function launchApp({ userDataDir, sessionFile, origin }) {
       ELECTRON_ENABLE_LOGGING: '1',
       BFC_GAME_PROCESS: 'bfc-smoke-no-such-process.exe',
       BFC_GAME_READER: 'fixture',
-      BFC_FIXTURE_ACCOUNT_FILE: ACCOUNT_FIXTURE,
+      BFC_FIXTURE_ACCOUNT_FILE: accountFile,
       BFC_USER_DATA_DIR: userDataDir,
       BFC_TOKEN_PATH_OVERRIDE: sessionFile,
       BFC_PREMIUM_API_ORIGIN: origin,
@@ -110,6 +112,7 @@ test.describe.serial('Premium sign-in and status against a stand-in API', () => 
   let tempDir;
   let userDataDir;
   let sessionFile;
+  let accountFile;
   let app;
   let page;
   let openedAtSignOut;
@@ -125,7 +128,11 @@ test.describe.serial('Premium sign-in and status against a stand-in API', () => 
       sessionFile,
       `[auth]\ntoken="${GAME_TOKEN}"\naccount_id="${GAME_ACCOUNT_ID}"\nsteam_id64="${GAME_STEAM_ID}"\n`,
     );
-    ({ app, page } = await launchApp({ userDataDir, sessionFile, origin: stub.origin }));
+    const fixture = JSON.parse(fs.readFileSync(ACCOUNT_FIXTURE, 'utf8'));
+    fixture.account = { ...fixture.account, account_id: Number(GAME_ACCOUNT_ID), player_name: GAME_PLAYER_NAME };
+    accountFile = path.join(tempDir, 'account.json');
+    fs.writeFileSync(accountFile, JSON.stringify(fixture));
+    ({ app, page } = await launchApp({ userDataDir, sessionFile, accountFile, origin: stub.origin }));
     await acceptConsent(page);
     encryptionAvailable = await app.evaluate(({ safeStorage }) => safeStorage.isEncryptionAvailable());
   });
@@ -178,15 +185,19 @@ test.describe.serial('Premium sign-in and status against a stand-in API', () => 
     }
   });
 
-  test('reports the game account once with exactly its two fields and no game token', async () => {
+  test('reports the game account once with its two ids and the player name, and no game token', async () => {
     await expect(
       page.getByText(en('settingsPremiumReportLinked').replace('{id}', GAME_ACCOUNT_ID)),
     ).toBeVisible({ timeout: 20_000 });
 
     const reports = stub.at(STUB_PATHS.report);
     expect(reports).toHaveLength(1);
-    expect(Object.keys(reports[0].body).sort()).toEqual(['account_id', 'steam_id64']);
-    expect(reports[0].body).toEqual({ account_id: GAME_ACCOUNT_ID, steam_id64: GAME_STEAM_ID });
+    expect(Object.keys(reports[0].body).sort()).toEqual(['account_id', 'player_name', 'steam_id64']);
+    expect(reports[0].body).toEqual({
+      account_id: GAME_ACCOUNT_ID,
+      steam_id64: GAME_STEAM_ID,
+      player_name: GAME_PLAYER_NAME,
+    });
     for (const request of stub.requests) {
       expect(request.text).not.toContain(GAME_TOKEN);
       expect(request.bearer ?? '').not.toContain(GAME_TOKEN);
@@ -254,7 +265,7 @@ test.describe.serial('Premium sign-in and status against a stand-in API', () => 
     const bearerCallsAtSignOut = stub.requests.filter((request) => request.bearer !== null).length;
 
     await app.close();
-    ({ app, page } = await launchApp({ userDataDir, sessionFile, origin: stub.origin }));
+    ({ app, page } = await launchApp({ userDataDir, sessionFile, accountFile, origin: stub.origin }));
     await openSettings(page);
 
     await expect(page.getByTestId('settings-premium-sign-in')).toBeVisible({ timeout: 20_000 });

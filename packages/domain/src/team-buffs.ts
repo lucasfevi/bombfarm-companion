@@ -361,28 +361,36 @@ export function entryPulseRankFloor(switches: TeamAuraSwitches): number {
 }
 
 /**
- * Which team auras a rotating surface — the Farm board, the Optimizer — prices at their cap the
- * whole of wall clock, whatever its carriers would sustain: the standing five are held at
- * `TEAM_BUFF_CAP` in the rotation-weighted total ({@link holdAurasAtCap}), Passagem de Bastão as
- * the field held at its capped pulse ({@link pulseHeldAtCap}). An answer to a question about a
- * field the roster does not light on its own — never a correction to the rotation model — so an
- * empty list is the model as it stands, and the default everywhere.
+ * Which team auras a rotating surface — the Farm board, the Optimizer — prices at 100% uptime of
+ * what the squad's own carriers give: the standing five at the carriers' full-presence total,
+ * clamped at `TEAM_BUFF_CAP` ({@link holdAurasAtCap}), Passagem de Bastão as the field lit by the
+ * best carrier's rank the whole time (`passagemBastaoHeldPulse`). A squad without a carrier
+ * gains nothing. An answer to a question about a rotation that never lets the aura lapse — never
+ * a correction to the rotation model — so an empty list is the model as it stands, and the
+ * default everywhere.
  */
 export type AurasAtCap = readonly TeamAuraId[];
 
 export const NO_AURAS_AT_CAP: AurasAtCap = Object.freeze([]);
 
-/** The same object back when nothing is held, so a caller keyed on identity is not woken. */
+/**
+ * Each named standing aura raised to the squad's full-presence total, never past its cap and
+ * never below what the rotation already prices. The same object back when nothing is held, so a
+ * caller keyed on identity is not woken.
+ */
 export function holdAurasAtCap(
   totals: Record<TeamBuffId, number>,
   aurasAtCap: AurasAtCap | undefined,
+  atFullPresence: Readonly<Record<TeamBuffId, number>>,
 ): Record<TeamBuffId, number> {
   if (aurasAtCap === undefined || aurasAtCap.length === 0) return totals;
   let held: Record<TeamBuffId, number> | null = null;
   for (const buffId of TEAM_BUFF_ABILITY_IDS) {
-    if (!aurasAtCap.includes(buffId) || totals[buffId] === TEAM_BUFF_CAP[buffId]) continue;
+    if (!aurasAtCap.includes(buffId)) continue;
+    const target = Math.min(TEAM_BUFF_CAP[buffId], atFullPresence[buffId]);
+    if (!(target > totals[buffId])) continue;
     held ??= { ...totals };
-    held[buffId] = TEAM_BUFF_CAP[buffId];
+    held[buffId] = target;
   }
   return held ?? totals;
 }

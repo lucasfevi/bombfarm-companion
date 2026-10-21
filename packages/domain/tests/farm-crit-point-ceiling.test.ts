@@ -135,8 +135,17 @@ describe('the full-presence aura the plan caps crit against', () => {
     expect(farmFromAccount(input).critFlatAtFullPresence).toBe(8);
   });
 
-  it('holds the aura at its cap when the plan holds it there', () => {
+  it('is what the carriers give at full presence whether or not the plan holds the aura', () => {
     const input = planInput([{ heroId: 'a', pressagio: 2 }], { a: 'optimize' }, ['pressagio_mortal']);
+    expect(farmFromAccount(input).critFlatAtFullPresence).toBe(2);
+  });
+
+  it('clamps strong carriers at the cap', () => {
+    const input = planInput(
+      [{ heroId: 'a', pressagio: 15 }, { heroId: 'b', pressagio: 12 }],
+      { a: 'optimize', b: 'optimize' },
+      ['pressagio_mortal'],
+    );
     expect(farmFromAccount(input).critFlatAtFullPresence).toBe(TEAM_BUFF_CAP.pressagio_mortal);
   });
 });

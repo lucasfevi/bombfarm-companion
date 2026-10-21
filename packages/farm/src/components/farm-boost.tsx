@@ -7,7 +7,7 @@ import type { FarmCopy } from '../copy';
 import { BOOST_ADD } from '../core';
 import { farmFieldClass, farmFieldControlClass, farmFieldLabelClass } from './farm-ranking-filters';
 
-type BoostAxis = keyof EconomyBoost;
+type BoostAxis = 'gold' | 'xp' | 'drop';
 
 const BOOST_AXES: readonly BoostAxis[] = ['gold', 'xp', 'drop'];
 

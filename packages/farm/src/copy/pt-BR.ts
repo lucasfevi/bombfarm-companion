@@ -149,6 +149,9 @@ export const farmPtBR: FarmCopy = {
   farmRankingPassTip:
     "+{gold}% de ouro, +{xp}% de XP e +{drop}% de chance de drop, sempre ativos. Com o Passe, o Bônus de Retorno é +{returnPass}% em vez de +{returnBase}%.",
   farmRankingPassTipDetected: "Lido da sua conta.",
+  farmRankingPassBonusLabel: "Bônus do Passe",
+  farmRankingPassBonusValue: "+{gold}% ouro · +{xp}% XP",
+  farmRankingPassBonusTip: "Um bônus temporário: +{gold}% de ouro e +{xp}% de XP, somados ao Passe e aos Boosts.",
   farmRankingMapSizeLabel: "Tamanho do mapa",
   farmRankingMapSizeClassic: "Clássico",
   farmRankingMapSizeCompact: "Compacto",

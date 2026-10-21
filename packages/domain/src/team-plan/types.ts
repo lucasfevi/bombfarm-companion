@@ -8,6 +8,7 @@ import type { InventoryItem } from '../inventory';
 import type {
   AbilityMods,
   BattleField,
+  CombatKind,
   Context,
   EffectiveDeltas,
   HeroSheet,
@@ -71,6 +72,8 @@ export type FarmContext = {
    * nothing. Absent, the roster is a rotation and presence is duty.
    */
   windowSecs?: number;
+  /** See `Context.combat` — set for a duel only. */
+  combat?: CombatKind;
   critFlatAtFullPresence?: number;
   /** The grid the squad farms on. Absent, the classic field. */
   field?: BattleField;
@@ -288,7 +291,7 @@ export type TeamPlanAccountInput = {
 /**
  * The build-independent half of one hero's farm basis, extracted once per run.
  *
- * `dmgMult` and the two loot ability levels are functions of the hero's abilities, the frozen
+ * `hitMult` and the two loot ability levels are functions of the hero's abilities, the frozen
  * team auras and the frozen field size alone — no gear, no points — so they survive every
  * candidate the search tries. The build-DEPENDENT half (the effective sheet, its per-point
  * deltas, and the farm `Context`) comes from the scorer per evaluation and is combined with this.
@@ -297,7 +300,7 @@ export type FrozenHeroFarmTerms = {
   /** The very `HeroPlanContext` the run was built from — fixed for a whole `runTeamPlan`, which
    *  is also the exact lifetime of the objective holding it. */
   ctx: HeroPlanContext;
-  dmgMult: number;
+  hitMult: number;
   /**
    * Present exactly for a squad hero the search may not re-gear. Nothing supplies a loadout for
    * such a hero per evaluation — the assignment only covers optimize scope — so the objective

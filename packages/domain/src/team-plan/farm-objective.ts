@@ -206,8 +206,7 @@ function priceField(
   fieldSlots: number,
   aurasAtCap: AurasAtCap | undefined,
 ): { auras: Record<TeamBuffId, number>; critFlatAtFullPresence: number; alliesByHeroId: Record<string, number> } {
-  // Held at both steps, as the estimator holds them (`priceFieldForAssignment`).
-  const atFullPresence = holdAurasAtCap(computeTeamBuffsOverRotation(squadContexts, null), aurasAtCap);
+  const atFullPresence = computeTeamBuffsOverRotation(squadContexts, null);
   const presence = squadContexts.map((ctx) =>
     presenceOf(
       scoreHeroLoadout(ctx, loadoutByHeroId[ctx.heroId] ?? {}, ctx.pts, atFullPresence, farm),
@@ -218,7 +217,7 @@ function priceField(
     alliesByHeroId[ctx.heroId] = alliesOverRotation(presence, index, fieldSlots);
   });
   return {
-    auras: holdAurasAtCap(computeTeamBuffsOverRotation(squadContexts, presence), aurasAtCap),
+    auras: holdAurasAtCap(computeTeamBuffsOverRotation(squadContexts, presence), aurasAtCap, atFullPresence),
     critFlatAtFullPresence: teamAuraLayer(atFullPresence).teamCritFlat,
     alliesByHeroId,
   };
@@ -262,12 +261,12 @@ export function buildFarmObjective(
   );
   const heroes: FrozenHeroFarmTerms[] = squadContexts.map((ctx) => ({
     ctx,
-    dmgMult: computeCombatMults({
+    hitMult: computeCombatMults({
       mods: ctx.mods,
       teamBuffs: auras,
       extraDmgPct: 0,
       fieldAllies: alliesByHeroId[ctx.heroId],
-    }).dmgMult,
+    }).hitMult,
     ...(ctx.scope === 'optimize' ? {} : { fixedLoadout: loadoutByHeroId[ctx.heroId] ?? {} }),
   }));
 
@@ -316,7 +315,7 @@ function basisForHero(
     effective: score.effective,
     effectiveDelta: score.effectiveDelta,
     context: score.context,
-    dmgMult: frozen.dmgMult,
+    hitMult: frozen.hitMult,
     adjustedLuckPct: score.adjusted.luck,
     treeLuckFlatPct: objective.treeLuckFlatPct,
     abilities: ctx.abilities,

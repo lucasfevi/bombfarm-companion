@@ -39,10 +39,13 @@ const UI_SRC = 'packages/ui/src/';
 const TITLE_IS_CONTENT = new Set([
   'AppShell',
   'Banner',
+  'BrandLockup',
   'ConfirmDialog',
   'EmptyState',
+  'ErrorScreen',
   'PanelHeader',
   'SettingsSection',
+  'TitledList',
   'Tooltip.StatusBody',
 ]);
 

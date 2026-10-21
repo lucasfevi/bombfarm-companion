@@ -72,7 +72,7 @@ function auraSignature(auras: Record<TeamBuffId, number>): string {
  * one pass is served the other's sheet.
  */
 function farmSignature(farm: FarmContext): string {
-  return `${farm.houseIdx}:${farm.houseLevel}:${farm.phase}:${farm.mitigationPct}:${farm.cycleSecs ?? ''}:${farm.cycleSecsHouseIdx ?? ''}:${farm.cycleSecsLevel ?? ''}:${farm.windowSecs ?? ''}:${farm.critFlatAtFullPresence ?? ''}`;
+  return `${farm.houseIdx}:${farm.houseLevel}:${farm.phase}:${farm.mitigationPct}:${farm.cycleSecs ?? ''}:${farm.cycleSecsHouseIdx ?? ''}:${farm.cycleSecsLevel ?? ''}:${farm.windowSecs ?? ''}:${farm.combat ?? ''}:${farm.critFlatAtFullPresence ?? ''}`;
 }
 
 /**
@@ -154,6 +154,7 @@ export function scoreHeroLoadout(
     cycleSecsHouseIdx: farm.cycleSecsHouseIdx,
     cycleSecsLevel: farm.cycleSecsLevel,
     ...(farm.windowSecs !== undefined ? { windowSecs: farm.windowSecs } : {}),
+    ...(farm.combat !== undefined ? { combat: farm.combat } : {}),
     ...(farm.field !== undefined ? { field: farm.field } : {}),
   });
 

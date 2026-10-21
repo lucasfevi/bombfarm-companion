@@ -144,6 +144,7 @@ export const heroEn = {
   heroDetailAurasTeamGroup: "Team auras",
   heroDetailAuraOwnTag: "own",
   heroDetailAuraSwitchAria: "Count {name} at its cap",
+  auraUptimeChipAria: "Count {name} at 100% uptime",
   heroDetailAuraDeltaIfOn: "+{value}% if on",
   heroDetailAuraDeltaIfOff: "−{value}% if off",
 

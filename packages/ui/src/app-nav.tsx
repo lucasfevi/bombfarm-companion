@@ -1,8 +1,10 @@
-import type { ReactNode } from 'react';
+'use client';
+
+import { cloneElement, lazy, Suspense, type ReactNode } from 'react';
 import { appNavItemRecipe, appNavRootClass } from './app-nav.recipe';
 import { cn } from './cn';
 import { Icon, type IconName } from './icon';
-import { Tooltip } from './tooltip';
+import type { AppNavTooltipEntry } from './app-nav-tooltip-items';
 
 /**
  * A small dot at an item's bottom-right corner that says how a live thing behind that screen is
@@ -25,6 +27,12 @@ export interface AppNavItem {
   icon?: IconName;
   mark?: AppNavItemMark | undefined;
 }
+
+const AppNavTooltipItems = lazy(() =>
+  import('./app-nav-tooltip-items').then((module) => ({ default: module.AppNavTooltipItems })),
+);
+
+const TOOLTIP_TRIGGER_ATTRIBUTES = { 'data-base-ui-tooltip-trigger': '', 'data-slot': 'tooltip-trigger' };
 
 const MARK_TONE_CLASS: Record<AppNavItemMark['tone'], string> = {
   up: 'bg-up',
@@ -62,69 +70,82 @@ export function AppNav({
 }: AppNavProps) {
   if (items.length === 0) return null;
 
-  const nav = (
-    <nav aria-label={ariaLabel} className={cn(appNavRootClass, className)}>
-      {items.map((item) => {
-        const glyph = compact ? item.icon : undefined;
-        const iconOnly = glyph !== undefined && !item.active;
-        const itemClassName = cn(
-          appNavItemRecipe({
-            active: item.active,
-            layout: glyph === undefined ? 'label' : iconOnly ? 'icon' : 'icon-and-label',
-          }),
-          item.mark && 'relative',
-        );
-        if (renderItem) return renderItem(item, itemClassName);
+  const layoutOf = (item: AppNavItem) => {
+    const glyph = compact ? item.icon : undefined;
+    return { glyph, iconOnly: glyph !== undefined && !item.active };
+  };
 
-        const button = (
-          <button
-            key={item.id}
-            type="button"
-            aria-current={item.active ? 'page' : undefined}
-            aria-label={iconOnly ? item.label : undefined}
-            data-mark={item.mark?.tone}
-            onClick={() => onSelect?.(item.id)}
-            className={itemClassName}
-          >
-            {glyph ? <Icon name={glyph} size="sm" /> : null}
-            {iconOnly ? null : item.label}
-            {item.mark ? (
-              <span
-                aria-hidden
-                data-testid={`nav-mark-${item.id}`}
-                className={cn('absolute', 'right-1', 'bottom-1', 'size-1.5', 'rounded-full', 'ring-2', 'ring-surface', MARK_TONE_CLASS[item.mark.tone])}
-              />
-            ) : null}
-          </button>
-        );
+  const classNameOf = (item: AppNavItem) => {
+    const { glyph, iconOnly } = layoutOf(item);
+    return cn(
+      appNavItemRecipe({
+        active: item.active,
+        layout: glyph === undefined ? 'label' : iconOnly ? 'icon' : 'icon-and-label',
+      }),
+      item.mark && 'relative',
+    );
+  };
 
-        // The tooltip names a glyph-only tab, says what a marked tab's dot means, or both.
-        const tipLines = [...(iconOnly ? [item.label] : []), ...(item.mark ? [item.mark.label, ...(item.mark.detail ? [item.mark.detail] : [])] : [])];
-        if (tipLines.length === 0) return button;
-        return (
-          <Tooltip.Root key={item.id}>
-            <Tooltip.Trigger render={button} />
-            <Tooltip.Portal>
-              <Tooltip.Positioner sideOffset={6}>
-                <Tooltip.Popup data-testid={item.mark ? `nav-mark-${item.id}-tip` : undefined}>
-                  {tipLines.map((line, index) => (
-                    <p key={index} className="m-0">
-                      {line}
-                    </p>
-                  ))}
-                </Tooltip.Popup>
-              </Tooltip.Positioner>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        );
-      })}
-    </nav>
-  );
+  const buttonOf = (item: AppNavItem) => {
+    const { glyph, iconOnly } = layoutOf(item);
+    return (
+      <button
+        key={item.id}
+        type="button"
+        aria-current={item.active ? 'page' : undefined}
+        aria-label={iconOnly ? item.label : undefined}
+        data-mark={item.mark?.tone}
+        onClick={() => onSelect?.(item.id)}
+        className={classNameOf(item)}
+      >
+        {glyph ? <Icon name={glyph} size="sm" /> : null}
+        {iconOnly ? null : item.label}
+        {item.mark ? (
+          <span
+            aria-hidden
+            data-testid={`nav-mark-${item.id}`}
+            className={cn('absolute', 'right-1', 'bottom-1', 'size-1.5', 'rounded-full', 'ring-2', 'ring-surface', MARK_TONE_CLASS[item.mark.tone])}
+          />
+        ) : null}
+      </button>
+    );
+  };
 
-  if (!compact && !items.some((item) => item.mark)) return nav;
+  // The tooltip names a glyph-only tab, says what a marked tab's dot means, or both.
+  const tipLinesOf = (item: AppNavItem) => [
+    ...(layoutOf(item).iconOnly ? [item.label] : []),
+    ...(item.mark ? [item.mark.label, ...(item.mark.detail ? [item.mark.detail] : [])] : []),
+  ];
+
+  if (renderItem) {
+    return (
+      <nav aria-label={ariaLabel} className={cn(appNavRootClass, className)}>
+        {items.map((item) => renderItem(item, classNameOf(item)))}
+      </nav>
+    );
+  }
+
+  const entries: AppNavTooltipEntry[] = items.map((item) => ({
+    id: item.id,
+    button: buttonOf(item),
+    tipLines: tipLinesOf(item),
+    popupTestId: item.mark ? `nav-mark-${item.id}-tip` : undefined,
+  }));
+  const needsTooltips = entries.some((entry) => entry.tipLines.length > 0);
+
   return (
-    <Tooltip.Provider delay={200} closeDelay={80}>
-      {nav}
-    </Tooltip.Provider>
+    <nav aria-label={ariaLabel} className={cn(appNavRootClass, className)}>
+      {needsTooltips ? (
+        <Suspense
+          fallback={entries.map((entry) =>
+            entry.tipLines.length === 0 ? entry.button : cloneElement(entry.button, TOOLTIP_TRIGGER_ATTRIBUTES),
+          )}
+        >
+          <AppNavTooltipItems entries={entries} />
+        </Suspense>
+      ) : (
+        entries.map((entry) => entry.button)
+      )}
+    </nav>
   );
 }

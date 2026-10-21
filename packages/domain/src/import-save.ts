@@ -143,6 +143,12 @@ export type AccountImportData = {
   playerName?: string | null;
   /** `account.vip_until`, unix seconds; `0` when the Pass was never owned. `null` when absent. */
   vipUntil?: number | null;
+  /**
+   * The timed gold and XP bonus the game labels "Pass Bonus": `account.bonus_passe_ate` (unix
+   * seconds), `bonus_passe_ouro` and `bonus_passe_xp` (the adds, as fractions). `null` when the
+   * account carries none of the three. Whether it is running is `passBonusOf`'s call (`farm-rate`).
+   */
+  passBonus?: PassBonusWire | null;
   accountId?: string | null;
   /**
    * Owned skill-tree levels (and the wallet / refunds that travel with them). `null` when the
@@ -345,6 +351,20 @@ function mapImportedSkillTree(
   return { levels: parsed.levels, refunds: parsed.refunds, gold: parsed.gold };
 }
 
+export type PassBonusWire = { until: number; gold: number; xp: number };
+
+/** The Pass Bonus off an `account` object; `null` unless all three keys are present numbers. */
+export function readPassBonus(account: unknown): PassBonusWire | null {
+  if (!isObject(account)) return null;
+  const { bonus_passe_ate: until, bonus_passe_ouro: gold, bonus_passe_xp: xp } = account;
+  if (!isFiniteNumber(until) || !isFiniteNumber(gold) || !isFiniteNumber(xp)) return null;
+  return { until, gold, xp };
+}
+
+function mapPassBonus(raw: Record<string, unknown>): PassBonusWire | null {
+  return readPassBonus(raw.account);
+}
+
 export function passActive(vipUntil: number | null | undefined, nowMs: number): boolean {
   return typeof vipUntil === 'number' && Number.isFinite(vipUntil) && vipUntil * 1000 > nowMs;
 }
@@ -409,6 +429,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       playerName,
       accountId,
       vipUntil: mapVipUntil(raw),
+      passBonus: mapPassBonus(raw),
       skillTree: mapImportedSkillTree(skills),
     };
   }
@@ -426,6 +447,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
     playerName,
     accountId,
     vipUntil: mapVipUntil(raw),
+    passBonus: mapPassBonus(raw),
     skillTree: mapImportedSkillTree(skills),
   };
 }
@@ -441,6 +463,7 @@ const EMPTY_ACCOUNT_DATA: AccountImportData = {
   playerName: null,
   accountId: null,
   vipUntil: null,
+  passBonus: null,
   skillTree: null,
 };
 

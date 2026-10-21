@@ -8,27 +8,46 @@
 import { describe, expect, it } from 'vitest';
 import { NO_AURAS_AT_CAP, holdAurasAtCap, pulseHeldAtCap } from '@bombfarm/domain/team-buffs';
 
-describe('holdAurasAtCap — the named standing auras at their cap, the rest as priced', () => {
+describe('holdAurasAtCap — the named standing auras at the squad’s full-presence total, the rest as priced', () => {
   const totals = { grito_guerra: 11.57, pressagio_mortal: 4, marcha_acelerada: 1.2, folego_mineiro: 0, brecha: 20, carnificina: 0 };
+  const strong = { grito_guerra: 20, pressagio_mortal: 20, marcha_acelerada: 3.7, folego_mineiro: 20, brecha: 20, carnificina: 100 };
+  const weak = { grito_guerra: 14, pressagio_mortal: 6, marcha_acelerada: 2, folego_mineiro: 0, brecha: 20, carnificina: 0 };
 
-  it('holds each named standing aura at TEAM_BUFF_CAP and leaves the others alone', () => {
-    expect(holdAurasAtCap(totals, ['grito_guerra', 'folego_mineiro'])).toEqual({
+  it('strong carriers clamp at TEAM_BUFF_CAP and the unnamed auras are left alone', () => {
+    expect(holdAurasAtCap(totals, ['grito_guerra', 'marcha_acelerada'], strong)).toEqual({
       ...totals,
       grito_guerra: 20,
-      folego_mineiro: 20,
+      marcha_acelerada: 3.7,
     });
   });
 
-  it('returns the same object when nothing is held — absent, empty, only the pulse, or already at cap', () => {
-    expect(holdAurasAtCap(totals, undefined)).toBe(totals);
-    expect(holdAurasAtCap(totals, NO_AURAS_AT_CAP)).toBe(totals);
-    expect(holdAurasAtCap(totals, ['passagem_bastao'])).toBe(totals);
-    expect(holdAurasAtCap(totals, ['brecha'])).toBe(totals);
+  it('a full-presence total above the cap is still held at the cap', () => {
+    expect(holdAurasAtCap(totals, ['grito_guerra'], { ...strong, grito_guerra: 32 }).grito_guerra).toBe(20);
+  });
+
+  it('weak carriers are held at their own full-presence sum, not the cap', () => {
+    expect(holdAurasAtCap(totals, ['grito_guerra', 'pressagio_mortal'], weak)).toEqual({
+      ...totals,
+      grito_guerra: 14,
+      pressagio_mortal: 6,
+    });
+  });
+
+  it('an aura no carrier gives gains nothing', () => {
+    expect(holdAurasAtCap(totals, ['folego_mineiro', 'carnificina'], weak)).toBe(totals);
+  });
+
+  it('returns the same object when nothing is held — absent, empty, only the pulse, or already at full presence', () => {
+    expect(holdAurasAtCap(totals, undefined, strong)).toBe(totals);
+    expect(holdAurasAtCap(totals, NO_AURAS_AT_CAP, strong)).toBe(totals);
+    expect(holdAurasAtCap(totals, ['passagem_bastao'], strong)).toBe(totals);
+    expect(holdAurasAtCap(totals, ['brecha'], strong)).toBe(totals);
+    expect(holdAurasAtCap(totals, ['marcha_acelerada'], { ...weak, marcha_acelerada: 1.2 })).toBe(totals);
   });
 
   it('never mutates the totals it is handed', () => {
     const before = { ...totals };
-    holdAurasAtCap(totals, ['marcha_acelerada']);
+    holdAurasAtCap(totals, ['marcha_acelerada'], strong);
     expect(totals).toEqual(before);
   });
 

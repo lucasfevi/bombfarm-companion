@@ -1,3 +1,5 @@
+'use client';
+
 import { Collapsible as BaseCollapsible } from '@base-ui/react/collapsible';
 import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '../cn';

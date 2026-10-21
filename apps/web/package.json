@@ -1,6 +1,6 @@
 {
   "name": "@bombfarm/web",
-  "version": "0.31.1",
+  "version": "0.32.0",
   "private": true,
   "sideEffects": [
     "src/features/team-plan/index.ts"
@@ -72,6 +72,7 @@
     "eslint-plugin-tailwindcss": "^4.2.0",
     "eslint-plugin-unicorn": "62.0.0",
     "globals": "^16.3.0",
+    "happy-dom": "^20.11.15",
     "postcss": "^8.5.22",
     "tailwindcss": "^4.1.11",
     "typescript": "^5.8.3",

@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { Accordion as BaseAccordion } from '@base-ui/react/accordion';
 import { MotionConfig } from 'motion/react';

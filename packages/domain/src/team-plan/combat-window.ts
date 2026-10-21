@@ -1,4 +1,5 @@
 import { PVP_WINDOW_SECS, gateWindowSecs, pvpSquadSlots, resolveGatePhase } from '../combat-window';
+import type { CombatKind } from '../model';
 import type { TeamPlanInput } from './types';
 
 export type ResolvedCombatWindow = {
@@ -7,6 +8,8 @@ export type ResolvedCombatWindow = {
   readonly windowSecs: number;
   /** How many heroes the window's field seats at once; `null` keeps the account's own field. */
   readonly fieldSlots: number | null;
+  /** `'duel'` for a duel; absent for a gate clear, which keeps the farm cadence. */
+  readonly combat?: CombatKind;
 };
 
 /**
@@ -25,7 +28,12 @@ export function resolveCombatWindow(
     return { phase, windowSecs: gateWindowSecs(phase), fieldSlots: null };
   }
   if (input.objective === 'pvp') {
-    return { phase: chosen ?? input.account.phase, windowSecs: PVP_WINDOW_SECS, fieldSlots: pvpSquadSlots(input.pvpSquadSlots) };
+    return {
+      phase: chosen ?? input.account.phase,
+      windowSecs: PVP_WINDOW_SECS,
+      fieldSlots: pvpSquadSlots(input.pvpSquadSlots),
+      combat: 'duel',
+    };
   }
   return null;
 }

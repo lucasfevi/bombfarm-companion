@@ -333,6 +333,36 @@ describe('MapFold: the Pass and the Return Bonus window', () => {
   });
 });
 
+describe('MapFold: the Pass Bonus', () => {
+  const BOOSTS = { xpMult: 1.5821538462, teamCoinPct: 196.7708333, collectionGoldPct: 0, pass: true };
+  const NO_WINDOW = baseTick({ phase: 61 });
+
+  function economyUnder(boost: MapAccountBoosts['boost']) {
+    const fold = makeFold(realWikiFactsFor);
+    fold.setAccountBoosts({ ...BOOSTS, ...(boost === undefined ? {} : { boost }) });
+    fold.consumeTick(NO_WINDOW, 1);
+    const economy = fold.current?.economy;
+    if (!economy || economy.xpPerProp === null) throw new Error('expected an economy');
+    return { ...economy, xpPerProp: economy.xpPerProp };
+  }
+
+  it('stacks on the Pass additively: 1.15 + 0.25 gold and 1.30 + 0.15 XP', () => {
+    const without = economyUnder(undefined);
+    const bonus = economyUnder({ gold: false, xp: false, drop: false, passBonus: { gold: 0.25, xp: 0.15 } });
+    expect(bonus.averageGoldPerProp / without.averageGoldPerProp).toBeCloseTo(1.4 / 1.15, 10);
+    expect(bonus.xpPerProp / without.xpPerProp).toBeCloseTo(1.45 / 1.3, 10);
+  });
+
+  it('re-prices when the bonus arrives, rather than serving the cached facts', () => {
+    const fold = makeFold(realWikiFactsFor);
+    fold.setAccountBoosts(BOOSTS);
+    fold.consumeTick(NO_WINDOW, 1);
+    const before = fold.current?.economy?.averageGoldPerProp ?? 0;
+    fold.setAccountBoosts({ ...BOOSTS, boost: { gold: false, xp: false, drop: false, passBonus: { gold: 0.25, xp: 0.15 } } });
+    expect(fold.current?.economy?.averageGoldPerProp).toBeGreaterThan(before);
+  });
+});
+
 describe('MapFold against the committed capture', () => {
   it('tracks a real clear down to its last prop and back up on the wave rollover', () => {
     const ticks = replayCommittedCaptureTicks();

@@ -22,10 +22,31 @@ export function marginalFuseSeconds(cdrPct: number): number {
   return 2 * (1 - cdr / 100);
 }
 
+/**
+ * Duel heroes plant faster than the farm cadence predicts, and the gap widens as the fuse
+ * shortens: duel bombs/s = farm bombs/s × {@link DUEL_CADENCE_SCALE} × (fuse /
+ * {@link DUEL_CADENCE_PIVOT_FUSE}) ^ {@link DUEL_CADENCE_EXPONENT}. Fitted on 283 stored PVP duel
+ * replays (4,900 hero-duels), 10-fold held out by replay, held out of band, not in this repo, and
+ * relative to the farm cadence whose free hop follows walk speed × fuse — so a refit of that hop
+ * moves these. Walk speed adds nothing once the fuse is in. Valid for a 0.4–2.0 s fuse, rooms at
+ * act 3–4, classic field — so the fuse is clamped to that range.
+ */
+export const DUEL_CADENCE_SCALE = 1.115;
+export const DUEL_CADENCE_PIVOT_FUSE = 1.8;
+export const DUEL_CADENCE_EXPONENT = -0.194;
+export const DUEL_CADENCE_FUSE_MAX = 2;
+
+/** `exp(k × ln x)` rather than `Math.pow`, for the same bit-identical goldens as `hopSpeedFactor`. */
+export function duelCadenceMultiplier(fuseSecs: number): number {
+  const fuse = Math.min(DUEL_CADENCE_FUSE_MAX, Math.max(FUSE_FLOOR, fuseSecs));
+  return DUEL_CADENCE_SCALE * Math.exp(DUEL_CADENCE_EXPONENT * Math.log(fuse / DUEL_CADENCE_PIVOT_FUSE));
+}
+
 /** Bombs per second at `fuseSec`: the inverse of the measured cycle, 0 for a hero that cannot move. */
 function bombsPerSecondWithFuse(hero: Pick<HeroSheet, 'speed'>, context: Context, fuseSec: number): number {
   const cycle = cycleSecondsForHero(fuseSec, hero.speed * GRID_SPEED_COEF, context.ato, context.field);
-  return Number.isFinite(cycle) && cycle > 0 ? 1 / cycle : 0;
+  if (!(Number.isFinite(cycle) && cycle > 0)) return 0;
+  return context.combat === 'duel' ? duelCadenceMultiplier(fuseSec) / cycle : 1 / cycle;
 }
 
 /**

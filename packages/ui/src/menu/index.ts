@@ -34,3 +34,17 @@ export const Menu = {
   RadioItem: MenuRadioItem,
   RadioItemIndicator: MenuRadioItemIndicator,
 };
+
+import {
+  DetailsMenuGroupLabel,
+  DetailsMenuItem,
+  DetailsMenuRoot,
+  DetailsMenuSeparator,
+} from './details-menu';
+
+export const DetailsMenu = {
+  Root: DetailsMenuRoot,
+  Item: DetailsMenuItem,
+  Separator: DetailsMenuSeparator,
+  GroupLabel: DetailsMenuGroupLabel,
+};

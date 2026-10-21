@@ -1,0 +1,157 @@
+<!-- story: Success -->
+<div>
+<div class="min-h-[50vh] bg-bg p-4 font-sans text-ink antialiased">
+<div class="pointer-events-auto flex items-start gap-2.5 rounded-sm border border-line bg-surface p-3 text-[13px] shadow-[0_8px_24px_color-mix(in_oklch,var(--ink)_18%,transparent)] motion-safe:animate-toast-in border-l-[3px] border-l-up" role="status" aria-live="polite" data-toast-variant="success">
+<span class="inline-flex size-5 mt-0.5 shrink-0 text-up" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+<div class="flex min-w-0 flex-1 flex-col gap-1">
+<p class="font-semibold text-ink">Plan saved</p>
+<p class="text-muted">Synced to browser storage.</p>
+</div>
+<button type="button" class="ml-auto shrink-0 self-start rounded-sm p-0.5 text-muted transition-colors hover:text-ink" aria-label="Dismiss">
+<span class="inline-flex shrink-0 size-4" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z">
+</path>
+</svg>
+</span>
+</button>
+</div>
+</div>
+</div>
+
+<!-- story: ErrorVariant -->
+<div>
+<div class="min-h-[50vh] bg-bg p-4 font-sans text-ink antialiased">
+<div class="pointer-events-auto flex items-start gap-2.5 rounded-sm border border-line bg-surface p-3 text-[13px] shadow-[0_8px_24px_color-mix(in_oklch,var(--ink)_18%,transparent)] motion-safe:animate-toast-in border-l-[3px] border-l-down" role="status" aria-live="assertive" data-toast-variant="error">
+<span class="inline-flex size-5 mt-0.5 shrink-0 text-down" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+<div class="flex min-w-0 flex-1 flex-col gap-1">
+<p class="font-semibold text-ink">Connection lost</p>
+<p class="text-muted">Game closed unexpectedly.</p>
+<div class="mt-1 flex items-center gap-3">
+<button type="button" class="rounded-sm border border-line bg-bg px-2 py-1 text-xs font-semibold text-ink transition-colors hover:border-accent hover:text-accent">Retry</button>
+</div>
+</div>
+<button type="button" class="ml-auto shrink-0 self-start rounded-sm p-0.5 text-muted transition-colors hover:text-ink" aria-label="Dismiss">
+<span class="inline-flex shrink-0 size-4" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z">
+</path>
+</svg>
+</span>
+</button>
+</div>
+</div>
+</div>
+
+<!-- story: Warning -->
+<div>
+<div class="min-h-[50vh] bg-bg p-4 font-sans text-ink antialiased">
+<div class="pointer-events-auto flex items-start gap-2.5 rounded-sm border border-line bg-surface p-3 text-[13px] shadow-[0_8px_24px_color-mix(in_oklch,var(--ink)_18%,transparent)] motion-safe:animate-toast-in border-l-[3px] border-l-warn" role="status" aria-live="polite" data-toast-variant="warning">
+<span class="inline-flex size-5 mt-0.5 shrink-0 text-warn" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+<div class="flex min-w-0 flex-1 flex-col gap-1">
+<p class="font-semibold text-ink">Save may be out of date</p>
+<p class="text-muted">Re-import to refresh.</p>
+</div>
+<button type="button" class="ml-auto shrink-0 self-start rounded-sm p-0.5 text-muted transition-colors hover:text-ink" aria-label="Dismiss">
+<span class="inline-flex shrink-0 size-4" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z">
+</path>
+</svg>
+</span>
+</button>
+</div>
+</div>
+</div>
+
+<!-- story: Info -->
+<div>
+<div class="min-h-[50vh] bg-bg p-4 font-sans text-ink antialiased">
+<div class="pointer-events-auto flex items-start gap-2.5 rounded-sm border border-line bg-surface p-3 text-[13px] shadow-[0_8px_24px_color-mix(in_oklch,var(--ink)_18%,transparent)] motion-safe:animate-toast-in border-l-[3px] border-l-info" role="status" aria-live="polite" data-toast-variant="info">
+<span class="inline-flex size-5 mt-0.5 shrink-0 text-info" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+<div class="flex min-w-0 flex-1 flex-col gap-1">
+<p class="font-semibold text-ink">Update available</p>
+<div class="mt-1 flex items-center gap-3">
+<button type="button" class="rounded-sm border border-line bg-bg px-2 py-1 text-xs font-semibold text-ink transition-colors hover:border-accent hover:text-accent">Restart now</button>
+</div>
+</div>
+<button type="button" class="ml-auto shrink-0 self-start rounded-sm p-0.5 text-muted transition-colors hover:text-ink" aria-label="Dismiss">
+<span class="inline-flex shrink-0 size-4" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z">
+</path>
+</svg>
+</span>
+</button>
+</div>
+</div>
+</div>
+
+<!-- story: Progress -->
+<div>
+<div class="min-h-[50vh] bg-bg p-4 font-sans text-ink antialiased">
+<div class="pointer-events-auto flex items-start gap-2.5 rounded-sm border border-line bg-surface p-3 text-[13px] shadow-[0_8px_24px_color-mix(in_oklch,var(--ink)_18%,transparent)] motion-safe:animate-toast-in border-l-[3px] border-l-accent" role="status" aria-live="polite" data-toast-variant="progress">
+<span class="inline-flex size-5 mt-0.5 shrink-0 text-accent" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+<div class="flex min-w-0 flex-1 flex-col gap-1">
+<p class="font-semibold text-ink">Pricing pass</p>
+<p class="text-muted">32 of 80 items</p>
+<div role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" aria-label="Pricing pass" class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-bg-2">
+<div class="h-full rounded-full bg-accent motion-safe:transition-[width] motion-safe:duration-[160ms]" style="width: 40%;">
+</div>
+</div>
+<span class="sr-only">40% complete</span>
+</div>
+<button type="button" class="ml-auto shrink-0 self-start rounded-sm p-0.5 text-muted transition-colors hover:text-ink" aria-label="Dismiss">
+<span class="inline-flex shrink-0 size-4" aria-hidden="true">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-full" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z">
+</path>
+</svg>
+</span>
+</button>
+</div>
+</div>
+</div>
+
+<!-- story: CoalescingProgress -->
+<div>
+<div class="min-h-[50vh] bg-bg p-4 font-sans text-ink antialiased">
+<button type="button" tabindex="0" class="cursor-pointer rounded-sm border px-2.5 py-1.5 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40 motion-safe:transition-[border-color,background-color] motion-safe:duration-[120ms] motion-safe:ease-out border-accent bg-accent text-accent-ink hover:border-accent">Start price pass</button>
+</div>
+</div>
+<div class="pointer-events-none fixed right-4 bottom-4 z-50 flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2">
+</div>
+
+<!-- story: OverflowAffordance -->
+<div>
+<div class="min-h-[50vh] bg-bg p-4 font-sans text-ink antialiased">
+<button type="button" tabindex="0" class="cursor-pointer rounded-sm border px-2.5 py-1.5 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40 motion-safe:transition-[border-color,background-color] motion-safe:duration-[120ms] motion-safe:ease-out border-accent bg-accent text-accent-ink hover:border-accent">Push 6 toasts</button>
+</div>
+</div>
+<div class="pointer-events-none fixed right-4 bottom-4 z-50 flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2">
+</div>

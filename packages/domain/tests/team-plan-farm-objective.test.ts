@@ -308,22 +308,25 @@ describe('aurasAtCap reaches the farm objective through the squad account and th
   const file = 'save-20260828-4heroes-postpatch.json';
   const AT_CAP = ['passagem_bastao', 'grito_guerra'] as const;
 
-  it('is carried on the squad account, and the frozen standing auras are held', () => {
+  it('is carried on the squad account, and the frozen standing auras are held at the carriers’ full rank', () => {
     const fixture = loadTeamPlanFarmFixture(file);
     const { account } = fixture.teamPlanInput;
     const built = buildHeroPlanContexts(fixture.teamPlanInput.heroes, account, fixture.teamPlanInput.scopeByHeroId);
     if (built.blocked) throw new Error('blocked');
-    const squad = built.contexts.filter((ctx) => isSquadScope(ctx.scope));
+    const squad = built.contexts
+      .filter((ctx) => isSquadScope(ctx.scope))
+      .map((ctx, index) => ({ ...ctx, abilities: { ...ctx.abilities, grito_guerra: index === 0 ? 9 : 0 } }));
     const plain = buildFarmObjective(squad, account, {});
     expect(plain.account.aurasAtCap).toBeUndefined();
     const held = buildFarmObjective(squad, account, {}, null, false, AT_CAP);
     expect(held.account.aurasAtCap).toBe(AT_CAP);
-    expect(held.auras.grito_guerra).toBe(20);
+    expect(plain.auras.grito_guerra).toBeLessThan(9);
+    expect(held.auras.grito_guerra).toBe(9);
     expect(held.auras.brecha).toBe(plain.auras.brecha);
     expect(held.phaseOptions).toEqual(plain.phaseOptions);
   });
 
-  it('the bridged objective at the cap equals the estimator run on an account holding the same auras', () => {
+  it('the bridged objective with the auras held equals the estimator run on an account holding the same auras', () => {
     const fixture = loadTeamPlanFarmFixture(file);
     const input = fixture.teamPlanInput;
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
@@ -346,7 +349,7 @@ describe('aurasAtCap reaches the farm objective through the squad account and th
     expect(bridged.objective).toBeGreaterThan(ordinaryFarmPath(fixture).goldPerHour);
   });
 
-  it('runTeamPlan under farm hands it to the objective, and the reported gold/hr is priced at the cap', () => {
+  it('runTeamPlan under farm hands it to the objective, and the reported gold/hr is priced with the auras held', () => {
     const fixture = loadTeamPlanFarmFixture(file);
     const base: TeamPlanInput = { ...fixture.teamPlanInput, objective: 'farm', allowedChanges: 'points' };
     const plain = runTeamPlan(base, { maxEvaluations: 200 });

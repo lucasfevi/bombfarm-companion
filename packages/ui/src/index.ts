@@ -42,6 +42,7 @@ export type { WindowControlsLabels, WindowControlsProps } from './window-control
 export { WINDOW_CONTROLS_WIDTH } from './window-controls.recipe';
 export { BrandMark } from './brand-mark';
 export type { BrandMarkProps } from './brand-mark';
+export { BrandLockup, type BrandLockupProps } from './brand-lockup';
 export { AppNav, type AppNavItemMark } from './app-nav';
 export type { AppNavItem, AppNavProps } from './app-nav';
 export {
@@ -55,8 +56,13 @@ export {
 } from './shell-density';
 export { SegmentedToggle } from './segmented-toggle';
 export type { SegmentedToggleOption, SegmentedToggleProps } from './segmented-toggle';
+export { SegmentedToggleForm, type SegmentedToggleFormProps } from './segmented-toggle-form';
+export { StatusDot, type StatusDotProps, type StatusDotTone } from './status-dot';
+export { StepProgress, type StepProgressProps } from './step-progress';
 export { ActionChip, type ActionChipProps, type ActionChipTone } from './action-chip';
 export { EmptyState, type EmptyStateProps } from './empty-state';
+export { Skeleton, type SkeletonProps } from './skeleton';
+export { ErrorScreen, type ErrorScreenProps } from './error-screen';
 export { cssVariables, tokens, colorTokens, breakpoints, motionTokens, contrastPairs, DEFAULT_HUE } from './tokens';
 export type { ColorTokenKey, ContrastPair } from './tokens';
 
@@ -68,11 +74,27 @@ export { RankControl } from './rank-control';
 export { AbilityCard, type AbilityCardProps } from './ability-card';
 export { Panel, type PanelProps } from './panel';
 export { PanelHeader, type PanelHeaderProps } from './panel-header';
+export { NativeSelect, type NativeSelectProps } from './native-select';
+export { TextInput, type TextInputProps } from './text-input';
+export { TextArea, type TextAreaProps } from './text-area';
+export { TextLink, type TextLinkProps } from './text-link';
+export { Pagination, type PaginationProps } from './pagination';
+export { DefinitionList, type DefinitionListItem, type DefinitionListProps } from './definition-list';
+export { TitledList, type TitledListProps } from './titled-list';
+export { Disclosure, type DisclosureProps } from './disclosure';
 export { Fields, type FieldsProps, type FieldsLayout } from './fields';
 export { FactTile, type FactTileProps } from './fact-tile';
 export { type FactTileSize } from './fact-tile.recipe';
 export { Bar, type BarProps } from './bar';
 export { Sparkline, type SparklineDomain, type SparklineMarkTone, type SparklineProps } from './sparkline';
+export { LineChart, type LineChartProps } from './line-chart';
+export { AreaChart, type AreaChartProps } from './area-chart';
+export { BarChart, type BarChartProps } from './bar-chart';
+export { ChartGrid, type ChartGridProps } from './chart-grid';
+export { ChartLegend, type ChartLegendItem, type ChartLegendProps } from './chart-legend';
+export { ChartPointer, type ChartPointerProps } from './chart-pointer';
+export { niceScale, type NiceScale } from './chart-scale';
+export type { ChartSeries, ChartProps, ChartTable } from './chart-model';
 export { Num } from './num';
 export {
   Select,
@@ -206,10 +228,19 @@ export { FileDropZone, type FileDropZoneProps } from './file-drop-zone';
 export { fileDropZoneRecipe } from './file-drop-zone.recipe';
 export { Banner, type BannerProps } from './banner';
 export { Dialog } from './dialog';
-export { Menu } from './menu';
+export { Menu, DetailsMenu } from './menu';
+export { SiteHeader, type SiteHeaderProps } from './site-header';
+export { siteHeaderBrandClass } from './site-header.recipe';
+export { SiteFooter, type SiteFooterProps } from './site-footer';
+export { PageFrame, PageSection, type PageFrameProps, type PageSectionProps } from './page-frame';
 export { ConfirmDialog, type ConfirmDialogProps } from './confirm-dialog';
 
-export { buttonRecipe, type ButtonVariant } from './button.recipe';
+export {
+  buttonRecipe,
+  type ButtonSize,
+  type ButtonTone,
+  type ButtonVariant,
+} from './button.recipe';
 export { chipRecipe, type ChipVariant } from './chip.recipe';
 export { barRecipe, type BarVariant } from './bar.recipe';
 export {
@@ -254,6 +285,7 @@ export {
   tipClass,
   warnClass,
   workspaceClass,
+  workspaceShellClass,
   type PanelVariant,
   type SetupBannerVariant,
 } from './panel-field.recipe';

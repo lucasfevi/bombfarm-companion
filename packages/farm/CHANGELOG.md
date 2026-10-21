@@ -1,5 +1,26 @@
 # @bombfarm/farm
 
+## 1.5.2
+
+### Patch Changes
+
+- 266f0f2: The Farm board, the Optimizer, Team Plan and the Live map now count the game's new timed Pass Bonus (+25% gold and +15% XP at the moment). The app reads the bonus and its expiry from your account, stacks it on top of the Pass, Boosts and the Return Bonus, and stops counting it when it runs out. Gold/hr and XP/hr were understated by that much while it was active.
+- Updated dependencies [6ae432b]
+- Updated dependencies [36a0a4a]
+- Updated dependencies [54e4d0b]
+- Updated dependencies [266f0f2]
+- Updated dependencies [e644ef6]
+- Updated dependencies [2809005]
+- Updated dependencies [adebf65]
+- Updated dependencies [d28b388]
+- Updated dependencies [bbcd719]
+- Updated dependencies [8f0c47a]
+- Updated dependencies [1a902f5]
+  - @bombfarm/domain@1.15.0
+  - @bombfarm/hero@0.7.4
+  - @bombfarm/ui@0.20.0
+  - @bombfarm/game-art@0.8.9
+
 ## 1.5.1
 
 ### Patch Changes

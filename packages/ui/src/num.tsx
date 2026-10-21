@@ -1,3 +1,5 @@
+'use client';
+
 import { Button as BaseButton } from '@base-ui/react/button';
 import { useState } from 'react';
 import { cn } from './cn';

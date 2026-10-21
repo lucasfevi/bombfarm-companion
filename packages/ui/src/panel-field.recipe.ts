@@ -35,6 +35,7 @@ export const panelRecipe = cva(panelBaseClass, {
     need: { true: panelNeedClass, false: '' },
     aligned: { true: panelAlignedClass, false: '' },
     unverified: { true: panelUnverifiedClass, false: '' },
+    overflow: { visible: 'max-[720px]:overflow-visible' },
   },
   defaultVariants: { focus: false, need: false, aligned: false, unverified: false },
 });
@@ -83,6 +84,11 @@ export const fieldLabelClass =
   'flex flex-col gap-[3px] text-[11px] tracking-[0.03em] text-muted uppercase';
 export const fieldControlClass =
   'w-full rounded-sm border border-line bg-bg px-2 py-1.5 text-[13px] tabular-nums';
+export const fieldFocusVisibleClass =
+  'focus-visible:ring-2 focus-visible:ring-[color-mix(in_oklch,var(--accent)_45%,transparent)]';
+export const fieldPlaceholderClass = 'placeholder:text-muted';
+export const fieldInvalidClass = 'aria-invalid:border-down focus:aria-invalid:border-down';
+export const textFieldClass = `w-full rounded-sm border border-line bg-bg-2 px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none ${fieldFocusVisibleClass} ${fieldPlaceholderClass} ${fieldInvalidClass}`;
 export const stackLabelClass = 'grid grid-cols-[1fr_auto] items-center gap-2 text-[13px] text-ink';
 
 export const treeKeysClass =
@@ -195,16 +201,26 @@ const setupBannerWarnClass =
   'mx-auto mt-2.5 max-w-app rounded-sm border border-[color-mix(in_oklch,var(--warn)_45%,var(--line))] bg-[color-mix(in_oklch,var(--warn)_12%,var(--surface))] px-3.5 py-2.5 [&_h2]:mb-1.5 [&_h2]:m-0 [&_h2]:text-[13px] [&_h2]:font-bold [&_ul]:m-0 [&_ul]:list-disc [&_ul]:py-0 [&_ul]:pl-[18px] [&_ul]:text-xs [&_ul]:leading-[1.45] [&_ul]:text-ink [&_ul]:marker:text-warn [&_p]:m-0 [&_p]:text-xs [&_p]:leading-[1.45] [&_p]:text-ink';
 const setupBannerDangerClass =
   'mx-auto mt-2.5 max-w-app rounded-sm border border-[color-mix(in_oklch,var(--down)_55%,var(--line))] bg-[color-mix(in_oklch,var(--down)_14%,var(--surface))] px-3.5 py-2.5 [&_h2]:mb-1 [&_h2]:m-0 [&_h2]:text-[13px] [&_h2]:font-bold [&_h2]:text-down [&_p]:m-0 [&_p]:text-xs [&_p]:leading-[1.45] [&_p]:text-ink';
+const setupBannerInfoClass =
+  'mx-auto mt-2.5 max-w-app rounded-sm border border-line bg-bg-2 px-3.5 py-2.5 [&_h2]:mb-1 [&_h2]:m-0 [&_h2]:text-[13px] [&_h2]:font-bold [&_h2]:text-ink [&_p]:m-0 [&_p]:text-xs [&_p]:leading-[1.45] [&_p]:text-ink';
 const setupBannerOkVariantClass =
   'mx-auto mt-2.5 max-w-app rounded-sm border border-[color-mix(in_oklch,var(--up)_40%,var(--line))] bg-[color-mix(in_oklch,var(--up)_10%,var(--surface))] px-3.5 py-2.5 [&_h2]:m-0 [&_h2]:text-[13px] [&_h2]:font-bold [&_h2]:text-up';
 
 /** In-tab status banner — full width of the stage, no page-level max-width centering. */
 export const setupBannerEmbeddedClass = 'mx-0 mt-0 mb-2.5 max-w-none w-full';
 
-/** Setup banner chrome — warn (issues), ok (ready) and danger (cannot be undone) tone. */
+/** Full width with no outer margin at all — for a banner that a parent already spaces. */
+export const setupBannerFlushClass = 'm-0 max-w-none w-full';
+
+/** Setup banner chrome — warn (issues), ok (ready), danger (cannot be undone) and info (neutral) tone. */
 export const setupBannerRecipe = cva('', {
   variants: {
-    tone: { warn: setupBannerWarnClass, ok: setupBannerOkVariantClass, danger: setupBannerDangerClass },
+    tone: {
+      warn: setupBannerWarnClass,
+      ok: setupBannerOkVariantClass,
+      danger: setupBannerDangerClass,
+      info: setupBannerInfoClass,
+    },
   },
   defaultVariants: { tone: 'warn' },
 });
@@ -214,6 +230,7 @@ export type SetupBannerVariant = VariantProps<typeof setupBannerRecipe>;
 export const setupBannerTitleClass = 'mb-1.5 m-0 text-[13px] font-bold';
 export const setupBannerOkTitleClass = 'm-0 text-[13px] font-bold text-up';
 export const setupBannerDangerTitleClass = 'mb-1 m-0 text-[13px] font-bold text-down';
+export const setupBannerInfoTitleClass = 'mb-1 m-0 text-[13px] font-bold text-ink';
 export const setupBannerListClass =
   'm-0 list-disc py-0 pl-[18px] text-xs leading-[1.45] text-ink marker:text-warn';
 export const setupBannerPClass = 'm-0 text-xs leading-[1.45] text-ink';

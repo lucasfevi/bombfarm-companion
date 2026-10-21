@@ -11,6 +11,10 @@ const transition =
 
 const btnBase = `cursor-pointer rounded-sm border px-2.5 py-1.5 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${transition}`;
 
+const dangerSolid = 'border-down bg-down text-accent-ink hover:border-down';
+const dangerOutline =
+  'border-[color-mix(in_oklch,var(--down)_60%,var(--line))] bg-transparent text-down hover:border-down';
+
 export const buttonRecipe = cva('', {
   variants: {
     variant: {
@@ -31,8 +35,17 @@ export const buttonRecipe = cva('', {
       coffee: 'btn coffee',
       'coffee-full': 'btn coffee full',
     },
+    tone: { danger: '' },
+    size: { md: '' },
   },
+  compoundVariants: [
+    { variant: 'primary', tone: 'danger', class: dangerSolid },
+    { variant: ['default', 'ghost'], tone: 'danger', class: dangerOutline },
+    { variant: ['default', 'primary', 'ghost', 'referral'], size: 'md', class: 'px-3 py-2 text-sm' },
+  ],
   defaultVariants: { variant: 'default' },
 });
 
 export type ButtonVariant = NonNullable<VariantProps<typeof buttonRecipe>['variant']>;
+export type ButtonTone = NonNullable<VariantProps<typeof buttonRecipe>['tone']>;
+export type ButtonSize = NonNullable<VariantProps<typeof buttonRecipe>['size']>;

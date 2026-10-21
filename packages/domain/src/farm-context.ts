@@ -1,4 +1,4 @@
-import type { AbilityMods, BattleField, Context } from './model';
+import type { AbilityMods, BattleField, CombatKind, Context } from './model';
 import type { HeroContext } from './shims/storage';
 import { combineDrainRate } from './drain';
 import { resolveHouseRestSeconds } from './model/house';
@@ -78,6 +78,8 @@ export type FarmContextForHeroInput = {
   cycleSecsLevel?: number | null;
   /** See {@link Context.windowSecs}. */
   windowSecs?: number;
+  /** See {@link Context.combat}. */
+  combat?: CombatKind;
   /** See {@link Context.field}. */
   field?: BattleField;
 };
@@ -102,6 +104,7 @@ export function farmContextForHero(input: FarmContextForHeroInput): Context {
     ato: effectiveFarmAto(input.phase),
     drainMult: combineDrainRate(input.mods.drainMult, input.teamDrainMult),
     ...(input.windowSecs !== undefined ? { windowSecs: input.windowSecs } : {}),
+    ...(input.combat !== undefined ? { combat: input.combat } : {}),
     ...(input.field !== undefined ? { field: input.field } : {}),
   };
 }

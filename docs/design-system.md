@@ -27,6 +27,7 @@ brand button).
 | Lines | `line` |
 | Accent / status | `accent`, `up`, `down`, `warn` |
 | Rarity | `rar-0` … `rar-5` |
+| Chart series | `series-1` … `series-4` (by position), `chart-grid` |
 | Type | `font-sans` (`--font`), `font-mono` (`--mono`) |
 | Layout | `spacing-top` (`--top`), `max-app` |
 
@@ -46,13 +47,13 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 
 | Primitive | Base UI wrap | Variants / props | Recipe |
 | --- | --- | --- | --- |
-| `Button` | `@base-ui/react/button` | `variant`: `default` \| `primary` \| `ghost` \| `help` \| `help-on` \| `text` \| `icon` \| `icon-action` \| `coffee` \| `coffee-full` | `button.recipe.ts` |
+| `Button` | `@base-ui/react/button` | `variant`: `default` \| `primary` \| `ghost` \| `help` \| `help-on` \| `text` \| `icon` \| `icon-action` \| `coffee` \| `coffee-full`; `tone="danger"` (the down colour: solid on `primary`, outlined on `default` / `ghost`); `size="md"` (`px-3 py-2 text-sm`, on `default` / `primary` / `ghost`). The recipe also exports `ButtonTone` / `ButtonSize` | `button.recipe.ts` |
 | `Chip` | `<span>` | `variant`: `default` \| `on` \| `small` \| `small-active` \| `small-warn` | `chip.recipe.ts` |
 | `Stepper` | `@base-ui/react/button` (×2) | `−`/value/`+` trio | `stepper.recipe.ts` |
 | `RankControl` | `@base-ui/react/button` | level readout + inc/dec (public props unchanged) | `stepper.recipe.ts` |
 | `AbilityCard` | `<div>` | compound `onSheet × selected` + `lockedOut` | `ability-card.recipe.ts` |
-| `Banner` | `<aside role="status">` | `tone`: `warn` \| `ok` \| `danger` (the down colour, for what cannot be undone); `layout`: `page` \| `embedded`; optional `title` | `panel-field.recipe.ts` (`setupBannerRecipe`) |
-| `Panel` | `<section>` | `focus` / `aligned` / `unverified` booleans (`need` is a no-op — required uses `FieldRequired`) | `panel-field.recipe.ts` |
+| `Banner` | `<aside role="status">` | `tone`: `warn` \| `ok` \| `danger` (the down colour, for what cannot be undone) \| `info` (neutral, bordered on `bg-2`); `layout`: `page` \| `embedded` \| `flush` (full width, no outer margin, for a banner a parent already spaces); optional `title`. Server-safe | `panel-field.recipe.ts` (`setupBannerRecipe`) |
+| `Panel` | `<section>` | `focus` / `aligned` / `unverified` booleans (`need` is a no-op — required uses `FieldRequired`); `overflow="visible"` lets a popover spill out of the panel on narrow screens instead of scrolling inside it | `panel-field.recipe.ts` |
 | `PanelHeader` | `<div>` + `<h2>` | `title` (required); optional `children` for the row's right-hand side (counters, actions). Section titles only — a hero name keeps bold sentence case | `panel-field.recipe.ts` (`panelHClass`/`panelTitleClass`) |
 | `Fields` | `<div>` | `layout`: `inline` \| `inline-dense` \| `stack` | `panel-field.recipe.ts` |
 | `FactTile` | `<div>` | one labelled figure of a facts cluster; `size`: `default` (bordered cell, as the hero identity panel's grid) \| `headline` (unboxed, the Live earnings panel's figure) \| `display` (the same block at 34px with a wrapping label, for the one or two figures a dialog turns on); `detail` is a small muted line under the figure; `note` as a tooltip over the tile — promoted from the hero identity panel for the PVP standing (2026-09-16) | `fact-tile.recipe.ts` |
@@ -66,21 +67,119 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `Accordion` | `@base-ui/react/accordion` | compound `Root`/`Item`/`Header`/`Trigger`/`Panel`; `multiple`; Trigger `tone`: `section` \| `row`, `size`: `default` \| `compact`; `Panel` open/close animates via Motion (`motion/react`), not a CSS transition — see [`animation.md`](animation.md) | `accordion.recipe.ts` |
 | `Collapsible` | `@base-ui/react/collapsible` | compound `Root`/`Trigger`/`Panel`; controlled `open` / uncontrolled `defaultOpen`; shared Trigger `tone`/`size`; `Panel` animates via Motion — see [`animation.md`](animation.md) | `accordion.recipe.ts` |
 | `Dialog` | `@base-ui/react/dialog` | compound `Root`/`Portal`/`Backdrop`/`Popup`/`Head`/`Title`/`Close`/`Body`/`Footer`; the popup ends with no bottom padding on purpose — a `Footer` rules a full-width line and pads its own actions, and a `Body` takes the height the head and footer leave and scrolls inside it (the consent modal is the reference shape) | `dialog.recipe.ts` (+ `panel-field.recipe.ts` for head/title) |
-| `ConfirmDialog` | `Dialog` | `title`, `confirmLabel`, `cancelLabel`, `closeLabel`, `onConfirm`, `destructive`; `description` is one paragraph of copy, `children` a block body in a `<div>` below it that scrolls inside the popup (compact 420px by default, `size="wide"` 560px and bounded to the window); the dialog is described by the description, or by the body when there is none | `dialog.recipe.ts` |
+| `ConfirmDialog` | `Dialog` | `title`, `confirmLabel`, `cancelLabel`, `closeLabel`, `onConfirm`, `destructive`; `tone="danger"` dresses the confirm button in the danger tone; `requireAck` (a label node) adds an acknowledgement checkbox that starts unticked each time the dialog opens, takes initial focus, and keeps confirm disabled until ticked; `description` is one paragraph of copy, `children` a block body in a `<div>` below it that scrolls inside the popup (compact 420px by default, `size="wide"` 560px and bounded to the window); the dialog is described by the description, or by the body when there is none | `dialog.recipe.ts` |
 | `Tabs` | Motion (Animate UI animate/tabs) | compound `Root`/`List`/`Tab`/`Panels`/`Panel`; horizontal slide + auto-height; tab `status` tip via Tooltip; `MotionConfig reducedMotion="user"` — see [`animation.md`](animation.md) | inline Tailwind |
 | `FieldRequired` | `<span>` | always-mounted “required” badge; `show` toggles `invisible` (no CLS) | `panel-field.recipe.ts` (`reqClass`) |
 | `HelpTip` | Base UI `Popover` | always-mounted `?` help; `show` / `active` for status-linked tips | `help-popover.recipe.ts` |
 | `InfoTip` | DS `Tooltip` | bare info glyph beside a panel title or field label carrying its explanation on hover/focus, in place of an intro paragraph — promoted from the optimizer setup bar (2026-09-14). `label` and `tip` come from the caller; it carries its own `Tooltip.Provider`. `PanelHeader`'s `info` slot draws one right after the title (DS-11) | inline Tailwind |
 | `CornerDismiss` | `@base-ui/react/button` via `Button` `icon` | the remove / close ✕ of a card, tile or row: no background, anchored `absolute -top-1 -right-1` on a `relative` container; `label` (the accessible name) comes from the caller (DS-10) | `button.recipe.ts` |
 | `Tooltip` | `@base-ui/react/tooltip` + Motion | compound `Provider`/`Root`/`Trigger`/`Portal`/`Positioner`/`Popup`/`Arrow`/`StatusBody`; Animate UI spring scale enter/exit — see [`animation.md`](animation.md) | `tooltip.recipe.ts` |
-| `DataTable` | `<table>` compound | `Root` (`scrollable` + optional `maxRows`/`minRows`), `Table`/`Head`/`Body`/`Row`/`Header`/`Cell`/`RowHeader`/`Caption`; sticky heads `z-20` + `border-separate`; `Header sortable` shows stacked ▲▼ when idle, single chevron when active | `data-table.recipe.ts` |
+| `DataTable` | `<table>` compound | `Root` (`scrollable` + optional `maxRows`/`minRows`), `Table`/`Head`/`Body`/`Row`/`Header`/`Cell`/`RowHeader`/`Caption`; sticky heads `z-20` + `border-separate`; `Header sortable` shows stacked ▲▼ when idle, single chevron when active; a sortable `Header` given `sortHref` (with `sortKey` / `sortDir`, and no `onSort`) renders its label as a plain `<a href>` to the sorted view, for a table sorted on the server | `data-table.recipe.ts` |
 | `GlossaryTerm` | DS `Tooltip` | inline dotted-underline formula token + tip | `glossary-term.recipe.ts` + `tooltip.recipe.ts` |
 | `MetricScoreboard` | `<div>` grid | equal-column KPI cells: `cells[]` of `{ id, label, value, tone, delta, deltaTone }`; keeps the invisible `+0.0%` placeholder for delta-less cells (no CLS) — promoted from the planner's `CompareMetricsStrip`; grid is a fixed `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4` — a caller with fewer than 4 cells passes `className="sm:grid-cols-N lg:grid-cols-N"` (`cn()`/tailwind-merge overrides both breakpoints) rather than leaving a blank trailing cell, e.g. `WaterfallPanel`'s 3-step scoreboard | `metric-scoreboard.recipe.ts` |
 | `GlossedText` | `<span>` | renders `template` with `terms: ReadonlyMap<token, tip>` tokens wrapped in `GlossaryTerm`; longest-token-first split; empty `terms` renders a plain wrapper — promoted from the planner's `GlossedFormula`; the vocabulary is the caller's | inline Tailwind |
 | `FileDropZone` | `<div role="button">` | click / keyboard / drag-drop file target; idle vs drag-over chrome via recipe; keeps Enter/Space and `input.value = ''` reset — promoted from import dialog | `file-drop-zone.recipe.ts` |
 | `AppNav` | `<nav>` + `<button>` | segmented nav pill: `items` (`{id, label, active}`), `ariaLabel` (default `'Main'`), `onSelect`; optional `renderItem` render prop lets a caller substitute its own element (the web supplies a Next `<Link>`) for the default `<button type="button">`; renders no `<nav>` at all when `items` is empty — extracted verbatim from the web's former `site-header.tsx` nav + `site-nav-link.tsx` | `app-nav.recipe.ts` |
 | `SegmentedToggle` | `<div role="group">` + `<button>` | generic bordered flush button group: `options` (`{id, label}`), `value`, `onChange`, `ariaLabel`; no language semantics (DS-09) — extracted verbatim from the web's former inline PT/EN control | `segmented-toggle.recipe.ts` |
+| `TextInput` | `<input>` | every `<input>` prop passes through; wears `textFieldClass`. Server-safe | `panel-field.recipe.ts` (`textFieldClass`) |
+| `TextArea` | `<textarea>` | every `<textarea>` prop passes through; wears `textFieldClass`. Server-safe | `panel-field.recipe.ts` (`textFieldClass`) |
+| `NativeSelect` | `<select>` | the browser's own select, on the same field chrome as `TextInput`; every `<select>` prop and `<option>` child passes through. For a form that must submit with scripting off — otherwise prefer `Select`. Server-safe | `panel-field.recipe.ts` (`textFieldClass`) |
+| `TextLink` | `<a>` | `tone`: `accent` \| `muted`; `as` renders a link component (a router link) in place of `<a>`, taking that component's own props. Server-safe | inline Tailwind |
+| `Skeleton` | `<div>` | `shape`: `line` \| `block` \| `rows` (`rows` sets how many); pulses only under `motion-safe`. Decorative unless `label` is given, which wraps it in a `role="status"` busy region. Server-safe | inline Tailwind |
+| `ErrorScreen` | `<div>` + heading | `title`, optional `message`, `action` (a node: a link or form from a server page, a button from a client one), `headingLevel` 1–4 (default 2). Server-safe | inline Tailwind |
+| `Pagination` | `<nav>` | `page` (1-based, clamped), `pageCount`, `hrefFor(page)`; previous and next are plain links (`rel="prev"` / `rel="next"`), inert text at either end; `linkAs` swaps in a router link; `label`, `previousLabel`, `nextLabel` and `formatStatus` carry the copy. Server-safe | inline Tailwind (`TextLink`) |
+| `DefinitionList` | `<dl>` | `items` of `{ term, detail }`; `variant`: `grid` (term column and value) \| `ruled` (each row on a hairline, value right-aligned and bold). Server-safe | inline Tailwind |
+| `TitledList` | `<section>` + `<ul>` | `title` (a small uppercase heading, `headingLevel` 2–6, default 3), `items` (nodes, each a ruled row), `empty` (shown in place of the list when there are no items). Server-safe | inline Tailwind |
+| `Disclosure` | native `<details>` | `summary`, `children`, `defaultOpen`; opens and closes with JavaScript off. Where a script is available, `Collapsible` / `Accordion` animate; this is the plain form. Server-safe | inline Tailwind |
+| `StatusDot` | `<span>` | `tone`: `live` \| `warn` \| `down` \| `muted`; `label` beside the dot; `live` announces label changes politely. Server-safe | inline Tailwind |
+| `StepProgress` | `<ol>` | `label`, `steps` (nodes), `current` (1-based, clamped); numbered badges joined by rules, done / current / next, the current one `aria-current="step"`; below the `sm` breakpoint only the badges show and the step names stay for screen readers. Server-safe | inline Tailwind |
+| `SegmentedToggleForm` | `<form>` + `<button type="submit">` | `SegmentedToggle`'s look as a form: `options`, `value`, `name` (the field each option button submits its id under), `ariaLabel`, `action`, `method` (`get` default \| `post`), `hidden` (extra fields submitted alongside), `className`. Works with JavaScript off. Server-safe | `segmented-toggle.recipe.ts` |
 | `AppShell` | `<header>`/`<main>`/`<footer>` | desktop-only top-bar shell (used solely by `apps/desktop/renderer/app/page.tsx`): sticky header (brand `title`/`badge` lockup, an `AppNav` pill built from `items`/`activeId`/`onNavigate`, and a right-hand `actions` slot), a single scrolling `<main>`, and a slim status strip (`status`/`progress`/`version`). Same top-bar shape as the web's `SiteHeader`, replacing the desktop's earlier icon-rail sidebar. `draggable`/`overlayInset` are implemented for a later custom-title-bar task and default off | `AppShell.recipe.ts` |
+| `SiteHeader` | `<header>` | sticky site bar from slots: `brand`, `nav`, `actions`, `compactActions`; `className`. Below 640px the nav drops into its own scrolling row and `compactActions` replace `actions`, by CSS alone. Server-safe — see **Site shell** below | `site-header.recipe.ts` |
+| `DetailsMenu` | native `<details>` / `<summary>` | compound `Root` (`label` names the trigger, `trigger` replaces the ellipsis glyph)/`Item` (`render` dresses a link)/`Separator`/`GroupLabel`; opens and closes with JavaScript off, wears the `Menu` popup chrome — see **Site shell** below | `menu.recipe.ts` |
+| `SiteFooter` | `<footer>` | `legal` (wrapped in a `<p>`, phrasing content only) on the left, `trailing` on the right; with no `legal` the trailing cluster sits at the end of the row | `site-footer.recipe.ts` |
+| `PageFrame` | `<div>` | page skeleton in one column: `header`, `notices`, `children` (the body, growing to fill), `footer`, `overlays` (rendered last) | `page-frame.recipe.ts` |
+| `PageSection` | `<div>` | one section of the body; `measure`: `default` (full app width) | `settings` (the narrower settings column); other `div` props pass through | `page-frame.recipe.ts` + `panel-field.recipe.ts` |
+| `BrandMark` | inline `<svg>` | the five-shape logo mark; `size` (default 34), `tone`: `default` | `web` (the site favicon's three colours on the same shapes) | inline |
+| `BrandLockup` | fragment | mark beside a `title` and an optional uppercase `tag`; `mark` replaces the default mark (for an image component). Renders as the children of the consumer's own link, so any router's link works | `brand-lockup.recipe.ts` |
+
+### Field recipe keys and server-safe primitives
+
+`panel-field.recipe.ts` exports the field chrome as plain class constants, imported directly from
+the recipe module (the sanctioned carve-out above): `fieldFocusVisibleClass` (the accent focus
+ring), `fieldPlaceholderClass` (muted placeholder text), `fieldInvalidClass` (the down-coloured
+border while `aria-invalid` is set) and `textFieldClass`, which is those three plus the bordered
+`bg-2` box that `TextInput`, `TextArea` and `NativeSelect` wear. A raw element that cannot be one
+of those primitives takes `textFieldClass` rather than a copy of it.
+
+Server-safe means a server component can render it: no `'use client'`, no hooks, no handlers, and
+no script needed in the browser. These are: `TextInput`, `TextArea`, `NativeSelect`, `TextLink`,
+`Banner`, `EmptyState` (including `size="inline"`), `Skeleton`, `ErrorScreen`, `Pagination`,
+`DefinitionList`, `TitledList`, `Disclosure`, `StatusDot`, `StepProgress`, `SegmentedToggleForm`
+and `Panel`. A `DataTable` header with `sortHref` is a plain link and carries no handler, so a
+server page can render it; the `onSort` form needs a client component. `ConfirmDialog` is a client
+component.
+
+`EmptyState` takes `size="inline"` for the spot inside a panel or list: paragraph-scale type and no
+icon, in place of the default's page-scale block.
+
+### Charts
+
+`LineChart`, `AreaChart` and `BarChart` draw a series as SVG in a **fixed coordinate space**:
+`width` and `height` (default 640 by 230) become the `viewBox`, and the SVG scales to its container
+with CSS. Nothing is measured in the browser, so the first render, on the server or the client, is
+the whole chart; there is no empty placeholder and no paint after hydration.
+
+The chart modules are server-safe: no `'use client'`, no hooks, no handlers. The pointer handling
+is the one client part. `ChartPointer` is a transparent layer over the plot that maps the pointer
+(or the arrow keys, Home, End and Escape, since the layer takes focus) to the nearest data index,
+draws the dashed crosshair and shows that index's tooltip. The chart computes each index's x and
+tooltip content where it draws, and passes them to the island as plain props.
+
+| Piece | Role |
+| --- | --- |
+| `ChartGrid` | horizontal rules at the ticks of `niceScale(max, tickCount)`, with the tick values at the left |
+| `ChartLegend` | a swatch and label per series; shown by default when there is more than one |
+| `ChartPointer` | the client island: crosshair, tooltip, keyboard |
+
+Series colours default to `--color-series-1` … `-4` by position (a fifth series wraps to the first)
+and can be overridden per series with `color`. Each clears 3:1 against `surface`, but hue alone should
+not carry the meaning, so pass `table` to add a disclosure with the data as a table.
+
+The y axis starts at zero. A negative reading is unsupported and draws as zero; a `null` (or
+non-finite) reading is a gap that breaks a line and leaves a bar out. No readings at all shows the
+`empty` text in place of an SVG. The kit carries no copy of its own: `ariaLabel`, `empty`, the table
+labels and the value formatter are props.
+
+### Site shell
+
+The pieces a content site's pages are framed with. All of them render from a server component.
+
+- **`SiteHeader`** takes `brand`, `nav`, `actions` and `compactActions`. With no `compact` prop it
+  renders both action branches and lets CSS pick: below 640px the nav moves into its own full-width
+  strip and `compactActions` replace `actions`; from 640px up the reverse. Needing no script to lay
+  out is the point. A consumer that already chooses the branch in JavaScript (a media hook) passes
+  `compact`: once it is defined only the matching branch is rendered and no class hides the other.
+  `siteHeaderBrandClass` is the class for the consumer's brand link, so the link keeps the router's
+  own `Link` and the header stays router-agnostic. The one client piece is the nav strip, a small
+  island that centres the active item on mount and again whenever `navRecenterKey` changes (pass
+  the pathname plus the language, say).
+- **`DetailsMenu`** is the compact-actions menu for a header that must work with scripting off.
+  It is the native disclosure element dressed like `Menu`: same popup, item, separator and group
+  label classes, and a trigger that wears the default button with the native marker hidden. Its
+  limits come with the element: no roving focus, no typeahead, no dismissal on outside press or
+  Escape, and the panel stays open after an item is chosen until the trigger is pressed again.
+  Reach for `Menu` whenever a script is available.
+- **`SiteFooter`** rules a line above its row and wraps `legal` in a `<p>`, so `legal` takes
+  phrasing content only.
+- **`PageFrame`** orders `header`, `notices` (banners and dialogs between header and body), the
+  body, `footer` and `overlays` (a toast, last). **`PageSection`** is one block of that body;
+  `measure="settings"` narrows it to the settings column.
+- **`BrandLockup`** draws inside the consumer's link rather than owning one.
+- **`@bombfarm/ui/site-shell.css`** carries `html { scrollbar-gutter: stable }`, so the page does
+  not shift sideways when content grows past the viewport and a scrollbar appears. It is opt-in,
+  imported once beside `styles.css`: a shell that scrolls the document wants it, while a
+  viewport-locked shell like `AppShell`, which scrolls inside `<main>`, must not take it.
 
 ### Game art (`packages/game-art/src/`)
 
@@ -383,6 +482,34 @@ Semantics live on a wrapping `<span>`; the inner `react-icons` SVG is always dec
 - **Known gap:** `packages/ui/**/*.{test,spec}.{ts,tsx}` are still ignored by root ESLint (same tsconfig reason), so a raw icon import in a unit test is caught by review only. Narrow blast radius, no owning feature yet.
 
 Storybook gallery: [`packages/ui/src/icon.stories.tsx`](../packages/ui/src/icon.stories.tsx) (enum-driven UI chrome).
+
+## Using the package from a server-rendered Next.js app
+
+`@bombfarm/ui` ships TypeScript source, so a Next.js app needs two settings in `next.config`:
+
+```js
+export default {
+  transpilePackages: ['@bombfarm/ui'],
+  experimental: { optimizePackageImports: ['@bombfarm/ui'] },
+};
+```
+
+- **`transpilePackages`** compiles the package's `.ts`/`.tsx` source with the app.
+- **`experimental.optimizePackageImports`** (the key sits under `experimental` in Next 15.5) lets
+  Next rewrite barrel imports to the modules actually used. Without it, Next keeps every client
+  module the barrel reaches in any page that imports the barrel, so a page rendering a plain
+  `AppNav` still loads `motion`, the tooltip's animation library. With it, that page does not.
+- **Server components may import from the barrel.** Client modules carry `'use client'`, so
+  `import { AppNav } from '@bombfarm/ui'` works in a server component. Deep paths such as
+  `@bombfarm/ui/panel` resolve through the package's `exports` map.
+- **CSS is the only side effect.** Import `@bombfarm/ui/styles.css` explicitly, once, in the app's
+  root layout; importing components never pulls it in.
+- **`AppNav` loads its tooltip lazily**, only when an item is `compact` or otherwise needs one.
+  A plain nav ships no tooltip code.
+
+The executable example is the fixture under
+[`packages/ui/test-fixtures/server-consumer/`](../packages/ui/test-fixtures/server-consumer): a
+server-rendered app plus a test that builds it and checks which chunks a page loads.
 
 ## Companion reuse strategy (decided)
 

@@ -4,11 +4,13 @@ import {
   computeHeroFarmBases,
   computeSquadFarmFacts,
   heroFactsFromBasis,
+  type EconomyBoost,
   type FarmAccount,
   type HeroFarmBasis,
   type ReturnBonusMode,
 } from '../farm-rate';
 import { windowedDamage } from '../model/combat';
+import type { CombatKind } from '../model/types';
 import { wikiPhaseLine } from '../phase-wiki';
 import { phaseLine } from '../phases';
 import type { HeroRecord } from '../shims/storage';
@@ -50,6 +52,8 @@ export type SkillTreePricingInput = {
   readonly enabledHeroIds: readonly string[] | null;
   readonly returnBonus: ReturnBonusMode;
   readonly pass?: boolean;
+  /** The Boosts running, as the board prices them; none when absent. */
+  readonly boost?: EconomyBoost;
   /** The phase the account is farming; a node is worth what it is worth here. */
   readonly phase: number;
   /** The tree as the roster stands. */
@@ -135,10 +139,12 @@ type GoldModel = {
   readonly account: FarmAccount;
 };
 
-function goldPerHourOf(model: GoldModel, phase: number, factor: number, returnBonus: ReturnBonusMode, pass: boolean): number {
+type Economy = { readonly returnBonus: ReturnBonusMode; readonly pass: boolean; readonly boost: EconomyBoost | undefined };
+
+function goldPerHourOf(model: GoldModel, phase: number, factor: number, economy: Economy): number {
   const facts = model.bases.map((basis) => heroFactsFromBasis(scaleAttack(basis, factor), basis.pts));
   const squad = computeSquadFarmFacts(facts, model.account);
-  const row = computeFarmRateRow(phase, squad, { returnBonus, pass, maxPhase: model.account.maxPhase ?? null });
+  const row = computeFarmRateRow(phase, squad, { ...economy, maxPhase: model.account.maxPhase ?? null });
   return row && Number.isFinite(row.goldPerHour) ? row.goldPerHour : 0;
 }
 
@@ -183,9 +189,14 @@ type DpsModel = {
   readonly mitigationPct: number;
   readonly phase: number;
   readonly windowSecs: number;
+  readonly combat: CombatKind | undefined;
 };
 
-function dpsModelFor(input: SkillTreePricingInput, window: SkillCombatWindow | null | undefined): DpsModel | null {
+function dpsModelFor(
+  input: SkillTreePricingInput,
+  window: SkillCombatWindow | null | undefined,
+  combat?: CombatKind,
+): DpsModel | null {
   if (!window || !(window.windowSecs > 0)) return null;
   const selected = combatHeroes(input, window.heroIds);
   const withBirth = selected.filter((hero) => hero.birth !== undefined);
@@ -200,6 +211,7 @@ function dpsModelFor(input: SkillTreePricingInput, window: SkillCombatWindow | n
     mitigationPct: +((line?.mitig ?? 0.01) * 100).toFixed(2),
     phase,
     windowSecs: window.windowSecs,
+    combat,
   };
 }
 
@@ -240,6 +252,7 @@ function windowedTeamDpsOf(model: DpsModel, input: SkillTreePricingInput, totals
       cycleSecsHouseIdx: account.cycleSecsHouseIdx,
       cycleSecsLevel: account.cycleSecsLevel,
       windowSecs: model.windowSecs,
+      ...(model.combat !== undefined ? { combat: model.combat } : {}),
     },
     forgeFloor: 0,
     aurasAtCap: base.aurasAtCap,
@@ -287,12 +300,13 @@ export function priceSkillTree(input: SkillTreePricingInput): SkillTreePricing {
   const baseAccount = accountForTotals(input.account, input.totals, baseFieldSlots);
 
   const baseGold = goldModelFor(input, baseAccount);
-  const goldAt = (model: GoldModel, factor: number) => goldPerHourOf(model, input.phase, factor, input.returnBonus, input.pass ?? false);
+  const economy: Economy = { returnBonus: input.returnBonus, pass: input.pass ?? false, boost: input.boost };
+  const goldAt = (model: GoldModel, factor: number) => goldPerHourOf(model, input.phase, factor, economy);
   const baseGoldByFactor = new Map(factors.map((factor) => [factor, goldAt(baseGold, factor)]));
   const baselineGold = goldAt(baseGold, 1);
 
   const gateModel = dpsModelFor(input, input.gate);
-  const pvpModel = dpsModelFor(input, input.pvp);
+  const pvpModel = dpsModelFor(input, input.pvp, 'duel');
   const baselineGate = gateModel === null ? null : windowedTeamDpsOf(gateModel, input, input.totals, baseFieldSlots);
   const baselinePvp = pvpModel === null ? null : windowedTeamDpsOf(pvpModel, input, input.totals, baseFieldSlots);
   const combatDelta = (model: DpsModel | null, baseline: number | null, moves: boolean, totals: SkillTotals, fieldSlots: number) => {

@@ -161,6 +161,7 @@ describe('evaluateRoster', () => {
         packDmgPctPerAlly: 0,
         rangeCells: 0,
         dmgMult: 1,
+        secondBlastChance: 0,
         shatterChancePct: 0,
         gateAttackMult: 1,
         bossDmgMult: 1,
@@ -223,6 +224,7 @@ describe('evaluateRoster', () => {
         packDmgPctPerAlly: 0,
         rangeCells: 0,
         dmgMult: 1,
+        secondBlastChance: 0,
         shatterChancePct: 0,
         gateAttackMult: 1,
         bossDmgMult: 1,
@@ -286,6 +288,7 @@ describe('evaluateRoster', () => {
         packDmgPctPerAlly: 0,
         rangeCells: 0,
         dmgMult: 1,
+        secondBlastChance: 0,
         shatterChancePct: 0,
         gateAttackMult: 1,
         bossDmgMult: 1,
@@ -355,6 +358,7 @@ describe('evaluateRoster', () => {
         packDmgPctPerAlly: 0,
         rangeCells: 0,
         dmgMult: 1,
+        secondBlastChance: 0,
         shatterChancePct: 0,
         gateAttackMult: 1,
         bossDmgMult: 1,
@@ -418,6 +422,7 @@ describe('evaluateRoster', () => {
         packDmgPctPerAlly: 0,
         rangeCells: 0,
         dmgMult: 1,
+        secondBlastChance: 0,
         shatterChancePct: 0,
         gateAttackMult: 1,
         bossDmgMult: 1,
@@ -582,36 +587,68 @@ describe('Passagem de Bastão is a field-wide pulse, priced like the auras', () 
     expect(leftAlone.objective).toBeGreaterThan(donated.objective);
   });
 
-  it('aurasAtCap naming Baton Pass holds the field at ×1.8 with no carrier at all, and lifts every score by it', () => {
+  it('aurasAtCap naming Baton Pass changes nothing when the squad has no carrier', () => {
     const without = evaluateRoster(withCarrier('optimize', 0));
-    const capped = evaluateRoster({ ...withCarrier('optimize', 0), aurasAtCap: ['passagem_bastao'] });
-    expect(capped.entryPulseMult).toBe(1.8);
-    for (const [heroId, score] of Object.entries(capped.perHero)) {
+    const held = evaluateRoster({ ...withCarrier('optimize', 0), aurasAtCap: ['passagem_bastao'] });
+    expect(held.entryPulseMult).toBe(1);
+    expect(held.objective).toBe(without.objective);
+  });
+
+  it('a rank-11 carrier is held at ×1.44 the whole time, and lifts every score by it', () => {
+    const without = evaluateRoster(withCarrier('optimize', 0));
+    const held = evaluateRoster({ ...withCarrier('optimize', 11), aurasAtCap: ['passagem_bastao'] });
+    expect(held.entryPulseMult).toBeCloseTo(1.44, 12);
+    for (const [heroId, score] of Object.entries(held.perHero)) {
       const before = without.perHero[heroId]!;
-      expect(score.sustained / before.sustained).toBeCloseTo(1.8, 9);
-      expect(score.active / before.active).toBeCloseTo(1.8, 9);
-      expect(score.duty).toBe(before.duty);
+      expect(score.sustained / before.sustained).toBeCloseTo(1.44, 9);
+      expect(score.active / before.active).toBeCloseTo(1.44, 9);
     }
-    expect(capped.objective / without.objective).toBeCloseTo(1.8, 9);
   });
 
-  it('the held pulse ignores what a carrier would sustain — the pool’s own pulse is not added on top', () => {
+  it('the held pulse replaces what a rank-20 carrier would sustain — ×1.8, the pool’s own pulse not added on top', () => {
     const sustained = evaluateRoster(withCarrier('optimize', 20));
-    const capped = evaluateRoster({ ...withCarrier('optimize', 20), aurasAtCap: ['passagem_bastao'] });
+    const held = evaluateRoster({ ...withCarrier('optimize', 20), aurasAtCap: ['passagem_bastao'] });
     expect(sustained.entryPulseMult).toBeLessThan(1.8);
-    expect(capped.entryPulseMult).toBe(1.8);
-    expect(capped.dutyByHeroId).toEqual(sustained.dutyByHeroId);
+    expect(held.entryPulseMult).toBeCloseTo(1.8, 12);
+    expect(held.dutyByHeroId).toEqual(sustained.dutyByHeroId);
   });
 
-  it('naming a standing aura holds its total at the cap in the reported auras, and only that one', () => {
-    const plain = evaluateRoster(withCarrier('optimize', 0));
-    const held = evaluateRoster({ ...withCarrier('optimize', 0), aurasAtCap: ['grito_guerra'] });
-    expect(held.auras.grito_guerra).toBe(20);
+  it('a donated carrier is out of the squad, so its rank is not held', () => {
+    const held = evaluateRoster({ ...withCarrier('donate', 20), aurasAtCap: ['passagem_bastao'] });
+    expect(held.entryPulseMult).toBe(1);
+  });
+
+  const withWarCry = (ranks: readonly number[]): EvaluateRosterInput => ({
+    ...input,
+    contexts: input.contexts.map((c, index) => ({
+      ...c,
+      scope: 'optimize' as const,
+      abilities: { ...c.abilities, passagem_bastao: 0, grito_guerra: ranks[index] ?? 0 },
+    })),
+  });
+
+  it('naming a standing aura holds a weak carrier at its own full-presence rank, not the cap, and only that aura', () => {
+    const plain = evaluateRoster(withWarCry([8]));
+    const held = evaluateRoster({ ...withWarCry([8]), aurasAtCap: ['grito_guerra'] });
+    expect(plain.auras.grito_guerra).toBeLessThan(8);
+    expect(held.auras.grito_guerra).toBe(8);
     expect(held.entryPulseMult).toBe(1);
     for (const id of ['pressagio_mortal', 'marcha_acelerada', 'folego_mineiro', 'brecha'] as const) {
       expect(held.auras[id]).toBe(plain.auras[id]);
     }
     expect(held.objective).toBeGreaterThan(plain.objective);
+  });
+
+  it('strong standing-aura carriers are held at the cap, never their sum', () => {
+    const held = evaluateRoster({ ...withWarCry([15, 12]), aurasAtCap: ['grito_guerra'] });
+    expect(held.auras.grito_guerra).toBe(20);
+  });
+
+  it('naming a standing aura no one carries changes nothing', () => {
+    const plain = evaluateRoster(withWarCry([]));
+    const held = evaluateRoster({ ...withWarCry([]), aurasAtCap: ['grito_guerra'] });
+    expect(held.auras).toEqual(plain.auras);
+    expect(held.objective).toBe(plain.objective);
   });
 });
 
