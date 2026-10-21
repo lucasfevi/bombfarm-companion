@@ -30,6 +30,12 @@ function buildFixture(): Promise<BuildResult> {
   });
 }
 
+function svgLabelled(html: string, label: string): string {
+  const start = html.indexOf(`<svg viewBox="0 0 640 230" role="img" aria-label="${label}"`);
+  expect(start).toBeGreaterThanOrEqual(0);
+  return html.slice(start, html.indexOf('</svg>', start));
+}
+
 const readPage = (name: string) => readFileSync(path.join(distDir, 'server', 'app', name), 'utf8');
 
 describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
@@ -77,6 +83,19 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(html).toContain('<section aria-label="Fixture list"');
     expect(html).toContain('>Fixture item</li>');
     expect(html).toMatch(/<details class="[^"]*"><summary class="[^"]*">Fixture summary<\/summary><div class="pt-2.5 pb-1">Fixture disclosure body<\/div><\/details>/);
+  });
+
+  it('prerenders the line and bar charts as complete svgs, with the pointer layer as the only client part', () => {
+    const html = readPage('index.html');
+    const line = svgLabelled(html, 'Fixture line chart');
+    expect(line).toContain('<path d="M44 204 L330 108 L616 12"');
+    expect(line).toContain('stroke="var(--color-series-1)"');
+    const bar = svgLabelled(html, 'Fixture bar chart');
+    expect(bar).toContain('<path d="M500.67 204 V16');
+    expect(bar).toContain('<rect x="119.33" y="203"');
+    expect(html.match(/data-chart-plot/g)).toHaveLength(2);
+    expect(html).toContain('>Fixture chart table</summary>');
+    expect(html).toContain('>Fixture day</th>');
   });
 
   it('prerenders the status dot, step progress and form toggle', () => {
