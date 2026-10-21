@@ -528,7 +528,9 @@ const KEYS_REMOVED: readonly string[] = [
  * `KEYS_REMOVED` — same precedent as the drop labels and `phasesBoost*` keys above.
  */
 const KEYS_ADDED: readonly string[] = [
-  'itemLevelSearch', 'itemLevelEmpty',
+  // The Optimizer's hero card names what its point reset adds to the plan's objective, one label
+  // per objective so a gold plan's card never reads a damage word (2026-10-21).
+  'itemLevelSearch', 'itemLevelEmpty', 'teamPlanColRespecGainDps', 'teamPlanColRespecGainFarm', 'teamPlanColRespecGainSetFarm', 'teamPlanColRespecGainGate', 'teamPlanColRespecGainPvp',
   'navHeroes', 'farmRankingPassLabel', 'farmRankingPassOn', 'farmRankingPassOff', 'farmRankingPassTip', 'farmRankingPassTipDetected', 'farmRankingPassBonusLabel', 'farmRankingPassBonusValue', 'farmRankingPassBonusTip',
   'farmRankingBoostLabel', 'farmRankingBoostGold', 'farmRankingBoostXp', 'farmRankingBoostDrop', 'farmRankingBoostTip', 'farmRankingBoostTipDetected', 'farmRankingXpNoImportLabel', 'farmRankingXpNoImportTip',
   // The Optimizer's ledger of what changed since the plan (2026-09-19, narrowed to breaking

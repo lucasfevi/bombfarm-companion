@@ -54,6 +54,7 @@ export function HeroDeltaTable({
   inventoryItems,
   rowsView,
   forgeQueueAction,
+  respecGainLabel,
 }: {
   t: TeamPlanScreenCopy;
   lang: Lang;
@@ -62,6 +63,7 @@ export function HeroDeltaTable({
   inventoryItems: readonly InventoryItem[];
   rowsView: HeroDeltaRowsView;
   forgeQueueAction: ForgeQueueAction | undefined;
+  respecGainLabel: string;
 }) {
   const roster: HeroDeltaRoster = useMemo(() => {
     const heroByScopeKey = new Map(heroes.map((hero) => [hero.sourceId ?? hero.id, hero]));
@@ -124,6 +126,7 @@ export function HeroDeltaTable({
               roster={roster}
               gear={gearByHeroId.get(row.heroId) ?? { rows: [], removed: [], crowdedField: false }}
               forgeQueueAction={forgeQueueAction}
+              respecGainLabel={respecGainLabel}
             />
           ))}
         </Accordion.Root>

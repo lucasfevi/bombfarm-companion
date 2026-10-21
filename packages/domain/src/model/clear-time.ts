@@ -155,6 +155,19 @@ export const HITS_PER_PLANT_CLUSTER = 1.5;
 export const HITS_PER_PLANT_CAP_BASE = 1.8;
 export const HITS_PER_PLANT_CAP_PER_CELL = 0.23;
 
+/**
+ * A hero walks to its next target while the other crosses keep clearing it, so a slower hero
+ * reaches the same cross later and finds fewer props in it. Props per blast go as walk speed to
+ * this power, relative to the squad's presence-weighted geometric mean speed. Across 285 duel
+ * replays and 27,851 free-hop blasts, many accounts, it reads +0.17 (0.08–0.24) overall and
+ * +0.14 (0.06–0.21) at fuses of 1.1 s and longer, with no fuse term once speed is in. One farm hero over eight builds reads 0.28, so the farm value may sit
+ * higher. At the cooldown floor, halving that hero's speed took its blasts from 3.20 props to 2.81.
+ * Measured from frame captures and stored replays held out of band, not in this repo. Relative,
+ * not absolute: a squad that is faster as a whole reaches every cross sooner together and gains
+ * nothing on its own crosses.
+ */
+export const BLAST_YIELD_SPEED_EXPONENT = 0.14;
+
 /** Seconds from the wave start to the first kill: activation stagger plus one fuse. */
 export const FIRST_KILL_SEC = 3.0;
 /** The kill rate the head starts at, as a share of steady state, ramping to 1 over `HEAD_RAMP_PROPS`. */
@@ -427,6 +440,13 @@ export function simulateClear(
   const hitsPerPlantFull = new Array<number>(heroCount).fill(0);
   const hitsPerPlantCap = active.map((hero) => HITS_PER_PLANT_CAP_BASE + HITS_PER_PLANT_CAP_PER_CELL * hero.blastCells);
   const speedFactor = active.map((hero) => hopSpeedFactor(hero.walkSpeedCells));
+  const meanLogSpeed = active.reduce((sum, hero) => sum + hero.presence * Math.log(hero.walkSpeedCells), 0) / squad;
+  // A hero at the squad's own speed reads exactly 1, not 1 ± an ulp, so a squad of one speed
+  // prices exactly as it did before this term existed.
+  const blastYield = active.map((hero) => {
+    const behind = Math.log(hero.walkSpeedCells) - meanLogSpeed;
+    return Math.abs(behind) < 1e-12 ? 1 : Math.exp(BLAST_YIELD_SPEED_EXPONENT * behind);
+  });
   const fuseHop = active.map((hero) => fuseHopFactor(hero.fuseSecs));
   const walkOverhead = active.map((hero) => walkCycleOverheadSeconds(hero.fuseSecs));
   const replantCycle = active.map((hero) => plantCycleSeconds(hero.fuseSecs, hero.walkSpeedCells, REPLANT_HOP_CELLS));
@@ -559,7 +579,7 @@ export function simulateClear(
       for (let h = 0; h < heroCount; h++) {
         const miss = 1 - surviveMean * (1 - perProp * (active[h].fuseSecs - meanFuse));
         const uncapped = HITS_PER_PLANT_BASE * (1 - miss) + hitsPerPlantFull[h];
-        const hitsPerPlant = Math.min(uncapped, hitsPerPlantCap[h]);
+        const hitsPerPlant = Math.min(uncapped, hitsPerPlantCap[h]) * blastYield[h];
         heroHits[h] = plantRate[h] * hitsPerPlant;
         hitRate += heroHits[h];
         if (extraKillsPerHitByType[h] === null) {

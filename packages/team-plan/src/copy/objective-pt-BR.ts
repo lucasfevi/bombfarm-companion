@@ -38,6 +38,11 @@ export const teamPlanObjectivePairsPtBR: TeamPlanObjectivePairsCopy = {
   teamPlanTotalGainValueDps: '{delta} dps ({pct}%)',
   teamPlanTotalGainValueFarm: '{delta} ouro/h ({pct}%)',
   teamPlanTotalGainValueSetFarm: '{delta} baús do conjunto/h ({pct}%)',
+  teamPlanColRespecGainDps: 'DPS do reset',
+  teamPlanColRespecGainFarm: 'Ouro/h do reset',
+  teamPlanColRespecGainSetFarm: 'Baús/h do reset',
+  teamPlanColRespecGainGate: 'DPS no portão do reset',
+  teamPlanColRespecGainPvp: 'DPS no duelo do reset',
   teamPlanTotalGainValueGate: '{delta} dps no portão ({pct}%)',
   teamPlanTotalGainValuePvp: '{delta} dps no duelo ({pct}%)',
   teamPlanGearDipNoteDps:
