@@ -290,7 +290,8 @@ describe('aurasAtCap naming the ability lights the field at the best carrier’s
     expect(helds.squad.entryPulse).toEqual(passagemBastaoHeldPulse([3]));
     expect(helds.heroFacts).toEqual(plain.heroFacts);
     for (const [index, row] of helds.rows.entries()) {
-      expect(row.goldPerHour).toBeGreaterThanOrEqual(plain.rows[index]!.goldPerHour);
+      // Rows the held aura cannot move price equal, so allow the last few bits of rounding.
+      expect(row.goldPerHour).toBeGreaterThanOrEqual(plain.rows[index]!.goldPerHour * (1 - 1e-12));
     }
   });
 });
