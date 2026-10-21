@@ -15,6 +15,12 @@ import {
 import type { PremiumHttp, PremiumHttpRequest, PremiumHttpResponse } from './premium-transport.js';
 import type { StoredSession } from './token-vault.js';
 
+export interface GameAccountReport {
+  readonly accountId: string;
+  readonly steamId64: string;
+  readonly playerName: string | null;
+}
+
 export type SignInStartResult =
   | { ok: true; approvalUrl: string }
   | { ok: false; reason: 'refused' | 'unreachable' | 'bad-response' };
@@ -51,7 +57,7 @@ export interface PremiumApi {
   fetchStatus(token: string): Promise<FetchResult<PremiumStatus>>;
   fetchMe(token: string): Promise<FetchResult<PremiumMe>>;
   fetchVisibility(): Promise<VisibilityResult>;
-  reportGameAccount(token: string, input: { accountId: string; steamId64: string }): Promise<ReportResult>;
+  reportGameAccount(token: string, input: GameAccountReport): Promise<ReportResult>;
   requestHandOff(token: string): Promise<HandOffResult>;
   signOut(token: string): Promise<void>;
 }
@@ -168,10 +174,17 @@ export function createPremiumApi(http: PremiumHttp): PremiumApi {
       return { ok: false, reason: result.reason === 'unreachable' ? 'unreachable' : 'bad-response' };
     },
 
-    async reportGameAccount(token, { accountId, steamId64 }) {
-      const values: Record<GameAccountReportField, string> = { account_id: accountId, steam_id64: steamId64 };
+    async reportGameAccount(token, { accountId, steamId64, playerName }) {
+      const values: Record<GameAccountReportField, string | null> = {
+        account_id: accountId,
+        steam_id64: steamId64,
+        player_name: playerName,
+      };
       const body: Record<string, string> = {};
-      for (const field of GAME_ACCOUNT_REPORT_FIELDS) body[field] = values[field];
+      for (const field of GAME_ACCOUNT_REPORT_FIELDS) {
+        const value = values[field];
+        if (value !== null) body[field] = value;
+      }
       const reached = await reach(http, { path: 'report', method: 'POST', token, body });
       if (!reached.reached) return { kind: 'failed' };
       const { response } = reached;

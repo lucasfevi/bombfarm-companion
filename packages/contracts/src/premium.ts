@@ -80,9 +80,10 @@ export const signedOutPremiumView: PremiumView = {
 export interface GameAccountReportBody {
   readonly account_id: string;
   readonly steam_id64: string;
+  readonly player_name?: string;
 }
 
-export const GAME_ACCOUNT_REPORT_FIELDS = ['account_id', 'steam_id64'] as const;
+export const GAME_ACCOUNT_REPORT_FIELDS = ['account_id', 'steam_id64', 'player_name'] as const;
 export type GameAccountReportField = (typeof GAME_ACCOUNT_REPORT_FIELDS)[number];
 
 type Exhaustive<Listed, Declared> = [Exclude<Declared, Listed>, Exclude<Listed, Declared>] extends [never, never]
@@ -93,6 +94,15 @@ export const GAME_ACCOUNT_REPORT_FIELDS_ARE_EXHAUSTIVE: Exhaustive<
   GameAccountReportField,
   keyof GameAccountReportBody
 > = true;
+
+export const REPORTED_PLAYER_NAME_MAX_LENGTH = 64;
+
+/** `length` counts UTF-16 units, never fewer than characters, so a name this accepts fits the API's limit. */
+export function reportablePlayerName(value: string | null): string | null {
+  if (value === null) return null;
+  const trimmed = value.trim();
+  return trimmed.length >= 1 && trimmed.length <= REPORTED_PLAYER_NAME_MAX_LENGTH ? trimmed : null;
+}
 
 const KINDS: readonly PremiumKind[] = ['subscription', 'pass', 'manual_grant'];
 const METHODS: readonly PremiumSignInMethod[] = ['discord', 'google', 'steam'];

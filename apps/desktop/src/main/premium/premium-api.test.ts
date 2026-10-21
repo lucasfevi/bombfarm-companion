@@ -340,9 +340,9 @@ describe('fetchVisibility', () => {
 });
 
 describe('reportGameAccount', () => {
-  const pair = { accountId: 'acct-1', steamId64: '76561198000000000' };
+  const pair = { accountId: 'acct-1', steamId64: '76561198000000000', playerName: null };
 
-  it('posts exactly account_id and steam_id64 with a bearer', async () => {
+  it('posts exactly account_id and steam_id64 with a bearer when there is no name', async () => {
     const { api, sent } = harness(reply(200, { outcome: 'linked' }));
 
     await expect(api.reportGameAccount(TOKEN, pair)).resolves.toEqual({ kind: 'linked' });
@@ -354,6 +354,18 @@ describe('reportGameAccount', () => {
       body: { account_id: 'acct-1', steam_id64: '76561198000000000' },
     });
     expect(Object.keys((sent[0]?.body ?? {})).sort()).toEqual(['account_id', 'steam_id64']);
+  });
+
+  it('adds player_name when there is one', async () => {
+    const { api, sent } = harness(reply(200, { outcome: 'linked' }));
+
+    await api.reportGameAccount(TOKEN, { ...pair, playerName: 'Some Player' });
+
+    expect(sent[0]?.body).toEqual({
+      account_id: 'acct-1',
+      steam_id64: '76561198000000000',
+      player_name: 'Some Player',
+    });
   });
 
   it('maps any other 200 outcome to failed', async () => {
@@ -455,7 +467,7 @@ describe('the bearer rule', () => {
     await api.rotate(TOKEN);
     await api.signOut(TOKEN);
     await api.fetchMe(TOKEN);
-    await api.reportGameAccount(TOKEN, { accountId: 'a', steamId64: '76561198000000000' });
+    await api.reportGameAccount(TOKEN, { accountId: 'a', steamId64: '76561198000000000', playerName: null });
     await api.requestHandOff(TOKEN);
     await api.fetchStatus(TOKEN);
 

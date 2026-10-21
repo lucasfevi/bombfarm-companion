@@ -193,7 +193,7 @@ describe('secrets stay out of logs and views', () => {
 
   it('through a report that cannot be sent and one the API turns away', async () => {
     const unreadable = createHarness({ vault: createFakeVault(session(SECRETS.token)) });
-    unreadable.identity.current = { accountId: SECRETS.accountId, steamId64: null };
+    unreadable.identity.current = { accountId: SECRETS.accountId, steamId64: null, playerName: null };
     unreadable.stub.on('status', { status: 503 });
     unreadable.service.start();
     await settle();
