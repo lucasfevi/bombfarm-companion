@@ -106,10 +106,10 @@ const CARD_FOR_EFFECT: Record<AbilityEffect['kind'], BreakdownStatId | null> = {
   teamCritDmgFlat: 'critDmg',
   drainPct: 'fieldSeconds',
   rangeCells: 'activeDps',
-  // Expectations, not blasts: the second blast is its own popup and the execute destroys the
-  // rock, so neither reaches a printed hit — they land where DPS earns them.
+  // An expectation, not a blast: the second blast is its own popup, so it lands where DPS earns it.
   secondBlastPct: 'activeDps',
-  executePct: 'activeDps',
+  // No damage the app can measure.
+  executePct: null,
   // Paid per rock destroyed, which only the farm clear counts — no per-bomb card carries it.
   shatterPct: null,
   packDmgPct: 'dmg',
@@ -133,7 +133,7 @@ export function expectedBlastAbilityIds(hero: Pick<HeroRecord, 'abilities'>): st
   return Object.entries(hero.abilities)
     .filter(([abilityId, rank]) => {
       const kind = ABILITY_BY_ID.get(abilityId)?.effect.kind;
-      return rank > 0 && (kind === 'secondBlastPct' || kind === 'executePct');
+      return rank > 0 && kind === 'secondBlastPct';
     })
     .map(([abilityId]) => abilityId);
 }

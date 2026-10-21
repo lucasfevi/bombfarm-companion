@@ -27,6 +27,7 @@ brand button).
 | Lines | `line` |
 | Accent / status | `accent`, `up`, `down`, `warn` |
 | Rarity | `rar-0` … `rar-5` |
+| Chart series | `series-1` … `series-4` (by position), `chart-grid` |
 | Type | `font-sans` (`--font`), `font-mono` (`--mono`) |
 | Layout | `spacing-top` (`--top`), `max-app` |
 
@@ -121,6 +122,34 @@ component.
 
 `EmptyState` takes `size="inline"` for the spot inside a panel or list: paragraph-scale type and no
 icon, in place of the default's page-scale block.
+
+### Charts
+
+`LineChart`, `AreaChart` and `BarChart` draw a series as SVG in a **fixed coordinate space**:
+`width` and `height` (default 640 by 230) become the `viewBox`, and the SVG scales to its container
+with CSS. Nothing is measured in the browser, so the first render, on the server or the client, is
+the whole chart; there is no empty placeholder and no paint after hydration.
+
+The chart modules are server-safe: no `'use client'`, no hooks, no handlers. The pointer handling
+is the one client part. `ChartPointer` is a transparent layer over the plot that maps the pointer
+(or the arrow keys, Home, End and Escape, since the layer takes focus) to the nearest data index,
+draws the dashed crosshair and shows that index's tooltip. The chart computes each index's x and
+tooltip content where it draws, and passes them to the island as plain props.
+
+| Piece | Role |
+| --- | --- |
+| `ChartGrid` | horizontal rules at the ticks of `niceScale(max, tickCount)`, with the tick values at the left |
+| `ChartLegend` | a swatch and label per series; shown by default when there is more than one |
+| `ChartPointer` | the client island: crosshair, tooltip, keyboard |
+
+Series colours default to `--color-series-1` … `-4` by position (a fifth series wraps to the first)
+and can be overridden per series with `color`. Each clears 3:1 against `surface`, but hue alone should
+not carry the meaning, so pass `table` to add a disclosure with the data as a table.
+
+The y axis starts at zero. A negative reading is unsupported and draws as zero; a `null` (or
+non-finite) reading is a gap that breaks a line and leaves a bar out. No readings at all shows the
+`empty` text in place of an SVG. The kit carries no copy of its own: `ariaLabel`, `empty`, the table
+labels and the value formatter are props.
 
 ### Site shell
 

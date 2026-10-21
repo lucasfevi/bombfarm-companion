@@ -34,6 +34,7 @@ function heroCtx(level: number, slot?: string): HeroPlanContext {
       packDmgPctPerAlly: 0,
       rangeCells: 0,
       dmgMult: 1,
+      secondBlastChance: 0,
       shatterChancePct: 0,
       gateAttackMult: 1,
       bossDmgMult: 1,

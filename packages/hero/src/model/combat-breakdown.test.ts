@@ -23,6 +23,10 @@ import { factsForHero, fixtureHero, loadBreakdownFixture } from './combat-breakd
 
 const fixture = loadBreakdownFixture();
 const minato = fixtureHero(fixture, 'Minato');
+const doubleDetonationMinato = {
+  ...minato,
+  abilities: { ...minato.abilities, misericordia: 0, detonacao_dupla: 20 },
+};
 const switchesOff = noTeamAuraSwitches();
 
 describe('the pipeline\'s rows and wires', () => {
@@ -82,7 +86,7 @@ describe('which card an ability lands on', () => {
   it('is decided by the catalog\'s effect kind, so every per-bomb ability has a card and the loot and per-kill ones have none', () => {
     for (const ability of ABILITIES) {
       const card = cardForAbility(ability.id);
-      const cardless = ['none', 'shatterPct', 'bossDmgPct', 'teamXpPct', 'goldPct', 'teamGoldPct'];
+      const cardless = ['none', 'executePct', 'shatterPct', 'bossDmgPct', 'teamXpPct', 'goldPct', 'teamGoldPct'];
       if (cardless.includes(ability.effect.kind)) expect(card, ability.id).toBeNull();
       else expect(card, ability.id).not.toBeNull();
     }
@@ -91,7 +95,7 @@ describe('which card an ability lands on', () => {
     expect(cardForAbility('pressagio_mortal')).toBe('critChance');
     expect(cardForAbility('brecha')).toBe('penetration');
     expect(cardForAbility('detonacao_dupla')).toBe('activeDps');
-    expect(cardForAbility('misericordia')).toBe('activeDps');
+    expect(cardForAbility('misericordia')).toBeNull();
     expect(cardForAbility('estilhacos')).toBeNull();
     expect(cardForAbility('matador_chefes')).toBeNull();
     expect(cardForAbility('matilha')).toBe('dmg');
@@ -225,17 +229,18 @@ describe('the notes a card carries', () => {
   });
 
   it('the Hit card says which of the hero’s abilities it leaves out and where they land, only while one is in force', () => {
-    const note = cardNoteFor('hit', facts, minato, switchesOff);
-    expect(note).toEqual({ kind: 'hitWithoutExpectedBlasts', abilityIds: ['misericordia'], mult: facts.mods.dmgMult });
-    expect(facts.mods.dmgMult).toBeCloseTo(1 / (1 - 0.15), 9);
-    const plainHero = { ...minato, abilities: { ...minato.abilities, misericordia: 0 } };
-    const plainFacts = factsForHero(fixture, plainHero);
-    expect(expectedBlastAbilityIds(plainHero)).toEqual([]);
-    expect(cardNoteFor('hit', plainFacts, plainHero, switchesOff)).toBeNull();
-    expect(expectedBlastAbilityIds({ abilities: { detonacao_dupla: 3, misericordia: 1, explosao_ampla: 20 } })).toEqual(['detonacao_dupla', 'misericordia']);
+    const carrierFacts = factsForHero(fixture, doubleDetonationMinato);
+    const note = cardNoteFor('hit', carrierFacts, doubleDetonationMinato, switchesOff);
+    expect(note).toEqual({ kind: 'hitWithoutExpectedBlasts', abilityIds: ['detonacao_dupla'], mult: carrierFacts.mods.dmgMult });
+    expect(carrierFacts.mods.dmgMult).toBe(1.25);
+    expect(minato.abilities.misericordia).toBe(20);
+    expect(expectedBlastAbilityIds(minato)).toEqual([]);
+    expect(cardNoteFor('hit', facts, minato, switchesOff)).toBeNull();
+    expect(expectedBlastAbilityIds({ abilities: { detonacao_dupla: 3, misericordia: 1, explosao_ampla: 20 } })).toEqual(['detonacao_dupla']);
   });
 
-  it('the Hit card prints what one blast shows: the second blast and the execute are Active DPS’s term, not the hit’s', () => {
+  it('the Hit card prints what one blast shows: the second blast is Active DPS’s term, not the hit’s', () => {
+    const facts = factsForHero(fixture, doubleDetonationMinato);
     const dmg = buildStatBreakdown('dmg', facts);
     const hit = buildStatBreakdown('hit', facts);
     const active = buildStatBreakdown('activeDps', facts);
@@ -306,8 +311,8 @@ describe('the Damage multiplier card says how Baton Pass is counted', () => {
 
 describe('the Active DPS card names its two constants', () => {
   it('carries the blast-spread and AI-efficiency note at the phase’s range', () => {
-    const facts = factsForHero(fixture, minato);
-    expect(cardNoteFor('activeDps', facts, minato, switchesOff)).toEqual({
+    const facts = factsForHero(fixture, doubleDetonationMinato);
+    expect(cardNoteFor('activeDps', facts, doubleDetonationMinato, switchesOff)).toEqual({
       kind: 'activeDpsConstants',
       rangeCells: facts.context.blastRange,
       damageRangeCells: 1 + 0.5 * (facts.context.blastRange - 1),

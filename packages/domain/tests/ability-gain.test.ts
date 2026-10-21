@@ -126,11 +126,11 @@ describe('abilityGainFor — the model responds to the abilities it is handed', 
   });
 
   it('moves the model when a NON-sheet ability gains a level', () => {
-    const joric = heroByName('Joric');
-    const bumped = withAbilityLevels(joric, { misericordia: 1 });
+    const joric = withAbilityLevels(heroByName('Joric'), { explosao_ampla: 9 });
+    const bumped = withAbilityLevels(joric, { explosao_ampla: 10 });
 
     expect(dpsOf(bumped)).not.toBe(dpsOf(joric));
-    expect(gainPctOf(joric, 'misericordia')).toBeGreaterThan(0);
+    expect(gainPctOf(joric, 'explosao_ampla')).toBeGreaterThan(0);
   });
 });
 

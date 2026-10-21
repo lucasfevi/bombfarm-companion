@@ -31,7 +31,7 @@ import {
   effectiveTargetProp,
   farmContextForHero,
 } from './farm-context';
-import { PROPS, BOSS_HP_MULT, phaseLine, propHp, hitsToKill, weightedAvgPropHp } from './phases';
+import { PROPS, BOSS_HP_MULT, phaseLine, propHp, hitsToKillWithSecondBlast, weightedAvgPropHp } from './phases';
 import {
   propHtkRows,
   gateRows as buildGateRows,
@@ -130,8 +130,8 @@ export type AdvisorPipelineResult = {
   rest: number;
   context: Context;
   gateAttackMult: number;
-  /** Abilities × pack × extra — expected damage per bomb, the pulse NOT folded in: the Farm board
-   *  prices the pulse per level through hits-to-kill and reads this as its base. */
+  /** Second blast × pack × extra — expected damage per bomb on a target that survives the first
+   *  blast, the pulse NOT folded in. DPS and the gate rows read it. */
   dmgMult: number;
   /** Pack × extra — what one blast carries (`CombatMults.hitMult`). A per-hero screen multiplies
    *  it by `entryPulse.expectedMult`, which is what `predHit` carries. */
@@ -410,12 +410,12 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     runeSheetMultipliers(runes),
   );
 
-  // Hits-to-kill runs on expected damage per bomb — the second blast and the execute as
-  // expectations, the Farm board's convention — which is more than any one blast shows.
-  const htkHit = equippedResult.hit * mods.dmgMult * critFactor(effective.critChance, effective.critDmg);
-  const propRows: PropHtkRow[] = propHtkRows(stoneHp, htkHit, targetProp);
+  // Hits-to-kill runs on the crit-averaged blast, with Detonação Dupla's second blast priced on
+  // what the first leaves standing.
+  const htkHit = equippedResult.hit * critFactor(effective.critChance, effective.critDmg);
+  const propRows: PropHtkRow[] = propHtkRows(stoneHp, htkHit, targetProp, mods.secondBlastChance);
   const bossHp = propHp(stoneHp, BOSS_HP_MULT);
-  const bossHits = hitsToKill(htkHit * mods.bossDmgMult, bossHp);
+  const bossHits = hitsToKillWithSecondBlast(htkHit * mods.bossDmgMult, bossHp, mods.secondBlastChance);
   const avgPropHp = weightedAvgPropHp(stoneHp);
 
   const gateRows: GateRow[] = buildGateRows(effective, context, field, dmgMult, gateAttackMult);

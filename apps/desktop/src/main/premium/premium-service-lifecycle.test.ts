@@ -31,7 +31,7 @@ async function acrossReSignIn(h: Harness): Promise<void> {
 describe('an unreadable game identity while signed out', () => {
   it.each([
     ['no identity at all', null],
-    ['an identity without a SteamID', { accountId: SECRETS.accountId, steamId64: null }],
+    ['an identity without a SteamID', { accountId: SECRETS.accountId, steamId64: null, playerName: null }],
   ])('leaves the report untouched after an account change with %s', async (_name, identity) => {
     const h = createHarness();
     h.identity.current = identity;
@@ -139,7 +139,7 @@ describe('after the service stops', () => {
     expect(h.stub.calls('report')).toHaveLength(1);
     h.service.stop();
 
-    h.identity.current = { accountId: 'account-fixture-9921', steamId64: '76561198099999999' };
+    h.identity.current = { accountId: 'account-fixture-9921', steamId64: '76561198099999999', playerName: null };
     h.service.noteAccountChanged();
     await settle();
 

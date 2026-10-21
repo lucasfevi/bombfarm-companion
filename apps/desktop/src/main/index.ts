@@ -10,6 +10,7 @@ import {
   type AppLocale,
   type AppSettings,
   type SettingsWriteResult,
+  type UsagePingAccount,
 } from '@bombfarm/contracts';
 import { createPacingGate, initialConsent, isGranted, trayTextFor } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView, resolveCachedAccountView } from './account-view.js';
@@ -910,14 +911,16 @@ async function bootstrap(): Promise<void> {
   gameKeepAlive.setEnabled(currentSettings.restartGameOnExit);
   gameKeepAlive.start();
 
+  const readAccountIdentity = (): UsagePingAccount | null =>
+    accountIdentityOf(resolveCachedAccountView({ gameReader, consentStore, accountRefresh })?.payload ?? null);
+
   usagePing = createElectronUsagePing({
     isPackaged: resolveAppEnv().isPackaged,
     db: accountOpen.db,
     flavor: resolveAppEnv().flavor,
     version: app.getVersion(),
     isEnabled: () => currentSettings.usagePingEnabled,
-    readAccount: () =>
-      accountIdentityOf(resolveCachedAccountView({ gameReader, consentStore, accountRefresh })?.payload ?? null),
+    readAccount: readAccountIdentity,
     log: (event, detail) => {
       log.info({ scope: 'main', event, ...detail });
     },
@@ -1161,6 +1164,7 @@ async function bootstrap(): Promise<void> {
       readConsent: () => consentStore?.read() ?? initialConsent(),
       readIdentity: (consent) =>
         readGameIdentity(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged })),
+      readAccount: readAccountIdentity,
     }),
     locale: () => currentSettings.locale,
     log,
