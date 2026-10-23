@@ -1,5 +1,5 @@
 import type { LiveExplosion, LiveHit, LiveLootPop, LiveTickHero, UnattributedReason } from '@bombfarm/contracts';
-import type { LedgerStep, RetiredBomb } from './bomb-ledger.js';
+import type { LedgerStep, OwnerBasis, RetiredBomb } from './bomb-ledger.js';
 import { crossCells } from './geometry.js';
 
 export interface SignatureBook {
@@ -54,6 +54,7 @@ export interface CreditHitsInput {
 
 interface CrossEntry {
   readonly owner: string | null;
+  readonly basis?: OwnerBasis;
   readonly reason: UnattributedReason | null;
 }
 
@@ -67,7 +68,7 @@ function ownerOfExplosion(explosion: LiveExplosion, ledger: LedgerStep): CrossEn
   if (!matches(source)) return { owner: null, reason: 'explosionWithoutBomb' };
   return source.owner === null
     ? { owner: null, reason: source.reason ?? 'noOwnerAtBirth' }
-    : { owner: source.owner, reason: null };
+    : { owner: source.owner, reason: null, ...(source.basis === undefined ? {} : { basis: source.basis }) };
 }
 
 function buildCrossMaps(explosions: readonly LiveExplosion[], ledger: LedgerStep, rows: number) {
@@ -141,8 +142,8 @@ export function creditHits({
     if (candidateCount === 1) {
       const [only] = owners;
       if (only === undefined) return unattributed(unownedReason ?? 'noOwnerAtBirth');
-      const throughOneCross = covering.length === 1 && ghostOwners.size === 0;
-      if (throughOneCross) signatures.record(hit.damage, critical, only);
+      const throughOneObservedCross = covering.length === 1 && ghostOwners.size === 0 && covering[0]?.basis === 'observed';
+      if (throughOneObservedCross) signatures.record(hit.damage, critical, only);
       return credit(only);
     }
 

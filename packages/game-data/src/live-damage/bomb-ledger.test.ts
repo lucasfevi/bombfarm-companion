@@ -84,7 +84,7 @@ describe('bomb ledger — what makes a bomb new', () => {
     advance([freshBomb(5, 1.6)], [hero('a', 5)]);
     const step = advance([freshBomb(5, 1.2)], [hero('b', 5)]);
     expect(step.births).toBe(1);
-    expect(step.retiredThisFrame.get(5)).toEqual({ owner: 'a', radius: 2 });
+    expect(step.retiredThisFrame.get(5)).toEqual({ owner: 'a', radius: 2, basis: 'observed' });
   });
 
   it('treats a rise in remaining fuse as a new bomb and retires the old one', () => {
@@ -120,11 +120,92 @@ describe('bomb ledger — fresh Birth versus adopted', () => {
 });
 
 describe('bomb ledger — owner cascade', () => {
-  it('owns a Birth by its unique fingerprint even when another hero stands on the cell', () => {
+  it('owns a Birth by its unique fingerprint when nobody stands on the cell, and marks it as fingerprint-decided', () => {
+    const { book, advance, leave } = setup();
+    book.seed('a', FUSE);
+    advance([freshBomb(5)], [hero('a', 9)]);
+    expect(leave().retiredThisFrame.get(5)).toEqual({ owner: 'a', radius: 2, basis: 'fingerprint' });
+  });
+
+  it('prefers the one hero standing on the cell over a unique fingerprint for someone else', () => {
     const { book, advance, leave } = setup();
     book.seed('a', FUSE);
     advance([freshBomb(5)], [hero('a', 9), hero('b', 5)]);
+    expect(leave().retiredThisFrame.get(5)).toEqual({ owner: 'b', radius: 2, basis: 'observed' });
+  });
+
+  it('credits the hero on the cell when a shared fuse group shrinks to one present member', () => {
+    const { book, advance, leave } = setup();
+    book.seed('a', 0.4);
+    book.seed('b', 0.4);
+    book.seed('c', 1.0);
+    const step = advance([freshBomb(5, 0.4)], [hero('a', 9), hero('c', 5)]);
+    expect(step.cellOwnerConflicts).toBe(1);
+    expect(leave().retiredThisFrame.get(5)?.owner).toBe('c');
+  });
+
+  it('excludes a walking hero from the heroes sharing the cell', () => {
+    const { advance, leave } = setup();
+    advance([freshBomb(5)], [{ id: 'a', cell: 5, actionState: 5 }, hero('b', 5)]);
+    expect(leave().retiredThisFrame.get(5)?.owner).toBe('b');
+  });
+
+  it('keeps a lone walking hero as the owner when nobody else is on the cell', () => {
+    const { advance, leave } = setup();
+    advance([freshBomb(5)], [{ id: 'a', cell: 5, actionState: 5 }]);
     expect(leave().retiredThisFrame.get(5)?.owner).toBe('a');
+  });
+
+  it('narrows heroes sharing the cell to those whose fuse matches the bomb', () => {
+    const { book, advance, leave } = setup();
+    book.seed('a', 1.0);
+    book.seed('b', FUSE);
+    advance([freshBomb(5)], [hero('a', 5), hero('b', 5)]);
+    expect(leave().retiredThisFrame.get(5)?.owner).toBe('b');
+  });
+
+  it('does not let the fuse filter empty the set of heroes sharing the cell', () => {
+    const { book, advance, leave } = setup();
+    book.seed('a', 1.0);
+    book.seed('b', 1.2);
+    advance([freshBomb(5)], [hero('a', 5), hero('b', 5)]);
+    expect(leave().retiredThisFrame.get(5)).toEqual({ owner: null, radius: 2, reason: 'ambiguousPlanter' });
+  });
+
+  it('narrows heroes sharing the cell by dropping one whose earlier bomb is still burning', () => {
+    const { advance, leave } = setup();
+    advance([freshBomb(9)], [hero('a', 9)]);
+    advance([bomb(9, FUSE - 0.1 - FRAME), freshBomb(5)], [hero('a', 5), hero('b', 5)]);
+    expect(leave().retiredThisFrame.get(5)?.owner).toBe('b');
+  });
+
+  it('still allows a hero to replant on the tick its previous bomb exploded', () => {
+    const { advance, leave } = setup();
+    advance([freshBomb(9, FUSE, 3), freshBomb(10, FUSE, 1)], [hero('a', 9), hero('b', 10)]);
+    advance([freshBomb(5, FUSE, 3)], [hero('a', 5), hero('b', 5)]);
+    expect(leave().retiredThisFrame.get(5)?.owner).toBe('a');
+  });
+
+  it('narrows heroes sharing the cell by the radius each was seen to plant', () => {
+    const { advance, leave } = setup();
+    advance([freshBomb(9, FUSE, 3)], [hero('a', 9)]);
+    advance([freshBomb(10, FUSE, 1)], [hero('b', 10)]);
+    advance([freshBomb(5, FUSE, 3)], [hero('a', 5), hero('b', 5)]);
+    expect(leave().retiredThisFrame.get(5)?.owner).toBe('a');
+  });
+
+  it('leaves heroes whose radius is unknown in the running instead of excluding them', () => {
+    const { advance, leave } = setup();
+    advance([freshBomb(9, FUSE, 3)], [hero('a', 9)]);
+    advance([freshBomb(5, FUSE, 1)], [hero('a', 5), hero('b', 5)]);
+    expect(leave().retiredThisFrame.get(5)?.owner).toBe('b');
+  });
+
+  it('leaves a Birth with several indistinguishable heroes on the cell without an owner', () => {
+    const { advance, leave } = setup();
+    const step = advance([freshBomb(5)], [hero('a', 5), hero('b', 5)]);
+    expect(step.owned).toBe(0);
+    expect(leave().retiredThisFrame.get(5)).toEqual({ owner: null, radius: 2, reason: 'ambiguousPlanter' });
   });
 
   it('owns a Birth with a shared fingerprint by the one hero standing on its cell', () => {
@@ -141,7 +222,7 @@ describe('bomb ledger — owner cascade', () => {
     book.seed('b', FUSE);
     const step = advance([freshBomb(5)], [hero('a', 5), hero('b', 5)]);
     expect(step.owned).toBe(0);
-    expect(leave().retiredThisFrame.get(5)).toEqual({ owner: null, radius: 2, reason: 'noOwnerAtBirth' });
+    expect(leave().retiredThisFrame.get(5)).toEqual({ owner: null, radius: 2, reason: 'ambiguousPlanter' });
   });
 
   it('leaves a Birth with an unknown fingerprint and nobody on its cell without an owner', () => {
@@ -213,13 +294,13 @@ describe('bomb ledger — teaching the fingerprint book', () => {
     expect(leave().retiredThisFrame.get(5)?.owner).toBe('a');
   });
 
-  it('teaches nothing and counts a conflict when the fingerprint names a different hero than the cell', () => {
+  it('counts a conflict and still teaches the hero on the cell when the fingerprint names someone else', () => {
     const { book, advance, leave } = setup();
     book.seed('a', FUSE);
     const step = advance([freshBomb(5)], [hero('a', 9), hero('b', 5)]);
     expect(step.cellOwnerConflicts).toBe(1);
-    expect(book.resolve(FUSE, new Set(['b']))).toEqual({ kind: 'unknown' });
-    expect(leave().retiredThisFrame.get(5)?.owner).toBe('a');
+    expect(book.fuseOf('b')).toBe(FUSE);
+    expect(leave().retiredThisFrame.get(5)?.owner).toBe('b');
   });
 
   it('counts no conflict when the fingerprint and the cell agree', () => {
@@ -238,9 +319,10 @@ describe('bomb ledger — teaching the fingerprint book', () => {
   it('surfaces a disagreement between a seed and the fuse it learned', () => {
     const { book, advance } = setup();
     book.seed('a', 1.9);
-    const step = advance([freshBomb(5)], [hero('a', 5)]);
+    expect(advance([freshBomb(5)], [hero('a', 5)]).disagreements).toEqual([]);
+    const step = advance([freshBomb(7)], [hero('a', 7)]);
     expect(step.disagreements).toEqual([{ heroId: 'a', seeded: 1.9, learned: FUSE }]);
-    expect(advance([freshBomb(7)], [hero('a', 7)]).disagreements).toEqual([]);
+    expect(advance([freshBomb(8)], [hero('a', 8)]).disagreements).toEqual([]);
   });
 });
 
@@ -272,7 +354,7 @@ describe('bomb ledger — retirement', () => {
   it('retires a bomb that leaves the frame with its owner and radius', () => {
     const { advance, leave } = setup();
     advance([freshBomb(5, FUSE, 3)], [hero('a', 5)]);
-    expect(leave().retiredThisFrame.get(5)).toEqual({ owner: 'a', radius: 3 });
+    expect(leave().retiredThisFrame.get(5)).toEqual({ owner: 'a', radius: 3, basis: 'observed' });
   });
 
   it('keeps a retired bomb in retiredLastFrame for exactly one more frame', () => {
@@ -282,7 +364,7 @@ describe('bomb ledger — retirement', () => {
     expect(leaving.retiredLastFrame.size).toBe(0);
     const following = advance([]);
     expect(following.retiredThisFrame.size).toBe(0);
-    expect(following.retiredLastFrame.get(5)).toEqual({ owner: 'a', radius: 2 });
+    expect(following.retiredLastFrame.get(5)).toEqual({ owner: 'a', radius: 2, basis: 'observed' });
     expect(advance([]).retiredLastFrame.size).toBe(0);
   });
 
@@ -290,7 +372,7 @@ describe('bomb ledger — retirement', () => {
     const { advance } = setup();
     advance([freshBomb(5)], [hero('a', 5)]);
     advance([freshBomb(5, 1.2)], [hero('b', 5)]);
-    expect(advance([bomb(5, 0.9, 1.2)]).retiredLastFrame.get(5)).toEqual({ owner: 'a', radius: 2 });
+    expect(advance([bomb(5, 0.9, 1.2)]).retiredLastFrame.get(5)).toEqual({ owner: 'a', radius: 2, basis: 'observed' });
   });
 
   it('records the reason when the retired bomb had no owner', () => {
