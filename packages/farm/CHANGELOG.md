@@ -1,5 +1,14 @@
 # @bombfarm/farm
 
+## 1.5.3
+
+### Patch Changes
+
+- Updated dependencies [b3125b4]
+  - @bombfarm/domain@1.15.1
+  - @bombfarm/game-art@0.8.10
+  - @bombfarm/hero@0.7.5
+
 ## 1.5.2
 
 ### Patch Changes

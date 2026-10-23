@@ -280,3 +280,24 @@ describe('simulateClear — Estilhaços shards', () => {
     expect(gain(100)).toBeGreaterThan(1);
   });
 });
+
+describe('a held squad presence', () => {
+  const weakHero = (presence: number) =>
+    hero({ presence, fuseSecs: 2, walkSpeedCells: 3, blastCells: 5, hitNoCrit: 5, critChance: 0, critMult: 1 });
+  const strongHero = hero({ presence: 0.9, fuseSecs: 2, walkSpeedCells: 3, blastCells: 5, hitNoCrit: 2000, critChance: 0, critMult: 1 });
+  const props: ClearPropType[] = [{ hp: 3000, weight: 1 }];
+  const bench = (longerStay: number) => [
+    strongHero,
+    weakHero(longerStay),
+    ...Array.from({ length: 19 }, () => weakHero(0.9)),
+  ];
+  const rate = (heroes: ClearHero[], held?: number) => 60 / simulateClear(heroes, props, 60, undefined, held).clearSecs;
+
+  it('is thinned by a weak hero who stays longer when left to the squad total', () => {
+    expect(rate(bench(1))).toBeLessThan(rate(bench(0.9)));
+  });
+
+  it('lets that hero add its own bombs without taking any from the rest', () => {
+    expect(rate(bench(1), 6)).toBeGreaterThanOrEqual(rate(bench(0.9), 6));
+  });
+});

@@ -43,7 +43,7 @@ export type TeamPlanSlice = {
   /** Which kinds of change the plan may propose — gear work, stat-point resets, or both. A
    *  different axis from `scopeByHeroId`, which decides WHICH HEROES the search may touch. */
   allowedChanges: TeamPlanAllowedChanges;
-  /** Score as if the field always had room, and keep every hero geared. A deliberate
+  /** Score as if energy never cost the squad anything, and keep every hero geared. A deliberate
    *  mis-pricing the player opts into — see the domain field of the same name. */
   ignoreFieldCrowding: boolean;
   /** The phase both objectives score at, or `null` for the objective's own default. Read through
