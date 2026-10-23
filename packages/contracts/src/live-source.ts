@@ -121,6 +121,7 @@ export type UnattributedReason =
   | 'explosionWithoutBomb'
   | 'streamDiscontinuity'
   | 'unresolvedOverlap'
+  | 'ambiguousPlanter'
   | 'explosionlessWithoutFantasma'
   | 'sharedOrUnattributedKill'
   | 'noHitOnLootCell';
@@ -130,6 +131,7 @@ export const UNATTRIBUTED_REASONS = [
   'explosionWithoutBomb',
   'streamDiscontinuity',
   'unresolvedOverlap',
+  'ambiguousPlanter',
   'explosionlessWithoutFantasma',
   'sharedOrUnattributedKill',
   'noHitOnLootCell',
