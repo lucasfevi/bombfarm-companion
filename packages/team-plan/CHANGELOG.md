@@ -1,5 +1,27 @@
 # @bombfarm/team-plan
 
+## 0.8.2
+
+### Patch Changes
+
+- bbcd719: A slower hero now reaches its next target later than the rest of the squad, after their bombs have thinned it, so each of its bombs catches fewer props. Speed is worth more to farming than before, and the Optimizer is more reluctant to trade it away. Under a gold or set-chest plan, each hero card now also shows what its point reset adds to the squad's rate, so a reset that trades damage or Speed for cooldown no longer reads as a pure loss.
+- Updated dependencies [6ae432b]
+- Updated dependencies [36a0a4a]
+- Updated dependencies [54e4d0b]
+- Updated dependencies [266f0f2]
+- Updated dependencies [e644ef6]
+- Updated dependencies [2809005]
+- Updated dependencies [adebf65]
+- Updated dependencies [d28b388]
+- Updated dependencies [bbcd719]
+- Updated dependencies [8f0c47a]
+- Updated dependencies [1a902f5]
+  - @bombfarm/domain@1.15.0
+  - @bombfarm/hero@0.7.4
+  - @bombfarm/farm@1.5.2
+  - @bombfarm/ui@0.20.0
+  - @bombfarm/game-art@0.8.9
+
 ## 0.8.1
 
 ### Patch Changes

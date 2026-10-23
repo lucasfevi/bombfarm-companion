@@ -1,5 +1,5 @@
 import { ABILITIES, abilityMods, type AbilityEffect } from './model';
-import { SHATTER_FRAC } from './phase-wiki';
+import { SECOND_BLAST_FRAC, SHATTER_FRAC } from './phase-wiki';
 import {
   TEAM_AURA_SWITCH_IDS,
   TEAM_BUFF_ABILITY_IDS,
@@ -10,7 +10,7 @@ import {
 
 /**
  * An ability's effect at a rank, in the unit a reader can check against the game: a percentage
- * of attack, crit points, a second-blast chance and the multiplier it works out to. Keyed by what
+ * of attack, crit points, a second-blast chance and the share of the hit it deals. Keyed by what
  * the effect DOES rather than by ability id, so an ability added to the catalog under an existing
  * kind gets a readout without anyone touching this file. The combat kinds are read off the
  * combat model's own arithmetic; the loot kinds the farm board prices, and the effects nothing
@@ -26,10 +26,10 @@ export type AbilityEffectReadout =
   | { kind: 'penetrationPoints'; value: number }
   | { kind: 'critDmgPct'; value: number }
   | { kind: 'rangeCells'; value: number }
-  /** Detonação Dupla — the chance of a second blast, and the expected multiplier it amounts to. */
-  | { kind: 'secondBlast'; chancePct: number; dmgMult: number }
-  /** Misericórdia — the HP share below which a rock is executed, and the multiplier it amounts to. */
-  | { kind: 'execute'; thresholdPct: number; dmgMult: number }
+  /** Detonação Dupla — the chance of a second blast, and the share of the hit it deals. */
+  | { kind: 'secondBlast'; chancePct: number; blastPct: number }
+  /** Misericórdia — the threshold the game publishes; it has no damage effect the app can measure. */
+  | { kind: 'execute'; thresholdPct: number }
   /** Estilhaços — the chance a destroyed rock shatters, and the share of the hit each shard deals. */
   | { kind: 'shatter'; chancePct: number; shardHitPct: number }
   /** Contra o Relógio — attack that reaches the timed-gate table only. */
@@ -186,9 +186,9 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
     case 'rangeCells':
       return { kind, value: mods.rangeCells };
     case 'secondBlast':
-      return { kind, chancePct: perLevelOf(definition.effect) * rank, dmgMult: mods.dmgMult };
+      return { kind, chancePct: mods.secondBlastChance * 100, blastPct: SECOND_BLAST_FRAC * 100 };
     case 'execute':
-      return { kind, thresholdPct: perLevelOf(definition.effect) * rank, dmgMult: mods.dmgMult };
+      return { kind, thresholdPct: perLevelOf(definition.effect) * rank };
     case 'shatter':
       return { kind, chancePct: mods.shatterChancePct, shardHitPct: SHATTER_FRAC * 100 };
     case 'gateAttackPct':

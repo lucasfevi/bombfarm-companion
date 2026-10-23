@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BLAST_YIELD_SPEED_EXPONENT,
   COMPACT_FIELD,
   expectedHitsToKill,
   simulateClear,
@@ -220,6 +221,32 @@ describe('simulateClear', () => {
       simulateClear(squad, mixAt(1_000 * Math.pow(1.02, phase)), 100);
     }
     expect(performance.now() - started).toBeLessThan(1_000);
+  });
+});
+
+describe('simulateClear — a slower hero reaches its cross later', () => {
+  const props = mixAt(525_000);
+  const killsPerPlant = (clear: ReturnType<typeof simulateClear>, index: number) =>
+    clear.killShareByHero[index]! / clear.plantRateByHero[index]!;
+
+  it('its kills fall further than its plants, because others have thinned its cross', () => {
+    const squad = [...Array.from({ length: 8 }, () => hero({ walkSpeedCells: 4 })), hero({ walkSpeedCells: 2 })];
+    const clear = simulateClear(squad, props, 100);
+    expect(killsPerPlant(clear, 8)).toBeLessThan(killsPerPlant(clear, 0) * 0.95);
+  });
+
+  it('heroes at one speed land the same kills per plant', () => {
+    const clear = simulateClear(Array.from({ length: 9 }, () => hero({ walkSpeedCells: 4 })), props, 100);
+    expect(killsPerPlant(clear, 8)).toBeCloseTo(killsPerPlant(clear, 0), 9);
+  });
+
+  it('is relative to the squad: doubling every speed leaves the slow hero exactly as far behind', () => {
+    const at = (fast: number, slow: number) => {
+      const clear = simulateClear([...Array.from({ length: 8 }, () => hero({ walkSpeedCells: fast })), hero({ walkSpeedCells: slow })], props, 100);
+      return killsPerPlant(clear, 8) / killsPerPlant(clear, 0);
+    };
+    expect(Math.abs(at(8, 4) / at(4, 2) - 1)).toBeLessThan(0.01);
+    expect(at(4, 2)).toBeCloseTo(Math.pow(0.5, BLAST_YIELD_SPEED_EXPONENT), 1);
   });
 });
 

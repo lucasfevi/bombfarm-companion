@@ -69,6 +69,10 @@
  * the greedy per-hero seed, a different proposal; soulbound −13.50% / −13.57%, one more point
  * reset (8), the proposal byte-identical. Same method.
  *
+ * NOT re-recorded 2026-10-20, when Misericórdia stopped pricing an execute into DPS (none was seen
+ * on the farm) and the third record above stopped describing the model: every capture here is
+ * held out of its sheet regime, so these cases skip, and the next re-record carries that change.
+ *
  * NOT regime-bound: the claim is "this code still plans what it planned", an identity between two
  * revisions of the same arithmetic, not a statement about what the game rewards.
  */

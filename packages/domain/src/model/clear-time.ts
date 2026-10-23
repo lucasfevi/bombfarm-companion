@@ -45,7 +45,8 @@
  * function of every input; integrating a fractional count to zero would take unbounded time.
  */
 
-import { BASE_BLAST_RANGE, EXTRA_RANGE_FRAC, SHATTER_FRAC } from '../phase-wiki';
+import { BASE_BLAST_RANGE, EXTRA_RANGE_FRAC, SECOND_BLAST_FRAC, SHATTER_FRAC } from '../phase-wiki';
+import { hitsToKillWithSecondBlast } from '../phases';
 import {
   REPLANT_HOP_CELLS,
   freeHopCells,
@@ -154,6 +155,19 @@ export const HITS_PER_PLANT_CLUSTER = 1.5;
 export const HITS_PER_PLANT_CAP_BASE = 1.8;
 export const HITS_PER_PLANT_CAP_PER_CELL = 0.23;
 
+/**
+ * A hero walks to its next target while the other crosses keep clearing it, so a slower hero
+ * reaches the same cross later and finds fewer props in it. Props per blast go as walk speed to
+ * this power, relative to the squad's presence-weighted geometric mean speed. Across 285 duel
+ * replays and 27,851 free-hop blasts, many accounts, it reads +0.17 (0.08–0.24) overall and
+ * +0.14 (0.06–0.21) at fuses of 1.1 s and longer, with no fuse term once speed is in. One farm hero over eight builds reads 0.28, so the farm value may sit
+ * higher. At the cooldown floor, halving that hero's speed took its blasts from 3.20 props to 2.81.
+ * Measured from frame captures and stored replays held out of band, not in this repo. Relative,
+ * not absolute: a squad that is faster as a whole reaches every cross sooner together and gains
+ * nothing on its own crosses.
+ */
+export const BLAST_YIELD_SPEED_EXPONENT = 0.14;
+
 /** Seconds from the wave start to the first kill: activation stagger plus one fuse. */
 export const FIRST_KILL_SEC = 3.0;
 /** The kill rate the head starts at, as a share of steady state, ramping to 1 over `HEAD_RAMP_PROPS`. */
@@ -197,6 +211,8 @@ export type ClearHero = {
   critMult: number;
   /** Estilhaços: the chance, 0..1, that a rock this hero destroys shatters. Absent means none. */
   shatterChance?: number;
+  /** Detonação Dupla: the chance, 0..1, that a blast strikes again. Absent means none. */
+  secondBlastChance?: number;
 };
 
 export type ClearPropType = {
@@ -239,8 +255,18 @@ function unclearable(heroCount: number): ClearResult {
  * `c*(k) = ceil((hp − k × hit) / (crit − hit))` of them were crits, so each term is a binomial
  * lower tail. Exact, and cheap: at most `ceil(hp / hit)` terms. Past {@link CRIT_ROLL_MAX_HITS}
  * the sum is replaced by `hp / E[hit]`, which the central limit theorem makes accurate there.
+ *
+ * With a `secondBlastChance` one hit is one bomb's blast, second blast included
+ * ({@link expectedHitsWithSecondBlast}).
  */
-export function expectedHitsToKill(hp: number, hitNoCrit: number, critChance: number, critMult: number): number {
+export function expectedHitsToKill(
+  hp: number,
+  hitNoCrit: number,
+  critChance: number,
+  critMult: number,
+  secondBlastChance = 0,
+): number {
+  if (secondBlastChance > 0) return expectedHitsWithSecondBlast(hp, hitNoCrit, critChance, critMult, Math.min(1, secondBlastChance));
   if (!(hitNoCrit > 0) || !Number.isFinite(hitNoCrit)) return Infinity;
   if (!(hp > 0)) return 0;
   const p = Math.min(1, Math.max(0, critChance));
@@ -273,6 +299,85 @@ export function expectedHitsToKill(hp: number, hitNoCrit: number, critChance: nu
     if (firstTerm < 1e-15) break;
   }
   return expected;
+}
+
+/**
+ * {@link expectedHitsToKill} when each blast, with chance `s`, strikes again for
+ * {@link SECOND_BLAST_FRAC} of the hit, rolling its own crit. The second blast lands only on a
+ * prop the first left standing, which never changes the count, so `E[blasts] = Σ P(alive)` over
+ * every damage state a blast sequence can reach is exact. Damage is a whole number of half hits
+ * (`i` non-crit, `j` crit halves), so a state's damage is `i + j × critMult` half hits and how
+ * likely a blast sequence is to reach it does not depend on the HP — only which states are alive
+ * does. One table per crit and second-blast chance, sorted by damage, answers every HP.
+ */
+function expectedHitsWithSecondBlast(hp: number, hitNoCrit: number, critChance: number, critMult: number, s: number): number {
+  if (!(hitNoCrit > 0) || !Number.isFinite(hitNoCrit)) return Infinity;
+  if (!(hp > 0)) return 0;
+  const p = Math.min(1, Math.max(0, critChance));
+  const cm = Math.max(1, critMult);
+  if (p >= 1) return hitsToKillWithSecondBlast(hitNoCrit * cm, hp, s);
+  if (p <= 0 || cm <= 1) return hitsToKillWithSecondBlast(hitNoCrit, hp, s);
+  if (Math.ceil(hp / hitNoCrit) > CRIT_ROLL_MAX_HITS) {
+    return hp / (hitNoCrit * (1 - p + p * cm) * (1 + s * SECOND_BLAST_FRAC));
+  }
+  const table = secondBlastTable(p, cm, s);
+  const aliveBelow = hp / (hitNoCrit * SECOND_BLAST_FRAC) - 1e-12;
+  let low = 0;
+  let high = table.damage.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (table.damage[mid] < aliveBelow) low = mid + 1;
+    else high = mid;
+  }
+  return table.cumulative[low];
+}
+
+type SecondBlastTable = { damage: Float64Array; cumulative: Float64Array };
+
+const SECOND_BLAST_TABLES = new Map<string, SecondBlastTable>();
+const SECOND_BLAST_TABLES_MAX = 512;
+const SECOND_BLAST_TABLE_HALF_HITS = (CRIT_ROLL_MAX_HITS + 1) / SECOND_BLAST_FRAC;
+
+function secondBlastTable(p: number, cm: number, s: number): SecondBlastTable {
+  const key = `${p}|${cm}|${s}`;
+  const cached = SECOND_BLAST_TABLES.get(key);
+  if (cached) return cached;
+  const units = 1 / SECOND_BLAST_FRAC;
+  const limit = SECOND_BLAST_TABLE_HALF_HITS;
+  const rows = Math.ceil(limit) + 2 * units + 2;
+  const cols = Math.ceil(limit / cm) + 2 * units + 2;
+  const reach = new Float64Array(rows * cols);
+  reach[0] = 1;
+  const q = 1 - p;
+  const steps: ReadonlyArray<readonly [number, number]> = [
+    [units * cols, q * (1 - s)],
+    [(units + 1) * cols, q * s * q],
+    [units * cols + 1, q * s * p],
+    [units, p * (1 - s)],
+    [cols + units, p * s * q],
+    [units + 1, p * s * p],
+  ];
+  const states: Array<{ damage: number; mass: number }> = [];
+  for (let i = 0; i < limit; i++) {
+    for (let j = 0; i + j * cm < limit; j++) {
+      const at = i * cols + j;
+      const mass = reach[at];
+      if (mass === 0) continue;
+      states.push({ damage: i + j * cm, mass });
+      for (const [offset, probability] of steps) reach[at + offset] += mass * probability;
+    }
+  }
+  states.sort((a, b) => a.damage - b.damage);
+  const damage = new Float64Array(states.length);
+  const cumulative = new Float64Array(states.length + 1);
+  for (let k = 0; k < states.length; k++) {
+    damage[k] = states[k].damage;
+    cumulative[k + 1] = cumulative[k] + states[k].mass;
+  }
+  if (SECOND_BLAST_TABLES.size >= SECOND_BLAST_TABLES_MAX) SECOND_BLAST_TABLES.clear();
+  const table = { damage, cumulative };
+  SECOND_BLAST_TABLES.set(key, table);
+  return table;
 }
 
 /** Kills per hit over the standing mix, for a per-type row; 0 for a hero without that row. */
@@ -325,7 +430,9 @@ export function simulateClear(
   const squad = active.reduce((sum, hero) => sum + hero.presence, 0);
 
   const hitsToKill = active.map((hero) =>
-    props.map((prop) => expectedHitsToKill(prop.hp, hero.hitNoCrit, hero.critChance, hero.critMult)),
+    props.map((prop) =>
+      expectedHitsToKill(prop.hp, hero.hitNoCrit, hero.critChance, hero.critMult, hero.secondBlastChance ?? 0),
+    ),
   );
   if (hitsToKill.every((row) => row.every((hits) => !Number.isFinite(hits)))) return unclearable(heroes.length);
 
@@ -338,6 +445,13 @@ export function simulateClear(
   const hitsPerPlantFull = new Array<number>(heroCount).fill(0);
   const hitsPerPlantCap = active.map((hero) => HITS_PER_PLANT_CAP_BASE + HITS_PER_PLANT_CAP_PER_CELL * hero.blastCells);
   const speedFactor = active.map((hero) => hopSpeedFactor(hero.walkSpeedCells));
+  const meanLogSpeed = active.reduce((sum, hero) => sum + hero.presence * Math.log(hero.walkSpeedCells), 0) / squad;
+  // A hero at the squad's own speed reads exactly 1, not 1 ± an ulp, so a squad of one speed
+  // prices exactly as it did before this term existed.
+  const blastYield = active.map((hero) => {
+    const behind = Math.log(hero.walkSpeedCells) - meanLogSpeed;
+    return Math.abs(behind) < 1e-12 ? 1 : Math.exp(BLAST_YIELD_SPEED_EXPONENT * behind);
+  });
   const fuseHop = active.map((hero) => fuseHopFactor(hero.fuseSecs));
   const walkOverhead = active.map((hero) => walkCycleOverheadSeconds(hero.fuseSecs));
   const replantCycle = active.map((hero) => plantCycleSeconds(hero.fuseSecs, hero.walkSpeedCells, REPLANT_HOP_CELLS));
@@ -347,7 +461,17 @@ export function simulateClear(
   const extraCells = active.map((hero) => Math.max(0, hero.blastCells - BASE_BLAST_CELLS));
   const extraKillsPerHitByType = active.map((hero, h) =>
     extraCells[h] > 0
-      ? props.map((prop) => 1 / expectedHitsToKill(prop.hp, hero.hitNoCrit * EXTRA_RANGE_FRAC, hero.critChance, hero.critMult))
+      ? props.map(
+          (prop) =>
+            1 /
+            expectedHitsToKill(
+              prop.hp,
+              hero.hitNoCrit * EXTRA_RANGE_FRAC,
+              hero.critChance,
+              hero.critMult,
+              hero.secondBlastChance ?? 0,
+            ),
+        )
       : null,
   );
   const extraKillsPerHit = new Array<number>(heroCount).fill(0);
@@ -460,7 +584,7 @@ export function simulateClear(
       for (let h = 0; h < heroCount; h++) {
         const miss = 1 - surviveMean * (1 - perProp * (active[h].fuseSecs - meanFuse));
         const uncapped = HITS_PER_PLANT_BASE * (1 - miss) + hitsPerPlantFull[h];
-        const hitsPerPlant = Math.min(uncapped, hitsPerPlantCap[h]);
+        const hitsPerPlant = Math.min(uncapped, hitsPerPlantCap[h]) * blastYield[h];
         heroHits[h] = plantRate[h] * hitsPerPlant;
         hitRate += heroHits[h];
         if (extraKillsPerHitByType[h] === null) {

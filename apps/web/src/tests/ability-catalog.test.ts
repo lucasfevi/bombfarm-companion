@@ -159,7 +159,7 @@ describe('rank-20 migration', () => {
     // instead of here. This test is now SELF abilities only.
     expect(abilityMods({ bateria_extra: 13 }).drainMult).toBeCloseTo(1 - 13 / 100, 10);
     expect(abilityMods({ ponta_diamante: 13 }).sheetPenetrationFlat).toBeCloseTo(13, 10);
-    expect(abilityMods({ misericordia: 13 }).dmgMult).toBeCloseTo(1 / (1 - 9.75 / 100), 10);
+    expect(abilityMods({ misericordia: 13 }).dmgMult).toBe(1);
     expect(abilityMods({ explosao_ampla: 13 }).rangeCells).toBe(1);
     expect(abilityMods({ contra_relogio: 13 }).gateAttackMult).toBeCloseTo(1.26, 10);
     expect(abilityMods({ olho_clinico: 13 }).sheetCritChanceFlat).toBeCloseTo(2 * 13, 10);

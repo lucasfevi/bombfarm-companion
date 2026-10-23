@@ -127,7 +127,7 @@ import {
   jaulaEarlyCap,
   type WikiPhaseLine,
 } from './phase-wiki';
-import { hitsToKill, propHp } from './phases';
+import { hitsToKillWithSecondBlast, propHp } from './phases';
 import { runeXpMultiplier, runesOf, type HeroRune } from './runes';
 import type { HeroRecord, AccountShared } from './shims/storage';
 import { collectionGoldMult, collectionLuckPct } from './collection';
@@ -270,7 +270,8 @@ export function normalizeStoredReturnBonus(stored: unknown): { returnBonus: Retu
 export type HeroFarmFacts = {
   heroId: string;
   heroName: string;
-  /** Crit-averaged hit BEFORE phase mitigation; already includes dmgMult (2nd blast, execute). */
+  /** Crit-averaged ONE-blast hit BEFORE phase mitigation — Detonação Dupla's second blast is
+   *  {@link secondBlastChance}, priced in hits-to-kill. */
   avgHitBase: number;
   /** Effective sheet penetration, PERCENT, unclamped — `mitigationFactor` applies the clamp. */
   penetrationPct: number;
@@ -306,8 +307,8 @@ export type HeroFarmFacts = {
    *  of the hit; the row prices that part at its own hits-to-kill. */
   blocksPerBomb: number;
   /**
-   * The NON-CRIT hit before phase mitigation, with `dmgMult` (second blast, execute) — what the
-   * clear simulation rolls crits on. OPTIONAL: a hand-built `HeroFarmFacts` without it is priced
+   * The NON-CRIT one-blast hit before phase mitigation — what the clear simulation rolls crits
+   * on. OPTIONAL: a hand-built `HeroFarmFacts` without it is priced
    * from {@link avgHitBase} as a hero that never crits. `computeHeroFarmFacts` always sets it.
    */
   hitNoCritBase?: number;
@@ -341,6 +342,9 @@ export type HeroFarmFacts = {
   /** Estilhaços: the chance, as a FRACTION, that a rock this hero destroys shatters. OPTIONAL, and
    *  absent means none, so a hand-built `HeroFarmFacts` prices as it always has. */
   shatterChance?: number;
+  /** Detonação Dupla: the chance, as a FRACTION, that a blast strikes again for
+   *  `SECOND_BLAST_FRAC` of the hit on what the first left standing. OPTIONAL, and absent means none. */
+  secondBlastChance?: number;
   /** Matador de Chefes: the multiplier on this hero's hit against the gate boss alone — never the
    *  rocks, the shards or the cage. OPTIONAL, and absent means 1. */
   bossDmgMult?: number;
@@ -416,9 +420,9 @@ export type HeroFarmBasis = {
   /** The hero's farm `Context`. `drainMult`, `restSeconds` and `blastRange` are read;
    *  `mitigation` is 0 here and is never read — the row layer applies phase mitigation. */
   context: Context;
-  /** Ability damage multiplier, Matilha's pack factor at the field the basis was priced for
-   *  included — a function of the abilities and the field size, never of gear or points. */
-  dmgMult: number;
+  /** What one blast carries — Matilha's pack factor at the field the basis was priced for — a
+   *  function of the abilities and the field size, never of gear or points. */
+  hitMult: number;
   /** Hero-only Sorte at `pts`, PERCENTAGE POINTS. A candidate vector moves it by
    *  `effectiveDelta.luck` per Luck point. */
   heroLuckPct: number;
@@ -427,6 +431,7 @@ export type HeroFarmBasis = {
   fortunaLevel: number;
   passagemBastaoLevel: number;
   estilhacosLevel: number;
+  detonacaoDuplaLevel: number;
   matadorChefesLevel: number;
   /** `1 + 0.5 × context.blastRange`, blocks struck per bomb — ability-driven, build-independent,
    *  precomputed. Geometry, not damage: see {@link HeroFarmFacts.blocksPerBomb}. */
@@ -457,7 +462,7 @@ export type HeroFarmBasis = {
  * One hero's pipeline terms with the team auras held at zero and the hero alone on the field —
  * the base the aura layer is applied to. `selfDrainMult` is the hero's own drain reduction
  * (Bateria Extra) — the pipeline's own input to {@link combineDrainRate}, kept so Fôlego can be
- * combined with it per candidate. `dmgMult` is the pipeline's with no ally beside the hero, so
+ * combined with it per candidate. `hitMult` is the pipeline's with no ally beside the hero, so
  * Matilha's pack factor can be priced at the field each candidate assignment sustains.
  */
 export type AuraFreeFarmTerms = {
@@ -465,7 +470,7 @@ export type AuraFreeFarmTerms = {
   effectiveDelta: EffectiveDeltas;
   context: Context;
   selfDrainMult: number;
-  dmgMult: number;
+  hitMult: number;
   abilities: Record<string, number>;
 };
 
@@ -482,7 +487,7 @@ export type HeroFarmBasisParts = {
   effective: HeroSheet;
   effectiveDelta: EffectiveDeltas;
   context: Context;
-  dmgMult: number;
+  hitMult: number;
   /** `pipeline.adjusted.luck` — the tree's flat share is peeled off here, not by the caller. */
   adjustedLuckPct: number;
   treeLuckFlatPct: number;
@@ -521,12 +526,13 @@ export function heroFarmBasisFromParts(parts: HeroFarmBasisParts): HeroFarmBasis
     effective: parts.effective,
     effectiveDelta: parts.effectiveDelta,
     context: parts.context,
-    dmgMult: parts.dmgMult,
+    hitMult: parts.hitMult,
     heroLuckPct: Math.max(0, parts.adjustedLuckPct - parts.treeLuckFlatPct),
     veiaOuroLevel: clampAbilityLevel(parts.abilities.veia_ouro ?? 0),
     fortunaLevel: clampAbilityLevel(parts.abilities.fortuna ?? 0),
     passagemBastaoLevel: clampAbilityLevel(parts.abilities.passagem_bastao ?? 0),
     estilhacosLevel: clampAbilityLevel(parts.abilities.estilhacos ?? 0),
+    detonacaoDuplaLevel: clampAbilityLevel(parts.abilities.detonacao_dupla ?? 0),
     matadorChefesLevel: clampAbilityLevel(parts.abilities.matador_chefes ?? 0),
     blocksPerBomb: 1 + 0.5 * parts.context.blastRange,
     ...xpRuneMultField(parts.runes),
@@ -565,7 +571,7 @@ function auraFreeBasesForAccount(
       effective: pipeline.effective,
       effectiveDelta: pipeline.A.effectiveDelta,
       context: pipeline.context,
-      dmgMult: pipeline.dmgMult,
+      hitMult: pipeline.hitMult,
       adjustedLuckPct: pipeline.adjusted.luck,
       treeLuckFlatPct,
       abilities: hero.abilities,
@@ -575,7 +581,7 @@ function auraFreeBasesForAccount(
         effectiveDelta: pipeline.A.effectiveDelta,
         context: pipeline.context,
         selfDrainMult: abilityMods(hero.abilities).drainMult,
-        dmgMult: pipeline.dmgMult,
+        hitMult: pipeline.hitMult,
         abilities: hero.abilities,
       },
     });
@@ -596,7 +602,7 @@ type FieldLayer = {
  * attack per point), Marcha multiplies speed (and its delta), Presságio adds flat crit points,
  * Carnificina adds flat crit-damage points, Brecha adds flat penetration points, and Fôlego combines with the hero's own drain reduction
  * ({@link combineDrainRate}) — nothing else in the sheet or the farm `Context` reads them.
- * Matilha's pack factor multiplies `dmgMult` at the allies the rotation keeps beside the
+ * Matilha's pack factor multiplies `hitMult` at the allies the rotation keeps beside the
  * carrier. Applying the same operations to the aura-free terms reproduces the pipeline's output
  * bit for bit, which is what lets a candidate assignment be priced with its own field at zero
  * pipeline calls.
@@ -608,7 +614,7 @@ function priceAuraLayer(basis: HeroFarmBasis, field: FieldLayer): HeroFarmBasis 
   const packRatePerAlly = abilityMods(base.abilities).packDmgPctPerAlly / 100;
   return {
     ...basis,
-    dmgMult: base.dmgMult * matilhaMult(packRatePerAlly, field.alliesByHeroId.get(basis.heroId) ?? 0),
+    hitMult: base.hitMult * matilhaMult(packRatePerAlly, field.alliesByHeroId.get(basis.heroId) ?? 0),
     critPointCeiling: critPointCeilingOf(field.critFlatAtFullPresence, mults.teamCritFlat),
     effective: {
       ...base.effective,
@@ -803,7 +809,7 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
   const critCeiling = critCeilingOfBasis(basis);
   if (critCeiling !== undefined) sheet.critChance = Math.min(sheet.critChance, critCeiling);
 
-  const hitNoCritBase = predictHitDamage(sheet.attack, 0, sheet.penetration, basis.dmgMult);
+  const hitNoCritBase = predictHitDamage(sheet.attack, 0, sheet.penetration, basis.hitMult);
   const avgHitBase = hitNoCritBase * critFactor(sheet.critChance, sheet.critDmg);
   const penetrationPct = sheet.penetration;
   const fuseSecs = fuseSeconds(sheet.cdr);
@@ -850,6 +856,9 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
     fortunaLevel: basis.fortunaLevel,
     ...(basis.estilhacosLevel > 0
       ? { shatterChance: abilityMods({ estilhacos: basis.estilhacosLevel }).shatterChancePct / 100 }
+      : {}),
+    ...(basis.detonacaoDuplaLevel > 0
+      ? { secondBlastChance: abilityMods({ detonacao_dupla: basis.detonacaoDuplaLevel }).secondBlastChance }
       : {}),
     ...(basis.matadorChefesLevel > 0
       ? { bossDmgMult: abilityMods({ matador_chefes: basis.matadorChefesLevel }).bossDmgMult }
@@ -1471,13 +1480,15 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const perHero = squad.heroes.map((hero) => {
     const mitF = mitigationFactor(line.mitig, hero.penetrationPct);
     const avgHit = hero.avgHitBase * mitF;
+    const secondBlast = hero.secondBlastChance ?? 0;
     const propHtkFor = (hit: number) =>
       PROP_SHARES.reduce(
-        (sum, prop) => sum + prop.share * hitsToKill(hit, propHp(line.hp, prop.hpMult)),
+        (sum, prop) => sum + prop.share * hitsToKillWithSecondBlast(hit, propHp(line.hp, prop.hpMult), secondBlast),
         0,
       );
     const bossDmgMult = hero.bossDmgMult ?? 1;
-    const bossHtkFor = (hit: number) => hitsToKill(hit * bossDmgMult, propHp(line.hp, BOSS_HP_MULT_WIKI));
+    const bossHtkFor = (hit: number) =>
+      hitsToKillWithSecondBlast(hit * bossDmgMult, propHp(line.hp, BOSS_HP_MULT_WIKI), secondBlast);
     const eHtk = pulseBlendedHtk(pulse, avgHit, propHtkFor);
     const bossHtk = pulseBlendedHtk(pulse, avgHit, bossHtkFor);
     const hps = hitsPerSec(hero, line.ato);
@@ -1564,6 +1575,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
         critChance: Math.max(0, critChancePct) / 100,
         critMult: 1 + Math.max(0, hero.critDmgPct ?? 0) / 100,
         ...(hero.shatterChance ? { shatterChance: hero.shatterChance } : {}),
+        ...(hero.secondBlastChance ? { secondBlastChance: hero.secondBlastChance } : {}),
       };
     });
     const clear = simulateClear(

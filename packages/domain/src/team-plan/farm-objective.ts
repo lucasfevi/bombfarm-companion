@@ -282,12 +282,12 @@ export function buildFarmObjective(
     : basePhaseOptions;
   const heroes: FrozenHeroFarmTerms[] = squadContexts.map((ctx) => ({
     ctx,
-    dmgMult: computeCombatMults({
+    hitMult: computeCombatMults({
       mods: ctx.mods,
       teamBuffs: auras,
       extraDmgPct: 0,
       fieldAllies: alliesByHeroId[ctx.heroId],
-    }).dmgMult,
+    }).hitMult,
     ...(ctx.scope === 'optimize' ? {} : { fixedLoadout: loadoutByHeroId[ctx.heroId] ?? {} }),
     ...(ignoreFieldCrowding && pulsePresenceByHeroId[ctx.heroId] !== undefined
       ? { heldPulsePresence: pulsePresenceByHeroId[ctx.heroId] }
@@ -339,7 +339,7 @@ function basisForHero(
     effective: score.effective,
     effectiveDelta: score.effectiveDelta,
     context: score.context,
-    dmgMult: frozen.dmgMult,
+    hitMult: frozen.hitMult,
     adjustedLuckPct: score.adjusted.luck,
     treeLuckFlatPct: objective.treeLuckFlatPct,
     abilities: ctx.abilities,

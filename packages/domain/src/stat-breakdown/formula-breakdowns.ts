@@ -126,8 +126,8 @@ export function formulaUptime(facts: PipelineFacts): FormulaBreakdown {
   return formula('bdFormulaUptime', value)`100 × ${term('field', field, 0)} / (${term('field', field, 0)} + ${term('restSeconds', facts.rest, 0)}) = ${formatBreakdownNumber(value, 1)}%`;
 }
 
-/** What no single blast shows and DPS still earns: Detonação Dupla's second blast and
- *  Misericórdia's execute, as expectations (`AbilityMods.dmgMult`). Omitted at exactly 1. */
+/** What no single blast shows and DPS still earns: Detonação Dupla's second blast, as an
+ *  expectation (`AbilityMods.dmgMult`). Omitted at exactly 1. */
 export function expectedBlastsMult(facts: PipelineFacts): number {
   return facts.mods.dmgMult;
 }

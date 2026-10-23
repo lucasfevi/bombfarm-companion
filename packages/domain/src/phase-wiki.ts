@@ -204,6 +204,9 @@ export const BASE_BLAST_RANGE = 1;
  *  sides. ← `combate.shatter_frac`; live 0.5 since the ability arrived on 2026-09-26. */
 export const SHATTER_FRAC: number = wiki.combat.shatterFrac;
 
+/** Detonação Dupla's second-blast share of each cell's hit: the game text's 50%, measured 0.5000× on frame captures held out of band. */
+export const SECOND_BLAST_FRAC = 0.5;
+
 /** [ato-1][rank-1] — P(rank | gem chest), per difficulty. 5 rows × 3 columns, each row sums to 1.
  *  Alias of `WIKI_GEMS.rankDistByAto`, exported flat because it is the term farm-rate reads. */
 export const GEM_RANK_DIST_BY_ATO: readonly (readonly number[])[] = WIKI_GEMS.rankDistByAto;

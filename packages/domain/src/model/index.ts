@@ -104,6 +104,7 @@ export {
   battleFieldFor,
   mapSizeOfCells,
   isMapSize,
+  BLAST_YIELD_SPEED_EXPONENT,
 } from './clear-time';
 export {
   FUSE_CYCLE_OVERHEAD_SEC,

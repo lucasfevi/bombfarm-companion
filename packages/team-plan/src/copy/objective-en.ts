@@ -50,6 +50,14 @@ export const teamPlanObjectivePairsEn = {
   teamPlanTotalGainValueDps: '{delta} dps ({pct}%)',
   teamPlanTotalGainValueFarm: '{delta} gold/h ({pct}%)',
   teamPlanTotalGainValueSetFarm: '{delta} set chests/h ({pct}%)',
+  /** A hero card's header: what this hero's point reset adds to the plan's objective, as a share
+   *  of today's. Under a gold plan the card's DPS columns alone read a reset that trades damage
+   *  for cadence as a loss. */
+  teamPlanColRespecGainDps: 'Reset dps',
+  teamPlanColRespecGainFarm: 'Reset gold/h',
+  teamPlanColRespecGainSetFarm: 'Reset chests/h',
+  teamPlanColRespecGainGate: 'Reset gate dps',
+  teamPlanColRespecGainPvp: 'Reset duel dps',
   teamPlanTotalGainValueGate: '{delta} dps at the gate ({pct}%)',
   teamPlanTotalGainValuePvp: '{delta} dps in the duel ({pct}%)',
   teamPlanGearDipNoteDps:

@@ -17,6 +17,7 @@ export type TeamPlanObjectiveCopy = {
   totalGainValue: string;
   gearDipNote: string;
   phaseHintNone: string;
+  respecGainLabel: string;
 };
 
 export function teamPlanObjectiveCopy(
@@ -31,6 +32,7 @@ export function teamPlanObjectiveCopy(
         totalGainValue: strings.teamPlanTotalGainValueFarm,
         gearDipNote: strings.teamPlanGearDipNoteFarm,
         phaseHintNone: strings.teamPlanPhaseHintNoneFarm,
+        respecGainLabel: strings.teamPlanColRespecGainFarm,
       };
     case 'setFarm':
       return {
@@ -39,6 +41,7 @@ export function teamPlanObjectiveCopy(
         totalGainValue: strings.teamPlanTotalGainValueSetFarm,
         gearDipNote: strings.teamPlanGearDipNoteSetFarm,
         phaseHintNone: strings.teamPlanPhaseHintNoneSetFarm,
+        respecGainLabel: strings.teamPlanColRespecGainSetFarm,
       };
     case 'gateClear':
       return {
@@ -47,6 +50,7 @@ export function teamPlanObjectiveCopy(
         totalGainValue: strings.teamPlanTotalGainValueGate,
         gearDipNote: strings.teamPlanGearDipNoteGate,
         phaseHintNone: strings.teamPlanScoredPhaseGate,
+        respecGainLabel: strings.teamPlanColRespecGainGate,
       };
     case 'pvp':
       return {
@@ -55,6 +59,7 @@ export function teamPlanObjectiveCopy(
         totalGainValue: strings.teamPlanTotalGainValuePvp,
         gearDipNote: strings.teamPlanGearDipNotePvp,
         phaseHintNone: strings.teamPlanScoredPhasePvp,
+        respecGainLabel: strings.teamPlanColRespecGainPvp,
       };
     default:
       return {
@@ -63,6 +68,7 @@ export function teamPlanObjectiveCopy(
         totalGainValue: strings.teamPlanTotalGainValueDps,
         gearDipNote: strings.teamPlanGearDipNoteDps,
         phaseHintNone: strings.teamPlanPhaseHintNoneDps,
+        respecGainLabel: strings.teamPlanColRespecGainDps,
       };
   }
 }

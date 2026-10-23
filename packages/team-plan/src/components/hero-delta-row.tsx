@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import type { TeamPlan, TeamPlanPerHeroRow } from '@bombfarm/domain/team-plan/types';
-import { Accordion } from '@bombfarm/ui';
+import { Accordion, formatNumber } from '@bombfarm/ui';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import { HeroIdentityChip } from '@bombfarm/game-art';
@@ -37,6 +37,7 @@ export const HeroDeltaRow = memo(function HeroDeltaRow({
   roster,
   gear,
   forgeQueueAction,
+  respecGainLabel,
 }: {
   t: TeamPlanScreenCopy;
   lang: Lang;
@@ -45,6 +46,7 @@ export const HeroDeltaRow = memo(function HeroDeltaRow({
   roster: HeroDeltaRoster;
   gear: HeroGearFlow;
   forgeQueueAction: ForgeQueueAction | undefined;
+  respecGainLabel: string;
 }) {
   const hero = roster.heroByScopeKey.get(row.heroId);
   const disambiguatedName = hero
@@ -55,6 +57,7 @@ export const HeroDeltaRow = memo(function HeroDeltaRow({
       })
     : row.heroName;
   const pointsReset = pointsResetView(plan, row);
+  const respecGainPct = pointsReset?.gainPct ?? null;
 
   return (
     <Accordion.Item value={row.heroId}>
@@ -83,6 +86,14 @@ export const HeroDeltaRow = memo(function HeroDeltaRow({
                 className={`${metricValueClass} ${row.delta < 0 ? 'text-down' : row.delta > 0 ? 'text-up' : ''}`}
               />
             </div>
+            {respecGainPct !== null ? (
+              <div className="flex flex-col items-end gap-0.5" data-testid="team-plan-hero-respec-gain">
+                <span className={metricLabelClass}>{respecGainLabel}</span>
+                <span className={`${metricValueClass} ${respecGainPct < 0 ? 'text-down' : respecGainPct > 0 ? 'text-up' : ''}`}>
+                  {`${respecGainPct > 0 ? '+' : ''}${formatNumber(respecGainPct, lang, 1)}%`}
+                </span>
+              </div>
+            ) : null}
           </div>
         </div>
       </Accordion.Trigger>
