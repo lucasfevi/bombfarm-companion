@@ -45,7 +45,7 @@ import {
 } from '../farm-optimize-objective';
 import { computeCombatMults } from '../derive';
 import { DEFAULT_CASA_SLOTS } from '../casa-slots';
-import { alliesOverRotation, fieldSeconds } from '../model';
+import { alliesOverRotation, fieldSeconds, passagemBastaoPresence } from '../model';
 import { computeTeamBuffsOverRotation, holdAurasAtCap, type AurasAtCap, type TeamBuffId } from '../team-buffs';
 import { critPointCeilingOf, teamAuraLayer } from '../team-aura-layer';
 import { isSquadScope } from './auras';
@@ -205,21 +205,39 @@ function priceField(
   farm: FarmContext,
   fieldSlots: number,
   aurasAtCap: AurasAtCap | undefined,
-): { auras: Record<TeamBuffId, number>; critFlatAtFullPresence: number; alliesByHeroId: Record<string, number> } {
+): {
+  auras: Record<TeamBuffId, number>;
+  critFlatAtFullPresence: number;
+  alliesByHeroId: Record<string, number>;
+  pulsePresenceByHeroId: Record<string, number>;
+  heldSquadPresence: number;
+} {
   const atFullPresence = computeTeamBuffsOverRotation(squadContexts, null);
-  const presence = squadContexts.map((ctx) =>
-    presenceOf(
-      scoreHeroLoadout(ctx, loadoutByHeroId[ctx.heroId] ?? {}, ctx.pts, atFullPresence, farm),
-    ),
+  const scores = squadContexts.map((ctx) =>
+    scoreHeroLoadout(ctx, loadoutByHeroId[ctx.heroId] ?? {}, ctx.pts, atFullPresence, farm),
   );
+  const presence = scores.map(presenceOf);
   const alliesByHeroId: Record<string, number> = {};
+  const pulsePresenceByHeroId: Record<string, number> = {};
   squadContexts.forEach((ctx, index) => {
     alliesByHeroId[ctx.heroId] = alliesOverRotation(presence, index, fieldSlots);
+    if ((ctx.abilities.passagem_bastao ?? 0) > 0) {
+      const score = scores[index];
+      pulsePresenceByHeroId[ctx.heroId] = passagemBastaoPresence(
+        fieldSeconds(score.effective, score.context),
+        presence[index],
+      );
+    }
   });
   return {
     auras: holdAurasAtCap(computeTeamBuffsOverRotation(squadContexts, presence), aurasAtCap, atFullPresence),
     critFlatAtFullPresence: teamAuraLayer(atFullPresence).teamCritFlat,
     alliesByHeroId,
+    pulsePresenceByHeroId,
+    heldSquadPresence: Math.min(
+      presence.reduce((sum, value) => sum + value, 0),
+      fieldSlots,
+    ),
   };
 }
 
@@ -245,20 +263,23 @@ export function buildFarmObjective(
   aurasAtCap?: AurasAtCap,
   setBand?: SetFarmBand | null,
 ): TeamPlanFarmObjective {
-  const phaseOptions = setBand
+  const basePhaseOptions = setBand
     ? setPhaseOptionsFor(account, setBand, ignoreFieldCrowding)
     : phaseOptionsFor(account, targetPhase, ignoreFieldCrowding);
   const rateObjective = setBand
     ? resolveFarmObjective({ kind: 'setChests', itemLevel: setBand.itemLevel })
     : FARM_GOLD_OBJECTIVE;
   const farm = farmContextFor(account);
-  const { auras, critFlatAtFullPresence, alliesByHeroId } = priceField(
+  const { auras, critFlatAtFullPresence, alliesByHeroId, pulsePresenceByHeroId, heldSquadPresence } = priceField(
     squadContexts,
     loadoutByHeroId,
     farm,
     account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS,
     aurasAtCap,
   );
+  const phaseOptions: BestFarmPhaseOptions = ignoreFieldCrowding
+    ? { ...basePhaseOptions, heldSquadPresence }
+    : basePhaseOptions;
   const heroes: FrozenHeroFarmTerms[] = squadContexts.map((ctx) => ({
     ctx,
     hitMult: computeCombatMults({
@@ -268,6 +289,9 @@ export function buildFarmObjective(
       fieldAllies: alliesByHeroId[ctx.heroId],
     }).hitMult,
     ...(ctx.scope === 'optimize' ? {} : { fixedLoadout: loadoutByHeroId[ctx.heroId] ?? {} }),
+    ...(ignoreFieldCrowding && pulsePresenceByHeroId[ctx.heroId] !== undefined
+      ? { heldPulsePresence: pulsePresenceByHeroId[ctx.heroId] }
+      : {}),
   }));
 
   return {
@@ -325,6 +349,7 @@ function basisForHero(
       teamAuraLayer(objective.auras).teamCritFlat,
     ),
     critCeilingBindsSheet: true,
+    ...(frozen.heldPulsePresence !== undefined ? { heldPulsePresence: frozen.heldPulsePresence } : {}),
   });
 }
 

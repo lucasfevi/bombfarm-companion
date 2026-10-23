@@ -452,6 +452,10 @@ export type HeroFarmBasis = {
   /** The plan prices builds it has yet to choose, so its ceiling clamps the whole sheet; a board
    *  pricing the build a player owns clamps only what points add on top. */
   critCeilingBindsSheet?: boolean;
+  /** The Passagem de Bastão pulse share to use instead of the one this build's own field time
+   *  implies. A longer stint means fewer entries and so fewer pulses, which makes energy cost a
+   *  carrier's squad; a plan that must not read energy that way holds the share where it stands. */
+  heldPulsePresence?: number;
 };
 
 /**
@@ -493,6 +497,7 @@ export type HeroFarmBasisParts = {
   auraFree?: AuraFreeFarmTerms;
   critPointCeiling?: number;
   critCeilingBindsSheet?: boolean;
+  heldPulsePresence?: number;
 };
 
 function xpRuneMultField(runes: readonly HeroRune[] | undefined): { xpRuneMult?: number } {
@@ -535,6 +540,7 @@ export function heroFarmBasisFromParts(parts: HeroFarmBasisParts): HeroFarmBasis
     ...(parts.auraFree ? { auraFree: parts.auraFree } : {}),
     ...(parts.critPointCeiling !== undefined ? { critPointCeiling: parts.critPointCeiling } : {}),
     ...(parts.critCeilingBindsSheet ? { critCeilingBindsSheet: true } : {}),
+    ...(parts.heldPulsePresence !== undefined ? { heldPulsePresence: parts.heldPulsePresence } : {}),
   };
 }
 
@@ -820,7 +826,10 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
   const uptime = (100 * field) / (field + basis.context.restSeconds) / 100;
   const passagemBastao =
     basis.passagemBastaoLevel > 0
-      ? { rank: basis.passagemBastaoLevel, presence: passagemBastaoPresence(field, uptime) }
+      ? {
+          rank: basis.passagemBastaoLevel,
+          presence: basis.heldPulsePresence ?? passagemBastaoPresence(field, uptime),
+        }
       : undefined;
   const degenerate = !(avgHitBase > 0) || !(plantsPerSec > 0);
 
@@ -1349,6 +1358,10 @@ export type FarmRateOptions = {
    * Off by default: this is the caller opting out of a term, never a correction to it.
    */
   ignoreFieldCrowding?: boolean;
+  /** The squad presence each hero's bombing share is divided by, in place of the sum the
+   *  candidate itself implies. Lets a plan that ignores crowding keep a hero's extra field time
+   *  from thinning everyone else's share. */
+  heldSquadPresence?: number;
   /** The grid each clear is priced on. Default the classic field. */
   field?: BattleField;
 };
@@ -1565,7 +1578,13 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
         ...(hero.secondBlastChance ? { secondBlastChance: hero.secondBlastChance } : {}),
       };
     });
-    const clear = simulateClear(clearHeroes, propTypes, propCount, options.field ?? squad.field);
+    const clear = simulateClear(
+      clearHeroes,
+      propTypes,
+      propCount,
+      options.field ?? squad.field,
+      options.heldSquadPresence,
+    );
     if (Number.isFinite(clear.clearSecs) && clear.clearSecs > 0) {
       const rate = (level.probability * propCount) / clear.clearSecs;
       clearRateSum += rate;

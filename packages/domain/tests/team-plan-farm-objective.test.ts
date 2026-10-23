@@ -359,6 +359,34 @@ describe('aurasAtCap reaches the farm objective through the squad account and th
   });
 });
 
+describe('ignoring field crowding holds what energy would otherwise cost the squad', () => {
+  const file = 'save-20260828-4heroes-postpatch.json';
+
+  function squadWithCarrier() {
+    const fixture = loadTeamPlanFarmFixture(file);
+    const { account, heroes, scopeByHeroId } = fixture.teamPlanInput;
+    const built = buildHeroPlanContexts(heroes, account, scopeByHeroId);
+    if (built.blocked) throw new Error('blocked');
+    const squad = built.contexts
+      .filter((ctx) => isSquadScope(ctx.scope))
+      .map((ctx, index) => ({ ...ctx, abilities: { ...ctx.abilities, passagem_bastao: index === 0 ? 20 : 0 } }));
+    return { squad, account };
+  }
+
+  it('freezes each carrier’s pulse share and the squad presence, and only when asked', () => {
+    const { squad, account } = squadWithCarrier();
+    const plain = buildFarmObjective(squad, account, {});
+    const ignoring = buildFarmObjective(squad, account, {}, null, true);
+
+    expect(plain.heroes.every((hero) => hero.heldPulsePresence === undefined)).toBe(true);
+    expect(plain.phaseOptions.heldSquadPresence).toBeUndefined();
+    expect(ignoring.heroes.map((hero) => hero.heldPulsePresence !== undefined)).toEqual(
+      squad.map((_, index) => index === 0),
+    );
+    expect(ignoring.phaseOptions.heldSquadPresence).toBeGreaterThan(0);
+  });
+});
+
 describe('the Pass reaches the farm objective', () => {
   const file = 'save-20260828-4heroes-postpatch.json';
 

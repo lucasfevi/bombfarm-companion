@@ -13,7 +13,7 @@ export const teamPlanGearFlowEn = {
   teamPlanFlowRemovedHeading: 'Taken off this hero',
   teamPlanFlowRowRemovedToInventory: 'Goes back to your inventory',
   teamPlanFlowRemovedWhyCrowded:
-    'The field is full, so this hero waiting in the House serves the squad better than wearing this. Turn on "Keep every hero geared" to plan without that.',
+    'The field is full, so this hero waiting in the House serves the squad better than wearing this. Turn on "Ignore energy penalties" to plan without that.',
   teamPlanFlowRemovedWhyOther:
     'No other hero in scope can use it, so it waits in your inventory.',
   teamPlanFlowRowForge: 'Forge from +{from} to +{to}',

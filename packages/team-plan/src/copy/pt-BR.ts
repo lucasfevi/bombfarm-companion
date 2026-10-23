@@ -55,8 +55,8 @@ export const teamPlanPagePtBR: TeamPlanPageCopy = {
     'Só pontos. Sem movimentações de itens e sem forjas — a busca nem chega a avaliá-las.',
   teamPlanAllowedChangesHintGear:
     'Só itens. Sem resets de pontos, então também sem custo de respec.',
-  teamPlanIgnoreCrowdingLabel: 'Manter todos equipados',
-  teamPlanIgnoreCrowdingAria: 'Calcular como se o campo sempre tivesse vaga, e preencher todos os espaços vazios',
+  teamPlanIgnoreCrowdingLabel: 'Ignorar penalidade de energia',
+  teamPlanIgnoreCrowdingAria: 'Calcular como se a energia nunca custasse nada ao time, e preencher todos os espaços vazios',
   teamPlanMapSizeLabel: 'Tamanho do mapa',
   teamPlanMapSizeClassic: 'Clássico',
   teamPlanMapSizeCompact: 'Compacto',
@@ -64,9 +64,9 @@ export const teamPlanPagePtBR: TeamPlanPageCopy = {
     'O mapa em que o plano é calculado, o mesmo do Farm. Compacto é o visual novo do jogo (F8): os mesmos props mais próximos, então mais deles caem em cada explosão, e os heróis andam mais devagar nele, então atravessar qualquer um dos mapas leva o mesmo tempo.',
   teamPlanMapSizeHintDetected: 'Lido do jogo enquanto ele está aberto. Escolha o outro mapa para sobrepor.',
   teamPlanIgnoreCrowdingHintOff:
-    'O campo comporta um número limitado de heróis, então um herói que fica mais tempo em campo tira espaço dos outros. O plano cobra por isso, e é por isso que ele pode pedir para tirar um item.',
+    'A energia pode custar ao time: um herói que fica mais tempo em campo tira espaço dos outros, e um portador de Passagem de Bastão dispara o pulso com menos frequência. O plano cobra por isso, e é por isso que ele pode deixar um herói sem item ou pedir para tirar um.',
   teamPlanIgnoreCrowdingHintOn:
-    'Calculando como se o campo sempre tivesse vaga. Nenhum item piora a pontuação de um herói, e todo espaço vazio é preenchido se você tiver algo que sirva — mas os totais passam a descrever um campo em que ninguém fica na fila, então ficam acima do que o time realmente rende.',
+    'A energia nunca pesa contra um herói: a fila do campo e o ritmo da Passagem de Bastão ficam onde estão hoje. Nenhum item piora a pontuação de um herói, e todo espaço vazio é preenchido se você tiver algo que sirva — mas os totais passam a descrever um time que a energia nunca atrasa, então ficam acima do que o time realmente rende.',
   teamPlanScopeSectionTitle: 'Escopo por herói',
   teamPlanScopeOptimize: 'Otimizar',
   teamPlanScopeDonate: 'Doar',

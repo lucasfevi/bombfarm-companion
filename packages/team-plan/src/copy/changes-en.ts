@@ -59,7 +59,7 @@ export const teamPlanChangesEn = {
   teamPlanChangesControlForgeFloor: 'forge floor',
   teamPlanChangesControlObjective: 'objective',
   teamPlanChangesControlAllowedChanges: 'what to change',
-  teamPlanChangesControlIgnoreFieldCrowding: 'keep every hero geared',
+  teamPlanChangesControlIgnoreFieldCrowding: 'ignore energy penalties',
   teamPlanChangesControlAurasAtCap: 'auras at cap',
   teamPlanChangesControlTargetPhase: 'phase scored at',
   teamPlanChangesControlPvpSquadSlots: 'duel squad slots',
