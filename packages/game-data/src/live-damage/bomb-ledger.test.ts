@@ -127,6 +127,25 @@ describe('bomb ledger — owner cascade', () => {
     expect(leave().retiredThisFrame.get(5)).toEqual({ owner: 'a', radius: 2, basis: 'fingerprint' });
   });
 
+  it('separates heroes sharing a fuse by radius when nobody stands on the cell', () => {
+    const { book, advance, leave } = setup();
+    book.seed('a', 0.4);
+    book.seed('b', 0.4);
+    advance([freshBomb(9, 0.4, 3)], [hero('a', 9), hero('b', 1)]);
+    advance([freshBomb(10, 0.4, 1)], [hero('a', 2), hero('b', 10)]);
+    leave();
+    advance([freshBomb(5, 0.4, 3)], [hero('a', 2), hero('b', 1)]);
+    expect(leave().retiredThisFrame.get(5)).toEqual({ owner: 'a', radius: 3, basis: 'fingerprint' });
+  });
+
+  it('leaves a Birth nobody stands on without an owner when heroes sharing its fuse also share its radius', () => {
+    const { book, advance, leave } = setup();
+    book.seed('a', 0.4);
+    book.seed('b', 0.4);
+    advance([freshBomb(5, 0.4)], [hero('a', 2), hero('b', 1)]);
+    expect(leave().retiredThisFrame.get(5)).toEqual({ owner: null, radius: 2, reason: 'noOwnerAtBirth' });
+  });
+
   it('prefers the one hero standing on the cell over a unique fingerprint for someone else', () => {
     const { book, advance, leave } = setup();
     book.seed('a', FUSE);

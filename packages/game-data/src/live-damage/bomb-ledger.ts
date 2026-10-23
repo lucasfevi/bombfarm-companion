@@ -83,9 +83,16 @@ function narrowed(ids: readonly string[], keep: (id: string) => boolean): readon
 
 function chooseOwner(book: FingerprintBook, { bomb, onCell, present, withLiveBomb }: BirthScene): OwnerDecision {
   if (onCell.length === 0) {
-    const free = new Set([...present].filter((id) => !withLiveBomb.has(id)));
-    const resolution = book.resolve(bomb.fuseTotalSeconds, free);
-    return resolution.kind === 'unique' ? byFingerprint(resolution.heroId) : undecided('noOwnerAtBirth');
+    const sameFuse = [...present].filter((id) => {
+      const fuse = book.fuseOf(id);
+      return !withLiveBomb.has(id) && fuse !== undefined && Math.abs(fuse - bomb.fuseTotalSeconds) <= FUSE_TOLERANCE;
+    });
+    const sameRadius = narrowed(sameFuse, (id) => {
+      const radius = book.radiusOf(id);
+      return radius === undefined || radius === bomb.radius;
+    });
+    const [only] = sameRadius;
+    return sameRadius.length === 1 && only !== undefined ? byFingerprint(only) : undecided('noOwnerAtBirth');
   }
 
   const [sole] = onCell;
