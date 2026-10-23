@@ -46,7 +46,9 @@ export const MINI_LIVE_INVOKE_CHANNELS: ReadonlySet<IpcInvokeChannel> = new Set<
   'miniLive:close',
 ]);
 
-const TRUSTED_PROTOCOLS: ReadonlySet<string> = new Set([`${RENDERER_SCHEME}:`, 'http:', 'https:']);
+const AUTHORITY_SEPARATOR = '://';
+
+const TRUSTED_PROTOCOLS:ReadonlySet<string> = new Set([`${RENDERER_SCHEME}:`, 'http:', 'https:']);
 
 /** Protocol and host (port included), or null when the URL carries credentials, is not
  *  parseable, or is not a scheme a renderer is ever served from. `URL.origin` is the string
@@ -61,11 +63,15 @@ export function trustedOriginKeyOf(rawUrl: string): string | null {
   if (!TRUSTED_PROTOCOLS.has(url.protocol) || url.username !== '' || url.password !== '') {
     return null;
   }
-  return `${url.protocol}//${url.host}`;
+  return originKeyOf(url);
+}
+
+function originKeyOf(url: URL): string {
+  return `${url.protocol.slice(0, -1)}${AUTHORITY_SEPARATOR}${url.host}`;
 }
 
 export function createIpcSenderPolicy(input: { isDev: boolean; devRendererUrl: string }): IpcSenderPolicy {
-  const trusted = new Set<string>([`${RENDERER_SCHEME}://${RENDERER_HOST}`]);
+  const trusted = new Set<string>([`${RENDERER_SCHEME}${AUTHORITY_SEPARATOR}${RENDERER_HOST}`]);
   if (input.isDev) {
     const devOrigin = trustedOriginKeyOf(input.devRendererUrl);
     if (devOrigin !== null && !devOrigin.startsWith(`${RENDERER_SCHEME}:`)) {
@@ -126,7 +132,7 @@ function loggableOrigin(frame: SenderFrameFacts | null): string {
   if (frame === null) return 'none';
   try {
     const url = new URL(frame.url);
-    return url.host === '' ? url.protocol : `${url.protocol}//${url.host}`;
+    return url.host === '' ? url.protocol : originKeyOf(url);
   } catch {
     return 'unparseable';
   }
