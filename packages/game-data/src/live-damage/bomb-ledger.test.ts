@@ -150,6 +150,22 @@ describe('bomb ledger — owner cascade', () => {
     expect(leave().retiredThisFrame.get(5)?.owner).toBe('b');
   });
 
+  it('credits a walking hero whose fuse matches over a standing hero whose fuse does not', () => {
+    const { book, advance, leave } = setup();
+    book.seed('a', 0.4);
+    book.seed('b', FUSE);
+    advance([freshBomb(5, 0.4)], [{ id: 'a', cell: 5, actionState: 5 }, hero('b', 5)]);
+    expect(leave().retiredThisFrame.get(5)?.owner).toBe('a');
+  });
+
+  it('never credits one hero with two bombs born in the same frame', () => {
+    const { book, advance, leave } = setup();
+    book.seed('a', FUSE);
+    advance([freshBomb(5), freshBomb(6)], [hero('a', 9)]);
+    const retired = leave().retiredThisFrame;
+    expect([retired.get(5)?.owner, retired.get(6)?.owner].filter((owner) => owner === 'a')).toHaveLength(1);
+  });
+
   it('keeps a lone walking hero as the owner when nobody else is on the cell', () => {
     const { advance, leave } = setup();
     advance([freshBomb(5)], [{ id: 'a', cell: 5, actionState: 5 }]);

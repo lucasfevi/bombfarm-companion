@@ -88,16 +88,19 @@ function chooseOwner(book: FingerprintBook, { bomb, onCell, present, withLiveBom
     return resolution.kind === 'unique' ? byFingerprint(resolution.heroId) : undecided('noOwnerAtBirth');
   }
 
-  const standing = onCell.filter((hero) => hero.actionState !== WALKING_ACTION_STATE);
-  const candidates = (standing.length === 0 ? onCell : standing).map((hero) => hero.id);
-  const [sole] = candidates;
-  if (candidates.length === 1 && sole !== undefined) return observed(sole);
+  const [sole] = onCell;
+  if (onCell.length === 1 && sole !== undefined) return observed(sole.id);
 
-  const sameFuse = narrowed(candidates, (id) => {
-    const fuse = book.fuseOf(id);
-    return fuse === undefined || Math.abs(fuse - bomb.fuseTotalSeconds) <= FUSE_TOLERANCE;
-  });
-  const idle = narrowed(sameFuse, (id) => !withLiveBomb.has(id));
+  const walking = new Set(onCell.filter((hero) => hero.actionState === WALKING_ACTION_STATE).map((hero) => hero.id));
+  const sameFuse = narrowed(
+    onCell.map((hero) => hero.id),
+    (id) => {
+      const fuse = book.fuseOf(id);
+      return fuse === undefined || Math.abs(fuse - bomb.fuseTotalSeconds) <= FUSE_TOLERANCE;
+    },
+  );
+  const standing = narrowed(sameFuse, (id) => !walking.has(id));
+  const idle = narrowed(standing, (id) => !withLiveBomb.has(id));
   const sameRadius = narrowed(idle, (id) => {
     const radius = book.radiusOf(id);
     return radius === undefined || radius === bomb.radius;
@@ -189,6 +192,7 @@ export function createBombLedger(book: FingerprintBook): BombLedger {
         let decision: OwnerDecision;
         if (fresh) {
           decision = chooseOwner(book, { bomb, onCell, present, withLiveBomb });
+          if (decision.owner !== null) withLiveBomb.add(decision.owner);
         } else {
           const resolution = book.resolve(bomb.fuseTotalSeconds, present);
           decision = resolution.kind === 'unique' ? byFingerprint(resolution.heroId) : undecided('noOwnerAtBirth');
