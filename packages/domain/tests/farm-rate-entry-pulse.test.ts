@@ -373,7 +373,7 @@ describe('a plan that ignores energy holds the pulse and the squad presence wher
     effective: basis.effective,
     effectiveDelta: basis.effectiveDelta,
     context: basis.context,
-    dmgMult: basis.dmgMult,
+    hitMult: basis.hitMult,
     adjustedLuckPct: basis.heroLuckPct,
     treeLuckFlatPct: 0,
     abilities: { passagem_bastao: 20 },
