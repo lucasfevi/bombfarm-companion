@@ -93,6 +93,7 @@ import { onlinePlayersHttpGet } from './online-players/online-players-transport.
 import { createPremiumWhenEnabled, type PremiumService } from './premium/index.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
+import { sandboxedWebPreferences } from './web-preferences.js';
 import {
   applyAlwaysOnTopMain as applyAlwaysOnTopMainSettings,
   applyAlwaysOnTopMini as applyAlwaysOnTopMiniSettings,
@@ -434,12 +435,7 @@ async function createMainWindow(): Promise<void> {
     // (`WindowControls`), which the OS overlay cannot be asked to do — Windows fixes those
     // buttons at 47px wide and only their height and colours are configurable.
     titleBarStyle: 'hidden',
-    webPreferences: {
-      preload: path.join(__dirname, '../preload/index.cjs'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
-    },
+    webPreferences: sandboxedWebPreferences(path.join(__dirname, '../preload/index.cjs')),
   });
 
   // `maximize()` shows a window that is not being displayed yet, so restoring a maximized layout
@@ -1251,6 +1247,10 @@ async function releaseLiveSource(): Promise<void> {
 }
 
 let liveSourceReleasedForQuit = false;
+
+// Sandboxes every renderer process whatever its window asks for, so a window added later cannot
+// opt out of it.
+app.enableSandbox();
 
 const env = resolveBootEnv();
 registerRendererSchemeAsPrivileged();
