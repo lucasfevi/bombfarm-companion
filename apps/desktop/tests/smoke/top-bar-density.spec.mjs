@@ -5,7 +5,7 @@
  * So the widths here are measured in a real window, the same way
  * `shell-measure-and-scrollbars.spec.mjs` measures the panels below it.
  */
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect, electron } from './smoke-test.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

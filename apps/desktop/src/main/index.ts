@@ -40,6 +40,7 @@ import { fuseSecondsForCdr } from './domain-edge.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
 import { applyExternalNavigationPolicy } from './external-navigation.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
+import { cspManifestForBoot } from './renderer-csp.js';
 import {
   registerRendererProtocol,
   registerRendererSchemeAsPrivileged,
@@ -1174,7 +1175,8 @@ async function bootstrap(): Promise<void> {
   });
 
   registerIpcHandlers();
-  registerRendererProtocol(path.join(__dirname, '../../renderer/out'));
+  const rendererRoot = path.join(__dirname, '../../renderer/out');
+  registerRendererProtocol(rendererRoot, cspManifestForBoot(env.isDev, rendererRoot));
   await createMainWindow();
   mainWindow?.setAlwaysOnTop(currentSettings.alwaysOnTopMain, 'normal');
   gameReader.start();

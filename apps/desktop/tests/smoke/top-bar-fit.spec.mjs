@@ -4,7 +4,7 @@
  * from: Portuguese (the binding language), with the Premium tab in the strip because that is the
  * widest bar the app ships, then the same bar with one more short tab standing in for the next.
  */
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect, electron } from './smoke-test.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
