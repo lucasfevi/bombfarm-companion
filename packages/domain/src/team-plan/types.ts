@@ -307,6 +307,9 @@ export type FrozenHeroFarmTerms = {
    * carries the one it will farm with for the whole run.
    */
   fixedLoadout?: Loadout;
+  /** The pulse share this carrier's Passagem de Bastão holds in every candidate, taken from the
+   *  gear it wears today. Present only when energy must not count against a hero. */
+  heldPulsePresence?: number;
 };
 
 /**
@@ -391,13 +394,15 @@ export type TeamPlanInput = {
    */
   pvpSquadSlots?: number | null;
   /**
-   * Score as if the field always had room, and keep every hero geared.
+   * Score as if energy never cost the squad anything, and keep every hero geared.
    *
-   * Omitted ⇒ `false`, the honest model. On a field that cannot seat the whole roster at once,
-   * a hero taking more field time crowds the others out, so gear that raises its uptime can lower
-   * the roster objective — and a plan reading that faithfully proposes stripping gear off a weak
-   * hero and leaving the slot empty. Set here, both objectives drop that term, so more gear can
-   * never score worse, and the plan fills every empty slot it has an item for.
+   * Omitted ⇒ `false`, the honest model. Energy lengthens a hero's stint, and a longer stint costs
+   * the squad twice: on a field that cannot seat the whole roster the hero crowds the others out,
+   * and a Passagem de Bastão carrier fires its pulse on fewer entries. A plan reading that
+   * faithfully proposes stripping gear off such a hero and leaving the slot empty. Set here, both
+   * objectives drop the crowding term, and the farm objective also holds each carrier's pulse
+   * share and the squad presence its bombing share is divided by at what today's gear gives, so
+   * more gear can never score worse and the plan fills every empty slot it has an item for.
    *
    * The answer is deliberately not the roster's true throughput: it is what the squad would earn
    * if the field never made heroes queue. That is the right question for a player who rotates

@@ -360,3 +360,34 @@ describe('oneShot reads the hit at the lowest level the field ever sits at', () 
     expect(row.oneShot).toBe(true);
   });
 });
+
+describe('a plan that ignores energy holds the pulse and the squad presence where they stand', () => {
+  const carrier = withAbilityLevels(heroes[0], { passagem_bastao: 20 });
+  const [basis] = computeHeroFarmBases({ heroes: [carrier], account });
+  const parts = {
+    heroId: basis.heroId,
+    heroName: basis.heroName,
+    level: basis.level,
+    pts: basis.pts,
+    effective: basis.effective,
+    effectiveDelta: basis.effectiveDelta,
+    context: basis.context,
+    dmgMult: basis.dmgMult,
+    adjustedLuckPct: basis.heroLuckPct,
+    treeLuckFlatPct: 0,
+    abilities: { passagem_bastao: 20 },
+  };
+  const moreEnergy = { ...basis.pts, energy: basis.pts.energy + 40 };
+
+  it('more energy shortens a carrier’s pulse share, which is what makes energy cost its squad', () => {
+    const before = heroFactsFromBasis(basis, basis.pts).passagemBastao!.presence;
+    const after = heroFactsFromBasis(basis, moreEnergy).passagemBastao!.presence;
+    expect(after).toBeLessThan(before);
+  });
+
+  it('a held pulse share is the one the facts carry, at any energy', () => {
+    const held = heroFarmBasisFromParts({ ...parts, heldPulsePresence: 0.3 });
+    expect(heroFactsFromBasis(held, held.pts).passagemBastao?.presence).toBe(0.3);
+    expect(heroFactsFromBasis(held, moreEnergy).passagemBastao?.presence).toBe(0.3);
+  });
+});

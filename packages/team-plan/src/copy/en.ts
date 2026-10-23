@@ -55,8 +55,8 @@ export const teamPlanPageEn = {
     'Stat points only. No gear moves and no forge work — the search never even prices them.',
   teamPlanAllowedChangesHintGear:
     'Gear only. No point resets, so no respec cost either.',
-  teamPlanIgnoreCrowdingLabel: 'Keep every hero geared',
-  teamPlanIgnoreCrowdingAria: 'Score as if the field always had room, and fill every empty slot',
+  teamPlanIgnoreCrowdingLabel: 'Ignore energy penalties',
+  teamPlanIgnoreCrowdingAria: 'Score as if energy never cost the squad anything, and fill every empty slot',
   teamPlanMapSizeLabel: 'Map size',
   teamPlanMapSizeClassic: 'Classic',
   teamPlanMapSizeCompact: 'Compact',
@@ -64,9 +64,9 @@ export const teamPlanPageEn = {
     "The map the plan is scored on, the Farm board's own. Compact is the game's redesigned look (F8): the same props closer together, so more fall under each blast, and heroes walk it more slowly, so crossing either map takes as long.",
   teamPlanMapSizeHintDetected: 'Read from the game while it is open. Pick the other map to override it.',
   teamPlanIgnoreCrowdingHintOff:
-    'The field seats a limited number of heroes, so a hero taking more field time crowds the others out. The plan prices that, which is why it can ask you to remove gear.',
+    'Energy can cost the squad: a hero who stays on the field longer crowds the others out, and a Baton Pass carrier fires its pulse less often. The plan prices that, which is why it can leave a hero ungeared or ask you to remove gear.',
   teamPlanIgnoreCrowdingHintOn:
-    'Scoring as if the field always had room. Gear can never make a hero score worse, and every empty slot gets filled if you own something that fits — but the totals now describe a field that never makes heroes queue, so they read higher than the roster really earns.',
+    'Energy never counts against a hero: crowding and Baton Pass timing are held where they stand today. Gear can never make a hero score worse, and every empty slot gets filled if you own something that fits — but the totals now describe a squad that energy never slows, so they read higher than the roster really earns.',
   teamPlanScopeSectionTitle: 'Hero scope',
   teamPlanScopeOptimize: 'Optimize',
   teamPlanScopeDonate: 'Donate',

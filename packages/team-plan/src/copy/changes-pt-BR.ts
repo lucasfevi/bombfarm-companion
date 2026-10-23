@@ -55,7 +55,7 @@ export const teamPlanChangesPtBR: TeamPlanChangesCopy = {
   teamPlanChangesControlForgeFloor: 'piso da forja',
   teamPlanChangesControlObjective: 'objetivo',
   teamPlanChangesControlAllowedChanges: 'o que mudar',
-  teamPlanChangesControlIgnoreFieldCrowding: 'manter todos equipados',
+  teamPlanChangesControlIgnoreFieldCrowding: 'ignorar penalidade de energia',
   teamPlanChangesControlAurasAtCap: 'auras no teto',
   teamPlanChangesControlTargetPhase: 'fase pontuada',
   teamPlanChangesControlPvpSquadSlots: 'vagas do esquadrão no duelo',

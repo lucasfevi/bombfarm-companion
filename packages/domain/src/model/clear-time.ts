@@ -294,12 +294,17 @@ function mixKillsPerHit(
  * `heroes` carry their presence (the House and field-queue models decide it; this function does
  * not), their cadence inputs and their hit at THIS phase. `props` is the spawn mix with each
  * type's HP at this phase, and `field` the grid they stand on.
+ *
+ * Each hero's share of the bombing is divided by the squad's total presence, so a hero who stays
+ * longer thins everyone else's. `heldSquadPresence` replaces that total with a fixed figure, which
+ * lets a hero's presence add its own bombs without taking any from the others.
  */
 export function simulateClear(
   classicHeroes: readonly ClearHero[],
   props: readonly ClearPropType[],
   propCount: number,
   field: BattleField = CLASSIC_FIELD,
+  heldSquadPresence?: number,
 ): ClearResult {
   const heroes = isClassic(field)
     ? classicHeroes
@@ -406,7 +411,7 @@ export function simulateClear(
     const propsKilled = propCount - n;
 
     const densityHop = freeHopCells(classicEquivalentStanding(n, field));
-    let activeShare = Math.min(1, (ACTIVE_PER_PROP * n + ACTIVE_EXTRA) / squad);
+    let activeShare = Math.min(1, (ACTIVE_PER_PROP * n + ACTIVE_EXTRA) / (heldSquadPresence ?? squad));
     const headRamp = propsKilled < HEAD_RAMP_PROPS ? Math.max(0, propsKilled) / HEAD_RAMP_PROPS : null;
     if (headRamp !== null) activeShare *= HEAD_RAMP_START + (1 - HEAD_RAMP_START) * headRamp;
     const densityHits = (HITS_PER_PLANT_CLUSTER * n) / cells;

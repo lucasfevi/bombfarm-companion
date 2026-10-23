@@ -215,6 +215,7 @@ function sanitizeRowOptions(options: BestFarmPhaseOptions | undefined): FarmRate
     boost: options?.boost,
     maxPhase: sanitizedMaxPhase,
     ignoreFieldCrowding: options?.ignoreFieldCrowding,
+    heldSquadPresence: options?.heldSquadPresence,
     field: options?.field,
   };
 }
