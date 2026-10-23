@@ -46,6 +46,19 @@ The website draws this window too, as an interactive section of the download pag
 (`apps/web/src/features/download/components/mini-live/`), so a change here has a third drawing to
 follow — see the rule above and [`apps/web/AGENTS.md`](../web/AGENTS.md).
 
+## RULE: every `bfc:invoke` is checked against its sender, and the compact window has an allowlist
+
+`src/main/ipc-sender-policy.ts` decides, before any handler runs, whether a call may proceed: the
+sender frame must be live, the top-level frame of its window, in a window the app owns, at the
+app's own origin (plus the dev renderer origin when unpackaged and in dev mode). The compact Live
+window is further held to `MINI_LIVE_INVOKE_CHANNELS`.
+
+**A new `invoke('…')` call in `renderer/app/mini-live/` or anything it imports needs its channel added
+to that set**, or the call is refused at runtime; `mini-live-channel-allowlist.test.ts` fails first and
+names the difference. It also fails if a channel is allowed that the window no longer calls, so the
+set stays exactly what the window needs. A new `ipcMain` listener of our own owes the same sender
+check — `ipcMain.handle`/`on` with an ignored event argument is the shape this rule exists to remove.
+
 ## Local checks
 
 ```bash

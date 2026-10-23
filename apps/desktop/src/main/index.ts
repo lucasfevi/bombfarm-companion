@@ -31,6 +31,13 @@ import { createPvpHistory, type PvpHistory } from './pvp/pvp-history.js';
 import { createPvpReader, type PvpReader } from './pvp/pvp-reader.js';
 import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
 import { createIpcDispatch, createIpcHandlers, defaultLiveView } from './ipc-handlers.js';
+import {
+  createIpcSenderPolicy,
+  decideIpcSender,
+  ipcSenderRejectionRecord,
+  readSenderFrame,
+  type SenderWindow,
+} from './ipc-sender-policy.js';
 import { createEventEmitter } from './event-emitter.js';
 import { createRedactingTokenReader } from './redacting-token-reader.js';
 import { LIVE_SOURCE_RELEASE_DEADLINE_MS, settleWithin, shutdownInOrder } from './shutdown.js';
@@ -388,7 +395,41 @@ function registerIpcHandlers(): void {
     }),
   );
 
-  ipcMain.handle('bfc:invoke', (_event, channel: string, ...args: unknown[]) => dispatch(channel, ...args));
+  const env = resolveAppEnv();
+  const senderPolicy = createIpcSenderPolicy({ isDev: env.isDev, devRendererUrl: RENDERER_DEV_URL });
+
+  ipcMain.handle('bfc:invoke', (event, channel: string, ...args: unknown[]) => {
+    const request = {
+      senderWindow: senderWindowOf(event.sender),
+      frame: readSenderFrame(event.senderFrame, mainFrameOf(event.sender)),
+      channel,
+    };
+    const verdict = decideIpcSender(request, senderPolicy);
+    if (!verdict.allowed) {
+      log.warn(ipcSenderRejectionRecord(request, verdict.reason));
+      throw new Error('IPC sender not permitted');
+    }
+    return dispatch(channel, ...args);
+  });
+}
+
+function senderWindowOf(sender: WebContents): SenderWindow | null {
+  if (mainWindow && !mainWindow.isDestroyed() && sender === mainWindow.webContents) {
+    return 'main';
+  }
+  const miniWindow = miniLiveController?.getWindow();
+  if (miniWindow && !miniWindow.isDestroyed() && sender.id === miniWindow.webContents.id) {
+    return 'mini-live';
+  }
+  return null;
+}
+
+function mainFrameOf(sender: WebContents): { processId: number; routingId: number } | null {
+  try {
+    return sender.mainFrame;
+  } catch {
+    return null;
+  }
 }
 
 async function createMainWindow(): Promise<void> {
