@@ -5,7 +5,7 @@ import type { AdvisorPipelineResult } from '@bombfarm/domain/advisor-pipeline';
 import type { HeroFarmOptimizeResult } from '@bombfarm/domain/farm-hero-optimize';
 import type { RankMode } from '@bombfarm/domain/model';
 import { SHEET_PANEL_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
-import { optimizeBuild, reoptBudget } from '@bombfarm/domain/points-reopt';
+import { optimizeBuildForPlayer, reoptBudget } from '@bombfarm/domain/points-reopt';
 import { pointsExceedLevel } from '@bombfarm/domain/point-inference';
 import {
   Button,
@@ -92,7 +92,7 @@ export function PointsTable({
       setPreview({ mode: 'farm', pts: farm.pts, result: farm });
       return;
     }
-    const result = optimizeBuild({
+    const result = optimizeBuildForPlayer({
       pts,
       effective: pipeline.effective,
       effectiveDelta: pipeline.A.effectiveDelta,
