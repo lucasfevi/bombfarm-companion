@@ -46,6 +46,15 @@ The website draws this window too, as an interactive section of the download pag
 (`apps/web/src/features/download/components/mini-live/`), so a change here has a third drawing to
 follow — see the rule above and [`apps/web/AGENTS.md`](../web/AGENTS.md).
 
+## RULE: the preload runs in the renderer sandbox
+
+Both windows are built from `sandboxedWebPreferences` (`src/main/web-preferences.ts`), and
+`app.enableSandbox()` covers any window added later. A sandboxed preload can `require` only
+`electron`, `events`, `timers` and `url`, so everything else it imports (`electron-log/renderer`
+included) is bundled into `dist/preload/index.cjs` by `scripts/electron-bundles.mjs`, and anything
+that needs Node, a file or a native module belongs in the main process behind IPC. Importing
+`node:fs` or similar into the preload fails `scripts/preload-bundle.test.mjs`, not the user's launch.
+
 ## RULE: every `bfc:invoke` is checked against its sender, and the compact window has an allowlist
 
 `src/main/ipc-sender-policy.ts` decides, before any handler runs, whether a call may proceed: the
