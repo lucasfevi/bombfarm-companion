@@ -1,5 +1,13 @@
 # @bombfarm/account
 
+## 0.3.22
+
+### Patch Changes
+
+- Updated dependencies [ddcd119]
+  - @bombfarm/domain@1.15.2
+  - @bombfarm/game-art@0.8.11
+
 ## 0.3.21
 
 ### Patch Changes
