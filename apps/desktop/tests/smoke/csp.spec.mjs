@@ -428,9 +428,9 @@ test.describe.serial('renderer Content-Security-Policy', () => {
       probe,
       [
         'let evalRan = false;',
-        "try { (0, eval)('evalRan = true'); } catch {}",
         `fetch('${FOREIGN}/worker-fetch').catch(() => {});`,
-        "setTimeout(() => self.postMessage({ evalRan }), 300);",
+        "setTimeout(() => (0, eval)('evalRan = true'), 50);",
+        'setTimeout(() => self.postMessage({ evalRan }), 400);',
       ].join('\n'),
     );
     try {
@@ -440,7 +440,6 @@ test.describe.serial('renderer Content-Security-Policy', () => {
           new Promise((resolve) => {
             const worker = new Worker('/__csp-worker-probe.js');
             worker.onmessage = (event) => resolve(event.data);
-            worker.onerror = () => resolve({ error: true });
           }),
       );
       expect(reply).toEqual({ evalRan: false });
@@ -450,11 +449,15 @@ test.describe.serial('renderer Content-Security-Policy', () => {
         .poll(
           () => {
             seen.push(...csp.takeViolations());
-            return [seen.some((entry) => entry.includes('worker-fetch')), seen.some((entry) => entry.includes('Refused to evaluate'))];
+            return [
+              seen.some((entry) => entry.includes('worker-fetch')),
+              seen.some((entry) => entry.includes('EvalError: Refused to evaluate a string as JavaScript')),
+            ];
           },
-          { timeout: 10_000, message: 'the guard saw the worker eval and the worker fetch' },
+          { timeout: 10_000, message: 'the guard saw the worker fetch and the worker eval' },
         )
         .toEqual([true, true]);
+      expect(seen.every((entry) => entry.startsWith('worker app://bundle/__csp-worker-probe.js'))).toBe(true);
     } finally {
       fs.rmSync(probe, { force: true });
     }

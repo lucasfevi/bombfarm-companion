@@ -31,46 +31,91 @@ export function failIfViolations(violations, headline) {
   }
 }
 
+function parseTargetMessage(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
 /**
- * Collects what every window and every worker of every app a spec launched reports. A window's
- * violation is both a `securitypolicyviolation` event and a console error; a worker has no page
- * to arm an event listener on, so its console error is the only signal it gives.
+ * A worker has no document to arm a `securitypolicyviolation` listener on, and Playwright's own
+ * worker console carries only `console.*` calls, not the browser's "Refused to…" log entries. So
+ * the worker targets are attached over CDP directly. A worker is held until its `Log` and
+ * `Runtime` domains are on, so a violation in its first lines is not lost; it is always resumed.
+ * A refused `eval` writes no log entry in a worker, only an exception, which is why uncaught
+ * exceptions are read too.
  */
+async function watchWorkerTargets(window, record) {
+  const session = await window.context().newCDPSession(window);
+  const urls = new Map();
+  const send = (sessionId, id, method) =>
+    session.send('Target.sendMessageToTarget', { sessionId, message: JSON.stringify({ id, method }) });
+
+  session.on('Target.attachedToTarget', ({ sessionId, targetInfo }) => {
+    urls.set(sessionId, targetInfo.url);
+    void (async () => {
+      try {
+        await send(sessionId, 1, 'Log.enable');
+        await send(sessionId, 2, 'Runtime.enable');
+      } catch {
+        // the target went away; there is nothing left to hold
+      } finally {
+        await send(sessionId, 3, 'Runtime.runIfWaitingForDebugger').catch(() => undefined);
+      }
+    })();
+  });
+
+  session.on('Target.receivedMessageFromTarget', ({ sessionId, message }) => {
+    const { method, params } = parseTargetMessage(message);
+    const text =
+      method === 'Log.entryAdded'
+        ? params.entry.text
+        : method === 'Runtime.exceptionThrown'
+          ? (params.exceptionDetails.exception?.description ?? params.exceptionDetails.text)
+          : '';
+    if (isViolation(text ?? '')) record(`worker ${urls.get(sessionId) ?? sessionId}`, text);
+  });
+
+  await session.send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: true, flatten: false });
+}
+
+/** Collects what every window and every worker of every app a spec launched reports. */
 export function createViolationLog() {
   const unreported = [];
 
-  const recorder = (describeSource) => (message) => {
-    const text = message.text();
-    if (isViolation(text)) unreported.push(`${describeSource()} :: ${text}`);
+  const record = (source, text) => {
+    unreported.push(`${source} :: ${text}`);
   };
 
-  function watchWorker(worker) {
-    worker.on('console', recorder(() => `worker ${worker.url()}`));
-  }
+  const recorder = (describeSource) => (message) => {
+    const text = message.text();
+    if (isViolation(text)) record(describeSource(), text);
+  };
 
   /**
    * The first window may have loaded before this runs: `consoleMessages()` recovers what it
    * already logged, and the evaluate arms the event listener on the document it already has. The
    * launch-time init script covers each document after that.
    */
-  function watchWindow(window) {
-    const record = recorder(() => window.url());
-    window.on('console', record);
-    window.on('worker', watchWorker);
-    window.workers().forEach(watchWorker);
+  async function watchWindow(window) {
+    const onConsole = recorder(() => window.url());
+    window.on('console', onConsole);
     void window.evaluate(REPORT_VIOLATIONS_FROM_PAGE).catch(() => undefined);
     void window
       .consoleMessages()
       .then((earlier) => {
-        earlier.forEach(record);
+        earlier.forEach(onConsole);
       })
       .catch(() => undefined);
+    await watchWorkerTargets(window, record).catch(() => undefined);
   }
 
   async function launchWatched(launchElectron, options) {
     const app = await launchElectron(options);
     await app.context().addInitScript(REPORT_VIOLATIONS_FROM_PAGE);
-    app.windows().forEach(watchWindow);
+    await Promise.all(app.windows().map(watchWindow));
     app.on('window', watchWindow);
     return app;
   }

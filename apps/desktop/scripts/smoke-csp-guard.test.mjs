@@ -51,20 +51,37 @@ function fakeConsoleMessage(text) {
   return { text: () => text };
 }
 
-function fakeWindow({ url = 'app://bundle/index.html', earlier = [], workers = [] } = {}) {
+function fakeCdpSession() {
+  const session = new EventEmitter();
+  session.sent = [];
+  session.send = (method, params) => {
+    session.sent.push({ method, params });
+    return Promise.resolve({});
+  };
+  session.sentToTargets = () =>
+    session.sent
+      .filter((call) => call.method === 'Target.sendMessageToTarget')
+      .map((call) => ({ sessionId: call.params.sessionId, method: JSON.parse(call.params.message).method }));
+  return session;
+}
+
+function fakeWindow({ url = 'app://bundle/index.html', earlier = [], session = fakeCdpSession() } = {}) {
   const window = new EventEmitter();
   window.url = () => url;
-  window.workers = () => workers;
   window.evaluate = () => Promise.resolve();
   window.consoleMessages = () => Promise.resolve(earlier);
+  window.context = () => ({ newCDPSession: () => Promise.resolve(session) });
   return window;
 }
 
-function fakeWorker(url = 'app://bundle/worker.js') {
-  const worker = new EventEmitter();
-  worker.url = () => url;
-  return worker;
-}
+const settle = () => new Promise((resolve) => setImmediate(resolve));
+
+const fromTarget = (sessionId, payload) => ({ sessionId, message: JSON.stringify(payload) });
+const logEntry = (text) => ({ method: 'Log.entryAdded', params: { entry: { source: 'security', level: 'error', text } } });
+const exception = (description) => ({
+  method: 'Runtime.exceptionThrown',
+  params: { exceptionDetails: { text: 'Uncaught', exception: { description } } },
+});
 
 describe('failIfViolations', () => {
   it('passes an empty list and fails a list with anything in it, naming each entry', () => {
@@ -140,20 +157,66 @@ describe('the violation log', () => {
     expect(log.take()).toHaveLength(1);
   });
 
-  it('keeps the console errors of a worker that starts later, and of one already running', () => {
-    const log = createViolationLog();
-    const running = fakeWorker('app://bundle/running.js');
-    const window = fakeWindow({ workers: [running] });
-    log.watchWindow(window);
-    const later = fakeWorker('app://bundle/later.js');
-    window.emit('worker', later);
-    running.emit('console', fakeConsoleMessage(CSP_CONSOLE_ERROR));
-    later.emit('console', fakeConsoleMessage(CSP_CONSOLE_ERROR));
-    later.emit('console', fakeConsoleMessage('worker says hello'));
-    expect(log.take()).toEqual([
-      `worker app://bundle/running.js :: ${CSP_CONSOLE_ERROR}`,
-      `worker app://bundle/later.js :: ${CSP_CONSOLE_ERROR}`,
-    ]);
+  describe('workers, watched over CDP because Playwright\'s worker console carries only console calls', () => {
+    const attach = (session, sessionId, url) =>
+      session.emit('Target.attachedToTarget', { sessionId, targetInfo: { type: 'worker', url } });
+
+    async function watched() {
+      const session = fakeCdpSession();
+      const log = createViolationLog();
+      await log.watchWindow(fakeWindow({ session }));
+      return { log, session };
+    }
+
+    it('asks to be told about every child target, and to hold each one until it is ready', async () => {
+      const { session } = await watched();
+      expect(session.sent).toContainEqual({
+        method: 'Target.setAutoAttach',
+        params: { autoAttach: true, waitForDebuggerOnStart: true, flatten: false },
+      });
+    });
+
+    it('turns on Log and Runtime for a worker and then always lets it run', async () => {
+      const { session } = await watched();
+      attach(session, 'w1', 'app://bundle/worker.js');
+      await settle();
+      expect(session.sentToTargets()).toEqual([
+        { sessionId: 'w1', method: 'Log.enable' },
+        { sessionId: 'w1', method: 'Runtime.enable' },
+        { sessionId: 'w1', method: 'Runtime.runIfWaitingForDebugger' },
+      ]);
+    });
+
+    it('still lets the worker run when enabling its domains fails', async () => {
+      const { session } = await watched();
+      const send = session.send;
+      session.send = (method, params) =>
+        method === 'Target.sendMessageToTarget' && JSON.parse(params.message).method === 'Log.enable'
+          ? Promise.reject(new Error('target gone'))
+          : send(method, params);
+      attach(session, 'w1', 'app://bundle/worker.js');
+      await settle();
+      expect(session.sentToTargets().map((call) => call.method)).toContain('Runtime.runIfWaitingForDebugger');
+    });
+
+    it('keeps a worker\'s refused load and its uncaught refused eval, named by the worker\'s url', async () => {
+      const { log, session } = await watched();
+      attach(session, 'w1', 'app://bundle/worker.js');
+      const refusedFetch = "Refused to connect to 'https://x.invalid/' because it violates the following Content Security Policy directive";
+      const refusedEval = "EvalError: Refused to evaluate a string as JavaScript because 'unsafe-eval' is not an allowed source of script in the following Content Security Policy directive";
+      session.emit('Target.receivedMessageFromTarget', fromTarget('w1', logEntry(refusedFetch)));
+      session.emit('Target.receivedMessageFromTarget', fromTarget('w1', exception(refusedEval)));
+      expect(log.take()).toEqual([`worker app://bundle/worker.js :: ${refusedFetch}`, `worker app://bundle/worker.js :: ${refusedEval}`]);
+    });
+
+    it('ignores a worker\'s ordinary log entries, exceptions and malformed messages', async () => {
+      const { log, session } = await watched();
+      attach(session, 'w1', 'app://bundle/worker.js');
+      session.emit('Target.receivedMessageFromTarget', fromTarget('w1', logEntry('a deprecation notice')));
+      session.emit('Target.receivedMessageFromTarget', fromTarget('w1', exception('TypeError: x is not a function')));
+      session.emit('Target.receivedMessageFromTarget', { sessionId: 'w1', message: '{not json' });
+      expect(log.take()).toEqual([]);
+    });
   });
 
   it('watches the windows an app already has and the ones it opens afterwards, and arms the init script', async () => {
