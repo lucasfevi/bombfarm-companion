@@ -46,6 +46,22 @@ The website draws this window too, as an interactive section of the download pag
 (`apps/web/src/features/download/components/mini-live/`), so a change here has a third drawing to
 follow — see the rule above and [`apps/web/AGENTS.md`](../web/AGENTS.md).
 
+## RULE: the packaged binary is fused; nothing may need it unfused
+
+`ELECTRON_FUSES` in `scripts/builder-config.mjs` is flipped into every packaged flavor, and the
+packaging gate reads the fuse wire and the embedded asar digest back out of the produced `.exe` —
+a flip electron-builder skipped fails `pnpm package:*`. Consequences for tooling:
+
+- **Playwright's `_electron.launch` cannot drive a packaged build.** It passes `--inspect` and
+  `--remote-debugging-port`, which the fuses ignore. The smoke suite launches the unpackaged
+  `node_modules/electron/dist/electron.exe` with the project directory, which carries no fuses.
+- **Nothing may spawn the app with `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS` or `--inspect`.** The
+  app has no `fork()`; background work that needs its own process belongs in a `utilityProcess`.
+- **Nothing may load `file://` pages** or put code outside `app.asar` / `app.asar.unpacked` (the
+  unpacked tree is not covered by the integrity digest, so it holds only what must be a real file).
+- Adding a fuse to the config means deciding it for every flavor; the config test fails until the
+  new fuse has a stated value.
+
 ## Local checks
 
 ```bash

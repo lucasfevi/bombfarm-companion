@@ -3,7 +3,10 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import minimatch from 'minimatch';
-import { listPackage } from '@electron/asar';
+import { createHash } from 'node:crypto';
+import { getRawHeader, listPackage } from '@electron/asar';
+import { FuseV1Options, getCurrentFuseWire } from '@electron/fuses';
+import { NtExecutable, NtExecutableResource } from 'resedit';
 import { resolveBuildFlavor } from '@bombfarm/contracts';
 import { createBuilderConfig } from './builder-config.mjs';
 
@@ -259,6 +262,103 @@ export function assertNoNativeBinariesInAsar(entries) {
   }
 }
 
+const FUSE_DISABLED = 0x30;
+const FUSE_ENABLED = 0x31;
+
+/** @returns {string} the one application executable at the top of `win-unpacked` */
+export function findPackagedExecutable(unpackedDir) {
+  const executables = readdirSync(unpackedDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.exe'))
+    .map((entry) => entry.name);
+  if (executables.length !== 1) {
+    throw new PackagingGateError(
+      `Packaging gate: expected exactly one .exe at the top of "${unpackedDir}" to read the Electron fuses from, found ${executables.length}${executables.length === 0 ? '' : `: ${executables.join(', ')}`}.`,
+    );
+  }
+  return path.join(unpackedDir, executables[0]);
+}
+
+/**
+ * electron-builder flips fuses only when asked and reports nothing when a flip is skipped, so the
+ * binary itself is the evidence: every fuse in the wire must read back as the state the config
+ * asked for, and a wire holding a fuse the config never mentions is a failure too — a newer
+ * Electron adding one must be decided, not inherited.
+ */
+export async function assertElectronFuses(config, executablePath) {
+  const expected = config.electronFuses;
+  if (!expected) {
+    throw new PackagingGateError('Packaging gate: the builder config declares no electronFuses.');
+  }
+
+  let wire;
+  try {
+    wire = await getCurrentFuseWire(executablePath);
+  } catch (error) {
+    throw new PackagingGateError(
+      `Packaging gate: could not read the Electron fuse wire from "${executablePath}": ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+
+  const problems = [];
+  const keysInWire = new Set();
+  const wireLength = Object.keys(wire).filter((index) => /^\d+$/.test(index)).length;
+  for (let index = 0; index < wireLength; index += 1) {
+    const name = FuseV1Options[index] ?? `fuse #${index}`;
+    const key = name.charAt(0).toLowerCase() + name.slice(1);
+    keysInWire.add(key);
+    const want = expected[key];
+    if (typeof want !== 'boolean') {
+      problems.push(`${name}: present in the binary but not configured`);
+    } else if (wire[index] !== (want ? FUSE_ENABLED : FUSE_DISABLED)) {
+      problems.push(`${name}: expected ${want ? 'enabled' : 'disabled'}, binary reads 0x${wire[index].toString(16)}`);
+    }
+  }
+  for (const key of Object.keys(expected)) {
+    if (!keysInWire.has(key)) problems.push(`${key}: configured but absent from the binary's fuse wire`);
+  }
+
+  if (problems.length > 0) {
+    throw new PackagingGateError(
+      `Packaging gate: Electron fuses in "${executablePath}" do not match the builder config:\n${problems
+        .map((problem) => `  - ${problem}`)
+        .join('\n')}`,
+    );
+  }
+}
+
+/**
+ * With the integrity fuse on, Electron refuses to start when the executable carries no digest of
+ * `app.asar` or one that no longer matches the archive — a failure no test run on the unpackaged
+ * binary can show. Compares the digest embedded in the executable with the one computed from the
+ * archive beside it.
+ */
+export async function assertAsarIntegrityMatches(executablePath, asarPath) {
+  let embedded;
+  try {
+    const resources = NtExecutableResource.from(NtExecutable.from(readFileSync(executablePath)));
+    const entry = resources.entries.find((candidate) => candidate.type === 'INTEGRITY' && candidate.id === 'ELECTRONASAR');
+    embedded = entry === undefined ? undefined : JSON.parse(Buffer.from(entry.bin).toString('utf8'));
+  } catch (error) {
+    throw new PackagingGateError(
+      `Packaging gate: could not read the asar integrity resource from "${executablePath}": ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  if (!Array.isArray(embedded) || embedded.length === 0) {
+    throw new PackagingGateError(
+      `Packaging gate: "${executablePath}" embeds no asar integrity digest, so the integrity fuse would stop it starting.`,
+    );
+  }
+
+  const { headerString } = getRawHeader(asarPath);
+  const actual = createHash('sha256').update(headerString).digest('hex');
+  const archiveEntry = embedded.find((item) => path.win32.normalize(item.file) === path.win32.join('resources', 'app.asar'));
+  if (archiveEntry === undefined || String(archiveEntry.alg).toLowerCase() !== 'sha256' || archiveEntry.value !== actual) {
+    throw new PackagingGateError(
+      `Packaging gate: the asar integrity digest embedded in "${executablePath}" does not match "${asarPath}" (embedded ${JSON.stringify(archiveEntry ?? null)}, archive sha256 ${actual}).`,
+    );
+  }
+}
+
 /**
  * Runs every assertion against a real `win-unpacked` output and throws one aggregated
  * `PackagingGateError` naming every failing check, rather than stopping at the first one.
@@ -269,7 +369,7 @@ export function assertNoNativeBinariesInAsar(entries) {
  *   describes it; a fabricated tree checked against the real config fails on whatever real
  *   `asarUnpack` patterns it was never built to satisfy.
  */
-export function runPackagingGateChecks(
+export async function runPackagingGateChecks(
   flavor,
   { desktopRootDir = desktopRoot, config = createBuilderConfig(flavor) } = {},
 ) {
@@ -282,9 +382,9 @@ export function runPackagingGateChecks(
   }
 
   const failures = [];
-  const record = (fn) => {
+  const record = async (fn) => {
     try {
-      fn();
+      await fn();
     } catch (error) {
       if (error instanceof PackagingGateError) {
         failures.push(error.message);
@@ -295,19 +395,30 @@ export function runPackagingGateChecks(
   };
 
   let asarPath;
-  record(() => {
+  await record(() => {
     asarPath = assertAsarExists(unpackedDir);
   });
-  record(() => assertAsarUnpackPatternsMatch(config, unpackedDir));
-  record(() => assertNativeBinariesUnpacked(path.join(desktopRootDir, 'package.json'), unpackedDir));
+  await record(() => assertAsarUnpackPatternsMatch(config, unpackedDir));
+  await record(() => assertNativeBinariesUnpacked(path.join(desktopRootDir, 'package.json'), unpackedDir));
   if (asarPath) {
     let entries;
-    record(() => {
+    await record(() => {
       entries = listAsarEntries(asarPath);
     });
     if (entries) {
-      record(() => assertRendererEntryPresent(entries));
-      record(() => assertNoNativeBinariesInAsar(entries));
+      await record(() => assertRendererEntryPresent(entries));
+      await record(() => assertNoNativeBinariesInAsar(entries));
+    }
+  }
+
+  let executablePath;
+  await record(() => {
+    executablePath = findPackagedExecutable(unpackedDir);
+  });
+  if (executablePath) {
+    await record(() => assertElectronFuses(config, executablePath));
+    if (asarPath && config.electronFuses?.enableEmbeddedAsarIntegrityValidation) {
+      await record(() => assertAsarIntegrityMatches(executablePath, asarPath));
     }
   }
 
@@ -323,7 +434,7 @@ const isMainModule = import.meta.url === pathToFileURL(process.argv[1] ?? '').hr
 if (isMainModule) {
   const flavor = resolveBuildFlavor(process.env.BFC_FLAVOR);
   try {
-    runPackagingGateChecks(flavor);
+    await runPackagingGateChecks(flavor);
     console.log(`Packaging gate passed for flavor "${flavor}".`);
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

@@ -76,7 +76,7 @@ await run('pnpm', [
 const { runPackagingGateChecks, PackagingGateError } = await import('./package-gate.mjs');
 
 try {
-  runPackagingGateChecks(flavor);
+  await runPackagingGateChecks(flavor);
 } catch (error) {
   if (error instanceof PackagingGateError) {
     console.error(error.message);
