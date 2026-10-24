@@ -46,6 +46,20 @@ The website draws this window too, as an interactive section of the download pag
 (`apps/web/src/features/download/components/mini-live/`), so a change here has a third drawing to
 follow — see the rule above and [`apps/web/AGENTS.md`](../web/AGENTS.md).
 
+## RULE: the renderer runs under a strict Content-Security-Policy built from the export
+
+Every response from the `app://` handler carries a policy with no `'unsafe-inline'` and no
+`'unsafe-eval'`; inline scripts, `<style>` elements and `style` attributes are allowed by SHA-256,
+from a manifest `pnpm build:renderer` writes beside the pages. Inline event handlers, `javascript:`
+URLs and anything the scanner does not model fail the build. **A new renderer dependency that
+injects a `<style>`, evals, opens a worker from a `blob:`, or reaches a new origin will be refused
+at runtime** — and every smoke spec fails on a violation, so you will see it. Route network
+access through the main process instead of widening the policy. `pnpm dev` is not covered.
+See [`docs/renderer-csp.md`](../../docs/renderer-csp.md).
+
+New smoke specs import `test`, `expect` and `electron` from `tests/smoke/smoke-test.mjs`, never
+from `@playwright/test`; a guard fails otherwise.
+
 ## RULE: the preload runs in the renderer sandbox
 
 Both windows are built from `sandboxedWebPreferences` (`src/main/web-preferences.ts`), and

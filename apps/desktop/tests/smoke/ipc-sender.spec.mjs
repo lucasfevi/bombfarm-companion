@@ -1,4 +1,4 @@
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect, electron } from './smoke-test.mjs';
 import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
@@ -171,7 +171,7 @@ test.describe('IPC sender validation smoke', () => {
     expect(statuses).toEqual({ bundle: 200, otherHost: 404, lookAlike: 404 });
   });
 
-  test('a child frame has no bridge of its own, and a cross-origin one cannot reach the top frame', async () => {
+  test('a child frame has no bridge of its own, and a foreign one is refused by the CSP before it could reach the top frame', async ({ csp }) => {
     const sameOrigin = await page.evaluate(async () => {
       const frame = document.createElement('iframe');
       frame.srcdoc = '<p>child</p>';
@@ -183,25 +183,31 @@ test.describe('IPC sender validation smoke', () => {
     });
     expect(sameOrigin.ownBridge).toBe('undefined');
 
+    // The window's CSP (`frame-src 'none'`) now stops a foreign child frame before the question of
+    // what it could reach arises, so the layer under test here is the policy, not the sender check.
     await page.evaluate(async () => {
       const frame = document.createElement('iframe');
       frame.id = 'foreign-frame';
       frame.src = 'data:text/html,<p>foreign</p>';
       document.body.append(frame);
-      await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+      await new Promise((resolve) => {
+        frame.addEventListener('load', resolve, { once: true });
+        setTimeout(resolve, 3_000);
+      });
     });
-    const foreign = page.frames().find((frame) => frame.url().startsWith('data:'));
-    expect(foreign, 'the foreign child frame attached').toBeDefined();
-    const reach = await foreign.evaluate(() => {
-      const outcome = { ownBridge: typeof window.bfc };
-      try {
-        outcome.topBridge = typeof window.top.bfc;
-      } catch (error) {
-        outcome.topBridge = error.name;
-      }
-      return outcome;
-    });
-    expect(reach).toEqual({ ownBridge: 'undefined', topBridge: 'SecurityError' });
+
+    const claimed = [];
+    await expect
+      .poll(
+        () => {
+          claimed.push(...csp.takeViolations());
+          return claimed.some((entry) => entry.includes("frame-src 'none'"));
+        },
+        { timeout: 10_000, message: 'the CSP refused the foreign frame' },
+      )
+      .toBe(true);
+    expect(claimed.every((entry) => /frame-src|text\/html,<p>foreign/.test(entry)), claimed.join('\n')).toBe(true);
+    expect(page.frames().some((frame) => frame.url().startsWith('data:')), 'no foreign frame attached').toBe(false);
     await page.evaluate(() => document.getElementById('foreign-frame')?.remove());
   });
 

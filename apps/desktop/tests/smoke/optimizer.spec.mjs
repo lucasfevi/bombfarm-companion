@@ -9,7 +9,7 @@
  * carries none — the twelve web e2e specs select by role, heading text and `aria-label`, and so
  * does this file.
  */
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect, electron } from './smoke-test.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

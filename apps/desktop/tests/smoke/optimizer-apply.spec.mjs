@@ -11,7 +11,7 @@
  * which answers `offline`, and the row settles on Stopped with Run again — the confirms and the
  * modal are reachable by ANY smoke only because `apply:inject` arms a scripted answer first.
  */
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect, electron } from './smoke-test.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

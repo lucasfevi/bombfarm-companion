@@ -1,13 +1,16 @@
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { protocol } from 'electron';
+import { documentPolicy, SUBRESOURCE_POLICY, type CspManifest } from './renderer-csp.js';
 
 export const RENDERER_SCHEME = 'app';
 export const RENDERER_HOST = 'bundle';
 export const RENDERER_ENTRY_URL = `${RENDERER_SCHEME}://${RENDERER_HOST}/index.html`;
 
+const HTML_MIME_TYPE = 'text/html';
+
 const MIME_TYPES: Record<string, string> = {
-  '.html': 'text/html',
+  '.html': HTML_MIME_TYPE,
   '.js': 'text/javascript',
   '.css': 'text/css',
   '.woff2': 'font/woff2',
@@ -104,18 +107,46 @@ export function registerRendererSchemeAsPrivileged(): void {
   ]);
 }
 
-export function registerRendererProtocol(root: string): void {
-  protocol.handle(RENDERER_SCHEME, async (request) => {
-    const resolved = resolveRendererFile(request.url, root);
-    if (!resolved) {
-      return new Response(null, { status: 404 });
-    }
+function policyFor(resolved: ResolvedRendererFile, root: string, manifest: CspManifest): string {
+  if (resolved.mimeType !== HTML_MIME_TYPE) {
+    return SUBRESOURCE_POLICY;
+  }
+  const pagePath = path.relative(root, resolved.path).split(path.sep).join('/');
+  return documentPolicy(manifest.pages.get(pagePath));
+}
 
-    try {
-      const data = await readFile(resolved.path);
-      return new Response(data, { headers: { 'content-type': resolved.mimeType } });
-    } catch {
-      return new Response(null, { status: 404 });
-    }
+function notFound(): Response {
+  return new Response(null, {
+    status: 404,
+    headers: { 'content-security-policy': SUBRESOURCE_POLICY, 'x-content-type-options': 'nosniff' },
   });
+}
+
+export async function serveRendererRequest(
+  requestUrl: string,
+  root: string,
+  manifest: CspManifest,
+  read: (filePath: string) => Promise<Uint8Array> = readFile,
+): Promise<Response> {
+  const resolved = resolveRendererFile(requestUrl, root);
+  if (!resolved) {
+    return notFound();
+  }
+
+  try {
+    const data = await read(resolved.path);
+    return new Response(data, {
+      headers: {
+        'content-type': resolved.mimeType,
+        'content-security-policy': policyFor(resolved, root, manifest),
+        'x-content-type-options': 'nosniff',
+      },
+    });
+  } catch {
+    return notFound();
+  }
+}
+
+export function registerRendererProtocol(root: string, manifest: CspManifest): void {
+  protocol.handle(RENDERER_SCHEME, (request) => serveRendererRequest(request.url, root, manifest));
 }

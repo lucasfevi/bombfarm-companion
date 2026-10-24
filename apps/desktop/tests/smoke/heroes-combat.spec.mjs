@@ -6,7 +6,7 @@
  * The panel is `@bombfarm/hero`'s and carries its own test ids; the roster rail's row ids are the
  * only desktop-owned selectors here.
  */
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect, electron } from './smoke-test.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

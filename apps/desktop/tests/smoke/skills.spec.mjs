@@ -5,7 +5,7 @@
  * `renderer/lib/skills` prove each piece; only a launched window proves they were wired to each
  * other, and that the Progression tab reaches its screen at all.
  */
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect, electron } from './smoke-test.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

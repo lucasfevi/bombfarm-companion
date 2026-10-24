@@ -5,7 +5,7 @@
  * tab; only a launched window proves a press reaches the screen, the "current" marks follow it,
  * and the gear is still on the bar when the actions have folded behind the overflow button.
  */
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect, electron } from './smoke-test.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

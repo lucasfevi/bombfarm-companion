@@ -6,7 +6,7 @@
  * fit a row is not a property this can assert. The board is `@bombfarm/hero`'s and carries its own
  * test ids.
  */
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect, electron } from './smoke-test.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
