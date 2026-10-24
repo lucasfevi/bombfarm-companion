@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import {
   findForbiddenDebugSwitch,
@@ -107,10 +108,33 @@ describe('the main entry', () => {
   const source = readFileSync(path.join(__dirname, '..', 'index.ts'), 'utf8');
 
   const CALL = 'refuseDebugSwitchesOfPackagedApp(app, process);';
+  const tree = ts.createSourceFile('index.ts', source, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TS);
+  const lastImportIndex = tree.statements.map((statement) => ts.isImportDeclaration(statement)).lastIndexOf(true);
 
-  it('calls the guard with the real app and process, once, as a top-level statement', () => {
+  it('calls the guard with the real app and process, once', () => {
     expect(source.split(CALL)).toHaveLength(2);
-    expect(source).toMatch(new RegExp(`^${CALL.replace(/[()]/g, '\\$&')}$`, 'm'));
+  });
+
+  function statementAt(index: number): ts.Statement {
+    const statement = tree.statements[index];
+    if (statement === undefined) throw new Error(`no top-level statement at ${String(index)}`);
+    return statement;
+  }
+
+  it('makes the call the first statement after the last import, bare and at the top level', () => {
+    const statement = statementAt(lastImportIndex + 1);
+    expect(ts.isExpressionStatement(statement)).toBe(true);
+    const expression = (statement as ts.ExpressionStatement).expression;
+    expect(expression.getText(tree)).toBe('refuseDebugSwitchesOfPackagedApp(app, process)');
+    expect(ts.isCallExpression(expression)).toBe(true);
+  });
+
+  it('puts nothing but whitespace and comments between the last import and the call', () => {
+    const lastImport = statementAt(lastImportIndex);
+    const call = statementAt(lastImportIndex + 1);
+    const between = source.slice(lastImport.getEnd(), call.getStart(tree));
+    const withoutComments = between.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+    expect(withoutComments.trim()).toBe('');
   });
 
   it('calls it synchronously, ahead of every await, whenReady, scheme registration, identity and environment work', () => {
