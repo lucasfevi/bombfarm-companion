@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { parseCspManifest } from './renderer-csp.js';
 import {
+  isRendererUrl,
   mimeTypeFor,
   registerRendererProtocol,
   registerRendererSchemeAsPrivileged,
@@ -120,6 +121,21 @@ describe('serveRendererRequest', () => {
     expect(response.headers.get('x-content-type-options')).toBe('nosniff');
   });
 
+  it.each([
+    'app://bundle.evil/index.html',
+    'app://evilbundle/index.html',
+    'app://bundle:8080/index.html',
+    'app://user@bundle/index.html',
+    'app://BUNDLE.evil/mini-live/',
+  ])('serves a 404 with the locked-down policy and nosniff, never a page, for the look-alike %s', async (url) => {
+    const read = vi.fn(readStub);
+    const response = await serveRendererRequest(url, ROOT, MANIFEST, read);
+    expect(response.status).toBe(404);
+    expect(response.headers.get('content-security-policy')).toBe(LOCKED_DOWN);
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(read).not.toHaveBeenCalled();
+  });
+
   it('serves a 404 with the locked-down policy and nosniff when the file cannot be read', async () => {
     const response = await serveRendererRequest('app://bundle/nope', ROOT, MANIFEST, () =>
       Promise.reject(new Error('ENOENT')),
@@ -165,6 +181,40 @@ describe('resolveRendererFile', () => {
   it('strips query and hash before resolving', () => {
     const resolved = resolveRendererFile('app://bundle/app.js?v=2#chunk', ROOT);
     expect(resolved?.path).toBe(path.join(ROOT, 'app.js'));
+  });
+});
+
+describe('resolveRendererFile — only the bundle host is served', () => {
+  it.each([
+    'app://other-host/index.html',
+    'app://bundle.evil/index.html',
+    'app://evilbundle/index.html',
+    'app://bundle@evil/index.html',
+    'app://bundle:secret@evil/index.html',
+    'app://bundle:80/index.html',
+    'app://BUNDLE.evil/index.html',
+    'app:///index.html',
+    'https://bundle/index.html',
+    'file:///C:/app/index.html',
+    '/index.html',
+    '',
+  ])('refuses %s', (url) => {
+    expect(resolveRendererFile(url, ROOT)).toBeNull();
+  });
+});
+
+describe('isRendererUrl', () => {
+  it('is true for the bundle host on any path, query or fragment', () => {
+    expect(isRendererUrl('app://bundle')).toBe(true);
+    expect(isRendererUrl('app://bundle/mini-live/index.html?x=1#y')).toBe(true);
+  });
+
+  it('is false for a look-alike host, a credential, a port or another scheme', () => {
+    expect(isRendererUrl('app://bundle.evil/')).toBe(false);
+    expect(isRendererUrl('app://user@bundle/')).toBe(false);
+    expect(isRendererUrl('app://bundle:8080/')).toBe(false);
+    expect(isRendererUrl('http://bundle/')).toBe(false);
+    expect(isRendererUrl('not a url')).toBe(false);
   });
 });
 

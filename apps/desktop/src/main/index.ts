@@ -31,6 +31,7 @@ import { createPvpHistory, type PvpHistory } from './pvp/pvp-history.js';
 import { createPvpReader, type PvpReader } from './pvp/pvp-reader.js';
 import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
 import { createIpcDispatch, createIpcHandlers, defaultLiveView } from './ipc-handlers.js';
+import { createBridgeInvokeHandler, createSenderWindowResolver } from './ipc-bridge-handler.js';
 import { createEventEmitter } from './event-emitter.js';
 import { createRedactingTokenReader } from './redacting-token-reader.js';
 import { LIVE_SOURCE_RELEASE_DEADLINE_MS, settleWithin, shutdownInOrder } from './shutdown.js';
@@ -94,6 +95,7 @@ import { onlinePlayersHttpGet } from './online-players/online-players-transport.
 import { createPremiumWhenEnabled, type PremiumService } from './premium/index.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
+import { sandboxedWebPreferences } from './web-preferences.js';
 import {
   applyAlwaysOnTopMain as applyAlwaysOnTopMainSettings,
   applyAlwaysOnTopMini as applyAlwaysOnTopMiniSettings,
@@ -389,7 +391,28 @@ function registerIpcHandlers(): void {
     }),
   );
 
-  ipcMain.handle('bfc:invoke', (_event, channel: string, ...args: unknown[]) => dispatch(channel, ...args));
+  ipcMain.handle(
+    'bfc:invoke',
+    createBridgeInvokeHandler({
+      env: resolveAppEnv(),
+      devRendererUrl: RENDERER_DEV_URL,
+      senderWindowOf: createSenderWindowResolver({
+        main: liveMainContents,
+        mini: liveMiniContents,
+      }),
+      dispatch,
+      log,
+    }),
+  );
+}
+
+function liveMainContents(): { readonly id: number } | null {
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null;
+}
+
+function liveMiniContents(): { readonly id: number } | null {
+  const miniWindow = miniLiveController?.getWindow();
+  return miniWindow && !miniWindow.isDestroyed() ? miniWindow.webContents : null;
 }
 
 async function createMainWindow(): Promise<void> {
@@ -435,12 +458,7 @@ async function createMainWindow(): Promise<void> {
     // (`WindowControls`), which the OS overlay cannot be asked to do — Windows fixes those
     // buttons at 47px wide and only their height and colours are configurable.
     titleBarStyle: 'hidden',
-    webPreferences: {
-      preload: path.join(__dirname, '../preload/index.cjs'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
-    },
+    webPreferences: sandboxedWebPreferences(path.join(__dirname, '../preload/index.cjs')),
   });
 
   // `maximize()` shows a window that is not being displayed yet, so restoring a maximized layout
@@ -1253,6 +1271,10 @@ async function releaseLiveSource(): Promise<void> {
 }
 
 let liveSourceReleasedForQuit = false;
+
+// Sandboxes every renderer process whatever its window asks for, so a window added later cannot
+// opt out of it.
+app.enableSandbox();
 
 const env = resolveBootEnv();
 registerRendererSchemeAsPrivileged();
