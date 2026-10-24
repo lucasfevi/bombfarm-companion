@@ -1,4 +1,4 @@
-import { relative, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { guardScanner } from './guard-scan';
 
@@ -38,7 +38,7 @@ function weakeningsIn(source: string): string[] {
 
 function webPreferencesNotFromSandboxedBuilder(source: string): number {
   const code = stripComments(source);
-  const all = [...code.matchAll(/\bwebPreferences\s*:/g)].length;
+  const all = [...code.matchAll(/\bwebPreferences\b/g)].length;
   const sanctioned = [...code.matchAll(/\bwebPreferences\s*:\s*sandboxedWebPreferences\(/g)].length;
   return all - sanctioned;
 }
@@ -46,6 +46,59 @@ function webPreferencesNotFromSandboxedBuilder(source: string): number {
 function otherHostsIn(source: string): string[] {
   const code = stripComments(source);
   return OTHER_WEB_CONTENTS_HOSTS.filter(([, pattern]) => pattern.test(code)).map(([name]) => name);
+}
+
+const WINDOW_CLASSES = ['BrowserWindow', 'BaseWindow', 'WebContentsView'];
+
+function withoutStrings(code: string): string {
+  return code.replace(/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g, '""');
+}
+
+function windowImportsFromElectron(source: string): string[] {
+  const code = stripComments(source);
+  const found: string[] = [];
+
+  for (const match of code.matchAll(/\b(?:import|export)\s+(type\s+)?([^;]*?)\s*from\s*['"]electron['"]/g)) {
+    if (match[1]) continue;
+    const clause = (match[2] ?? '').trim();
+    const named = /\{([^}]*)\}/.exec(clause);
+    if (!named || clause.replace(/\{[^}]*\}/, '').replace(/[,\s]/g, '') !== '') {
+      found.push('whole electron module');
+    }
+    for (const specifier of (named?.[1] ?? '').split(',')) {
+      const trimmed = specifier.trim();
+      if (trimmed === '' || /^type\s/.test(trimmed)) continue;
+      const imported = (trimmed.split(/\s+as\s+/)[0] ?? '').trim();
+      if (WINDOW_CLASSES.includes(imported)) found.push(imported);
+    }
+  }
+
+  if (/\brequire\s*\(\s*['"]electron['"]\s*\)|\bimport\s*\(\s*['"]electron['"]\s*\)/.test(code)) {
+    found.push('whole electron module');
+  }
+
+  return found;
+}
+
+function webPreferenceAssignmentsIn(source: string): string[] {
+  const code = stripComments(source);
+  const pattern =
+    /(?:\.\s*|\[\s*['"])(sandbox|nodeIntegration|contextIsolation)(?:['"]\s*\])?\s*(?:[-+*/%&|^]|\*\*|<<|>>>?|&&|\|\||\?\?)?=(?!=)/g;
+  return [...code.matchAll(pattern)].map((match) => match[1] ?? '');
+}
+
+function definesSecurityPreferenceKey(source: string): boolean {
+  return /\b(?:sandbox|nodeIntegration|contextIsolation)\s*:/.test(stripComments(source));
+}
+
+function enableSandboxAtModuleTopLevel(source: string): boolean {
+  const code = withoutStrings(stripComments(source));
+  const call = /^app\.enableSandbox\(\);/m.exec(code);
+  if (!call) return false;
+  const before = code.slice(0, call.index);
+  const opened = (before.match(/\{/g) ?? []).length;
+  const closed = (before.match(/\}/g) ?? []).length;
+  return opened === closed;
 }
 
 describe('renderer windows stay sandboxed', () => {
@@ -99,13 +152,84 @@ describe('renderer windows stay sandboxed', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('asks Electron to sandbox every renderer before the app is ready', () => {
-    const code = stripComments(sources.find((file) => file.path === MAIN_INDEX)?.source ?? '');
-    const enableAt = code.indexOf('app.enableSandbox()');
-    const readyAt = code.indexOf('app.whenReady()');
+  it('asks Electron to sandbox every renderer at module top level, before the app is ready', () => {
+    const source = sources.find((file) => file.path === MAIN_INDEX)?.source ?? '';
+    const code = stripComments(source);
 
-    expect(enableAt).toBeGreaterThan(-1);
-    expect(readyAt).toBeGreaterThan(enableAt);
+    expect(enableSandboxAtModuleTopLevel(source)).toBe(true);
+    expect(code.search(/^app\.enableSandbox\(\);/m)).toBeLessThan(code.indexOf('app.whenReady()'));
+  });
+
+  it('imports a window class from electron in no file but the two that build windows', () => {
+    const offenders = sources
+      .filter((file) => file.path !== MAIN_INDEX && file.path !== MINI_LIVE_WINDOW)
+      .map((file) => ({ file: relative(SRC_ROOT, file.path), found: windowImportsFromElectron(file.source) }))
+      .filter((entry) => entry.found.length > 0);
+
+    expect(offenders).toEqual([]);
+  });
+
+  it('assigns no security-relevant web preference anywhere', () => {
+    const offenders = sources
+      .map((file) => ({ file: relative(SRC_ROOT, file.path), found: webPreferenceAssignmentsIn(file.source) }))
+      .filter((entry) => entry.found.length > 0);
+
+    expect(offenders).toEqual([]);
+  });
+
+  it('spells the sandbox, isolation and node-integration keys only in the builder', () => {
+    const spellers = sources
+      .filter((file) => definesSecurityPreferenceKey(file.source))
+      .map((file) => relative(SRC_ROOT, file.path));
+
+    expect(spellers).toEqual([join('main', 'web-preferences.ts')]);
+  });
+
+  it('red state demonstrated: an aliased window import is caught, a type-only one is not', () => {
+    expect(windowImportsFromElectron("import { BrowserWindow as BW } from 'electron';")).toEqual(['BrowserWindow']);
+    expect(windowImportsFromElectron("import { app, type BaseWindow, WebContentsView } from 'electron';")).toEqual([
+      'WebContentsView',
+    ]);
+    expect(windowImportsFromElectron("import type { BrowserWindow } from 'electron';")).toEqual([]);
+    expect(windowImportsFromElectron("import { app, net } from 'electron';")).toEqual([]);
+  });
+
+  it('red state demonstrated: reaching the classes through the whole module is caught', () => {
+    expect(windowImportsFromElectron("import * as e from 'electron';")).toEqual(['whole electron module']);
+    expect(windowImportsFromElectron("import electron from 'electron';")).toEqual(['whole electron module']);
+    expect(windowImportsFromElectron("const e = require('electron');")).toEqual(['whole electron module']);
+    expect(windowImportsFromElectron("export { BaseWindow } from 'electron';")).toEqual(['BaseWindow']);
+    expect(
+      windowImportsFromElectron("import {\n  app,\n  BrowserWindow as BW,\n} from 'electron';"),
+    ).toEqual(['BrowserWindow']);
+  });
+
+  it('red state demonstrated: assigning a security preference is caught', () => {
+    expect(webPreferenceAssignmentsIn('webPreferences.sandbox = !true;')).toEqual(['sandbox']);
+    expect(webPreferenceAssignmentsIn("prefs['nodeIntegration'] = flag;")).toEqual(['nodeIntegration']);
+    expect(webPreferenceAssignmentsIn('prefs.contextIsolation &&= other;')).toEqual(['contextIsolation']);
+    expect(webPreferenceAssignmentsIn('if (prefs.sandbox === true) {}')).toEqual([]);
+  });
+
+  it('red state demonstrated: a computed value for a security key is caught', () => {
+    expect(definesSecurityPreferenceKey('{ sandbox: !true }')).toBe(true);
+    expect(definesSecurityPreferenceKey('{ ...sandboxedWebPreferences(p), nodeIntegration: x }')).toBe(true);
+    expect(definesSecurityPreferenceKey('sandboxedWebPreferences(p)')).toBe(false);
+  });
+
+  it('red state demonstrated: shorthand web preferences are caught', () => {
+    expect(webPreferencesNotFromSandboxedBuilder('new BW({ webPreferences })')).toBe(1);
+  });
+
+  it('red state demonstrated: enableSandbox inside a function is not top level', () => {
+    const inFunction = 'async function bootstrap() {\napp.enableSandbox();\n}\napp.whenReady();';
+    const indented = 'async function bootstrap() {\n  app.enableSandbox();\n}\napp.whenReady();';
+    const conditional = 'if (x) app.enableSandbox();\napp.whenReady();';
+
+    expect(enableSandboxAtModuleTopLevel(inFunction)).toBe(false);
+    expect(enableSandboxAtModuleTopLevel(indented)).toBe(false);
+    expect(enableSandboxAtModuleTopLevel(conditional)).toBe(false);
+    expect(enableSandboxAtModuleTopLevel('app.enableSandbox();\napp.whenReady();')).toBe(true);
   });
 
   it('red state demonstrated: each weakening is caught', () => {

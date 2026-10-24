@@ -14,7 +14,6 @@ const SANDBOX_PROCESS_MEMBERS = [
   'env',
   'pid',
   'platform',
-  'resourcesPath',
   'sandboxed',
   'type',
   'version',
@@ -108,6 +107,10 @@ describe('sandboxViolations', () => {
       'process.cwd',
       'computed process access',
     ]);
+  });
+
+  it('red state demonstrated: process.resourcesPath, which the sandbox leaves undefined, is caught', () => {
+    expect(sandboxViolations('const dir = process.resourcesPath;')).toEqual(['process.resourcesPath']);
   });
 
   it('red state demonstrated: reaching process or require through another object is caught', () => {
