@@ -1,9 +1,10 @@
 import { createPackage, createPackageWithOptions, getRawHeader } from '@electron/asar';
 import { FuseV1Options } from '@electron/fuses';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { NtExecutable, NtExecutableResource } from 'resedit';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createBuilderConfig } from './builder-config.mjs';
@@ -24,6 +25,7 @@ import {
   PackagingGateError,
   resolveUnpackedDir,
   runPackagingGateChecks,
+  runPackagingGateOrExit,
 } from './package-gate.mjs';
 
 const tempDirs = [];
@@ -88,7 +90,10 @@ function integrityOf(asarPath) {
 
 /** A PE image that carries what the gate reads from the real executable: the integrity resource
  *  and the fuse wire (sentinel, wire version, length, one state byte per fuse). */
-function writePackagedExecutable(filePath, { fuses = createBuilderConfig('dev').electronFuses, integrity } = {}) {
+function writePackagedExecutable(
+  filePath,
+  { fuses = createBuilderConfig('dev').electronFuses, integrity, wireLength = fuseNamesInWireOrder.length } = {},
+) {
   const image = NtExecutable.createEmpty(false, false);
   const resources = NtExecutableResource.from(image);
   if (integrity) {
@@ -101,7 +106,7 @@ function writePackagedExecutable(filePath, { fuses = createBuilderConfig('dev').
     });
   }
   resources.outputResource(image);
-  const states = fuseNamesInWireOrder.map((name) => (fuses[lowerFirst(name)] ? 0x31 : 0x30));
+  const states = fuseNamesInWireOrder.slice(0, wireLength).map((name) => (fuses[lowerFirst(name)] ? 0x31 : 0x30));
   writeFile(
     filePath,
     Buffer.concat([
@@ -526,6 +531,52 @@ describe('runPackagingGateChecks', () => {
     );
     expect(existsSync(path.join(desktopRootDir, 'release'))).toBe(false);
   });
+
+  describe('runPackagingGateOrExit', () => {
+    function recorders() {
+      const exits = [];
+      const errors = [];
+      const logs = [];
+      return {
+        exits,
+        errors,
+        logs,
+        deps: {
+          log: { error: (message) => errors.push(message), log: (message) => logs.push(message) },
+          exit: (code) => exits.push(code),
+        },
+      };
+    }
+
+    it('exits 1 with the gate\'s message when the gate rejects, even though the gate is async', async () => {
+      const desktopRootDir = await buildFakePackagedApp();
+      rmSync(path.join(desktopRootDir, 'release', 'dev', 'win-unpacked', 'Bomb Farm Companion (Dev).exe'));
+      const { exits, errors, logs, deps } = recorders();
+
+      await runPackagingGateOrExit('dev', { desktopRootDir, config: configForFakeTree() }, deps);
+
+      expect(exits).toEqual([1]);
+      expect(errors.join('\n')).toContain('expected exactly one .exe');
+      expect(logs).toEqual([]);
+    });
+
+    it('reports success and does not exit when the gate passes', async () => {
+      const desktopRootDir = await buildFakePackagedApp();
+      const { exits, errors, logs, deps } = recorders();
+
+      await runPackagingGateOrExit('dev', { desktopRootDir, config: configForFakeTree() }, deps);
+
+      expect(exits).toEqual([]);
+      expect(errors).toEqual([]);
+      expect(logs).toEqual(['Packaging gate passed for flavor "dev".']);
+    });
+
+    it('is what the packaging entry awaits last', () => {
+      const entry = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'package.mjs'), 'utf8');
+      expect(entry).toMatch(/^await runPackagingGateOrExit\(flavor\);\s*$/m);
+      expect(entry.trimEnd().endsWith('await runPackagingGateOrExit(flavor);')).toBe(true);
+    });
+  });
 });
 
 describe('findPackagedExecutable', () => {
@@ -581,6 +632,24 @@ describe('assertElectronFuses', () => {
     await expectPackagingGateRejection(
       assertElectronFuses({ ...config, electronFuses: partial }, exe),
       'GrantFileProtocolExtraPrivileges: present in the binary but not configured',
+    );
+  });
+
+  it('fails on a fuse the config names that the binary\'s wire is too short to carry', async () => {
+    const exe = path.join(makeTempDir('fuses-short-wire'), 'App.exe');
+    writePackagedExecutable(exe, { wireLength: fuseNamesInWireOrder.length - 1 });
+    await expectPackagingGateRejection(
+      assertElectronFuses(config, exe),
+      'grantFileProtocolExtraPrivileges: configured but absent from the binary\'s fuse wire',
+    );
+  });
+
+  it('fails on a configured fuse no version of @electron/fuses defines', async () => {
+    const exe = path.join(makeTempDir('fuses-unknown'), 'App.exe');
+    writePackagedExecutable(exe);
+    await expectPackagingGateRejection(
+      assertElectronFuses({ ...config, electronFuses: { ...config.electronFuses, invented: true } }, exe),
+      'invented: configured but absent from the binary\'s fuse wire',
     );
   });
 

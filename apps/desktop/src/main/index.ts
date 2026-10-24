@@ -123,6 +123,7 @@ import {
   type ShellLifecycle,
   type WindowPort,
 } from './shell/window-lifecycle.js';
+import { refuseDebugSwitchesWhenPackaged } from './shell/debug-switch-guard.js';
 import { isWindowRevealSuppressed } from './shell/window-reveal.js';
 import {
   createMiniLiveController,
@@ -135,6 +136,17 @@ import {
   type GameKeepAlive,
 } from './game-keep-alive/keep-alive-runtime.js';
 import { askSteam, createSteamLaunchDeps } from './game-keep-alive/steam-launch.js';
+
+refuseDebugSwitchesWhenPackaged({
+  isPackaged: app.isPackaged,
+  argv: process.argv,
+  exit: (code) => {
+    app.exit(code);
+  },
+  writeLine: (line) => {
+    process.stderr.write(`${line}\n`);
+  },
+});
 
 let mainWindow: BrowserWindow | null = null;
 let storage: Storage | null = null;

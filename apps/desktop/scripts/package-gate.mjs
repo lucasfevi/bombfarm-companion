@@ -429,13 +429,32 @@ export async function runPackagingGateChecks(
   }
 }
 
+/** The packaging entry's tail: a failed gate must end the process non-zero, which only holds
+ *  while the async gate is awaited here. */
+export async function runPackagingGateOrExit(
+  flavor,
+  options = {},
+  { log = console, exit = (code) => process.exit(code) } = {},
+) {
+  try {
+    await runPackagingGateChecks(flavor, options);
+  } catch (error) {
+    if (error instanceof PackagingGateError) {
+      log.error(error.message);
+      exit(1);
+      return;
+    }
+    throw error;
+  }
+  log.log(`Packaging gate passed for flavor "${flavor}".`);
+}
+
 const isMainModule = import.meta.url === pathToFileURL(process.argv[1] ?? '').href;
 
 if (isMainModule) {
   const flavor = resolveBuildFlavor(process.env.BFC_FLAVOR);
   try {
-    await runPackagingGateChecks(flavor);
-    console.log(`Packaging gate passed for flavor "${flavor}".`);
+    await runPackagingGateOrExit(flavor);
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);

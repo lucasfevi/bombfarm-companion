@@ -53,8 +53,11 @@ packaging gate reads the fuse wire and the embedded asar digest back out of the 
 a flip electron-builder skipped fails `pnpm package:*`. Consequences for tooling:
 
 - **Playwright's `_electron.launch` cannot drive a packaged build.** It passes `--inspect` and
-  `--remote-debugging-port`, which the fuses ignore. The smoke suite launches the unpackaged
-  `node_modules/electron/dist/electron.exe` with the project directory, which carries no fuses.
+  `--remote-debugging-port`: the fuses make the main process ignore the first, and no fuse covers
+  the second, so `src/main/shell/debug-switch-guard.ts` makes a packaged main exit at startup
+  when it sees either (Chromium opens the port before main runs, so a brief window remains). The
+  smoke suite launches the unpackaged `node_modules/electron/dist/electron.exe` with the project
+  directory, which carries no fuses and is never refused.
 - **Nothing may spawn the app with `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS` or `--inspect`.** The
   app has no `fork()`; background work that needs its own process belongs in a `utilityProcess`.
 - **Nothing may load `file://` pages** or put code outside `app.asar` / `app.asar.unpacked` (the

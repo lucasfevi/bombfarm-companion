@@ -58,6 +58,7 @@
     "better-sqlite3": "^11.10.0"
   },
   "devDependencies": {
+    "@electron/asar": "^3.4.1",
     "@electron/fuses": "^1.8.0",
     "@playwright/test": "^1.54.1",
     "@tailwindcss/postcss": "^4.1.11",
@@ -68,6 +69,7 @@
     "electron": "^35.7.5",
     "electron-builder": "^26.0.12",
     "esbuild": "^0.25.8",
+    "minimatch": "^3.1.2",
     "playwright": "^1.54.1",
     "resedit": "^1.7.0",
     "tailwindcss": "^4.1.11",
