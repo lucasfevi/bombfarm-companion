@@ -35,7 +35,7 @@ import {
 import { reoptBudget, RESPEC_KEYS } from './points-reopt-core';
 import { requiresPointReset, respecCostGold } from './respec-cost';
 import {
-  runFarmSearch,
+  runPlayerFarmSearch,
   squadEnergyShare,
   derivePlateauBounds,
   compareFarmCandidates,
@@ -519,7 +519,7 @@ function computeFrontier(params: {
     const solvesLeft = plannedSolves.length - i;
     const share = Math.max(0, Math.floor(remaining / solvesLeft));
     const heroIds = plannedSolves[i];
-    const search = runFarmSearch(bases, heroIds, budgetById, account, objective, scales, phaseOptions, share);
+    const search = runPlayerFarmSearch(bases, heroIds, budgetById, account, objective, scales, phaseOptions, share);
     remaining -= search.evaluations;
     evaluationsSpent += search.evaluations;
     if (search.budgetExhausted) budgetExhausted = true;
@@ -680,7 +680,7 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
   const { bases, objective, phaseOptions, currentFactsById, budgetById, currentSquad, scales, searchableIds } = setup;
 
   const evaluationBudget = Math.floor(FARM_OPT_FULL_MAX_EVALUATIONS * FARM_OPT_JOINT_BUDGET_SHARE);
-  const search = runFarmSearch(
+  const search = runPlayerFarmSearch(
     bases,
     searchableIds,
     budgetById,

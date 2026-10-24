@@ -28,7 +28,7 @@ import {
   type FarmObjectiveScales,
   type ResolvedFarmObjective,
 } from './farm-optimize-objective';
-import { runFarmSearch, FARM_OPT_FULL_MAX_EVALUATIONS } from './farm-optimize-search';
+import { runPlayerFarmSearch, FARM_OPT_FULL_MAX_EVALUATIONS } from './farm-optimize-search';
 import { reoptBudget, RESPEC_KEYS } from './points-reopt-core';
 import { ZERO_PTS, type SheetKey } from './planner-constants';
 
@@ -148,7 +148,7 @@ export function optimizeHeroForFarm(input: HeroFarmOptimizeInput): HeroFarmOptim
   if (currentPick === null) return bail('noFeasiblePhase');
 
   const budgetById = new Map(bases.map((b) => [b.heroId, b.heroId === heroId ? budget : 0] as const));
-  const search = runFarmSearch(
+  const search = runPlayerFarmSearch(
     bases,
     [heroId],
     budgetById,

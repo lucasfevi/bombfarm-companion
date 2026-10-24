@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mimeTypeFor, resolveRendererFile } from './renderer-protocol.js';
+import { isRendererUrl, mimeTypeFor, resolveRendererFile } from './renderer-protocol.js';
 
 const ROOT = path.join('C:', 'app', 'renderer', 'out');
 
@@ -39,6 +39,40 @@ describe('resolveRendererFile', () => {
   it('strips query and hash before resolving', () => {
     const resolved = resolveRendererFile('app://bundle/app.js?v=2#chunk', ROOT);
     expect(resolved?.path).toBe(path.join(ROOT, 'app.js'));
+  });
+});
+
+describe('resolveRendererFile — only the bundle host is served', () => {
+  it.each([
+    'app://other-host/index.html',
+    'app://bundle.evil/index.html',
+    'app://evilbundle/index.html',
+    'app://bundle@evil/index.html',
+    'app://bundle:secret@evil/index.html',
+    'app://bundle:80/index.html',
+    'app://BUNDLE.evil/index.html',
+    'app:///index.html',
+    'https://bundle/index.html',
+    'file:///C:/app/index.html',
+    '/index.html',
+    '',
+  ])('refuses %s', (url) => {
+    expect(resolveRendererFile(url, ROOT)).toBeNull();
+  });
+});
+
+describe('isRendererUrl', () => {
+  it('is true for the bundle host on any path, query or fragment', () => {
+    expect(isRendererUrl('app://bundle')).toBe(true);
+    expect(isRendererUrl('app://bundle/mini-live/index.html?x=1#y')).toBe(true);
+  });
+
+  it('is false for a look-alike host, a credential, a port or another scheme', () => {
+    expect(isRendererUrl('app://bundle.evil/')).toBe(false);
+    expect(isRendererUrl('app://user@bundle/')).toBe(false);
+    expect(isRendererUrl('app://bundle:8080/')).toBe(false);
+    expect(isRendererUrl('http://bundle/')).toBe(false);
+    expect(isRendererUrl('not a url')).toBe(false);
   });
 });
 

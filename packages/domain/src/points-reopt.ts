@@ -21,8 +21,10 @@ import {
   greedyWalk,
   REOPT_GATE_MAX_EVALUATIONS,
   reoptBudget,
+  RESPEC_KEYS,
   zeroedRespecKeys,
 } from './points-reopt-core';
+import { trimTowardCurrent } from './points-trim';
 import {
   buildSeeds,
   generateMoves,
@@ -281,5 +283,46 @@ export function optimizeBuild(input: ReoptInput): ReoptResult {
     budgetExhausted: truncatedAny,
     winningSeed: winner.name,
     sweeps: winner.sweeps,
+  };
+}
+
+/** Bound on the trim pass `optimizeBuildForPlayer` adds after the search. */
+export const REOPT_TRIM_MAX_EVALUATIONS = 200;
+
+/**
+ * `optimizeBuild` as a player is shown it: the proposal trimmed back toward the current vector
+ * (`trimTowardCurrent`), so a point that buys almost nothing is not a change they are asked to
+ * make. The team plan calls `optimizeBuild` itself and trims once, at its own decision point.
+ */
+export function optimizeBuildForPlayer(input: ReoptInput): ReoptResult {
+  const result = optimizeBuild(input);
+  const { pts, effective, effectiveDelta, context, level } = input;
+  // Not `result.keptCurrent`: that says the winning search STARTED from the current vector, and
+  // its local search may still have moved points away from it.
+  if (RESPEC_KEYS.every((key) => result.pts[key] === pts[key])) return result;
+  const score = (candidate: Record<SheetKey, number>) =>
+    sustainedDps(buildCandidateSheet(effective, pts, effectiveDelta, candidate), context);
+  const currentDps = score(pts);
+  const trim = trimTowardCurrent({
+    current: new Map([['hero', pts]]),
+    proposed: new Map([['hero', result.pts]]),
+    proposedValue: result.reoptDps,
+    currentValue: currentDps,
+    evaluate: (vectors) => score(vectors.get('hero')!),
+    maxEvaluations: REOPT_TRIM_MAX_EVALUATIONS,
+  });
+  const trimmed = trim.vectors.get('hero')!;
+  const keptCurrent = RESPEC_KEYS.every((key) => trimmed[key] === pts[key]);
+  const reoptDps = keptCurrent ? currentDps : Math.max(trim.value, currentDps);
+  return {
+    ...result,
+    pts: keptCurrent ? { ...pts } : trimmed,
+    unallocated: Math.max(0, reoptBudget(level) - budgetOf(keptCurrent ? pts : trimmed)),
+    currentDps,
+    reoptDps,
+    gainPct: currentDps > 0 ? Math.max(0, (reoptDps / currentDps - 1) * 100) : 0,
+    keptCurrent,
+    evaluations: result.evaluations + 1 + trim.evaluations,
+    cappedStats: cappedStatsOf(buildCandidateSheet(effective, pts, effectiveDelta, keptCurrent ? pts : trimmed)),
   };
 }

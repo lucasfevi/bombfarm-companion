@@ -32,8 +32,8 @@ describe('privacy page', () => {
   }
 
   it('dates the policy in each language', () => {
-    expect(render('en')).toContain('Last updated October 20, 2026');
-    expect(render('pt')).toContain('Atualizada em 20 de outubro de 2026');
+    expect(render('en')).toContain('Last updated October 21, 2026');
+    expect(render('pt')).toContain('Atualizada em 21 de outubro de 2026');
   });
 
   it('says a Premium sign-in keeps only the account id, never an email, in each language', () => {

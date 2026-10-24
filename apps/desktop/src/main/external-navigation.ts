@@ -1,9 +1,8 @@
 import type { WebContents } from 'electron';
+import { isRendererUrl } from './renderer-protocol.js';
 import type { LogPort } from './storage/index.js';
 
 export type NavigationDecision = 'open-external' | 'allow-internal' | 'block';
-
-const INTERNAL_SCHEMES: ReadonlySet<string> = new Set(['app:', 'devtools:']);
 
 const OPAQUE_ORIGIN = 'null';
 
@@ -24,7 +23,7 @@ export function decideNavigation(
     return 'block';
   }
 
-  if (INTERNAL_SCHEMES.has(target.protocol)) {
+  if (target.protocol === 'devtools:' || isRendererUrl(rawUrl)) {
     return 'allow-internal';
   }
 

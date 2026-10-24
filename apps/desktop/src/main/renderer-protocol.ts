@@ -22,6 +22,21 @@ const MIME_TYPES: Record<string, string> = {
 
 const DEFAULT_MIME_TYPE = 'application/octet-stream';
 
+export function isRendererUrl(rawUrl: string): boolean {
+  try {
+    const url = new URL(rawUrl);
+    return (
+      url.protocol === `${RENDERER_SCHEME}:` &&
+      url.hostname === RENDERER_HOST &&
+      url.port === '' &&
+      url.username === '' &&
+      url.password === ''
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function mimeTypeFor(filePath: string): string {
   return MIME_TYPES[path.extname(filePath).toLowerCase()] ?? DEFAULT_MIME_TYPE;
 }
@@ -49,6 +64,10 @@ export interface ResolvedRendererFile {
  * is kept as a last defense in case a shape above was missed.
  */
 export function resolveRendererFile(requestUrl: string, root: string): ResolvedRendererFile | null {
+  if (!isRendererUrl(requestUrl)) {
+    return null;
+  }
+
   let pathname: string;
   try {
     pathname = decodeURIComponent(extractPathname(requestUrl));

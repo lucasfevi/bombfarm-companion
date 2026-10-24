@@ -17,6 +17,16 @@ describe('decideNavigation', () => {
     expect(decideNavigation(RENDERER_ENTRY)).toBe('allow-internal');
   });
 
+  it.each([
+    'app://other-host/index.html',
+    'app://bundle.evil/index.html',
+    'app://bundle@evil/index.html',
+    'app://bundle:8080/index.html',
+    'app:///index.html',
+  ])('does not treat the look-alike app url %s as internal', (url) => {
+    expect(decideNavigation(url)).toBe('block');
+  });
+
   it('keeps devtools inside the app', () => {
     expect(decideNavigation('devtools://devtools/bundled/devtools_app.html')).toBe('allow-internal');
   });
