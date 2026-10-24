@@ -18,8 +18,8 @@ function electronExecutable() {
   );
 }
 
-async function exerciseBridge(page) {
-  return page.evaluate(async () => {
+async function exerciseBridge(page, channel) {
+  return page.evaluate(async (channel) => {
     const bridge = window.bfc;
     if (!bridge) throw new Error('preload bridge missing');
     const dispose = bridge.on('consent:changed', () => undefined);
@@ -41,7 +41,7 @@ async function exerciseBridge(page) {
       keys: Object.keys(bridge).sort(),
       ping: bridge.ping(),
       logBoot: bridge.logBoot(),
-      invoked: await bridge.invoke('app:ping'),
+      invoked: await bridge.invoke(channel),
       disposerIsFunction,
       loggingThrew,
       nodeGlobals: {
@@ -50,14 +50,13 @@ async function exerciseBridge(page) {
         Buffer: typeof window.Buffer,
       },
     };
-  });
+  }, channel);
 }
 
 function expectBridge(result) {
   expect(result.keys).toEqual(['invoke', 'logBoot', 'logRendererError', 'on', 'ping']);
   expect(result.ping).toEqual({ ok: true, from: 'preload' });
   expect(result.logBoot).toEqual({ ok: true, from: 'preload' });
-  expect(result.invoked).toEqual({ ok: true, from: 'main' });
   expect(result.disposerIsFunction).toBe(true);
   expect(result.loggingThrew).toBe(false);
   expect(result.nodeGlobals).toEqual({ require: 'undefined', process: 'undefined', Buffer: 'undefined' });
@@ -134,8 +133,15 @@ test.describe('renderer sandbox smoke', () => {
       expect(rendererSandboxed.length).toBeGreaterThanOrEqual(2);
       expect(rendererSandboxed.every((sandboxed) => sandboxed === true)).toBe(true);
 
-      expectBridge(await exerciseBridge(page));
-      expectBridge(await exerciseBridge(mini));
+      // The compact window may invoke only its own channels; `settings:get` is one of them.
+      const mainResult = await exerciseBridge(page, 'app:ping');
+      expectBridge(mainResult);
+      expect(mainResult.invoked).toEqual({ ok: true, from: 'main' });
+
+      const miniResult = await exerciseBridge(mini, 'settings:get');
+      expectBridge(miniResult);
+      expect(miniResult.invoked).toEqual(expect.objectContaining({}));
+      expect(miniResult.invoked).not.toBeNull();
     } finally {
       await app?.close().catch(() => undefined);
       fs.rmSync(userDataDir, { recursive: true, force: true });
