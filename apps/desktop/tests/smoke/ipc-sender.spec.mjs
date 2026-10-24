@@ -147,13 +147,28 @@ test.describe('IPC sender validation smoke', () => {
     expect(windowControl.message).toMatch(REFUSAL);
   });
 
-  test('a window the app does not own is refused with the same preload, at a foreign origin or at the app origin', async () => {
-    for (const url of ['data:text/html,<title>stranger</title>', 'about:blank', 'app://bundle/mini-live/index.html']) {
-      const result = await probeFromUnknownWindow(app, { url, channel: 'app:getFlavor' });
-      expect(result.settled, url).toBe('rejected');
-      expect(result.message, url).toMatch(REFUSAL);
+  test('a window the app does not own is refused with the same preload, at a foreign origin or at the app origin, for a channel the compact window may call and for one only the main window may', async () => {
+    const urls = ['data:text/html,<title>stranger</title>', 'about:blank', 'app://bundle/mini-live/index.html'];
+    for (const url of urls) {
+      for (const channel of ['app:getFlavor', 'settings:get', 'miniLive:getLayout']) {
+        const result = await probeFromUnknownWindow(app, { url, channel });
+        expect(result.settled, `${url} ${channel}`).toBe('rejected');
+        expect(result.message, `${url} ${channel}`).toMatch(REFUSAL);
+      }
     }
     await expect.poll(() => windowCount(app), { timeout: 15_000 }).toBe(2);
+  });
+
+  test('the app scheme serves the bundle host only, so a look-alike host loads nothing', async () => {
+    const statuses = await app.evaluate(async ({ net }) => {
+      const statusOf = async (url) => (await net.fetch(url)).status;
+      return {
+        bundle: await statusOf('app://bundle/index.html'),
+        otherHost: await statusOf('app://other-host/index.html'),
+        lookAlike: await statusOf('app://bundle.evil/index.html'),
+      };
+    });
+    expect(statuses).toEqual({ bundle: 200, otherHost: 404, lookAlike: 404 });
   });
 
   test('a child frame has no bridge of its own, and a cross-origin one cannot reach the top frame', async () => {

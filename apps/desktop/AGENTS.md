@@ -57,7 +57,16 @@ window is further held to `MINI_LIVE_INVOKE_CHANNELS`.
 to that set**, or the call is refused at runtime; `mini-live-channel-allowlist.test.ts` fails first and
 names the difference. It also fails if a channel is allowed that the window no longer calls, so the
 set stays exactly what the window needs. A new `ipcMain` listener of our own owes the same sender
-check — `ipcMain.handle`/`on` with an ignored event argument is the shape this rule exists to remove.
+check: `ipc-listeners-guard.test.ts` reads the AST and fails on any `ipcMain`/`webContents.ipc`
+registration whose channel is not a string literal, on an aliased or destructured `ipcMain`, and on
+any registration beyond the one `bfc:invoke` handler built by `createBridgeInvokeHandler`.
+
+**Never embed a same-origin frame (`srcdoc`, `about:blank`, `app://`) in a window that has the
+bridge.** The sender check cannot tell such a child from the top frame: `window.top.bfc.invoke`
+runs in the top frame's context, so `senderFrame` is the top frame. A CSP `frame-src` does not close
+this (`srcdoc` and `about:blank` children still load). What does: give untrusted content an opaque
+origin (a sandboxed iframe without `allow-same-origin`) or its own window or partition that has no
+preload.
 
 ## Local checks
 
