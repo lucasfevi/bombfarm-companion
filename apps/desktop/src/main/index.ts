@@ -31,6 +31,7 @@ import { createPvpHistory, type PvpHistory } from './pvp/pvp-history.js';
 import { createPvpReader, type PvpReader } from './pvp/pvp-reader.js';
 import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
 import { createIpcDispatch, createIpcHandlers, defaultLiveView } from './ipc-handlers.js';
+import { createBridgeInvokeHandler, createSenderWindowResolver } from './ipc-bridge-handler.js';
 import { createEventEmitter } from './event-emitter.js';
 import { createRedactingTokenReader } from './redacting-token-reader.js';
 import { LIVE_SOURCE_RELEASE_DEADLINE_MS, settleWithin, shutdownInOrder } from './shutdown.js';
@@ -388,7 +389,28 @@ function registerIpcHandlers(): void {
     }),
   );
 
-  ipcMain.handle('bfc:invoke', (_event, channel: string, ...args: unknown[]) => dispatch(channel, ...args));
+  ipcMain.handle(
+    'bfc:invoke',
+    createBridgeInvokeHandler({
+      env: resolveAppEnv(),
+      devRendererUrl: RENDERER_DEV_URL,
+      senderWindowOf: createSenderWindowResolver({
+        main: liveMainContents,
+        mini: liveMiniContents,
+      }),
+      dispatch,
+      log,
+    }),
+  );
+}
+
+function liveMainContents(): { readonly id: number } | null {
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null;
+}
+
+function liveMiniContents(): { readonly id: number } | null {
+  const miniWindow = miniLiveController?.getWindow();
+  return miniWindow && !miniWindow.isDestroyed() ? miniWindow.webContents : null;
 }
 
 async function createMainWindow(): Promise<void> {

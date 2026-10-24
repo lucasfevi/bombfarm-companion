@@ -51,6 +51,7 @@ export function buildMiniLiveWindowOptions(input: {
 }
 
 export interface MiniLiveWebContents {
+  readonly id: number;
   loadURL(url: string): Promise<void>;
   on(event: string, listener: (...args: unknown[]) => void): void;
 }
