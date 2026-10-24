@@ -16,6 +16,7 @@ import {
   zeroedRespecKeys,
 } from './points-reopt-core';
 import { sustainedDps } from './model';
+import { trimTowardCurrent } from './points-trim';
 import {
   critCeilingOfBasis,
   squadFactsFromBases,
@@ -607,5 +608,51 @@ export function runFarmSearch(
 
   const final = compareFarmCandidates(incumbent, winner, bases) <= 0 ? incumbent : winner;
   return { winner: final, winningSeedName: final.name, evaluations, sweeps, budgetExhausted, ladder };
+}
+
+/** Bound on the trim pass `runPlayerFarmSearch` adds after the search. */
+export const FARM_OPT_TRIM_MAX_EVALUATIONS = 300;
+
+/**
+ * `runFarmSearch` as a player is shown it: the winner trimmed back toward the current builds
+ * (`trimTowardCurrent`), so a point worth almost nothing is not a change they are asked to make.
+ * The team plan runs `runFarmSearch` itself every round and trims once, at its own decision point.
+ */
+export function runPlayerFarmSearch(
+  bases: readonly HeroFarmBasis[],
+  searchableIds: readonly string[],
+  budgetById: ReadonlyMap<string, number>,
+  account: SquadFarmAccount,
+  objective: ResolvedFarmObjective,
+  scales: FarmObjectiveScales,
+  phaseOptions: BestFarmPhaseOptions,
+  evaluationBudget: number,
+): FarmSearchOutcome {
+  const search = runFarmSearch(bases, searchableIds, budgetById, account, objective, scales, phaseOptions, evaluationBudget);
+  if (search.winner.name === 'current') return search;
+
+  const evaluate = (assignment: PtsAssignment | null) =>
+    evaluateAssignment(bases, assignment, account, objective, scales, phaseOptions);
+  const currentValue = evaluate(null).value;
+  const trim = trimTowardCurrent({
+    current: new Map(bases.map((basis) => [basis.heroId, basis.pts] as const)),
+    proposed: search.winner.assignment,
+    proposedValue: search.winner.value,
+    currentValue,
+    evaluate: (vectors) => evaluate(vectors).value,
+    maxEvaluations: FARM_OPT_TRIM_MAX_EVALUATIONS,
+  });
+  const trimmed = evaluate(trim.vectors);
+  const backToCurrent = bases.every((basis) => {
+    const pts = trim.vectors.get(basis.heroId);
+    return !pts || RESPEC_KEYS.every((key) => pts[key] === basis.pts[key]);
+  });
+  const name = backToCurrent ? 'current' : search.winner.name;
+  return {
+    ...search,
+    winner: { name, assignment: trim.vectors, value: trimmed.value, pick: trimmed.pick, squad: trimmed.squad },
+    winningSeedName: name,
+    evaluations: search.evaluations + 2 + trim.evaluations,
+  };
 }
 
