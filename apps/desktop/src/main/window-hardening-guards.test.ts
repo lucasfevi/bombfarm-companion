@@ -1,117 +1,299 @@
 import { join, relative, resolve } from 'node:path';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { guardScanner } from './guard-scan';
 
 const SRC_ROOT = resolve(__dirname, '..');
 const MAIN_INDEX = resolve(__dirname, 'index.ts');
 const MINI_LIVE_WINDOW = resolve(__dirname, 'mini-live-window.ts');
+const WEB_PREFERENCES_BUILDER = resolve(__dirname, 'web-preferences.ts');
+const WINDOW_FILES = [MAIN_INDEX, MINI_LIVE_WINDOW];
 
 const { readAll } = guardScanner(__filename);
 
-function stripComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-}
+const WINDOW_CLASSES = ['BrowserWindow', 'BaseWindow', 'WebContentsView', 'BrowserView'];
+const WINDOW_CONSTRUCTORS = [...WINDOW_CLASSES, 'BrowserWindowCtor'];
 
-const WEAKENINGS: [string, RegExp][] = [
-  ['sandbox: false', /\bsandbox\s*:\s*false\b/],
-  ['nodeIntegration: true', /\bnodeIntegration\s*:\s*true\b/],
-  ['nodeIntegrationInWorker: true', /\bnodeIntegrationInWorker\s*:\s*true\b/],
-  ['nodeIntegrationInSubFrames: true', /\bnodeIntegrationInSubFrames\s*:\s*true\b/],
-  ['contextIsolation: false', /\bcontextIsolation\s*:\s*false\b/],
-  ['webSecurity: false', /\bwebSecurity\s*:\s*false\b/],
-  ['allowRunningInsecureContent: true', /\ballowRunningInsecureContent\s*:\s*true\b/],
-  ['webviewTag: true', /\bwebviewTag\s*:\s*true\b/],
-  ['no-sandbox', /no-sandbox/],
-  ['disable-gpu-sandbox', /disable-gpu-sandbox/],
+const SECURITY_KEYS = [
+  'sandbox',
+  'nodeIntegration',
+  'nodeIntegrationInSubFrames',
+  'nodeIntegrationInWorker',
+  'contextIsolation',
+  'webSecurity',
+  'allowRunningInsecureContent',
+  'webviewTag',
 ];
 
-const OTHER_WEB_CONTENTS_HOSTS: [string, RegExp][] = [
-  ['BrowserView', /\bBrowserView\b/],
-  ['WebContentsView', /\bWebContentsView\b/],
-  ['<webview', /<webview\b/],
-];
+const SANDBOX_OFF_SWITCHES = ['no-sandbox', 'disable-gpu-sandbox', 'disable-web-security'];
 
-function weakeningsIn(source: string): string[] {
-  const code = stripComments(source);
-  return WEAKENINGS.filter(([, pattern]) => pattern.test(code)).map(([name]) => name);
+function parse(source: string): ts.SourceFile {
+  return ts.createSourceFile('guarded.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
 }
 
-function webPreferencesNotFromSandboxedBuilder(source: string): number {
-  const code = stripComments(source);
-  const all = [...code.matchAll(/\bwebPreferences\b/g)].length;
-  const sanctioned = [...code.matchAll(/\bwebPreferences\s*:\s*sandboxedWebPreferences\(/g)].length;
-  return all - sanctioned;
+function visit(node: ts.Node, each: (node: ts.Node) => void): void {
+  each(node);
+  ts.forEachChild(node, (child) => {
+    visit(child, each);
+  });
 }
 
-function otherHostsIn(source: string): string[] {
-  const code = stripComments(source);
-  return OTHER_WEB_CONTENTS_HOSTS.filter(([, pattern]) => pattern.test(code)).map(([name]) => name);
+function nodesOf(source: string): ts.Node[] {
+  const nodes: ts.Node[] = [];
+  visit(parse(source), (node) => nodes.push(node));
+  return nodes;
 }
 
-const WINDOW_CLASSES = ['BrowserWindow', 'BaseWindow', 'WebContentsView'];
+function isElectronSpecifier(text: string): boolean {
+  return /^electron(\/.*)?$/.test(text);
+}
 
-function withoutStrings(code: string): string {
-  return code.replace(/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g, '""');
+function stringText(node: ts.Node | undefined): string | undefined {
+  if (!node) return undefined;
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
+  return undefined;
+}
+
+function propertyNameText(name: ts.PropertyName | ts.BindingName | ts.EntityName | undefined): string | undefined {
+  if (!name) return undefined;
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNoSubstitutionTemplateLiteral(name)) {
+    return name.text;
+  }
+  if (ts.isComputedPropertyName(name)) return stringText(name.expression);
+  return undefined;
+}
+
+function unwrap(expression: ts.Expression): ts.Expression {
+  let current = expression;
+  while (ts.isParenthesizedExpression(current) || ts.isNonNullExpression(current) || ts.isAsExpression(current)) {
+    current = current.expression;
+  }
+  return current;
 }
 
 function windowImportsFromElectron(source: string): string[] {
-  const code = stripComments(source);
   const found: string[] = [];
 
-  for (const match of code.matchAll(/\b(?:import|export)\s+(type\s+)?([^;]*?)\s*from\s*['"]electron['"]/g)) {
-    if (match[1]) continue;
-    const clause = (match[2] ?? '').trim();
-    const named = /\{([^}]*)\}/.exec(clause);
-    if (!named || clause.replace(/\{[^}]*\}/, '').replace(/[,\s]/g, '') !== '') {
-      found.push('whole electron module');
-    }
-    for (const specifier of (named?.[1] ?? '').split(',')) {
-      const trimmed = specifier.trim();
-      if (trimmed === '' || /^type\s/.test(trimmed)) continue;
-      const imported = (trimmed.split(/\s+as\s+/)[0] ?? '').trim();
+  const named = (elements: readonly (ts.ImportSpecifier | ts.ExportSpecifier)[]): void => {
+    for (const element of elements) {
+      if (element.isTypeOnly) continue;
+      const imported = (element.propertyName ?? element.name).text;
       if (WINDOW_CLASSES.includes(imported)) found.push(imported);
     }
-  }
+  };
 
-  if (/\brequire\s*\(\s*['"]electron['"]\s*\)|\bimport\s*\(\s*['"]electron['"]\s*\)/.test(code)) {
-    found.push('whole electron module');
+  for (const node of nodesOf(source)) {
+    if (ts.isImportDeclaration(node) && isElectronSpecifier(stringText(node.moduleSpecifier) ?? '')) {
+      const clause = node.importClause;
+      if (!clause || clause.phaseModifier === ts.SyntaxKind.TypeKeyword) continue;
+      if (clause.name) found.push('whole electron module');
+      const bindings = clause.namedBindings;
+      if (bindings && ts.isNamespaceImport(bindings)) found.push('whole electron module');
+      if (bindings && ts.isNamedImports(bindings)) named(bindings.elements);
+    } else if (ts.isExportDeclaration(node) && isElectronSpecifier(stringText(node.moduleSpecifier) ?? '')) {
+      if (node.isTypeOnly) continue;
+      const exported = node.exportClause;
+      if (!exported || ts.isNamespaceExport(exported)) found.push('whole electron module');
+      else named(exported.elements);
+    } else if (ts.isImportEqualsDeclaration(node) && !node.isTypeOnly) {
+      const reference = node.moduleReference;
+      if (ts.isExternalModuleReference(reference) && isElectronSpecifier(stringText(reference.expression) ?? '')) {
+        found.push('whole electron module');
+      }
+    } else if (ts.isCallExpression(node)) {
+      const callee = node.expression;
+      const loadsModule =
+        callee.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(callee) && callee.text === 'require');
+      if (loadsModule && isElectronSpecifier(stringText(node.arguments[0]) ?? '')) {
+        found.push('whole electron module');
+      }
+    }
   }
 
   return found;
 }
 
-function webPreferenceAssignmentsIn(source: string): string[] {
-  const code = stripComments(source);
-  const pattern =
-    /(?:\.\s*|\[\s*['"])(sandbox|nodeIntegration|contextIsolation)(?:['"]\s*\])?\s*(?:[-+*/%&|^]|\*\*|<<|>>>?|&&|\|\||\?\?)?=(?!=)/g;
-  return [...code.matchAll(pattern)].map((match) => match[1] ?? '');
+function securityKeyOf(target: ts.Expression): string | undefined {
+  const expression = unwrap(target);
+  const key = ts.isPropertyAccessExpression(expression)
+    ? expression.name.text
+    : ts.isElementAccessExpression(expression)
+      ? stringText(expression.argumentExpression)
+      : undefined;
+  return key !== undefined && SECURITY_KEYS.includes(key) ? key : undefined;
 }
 
-function definesSecurityPreferenceKey(source: string): boolean {
-  return /\b(?:sandbox|nodeIntegration|contextIsolation)\s*:/.test(stripComments(source));
+function mentionsSecurityKey(node: ts.Node): string | undefined {
+  let key: string | undefined;
+  visit(node, (inner) => {
+    if (key !== undefined) return;
+    const candidate =
+      ts.isPropertyAssignment(inner) || ts.isShorthandPropertyAssignment(inner)
+        ? propertyNameText(inner.name)
+        : stringText(inner);
+    if (candidate !== undefined && SECURITY_KEYS.includes(candidate)) key = candidate;
+  });
+  return key;
 }
 
-function enableSandboxAtModuleTopLevel(source: string): boolean {
-  const code = withoutStrings(stripComments(source));
-  const call = /^app\.enableSandbox\(\);/m.exec(code);
-  if (!call) return false;
-  const before = code.slice(0, call.index);
-  const opened = (before.match(/\{/g) ?? []).length;
-  const closed = (before.match(/\}/g) ?? []).length;
-  return opened === closed;
+function securityPreferenceMutations(source: string): string[] {
+  const found: string[] = [];
+
+  for (const node of nodesOf(source)) {
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+      node.operatorToken.kind <= ts.SyntaxKind.LastAssignment
+    ) {
+      const key = securityKeyOf(node.left);
+      if (key) found.push(key);
+    } else if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
+      const { expression: owner, name } = node.expression;
+      const reflective =
+        ts.isIdentifier(owner) &&
+        ((owner.text === 'Reflect' && ['set', 'defineProperty'].includes(name.text)) ||
+          (owner.text === 'Object' && ['defineProperty', 'defineProperties', 'assign'].includes(name.text)));
+      if (!reflective) continue;
+      for (const argument of node.arguments) {
+        const key = mentionsSecurityKey(argument);
+        if (key) found.push(key);
+      }
+    }
+  }
+
+  return found;
+}
+
+function configuresWindows(source: string): boolean {
+  return nodesOf(source).some(
+    (node) =>
+      (ts.isIdentifier(node) && node.text === 'webPreferences') ||
+      (ts.isNewExpression(node) && ts.isIdentifier(node.expression) && WINDOW_CONSTRUCTORS.includes(node.expression.text)),
+  );
+}
+
+function securityKeysSpelledInObjectLiterals(source: string): string[] {
+  const found: string[] = [];
+  for (const node of nodesOf(source)) {
+    if (!ts.isObjectLiteralExpression(node)) continue;
+    for (const property of node.properties) {
+      if (ts.isSpreadAssignment(property)) continue;
+      const name = propertyNameText(property.name);
+      if (name !== undefined && SECURITY_KEYS.includes(name)) found.push(name);
+    }
+  }
+  return found;
+}
+
+function sandboxOffSwitchesIn(source: string): string[] {
+  const found: string[] = [];
+  for (const node of nodesOf(source)) {
+    const text =
+      ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateLiteralToken(node)
+        ? node.text
+        : undefined;
+    if (text === undefined) continue;
+    for (const flag of SANDBOX_OFF_SWITCHES) if (text.includes(flag)) found.push(flag);
+  }
+  return found;
+}
+
+function otherHostsIn(source: string): string[] {
+  const found: string[] = [];
+  for (const node of nodesOf(source)) {
+    if (ts.isIdentifier(node) && ['BrowserView', 'WebContentsView', 'BaseWindow'].includes(node.text)) {
+      found.push(node.text);
+    } else if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && /<webview\b/.test(node.text)) {
+      found.push('<webview');
+    }
+  }
+  return found;
+}
+
+function createsWindows(source: string): boolean {
+  return nodesOf(source).some(
+    (node) => ts.isNewExpression(node) && ts.isIdentifier(node.expression) && WINDOW_CONSTRUCTORS.includes(node.expression.text),
+  );
+}
+
+function webPreferencesNotFromSandboxedBuilder(source: string): number {
+  let offenders = 0;
+  for (const node of nodesOf(source)) {
+    const isName =
+      ts.isIdentifier(node) || ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node);
+    if (!isName || node.text !== 'webPreferences') continue;
+    const parent = node.parent;
+    const sanctioned =
+      ts.isPropertyAssignment(parent) &&
+      parent.name === node &&
+      ts.isCallExpression(parent.initializer) &&
+      ts.isIdentifier(parent.initializer.expression) &&
+      parent.initializer.expression.text === 'sandboxedWebPreferences';
+    if (!sanctioned) offenders += 1;
+  }
+  return offenders;
+}
+
+function isCallOf(node: ts.Node, owner: string, member: string): node is ts.CallExpression {
+  return (
+    ts.isCallExpression(node) &&
+    ts.isPropertyAccessExpression(node.expression) &&
+    ts.isIdentifier(node.expression.expression) &&
+    node.expression.expression.text === owner &&
+    node.expression.name.text === member
+  );
+}
+
+type SandboxPlacement = 'ok' | 'missing' | 'repeated' | 'not a top-level statement' | 'after whenReady';
+
+function enableSandboxPlacement(source: string): SandboxPlacement {
+  const file = parse(source);
+  const calls = nodesOf(source).filter(
+    (node): node is ts.CallExpression =>
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'enableSandbox',
+  );
+  if (calls.length === 0) return 'missing';
+  if (calls.length > 1) return 'repeated';
+
+  const topLevel = file.statements.find(
+    (statement) =>
+      ts.isExpressionStatement(statement) &&
+      isCallOf(statement.expression, 'app', 'enableSandbox') &&
+      statement.expression.arguments.length === 0,
+  );
+  if (!topLevel) return 'not a top-level statement';
+
+  const firstReady = nodesOf(source).find(
+    (node) => ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === 'whenReady',
+  );
+  if (!firstReady || firstReady.getStart(file) < topLevel.getStart(file)) return 'after whenReady';
+
+  return 'ok';
 }
 
 describe('renderer windows stay sandboxed', () => {
   const sources = readAll(SRC_ROOT, ['.ts']);
+  const named = (read: (source: string) => unknown[], only?: (path: string) => boolean) =>
+    sources
+      .filter((file) => (only ? only(file.path) : true))
+      .map((file) => ({ file: relative(SRC_ROOT, file.path), found: read(file.source) }))
+      .filter((entry) => entry.found.length > 0);
 
   it('scans the main and preload trees', () => {
     expect(sources.length).toBeGreaterThanOrEqual(90);
   });
 
-  it('weakens no web preference and passes no flag that turns the sandbox off', () => {
-    const offenders = sources
-      .map((file) => ({ file: relative(SRC_ROOT, file.path), found: weakeningsIn(file.source) }))
-      .filter((entry) => entry.found.length > 0);
+  it('passes no switch that turns the sandbox or web security off', () => {
+    expect(named(sandboxOffSwitchesIn)).toEqual([]);
+  });
+
+  it('spells no security preference key in a file that configures windows, except the builder', () => {
+    const offenders = named(
+      securityKeysSpelledInObjectLiterals,
+      (path) => path !== WEB_PREFERENCES_BUILDER && configuresWindows(sources.find((file) => file.path === path)?.source ?? ''),
+    );
 
     expect(offenders).toEqual([]);
   });
@@ -127,135 +309,164 @@ describe('renderer windows stay sandboxed', () => {
   it('gives both windows that builder', () => {
     const byPath = new Map(sources.map((file) => [file.path, file.source]));
 
-    for (const path of [MAIN_INDEX, MINI_LIVE_WINDOW]) {
+    for (const path of WINDOW_FILES) {
       const source = byPath.get(path) ?? '';
-      expect(stripComments(source), relative(SRC_ROOT, path)).toMatch(
-        /\bwebPreferences\s*:\s*sandboxedWebPreferences\(/,
-      );
+      expect(configuresWindows(source), relative(SRC_ROOT, path)).toBe(true);
+      expect(webPreferencesNotFromSandboxedBuilder(source), relative(SRC_ROOT, path)).toBe(0);
     }
   });
 
   it('opens windows only from the two files that hand them the builder', () => {
     const creators = sources
-      .filter((file) => /\bnew\s+BrowserWindow\b|\bBrowserWindowCtor\s*\(/.test(stripComments(file.source)))
+      .filter((file) => createsWindows(file.source))
       .map((file) => file.path)
       .sort();
 
-    expect(creators).toEqual([MAIN_INDEX, MINI_LIVE_WINDOW].sort());
+    expect(creators).toEqual([...WINDOW_FILES].sort());
   });
 
-  it('hosts no web content in a view, webview or other process Electron would not sandbox the same way', () => {
-    const offenders = sources
-      .map((file) => ({ file: relative(SRC_ROOT, file.path), found: otherHostsIn(file.source) }))
-      .filter((entry) => entry.found.length > 0);
-
-    expect(offenders).toEqual([]);
+  it('hosts no web content in a view, webview or base window Electron would not sandbox the same way', () => {
+    expect(named(otherHostsIn)).toEqual([]);
   });
 
-  it('asks Electron to sandbox every renderer at module top level, before the app is ready', () => {
+  it('value-imports a window class, or the whole electron module, in no file but the two that build windows', () => {
+    expect(named(windowImportsFromElectron, (path) => !WINDOW_FILES.includes(path))).toEqual([]);
+  });
+
+  it('assigns, defines or reflects no security preference anywhere', () => {
+    expect(named(securityPreferenceMutations)).toEqual([]);
+  });
+
+  it('asks Electron to sandbox every renderer from a top-level statement of the main entry, before the app is ready', () => {
     const source = sources.find((file) => file.path === MAIN_INDEX)?.source ?? '';
-    const code = stripComments(source);
 
-    expect(enableSandboxAtModuleTopLevel(source)).toBe(true);
-    expect(code.search(/^app\.enableSandbox\(\);/m)).toBeLessThan(code.indexOf('app.whenReady()'));
+    expect(enableSandboxPlacement(source)).toBe('ok');
   });
 
-  it('imports a window class from electron in no file but the two that build windows', () => {
-    const offenders = sources
-      .filter((file) => file.path !== MAIN_INDEX && file.path !== MINI_LIVE_WINDOW)
-      .map((file) => ({ file: relative(SRC_ROOT, file.path), found: windowImportsFromElectron(file.source) }))
-      .filter((entry) => entry.found.length > 0);
+  it('spells the security keys in the builder, so the scan above reaches the one file that must', () => {
+    const builder = sources.find((file) => file.path === WEB_PREFERENCES_BUILDER)?.source ?? '';
 
-    expect(offenders).toEqual([]);
+    expect(securityKeysSpelledInObjectLiterals(builder).sort()).toEqual(
+      ['contextIsolation', 'nodeIntegration', 'sandbox'].sort(),
+    );
+    expect(join('main', 'web-preferences.ts')).toBe(relative(SRC_ROOT, WEB_PREFERENCES_BUILDER));
   });
 
-  it('assigns no security-relevant web preference anywhere', () => {
-    const offenders = sources
-      .map((file) => ({ file: relative(SRC_ROOT, file.path), found: webPreferenceAssignmentsIn(file.source) }))
-      .filter((entry) => entry.found.length > 0);
+  describe('red state demonstrated', () => {
+    it('an aliased window import is caught, in any electron entry point, and a type-only one is not', () => {
+      expect(windowImportsFromElectron("import { BrowserWindow as BW } from 'electron';")).toEqual(['BrowserWindow']);
+      expect(windowImportsFromElectron("import { BrowserWindow as BW } from 'electron/main';")).toEqual(['BrowserWindow']);
+      expect(windowImportsFromElectron("import { app, type BaseWindow, WebContentsView } from 'electron';")).toEqual([
+        'WebContentsView',
+      ]);
+      expect(windowImportsFromElectron("import type { BrowserWindow } from 'electron';")).toEqual([]);
+      expect(windowImportsFromElectron("import { app, net } from 'electron';")).toEqual([]);
+    });
 
-    expect(offenders).toEqual([]);
-  });
+    it('reaching the classes through the whole module, a re-export or a load is caught', () => {
+      expect(windowImportsFromElectron("import * as e from 'electron';")).toEqual(['whole electron module']);
+      expect(windowImportsFromElectron("import electron from 'electron/main';")).toEqual(['whole electron module']);
+      expect(windowImportsFromElectron("const e = require('electron');")).toEqual(['whole electron module']);
+      expect(windowImportsFromElectron("const e = await import('electron/main');")).toEqual(['whole electron module']);
+      expect(windowImportsFromElectron("import e = require('electron');")).toEqual(['whole electron module']);
+      expect(windowImportsFromElectron("export { BaseWindow } from 'electron';")).toEqual(['BaseWindow']);
+      expect(windowImportsFromElectron("import {\n  app,\n  BrowserWindow as BW,\n} from 'electron';")).toEqual([
+        'BrowserWindow',
+      ]);
+    });
 
-  it('spells the sandbox, isolation and node-integration keys only in the builder', () => {
-    const spellers = sources
-      .filter((file) => definesSecurityPreferenceKey(file.source))
-      .map((file) => relative(SRC_ROOT, file.path));
+    it('assigning a security preference is caught, however it is spelled', () => {
+      expect(securityPreferenceMutations('webPreferences.sandbox = !true;')).toEqual(['sandbox']);
+      expect(securityPreferenceMutations("prefs['nodeIntegration'] = flag;")).toEqual(['nodeIntegration']);
+      expect(securityPreferenceMutations('prefs.contextIsolation &&= other;')).toEqual(['contextIsolation']);
+      expect(securityPreferenceMutations('(prefs as Loose).webSecurity = false;')).toEqual(['webSecurity']);
+      expect(securityPreferenceMutations('if (prefs.sandbox === true) {}')).toEqual([]);
+    });
 
-    expect(spellers).toEqual([join('main', 'web-preferences.ts')]);
-  });
+    it('Reflect, Object.defineProperty and Object.assign naming a security preference are caught', () => {
+      expect(securityPreferenceMutations("Reflect.set(prefs, 'sandbox', false);")).toEqual(['sandbox']);
+      expect(securityPreferenceMutations("Object.defineProperty(prefs, 'nodeIntegration', { value: true });")).toEqual([
+        'nodeIntegration',
+      ]);
+      expect(securityPreferenceMutations('Object.assign(prefs, { contextIsolation: false });')).toEqual([
+        'contextIsolation',
+      ]);
+      expect(securityPreferenceMutations("Object.assign(prefs, { preload: 'x' });")).toEqual([]);
+    });
 
-  it('red state demonstrated: an aliased window import is caught, a type-only one is not', () => {
-    expect(windowImportsFromElectron("import { BrowserWindow as BW } from 'electron';")).toEqual(['BrowserWindow']);
-    expect(windowImportsFromElectron("import { app, type BaseWindow, WebContentsView } from 'electron';")).toEqual([
-      'WebContentsView',
-    ]);
-    expect(windowImportsFromElectron("import type { BrowserWindow } from 'electron';")).toEqual([]);
-    expect(windowImportsFromElectron("import { app, net } from 'electron';")).toEqual([]);
-  });
+    it('a security key spelled in an object literal is caught, whatever value it holds', () => {
+      expect(securityKeysSpelledInObjectLiterals('const a = { sandbox: !true };')).toEqual(['sandbox']);
+      expect(
+        securityKeysSpelledInObjectLiterals('const a = { ...sandboxedWebPreferences(p), nodeIntegration: x };'),
+      ).toEqual(['nodeIntegration']);
+      expect(securityKeysSpelledInObjectLiterals("const a = { 'webSecurity': false, [`sandbox`]: 0 };")).toEqual([
+        'webSecurity',
+        'sandbox',
+      ]);
+      expect(securityKeysSpelledInObjectLiterals('sandboxedWebPreferences(p)')).toEqual([]);
+    });
 
-  it('red state demonstrated: reaching the classes through the whole module is caught', () => {
-    expect(windowImportsFromElectron("import * as e from 'electron';")).toEqual(['whole electron module']);
-    expect(windowImportsFromElectron("import electron from 'electron';")).toEqual(['whole electron module']);
-    expect(windowImportsFromElectron("const e = require('electron');")).toEqual(['whole electron module']);
-    expect(windowImportsFromElectron("export { BaseWindow } from 'electron';")).toEqual(['BaseWindow']);
-    expect(
-      windowImportsFromElectron("import {\n  app,\n  BrowserWindow as BW,\n} from 'electron';"),
-    ).toEqual(['BrowserWindow']);
-  });
+    it('an unrelated sandbox key is not held against a file that configures no window', () => {
+      const unrelated = 'export const policy = { sandbox: 1 };';
 
-  it('red state demonstrated: assigning a security preference is caught', () => {
-    expect(webPreferenceAssignmentsIn('webPreferences.sandbox = !true;')).toEqual(['sandbox']);
-    expect(webPreferenceAssignmentsIn("prefs['nodeIntegration'] = flag;")).toEqual(['nodeIntegration']);
-    expect(webPreferenceAssignmentsIn('prefs.contextIsolation &&= other;')).toEqual(['contextIsolation']);
-    expect(webPreferenceAssignmentsIn('if (prefs.sandbox === true) {}')).toEqual([]);
-  });
+      expect(configuresWindows(unrelated)).toBe(false);
+      expect(configuresWindows('const w = { webPreferences: { sandbox: 1 } };')).toBe(true);
+    });
 
-  it('red state demonstrated: a computed value for a security key is caught', () => {
-    expect(definesSecurityPreferenceKey('{ sandbox: !true }')).toBe(true);
-    expect(definesSecurityPreferenceKey('{ ...sandboxedWebPreferences(p), nodeIntegration: x }')).toBe(true);
-    expect(definesSecurityPreferenceKey('sandboxedWebPreferences(p)')).toBe(false);
-  });
+    it('shorthand and non-builder web preferences are caught', () => {
+      expect(webPreferencesNotFromSandboxedBuilder('new BW({ webPreferences })')).toBe(1);
+      expect(webPreferencesNotFromSandboxedBuilder('new BW({ webPreferences: { preload } })')).toBe(1);
+      expect(webPreferencesNotFromSandboxedBuilder('win.webPreferences = x;')).toBe(1);
+      expect(webPreferencesNotFromSandboxedBuilder('new BW({ webPreferences: sandboxedWebPreferences(p) })')).toBe(0);
+    });
 
-  it('red state demonstrated: shorthand web preferences are caught', () => {
-    expect(webPreferencesNotFromSandboxedBuilder('new BW({ webPreferences })')).toBe(1);
-  });
+    it('a // inside a string literal hides nothing on the rest of its line', () => {
+      const hiding = "const home = 'https://example.test'; prefs.sandbox = false; Reflect.set(p, 'nodeIntegration', 1);";
 
-  it('red state demonstrated: enableSandbox inside a function is not top level', () => {
-    const inFunction = 'async function bootstrap() {\napp.enableSandbox();\n}\napp.whenReady();';
-    const indented = 'async function bootstrap() {\n  app.enableSandbox();\n}\napp.whenReady();';
-    const conditional = 'if (x) app.enableSandbox();\napp.whenReady();';
+      expect(securityPreferenceMutations(hiding)).toEqual(['sandbox', 'nodeIntegration']);
+      expect(windowImportsFromElectron("const u = 'https://x.test'; import { BrowserWindow as BW } from 'electron';")).toEqual([
+        'BrowserWindow',
+      ]);
+    });
 
-    expect(enableSandboxAtModuleTopLevel(inFunction)).toBe(false);
-    expect(enableSandboxAtModuleTopLevel(indented)).toBe(false);
-    expect(enableSandboxAtModuleTopLevel(conditional)).toBe(false);
-    expect(enableSandboxAtModuleTopLevel('app.enableSandbox();\napp.whenReady();')).toBe(true);
-  });
+    it('a weakening named only in a comment is not a finding', () => {
+      expect(securityPreferenceMutations('// prefs.sandbox = false would break the preload\nconst x = 1;')).toEqual([]);
+      expect(securityKeysSpelledInObjectLiterals('/* { sandbox: false } */ const x = 1;')).toEqual([]);
+    });
 
-  it('red state demonstrated: each weakening is caught', () => {
-    expect(weakeningsIn('webPreferences: { sandbox: false }')).toEqual(['sandbox: false']);
-    expect(weakeningsIn('{ nodeIntegration: true, contextIsolation: false }')).toEqual([
-      'nodeIntegration: true',
-      'contextIsolation: false',
-    ]);
-    expect(weakeningsIn("app.commandLine.appendSwitch('no-sandbox')")).toEqual(['no-sandbox']);
-    expect(weakeningsIn("args: ['--no-sandbox']")).toEqual(['no-sandbox']);
-    expect(weakeningsIn("appendSwitch('disable-gpu-sandbox')")).toEqual(['disable-gpu-sandbox']);
-  });
+    it('each sandbox-off switch is caught, in a string and not in a comment', () => {
+      expect(sandboxOffSwitchesIn("app.commandLine.appendSwitch('no-sandbox');")).toEqual(['no-sandbox']);
+      expect(sandboxOffSwitchesIn("args: ['--no-sandbox']")).toEqual(['no-sandbox']);
+      expect(sandboxOffSwitchesIn("appendSwitch('disable-gpu-sandbox')")).toEqual(['disable-gpu-sandbox']);
+      expect(sandboxOffSwitchesIn("appendSwitch('disable-web-security')")).toEqual(['disable-web-security']);
+      expect(sandboxOffSwitchesIn('// no-sandbox')).toEqual([]);
+    });
 
-  it('red state demonstrated: hand-written web preferences are caught', () => {
-    expect(webPreferencesNotFromSandboxedBuilder('new BrowserWindow({ webPreferences: { preload } })')).toBe(1);
-    expect(
-      webPreferencesNotFromSandboxedBuilder('new BrowserWindow({ webPreferences: sandboxedWebPreferences(p) })'),
-    ).toBe(0);
-  });
+    it('a view, base window or webview is caught', () => {
+      expect(otherHostsIn('new WebContentsView({})')).toEqual(['WebContentsView']);
+      expect(otherHostsIn('new BaseWindow({})')).toEqual(['BaseWindow']);
+      expect(otherHostsIn("const html = '<webview src=\"x\"></webview>';")).toEqual(['<webview']);
+    });
 
-  it('red state demonstrated: a view or webview is caught', () => {
-    expect(otherHostsIn('new WebContentsView({})')).toEqual(['WebContentsView']);
-    expect(otherHostsIn('<webview src="x" />')).toEqual(['<webview']);
-  });
+    it('enableSandbox is accepted only as a top-level statement ahead of whenReady', () => {
+      const topLevel = 'app.enableSandbox();\napp.whenReady();';
 
-  it('ignores a weakening named only in a comment', () => {
-    expect(weakeningsIn('// sandbox: false would break the preload\nconst x = 1;')).toEqual([]);
+      expect(enableSandboxPlacement(topLevel)).toBe('ok');
+      expect(enableSandboxPlacement('async function bootstrap() {\napp.enableSandbox();\n}\napp.whenReady();')).toBe(
+        'not a top-level statement',
+      );
+      expect(enableSandboxPlacement('if (x) {\napp.enableSandbox();\n}\napp.whenReady();')).toBe(
+        'not a top-level statement',
+      );
+      expect(enableSandboxPlacement('if (cond)\napp.enableSandbox();\napp.whenReady();')).toBe(
+        'not a top-level statement',
+      );
+      expect(enableSandboxPlacement('try { app.enableSandbox(); } catch {}\napp.whenReady();')).toBe(
+        'not a top-level statement',
+      );
+      expect(enableSandboxPlacement('app.whenReady();\napp.enableSandbox();')).toBe('after whenReady');
+      expect(enableSandboxPlacement('app.whenReady();')).toBe('missing');
+      expect(enableSandboxPlacement('app.enableSandbox();\napp.enableSandbox();\napp.whenReady();')).toBe('repeated');
+    });
   });
 });
