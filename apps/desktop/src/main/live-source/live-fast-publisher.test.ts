@@ -27,6 +27,7 @@ function damage(overrides: Partial<LiveDamage> = {}): LiveDamage {
       explosionWithoutBomb: none,
       streamDiscontinuity: none,
       unresolvedOverlap: { damage: 50, props: 0, gold: 0 },
+      ambiguousPlanter: none,
       explosionlessWithoutFantasma: none,
       sharedOrUnattributedKill: { damage: 0, props: 2, gold: 90 },
       noHitOnLootCell: none,

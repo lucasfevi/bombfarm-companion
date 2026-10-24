@@ -1,5 +1,26 @@
 # @bombfarm/desktop
 
+## 0.32.2
+
+### Patch Changes
+
+- e009108: The desktop app now checks who is calling before it answers a request from a window: only the app's own top-level pages are served, and the compact Live window is limited to the requests it actually makes.
+- 8014b2c: The Live screen now credits each bomb to the hero standing on its cell when it is planted, instead of guessing from the bomb's fuse time. Late in a run, when several heroes share the same capped fuse time, damage could be credited to a hero who was nowhere near the bomb. When two or more heroes stand on the same cell and nothing tells them apart, the damage now counts as unattributed rather than going to the wrong hero.
+- ddcd119: The optimizer no longer asks you to move points that make no real difference. After it finds the best build, it puts back any change from your current build that is worth almost nothing (such as a single point in Speed), as long as the plan as a whole stays within 0.5% of the best it found. That cap covers all the dropped changes together, not each one. The gain each plan shows is now the gain of the trimmed plan you are asked to apply. A plan whose whole gain is under 0.5% now keeps your current build. This applies to the Team Plan on desktop and web, the Farm respec, and the Optimize button on each hero's points.
+- 6e18682: Both app windows now run in Chromium's renderer sandbox, so the pages they show no longer share a process with any Node access.
+- Updated dependencies [8014b2c]
+- Updated dependencies [ddcd119]
+  - @bombfarm/game-data@0.0.26
+  - @bombfarm/contracts@0.16.1
+  - @bombfarm/domain@1.15.2
+  - @bombfarm/hero@0.7.6
+  - @bombfarm/game-api@0.8.7
+  - @bombfarm/pricing@0.4.8
+  - @bombfarm/account@0.3.22
+  - @bombfarm/farm@1.5.4
+  - @bombfarm/game-art@0.8.11
+  - @bombfarm/team-plan@0.8.4
+
 ## 0.32.1
 
 ### Patch Changes

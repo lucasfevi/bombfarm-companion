@@ -157,6 +157,7 @@ describe('UNATTRIBUTED_REASONS', () => {
     expect(everyReason).toBe(true);
     expect(new Set(UNATTRIBUTED_REASONS).size).toBe(UNATTRIBUTED_REASONS.length);
     expect([...UNATTRIBUTED_REASONS].sort()).toEqual([
+      'ambiguousPlanter',
       'explosionWithoutBomb',
       'explosionlessWithoutFantasma',
       'noHitOnLootCell',
@@ -174,6 +175,7 @@ describe('sameLiveDamage', () => {
     'explosionWithoutBomb',
     'streamDiscontinuity',
     'unresolvedOverlap',
+    'ambiguousPlanter',
     'explosionlessWithoutFantasma',
     'sharedOrUnattributedKill',
     'noHitOnLootCell',

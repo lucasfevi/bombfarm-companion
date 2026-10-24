@@ -64,6 +64,7 @@ describe('createMiniLiveBrowserWindow', () => {
 
     class FakeBrowserWindow {
       webContents = {
+        id: 1,
         loadURL: vi.fn(() => Promise.resolve()),
         on: vi.fn(),
       };
@@ -127,6 +128,7 @@ function createFakeBrowserWindowCtor() {
 
   class FakeBrowserWindow {
     webContents = {
+      id: 1,
       loadURL: vi.fn(() => Promise.resolve()),
       on: vi.fn(),
     };
@@ -404,6 +406,7 @@ describe('createMiniLiveBrowserWindow — revealed at construction, exactly once
 
     class FakeBrowserWindow {
       webContents = {
+        id: 1,
         loadURL,
         on: (event: string, listener: (...args: unknown[]) => void) => {
           contentsListeners.set(event, listener);

@@ -31,6 +31,7 @@ const ALL_REASONS: readonly UnattributedReason[] = [
   'explosionWithoutBomb',
   'streamDiscontinuity',
   'unresolvedOverlap',
+  'ambiguousPlanter',
   'explosionlessWithoutFantasma',
   'sharedOrUnattributedKill',
   'noHitOnLootCell',
@@ -830,6 +831,16 @@ describe('DamageFold: diagnostics logs', () => {
     expect(logged.eventsOf('live_damage.fingerprint_disagreement')).toHaveLength(2);
   });
 
+  it('logs cell-owner conflicts in aggregate, at each tenfold of the running total', () => {
+    const conflicts = (cellOwnerConflicts: number) =>
+      creditOf({ bombs: { births: 0, adopted: 0, owned: 0, cellOwnerConflicts } });
+    const { attributor } = fakeAttributor((call) => conflicts(call === 1 ? 0 : 1));
+    const logged = recordingLog();
+    const { step } = makeHarness({ attributor, log: logged.log });
+    for (let frame = 0; frame < 12; frame += 1) step({});
+    expect(logged.eventsOf('live_damage.cell_owner_conflicts').map((record) => record.total)).toEqual([1, 10]);
+  });
+
   it('logs each Unattributed reason once per session, when its first amount appears', () => {
     const logged = recordingLog();
     const { fold, step } = makeHarness({ log: logged.log });
@@ -967,6 +978,7 @@ describe('DamageFold: replaying the combat capture', () => {
       explosionWithoutBomb: { damage: 0, props: 0, gold: 0 },
       streamDiscontinuity: { damage: 0, props: 0, gold: 0 },
       unresolvedOverlap: { damage: 2_373_305, props: 0, gold: 0 },
+      ambiguousPlanter: { damage: 0, props: 0, gold: 0 },
       explosionlessWithoutFantasma: { damage: 0, props: 0, gold: 0 },
       sharedOrUnattributedKill: { damage: 0, props: 6, gold: 129_662 },
       noHitOnLootCell: { damage: 0, props: 0, gold: 0 },

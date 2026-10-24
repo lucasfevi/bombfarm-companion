@@ -10,6 +10,7 @@
  */
 import { SLOTS } from '../gear/catalog';
 import { requiresPointReset } from '../respec-cost';
+import { trimTowardCurrent } from '../points-trim';
 import type { PointAlloc } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { wikiPhaseLine } from '../phase-wiki';
@@ -467,7 +468,48 @@ export function chooseGearCandidate(input: ChooseGearCandidateInput): ChosenGear
   return {
     candidate: winner.candidate,
     gearEvaluation: winner.gearEvaluation,
-    respec: winner.respec,
+    respec: trimRespec(input, winner.candidate, winner.gearEvaluation, winner.respec),
     todayEvaluation,
   };
+}
+
+/** Bound on the trim pass `trimRespec` runs on the winning candidate. */
+export const TEAM_PLAN_TRIM_MAX_EVALUATIONS = 200;
+
+/**
+ * The winning respec trimmed back toward the current points (`trimTowardCurrent`), then accepted
+ * again so `acceptedHeroIds` and `gainByHeroId` describe the trimmed vectors. Once, on the winner
+ * only: the per-round point passes are left untrimmed, or each round would give up its own share.
+ */
+function trimRespec(
+  input: ChooseGearCandidateInput,
+  candidate: GearCandidate,
+  gearEvaluation: RosterEvaluation,
+  respec: AcceptedRespec,
+): AcceptedRespec {
+  if (respec.acceptedHeroIds.length === 0) return respec;
+  const { contexts, gearInput, itemById, currentPts, farmObjective } = input;
+  const trim = trimTowardCurrent({
+    current: new Map(Object.entries(currentPts)),
+    proposed: new Map(Object.entries(respec.ptsByHeroId)),
+    proposedValue: respec.objective,
+    currentValue: gearEvaluation.objective,
+    evaluate: (vectors) =>
+      evaluateAt(contexts, candidate.assignment, Object.fromEntries(vectors), gearInput, itemById, candidate.floor, farmObjective)
+        .objective,
+    maxEvaluations: TEAM_PLAN_TRIM_MAX_EVALUATIONS,
+  });
+  const trimmed: Record<string, PointAlloc> = Object.fromEntries(trim.vectors);
+  if (!Object.keys(trimmed).some((heroId) => ptsChanged(trimmed[heroId], respec.ptsByHeroId[heroId]))) return respec;
+  return acceptPointResets(
+    contexts,
+    candidate.assignment,
+    currentPts,
+    trimmed,
+    gearInput,
+    itemById,
+    candidate.floor,
+    gearEvaluation,
+    farmObjective,
+  );
 }

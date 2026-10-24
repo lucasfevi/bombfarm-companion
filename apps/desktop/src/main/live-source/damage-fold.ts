@@ -84,6 +84,8 @@ export class DamageFold {
   #frameFailureLogged = false;
   readonly #loggedReasons = new Set<UnattributedReason>();
   readonly #loggedDisagreements = new Set<string>();
+  #cellOwnerConflicts = 0;
+  #nextConflictLogAt = 1;
 
   constructor(deps: DamageFoldDeps) {
     this.#deps = deps;
@@ -119,6 +121,7 @@ export class DamageFold {
       this.#logReasonOnce(reason, amounts);
     }
     for (const disagreement of credit.disagreements) this.#logDisagreementOnce(disagreement);
+    this.#countCellOwnerConflicts(credit.bombs.cellOwnerConflicts);
   }
 
   setRoster(rawHeroes: readonly unknown[]): void {
@@ -136,6 +139,8 @@ export class DamageFold {
       this.#buckets = [];
       this.#present = new Set();
       this.#loggedDisagreements.clear();
+      this.#cellOwnerConflicts = 0;
+      this.#nextConflictLogAt = 1;
       this.#attributor.clear();
     }
   }
@@ -221,6 +226,18 @@ export class DamageFold {
       heroId: disagreement.heroId,
       seeded: disagreement.seeded,
       learned: disagreement.learned,
+    });
+  }
+
+  #countCellOwnerConflicts(conflicts: number): void {
+    if (conflicts === 0) return;
+    this.#cellOwnerConflicts += conflicts;
+    if (this.#cellOwnerConflicts < this.#nextConflictLogAt) return;
+    while (this.#nextConflictLogAt <= this.#cellOwnerConflicts) this.#nextConflictLogAt *= 10;
+    this.#deps.log.info({
+      scope: 'live-source',
+      event: 'live_damage.cell_owner_conflicts',
+      total: this.#cellOwnerConflicts,
     });
   }
 
