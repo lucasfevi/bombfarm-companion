@@ -29,3 +29,23 @@ export function refuseDebugSwitchesWhenPackaged(deps: DebugSwitchGuardDeps): boo
   deps.exit(1);
   return true;
 }
+
+/**
+ * The DevTools server opens only after main's synchronous part returns (measured), so this must
+ * run synchronously, ahead of every `await`: a call placed after one reopens the port.
+ */
+export function refuseDebugSwitchesOfPackagedApp(
+  app: { readonly isPackaged: boolean; exit(code: number): void },
+  proc: { readonly argv: readonly string[]; readonly stderr: { write(line: string): unknown } },
+): boolean {
+  return refuseDebugSwitchesWhenPackaged({
+    isPackaged: app.isPackaged,
+    argv: proc.argv,
+    exit: (code) => {
+      app.exit(code);
+    },
+    writeLine: (line) => {
+      proc.stderr.write(`${line}\n`);
+    },
+  });
+}

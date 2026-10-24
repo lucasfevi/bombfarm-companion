@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { findForbiddenDebugSwitch, refuseDebugSwitchesWhenPackaged } from './debug-switch-guard.js';
+import {
+  findForbiddenDebugSwitch,
+  refuseDebugSwitchesOfPackagedApp,
+  refuseDebugSwitchesWhenPackaged,
+} from './debug-switch-guard.js';
 
 const EXE = 'C:\\Users\\player\\AppData\\Local\\Programs\\Bomb Farm Companion\\Bomb Farm Companion.exe';
 
@@ -52,6 +56,13 @@ describe('findForbiddenDebugSwitch', () => {
     expect(findForbiddenDebugSwitch([])).toBeNull();
   });
 
+  it('leaves alone a switch whose name only contains the word mid-name', () => {
+    expect(findForbiddenDebugSwitch([EXE, '--no-inspect'])).toBeNull();
+    expect(findForbiddenDebugSwitch([EXE, '--enable-remote-debugging-port=1'])).toBeNull();
+    expect(findForbiddenDebugSwitch([EXE, '--my-js-flags=x'])).toBeNull();
+    expect(findForbiddenDebugSwitch([EXE, '--disable-remote-allow-origins'])).toBeNull();
+  });
+
   it('does not take a path or a value that merely contains the word for a switch', () => {
     expect(findForbiddenDebugSwitch(['C:\\tools\\inspect\\app.exe', '--note=inspect'])).toBeNull();
   });
@@ -95,20 +106,60 @@ describe('refuseDebugSwitchesWhenPackaged', () => {
 describe('the main entry', () => {
   const source = readFileSync(path.join(__dirname, '..', 'index.ts'), 'utf8');
 
-  it('refuses debugging switches before it resolves its environment, registers a scheme or touches the app identity', () => {
-    const guardAt = source.indexOf('refuseDebugSwitchesWhenPackaged({');
-    expect(guardAt).toBeGreaterThan(-1);
+  const CALL = 'refuseDebugSwitchesOfPackagedApp(app, process);';
+
+  it('calls the guard with the real app and process, once, as a top-level statement', () => {
+    expect(source.split(CALL)).toHaveLength(2);
+    expect(source).toMatch(new RegExp(`^${CALL.replace(/[()]/g, '\\$&')}$`, 'm'));
+  });
+
+  it('calls it synchronously, ahead of every await, whenReady, scheme registration, identity and environment work', () => {
+    const callAt = source.indexOf(CALL);
+    const before = source.slice(0, callAt);
+    expect(before).not.toMatch(/\bawait\b/);
+    expect(before).not.toContain('whenReady');
+    expect(before).not.toContain('.then(');
     for (const later of ['const env = resolveBootEnv()', 'registerRendererSchemeAsPrivileged();', 'applyAppIdentity(app', 'app.whenReady()']) {
       const laterAt = source.indexOf(later);
       expect(laterAt, later).toBeGreaterThan(-1);
-      expect(guardAt, later).toBeLessThan(laterAt);
+      expect(callAt, later).toBeLessThan(laterAt);
     }
   });
+});
 
-  it('ends the process with app.exit, not a graceful quit', () => {
-    const guardAt = source.indexOf('refuseDebugSwitchesWhenPackaged({');
-    const guardCall = source.slice(guardAt, source.indexOf('});', guardAt));
-    expect(guardCall).toContain('app.exit(');
-    expect(guardCall).not.toContain('app.quit');
+describe('refuseDebugSwitchesOfPackagedApp', () => {
+  function run(isPackaged: boolean, argv: readonly string[]) {
+    const exits: number[] = [];
+    const written: string[] = [];
+    const refused = refuseDebugSwitchesOfPackagedApp(
+      { isPackaged, exit: (code) => exits.push(code) },
+      { argv, stderr: { write: (line) => written.push(line) } },
+    );
+    return { refused, exits, written };
+  }
+
+  it('exits with code 1 through app.exit and writes one line to stderr when packaged with a debugging switch', () => {
+    const { refused, exits, written } = run(true, [EXE, '--remote-debugging-port=9222']);
+    expect(refused).toBe(true);
+    expect(exits).toEqual([1]);
+    expect(written).toEqual(['debug_switch.refused --remote-debugging-port=9222\n']);
+  });
+
+  it('does not exit unpackaged, whatever the arguments', () => {
+    const { refused, exits, written } = run(false, [EXE, '--remote-debugging-port=0', '--inspect=0']);
+    expect(refused).toBe(false);
+    expect(exits).toEqual([]);
+    expect(written).toEqual([]);
+  });
+
+  it('does not exit when packaged with a clean argv', () => {
+    const { refused, exits, written } = run(true, [EXE, '--lang=en']);
+    expect(refused).toBe(false);
+    expect(exits).toEqual([]);
+    expect(written).toEqual([]);
+  });
+
+  it('reads the arguments it is handed, not an empty list', () => {
+    expect(run(true, [EXE, '--js-flags=--expose-gc']).refused).toBe(true);
   });
 });

@@ -55,8 +55,11 @@ a flip electron-builder skipped fails `pnpm package:*`. Consequences for tooling
 - **Playwright's `_electron.launch` cannot drive a packaged build.** It passes `--inspect` and
   `--remote-debugging-port`: the fuses make the main process ignore the first, and no fuse covers
   the second, so `src/main/shell/debug-switch-guard.ts` makes a packaged main exit at startup
-  when it sees either (Chromium opens the port before main runs, so a brief window remains). The
-  smoke suite launches the unpackaged `node_modules/electron/dist/electron.exe` with the project
+  when it sees either. **That guard must stay synchronous and ahead of every `await` in
+  `src/main/index.ts`:** measured, the DevTools server opens only after main's synchronous part
+  returns, so the port never answers while the guard runs first, and moving the call later (behind
+  an `await`, `whenReady` or any async setup) reopens it. A test pins the position. The smoke
+  suite launches the unpackaged `node_modules/electron/dist/electron.exe` with the project
   directory, which carries no fuses and is never refused.
 - **Nothing may spawn the app with `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS` or `--inspect`.** The
   app has no `fork()`; background work that needs its own process belongs in a `utilityProcess`.
