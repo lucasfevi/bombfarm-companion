@@ -422,44 +422,68 @@ test.describe.serial('renderer Content-Security-Policy', () => {
     expect(csp.takeViolations().length).toBeGreaterThan(0);
   });
 
-  test('a worker that evals and reaches a foreign origin is refused, and the suite guard sees it', async ({ csp }) => {
-    const probe = path.join(desktopRoot, 'renderer', 'out', '__csp-worker-probe.js');
-    fs.writeFileSync(
-      probe,
-      [
+  const WORKER_KINDS = [
+    {
+      kind: 'dedicated worker',
+      file: '__csp-worker-probe.js',
+      source: [
         'let evalRan = false;',
         `fetch('${FOREIGN}/worker-fetch').catch(() => {});`,
         "setTimeout(() => (0, eval)('evalRan = true'), 50);",
         'setTimeout(() => self.postMessage({ evalRan }), 400);',
-      ].join('\n'),
-    );
-    try {
-      csp.takeViolations();
-      const reply = await main.evaluate(
-        () =>
-          new Promise((resolve) => {
-            const worker = new Worker('/__csp-worker-probe.js');
-            worker.onmessage = (event) => resolve(event.data);
-          }),
-      );
-      expect(reply).toEqual({ evalRan: false });
+      ],
+      start: () =>
+        new Promise((resolve) => {
+          const worker = new Worker('/__csp-worker-probe.js');
+          worker.onmessage = (event) => resolve(event.data);
+        }),
+      fetchMark: 'worker-fetch',
+    },
+    {
+      kind: 'shared worker',
+      file: '__csp-shared-probe.js',
+      source: [
+        'let evalRan = false;',
+        `fetch('${FOREIGN}/shared-fetch').catch(() => {});`,
+        "setTimeout(() => (0, eval)('evalRan = true'), 50);",
+        'onconnect = (event) => setTimeout(() => event.ports[0].postMessage({ evalRan }), 400);',
+      ],
+      start: () =>
+        new Promise((resolve) => {
+          const worker = new SharedWorker('/__csp-shared-probe.js');
+          worker.port.onmessage = (event) => resolve(event.data);
+          worker.port.start();
+        }),
+      fetchMark: 'shared-fetch',
+    },
+  ];
 
-      const seen = [];
-      await expect
-        .poll(
-          () => {
-            seen.push(...csp.takeViolations());
-            return [
-              seen.some((entry) => entry.includes('worker-fetch')),
-              seen.some((entry) => entry.includes('EvalError: Refused to evaluate a string as JavaScript')),
-            ];
-          },
-          { timeout: 10_000, message: 'the guard saw the worker fetch and the worker eval' },
-        )
-        .toEqual([true, true]);
-      expect(seen.every((entry) => entry.startsWith('worker app://bundle/__csp-worker-probe.js'))).toBe(true);
-    } finally {
-      fs.rmSync(probe, { force: true });
-    }
-  });
+  for (const { kind, file, source, start, fetchMark } of WORKER_KINDS) {
+    test(`a ${kind} that evals and reaches a foreign origin is refused, and the suite guard sees it`, async ({ csp }) => {
+      const probe = path.join(desktopRoot, 'renderer', 'out', file);
+      fs.writeFileSync(probe, source.join('\n'));
+      try {
+        csp.takeViolations();
+        const reply = await main.evaluate(start);
+        expect(reply).toEqual({ evalRan: false });
+
+        const seen = [];
+        await expect
+          .poll(
+            () => {
+              seen.push(...csp.takeViolations());
+              return [
+                seen.some((entry) => entry.includes(fetchMark)),
+                seen.some((entry) => entry.includes('EvalError: Refused to evaluate a string as JavaScript')),
+              ];
+            },
+            { timeout: 10_000, message: `the guard saw the ${kind}'s fetch and eval` },
+          )
+          .toEqual([true, true]);
+        expect(seen.every((entry) => entry.startsWith(`worker app://bundle/${file}`))).toBe(true);
+      } finally {
+        fs.rmSync(probe, { force: true });
+      }
+    });
+  }
 });

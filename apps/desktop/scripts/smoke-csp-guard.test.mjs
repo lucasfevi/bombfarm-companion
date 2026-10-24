@@ -176,6 +176,43 @@ describe('the violation log', () => {
       });
     });
 
+    const created = (targetId, type, url = 'app://bundle/shared.js') => ({ targetInfo: { targetId, type, url } });
+    const attachCalls = (session) => session.sent.filter((call) => call.method === 'Target.attachToTarget');
+
+    it('discovers targets, because auto-attach never reaches a shared worker', async () => {
+      const { session } = await watched();
+      expect(session.sent).toContainEqual({ method: 'Target.setDiscoverTargets', params: { discover: true } });
+    });
+
+    it('attaches to a shared worker by id, and only to a shared worker', async () => {
+      const { session } = await watched();
+      session.emit('Target.targetCreated', created('t-page', 'page', 'app://bundle/index.html'));
+      session.emit('Target.targetCreated', created('t-shared', 'shared_worker'));
+      expect(attachCalls(session)).toEqual([
+        { method: 'Target.attachToTarget', params: { targetId: 't-shared', flatten: false } },
+      ]);
+    });
+
+    it('attaches to one shared worker once, however many windows can see it', async () => {
+      const first = fakeCdpSession();
+      const second = fakeCdpSession();
+      const log = createViolationLog();
+      await log.watchWindow(fakeWindow({ session: first }));
+      await log.watchWindow(fakeWindow({ session: second }));
+      first.emit('Target.targetCreated', created('t-shared', 'shared_worker'));
+      second.emit('Target.targetCreated', created('t-shared', 'shared_worker'));
+      expect(attachCalls(first).length + attachCalls(second).length).toBe(1);
+    });
+
+    it('keeps a shared worker\'s refused load once it is attached', async () => {
+      const { log, session } = await watched();
+      session.emit('Target.targetCreated', created('t-shared', 'shared_worker'));
+      session.emit('Target.attachedToTarget', { sessionId: 's1', targetInfo: { type: 'shared_worker', url: 'app://bundle/shared.js' } });
+      const refused = "Refused to connect to 'https://x.invalid/' because it violates the following Content Security Policy directive";
+      session.emit('Target.receivedMessageFromTarget', fromTarget('s1', logEntry(refused)));
+      expect(log.take()).toEqual([`worker app://bundle/shared.js :: ${refused}`]);
+    });
+
     it('turns on Log and Runtime for a worker and then always lets it run', async () => {
       const { session } = await watched();
       attach(session, 'w1', 'app://bundle/worker.js');

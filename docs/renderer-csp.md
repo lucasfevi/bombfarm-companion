@@ -78,3 +78,10 @@ fix was to switch the injection off and ship its rule in `globals.css`, not to a
   `securitypolicyviolation` event or a CSP console error in any window fails the test that was
   running, and anything left over fails the worker. `scripts/smoke-csp-guard.test.mjs` keeps a new
   spec from launching around it.
+- Workers are watched over CDP (`tests/smoke/csp-guard.mjs`), because Playwright's worker console
+  carries only `console.*` calls: dedicated workers by auto-attach (held until `Log` and `Runtime`
+  are on), shared workers by target discovery and `Target.attachToTarget`, with the replay
+  `Log.enable` gives for what they logged first. A refused `eval` in a worker writes no log
+  entry, only an uncaught exception, so exceptions are read too. `csp.spec.mjs` runs a probe
+  worker of each kind that fetches a foreign origin and evals. A service worker is not watched or
+  probed: the app registers none.

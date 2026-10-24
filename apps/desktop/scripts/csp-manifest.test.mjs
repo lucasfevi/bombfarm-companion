@@ -317,21 +317,33 @@ describe('the manifest and the policy the main process builds from it', () => {
 });
 
 /**
- * A second, deliberately naive way to find the inline scripts of a page: split on the literal
- * `<script`, drop the ones whose opening tag carries `src=`, and take the text up to `</script`.
- * It shares no code with the scanner that writes, verifies and gates the manifest, so a scanner
- * that drops or truncates a script cannot also fool this.
+ * A second, deliberately naive way to find what a page's policy has to hash: split on the literal
+ * `<script` / `<style`, drop the scripts whose opening tag carries `src=`, take the text up to the
+ * closing tag, and pick `style="…"` values out with a pattern. It shares no code with the scanner
+ * that writes, verifies and gates the manifest, so a scanner that drops or truncates one of the
+ * three kinds cannot also fool this.
  */
-function naiveInlineScriptTexts(html) {
-  return html
-    .split('<script')
-    .slice(1)
-    .filter((chunk) => !/\ssrc=/.test(chunk.slice(0, chunk.indexOf('>'))))
-    .map((chunk) => chunk.slice(chunk.indexOf('>') + 1, chunk.indexOf('</script')));
+function naiveInline(html) {
+  const textsOf = (tag, keep) =>
+    html
+      .split(`<${tag}`)
+      .slice(1)
+      .filter((chunk) => keep(chunk.slice(0, chunk.indexOf('>'))))
+      .map((chunk) => chunk.slice(chunk.indexOf('>') + 1, chunk.indexOf(`</${tag}`)));
+  return {
+    scripts: textsOf('script', (openingTag) => !/\ssrc=/.test(openingTag)),
+    styleElements: textsOf('style', () => true),
+    styleAttributes: [...html.matchAll(/\sstyle="([^"]*)"/g)].map((match) =>
+      match[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&'),
+    ),
+  };
 }
+
+const hashSet = (texts) => [...new Set(texts.map(sha256))].sort();
 
 describe('the scanner against a naive second count', () => {
   const longScript = `self.__next_f.push([1,"${'x'.repeat(4000)}"])`;
+  const longStyle = `padding-right:max(0px, 100px - (100% - min(var(--container-desktop), 100%)) / 2 - ${'1px - '.repeat(10)}0px)`;
   const fixture = page(
     [
       '<script>short()</script>',
@@ -339,27 +351,57 @@ describe('the scanner against a naive second count', () => {
       `<script>${longScript}</script>`,
       '<script type="module">import("./m.js")</script>',
       `<script>${'y'.repeat(600)}</script>`,
+      '<div style="color:red"></div>',
+      `<div style="${longStyle}"></div>`,
+      '<div style="font-family:&quot;A B&quot;;margin:0 0 0 0;padding:0 0 0 0;outline:none none"></div>',
+      '<style>.a{color:red}</style>',
+      `<style>.b{content:"${'z'.repeat(300)}"}</style>`,
     ].join(''),
+    '<link rel="stylesheet" href="/a.css"/>',
   );
 
   it('finds as many inline scripts as the naive count, long ones included', () => {
-    const naive = naiveInlineScriptTexts(fixture);
+    const naive = naiveInline(fixture).scripts;
     expect(naive).toHaveLength(4);
     expect(scanHtml(fixture).scripts).toHaveLength(naive.length);
   });
 
-  it('hashes exactly the texts the naive count found', () => {
-    const hashed = hashesForPage(fixture).page.scripts;
-    expect(hashed).toEqual([...new Set(naiveInlineScriptTexts(fixture).map(sha256))].sort());
+  it('finds as many style attributes as the naive count, long ones included', () => {
+    const naive = naiveInline(fixture).styleAttributes;
+    expect(naive).toHaveLength(3);
+    expect(naive.some((value) => value.length >= 40)).toBe(true);
+    expect(scanHtml(fixture).styleAttributes).toHaveLength(naive.length);
   });
 
-  it('agrees on every page of the real renderer export when it has been built', () => {
-    const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'renderer', 'out');
-    const pages = existsSync(outDir) ? readExportedPages(outDir) : new Map();
-    for (const [relativePath, html] of pages) {
-      const naive = naiveInlineScriptTexts(html);
-      expect(scanHtml(html).scripts, relativePath).toHaveLength(naive.length);
-      expect(hashesForPage(html).page.scripts, relativePath).toEqual([...new Set(naive.map(sha256))].sort());
-    }
+  it('finds as many style elements as the naive count, long ones included', () => {
+    const naive = naiveInline(fixture).styleElements;
+    expect(naive).toHaveLength(2);
+    expect(scanHtml(fixture).styleElements).toHaveLength(naive.length);
   });
+
+  it('hashes exactly the texts the naive count found, for all three kinds', () => {
+    const naive = naiveInline(fixture);
+    const { page: hashed } = hashesForPage(fixture);
+    expect(hashed.scripts).toEqual(hashSet(naive.scripts));
+    expect(hashed.styleElements).toEqual(hashSet(naive.styleElements));
+    expect(hashed.styleAttributes).toEqual(hashSet(naive.styleAttributes));
+  });
+
+  const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'renderer', 'out');
+
+  it.skipIf(!existsSync(outDir))(
+    'agrees on every page of the real renderer export (reported as skipped when renderer/out has not been built)',
+    () => {
+      const pages = readExportedPages(outDir);
+      expect(pages.size).toBeGreaterThan(0);
+      for (const [relativePath, html] of pages) {
+        const naive = naiveInline(html);
+        const { page: hashed } = hashesForPage(html);
+        expect(scanHtml(html).scripts, relativePath).toHaveLength(naive.scripts.length);
+        expect(hashed.scripts, relativePath).toEqual(hashSet(naive.scripts));
+        expect(hashed.styleElements, relativePath).toEqual(hashSet(naive.styleElements));
+        expect(hashed.styleAttributes, relativePath).toEqual(hashSet(naive.styleAttributes));
+      }
+    },
+  );
 });

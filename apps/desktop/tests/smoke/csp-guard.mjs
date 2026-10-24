@@ -46,8 +46,13 @@ function parseTargetMessage(raw) {
  * `Runtime` domains are on, so a violation in its first lines is not lost; it is always resumed.
  * A refused `eval` writes no log entry in a worker, only an exception, which is why uncaught
  * exceptions are read too.
+ *
+ * Auto-attach reaches only a page's dedicated workers. A shared worker is found by target
+ * discovery and attached to by id, after it has started; `Log.enable` and `Runtime.enable` replay
+ * what it had already logged, so its first lines are not lost either. One shared worker serves
+ * every window, so `claimedTargets` keeps each from being attached once per window.
  */
-async function watchWorkerTargets(window, record) {
+async function watchWorkerTargets(window, record, claimedTargets) {
   const session = await window.context().newCDPSession(window);
   const urls = new Map();
   const send = (sessionId, id, method) =>
@@ -78,12 +83,22 @@ async function watchWorkerTargets(window, record) {
     if (isViolation(text ?? '')) record(`worker ${urls.get(sessionId) ?? sessionId}`, text);
   });
 
+  session.on('Target.targetCreated', ({ targetInfo }) => {
+    if (targetInfo.type !== 'shared_worker' || claimedTargets.has(targetInfo.targetId)) return;
+    claimedTargets.add(targetInfo.targetId);
+    session.send('Target.attachToTarget', { targetId: targetInfo.targetId, flatten: false }).catch(() => {
+      claimedTargets.delete(targetInfo.targetId);
+    });
+  });
+
   await session.send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: true, flatten: false });
+  await session.send('Target.setDiscoverTargets', { discover: true });
 }
 
 /** Collects what every window and every worker of every app a spec launched reports. */
 export function createViolationLog() {
   const unreported = [];
+  const claimedTargets = new Set();
 
   const record = (source, text) => {
     unreported.push(`${source} :: ${text}`);
@@ -109,7 +124,7 @@ export function createViolationLog() {
         earlier.forEach(onConsole);
       })
       .catch(() => undefined);
-    await watchWorkerTargets(window, record).catch(() => undefined);
+    await watchWorkerTargets(window, record, claimedTargets).catch(() => undefined);
   }
 
   async function launchWatched(launchElectron, options) {
