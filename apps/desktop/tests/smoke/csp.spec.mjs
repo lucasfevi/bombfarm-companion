@@ -421,4 +421,42 @@ test.describe.serial('renderer Content-Security-Policy', () => {
     expect(ran).toBe(false);
     expect(csp.takeViolations().length).toBeGreaterThan(0);
   });
+
+  test('a worker that evals and reaches a foreign origin is refused, and the suite guard sees it', async ({ csp }) => {
+    const probe = path.join(desktopRoot, 'renderer', 'out', '__csp-worker-probe.js');
+    fs.writeFileSync(
+      probe,
+      [
+        'let evalRan = false;',
+        "try { (0, eval)('evalRan = true'); } catch {}",
+        `fetch('${FOREIGN}/worker-fetch').catch(() => {});`,
+        "setTimeout(() => self.postMessage({ evalRan }), 300);",
+      ].join('\n'),
+    );
+    try {
+      csp.takeViolations();
+      const reply = await main.evaluate(
+        () =>
+          new Promise((resolve) => {
+            const worker = new Worker('/__csp-worker-probe.js');
+            worker.onmessage = (event) => resolve(event.data);
+            worker.onerror = () => resolve({ error: true });
+          }),
+      );
+      expect(reply).toEqual({ evalRan: false });
+
+      const seen = [];
+      await expect
+        .poll(
+          () => {
+            seen.push(...csp.takeViolations());
+            return [seen.some((entry) => entry.includes('worker-fetch')), seen.some((entry) => entry.includes('Refused to evaluate'))];
+          },
+          { timeout: 10_000, message: 'the guard saw the worker eval and the worker fetch' },
+        )
+        .toEqual([true, true]);
+    } finally {
+      fs.rmSync(probe, { force: true });
+    }
+  });
 });

@@ -431,7 +431,7 @@ describe('assertNoNativeBinariesInAsar', () => {
 });
 
 describe('runPackagingGateChecks', () => {
-  async function buildFakePackagedApp() {
+  async function buildFakePackagedApp({ manifest = 'matching' } = {}) {
     const desktopRootDir = makeTempDir('gate-run-root');
     writeJson(path.join(desktopRootDir, 'package.json'), {
       name: '@bombfarm/desktop',
@@ -450,10 +450,13 @@ describe('runPackagingGateChecks', () => {
     const asarSrcDir = makeTempDir('gate-run-asar-src');
     const indexHtml = '<html><body><script>boot()</script></body></html>';
     writeFile(path.join(asarSrcDir, 'renderer', 'out', 'index.html'), indexHtml);
-    writeJson(
-      path.join(asarSrcDir, 'renderer', 'out', CSP_MANIFEST_FILE),
-      buildManifest(new Map([['index.html', indexHtml]])),
-    );
+    const hashedHtml = manifest === 'stale' ? indexHtml.replace('boot()', 'boot(); injected()') : indexHtml;
+    if (manifest !== 'missing') {
+      writeJson(
+        path.join(asarSrcDir, 'renderer', 'out', CSP_MANIFEST_FILE),
+        buildManifest(new Map([['index.html', hashedHtml]])),
+      );
+    }
     await createPackageOnceReadable(asarSrcDir, path.join(unpackedDir, 'resources', 'app.asar'));
 
     return desktopRootDir;
@@ -466,6 +469,24 @@ describe('runPackagingGateChecks', () => {
   it('passes for a packaged tree with a matching native binary and a renderer entry', async () => {
     const desktopRootDir = await buildFakePackagedApp();
     expect(() => runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() })).not.toThrow();
+  });
+
+  it('fails the whole gate when the archive carries no CSP manifest', async () => {
+    const desktopRootDir = await buildFakePackagedApp({ manifest: 'missing' });
+    expectPackagingGateError(
+      () => runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
+      CSP_MANIFEST_FILE,
+      'missing',
+    );
+  });
+
+  it('fails the whole gate when the archived manifest no longer matches the archived pages', async () => {
+    const desktopRootDir = await buildFakePackagedApp({ manifest: 'stale' });
+    expectPackagingGateError(
+      () => runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
+      'disagree',
+      'is not in the manifest',
+    );
   });
 
   it('aggregates every failing check into one PackagingGateError', async () => {

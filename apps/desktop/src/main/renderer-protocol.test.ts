@@ -111,17 +111,22 @@ describe('serveRendererRequest', () => {
     expect((await serve('app://bundle/a.js')).headers.get('x-content-type-options')).toBe('nosniff');
   });
 
-  it('serves a 404 with no page policy for a path outside the root', async () => {
+  const LOCKED_DOWN = "default-src 'none'; script-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+
+  it('serves a 404 with the locked-down policy and nosniff for a path outside the root', async () => {
     const response = await serve('app://bundle/..%2f..%2fsecret.html');
     expect(response.status).toBe(404);
-    expect(response.headers.get('content-security-policy')).toBeNull();
+    expect(response.headers.get('content-security-policy')).toBe(LOCKED_DOWN);
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
   });
 
-  it('serves a 404 when the file cannot be read', async () => {
-    const response = await serveRendererRequest('app://bundle/index.html', ROOT, MANIFEST, () =>
+  it('serves a 404 with the locked-down policy and nosniff when the file cannot be read', async () => {
+    const response = await serveRendererRequest('app://bundle/nope', ROOT, MANIFEST, () =>
       Promise.reject(new Error('ENOENT')),
     );
     expect(response.status).toBe(404);
+    expect(response.headers.get('content-security-policy')).toBe(LOCKED_DOWN);
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
   });
 });
 

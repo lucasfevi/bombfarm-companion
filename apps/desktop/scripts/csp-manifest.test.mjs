@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   buildManifest,
@@ -9,6 +10,7 @@ import {
   CspManifestError,
   cspHash,
   hashesForPage,
+  readExportedPages,
   scanHtml,
   verifyManifest,
   verifyManifestOnDisk,
@@ -311,5 +313,53 @@ describe('the manifest and the policy the main process builds from it', () => {
         .map(sha256)
         .sort(),
     );
+  });
+});
+
+/**
+ * A second, deliberately naive way to find the inline scripts of a page: split on the literal
+ * `<script`, drop the ones whose opening tag carries `src=`, and take the text up to `</script`.
+ * It shares no code with the scanner that writes, verifies and gates the manifest, so a scanner
+ * that drops or truncates a script cannot also fool this.
+ */
+function naiveInlineScriptTexts(html) {
+  return html
+    .split('<script')
+    .slice(1)
+    .filter((chunk) => !/\ssrc=/.test(chunk.slice(0, chunk.indexOf('>'))))
+    .map((chunk) => chunk.slice(chunk.indexOf('>') + 1, chunk.indexOf('</script')));
+}
+
+describe('the scanner against a naive second count', () => {
+  const longScript = `self.__next_f.push([1,"${'x'.repeat(4000)}"])`;
+  const fixture = page(
+    [
+      '<script>short()</script>',
+      '<script src="/_next/a.js" async=""></script>',
+      `<script>${longScript}</script>`,
+      '<script type="module">import("./m.js")</script>',
+      `<script>${'y'.repeat(600)}</script>`,
+    ].join(''),
+  );
+
+  it('finds as many inline scripts as the naive count, long ones included', () => {
+    const naive = naiveInlineScriptTexts(fixture);
+    expect(naive).toHaveLength(4);
+    expect(scanHtml(fixture).scripts).toHaveLength(naive.length);
+  });
+
+  it('hashes exactly the texts the naive count found', () => {
+    const hashed = hashesForPage(fixture).page.scripts;
+    expect(hashed).toEqual([...new Set(naiveInlineScriptTexts(fixture).map(sha256))].sort());
+  });
+
+  it('agrees on every page of the real renderer export when it has been built', () => {
+    const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'renderer', 'out');
+    const pages = existsSync(outDir) ? readExportedPages(outDir) : new Map();
+    for (const [relativePath, html] of pages) {
+      const naive = naiveInlineScriptTexts(html);
+      expect(scanHtml(html).scripts, relativePath).toHaveLength(naive.length);
+      expect(hashesForPage(html).page.scripts, relativePath).toEqual([...new Set(naive.map(sha256))].sort());
+    }
   });
 });

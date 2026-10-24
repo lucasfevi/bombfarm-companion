@@ -96,6 +96,13 @@ function policyFor(resolved: ResolvedRendererFile, root: string, manifest: CspMa
   return documentPolicy(manifest.pages.get(pagePath));
 }
 
+function notFound(): Response {
+  return new Response(null, {
+    status: 404,
+    headers: { 'content-security-policy': SUBRESOURCE_POLICY, 'x-content-type-options': 'nosniff' },
+  });
+}
+
 export async function serveRendererRequest(
   requestUrl: string,
   root: string,
@@ -104,7 +111,7 @@ export async function serveRendererRequest(
 ): Promise<Response> {
   const resolved = resolveRendererFile(requestUrl, root);
   if (!resolved) {
-    return new Response(null, { status: 404 });
+    return notFound();
   }
 
   try {
@@ -117,7 +124,7 @@ export async function serveRendererRequest(
       },
     });
   } catch {
-    return new Response(null, { status: 404 });
+    return notFound();
   }
 }
 
