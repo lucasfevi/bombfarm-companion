@@ -389,19 +389,39 @@ describe('the scanner against a naive second count', () => {
 
   const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'renderer', 'out');
 
-  it.skipIf(!existsSync(outDir))(
-    'agrees on every page of the real renderer export (reported as skipped when renderer/out has not been built)',
-    () => {
-      const pages = readExportedPages(outDir);
-      expect(pages.size).toBeGreaterThan(0);
-      for (const [relativePath, html] of pages) {
-        const naive = naiveInline(html);
-        const { page: hashed } = hashesForPage(html);
-        expect(scanHtml(html).scripts, relativePath).toHaveLength(naive.scripts.length);
-        expect(hashed.scripts, relativePath).toEqual(hashSet(naive.scripts));
-        expect(hashed.styleElements, relativePath).toEqual(hashSet(naive.styleElements));
-        expect(hashed.styleAttributes, relativePath).toEqual(hashSet(naive.styleAttributes));
-      }
-    },
-  );
+  const nextShapedFallback = new Map([
+    [
+      'index.html',
+      page(
+        [
+          '<div style="-webkit-app-region:drag"></div>',
+          '<div style="padding-right:max(0px, 100px - (100% - min(var(--container-desktop), 100%)) / 2 - var(--shell-gutter) - var(--scrollbar))"></div>',
+          '<script>(self.__next_f=self.__next_f||[]).push([0])</script>',
+          `<script>self.__next_f.push([1,"1:\\"$Sreact.fragment\\"\\n2:I[53550,[],\\"\\"]\\n${'3:I[25188,[],[874]]\\n'.repeat(20)}"])</script>`,
+          '<style>.error{font:14px system-ui}</style>',
+        ].join(''),
+        '<script src="/_next/static/chunks/main-app.js" async=""></script>',
+      ),
+    ],
+  ]);
+
+  it('agrees on every page of the real renderer export, or of a Next-shaped page when it has not been built', () => {
+    const pages = existsSync(outDir) ? readExportedPages(outDir) : nextShapedFallback;
+    expect(pages.size).toBeGreaterThan(0);
+    for (const [relativePath, html] of pages) {
+      const naive = naiveInline(html);
+      const { page: hashed } = hashesForPage(html);
+      expect(scanHtml(html).scripts, relativePath).toHaveLength(naive.scripts.length);
+      expect(hashed.scripts, relativePath).toEqual(hashSet(naive.scripts));
+      expect(hashed.styleElements, relativePath).toEqual(hashSet(naive.styleElements));
+      expect(hashed.styleAttributes, relativePath).toEqual(hashSet(naive.styleAttributes));
+    }
+  });
+
+  it('finds something to compare in the Next-shaped page, so the fallback is never vacuous', () => {
+    const naive = naiveInline(nextShapedFallback.get('index.html'));
+    expect(naive.scripts).toHaveLength(2);
+    expect(naive.styleAttributes).toHaveLength(2);
+    expect(naive.styleElements).toHaveLength(1);
+  });
 });
