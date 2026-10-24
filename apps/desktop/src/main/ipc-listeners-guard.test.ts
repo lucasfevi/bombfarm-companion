@@ -97,18 +97,71 @@ function calleeName(expression: ts.Expression | undefined): string | null {
     : null;
 }
 
-function factoryArguments(expression: ts.Expression | undefined): Record<string, string> {
-  const options = expression !== undefined && ts.isCallExpression(expression) ? expression.arguments[0] : undefined;
-  if (options === undefined || !ts.isObjectLiteralExpression(options)) return {};
-  const described: Record<string, string> = {};
-  for (const property of options.properties) {
-    if (!ts.isPropertyAssignment(property) && !ts.isShorthandPropertyAssignment(property)) continue;
-    const value = ts.isPropertyAssignment(property) ? property.initializer : property.name;
-    described[property.name.getText()] = ts.isCallExpression(value) && value.arguments.length > 0
-      ? (ts.isIdentifier(value.expression) ? value.expression.text : value.getText())
-      : value.getText();
+interface ReadOptions {
+  readonly members: Record<string, ts.Expression>;
+  readonly violations: string[];
+}
+
+function readOptions(options: ts.Node | undefined, label: string): ReadOptions {
+  const members: Record<string, ts.Expression> = {};
+  const violations: string[] = [];
+  if (options === undefined || !ts.isObjectLiteralExpression(options)) {
+    return { members, violations: [`${label}: options are not an object literal`] };
   }
-  return described;
+  for (const member of options.properties) {
+    let key: string;
+    let value: ts.Expression;
+    if (ts.isShorthandPropertyAssignment(member)) {
+      key = member.name.text;
+      value = member.name;
+    } else if (ts.isPropertyAssignment(member) && (ts.isIdentifier(member.name) || ts.isStringLiteral(member.name))) {
+      key = member.name.text;
+      value = member.initializer;
+    } else {
+      violations.push(`${label}: member that is not a plain property: ${member.getText().slice(0, 60)}`);
+      continue;
+    }
+    if (Object.hasOwn(members, key)) {
+      violations.push(`${label}: duplicate key ${key}`);
+    }
+    members[key] = value;
+  }
+  return { members, violations };
+}
+
+function describeValue(value: ts.Expression): string {
+  return ts.isCallExpression(value) && value.arguments.length > 0 && ts.isIdentifier(value.expression)
+    ? value.expression.text
+    : value.getText();
+}
+
+function describeAll(members: Record<string, ts.Expression>): Record<string, string> {
+  return Object.fromEntries(Object.entries(members).map(([key, value]) => [key, describeValue(value)]));
+}
+
+interface FactoryPin {
+  readonly violations: string[];
+  readonly factory: Record<string, string>;
+  readonly resolver: Record<string, string>;
+}
+
+function pinFactory(handler: ts.Expression | undefined): FactoryPin {
+  const factoryCall = handler !== undefined && ts.isCallExpression(handler) ? handler : undefined;
+  const factory = readOptions(factoryCall?.arguments[0], 'factory');
+  const resolverValue = factory.members.senderWindowOf;
+  const resolverCall = resolverValue !== undefined && ts.isCallExpression(resolverValue) ? resolverValue : undefined;
+  const resolver = readOptions(resolverCall?.arguments[0], 'resolver');
+  return {
+    violations: [...factory.violations, ...resolver.violations],
+    factory: describeAll(factory.members),
+    resolver: describeAll(resolver.members),
+  };
+}
+
+function firstExpression(source: string): ts.Expression | undefined {
+  const sourceFile = ts.createSourceFile('fixture.ts', source, ts.ScriptTarget.Latest, true);
+  const statement = sourceFile.statements[0];
+  return statement !== undefined && ts.isExpressionStatement(statement) ? statement.expression : undefined;
 }
 
 describe('main-process IPC listeners we own', () => {
@@ -133,13 +186,69 @@ describe('main-process IPC listeners we own', () => {
 
   it('feeds the factory the resolved environment, the dev renderer URL, the real dispatch and the log', () => {
     const handler = uses.find((entry) => entry.file === 'main/index.ts')?.use.registrations[0]?.handler;
-    expect(factoryArguments(handler)).toEqual({
-      env: 'resolveAppEnv()',
-      devRendererUrl: 'RENDERER_DEV_URL',
-      senderWindowOf: 'createSenderWindowResolver',
-      dispatch: 'dispatch',
-      log: 'log',
-    });
+    expect(pinFactory(handler)).toEqual(PINNED);
+  });
+});
+
+const PINNED: FactoryPin = {
+  violations: [],
+  factory: {
+    env: 'resolveAppEnv()',
+    devRendererUrl: 'RENDERER_DEV_URL',
+    senderWindowOf: 'createSenderWindowResolver',
+    dispatch: 'dispatch',
+    log: 'log',
+  },
+  resolver: { main: 'liveMainContents', mini: 'liveMiniContents' },
+};
+
+describe('pinFactory', () => {
+  const pinned = (source: string) => pinFactory(firstExpression(source));
+  const wrap = (members: string, resolverMembers = 'main: liveMainContents, mini: liveMiniContents') =>
+    `createBridgeInvokeHandler({ ${members}, senderWindowOf: createSenderWindowResolver({ ${resolverMembers} }) });`;
+  const CLEAN = 'env: resolveAppEnv(), devRendererUrl: RENDERER_DEV_URL, dispatch, log';
+
+  it('reads the clean shape the app uses', () => {
+    expect(pinned(wrap(CLEAN))).toEqual(PINNED);
+  });
+
+  it('flags a spread appended to the factory options', () => {
+    const result = pinned(wrap(`${CLEAN}, ...{ env: { isDev: true } }`));
+    expect(result.violations).toHaveLength(1);
+    expect(result).not.toEqual(PINNED);
+  });
+
+  it('flags a duplicate key that would override an earlier one', () => {
+    const result = pinned(wrap(`${CLEAN}, env: { isDev: true }`));
+    expect(result.violations).toEqual(['factory: duplicate key env']);
+  });
+
+  it('flags a computed key, a method, a getter and a string-keyed duplicate', () => {
+    expect(pinned(wrap(`${CLEAN}, ['env']: other`)).violations).toHaveLength(1);
+    expect(pinned(wrap(`${CLEAN}, env() { return other; }`)).violations.length).toBeGreaterThan(0);
+    expect(pinned(wrap(`${CLEAN}, get env() { return other; }`)).violations.length).toBeGreaterThan(0);
+    expect(pinned(wrap(`${CLEAN}, 'env': other`)).violations).toEqual(['factory: duplicate key env']);
+  });
+
+  it('flags factory options that are not an object literal', () => {
+    expect(pinned('createBridgeInvokeHandler(options);').violations).toEqual([
+      'factory: options are not an object literal',
+      'resolver: options are not an object literal',
+    ]);
+  });
+
+  it('flags a wrong resolver getter', () => {
+    const result = pinned(wrap(CLEAN, 'main: liveMiniContents, mini: liveMiniContents'));
+    expect(result.violations).toEqual([]);
+    expect(result).not.toEqual(PINNED);
+  });
+
+  it('flags a spread, a duplicate and a computed key among the resolver getters', () => {
+    expect(pinned(wrap(CLEAN, 'main: liveMainContents, mini: liveMiniContents, ...other')).violations).toHaveLength(1);
+    expect(pinned(wrap(CLEAN, 'main: liveMainContents, mini: liveMiniContents, main: other')).violations).toEqual([
+      'resolver: duplicate key main',
+    ]);
+    expect(pinned(wrap(CLEAN, 'main: liveMainContents, mini: liveMiniContents, [key]: other')).violations).toHaveLength(1);
   });
 });
 

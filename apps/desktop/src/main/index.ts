@@ -395,16 +395,22 @@ function registerIpcHandlers(): void {
       env: resolveAppEnv(),
       devRendererUrl: RENDERER_DEV_URL,
       senderWindowOf: createSenderWindowResolver({
-        main: () => (mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null),
-        mini: () => {
-          const miniWindow = miniLiveController?.getWindow();
-          return miniWindow && !miniWindow.isDestroyed() ? miniWindow.webContents : null;
-        },
+        main: liveMainContents,
+        mini: liveMiniContents,
       }),
       dispatch,
       log,
     }),
   );
+}
+
+function liveMainContents(): { readonly id: number } | null {
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null;
+}
+
+function liveMiniContents(): { readonly id: number } | null {
+  const miniWindow = miniLiveController?.getWindow();
+  return miniWindow && !miniWindow.isDestroyed() ? miniWindow.webContents : null;
 }
 
 async function createMainWindow(): Promise<void> {
