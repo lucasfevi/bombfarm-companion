@@ -221,4 +221,14 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(readPage('details-menu.html')).toContain('<details class="relative inline-block"><summary aria-label="Only menu"');
     expect(chunksContaining(distDir, chunks, BASE_UI_MENU_MARKER)).toEqual([]);
   });
+
+  it('loads no motion on a page that renders only an info tip, and keeps it in a lazy chunk', () => {
+    const chunks = loadedChunks(distDir, 'info-tip.html');
+    expect(chunks.length).toBeGreaterThan(0);
+    expect(readPage('info-tip.html')).toContain('aria-label="Only tip: Only tip text."');
+    expect(chunksContainingMotion(distDir, chunks)).toEqual([]);
+    const lazy = lazilyRequestedChunks(distDir, chunks);
+    expect(lazy.length).toBeGreaterThan(0);
+    expect(chunksContainingMotion(distDir, lazy)).not.toEqual([]);
+  });
 });

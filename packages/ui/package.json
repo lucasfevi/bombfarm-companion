@@ -67,6 +67,8 @@
     "./help-tip.recipe": "./src/help-tip.recipe.ts",
     "./icon": "./src/icon/index.ts",
     "./info-tip": "./src/info-tip.tsx",
+    "./info-tip-tooltip": "./src/info-tip-tooltip.tsx",
+    "./info-tip-trigger": "./src/info-tip-trigger.ts",
     "./mask-reveal": "./src/mask-reveal.ts",
     "./menu": "./src/menu/index.ts",
     "./menu.recipe": "./src/menu.recipe.ts",
