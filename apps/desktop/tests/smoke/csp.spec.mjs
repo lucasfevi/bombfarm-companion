@@ -334,7 +334,7 @@ test.describe.serial('renderer Content-Security-Policy', () => {
 
   test.afterAll(async () => {
     await app?.close().catch(() => undefined);
-    fs.rmSync(userDataDir, { recursive: true, force: true });
+    fs.rmSync(userDataDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   });
 
   for (const [label, windowOf] of [

@@ -199,19 +199,22 @@ test.describe('IPC sender validation smoke', () => {
     // One refusal reaches the guard twice, as the browser's console line and as the page-side
     // event, a few milliseconds apart. Claiming on the first would leave the second unclaimed.
     const claimed = [];
+    const consoleLines = () =>
+      claimed.filter((entry) => entry.includes('Refused to frame') && entry.includes("frame-src 'none'"));
+    const events = () =>
+      claimed.filter((entry) => entry.includes('__bfc_csp_violation__') && entry.includes('"directive":"frame-src"'));
     await expect
       .poll(
         () => {
           claimed.push(...csp.takeViolations());
-          return [
-            claimed.some((entry) => entry.includes("Refused to frame") && entry.includes("frame-src 'none'")),
-            claimed.some((entry) => entry.includes('__bfc_csp_violation__') && entry.includes('"directive":"frame-src"')),
-          ];
+          return [consoleLines().length > 0, events().length > 0];
         },
         { timeout: 10_000, message: 'the CSP refused the foreign frame, as a console line and as an event' },
       )
       .toEqual([true, true]);
-    expect(claimed.every((entry) => /frame-src|text\/html,<p>foreign/.test(entry)), claimed.join('\n')).toBe(true);
+    await page.waitForTimeout(500);
+    claimed.push(...csp.takeViolations());
+    expect([consoleLines().length, events().length, claimed.length], claimed.join('\n')).toEqual([1, 1, 2]);
     expect(page.frames().some((frame) => frame.url().startsWith('data:')), 'no foreign frame attached').toBe(false);
     await page.evaluate(() => document.getElementById('foreign-frame')?.remove());
   });
