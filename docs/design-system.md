@@ -506,6 +506,13 @@ export default {
   root layout; importing components never pulls it in.
 - **`AppNav` loads its tooltip lazily**, only when an item is `compact` or otherwise needs one.
   A plain nav ships no tooltip code.
+- **`InfoTip` loads its tooltip lazily**, the same way. Until the tooltip arrives the glyph is the
+  same `<button>` with the same accessible name and markup, so a page that only renders a tip (a
+  `PanelHeader info`, say) ships no `motion` in its first load. A glyph hovered or focused before the
+  tooltip arrives opens it on arrival.
+- **`DetailsMenu` lives in its own module** (`@bombfarm/ui/details-menu`), apart from `Menu`. A
+  client component that imports only `DetailsMenu` from the barrel pulls in none of Base UI's menu
+  or floating code. `@bombfarm/ui/menu` still exports both.
 
 The executable example is the fixture under
 [`packages/ui/test-fixtures/server-consumer/`](../packages/ui/test-fixtures/server-consumer): a
