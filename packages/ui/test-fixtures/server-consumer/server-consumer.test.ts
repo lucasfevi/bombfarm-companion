@@ -5,7 +5,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import * as barrel from '../../src/index';
-import { chunksContainingMotion, lazilyRequestedChunks, loadedChunks } from './chunk-scanner';
+import {
+  BASE_UI_MENU_MARKER,
+  chunksContaining,
+  chunksContainingMotion,
+  lazilyRequestedChunks,
+  loadedChunks,
+} from './chunk-scanner';
 
 const fixtureDir = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(fixtureDir, '.next');
@@ -207,5 +213,12 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(chunks.length).toBeGreaterThan(0);
     expect(readPage('plain-nav.html')).toContain('<nav aria-label="Main"');
     expect(chunksContainingMotion(distDir, chunks)).toEqual([]);
+  });
+
+  it('loads no Base UI menu code on a page that renders only the details menu', () => {
+    const chunks = loadedChunks(distDir, 'details-menu.html');
+    expect(chunks.length).toBeGreaterThan(0);
+    expect(readPage('details-menu.html')).toContain('<details class="relative inline-block"><summary aria-label="Only menu"');
+    expect(chunksContaining(distDir, chunks, BASE_UI_MENU_MARKER)).toEqual([]);
   });
 });

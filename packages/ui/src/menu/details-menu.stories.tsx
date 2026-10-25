@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { DetailsMenu } from './index';
+import { DetailsMenu } from '../details-menu';
 
 const meta = {
   title: 'UI/DetailsMenu',

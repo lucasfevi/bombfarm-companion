@@ -46,6 +46,7 @@
     "./data-table.recipe": "./src/data-table.recipe.ts",
     "./delta-table": "./src/delta-table.tsx",
     "./delta-table.recipe": "./src/delta-table.recipe.ts",
+    "./details-menu": "./src/details-menu/index.ts",
     "./dialog": "./src/dialog/index.ts",
     "./dialog.recipe": "./src/dialog.recipe.ts",
     "./empty-state": "./src/empty-state.tsx",
