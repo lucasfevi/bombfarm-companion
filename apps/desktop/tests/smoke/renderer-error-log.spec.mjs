@@ -50,55 +50,37 @@ async function recordsContaining(app, userDataDir, marker) {
   return (await logRecords(app, userDataDir)).filter((record) => record.includes(marker));
 }
 
-/** Makes the next number formatted anywhere in the page throw once, then puts the formatter back. */
-function armOneShotCrash(page, message) {
-  return page.evaluate((message) => {
-    const original = Number.prototype.toLocaleString;
-    Number.prototype.toLocaleString = function trap() {
-      Number.prototype.toLocaleString = original;
-      throw new Error(message);
-    };
-  }, message);
-}
-
 /**
- * The main window formats numbers in components that sit outside every screen boundary (the
- * status strip), so a plain one-shot trap lands there and unmounts the page instead of reaching a
- * boundary. This one watches the call sites that already format numbers on the screen the window
- * is showing, then throws once from the first site it has not seen — which can only be a
- * component the next screen mounted, inside that screen's boundary.
+ * Both crashes below are made the way a stray script or extension would make one, with no hook in
+ * the app: a node React owns is moved out of its parent, so the next commit that removes it throws
+ * from `removeChild`. React hands a commit-phase error to the nearest boundary exactly as it does a
+ * render error, so what reaches the log is what a real screen crash would send.
  */
-async function armCrashOnNewScreen(page, message) {
-  await page.evaluate(() => {
-    const original = Number.prototype.toLocaleString;
-    const seen = new Set();
-    const siteOf = () => new Error().stack.split('\n').slice(2, 5).join('|');
-    window.__smokeFormatter = { original, seen, siteOf };
-    Number.prototype.toLocaleString = function watch(...args) {
-      seen.add(siteOf());
-      return original.apply(this, args);
-    };
+function detachScreenNodes(page) {
+  return page.evaluate(() => {
+    const host = document.querySelector('[data-testid="app-ready"]');
+    for (const child of [...host.children]) {
+      if (child.getAttribute('data-testid') !== 'domain-label-probe') document.body.append(child);
+    }
   });
-  await page.waitForTimeout(3000);
-  await page.evaluate((message) => {
-    const { original, seen, siteOf } = window.__smokeFormatter;
-    Number.prototype.toLocaleString = function trap(...args) {
-      if (seen.has(siteOf())) return original.apply(this, args);
-      Number.prototype.toLocaleString = original;
-      throw new Error(message);
-    };
-  }, message);
 }
 
-async function showScreensUntilOneCrashes(page) {
-  const buttons = page.locator('nav[aria-label="Main"] button');
-  const count = await buttons.count();
-  for (let index = 1; index < count; index += 1) {
-    await buttons.nth(index).click();
-    if ((await page.getByTestId('screen-crash').count()) > 0) return;
-    await page.waitForTimeout(700);
-    if ((await page.getByTestId('screen-crash').count()) > 0) return;
-  }
+async function crashMainScreenBySwitchingTab(page) {
+  await detachScreenNodes(page);
+  await page.locator('nav[aria-label="Main"] button').nth(1).click();
+}
+
+async function crashCompactWindowByHidingEarnings(mini) {
+  await mini.evaluate(() => {
+    document.body.append(document.querySelector('[data-testid="mini-earnings"]'));
+  });
+  await mini.getByTestId('mini-live-gear').click();
+  await mini.getByRole('switch', { name: 'Earnings' }).click();
+}
+
+async function crashRecordsFrom(app, userDataDir, window) {
+  const records = await recordsContaining(app, userDataDir, "event: 'screen.crash'");
+  return records.filter((record) => record.includes("screen: 'mini-live'") === (window === 'mini'));
 }
 
 test.describe('renderer error log smoke', () => {
@@ -135,35 +117,35 @@ test.describe('renderer error log smoke', () => {
       await expect(mini.getByTestId('live-map-phase')).toBeVisible({ timeout: 30_000 });
 
       await test.step('a screen that throws in the main window is logged by its boundary', async () => {
-        await armCrashOnNewScreen(page, 'smoke main crash');
-        await showScreensUntilOneCrashes(page);
+        await crashMainScreenBySwitchingTab(page);
         await expect(page.getByTestId('screen-crash')).toBeVisible({ timeout: 15_000 });
 
         await expect
-          .poll(async () => (await recordsContaining(app, userDataDir, 'smoke main crash')).length, { timeout: 15_000 })
-          .toBeGreaterThan(0);
-        const [record] = await recordsContaining(app, userDataDir, 'smoke main crash');
+          .poll(async () => (await crashRecordsFrom(app, userDataDir, 'main')).length, { timeout: 15_000 })
+          .toBe(1);
+        const [record] = await crashRecordsFrom(app, userDataDir, 'main');
         expect(record).toContain('[error]');
         expect(record).toContain("scope: 'renderer'");
         expect(record).toContain("event: 'screen.crash'");
         expect(record).toMatch(/screen: '[a-z-]+'/);
-        expect(record).not.toContain("screen: 'mini-live'");
+        expect(record).toContain('removeChild');
         expect(record).toContain('stack:');
         expect(record).toContain('componentStack:');
       });
 
       await test.step('a screen that throws in the compact window is logged, and the window keeps its close control', async () => {
-        await armOneShotCrash(mini, 'smoke mini crash');
+        await crashCompactWindowByHidingEarnings(mini);
         await expect(mini.getByTestId('mini-live-crash')).toBeVisible({ timeout: 15_000 });
         await expect(mini.getByTestId('mini-live-close')).toBeVisible();
 
         await expect
-          .poll(async () => (await recordsContaining(app, userDataDir, 'smoke mini crash')).length, { timeout: 15_000 })
-          .toBeGreaterThan(0);
-        const [record] = await recordsContaining(app, userDataDir, 'smoke mini crash');
+          .poll(async () => (await crashRecordsFrom(app, userDataDir, 'mini')).length, { timeout: 15_000 })
+          .toBe(1);
+        const [record] = await crashRecordsFrom(app, userDataDir, 'mini');
         expect(record).toContain("scope: 'renderer'");
         expect(record).toContain("screen: 'mini-live'");
         expect(record).toContain("event: 'screen.crash'");
+        expect(record).toContain('removeChild');
       });
 
       await test.step('an oversized, extra-keyed, scope-forging payload is capped and stripped', async () => {
