@@ -24,7 +24,14 @@ export function createPlayingAccount(): PlayingAccount {
     set(next) {
       if (next.state === value.state && next.reason === value.reason) return;
       value = next;
-      for (const listener of [...listeners]) listener(next);
+      for (const listener of [...listeners]) {
+        // One subscriber's fault must not stop the others hearing of the change, nor the writer.
+        try {
+          listener(next);
+        } catch {
+          // ignored on purpose
+        }
+      }
     },
     allows: () => value.state === 'linked',
     subscribe(listener) {

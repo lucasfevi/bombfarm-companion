@@ -46,6 +46,21 @@ describe('playing-account state holder', () => {
   });
 });
 
+describe('a subscriber that throws', () => {
+  it('neither stops the change nor the other subscribers', () => {
+    const playing = createPlayingAccount();
+    const seen: string[] = [];
+    playing.subscribe(() => {
+      throw new Error('subscriber fault');
+    });
+    playing.subscribe((next) => seen.push(next.state));
+
+    expect(() => playing.set({ state: 'linked', reason: null })).not.toThrow();
+    expect(playing.current()).toEqual({ state: 'linked', reason: null });
+    expect(seen).toEqual(['linked']);
+  });
+});
+
 describe('the app gate', () => {
   it('takes no arguments and answers from the app state', () => {
     expect(premiumAccountAllows.length).toBe(0);
