@@ -200,7 +200,7 @@ function createWebContentsSpy(): {
     redirect: (url, options) => emit('will-redirect', url, options.isMainFrame),
     loadURL,
     async commit(url) {
-      const listener = listeners.get('did-navigate') as unknown as (event: object, url: string) => void;
+      const listener = listeners.get('did-navigate') as unknown as ((event: object, url: string) => void) | undefined;
       if (!listener) {
         throw new Error('no did-navigate listener registered');
       }
@@ -218,7 +218,7 @@ function createWebContentsSpy(): {
         isSameDocument: options?.isSameDocument ?? false,
         initiator: options?.initiated === false ? null : {},
         preventDefault: () => undefined,
-      } as never);
+      });
       await new Promise((resolve) => setImmediate(resolve));
     },
   };

@@ -230,7 +230,7 @@ describe('createMiniLiveController — navigation policy', () => {
 
     controller.open();
 
-    const events = (fake.lastInstance?.webContents.on as ReturnType<typeof vi.fn>).mock.calls.map(([event]) => event);
+    const events = (fake.lastInstance?.webContents.on as ReturnType<typeof vi.fn>).mock.calls.map((call: unknown[]) => call[0]);
     expect(setWindowOpenHandler).toHaveBeenCalledOnce();
     expect(events).toEqual(
       expect.arrayContaining(['will-navigate', 'will-redirect', 'will-frame-navigate', 'did-start-navigation', 'did-navigate']),

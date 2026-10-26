@@ -120,12 +120,12 @@ export function findNavigationPolicyWiring(source: string): string[] {
   if (loads.length !== 2) problems.push('createMainWindow must load entryUrl, the page the policy sends the window back to, in both branches');
 
   const miniBody = functionBody(sourceFile, 'createMiniLiveControllerInstance');
-  let miniApplied = false;
+  const miniApplied: boolean[] = [];
   const visit = (node: ts.Node): void => {
     if (ts.isPropertyAssignment(node) && node.name.getText(sourceFile) === 'applyExternalNavigation') {
       const handler = node.initializer;
       if (ts.isArrowFunction(handler) && ts.isBlock(handler.body)) {
-        miniApplied = handler.body.statements.some(
+        miniApplied.push(handler.body.statements.some(
           (statement) =>
             ts.isExpressionStatement(statement) &&
             ts.isCallExpression(statement.expression) &&
@@ -133,13 +133,13 @@ export function findNavigationPolicyWiring(source: string): string[] {
             normalised(statement.expression.expression, sourceFile) === 'windowNavigationPolicy(env)' &&
             statement.expression.arguments.map((arg) => normalised(arg, sourceFile)).join('|') ===
               'webContents as WebContents|entryUrl',
-        );
+        ));
       }
     }
     ts.forEachChild(node, visit);
   };
   visit(miniBody);
-  if (!miniApplied) problems.push('the compact window must apply windowNavigationPolicy(env) to its web contents with its entry url');
+  if (!miniApplied.includes(true)) problems.push('the compact window must apply windowNavigationPolicy(env) to its web contents with its entry url');
 
   return problems;
 }
