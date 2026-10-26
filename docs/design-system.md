@@ -146,6 +146,18 @@ Series colours default to `--color-series-1` … `-4` by position (a fifth serie
 and can be overridden per series with `color`. Each clears 3:1 against `surface`, but hue alone should
 not carry the meaning, so pass `table` to add a disclosure with the data as a table.
 
+Three opt-in props add detail without changing a chart that does not pass them. All of it is
+computed where the chart draws and reaches the pointer island as plain tooltip content:
+
+- `details` (`readonly (readonly { label: string; value: string }[] | undefined)[]`) — extra
+  tooltip rows per data index, label plus pre-formatted value, shown under the series rows and
+  never drawn. `table.detailColumns: true` also lists them as table columns.
+- `partial` (`{ from: number; label: string }`) — marks index `from` onward as in progress: a line
+  or area draws the stretch into it dashed, and the tooltip and table add the caller's `label`
+  (e.g. "(in progress)") after those x labels. A bar chart takes the marker text only.
+- `integerTicks` (`boolean`; `niceScale(max, tickCount, integerTicks?)`) — the y step is a whole
+  number, never 2.5 or 0.5, for count data.
+
 The y axis starts at zero. A negative reading is unsupported and draws as zero; a `null` (or
 non-finite) reading is a gap that breaks a line and leaves a bar out. No readings at all shows the
 `empty` text in place of an SVG. The kit carries no copy of its own: `ariaLabel`, `empty`, the table

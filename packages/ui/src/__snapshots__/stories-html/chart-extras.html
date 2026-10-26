@@ -1,0 +1,187 @@
+<!-- story: CountsWithDetail -->
+<div>
+<div class="min-h-[50vh] bg-bg p-4 font-sans text-ink antialiased">
+<div style="width: 640px;">
+<div class="flex flex-col gap-2">
+<div class="relative">
+<svg viewBox="0 0 640 230" role="img" aria-label="Runs per day" class="block h-auto w-full">
+<g data-chart-grid="true">
+<g>
+<line x1="44" x2="616" y1="204" y2="204" stroke="var(--color-line)" stroke-width="1">
+</line>
+<text x="36" y="207.5" text-anchor="end" class="fill-muted font-mono text-[10.5px]">0</text>
+</g>
+<g>
+<line x1="44" x2="616" y1="108" y2="108" stroke="var(--color-chart-grid)" stroke-width="1">
+</line>
+<text x="36" y="111.5" text-anchor="end" class="fill-muted font-mono text-[10.5px]">1</text>
+</g>
+<g>
+<line x1="44" x2="616" y1="12" y2="12" stroke="var(--color-chart-grid)" stroke-width="1">
+</line>
+<text x="36" y="15.5" text-anchor="end" class="fill-muted font-mono text-[10.5px]">2</text>
+</g>
+</g>
+<g data-chart-series="0">
+<g>
+<path d="M44 108 L187 12 L330 12 L473 108" fill="none" stroke="var(--color-series-1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path data-chart-partial="true" d="M473 108 L616 12" fill="none" stroke="var(--color-series-1)" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round" stroke-linejoin="round">
+</path>
+</g>
+<circle cx="616" cy="12" r="4" fill="var(--color-series-1)" stroke="var(--color-surface)" stroke-width="2">
+</circle>
+</g>
+<text x="44" y="220" text-anchor="middle" class="fill-muted font-mono text-[10.5px]">Mon</text>
+<text x="187" y="220" text-anchor="middle" class="fill-muted font-mono text-[10.5px]">Tue</text>
+<text x="330" y="220" text-anchor="middle" class="fill-muted font-mono text-[10.5px]">Wed</text>
+<text x="473" y="220" text-anchor="middle" class="fill-muted font-mono text-[10.5px]">Thu</text>
+<text x="616" y="220" text-anchor="middle" class="fill-muted font-mono text-[10.5px]">Fri</text>
+</svg>
+<svg aria-hidden="true" viewBox="0 0 640 230" class="pointer-events-none absolute inset-0 block h-full w-full">
+</svg>
+<div data-chart-plot="true" role="group" tabindex="0" aria-label="Runs per day" class="absolute inset-0 touch-pan-y rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+</div>
+</div>
+<details class="rounded-sm border border-line px-2.5 py-1.5">
+<summary class="cursor-pointer text-[13px] text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">Show as table</summary>
+<div class="pt-2.5 pb-1">
+<div class="overflow-x-auto">
+<table class="w-full border-collapse text-xs tabular-nums">
+<thead>
+<tr>
+<th scope="col" class="px-2 py-1 text-left font-semibold text-muted">Day</th>
+<th scope="col" class="px-2 py-1 text-right font-semibold text-muted">Running</th>
+<th scope="col" class="px-2 py-1 text-right font-semibold text-muted">accounts</th>
+<th scope="col" class="px-2 py-1 text-right font-semibold text-muted">anonymous</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-t border-line/70">
+<th scope="row" class="px-2 py-1 text-left font-normal">Mon</th>
+<td class="px-2 py-1 text-right">1</td>
+<td class="px-2 py-1 text-right">1</td>
+<td class="px-2 py-1 text-right">—</td>
+</tr>
+<tr class="border-t border-line/70">
+<th scope="row" class="px-2 py-1 text-left font-normal">Tue</th>
+<td class="px-2 py-1 text-right">2</td>
+<td class="px-2 py-1 text-right">2</td>
+<td class="px-2 py-1 text-right">0</td>
+</tr>
+<tr class="border-t border-line/70">
+<th scope="row" class="px-2 py-1 text-left font-normal">Wed</th>
+<td class="px-2 py-1 text-right">2</td>
+<td class="px-2 py-1 text-right">—</td>
+<td class="px-2 py-1 text-right">—</td>
+</tr>
+<tr class="border-t border-line/70">
+<th scope="row" class="px-2 py-1 text-left font-normal">Thu</th>
+<td class="px-2 py-1 text-right">1</td>
+<td class="px-2 py-1 text-right">1</td>
+<td class="px-2 py-1 text-right">—</td>
+</tr>
+<tr class="border-t border-line/70">
+<th scope="row" class="px-2 py-1 text-left font-normal">Fri (in progress)</th>
+<td class="px-2 py-1 text-right">2</td>
+<td class="px-2 py-1 text-right">2</td>
+<td class="px-2 py-1 text-right">0</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</details>
+</div>
+</div>
+</div>
+</div>
+
+<!-- story: AreaWithPartialRange -->
+<div>
+<div class="min-h-[50vh] bg-bg p-4 font-sans text-ink antialiased">
+<div style="width: 640px;">
+<div class="flex flex-col gap-2">
+<div class="relative">
+<svg viewBox="0 0 640 230" role="img" aria-label="Runs per day" class="block h-auto w-full">
+<g data-chart-grid="true">
+<g>
+<line x1="44" x2="616" y1="204" y2="204" stroke="var(--color-line)" stroke-width="1">
+</line>
+<text x="36" y="207.5" text-anchor="end" class="fill-muted font-mono text-[10.5px]">0</text>
+</g>
+<g>
+<line x1="44" x2="616" y1="108" y2="108" stroke="var(--color-chart-grid)" stroke-width="1">
+</line>
+<text x="36" y="111.5" text-anchor="end" class="fill-muted font-mono text-[10.5px]">1</text>
+</g>
+<g>
+<line x1="44" x2="616" y1="12" y2="12" stroke="var(--color-chart-grid)" stroke-width="1">
+</line>
+<text x="36" y="15.5" text-anchor="end" class="fill-muted font-mono text-[10.5px]">2</text>
+</g>
+</g>
+<g data-chart-series="0">
+<path d="M44 108 L187 12 L330 12 L473 108 L616 12 L616 204 L44 204 Z" fill="color-mix(in srgb, var(--color-series-1) 20%, transparent)" stroke="none">
+</path>
+<g>
+<path d="M44 108 L187 12 L330 12 L473 108" fill="none" stroke="var(--color-series-1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path data-chart-partial="true" d="M473 108 L616 12" fill="none" stroke="var(--color-series-1)" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round" stroke-linejoin="round">
+</path>
+</g>
+<circle cx="616" cy="12" r="4" fill="var(--color-series-1)" stroke="var(--color-surface)" stroke-width="2">
+</circle>
+</g>
+<text x="44" y="220" text-anchor="middle" class="fill-muted font-mono text-[10.5px]">Mon</text>
+<text x="187" y="220" text-anchor="middle" class="fill-muted font-mono text-[10.5px]">Tue</text>
+<text x="330" y="220" text-anchor="middle" class="fill-muted font-mono text-[10.5px]">Wed</text>
+<text x="473" y="220" text-anchor="middle" class="fill-muted font-mono text-[10.5px]">Thu</text>
+<text x="616" y="220" text-anchor="middle" class="fill-muted font-mono text-[10.5px]">Fri</text>
+</svg>
+<svg aria-hidden="true" viewBox="0 0 640 230" class="pointer-events-none absolute inset-0 block h-full w-full">
+</svg>
+<div data-chart-plot="true" role="group" tabindex="0" aria-label="Runs per day" class="absolute inset-0 touch-pan-y rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+</div>
+</div>
+<details class="rounded-sm border border-line px-2.5 py-1.5">
+<summary class="cursor-pointer text-[13px] text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">Show as table</summary>
+<div class="pt-2.5 pb-1">
+<div class="overflow-x-auto">
+<table class="w-full border-collapse text-xs tabular-nums">
+<thead>
+<tr>
+<th scope="col" class="px-2 py-1 text-left font-semibold text-muted">Day</th>
+<th scope="col" class="px-2 py-1 text-right font-semibold text-muted">Running</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-t border-line/70">
+<th scope="row" class="px-2 py-1 text-left font-normal">Mon</th>
+<td class="px-2 py-1 text-right">1</td>
+</tr>
+<tr class="border-t border-line/70">
+<th scope="row" class="px-2 py-1 text-left font-normal">Tue</th>
+<td class="px-2 py-1 text-right">2</td>
+</tr>
+<tr class="border-t border-line/70">
+<th scope="row" class="px-2 py-1 text-left font-normal">Wed</th>
+<td class="px-2 py-1 text-right">2</td>
+</tr>
+<tr class="border-t border-line/70">
+<th scope="row" class="px-2 py-1 text-left font-normal">Thu</th>
+<td class="px-2 py-1 text-right">1</td>
+</tr>
+<tr class="border-t border-line/70">
+<th scope="row" class="px-2 py-1 text-left font-normal">Fri (in progress)</th>
+<td class="px-2 py-1 text-right">2</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</details>
+</div>
+</div>
+</div>
+</div>
