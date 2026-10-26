@@ -1,6 +1,7 @@
 import type { AppLocale, PremiumView } from '@bombfarm/contracts';
 import type { LogPort } from '../storage/index.js';
 import type { LoopbackListener, LoopbackResult, startLoopbackListener } from './loopback-listener.js';
+import { createPlayingAccount, type PlayingAccount } from './playing-account.js';
 import { createPremiumApi, type PremiumApi } from './premium-api.js';
 import type { PremiumHttp, PremiumHttpRequest, PremiumHttpResponse, PremiumPath } from './premium-transport.js';
 import { createPremiumService, type GameIdentity, type PremiumService } from './premium-service.js';
@@ -329,6 +330,7 @@ export interface Harness {
   opened: string[];
   views: PremiumView[];
   identity: { current: GameIdentity | null };
+  playing: PlayingAccount;
   failOpening(): void;
   signedIn(): Promise<void>;
 }
@@ -350,6 +352,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
   const listeners = createListenerFactory();
   const opened: string[] = [];
   const views: PremiumView[] = [];
+  const playing = createPlayingAccount();
   const identity: { current: GameIdentity | null } = {
     current: { accountId: SECRETS.accountId, steamId64: SECRETS.steamId64, playerName: null },
   };
@@ -379,6 +382,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     onChanged: (view) => {
       views.push(view);
     },
+    playingAccount: playing,
   });
 
   return {
@@ -393,6 +397,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     opened,
     views,
     identity,
+    playing,
     failOpening: () => {
       openingFails = true;
     },

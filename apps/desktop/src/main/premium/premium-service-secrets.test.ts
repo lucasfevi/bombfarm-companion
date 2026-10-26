@@ -19,6 +19,7 @@ const LITERAL_EVENTS = [
   'report.outcome',
   'handoff.failed',
   'signout.unreachable',
+  'account_state',
 ];
 
 const NEVER_LOGGED = [...NEVER_LOGGED_OR_EMITTED, SECRETS.accountId, SECRETS.steamId64];

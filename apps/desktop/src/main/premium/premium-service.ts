@@ -8,6 +8,7 @@ import {
   type AppLocale,
   type PremiumActionResult,
   type PremiumMe,
+  type PremiumPlayingAccount,
   type PremiumReportOutcome,
   type PremiumSignInEnd,
   type PremiumStatus,
@@ -16,6 +17,7 @@ import {
 import type { LogPort } from '../storage/index.js';
 import type { LoopbackListener, startLoopbackListener } from './loopback-listener.js';
 import { loopbackPage } from './loopback-page.js';
+import { createPlayingAccount, type PlayingAccount } from './playing-account.js';
 import type { FetchResult, PremiumApi } from './premium-api.js';
 import type { PremiumCache } from './premium-cache.js';
 import type { createPkce, createState } from './pkce.js';
@@ -43,6 +45,8 @@ export interface PremiumServiceDeps {
   scheduler?: { readonly setTimeout: typeof setTimeout; readonly clearTimeout: typeof clearTimeout };
   log: LogPort;
   onChanged(view: PremiumView): void;
+  /** Where the playing-account state is kept; the service is its only writer. */
+  playingAccount?: PlayingAccount;
 }
 
 export interface PremiumService {
@@ -59,6 +63,23 @@ export interface PremiumService {
 
 type Session = PremiumView['session'];
 
+const LINKED: PremiumPlayingAccount = { state: 'linked', reason: null };
+const CHECKING: PremiumPlayingAccount = { state: 'unknown', reason: 'checking' };
+
+/**
+ * What a report answer says about the playing account. A failed or unexpected answer leaves a pair
+ * that already answered linked as linked: only a refusal changes what is known about it.
+ */
+function playingAccountAfter(outcome: PremiumReportOutcome, alreadyLinked: boolean): PremiumPlayingAccount {
+  if (outcome.kind === 'linked') return LINKED;
+  if (outcome.kind === 'refused' && outcome.reason !== 'unknown') {
+    return outcome.reason === 'no_steam_id'
+      ? { state: 'other', reason: 'no_steam_link' }
+      : { state: 'other', reason: 'other_account' };
+  }
+  return alreadyLinked ? LINKED : { state: 'unknown', reason: 'report_failed' };
+}
+
 function isHttps(url: string): boolean {
   try {
     return new URL(url).protocol === 'https:';
@@ -70,6 +91,7 @@ function isHttps(url: string): boolean {
 export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
   const setTimeoutFn = deps.scheduler?.setTimeout ?? setTimeout;
   const clearTimeoutFn = deps.scheduler?.clearTimeout ?? clearTimeout;
+  const playing = deps.playingAccount ?? createPlayingAccount();
 
   let session: Session = 'signed-out';
   let generation = 0;
@@ -89,6 +111,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
   let reportedPair: string | null = null;
   let reportedName: string | null = null;
   let reporting: string | null = null;
+  let currentPair: string | null = null;
 
   let listener: LoopbackListener | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -101,7 +124,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
   function buildView(): PremiumView {
     return {
       session,
-      playingAccount: signedOutPlayingAccount,
+      playingAccount: playing.current(),
       rememberedAcrossRestarts: remembered,
       lastSignInEnd,
       ended,
@@ -126,6 +149,18 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
 
   function isoNow(): string {
     return new Date(deps.now()).toISOString();
+  }
+
+  function setPlayingAccount(next: PremiumPlayingAccount): void {
+    const was = playing.current();
+    if (was.state === next.state && was.reason === next.reason) return;
+    playing.set(next);
+    deps.log.info({
+      scope: 'premium',
+      event: 'account_state',
+      state: next.state,
+      ...(next.reason === null ? {} : { reason: next.reason }),
+    });
   }
 
   function clearTimer(): void {
@@ -158,6 +193,8 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     reportedPair = null;
     reportedName = null;
     reporting = null;
+    currentPair = null;
+    setPlayingAccount(signedOutPlayingAccount);
     remembered = true;
     deps.vault.clear();
     deps.cache.clear();
@@ -322,6 +359,8 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     const startedIn = generation;
     const identity = deps.readGameIdentity();
     if (identity === null) {
+      currentPair = null;
+      setPlayingAccount({ state: 'unknown', reason: 'no_session' });
       report = { kind: 'not-sent', reason: 'no-game-account' };
       reportedAccountId = null;
       publish();
@@ -329,6 +368,8 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     }
     const { accountId, steamId64 } = identity;
     if (steamId64 === null || !isSteamId64(steamId64)) {
+      currentPair = null;
+      setPlayingAccount({ state: 'unknown', reason: 'no_steam_id64' });
       report = { kind: 'not-sent', reason: 'no-steam-id' };
       reportedAccountId = null;
       publish();
@@ -336,6 +377,13 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     }
     const playerName = reportablePlayerName(identity.playerName);
     const pair = JSON.stringify([accountId, steamId64]);
+    // A new pair is never vouched for by the old one's answer: the state leaves `linked` here,
+    // before anything is sent, unless this very pair already answered linked in this session.
+    if (pair !== currentPair) {
+      currentPair = pair;
+      setPlayingAccount(pair === reportedPair ? LINKED : CHECKING);
+      publish();
+    }
     const nameIsCurrent = playerName === null || playerName === reportedName;
     if (pair === reportedPair && nameIsCurrent) {
       report = { kind: 'linked' };
@@ -355,12 +403,18 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
         handleUnauthorized(startedIn);
         return;
       }
+      // An answer about a pair the game has since left says nothing about the one playing now.
+      if (pair !== currentPair) return;
+      const alreadyLinked = pair === reportedPair;
       report = outcome;
       reportedAccountId = accountId;
       if (outcome.kind === 'linked') {
         reportedPair = pair;
         reportedName = playerName;
+      } else if (outcome.kind === 'refused' && outcome.reason !== 'unknown' && alreadyLinked) {
+        reportedPair = null;
       }
+      setPlayingAccount(playingAccountAfter(outcome, alreadyLinked));
       deps.log.info({
         scope: 'premium',
         event: 'report.outcome',
@@ -531,6 +585,8 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       open?.close();
       clearTimer();
       if (session === 'signing-in') session = 'signed-out';
+      currentPair = null;
+      setPlayingAccount(signedOutPlayingAccount);
     },
 
     getView: buildView,
