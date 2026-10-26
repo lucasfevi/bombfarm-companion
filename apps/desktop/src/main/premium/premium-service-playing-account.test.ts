@@ -217,15 +217,48 @@ describe('a change of the session pair', () => {
     h.service.noteAccountChanged();
     await settle();
     expect(h.service.getView().playingAccount).toEqual({ state: 'other', reason: 'other_account' });
-    h.stub.on('report', () => ({ status: 200, body: { outcome: 'linked' } }));
+    h.stub.on('report', refusedWith('steam_mismatch'));
 
     switchTo(h, PAIR_B);
     await settle();
+    expect(h.service.getView().playingAccount).toEqual({ state: 'other', reason: 'other_account' });
+    const sent = h.stub.calls('report').length;
     const answer = deferred<StubReply>();
     h.stub.on('report', () => answer.promise);
-    switchTo(h, PAIR_A);
+    switchTo(h, { ...PAIR_A, playerName: 'New Name' });
 
     expect(h.service.getView().playingAccount).toEqual(CHECKING);
+    await settle();
+    expect(h.stub.calls('report')).toHaveLength(sent + 1);
+  });
+
+  it('a linked pair later refused for its Steam link is not vouched for either', async () => {
+    const h = await signedIn();
+    h.identity.current = { ...PAIR_A, playerName: 'New Name' };
+    h.stub.on('report', refusedWith('no_steam_id'));
+    h.service.noteAccountChanged();
+    await settle();
+    expect(h.service.getView().playingAccount).toEqual({ state: 'other', reason: 'no_steam_link' });
+
+    switchTo(h, PAIR_B);
+    await settle();
+    h.stub.on('report', () => deferred<StubReply>().promise);
+    switchTo(h, { ...PAIR_A, playerName: 'New Name' });
+
+    expect(h.service.getView().playingAccount).toEqual(CHECKING);
+  });
+
+  it('after a game wipe, the same SteamID under a new account id is checked, then linked', async () => {
+    const h = await signedIn();
+    const answer = deferred<StubReply>();
+    h.stub.on('report', () => answer.promise);
+
+    switchTo(h, { ...PAIR_A, accountId: 'account-fixture-wiped-5001' });
+    expect(h.service.getView().playingAccount).toEqual(CHECKING);
+    answer.resolve({ status: 200, body: { outcome: 'linked' } });
+    await settle();
+
+    expect(h.service.getView().playingAccount).toEqual(LINKED);
   });
 
   it('a name-only re-report that fails keeps a linked pair linked', async () => {
@@ -273,6 +306,27 @@ describe('a change of the session pair', () => {
 
     expect(h.service.getView().playingAccount).toEqual({ state: 'unknown', reason: 'no_session' });
     expect(h.playing.allows()).toBe(false);
+    const sent = h.stub.calls('report').length;
+
+    switchTo(h, PAIR_A);
+
+    expect(h.service.getView().playingAccount).toEqual(LINKED);
+    await settle();
+    expect(h.stub.calls('report')).toHaveLength(sent);
+  });
+
+  it('comes back to linked at once after a session without a SteamID, with no request', async () => {
+    const h = await signedIn();
+
+    switchTo(h, { ...PAIR_A, steamId64: null });
+    expect(h.service.getView().playingAccount).toEqual({ state: 'unknown', reason: 'no_steam_id64' });
+    const sent = h.stub.calls('report').length;
+
+    switchTo(h, PAIR_A);
+
+    expect(h.service.getView().playingAccount).toEqual(LINKED);
+    await settle();
+    expect(h.stub.calls('report')).toHaveLength(sent);
   });
 });
 
@@ -394,6 +448,22 @@ describe('retrying a failed report', () => {
       steam_id64: SECRETS.steamId64,
     });
     expect(h.service.getView().playingAccount).toEqual(LINKED);
+  });
+
+  it('re-sends the report when Refresh joins a fetch already in flight', async () => {
+    const h = await failedOnce();
+    const sent = h.stub.calls('report').length;
+    const held = deferred<StubReply>();
+    h.stub.on('visibility', () => held.promise);
+    await h.clock.advance(3_600_000);
+    expect(h.stub.calls('report')).toHaveLength(sent);
+
+    const joined = h.service.refresh('button');
+    await settle();
+    held.resolve({ status: 200, body: { visible: false } });
+
+    expect(await joined).toEqual({ ok: true });
+    expect(h.stub.calls('report')).toHaveLength(sent + 1);
   });
 
   it('does not re-send when the refresh is refused as too soon', async () => {
