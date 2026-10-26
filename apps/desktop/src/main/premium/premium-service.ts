@@ -427,6 +427,11 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     }
   }
 
+  /** A report that failed is retried when the player asks for a refresh, never on a timer. */
+  function retryFailedReport(): void {
+    if (playing.current().reason === 'report_failed') void reportAccount();
+  }
+
   function completeSignIn(startedIn: number, granted: StoredSession): void {
     if (!attemptIsCurrent(startedIn)) return;
     listener = null;
@@ -606,6 +611,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     refresh() {
       if (halted) return Promise.resolve({ ok: false, reason: 'unavailable' });
       if (inFlight !== null && inFlight.generation === generation) {
+        retryFailedReport();
         return inFlight.promise.then((): PremiumActionResult => ({ ok: true }));
       }
       const now = deps.now();
@@ -613,6 +619,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       if (lastFinishedAt !== null && now - lastFinishedAt < PREMIUM_REFRESH_FLOOR_MS) {
         return Promise.resolve({ ok: false, reason: 'too-soon' });
       }
+      retryFailedReport();
       return runFetch().then((): PremiumActionResult => ({ ok: true }));
     },
 

@@ -84,9 +84,10 @@ describe('the playing-account state', () => {
     const answer = deferred<StubReply>();
     h.stub.on('report', () => answer.promise);
     const seen: PremiumPlayingAccount[] = [];
+    const reportsAtChange: number[] = [];
     h.playing.subscribe((next) => {
       seen.push(next);
-      expect(h.stub.calls('report')).toEqual([]);
+      reportsAtChange.push(h.stub.calls('report').length);
     });
 
     h.service.start();
@@ -100,6 +101,7 @@ describe('the playing-account state', () => {
     await settle();
 
     expect(seen).toEqual([CHECKING, LINKED]);
+    expect(reportsAtChange).toEqual([0, 1]);
     expect(h.service.getView().playingAccount).toEqual(LINKED);
     expect(h.playing.allows()).toBe(true);
   });
@@ -364,5 +366,67 @@ describe('the state change log', () => {
       { scope: 'premium', event: 'account_state', state: 'unknown', reason: 'checking' },
       { scope: 'premium', event: 'account_state', state: 'other', reason: 'other_account' },
     ]);
+  });
+});
+
+describe('retrying a failed report', () => {
+  async function failedOnce(): Promise<Harness> {
+    const h = createHarness({ vault: createFakeVault(session(SECRETS.token)) });
+    h.stub.on('report', () => unreachable());
+    h.service.start();
+    await settle();
+    expect(h.service.getView().playingAccount).toEqual({ state: 'unknown', reason: 'report_failed' });
+    return h;
+  }
+
+  it('re-sends the report for the current pair when Refresh runs', async () => {
+    const h = await failedOnce();
+    const sent = h.stub.calls('report').length;
+    h.stub.on('report', () => ({ status: 200, body: { outcome: 'linked' } }));
+    await h.clock.advance(31_000);
+
+    expect(await h.service.refresh('button')).toEqual({ ok: true });
+    await settle();
+
+    expect(h.stub.calls('report')).toHaveLength(sent + 1);
+    expect(h.stub.calls('report').at(-1)?.body).toMatchObject({
+      account_id: SECRETS.accountId,
+      steam_id64: SECRETS.steamId64,
+    });
+    expect(h.service.getView().playingAccount).toEqual(LINKED);
+  });
+
+  it('does not re-send when the refresh is refused as too soon', async () => {
+    const h = await failedOnce();
+    const sent = h.stub.calls('report').length;
+
+    expect(await h.service.refresh('button')).toEqual({ ok: false, reason: 'too-soon' });
+    await settle();
+
+    expect(h.stub.calls('report')).toHaveLength(sent);
+  });
+
+  it('does not re-send on Refresh when the state is anything but a failed report', async () => {
+    const h = createHarness({ vault: createFakeVault(session(SECRETS.token)) });
+    h.stub.on('report', refusedWith('steam_mismatch'));
+    h.service.start();
+    await settle();
+    const sent = h.stub.calls('report').length;
+    await h.clock.advance(31_000);
+
+    expect(await h.service.refresh('button')).toEqual({ ok: true });
+    await settle();
+
+    expect(h.stub.calls('report')).toHaveLength(sent);
+  });
+
+  it('never retries by itself: an hour of timers sends no second report', async () => {
+    const h = await failedOnce();
+    const sent = h.stub.calls('report').length;
+
+    await h.clock.advance(3 * 3_600_000);
+
+    expect(h.stub.calls('report')).toHaveLength(sent);
+    expect(h.service.getView().playingAccount).toEqual({ state: 'unknown', reason: 'report_failed' });
   });
 });
