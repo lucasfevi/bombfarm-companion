@@ -5,7 +5,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import * as barrel from '../../src/index';
-import { chunksContainingMotion, lazilyRequestedChunks, loadedChunks } from './chunk-scanner';
+import {
+  BASE_UI_MENU_MARKER,
+  chunksContaining,
+  chunksContainingMotion,
+  lazilyRequestedChunks,
+  loadedChunks,
+} from './chunk-scanner';
 
 const fixtureDir = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(fixtureDir, '.next');
@@ -206,6 +212,30 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     const chunks = loadedChunks(distDir, 'plain-nav.html');
     expect(chunks.length).toBeGreaterThan(0);
     expect(readPage('plain-nav.html')).toContain('<nav aria-label="Main"');
+    expect(chunksContainingMotion(distDir, chunks)).toEqual([]);
+  });
+
+  it('loads no Base UI menu code on a page that renders only the details menu', () => {
+    const chunks = loadedChunks(distDir, 'details-menu.html');
+    expect(chunks.length).toBeGreaterThan(0);
+    expect(readPage('details-menu.html')).toContain('<details class="relative inline-block"><summary aria-label="Only menu"');
+    expect(chunksContaining(distDir, chunks, BASE_UI_MENU_MARKER)).toEqual([]);
+  });
+
+  it('loads no motion on a page that renders only an info tip, and keeps it in a lazy chunk', () => {
+    const chunks = loadedChunks(distDir, 'info-tip.html');
+    expect(chunks.length).toBeGreaterThan(0);
+    expect(readPage('info-tip.html')).toContain('aria-label="Only tip: Only tip text."');
+    expect(chunksContainingMotion(distDir, chunks)).toEqual([]);
+    const lazy = lazilyRequestedChunks(distDir, chunks);
+    expect(lazy.length).toBeGreaterThan(0);
+    expect(chunksContainingMotion(distDir, lazy)).not.toEqual([]);
+  });
+
+  it('loads no motion on a page that renders a fact tile without a note', () => {
+    const chunks = loadedChunks(distDir, 'fact-tile.html');
+    expect(chunks.length).toBeGreaterThan(0);
+    expect(readPage('fact-tile.html')).toContain('Only fact detail');
     expect(chunksContainingMotion(distDir, chunks)).toEqual([]);
   });
 });

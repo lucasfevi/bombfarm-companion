@@ -12,10 +12,16 @@ export function loadedChunks(distDir: string, pageHtml: string): string[] {
   return [...html.matchAll(SCRIPT_SRC)].map((match) => match[1] as string);
 }
 
+// Base UI's menu is the only code in a build that names the `menuitemradio` role; React's own
+// bundle knows `menuitem` but not this one, and a string literal survives minification.
+export const BASE_UI_MENU_MARKER = 'menuitemradio';
+
+export function chunksContaining(distDir: string, chunks: readonly string[], marker: string): string[] {
+  return chunks.filter((chunk) => readFileSync(path.join(distDir, chunk), 'utf8').includes(marker));
+}
+
 export function chunksContainingMotion(distDir: string, chunks: readonly string[]): string[] {
-  return chunks.filter((chunk) =>
-    readFileSync(path.join(distDir, chunk), 'utf8').includes(MOTION_MARKER),
-  );
+  return chunksContaining(distDir, chunks, MOTION_MARKER);
 }
 
 const CHUNK_REQUEST = /\.e\((\d+)\)/g;

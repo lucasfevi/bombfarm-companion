@@ -35,16 +35,6 @@ export const Menu = {
   RadioItemIndicator: MenuRadioItemIndicator,
 };
 
-import {
-  DetailsMenuGroupLabel,
-  DetailsMenuItem,
-  DetailsMenuRoot,
-  DetailsMenuSeparator,
-} from './details-menu';
-
-export const DetailsMenu = {
-  Root: DetailsMenuRoot,
-  Item: DetailsMenuItem,
-  Separator: DetailsMenuSeparator,
-  GroupLabel: DetailsMenuGroupLabel,
-};
+// Kept here so `@bombfarm/ui/menu` still exports `DetailsMenu`; the barrel imports it from
+// `./details-menu` directly, which is what keeps Base UI's menu out of a DetailsMenu-only consumer.
+export { DetailsMenu } from '../details-menu';

@@ -2,13 +2,13 @@ import type { ReactNode } from 'react';
 import { ChartGrid } from './chart-grid';
 import { ChartLegend } from './chart-legend';
 import { ChartPointer } from './chart-pointer';
-import type { ChartModel, ChartProps } from './chart-model';
+import type { ChartDetailRow, ChartModel, ChartPartial, ChartProps } from './chart-model';
 import { cn } from './cn';
 import { Disclosure } from './disclosure';
 
 export type ChartFrameProps = Pick<
   ChartProps,
-  'ariaLabel' | 'empty' | 'formatValue' | 'legend' | 'maxXLabels' | 'table' | 'className'
+  'ariaLabel' | 'empty' | 'formatValue' | 'legend' | 'maxXLabels' | 'table' | 'details' | 'partial' | 'className'
 > & {
   model: ChartModel;
   /** The x of each data index. */
@@ -27,10 +27,28 @@ function visibleLabelIndexes(count: number, maxLabels: number): ReadonlySet<numb
   return shown;
 }
 
-function tooltipFor(model: ChartModel, index: number, format: (value: number) => string): ReactNode {
+/** The x label, with the caller's in-progress copy after it for an index still in progress. */
+function labelFor(model: ChartModel, partial: ChartPartial | undefined, index: number): string {
+  const label = model.labels[index] ?? '';
+  return partial !== undefined && index >= partial.from ? `${label} ${partial.label}` : label;
+}
+
+function detailColumnsOf(details: ChartProps['details']): readonly string[] {
+  const labels = new Set<string>();
+  details?.forEach((rows) => rows?.forEach((row) => labels.add(row.label)));
+  return [...labels];
+}
+
+function tooltipFor(
+  model: ChartModel,
+  index: number,
+  format: (value: number) => string,
+  partial?: ChartPartial,
+  rows?: readonly ChartDetailRow[],
+): ReactNode {
   return (
     <>
-      <div className="mb-0.5 text-bg/70">{model.labels[index] ?? ''}</div>
+      <div className="mb-0.5 text-bg/70">{labelFor(model, partial, index)}</div>
       {model.series.map((entry) => {
         const value = entry.values[index];
         return (
@@ -43,6 +61,13 @@ function tooltipFor(model: ChartModel, index: number, format: (value: number) =>
           </div>
         );
       })}
+      {rows?.map((row, rowIndex) => (
+        <div key={rowIndex} className="flex items-center gap-1.5 text-bg/80">
+          <span aria-hidden className="block w-3" />
+          <span>{row.label}</span>
+          <span className="ml-auto pl-3 font-semibold">{row.value}</span>
+        </div>
+      ))}
     </>
   );
 }
@@ -61,6 +86,8 @@ export function ChartFrame({
   legend,
   maxXLabels = DEFAULT_MAX_X_LABELS,
   table,
+  details,
+  partial,
   className,
   children,
 }: ChartFrameProps) {
@@ -69,6 +96,7 @@ export function ChartFrame({
   const { box } = model;
   const shown = visibleLabelIndexes(model.count, maxXLabels);
   const showLegend = legend ?? model.series.length > 1;
+  const detailColumns = table?.detailColumns === true ? detailColumnsOf(details) : [];
 
   return (
     <div className={cn('flex flex-col gap-2', className)}>
@@ -96,7 +124,7 @@ export function ChartFrame({
           plotTop={box.top}
           plotBottom={box.bottom}
           xs={xs}
-          tooltips={xs.map((_, index) => tooltipFor(model, index, formatValue))}
+          tooltips={xs.map((_, index) => tooltipFor(model, index, formatValue, partial, details?.[index]))}
           ariaLabel={ariaLabel}
         />
       </div>
@@ -114,13 +142,18 @@ export function ChartFrame({
                       {entry.label}
                     </th>
                   ))}
+                  {detailColumns.map((heading) => (
+                    <th key={heading} scope="col" className="px-2 py-1 text-right font-semibold text-muted">
+                      {heading}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {xs.map((_, index) => (
                   <tr key={index} className="border-t border-line/70">
                     <th scope="row" className="px-2 py-1 text-left font-normal">
-                      {model.labels[index] ?? ''}
+                      {labelFor(model, partial, index)}
                     </th>
                     {model.series.map((entry) => {
                       const value = entry.values[index];
@@ -130,6 +163,11 @@ export function ChartFrame({
                         </td>
                       );
                     })}
+                    {detailColumns.map((heading) => (
+                      <td key={heading} className="px-2 py-1 text-right">
+                        {details?.[index]?.find((row) => row.label === heading)?.value ?? MISSING}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
