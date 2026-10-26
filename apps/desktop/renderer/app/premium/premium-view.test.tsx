@@ -318,6 +318,27 @@ describe('the paused notice for the account playing', () => {
     }
   });
 
+  it('renders the warning reasons in the warning tone and the waiting reasons in the info tone', () => {
+    const classOf = (playingAccount: PremiumPlayingAccount, testId: string, status: Partial<PremiumStatus> = {}) => {
+      const html = render(signedIn(status, { playingAccount }));
+      const tag = new RegExp(`<[^>]*data-testid="${testId}"[^>]*>`).exec(html)?.[0] ?? '';
+      return /class="([^"]*)"/.exec(tag)?.[1] ?? null;
+    };
+    const warnClass = classOf({ state: 'linked', reason: null }, 'premium-banner-grace', { graceUntil: MIDDAY('2026-10-30') });
+    const dangerClass = classOf({ state: 'linked', reason: null }, 'premium-banner-disputeHold', { disputeHold: true });
+    const infoClass = classOf({ state: 'unknown', reason: 'no_session' }, 'premium-banner-paused-no_session');
+
+    expect(warnClass).not.toBeNull();
+    expect(infoClass).not.toBeNull();
+    expect(infoClass).not.toBe(warnClass);
+    expect(infoClass).not.toBe(dangerClass);
+    for (const reason of ['other_account', 'no_steam_link'] as const) {
+      expect(classOf({ state: 'other', reason }, `premium-banner-paused-${reason}`)).toBe(warnClass);
+    }
+    expect(classOf({ state: 'unknown', reason: 'report_failed' }, 'premium-banner-paused-report_failed')).toBe(warnClass);
+    expect(classOf({ state: 'unknown', reason: 'no_steam_id64' }, 'premium-banner-paused-no_steam_id64')).toBe(infoClass);
+  });
+
   it('sits above the payment banners, and a payment banner still shows beside it', () => {
     const html = render(
       signedIn(
