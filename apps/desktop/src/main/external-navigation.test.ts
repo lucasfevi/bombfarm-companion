@@ -140,6 +140,7 @@ function createWebContentsSpy(): {
   openWindow(url: string): { action: string };
   navigate(url: string): { prevented: boolean };
   navigateFrame(url: string, options?: { isMainFrame?: boolean }): { prevented: boolean };
+  redirect(url: string, options: { isMainFrame: boolean }): { prevented: boolean };
 } {
   let openHandler: ((details: { url: string }) => { action: string }) | null = null;
   const listeners = new Map<string, (details: NavigateDetails) => void>();
@@ -180,6 +181,7 @@ function createWebContentsSpy(): {
     },
     navigate: (url) => emit('will-navigate', url, true),
     navigateFrame: (url, options) => emit('will-frame-navigate', url, options?.isMainFrame ?? false),
+    redirect: (url, options) => emit('will-redirect', url, options.isMainFrame),
   };
 }
 
@@ -286,6 +288,23 @@ describe('applyExternalNavigationPolicy', () => {
     expect(spy.navigateFrame('app://bundle/index.html')).toEqual({ prevented: false });
     expect(spy.navigateFrame('about:blank')).toEqual({ prevented: false });
     expect(spy.navigateFrame('about:srcdoc')).toEqual({ prevented: false });
+  });
+
+  it('refuses a redirect off the app origin, in the main frame and in a subframe', () => {
+    const openExternal = vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined);
+    const log = createLogSpy();
+    const spy = createWebContentsSpy();
+    applyExternalNavigationPolicy(spy.contents, { openExternal, log, internalUrls: [DEV_RENDERER] });
+
+    expect(spy.redirect(STEAM_LISTING, { isMainFrame: true })).toEqual({ prevented: true });
+    expect(spy.redirect(STEAM_LISTING, { isMainFrame: false })).toEqual({ prevented: true });
+    expect(spy.redirect(`${DEV_RENDERER}/live`, { isMainFrame: true })).toEqual({ prevented: false });
+    expect(spy.redirect('about:blank', { isMainFrame: true })).toEqual({ prevented: true });
+    expect(spy.redirect('about:blank', { isMainFrame: false })).toEqual({ prevented: false });
+    expect(openExternal).not.toHaveBeenCalled();
+    expect(log.records).toContainEqual(
+      expect.objectContaining({ event: 'navigation.blocked', trigger: 'will-redirect', url: STEAM_LISTING }),
+    );
   });
 
   it('leaves the main frame to the top-level handler', () => {

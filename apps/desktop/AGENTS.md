@@ -96,7 +96,8 @@ preload.
 `src/main/external-navigation.ts` refuses every top-level navigation away from the app's own origin
 (`will-navigate`, which a `<meta http-equiv="refresh">` or a `location` assignment reaches with no
 script a CSP could stop) and every subframe navigation to anything but the app origin or an empty
-document (`will-frame-navigate`). Neither hands anything to `shell.openExternal`. The two ways a
+document (`will-frame-navigate`), and it refuses a redirect off the app origin the same way
+(`will-redirect`). None of them hands anything to `shell.openExternal`. The two ways a
 link reaches the browser are `target="_blank"` / `window.open` (the window-open handler, `https:`
 only) and a main-process call such as the Premium sign-in. **A new external link in the renderer
 must be `target="_blank"`**; a plain anchor is refused, and the smoke spec for this lists every
@@ -104,8 +105,9 @@ link the UI shows.
 
 `src/main/session-permissions.ts` answers every permission request and check, and cancels every
 HID, USB, serial and Bluetooth device selection. `GRANTED_PERMISSIONS` is the allowlist and it is
-only ever granted to the app's own origin; **a feature that needs a permission adds one line there
-and a smoke assertion that the feature works.**
+only ever granted to the app's own origin, and holds one entry today: `clipboard-sanitized-write`,
+which copying the referral code needs. **A feature that needs a permission adds one line there and
+a smoke assertion that the feature works.**
 
 ## Local checks
 

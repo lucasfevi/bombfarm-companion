@@ -59,7 +59,7 @@ async function watchNavigations(app) {
     for (const win of BrowserWindow.getAllWindows()) {
       if (watched.has(win.id)) continue;
       watched.add(win.id);
-      for (const kind of ['will-navigate', 'will-frame-navigate']) {
+      for (const kind of ['will-navigate', 'will-frame-navigate', 'will-redirect']) {
         win.webContents.on(kind, (details) => {
           globalThis.__navigations.push({
             kind,
@@ -380,6 +380,10 @@ const STATIC_MIME_TYPES = {
 function serveRendererOverLoopback(root) {
   const server = http.createServer((request, response) => {
     const pathname = decodeURIComponent(new URL(request.url, 'http://127.0.0.1').pathname);
+    if (pathname === '/redirect-away') {
+      response.writeHead(302, { location: FOREIGN }).end();
+      return;
+    }
     const target = path.join(root, pathname.endsWith('/') ? `${pathname}index.html` : pathname);
     if (path.relative(root, target).startsWith('..') || !fs.existsSync(target) || fs.statSync(target).isDirectory()) {
       response.writeHead(404).end();
@@ -394,7 +398,7 @@ function serveRendererOverLoopback(root) {
 }
 
 test.describe('navigation hardening in a dev run, where no Content-Security-Policy is in the way', () => {
-  test('the dev origin is the only origin the window may leave to, and a foreign subframe is refused by the policy itself', async () => {
+  test('with no CSP in the way, the policy alone refuses a foreign navigation, subframe and redirect, and still serves the dev origin', async () => {
     const devUserData = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-navigation-dev-'));
     const server = await serveRendererOverLoopback(path.join(desktopRoot, 'renderer', 'out'));
     const origin = `http://127.0.0.1:${String(server.address().port)}`;
@@ -455,6 +459,23 @@ test.describe('navigation hardening in a dev run, where no Content-Security-Poli
         return text;
       });
       expect(sameOrigin, 'an empty-document child frame is not refused').toBe('child');
+
+      await devApp.evaluate(() => {
+        globalThis.__navigations.length = 0;
+      });
+      await devPage.evaluate((target) => {
+        window.location.assign(target);
+      }, `${origin}/redirect-away`);
+      await expect
+        .poll(async () => (await navigations(devApp)).some((entry) => entry.kind === 'will-redirect' && entry.url === FOREIGN), {
+          timeout: 15_000,
+          message: 'the server redirect reached the main process',
+        })
+        .toBe(true);
+      const redirects = (await navigations(devApp)).filter((entry) => entry.kind === 'will-redirect' && entry.url === FOREIGN);
+      expect(redirects.every((entry) => entry.prevented)).toBe(true);
+      expect(await openedUrls(devApp)).toEqual([]);
+      expect(devPage.url().startsWith(origin)).toBe(true);
     } finally {
       await devApp?.close().catch(() => undefined);
       await new Promise((resolve) => server.close(resolve));

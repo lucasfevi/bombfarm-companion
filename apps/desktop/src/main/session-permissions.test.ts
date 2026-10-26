@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import type { Session, WebContents } from 'electron';
 import { createIpcSenderPolicy } from './ipc-sender-policy.js';
@@ -205,5 +207,26 @@ describe('cancelBluetoothSelection', () => {
     (listener as unknown as (...args: unknown[]) => void)(event, [{ deviceId: 'a' }], callback);
     expect(event.preventDefault).toHaveBeenCalled();
     expect(callback).toHaveBeenCalledWith('');
+  });
+});
+
+describe('boot wiring', () => {
+  const bootSource = readFileSync(resolve(__dirname, 'index.ts'), 'utf8');
+
+  it('applies the permission policy to the default session every window uses, before a window exists', () => {
+    const policy = bootSource.indexOf('applySessionPermissionPolicy(session.defaultSession');
+    expect(policy).toBeGreaterThan(-1);
+    expect(bootSource.match(/applySessionPermissionPolicy\(/g)).toHaveLength(1);
+    expect(policy).toBeLessThan(bootSource.indexOf('await createMainWindow()'));
+  });
+
+  it('cancels Bluetooth selection on every web contents created', () => {
+    expect(bootSource).toMatch(/app\.on\('web-contents-created',[^]*cancelBluetoothSelection\(contents\)/);
+  });
+
+  it('keeps every window on the default session, so the one policy covers them all', () => {
+    for (const file of ['index.ts', 'mini-live-window.ts', 'web-preferences.ts']) {
+      expect(readFileSync(resolve(__dirname, file), 'utf8'), file).not.toMatch(/partition/i);
+    }
   });
 });

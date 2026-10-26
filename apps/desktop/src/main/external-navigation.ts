@@ -123,6 +123,15 @@ export function applyExternalNavigationPolicy(
     refuse(details.url, 'will-navigate');
   });
 
+  contents.on('will-redirect', (details) => {
+    const decide = details.isMainFrame ? decideTopLevelNavigation : decideFrameNavigation;
+    if (decide(details.url, internalUrls) === 'allow') {
+      return;
+    }
+    details.preventDefault();
+    refuse(details.url, 'will-redirect');
+  });
+
   contents.on('will-frame-navigate', (details) => {
     if (details.isMainFrame || decideFrameNavigation(details.url, internalUrls) === 'allow') {
       return;
