@@ -55,7 +55,9 @@ describe('a subscriber that throws', () => {
     });
     playing.subscribe((next) => seen.push(next.state));
 
-    expect(() => playing.set({ state: 'linked', reason: null })).not.toThrow();
+    expect(() => {
+      playing.set({ state: 'linked', reason: null });
+    }).not.toThrow();
     expect(playing.current()).toEqual({ state: 'linked', reason: null });
     expect(seen).toEqual(['linked']);
   });
