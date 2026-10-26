@@ -8,9 +8,13 @@ import { guardScanner, isTestFile } from '../guard-scan';
  */
 const PREMIUM_ACCOUNT_GATE_CALLERS: readonly string[] = [];
 
+/** The one file that hands the app's state to the Premium service, its only writer. */
+const PLAYING_ACCOUNT_WRITERS: readonly string[] = ['src/main/premium/index.ts'];
+
 const DESKTOP_ROOT = resolve(__dirname, '..', '..', '..');
 const GATE_MODULE = join(__dirname, 'playing-account-gate.ts');
 const GATE_NAMES = /\b(premiumAccountAllows|onPremiumAccountChange)\b/;
+const STATE_NAME = /\bappPlayingAccount\b/;
 const { readAll } = guardScanner(__filename);
 
 function stripComments(source: string): string {
@@ -42,5 +46,14 @@ describe('who may call the premium account gate', () => {
 
     expect(callers).toEqual([...PREMIUM_ACCOUNT_GATE_CALLERS]);
     expect(PREMIUM_ACCOUNT_GATE_CALLERS).toEqual([]);
+  });
+
+  it('hands the app state itself to nothing but the Premium service wiring', () => {
+    const holders = desktopSources()
+      .filter((file) => file.path !== GATE_MODULE && !isTestFile(file.path))
+      .filter((file) => STATE_NAME.test(stripComments(file.source)))
+      .map((file) => asListed(file.path));
+
+    expect(holders).toEqual([...PLAYING_ACCOUNT_WRITERS]);
   });
 });
