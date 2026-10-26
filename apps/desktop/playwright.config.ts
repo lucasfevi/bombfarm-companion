@@ -56,6 +56,7 @@ export default defineConfig({
         'settings-gear-and-progression.spec.mjs',
         'tray-hide.spec.mjs',
         'mini-live.spec.mjs',
+        'csp.spec.mjs',
         'renderer-sandbox.spec.mjs',
         'ipc-sender.spec.mjs',
       ],
