@@ -26,6 +26,7 @@ vi.mock('./premium-transport.js', async (importOriginal) => {
 
 import { FLAVORS } from '@bombfarm/contracts';
 import { createPremiumWhenEnabled } from './index.js';
+import { premiumAccountAllows } from './playing-account-gate.js';
 
 function deps() {
   return {
@@ -55,6 +56,7 @@ describe('building the Premium service per flavor', () => {
       expect(transport.createPremiumHttp).not.toHaveBeenCalled();
       expect(electron.fetch).not.toHaveBeenCalled();
       expect(built.readGameIdentity).not.toHaveBeenCalled();
+      expect(premiumAccountAllows()).toBe(false);
     },
   );
 

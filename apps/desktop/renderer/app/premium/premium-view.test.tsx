@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { signedOutPremiumView, type PremiumStatus, type PremiumView } from '@bombfarm/contracts';
+import {
+  signedOutPremiumView,
+  type PremiumPlayingAccount,
+  type PremiumStatus,
+  type PremiumView,
+} from '@bombfarm/contracts';
 import { CopyProvider } from '../../lib/copy';
 import { en } from '../../lib/copy/en';
 import { ptBR } from '../../lib/copy/pt-BR';
@@ -259,5 +264,94 @@ describe('what a button press leaves behind', () => {
     for (const reason of ['failed', 'unavailable', 'signed-out'] as const) {
       expect(noticeAfterManage({ ok: false, reason })).toBe('manage-failed');
     }
+  });
+});
+
+describe('the paused notice for the account playing', () => {
+  const CASES: [PremiumPlayingAccount, string | null][] = [
+    [{ state: 'other', reason: 'other_account' }, 'premiumPausedOtherAccount'],
+    [{ state: 'other', reason: 'no_steam_link' }, 'premiumPausedNoSteamLink'],
+    [{ state: 'unknown', reason: 'no_session' }, 'premiumPausedNoSession'],
+    [{ state: 'unknown', reason: 'no_steam_id64' }, 'premiumPausedNoSession'],
+    [{ state: 'unknown', reason: 'report_failed' }, 'premiumPausedReportFailed'],
+    [{ state: 'unknown', reason: 'checking' }, 'premiumCheckingAccount'],
+    [{ state: 'linked', reason: null }, null],
+  ];
+  const ALL_KEYS = [
+    'premiumPausedOtherAccount',
+    'premiumPausedNoSteamLink',
+    'premiumPausedNoSession',
+    'premiumPausedReportFailed',
+    'premiumCheckingAccount',
+    'premiumPausedUpdateGame',
+  ] as const;
+
+  it.each(['en', 'pt-BR'] as const)('shows exactly the matching text for each state, in %s', (locale) => {
+    const copy = locale === 'en' ? en : ptBR;
+    for (const [playingAccount, key] of CASES) {
+      const shown = text(render(signedIn({}, { playingAccount }), locale));
+      for (const other of ALL_KEYS) {
+        const expected = other === key || (other === 'premiumPausedUpdateGame' && playingAccount.reason === 'no_steam_id64');
+        expect(shown.includes(copy[other]), `${String(playingAccount.reason)} → ${other}`).toBe(expected);
+      }
+    }
+  });
+
+  it('uses a warning banner for another account, a missing Steam link and a failed check, an info banner while waiting for the game, and a plain line while checking', () => {
+    const html = (playingAccount: PremiumPlayingAccount) => render(signedIn({}, { playingAccount }));
+
+    expect(html({ state: 'other', reason: 'other_account' })).toContain('data-testid="premium-banner-paused-other_account"');
+    expect(html({ state: 'other', reason: 'no_steam_link' })).toContain('data-testid="premium-banner-paused-no_steam_link"');
+    expect(html({ state: 'unknown', reason: 'report_failed' })).toContain('data-testid="premium-banner-paused-report_failed"');
+    expect(html({ state: 'unknown', reason: 'no_session' })).toContain('data-testid="premium-banner-paused-no_session"');
+    const checking = html({ state: 'unknown', reason: 'checking' });
+    expect(checking).toContain('data-testid="premium-account-checking"');
+    expect(checking).not.toContain('premium-banner-paused');
+  });
+
+  it('shows nothing about the account when Premium is not active, or when status is unknown', () => {
+    for (const [playingAccount] of CASES) {
+      for (const view of [signedIn({ active: false }, { playingAccount }), signedIn(null, { playingAccount })]) {
+        const shown = text(render(view));
+        for (const key of ALL_KEYS) expect(shown).not.toContain(en[key]);
+      }
+    }
+  });
+
+  it('renders the warning reasons in the warning tone and the waiting reasons in the info tone', () => {
+    const classOf = (playingAccount: PremiumPlayingAccount, testId: string, status: Partial<PremiumStatus> = {}) => {
+      const html = render(signedIn(status, { playingAccount }));
+      const tag = new RegExp(`<[^>]*data-testid="${testId}"[^>]*>`).exec(html)?.[0] ?? '';
+      return /class="([^"]*)"/.exec(tag)?.[1] ?? null;
+    };
+    const warnClass = classOf({ state: 'linked', reason: null }, 'premium-banner-grace', { graceUntil: MIDDAY('2026-10-30') });
+    const dangerClass = classOf({ state: 'linked', reason: null }, 'premium-banner-disputeHold', { disputeHold: true });
+    const infoClass = classOf({ state: 'unknown', reason: 'no_session' }, 'premium-banner-paused-no_session');
+
+    expect(warnClass).not.toBeNull();
+    expect(infoClass).not.toBeNull();
+    expect(infoClass).not.toBe(warnClass);
+    expect(infoClass).not.toBe(dangerClass);
+    for (const reason of ['other_account', 'no_steam_link'] as const) {
+      expect(classOf({ state: 'other', reason }, `premium-banner-paused-${reason}`)).toBe(warnClass);
+    }
+    expect(classOf({ state: 'unknown', reason: 'report_failed' }, 'premium-banner-paused-report_failed')).toBe(warnClass);
+    expect(classOf({ state: 'unknown', reason: 'no_steam_id64' }, 'premium-banner-paused-no_steam_id64')).toBe(infoClass);
+  });
+
+  it('sits above the payment banners, and a payment banner still shows beside it', () => {
+    const html = render(
+      signedIn(
+        { graceUntil: MIDDAY('2026-10-30'), disputeHold: true },
+        { playingAccount: { state: 'other', reason: 'other_account' } },
+      ),
+    );
+    const paused = html.indexOf('premium-banner-paused-other_account');
+    const grace = html.indexOf('premium-banner-grace');
+    const dispute = html.indexOf('premium-banner-disputeHold');
+
+    expect(paused).toBeGreaterThan(-1);
+    expect(grace).toBeGreaterThan(paused);
+    expect(dispute).toBeGreaterThan(grace);
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { signedOutPremiumView, type PremiumStatus, type PremiumView } from '@bombfarm/contracts';
-import { premiumBannersFor } from './premium-banners';
+import { premiumAccountNoticeFor, premiumBannersFor } from './premium-banners';
 
 const quiet: PremiumStatus = {
   active: true,
@@ -85,5 +85,39 @@ describe('which banners the Premium tab shows', () => {
     const view = viewWith({ pendingFirstPayment: true, cancellationAt: '2026-11-01T12:00:00.000Z' });
 
     expect(premiumBannersFor(view)).toEqual([]);
+  });
+});
+
+describe('the account notice', () => {
+  it('maps each paused reason to its tone and copy', () => {
+    const notice = (playingAccount: PremiumView['playingAccount']) =>
+      premiumAccountNoticeFor(viewWith({}, { playingAccount }));
+
+    expect(notice({ state: 'other', reason: 'other_account' })).toEqual({
+      kind: 'paused',
+      reason: 'other_account',
+      tone: 'warn',
+      titleKey: 'premiumPausedOtherAccount',
+      bodyKey: null,
+    });
+    expect(notice({ state: 'other', reason: 'no_steam_link' })).toMatchObject({ tone: 'warn', titleKey: 'premiumPausedNoSteamLink' });
+    expect(notice({ state: 'unknown', reason: 'no_session' })).toMatchObject({ tone: 'info', titleKey: 'premiumPausedNoSession', bodyKey: null });
+    expect(notice({ state: 'unknown', reason: 'no_steam_id64' })).toMatchObject({
+      tone: 'info',
+      titleKey: 'premiumPausedNoSession',
+      bodyKey: 'premiumPausedUpdateGame',
+    });
+    expect(notice({ state: 'unknown', reason: 'report_failed' })).toMatchObject({ tone: 'warn', titleKey: 'premiumPausedReportFailed' });
+    expect(notice({ state: 'unknown', reason: 'checking' })).toEqual({ kind: 'checking' });
+    expect(notice({ state: 'linked', reason: null })).toBeNull();
+    expect(notice({ state: 'unknown', reason: 'signed_out' })).toBeNull();
+  });
+
+  it('is absent unless signed in with Premium active', () => {
+    const playingAccount = { state: 'other', reason: 'other_account' } as const;
+
+    expect(premiumAccountNoticeFor(viewWith({ active: false }, { playingAccount }))).toBeNull();
+    expect(premiumAccountNoticeFor(viewWith({}, { playingAccount, status: null }))).toBeNull();
+    expect(premiumAccountNoticeFor(viewWith({}, { playingAccount, session: 'signing-in' }))).toBeNull();
   });
 });

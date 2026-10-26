@@ -202,6 +202,7 @@ export type {
   PremiumActionResult,
   PremiumKind,
   PremiumMe,
+  PremiumPlayingAccount,
   PremiumReportOutcome,
   PremiumReportRefusal,
   PremiumSignInEnd,
@@ -212,6 +213,8 @@ export type {
 export {
   GAME_ACCOUNT_REPORT_FIELDS,
   GAME_ACCOUNT_REPORT_FIELDS_ARE_EXHAUSTIVE,
+  PREMIUM_ACCOUNT_OTHER_REASONS,
+  PREMIUM_ACCOUNT_UNKNOWN_REASONS,
   PREMIUM_REFRESH_EVERY_MS,
   PREMIUM_REFRESH_FLOOR_MS,
   PREMIUM_SIGN_IN_TIMEOUT_MS,
@@ -225,6 +228,7 @@ export {
   readSessionTokenBody,
   readSignInRequestBody,
   reportablePlayerName,
+  signedOutPlayingAccount,
   signedOutPremiumView,
 } from './premium.js';
 export type {

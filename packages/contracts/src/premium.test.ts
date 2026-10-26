@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   GAME_ACCOUNT_REPORT_FIELDS,
+  PREMIUM_ACCOUNT_OTHER_REASONS,
+  PREMIUM_ACCOUNT_UNKNOWN_REASONS,
   PREMIUM_REFRESH_EVERY_MS,
   PREMIUM_REFRESH_FLOOR_MS,
   PREMIUM_SIGN_IN_TIMEOUT_MS,
@@ -14,6 +16,7 @@ import {
   readSessionTokenBody,
   readSignInRequestBody,
   reportablePlayerName,
+  signedOutPlayingAccount,
   signedOutPremiumView,
 } from './premium.js';
 
@@ -356,6 +359,7 @@ describe('signedOutPremiumView', () => {
   it('is a signed-out view that is remembered, hidden and carries nothing else', () => {
     expect(signedOutPremiumView).toEqual({
       session: 'signed-out',
+      playingAccount: { state: 'unknown', reason: 'signed_out' },
       rememberedAcrossRestarts: true,
       lastSignInEnd: null,
       ended: null,
@@ -367,5 +371,27 @@ describe('signedOutPremiumView', () => {
       report: null,
       reportedAccountId: null,
     });
+  });
+});
+
+describe('playing-account reasons', () => {
+  it('names exactly the reasons the main process may send, and no id-shaped value', () => {
+    expect([...PREMIUM_ACCOUNT_UNKNOWN_REASONS]).toEqual([
+      'signed_out',
+      'no_session',
+      'no_steam_id64',
+      'checking',
+      'report_failed',
+    ]);
+    expect([...PREMIUM_ACCOUNT_OTHER_REASONS]).toEqual(['other_account', 'no_steam_link']);
+    for (const reason of [...PREMIUM_ACCOUNT_UNKNOWN_REASONS, ...PREMIUM_ACCOUNT_OTHER_REASONS]) {
+      expect(reason).toMatch(/^[a-z][a-z0-9_]*[a-z0-9]$/);
+      expect(reason).not.toMatch(/\d{5,}/);
+    }
+  });
+
+  it('starts a signed-out view at unknown, so nothing reads it as the linked account', () => {
+    expect(signedOutPlayingAccount).toEqual({ state: 'unknown', reason: 'signed_out' });
+    expect(signedOutPremiumView.playingAccount).toBe(signedOutPlayingAccount);
   });
 });
