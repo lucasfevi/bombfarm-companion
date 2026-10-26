@@ -1500,4 +1500,11 @@ export const ptBR: Copy = {
   premiumBannerDisputeBody: 'O Premium fica pausado enquanto uma contestação de pagamento estiver aberta.',
   premiumBannerUnreachableTitle: 'Não foi possível conectar ao servidor',
   premiumBannerUnreachableBody: 'Mostrando o último status, atualizado {time}.',
+  premiumPausedOtherAccount:
+    'O Premium está pausado — o jogo está conectado com uma conta diferente da vinculada ao seu Premium.',
+  premiumPausedNoSteamLink: 'O Premium está pausado — conecte a Steam na página do Premium para vincular sua conta do jogo.',
+  premiumPausedNoSession: 'O Premium está pausado até o jogo estar aberto com a sua conta vinculada.',
+  premiumPausedUpdateGame: 'Atualize o jogo se este aviso não sumir.',
+  premiumPausedReportFailed: 'Não foi possível confirmar sua conta do jogo — clique em Atualizar para tentar de novo.',
+  premiumCheckingAccount: 'Verificando sua conta do jogo…',
 };
