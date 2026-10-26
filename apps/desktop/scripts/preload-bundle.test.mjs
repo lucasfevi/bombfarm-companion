@@ -74,11 +74,19 @@ describe('the preload bundle runs inside the renderer sandbox', () => {
     expect(sandboxViolations(await bundlePreload())).toEqual([]);
   });
 
-  it('brings electron-log into the bundle instead of requiring it at load time', async () => {
+  it('carries no logging library: electron-log neither bundled nor required, and no channel of its own sent on', async () => {
     const code = await bundlePreload();
 
-    expect(code).not.toMatch(/require\(\s*["']electron-log/);
-    expect(code).toContain('__electronLog');
+    expect(code).not.toMatch(/electron-log/i);
+    expect(code).not.toContain('__electronLog');
+    expect(code).not.toContain('__ELECTRON_LOG');
+  });
+
+  it('sends only over the one bfc:invoke channel', async () => {
+    const code = await bundlePreload();
+
+    expect([...code.matchAll(/ipcRenderer\.(send|sendSync|sendToHost|postMessage)\b/g)]).toEqual([]);
+    expect([...code.matchAll(/ipcRenderer\.invoke\(\s*(["'][^"']+["'])/g)].map((match) => match[1])).toEqual(['"bfc:invoke"']);
   });
 
   it('still requires electron itself, which is what exposes the bridge', async () => {

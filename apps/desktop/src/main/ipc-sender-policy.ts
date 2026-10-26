@@ -44,6 +44,7 @@ export const MINI_LIVE_INVOKE_CHANNELS: ReadonlySet<IpcInvokeChannel> = new Set<
   'miniLive:setLayout',
   'miniLive:fitGrowthAxis',
   'miniLive:close',
+  'log:rendererError',
 ]);
 
 const AUTHORITY_SEPARATOR = '://';

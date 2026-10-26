@@ -21,20 +21,30 @@ export function ScreenCrashFallback({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-export function ScreenBoundary({ screen, children }: { screen: string; children: ReactNode }) {
+export function ScreenBoundary({
+  screen,
+  children,
+  fallback = (retry) => <ScreenCrashFallback onRetry={retry} />,
+}: {
+  screen: string;
+  children: ReactNode;
+  fallback?: (retry: () => void) => ReactNode;
+}) {
   return (
     <ErrorBoundary
       resetKey={screen}
       onError={(error, info) => {
-        window.bfc?.logRendererError({
-          event: 'screen.crash',
-          screen,
-          message: error.message,
-          stack: error.stack ?? '',
-          componentStack: info.componentStack ?? '',
-        });
+        void window.bfc
+          ?.invoke('log:rendererError', {
+            event: 'screen.crash',
+            screen,
+            message: error.message,
+            stack: error.stack ?? '',
+            componentStack: info.componentStack ?? '',
+          })
+          .catch(() => undefined);
       }}
-      fallback={(retry) => <ScreenCrashFallback onRetry={retry} />}
+      fallback={fallback}
     >
       {children}
     </ErrorBoundary>

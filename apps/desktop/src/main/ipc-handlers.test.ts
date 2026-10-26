@@ -224,6 +224,7 @@ function fakes() {
     },
     spies: {
       warn: vi.fn(),
+      error: vi.fn(),
       accountSource: vi.fn((): AccountSource => 'server'),
       isMiniAvailable: vi.fn(() => true),
       getAccountView: vi.fn(() => ACCOUNT_VIEW),
@@ -251,6 +252,7 @@ function wired(env: AppEnv = BETA_ENV) {
   const deps: IpcHandlerDeps = {
     now: () => f.clock.ms,
     warn: f.spies.warn,
+    error: f.spies.error,
     resolveEnv: () => env,
     appVersion: f.spies.appVersion,
     appIsPackaged: () => env.isPackaged,
@@ -963,6 +965,36 @@ describe('the clipboard', () => {
     });
     expect(f.imageClipboard.decodePng).not.toHaveBeenCalled();
     expect(f.imageClipboard.writeImage).not.toHaveBeenCalled();
+  });
+});
+
+describe('the renderer error log', () => {
+  const crash = {
+    event: 'screen.crash',
+    screen: 'heroes',
+    message: 'boom',
+    stack: 'Error: boom\n    at render',
+    componentStack: '\n    at Heroes',
+  };
+
+  it('logs a crash at error level under a scope main stamps, and answers null', () => {
+    const { dispatch, f } = wired();
+    expect(dispatch('log:rendererError', crash)).toBeNull();
+    expect(f.spies.error).toHaveBeenCalledTimes(1);
+    expect(f.spies.error).toHaveBeenCalledWith({ scope: 'renderer', ...crash });
+  });
+
+  it('lets a page neither pick the scope nor add keys', () => {
+    const { dispatch, f } = wired();
+    dispatch('log:rendererError', { ...crash, scope: 'main', level: 'info', extra: 'x' });
+    expect(f.spies.error).toHaveBeenCalledWith({ scope: 'renderer', ...crash });
+  });
+
+  it('refuses something that is not a record with a warning that carries nothing from the page', () => {
+    const { dispatch, f } = wired();
+    expect(dispatch('log:rendererError', 'not a record')).toBeNull();
+    expect(f.spies.error).not.toHaveBeenCalled();
+    expect(f.spies.warn).toHaveBeenCalledWith({ scope: 'renderer', event: 'error_record.rejected' });
   });
 });
 

@@ -5,7 +5,7 @@ import {
   createSenderWindowResolver,
   type BridgeSender,
 } from './ipc-bridge-handler.js';
-import type { SenderFrameLike } from './ipc-sender-policy.js';
+import type { SenderFrameLike, SenderWindow } from './ipc-sender-policy.js';
 
 const MAIN_ID = 1;
 const MINI_ID = 2;
@@ -29,14 +29,16 @@ function frameAt(url: string, overrides: Partial<SenderFrameLike> = {}): SenderF
 function harness(env: { isDev: boolean } = { isDev: false }) {
   const dispatch = vi.fn((channel: string, ...args: unknown[]) => ({ channel, args }));
   const log = { warn: vi.fn() };
+  const gate = { admit: vi.fn((_window: SenderWindow) => true) };
   const handler = createBridgeInvokeHandler<BridgeSender>({
     env,
     devRendererUrl: DEV_URL,
     senderWindowOf,
     dispatch,
     log,
+    rendererErrorGate: gate,
   });
-  return { handler, dispatch, log };
+  return { handler, dispatch, log, gate };
 }
 
 describe('createSenderWindowResolver', () => {
@@ -121,6 +123,34 @@ describe('the bridge invoke handler', () => {
     };
     expect(() => handler({ sender, senderFrame: frameAt(APP_URL) }, 'app:ping')).toThrow('IPC sender not permitted');
     expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  describe('the renderer error channel', () => {
+    const miniEvent = { sender: senderOf(MINI_ID), senderFrame: frameAt('app://bundle/mini-live/index.html') };
+    const mainEvent = { sender: senderOf(MAIN_ID), senderFrame: frameAt(APP_URL) };
+
+    it('asks the gate about the window the call came from, then dispatches an admitted call from either window', () => {
+      const { handler, dispatch, gate } = harness();
+      expect(handler(mainEvent, 'log:rendererError', { message: 'a' })).toMatchObject({ channel: 'log:rendererError' });
+      expect(handler(miniEvent, 'log:rendererError', { message: 'b' })).toMatchObject({ channel: 'log:rendererError' });
+      expect(gate.admit.mock.calls).toEqual([['main'], ['mini-live']]);
+      expect(dispatch).toHaveBeenCalledTimes(2);
+    });
+
+    it('answers null without dispatching a call the gate drops', () => {
+      const { handler, dispatch, gate } = harness();
+      gate.admit.mockReturnValue(false);
+      expect(handler(miniEvent, 'log:rendererError', { message: 'a' })).toBeNull();
+      expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('does not spend the allowance on a refused sender, and consults the gate for no other channel', () => {
+      const { handler, gate } = harness();
+      const stranger = { sender: senderOf(STRANGER_ID), senderFrame: frameAt(APP_URL) };
+      expect(() => handler(stranger, 'log:rendererError', {})).toThrow('IPC sender not permitted');
+      handler(mainEvent, 'app:ping');
+      expect(gate.admit).not.toHaveBeenCalled();
+    });
   });
 
   describe('which environment may use the dev renderer origin', () => {

@@ -13,6 +13,12 @@ describe('mini-live page shell', () => {
     expect(source).not.toContain('ConsentGate');
   });
 
+  it('contains a crash in a screen boundary whose fallback keeps the chrome, so the window can still be closed', () => {
+    expect(source).toContain('<ScreenBoundary');
+    expect(source).toContain('screen="mini-live"');
+    expect(source).toMatch(/fallback=\{[\s\S]*<MiniChrome onClose=\{onClose\} gear=\{null\} \/>[\s\S]*ScreenCrashFallback/);
+  });
+
   it('loads layout through miniLive:getLayout', () => {
     expect(source).toContain("'miniLive:getLayout'");
   });

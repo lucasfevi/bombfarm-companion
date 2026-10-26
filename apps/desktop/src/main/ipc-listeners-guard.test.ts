@@ -184,7 +184,7 @@ describe('main-process IPC listeners we own', () => {
     expect(calleeName(handler)).toBe('createBridgeInvokeHandler');
   });
 
-  it('feeds the factory the resolved environment, the dev renderer URL, the real dispatch and the log', () => {
+  it('feeds the factory the resolved environment, the dev renderer URL, the real dispatch, the log and the renderer-error gate', () => {
     const handler = uses.find((entry) => entry.file === 'main/index.ts')?.use.registrations[0]?.handler;
     expect(pinFactory(handler)).toEqual(PINNED);
   });
@@ -198,6 +198,7 @@ const PINNED: FactoryPin = {
     senderWindowOf: 'createSenderWindowResolver',
     dispatch: 'dispatch',
     log: 'log',
+    rendererErrorGate: 'createRendererErrorGate',
   },
   resolver: { main: 'liveMainContents', mini: 'liveMiniContents' },
 };
@@ -206,7 +207,8 @@ describe('pinFactory', () => {
   const pinned = (source: string) => pinFactory(firstExpression(source));
   const wrap = (members: string, resolverMembers = 'main: liveMainContents, mini: liveMiniContents') =>
     `createBridgeInvokeHandler({ ${members}, senderWindowOf: createSenderWindowResolver({ ${resolverMembers} }) });`;
-  const CLEAN = 'env: resolveAppEnv(), devRendererUrl: RENDERER_DEV_URL, dispatch, log';
+  const CLEAN =
+    'env: resolveAppEnv(), devRendererUrl: RENDERER_DEV_URL, dispatch, log, rendererErrorGate: createRendererErrorGate({ now })';
 
   it('reads the clean shape the app uses', () => {
     expect(pinned(wrap(CLEAN))).toEqual(PINNED);

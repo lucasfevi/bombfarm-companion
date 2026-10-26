@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { AppLocale, MiniLiveLayoutPatch, MiniLiveLayoutView } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS } from '@bombfarm/contracts';
 import { CopyProvider } from '../../lib/copy';
+import { ScreenBoundary, ScreenCrashFallback } from '../screen-boundary';
 import { useLiveModel } from '../../lib/live/use-live-model';
 import { readMiniLiveFitSize } from './measure-mini-live-fit';
 import { MiniChrome } from './mini-chrome';
@@ -82,14 +83,29 @@ export default function MiniLivePage() {
 
   return (
     <CopyProvider locale={locale}>
-      <MiniLiveShell
-        layout={layout}
-        gearOpen={gearOpen}
-        onGearOpenChange={setGearOpen}
-        onClose={onClose}
-        onLayoutChange={onLayoutChange}
-        onResetEarnings={onResetEarnings}
-      />
+      <ScreenBoundary
+        screen="mini-live"
+        fallback={(retry) => (
+          <div
+            data-testid="mini-live-crash"
+            className="flex h-dvh flex-col overflow-hidden bg-bg text-ink font-sans"
+          >
+            <MiniChrome onClose={onClose} gear={null} />
+            <div className="p-2">
+              <ScreenCrashFallback onRetry={retry} />
+            </div>
+          </div>
+        )}
+      >
+        <MiniLiveShell
+          layout={layout}
+          gearOpen={gearOpen}
+          onGearOpenChange={setGearOpen}
+          onClose={onClose}
+          onLayoutChange={onLayoutChange}
+          onResetEarnings={onResetEarnings}
+        />
+      </ScreenBoundary>
     </CopyProvider>
   );
 }

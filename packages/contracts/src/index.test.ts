@@ -78,6 +78,7 @@ const IPC_CHANNEL_LIST = [
   'premium:signOut',
   'premium:refresh',
   'premium:manage',
+  'log:rendererError',
 ] as const;
 
 const IPC_EVENT_CHANNEL_LIST = [

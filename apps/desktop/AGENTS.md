@@ -64,10 +64,22 @@ from `@playwright/test`; a guard fails otherwise.
 
 Both windows are built from `sandboxedWebPreferences` (`src/main/web-preferences.ts`), and
 `app.enableSandbox()` covers any window added later. A sandboxed preload can `require` only
-`electron`, `events`, `timers` and `url`, so everything else it imports (`electron-log/renderer`
-included) is bundled into `dist/preload/index.cjs` by `scripts/electron-bundles.mjs`, and anything
-that needs Node, a file or a native module belongs in the main process behind IPC. Importing
-`node:fs` or similar into the preload fails `scripts/preload-bundle.test.mjs`, not the user's launch.
+`electron`, `events`, `timers` and `url`, so everything else it imports is bundled into
+`dist/preload/index.cjs` by `scripts/electron-bundles.mjs`, and anything that needs Node, a file or
+a native module belongs in the main process behind IPC. Importing `node:fs` or similar into the
+preload fails `scripts/preload-bundle.test.mjs`, not the user's launch.
+
+## RULE: a renderer reaches the log file only through `log:rendererError`
+
+The preload carries no logger and the main process never calls electron-log's `log.initialize()`
+(it would inject a second preload and expose `__electronLog` to the page's world). A screen crash is
+reported with `window.bfc.invoke('log:rendererError', record)`, as `ScreenBoundary` does for every
+screen of the main window and for the compact window. Main (`src/main/renderer-error-log.ts`) keeps
+only the five contract keys, caps each, strips control characters, stamps `scope: 'renderer'`
+itself, and admits each window a burst of five then one record every ten seconds; what it drops is
+reported as one `error_log.suppressed` line. **A new renderer-side log call goes through that
+channel, not through a new bridge function** — the compact window's allowlist and the sender check
+then cover it with no further work.
 
 ## RULE: every `bfc:invoke` is checked against its sender, and the compact window has an allowlist
 

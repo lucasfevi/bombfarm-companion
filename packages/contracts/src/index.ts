@@ -12,6 +12,10 @@ import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
 import type { CollectionsView } from './collections.js';
 import type { ApplyEvent, ApplyStartRequest, ApplyStartResult } from './apply.js';
 import type { DeconstructEvent, DeconstructStartRequest, DeconstructStartResult } from './deconstruct.js';
+import type { RendererErrorRecord } from './renderer-error.js';
+
+export { RENDERER_ERROR_KEYS } from './renderer-error.js';
+export type { RendererErrorRecord } from './renderer-error.js';
 
 export { accountChangeKey, canonicalStringify } from './account-change-key.js';
 export {
@@ -680,6 +684,10 @@ export interface IpcChannels {
   'premium:refresh': { args: []; result: PremiumActionResult };
   /** Opens the Premium page in the system browser. `ok` means a URL was opened. */
   'premium:manage': { args: []; result: PremiumActionResult };
+  /** A screen crash, reported by the window that drew it so it reaches the log file the renderer
+   *  cannot write to. Main validates the record rather than trusting its shape, caps every field,
+   *  stamps the scope itself and rate-limits each window; a call it drops answers the same `null`. */
+  'log:rendererError': { args: [RendererErrorRecord]; result: null };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -751,6 +759,7 @@ export const IPC_CHANNELS = [
   'premium:signOut',
   'premium:refresh',
   'premium:manage',
+  'log:rendererError',
 ] as const satisfies readonly IpcInvokeChannel[];
 
 export type IpcEventChannel =

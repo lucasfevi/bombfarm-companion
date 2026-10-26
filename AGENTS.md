@@ -26,7 +26,7 @@ change the other, in the same PR — see [`apps/desktop/AGENTS.md`](apps/desktop
   `.github/workflows/wiki-drift.yml`, fetches the wiki to detect drift; it is
   alert-only and may not write `packages/domain/**` — see
   [`docs/wiki-drift-check.md`](docs/wiki-drift-check.md)
-- **electron-log** (main/preload/renderer)
+- **electron-log** (main process; renderer errors reach it over the `log:rendererError` bridge channel)
 - **SQLite** via `Storage` wrapper (`node:sqlite` when Electron's Node supports it, else `better-sqlite3`)
 
 ## Local checks
