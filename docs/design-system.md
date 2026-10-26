@@ -510,6 +510,8 @@ export default {
   same `<button>` with the same accessible name and markup, so a page that only renders a tip (a
   `PanelHeader info`, say) ships no `motion` in its first load. A glyph hovered or focused before the
   tooltip arrives opens it on arrival.
+- **`FactTile` loads its tooltip lazily**, and only when it carries a `note`. A tile without one
+  ships no tooltip or `motion` code; with one, it is the same element until the tooltip arrives.
 - **`DetailsMenu` lives in its own module** (`@bombfarm/ui/details-menu`), apart from `Menu`. A
   client component that imports only `DetailsMenu` from the barrel pulls in none of Base UI's menu
   or floating code. `@bombfarm/ui/menu` still exports both.

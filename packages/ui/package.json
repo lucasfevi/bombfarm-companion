@@ -54,6 +54,7 @@
     "./error-boundary": "./src/error-boundary.tsx",
     "./escape-reg-exp": "./src/escape-reg-exp.ts",
     "./fact-tile": "./src/fact-tile.tsx",
+    "./fact-tile-note": "./src/fact-tile-note.tsx",
     "./fact-tile.recipe": "./src/fact-tile.recipe.ts",
     "./field-required": "./src/field-required.tsx",
     "./fields": "./src/fields.tsx",

@@ -231,4 +231,11 @@ describe('a server-rendered consumer of the @bombfarm/ui barrel', () => {
     expect(lazy.length).toBeGreaterThan(0);
     expect(chunksContainingMotion(distDir, lazy)).not.toEqual([]);
   });
+
+  it('loads no motion on a page that renders a fact tile without a note', () => {
+    const chunks = loadedChunks(distDir, 'fact-tile.html');
+    expect(chunks.length).toBeGreaterThan(0);
+    expect(readPage('fact-tile.html')).toContain('Only fact detail');
+    expect(chunksContainingMotion(distDir, chunks)).toEqual([]);
+  });
 });
