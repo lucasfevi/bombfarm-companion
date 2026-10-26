@@ -1,5 +1,6 @@
 import type { IpcInvokeChannel } from '@bombfarm/contracts';
 import type { AppEnv } from './env.js';
+import type { IpcRejectionLogGate } from './ipc-rejection-log.js';
 import type { RendererErrorGate } from './renderer-error-log.js';
 import {
   createIpcSenderPolicy,
@@ -46,6 +47,7 @@ export function createBridgeInvokeHandler<Sender extends BridgeSender>(deps: {
   dispatch: (channel: string, ...args: unknown[]) => unknown;
   log: { warn: (record: Record<string, unknown>) => void };
   rendererErrorGate: RendererErrorGate;
+  rejectionLogGate: IpcRejectionLogGate;
 }): (event: BridgeInvokeEvent<Sender>, channel: string, ...args: unknown[]) => unknown {
   const policy = createIpcSenderPolicy({ isDev: deps.env.isDev, devRendererUrl: deps.devRendererUrl });
 
@@ -57,7 +59,9 @@ export function createBridgeInvokeHandler<Sender extends BridgeSender>(deps: {
     };
     const verdict = decideIpcSender(request, policy);
     if (!verdict.allowed) {
-      deps.log.warn(ipcSenderRejectionRecord(request, verdict.reason));
+      if (deps.rejectionLogGate.admit(request.senderWindow, verdict.reason)) {
+        deps.log.warn(ipcSenderRejectionRecord(request, verdict.reason));
+      }
       throw new Error('IPC sender not permitted');
     }
     const { senderWindow } = request;

@@ -1,5 +1,6 @@
 import { RENDERER_ERROR_KEYS, type RendererErrorRecord } from '@bombfarm/contracts';
 import type { SenderWindow } from './ipc-sender-policy.js';
+import { createKeyedLogGate } from './log-gate.js';
 
 /** A React component stack runs to a few KB and a JS stack to one or two; message and the two
  *  labels are short by nature. Past these a field is a page filling the disk, not a crash. */
@@ -91,65 +92,18 @@ export interface RendererErrorGate {
   admit(window: SenderWindow): boolean;
 }
 
-interface Bucket {
-  tokens: number;
-  refilledAt: number;
-  suppressed: number;
-  reportPending: boolean;
-}
-
-function unrefTimer(callback: () => void, delayMs: number): void {
-  setTimeout(callback, delayMs).unref();
-}
-
-/** A token bucket per window. What it drops is counted and reported once, a minute after the first
- *  drop, as a single line — so a crash loop leaves a bounded trail that says it was bounded. */
+/** One bucket per window, reported a minute after the first drop as a single line — so a crash loop
+ *  leaves a bounded trail that says it was bounded. */
 export function createRendererErrorGate(deps: RendererErrorGateDeps): RendererErrorGate {
-  const schedule = deps.schedule ?? unrefTimer;
-  const clock = deps.now ?? (() => performance.now());
-  const buckets = new Map<SenderWindow, Bucket>();
-
-  function bucketFor(window: SenderWindow): Bucket {
-    let bucket = buckets.get(window);
-    if (bucket === undefined) {
-      bucket = { tokens: RENDERER_ERROR_BURST, refilledAt: clock(), suppressed: 0, reportPending: false };
-      buckets.set(window, bucket);
-    }
-    return bucket;
-  }
-
-  function reportSuppressed(window: SenderWindow, bucket: Bucket): void {
-    deps.warn({
-      scope: 'renderer',
-      event: 'error_log.suppressed',
-      window,
-      suppressed: bucket.suppressed,
-    });
-    bucket.suppressed = 0;
-    bucket.reportPending = false;
-  }
-
-  return {
-    admit: (window) => {
-      const bucket = bucketFor(window);
-      const now = clock();
-      if (now > bucket.refilledAt) {
-        const refill = (now - bucket.refilledAt) / RENDERER_ERROR_REFILL_MS;
-        bucket.tokens = Math.min(RENDERER_ERROR_BURST, bucket.tokens + refill);
-        bucket.refilledAt = now;
-      }
-      if (bucket.tokens >= 1) {
-        bucket.tokens -= 1;
-        return true;
-      }
-      bucket.suppressed += 1;
-      if (!bucket.reportPending) {
-        bucket.reportPending = true;
-        schedule(() => {
-          reportSuppressed(window, bucket);
-        }, RENDERER_ERROR_SUPPRESSION_REPORT_MS);
-      }
-      return false;
+  const gate = createKeyedLogGate<SenderWindow>({
+    burst: RENDERER_ERROR_BURST,
+    refillMs: RENDERER_ERROR_REFILL_MS,
+    reportMs: RENDERER_ERROR_SUPPRESSION_REPORT_MS,
+    now: deps.now,
+    schedule: deps.schedule,
+    onSuppressed: (window, suppressed) => {
+      deps.warn({ scope: 'renderer', event: 'error_log.suppressed', window, suppressed });
     },
-  };
+  });
+  return { admit: (window) => gate.admit(window, window) };
 }

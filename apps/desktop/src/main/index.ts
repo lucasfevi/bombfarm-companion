@@ -33,6 +33,7 @@ import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
 import { createIpcDispatch, createIpcHandlers, defaultLiveView } from './ipc-handlers.js';
 import { createBridgeInvokeHandler, createSenderWindowResolver } from './ipc-bridge-handler.js';
 import { createEventEmitter } from './event-emitter.js';
+import { createIpcRejectionLogGate } from './ipc-rejection-log.js';
 import { createRendererErrorGate } from './renderer-error-log.js';
 import { createRedactingTokenReader } from './redacting-token-reader.js';
 import { LIVE_SOURCE_RELEASE_DEADLINE_MS, settleWithin, shutdownInOrder } from './shutdown.js';
@@ -413,6 +414,11 @@ function registerIpcHandlers(): void {
       dispatch,
       log,
       rendererErrorGate: createRendererErrorGate({
+        warn: (record) => {
+          log.warn(record);
+        },
+      }),
+      rejectionLogGate: createIpcRejectionLogGate({
         warn: (record) => {
           log.warn(record);
         },

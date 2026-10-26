@@ -227,6 +227,36 @@ test.describe('renderer error log smoke', () => {
         expect(written).toBeLessThan(calls);
       });
 
+      await test.step('a flood of refused calls with varied channel names is all refused but logs only a handful of lines', async () => {
+        const calls = 300;
+        const refused = await mini.evaluate(
+          async (calls) => {
+            let count = 0;
+            await Promise.all(
+              Array.from({ length: calls }, (_, index) =>
+                window.bfc.invoke(`smoke:varied-${index}`).catch((error) => {
+                  if (String(error).includes('IPC sender not permitted')) count += 1;
+                }),
+              ),
+            );
+            return count;
+          },
+          calls,
+        );
+        expect(refused).toBe(calls);
+
+        await expect
+          .poll(async () => (await recordsContaining(app, userDataDir, 'smoke:varied-')).length, { timeout: 15_000 })
+          .toBeGreaterThan(0);
+        const logged = (await recordsContaining(app, userDataDir, 'smoke:varied-')).length;
+        expect(logged).toBeLessThanOrEqual(11);
+        for (const record of await recordsContaining(app, userDataDir, 'smoke:varied-')) {
+          expect(record).toContain("event: 'ipc.sender_rejected'");
+          expect(record).toContain("window: 'mini-live'");
+          expect(record).toContain("reason: 'channel_not_allowed'");
+        }
+      });
+
       await test.step('the other window still has its own allowance after one has used up its own', async () => {
         await page.evaluate(() =>
           window.bfc.invoke('log:rendererError', {

@@ -21,6 +21,7 @@ describe('the renderer error channel when the sender check lets through a window
       dispatch,
       log: { warn: vi.fn() },
       rendererErrorGate: gate,
+      rejectionLogGate: { admit: () => true },
     });
     return { handler, dispatch, gate };
   }

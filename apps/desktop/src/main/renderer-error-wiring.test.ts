@@ -5,11 +5,11 @@ import { describe, expect, it } from 'vitest';
 
 /** A gate given a clock of its own is a gate the app cannot be sure refills: `now: () => 0` never
  *  does, and nothing else would notice. The app builds it with its default monotonic clock. */
-function gateCallsIn(source: string): ts.CallExpression[] {
+function gateCallsIn(source: string, factory = 'createRendererErrorGate'): ts.CallExpression[] {
   const file = ts.createSourceFile('fixture.ts', source, ts.ScriptTarget.Latest, true);
   const calls: ts.CallExpression[] = [];
   const visit = (node: ts.Node): void => {
-    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'createRendererErrorGate') {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === factory) {
       calls.push(node);
     }
     ts.forEachChild(node, visit);
@@ -31,6 +31,12 @@ describe('how the app builds the renderer-error gate', () => {
 
   it('builds exactly one, from the log alone, so it runs on its default monotonic clock', () => {
     const calls = gateCallsIn(source);
+    expect(calls).toHaveLength(1);
+    expect(optionNames(calls[0] as ts.CallExpression)).toEqual(['warn']);
+  });
+
+  it('builds the rejection log gate the same way', () => {
+    const calls = gateCallsIn(source, 'createIpcRejectionLogGate');
     expect(calls).toHaveLength(1);
     expect(optionNames(calls[0] as ts.CallExpression)).toEqual(['warn']);
   });
