@@ -44,6 +44,16 @@ export function inactiveStatusBody() {
   return { active: false, kinds: [], until: null, entitlements: [], states: NO_STATES };
 }
 
+export function activeStatusBody() {
+  return {
+    active: true,
+    kinds: ['subscription'],
+    until: new Date(Date.now() + 30 * DAY_MS).toISOString(),
+    entitlements: [],
+    states: NO_STATES,
+  };
+}
+
 export function graceStatusBody() {
   const now = Date.now();
   return {
@@ -71,6 +81,8 @@ export async function startPremiumApiStub() {
     validTokens: new Set(),
     challenge: null,
     firstRotateAfterInThePast: true,
+    /** Report answers by the SteamID reported; any other SteamID is answered linked. */
+    reportReplies: {},
   };
 
   function json(response, status, body) {
@@ -158,7 +170,9 @@ export async function startPremiumApiStub() {
         admitted: false,
       });
     } else if (url.pathname === PATHS.report) {
-      json(response, 200, { outcome: 'linked' });
+      const reply = state.reportReplies[body?.steam_id64];
+      if (reply === undefined) json(response, 200, { outcome: 'linked' });
+      else json(response, reply.status, reply.body);
     } else if (url.pathname === PATHS.handOff) {
       json(response, 200, { url: STUB_HAND_OFF_URL, expiresAt: new Date(Date.now() + 60_000).toISOString() });
     } else if (url.pathname === PATHS.status) {
