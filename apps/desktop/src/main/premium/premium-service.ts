@@ -4,6 +4,7 @@ import {
   PREMIUM_REFRESH_FLOOR_MS,
   PREMIUM_SIGN_IN_TIMEOUT_MS,
   reportablePlayerName,
+  signedOutPlayingAccount,
   type AppLocale,
   type PremiumActionResult,
   type PremiumMe,
@@ -100,6 +101,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
   function buildView(): PremiumView {
     return {
       session,
+      playingAccount: signedOutPlayingAccount,
       rememberedAcrossRestarts: remembered,
       lastSignInEnd,
       ended,
