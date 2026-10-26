@@ -75,11 +75,17 @@ The preload carries no logger and the main process never calls electron-log's `l
 (it would inject a second preload and expose `__electronLog` to the page's world). A screen crash is
 reported with `window.bfc.invoke('log:rendererError', record)`, as `ScreenBoundary` does for every
 screen of the main window and for the compact window. Main (`src/main/renderer-error-log.ts`) keeps
-only the five contract keys, caps each, strips control characters, stamps `scope: 'renderer'`
-itself, and admits each window a burst of five then one record every ten seconds; what it drops is
+only the five contract keys, caps each, strips control characters (including the Unicode
+direction, isolate and separator controls), stamps `scope: 'renderer'` itself, and admits each
+window a burst of five then one record every ten seconds on a monotonic clock; what it drops is
 reported as one `error_log.suppressed` line. **A new renderer-side log call goes through that
 channel, not through a new bridge function** — the compact window's allowlist and the sender check
 then cover it with no further work.
+
+Importing `electron-log/main` registers its own `ipcMain` listener and handler on
+`__ELECTRON_LOG__`, which would take any record from any renderer process with no check, cap or
+gate. `registerIpcHandlers` removes both before the bridge handler is registered, and
+`renderer-error-wiring.test.ts` and the error-log smoke spec fail if that is undone.
 
 ## RULE: every `bfc:invoke` is checked against its sender, and the compact window has an allowlist
 

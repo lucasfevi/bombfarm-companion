@@ -208,7 +208,7 @@ describe('pinFactory', () => {
   const wrap = (members: string, resolverMembers = 'main: liveMainContents, mini: liveMiniContents') =>
     `createBridgeInvokeHandler({ ${members}, senderWindowOf: createSenderWindowResolver({ ${resolverMembers} }) });`;
   const CLEAN =
-    'env: resolveAppEnv(), devRendererUrl: RENDERER_DEV_URL, dispatch, log, rendererErrorGate: createRendererErrorGate({ now })';
+    'env: resolveAppEnv(), devRendererUrl: RENDERER_DEV_URL, dispatch, log, rendererErrorGate: createRendererErrorGate({ warn })';
 
   it('reads the clean shape the app uses', () => {
     expect(pinned(wrap(CLEAN))).toEqual(PINNED);

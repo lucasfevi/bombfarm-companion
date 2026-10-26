@@ -43,6 +43,7 @@ async function exerciseBridge(page, channel) {
       invoked: await bridge.invoke(channel),
       disposerIsFunction,
       loggingThrew,
+      electronLog: typeof window.__electronLog,
       nodeGlobals: {
         require: typeof window.require,
         process: typeof window.process,
@@ -57,6 +58,7 @@ function expectBridge(result) {
   expect(result.ping).toEqual({ ok: true, from: 'preload' });
   expect(result.disposerIsFunction).toBe(true);
   expect(result.loggingThrew).toBe(false);
+  expect(result.electronLog).toBe('undefined');
   expect(result.nodeGlobals).toEqual({ require: 'undefined', process: 'undefined', Buffer: 'undefined' });
 }
 

@@ -17,6 +17,7 @@ describe('mini-live page shell', () => {
     expect(source).toContain('<ScreenBoundary');
     expect(source).toContain('screen="mini-live"');
     expect(source).toMatch(/fallback=\{[\s\S]*<MiniChrome onClose=\{onClose\} gear=\{null\} \/>[\s\S]*ScreenCrashFallback/);
+    expect(source).toContain('<ScreenCrashFallback compact');
   });
 
   it('loads layout through miniLive:getLayout', () => {

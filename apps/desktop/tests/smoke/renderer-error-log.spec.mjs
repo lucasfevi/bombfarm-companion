@@ -116,6 +116,20 @@ test.describe('renderer error log smoke', () => {
       const mini = await miniOpened;
       await expect(mini.getByTestId('live-map-phase')).toBeVisible({ timeout: 30_000 });
 
+      await test.step("electron-log's own IPC listener and handler are gone, so only the checked channel writes", async () => {
+        const outcome = await app.evaluate(({ ipcMain }) => {
+          let handlerStillRegistered = false;
+          try {
+            ipcMain.handle('__ELECTRON_LOG__', () => null);
+            ipcMain.removeHandler('__ELECTRON_LOG__');
+          } catch {
+            handlerStillRegistered = true;
+          }
+          return { listeners: ipcMain.listenerCount('__ELECTRON_LOG__'), handlerStillRegistered };
+        });
+        expect(outcome).toEqual({ listeners: 0, handlerStillRegistered: false });
+      });
+
       await test.step('a screen that throws in the main window is logged by its boundary', async () => {
         await crashMainScreenBySwitchingTab(page);
         await expect(page.getByTestId('screen-crash')).toBeVisible({ timeout: 15_000 });
@@ -149,20 +163,17 @@ test.describe('renderer error log smoke', () => {
       });
 
       await test.step('an oversized, extra-keyed, scope-forging payload is capped and stripped', async () => {
-        await page.evaluate(
-          ({ messageLength, stackLength }) =>
-            window.bfc.invoke('log:rendererError', {
-              event: 'smoke.hostile',
-              screen: 'hostile-screen',
-              message: 'm'.repeat(messageLength),
-              stack: 's'.repeat(stackLength),
-              componentStack: 'c\u001b[31mc',
-              scope: 'main',
-              level: 'info',
-              smokeExtraKey: 'smoke-extra-value',
-            }),
-          { messageLength: MESSAGE_CAP * 3, stackLength: STACK_CAP * 3 },
-        );
+        const hostile = {
+          event: 'smoke.hostile.' + 'e'.repeat(186),
+          screen: 'hostile-screen-' + 'x'.repeat(175),
+          message: '‮ ' + 'm'.repeat(MESSAGE_CAP * 3 - 2),
+          stack: 's'.repeat(STACK_CAP * 3),
+          componentStack: 'c\u001b[31mc' + 'k'.repeat(STACK_CAP * 2 - 7),
+          scope: 'main',
+          level: 'info',
+          smokeExtraKey: 'smoke-extra-value',
+        };
+        await page.evaluate((payload) => window.bfc.invoke('log:rendererError', payload), hostile);
 
         await expect
           .poll(async () => (await recordsContaining(app, userDataDir, 'smoke.hostile')).length, { timeout: 15_000 })
@@ -172,11 +183,17 @@ test.describe('renderer error log smoke', () => {
         expect(record).not.toContain("scope: 'main'");
         expect(record).not.toContain('smokeExtraKey');
         expect(record).not.toContain('smoke-extra-value');
-        expect(record).toContain(`truncated, was ${MESSAGE_CAP * 3} chars`);
-        expect(record).toContain(`truncated, was ${STACK_CAP * 3} chars`);
+        for (const key of ['event', 'screen', 'message', 'stack', 'componentStack']) {
+          expect(record, `${key} was cut and says what it was`).toContain(`truncated, was ${hostile[key].length} chars`);
+        }
+        expect(record).not.toContain('e'.repeat(64));
+        expect(record).not.toContain('x'.repeat(64));
         expect(record).not.toContain('m'.repeat(MESSAGE_CAP));
         expect(record).not.toContain('s'.repeat(STACK_CAP));
+        expect(record).not.toContain('k'.repeat(STACK_CAP));
         expect(record).not.toContain('\u001b');
+        expect(record).not.toContain('‮');
+        expect(record).not.toContain(' ');
         expect(record.length).toBeLessThan((MESSAGE_CAP + STACK_CAP + 3000) * 2);
       });
 

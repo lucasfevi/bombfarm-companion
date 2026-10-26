@@ -92,7 +92,7 @@ export default function MiniLivePage() {
           >
             <MiniChrome onClose={onClose} gear={null} />
             <div className="p-2">
-              <ScreenCrashFallback onRetry={retry} />
+              <ScreenCrashFallback compact onRetry={retry} />
             </div>
           </div>
         )}

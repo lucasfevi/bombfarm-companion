@@ -21,13 +21,27 @@ const HIGH_SURROGATE_END = /[\uD800-\uDBFF]$/;
 const TAB = 0x09;
 const LINE_FEED = 0x0a;
 const SPACE = 0x20;
-const DELETE = 0x7f;
+
+/** Controls that can reorder, hide or break up a line when the file is read: C1, the direction
+ *  marks and isolates, the line and paragraph separators and byte-order mark. */
+const FORMATTING_CONTROLS: readonly (readonly [number, number])[] = [
+  [0x7f, 0x9f],
+  [0x200e, 0x200f],
+  [0x2028, 0x202e],
+  [0x2066, 0x2069],
+  [0xfeff, 0xfeff],
+];
+
+function isKept(code: number): boolean {
+  if (code === TAB || code === LINE_FEED) return true;
+  if (code < SPACE) return false;
+  return !FORMATTING_CONTROLS.some(([first, last]) => code >= first && code <= last);
+}
 
 function withoutControlCharacters(text: string): string {
   let kept = '';
   for (let index = 0; index < text.length; index += 1) {
-    const code = text.charCodeAt(index);
-    if (code === TAB || code === LINE_FEED || (code >= SPACE && code !== DELETE)) kept += text.charAt(index);
+    if (isKept(text.charCodeAt(index))) kept += text.charAt(index);
   }
   return kept;
 }
@@ -63,7 +77,9 @@ export function rendererErrorLogRecord(record: RendererErrorRecord): Record<stri
 }
 
 export interface RendererErrorGateDeps {
-  now: () => number;
+  /** Milliseconds on a clock that never steps backwards; the default is monotonic, so a wall-clock
+   *  change cannot hand a window a fresh burst. */
+  now?: () => number;
   warn: (record: Record<string, unknown>) => void;
   /** Runs `callback` once after `delayMs`. The default timer is unref'd so a pending report never
    *  holds the process open. */
@@ -90,12 +106,13 @@ function unrefTimer(callback: () => void, delayMs: number): void {
  *  drop, as a single line — so a crash loop leaves a bounded trail that says it was bounded. */
 export function createRendererErrorGate(deps: RendererErrorGateDeps): RendererErrorGate {
   const schedule = deps.schedule ?? unrefTimer;
+  const clock = deps.now ?? (() => performance.now());
   const buckets = new Map<SenderWindow, Bucket>();
 
   function bucketFor(window: SenderWindow): Bucket {
     let bucket = buckets.get(window);
     if (bucket === undefined) {
-      bucket = { tokens: RENDERER_ERROR_BURST, refilledAt: deps.now(), suppressed: 0, reportPending: false };
+      bucket = { tokens: RENDERER_ERROR_BURST, refilledAt: clock(), suppressed: 0, reportPending: false };
       buckets.set(window, bucket);
     }
     return bucket;
@@ -115,10 +132,12 @@ export function createRendererErrorGate(deps: RendererErrorGateDeps): RendererEr
   return {
     admit: (window) => {
       const bucket = bucketFor(window);
-      const now = deps.now();
-      const refill = Math.max(0, now - bucket.refilledAt) / RENDERER_ERROR_REFILL_MS;
-      bucket.tokens = Math.min(RENDERER_ERROR_BURST, bucket.tokens + refill);
-      bucket.refilledAt = now;
+      const now = clock();
+      if (now > bucket.refilledAt) {
+        const refill = (now - bucket.refilledAt) / RENDERER_ERROR_REFILL_MS;
+        bucket.tokens = Math.min(RENDERER_ERROR_BURST, bucket.tokens + refill);
+        bucket.refilledAt = now;
+      }
       if (bucket.tokens >= 1) {
         bucket.tokens -= 1;
         return true;

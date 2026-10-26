@@ -61,7 +61,7 @@ export function createBridgeInvokeHandler<Sender extends BridgeSender>(deps: {
       throw new Error('IPC sender not permitted');
     }
     const { senderWindow } = request;
-    if (channel === RENDERER_ERROR_CHANNEL && senderWindow !== null && !deps.rendererErrorGate.admit(senderWindow)) {
+    if (channel === RENDERER_ERROR_CHANNEL && (senderWindow === null || !deps.rendererErrorGate.admit(senderWindow))) {
       return null;
     }
     return deps.dispatch(channel, ...args);

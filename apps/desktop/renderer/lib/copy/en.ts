@@ -268,6 +268,7 @@ export const en = {
   screenCrashTitle: "This screen couldn't load",
   screenCrashInfoLabel: 'What happened',
   screenCrashInfo: 'The rest of the app still works. Switch tabs or try again; the details were saved to the log file.',
+  screenCrashInfoCompact: 'The rest of the app still works. Try again; the details were saved to the log file.',
   screenCrashRetry: 'Try again',
   // dataNotice* / heroFlag* / dataField* — what the app says when the game stops sending a field it reads
   dataNoticeInfoLabel: 'What this means',

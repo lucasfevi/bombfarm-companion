@@ -48,6 +48,24 @@ describe('parseRendererErrorRecord', () => {
   });
 
   describe('length caps', () => {
+    it('are the values the log budget was reasoned from, not whatever the constant now says', () => {
+      expect(RENDERER_ERROR_FIELD_CAPS).toEqual({ event: 64, screen: 64, message: 2048, stack: 8192, componentStack: 8192 });
+    });
+
+    it.each([
+      ['event', 64],
+      ['screen', 64],
+      ['message', 2048],
+      ['stack', 8192],
+      ['componentStack', 8192],
+    ] as const)('holds %s at a literal %i characters', (key, cap) => {
+      expect(parseRendererErrorRecord({ [key]: 'a'.repeat(cap - 1) })?.[key]).toHaveLength(cap - 1);
+      expect(parseRendererErrorRecord({ [key]: 'a'.repeat(cap) })?.[key]).toHaveLength(cap);
+      const cut = parseRendererErrorRecord({ [key]: 'a'.repeat(cap + 1) })?.[key] ?? '';
+      expect(cut).toHaveLength(cap);
+      expect(cut).toContain('…[truncated, was ' + String(cap + 1) + ' chars]');
+    });
+
     it.each(RENDERER_ERROR_KEYS)('holds %s at exactly its cap, untouched', (key) => {
       const cap = RENDERER_ERROR_FIELD_CAPS[key];
       const parsed = parseRendererErrorRecord({ [key]: 'a'.repeat(cap) });
@@ -88,6 +106,34 @@ describe('parseRendererErrorRecord', () => {
       expect(parsed?.message).toBe('a[31mred');
       expect(parsed?.stack).toBe('x\n\tat y\n');
     });
+
+    it.each([
+      ['U+0080', '\u0080'],
+      ['U+009F', '\u009f'],
+      ['U+200E left-to-right mark', '‎'],
+      ['U+200F right-to-left mark', '‏'],
+      ['U+2028 line separator', ' '],
+      ['U+2029 paragraph separator', ' '],
+      ['U+202A', '‪'],
+      ['U+202D', '‭'],
+      ['U+202E right-to-left override', '‮'],
+      ['U+2066', '⁦'],
+      ['U+2067', '⁧'],
+      ['U+2068', '⁨'],
+      ['U+2069', '⁩'],
+      ['U+FEFF', '﻿'],
+    ])('removes %s that could reorder or split a line when the file is read', (_name, character) => {
+      const parsed = parseRendererErrorRecord({ message: `a${character}b`, stack: `${character}x` });
+      expect(parsed?.message).toBe('ab');
+      expect(parsed?.stack).toBe('x');
+    });
+
+    it.each([' ', '¡', 'ÿ', '​', '‍', ' ', '‰', '⁥', '⁪', '﻾', '😀', 'é', '日本'])(
+      'keeps the neighbouring character %j that is not a control',
+      (character) => {
+        expect(parseRendererErrorRecord({ message: `a${character}b` })?.message).toBe(`a${character}b`);
+      },
+    );
 
     it('removes them from the kept head of a truncated field as well', () => {
       const parsed = parseRendererErrorRecord({ message: '\u001b'.repeat(10) + 'z'.repeat(RENDERER_ERROR_FIELD_CAPS.message) });
@@ -152,11 +198,33 @@ describe('createRendererErrorGate', () => {
     expect(mini.every(Boolean)).toBe(true);
   });
 
-  it('tolerates a clock that steps backwards without minting tokens', () => {
+  it('tolerates a clock that steps backwards, and mints nothing when it returns', () => {
     const { gate, clock } = gateAt();
+    const start = clock.ms;
     for (let i = 0; i < RENDERER_ERROR_BURST; i += 1) gate.admit('main');
-    clock.ms -= 10 * RENDERER_ERROR_REFILL_MS;
+
+    for (let trip = 0; trip < 3; trip += 1) {
+      clock.ms = start - 3_600_000;
+      expect(gate.admit('main')).toBe(false);
+      clock.ms = start;
+      expect(gate.admit('main')).toBe(false);
+    }
+
+    clock.ms = start + RENDERER_ERROR_REFILL_MS;
+    expect(gate.admit('main')).toBe(true);
     expect(gate.admit('main')).toBe(false);
+  });
+
+  it('does not count time the clock spent behind its high-water mark as elapsed', () => {
+    const { gate, clock } = gateAt();
+    const start = clock.ms;
+    for (let i = 0; i < RENDERER_ERROR_BURST; i += 1) gate.admit('main');
+    clock.ms = start - 3_600_000;
+    gate.admit('main');
+    clock.ms = start + RENDERER_ERROR_REFILL_MS / 2;
+    expect(gate.admit('main')).toBe(false);
+    clock.ms = start + RENDERER_ERROR_REFILL_MS;
+    expect(gate.admit('main')).toBe(true);
   });
 
   it('writes nothing, and schedules nothing, while every call is admitted', () => {
@@ -203,6 +271,30 @@ describe('createRendererErrorGate', () => {
   });
 });
 
+describe('the gate clock when none is given', () => {
+  it('refills from the monotonic clock, and ignores the wall clock entirely', () => {
+    const monotonic = vi.spyOn(performance, 'now').mockReturnValue(1_000);
+    const wall = vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+    try {
+      const gate = createRendererErrorGate({ warn: vi.fn(), schedule: vi.fn() });
+      for (let i = 0; i < RENDERER_ERROR_BURST; i += 1) gate.admit('main');
+      expect(gate.admit('main')).toBe(false);
+
+      wall.mockReturnValue(0);
+      expect(gate.admit('main')).toBe(false);
+      wall.mockReturnValue(1_700_003_600_000);
+      expect(gate.admit('main')).toBe(false);
+
+      monotonic.mockReturnValue(1_000 + RENDERER_ERROR_REFILL_MS);
+      expect(gate.admit('main')).toBe(true);
+      expect(gate.admit('main')).toBe(false);
+    } finally {
+      monotonic.mockRestore();
+      wall.mockRestore();
+    }
+  });
+});
+
 describe('the default report timer', () => {
   it('fires through a real timer that does not hold the process open', () => {
     vi.useFakeTimers();
@@ -211,6 +303,7 @@ describe('the default report timer', () => {
       const clock = { ms: 0 };
       const gate = createRendererErrorGate({ now: () => clock.ms, warn });
       for (let i = 0; i < RENDERER_ERROR_BURST + 1; i += 1) gate.admit('main');
+      expect(RENDERER_ERROR_SUPPRESSION_REPORT_MS).toBe(60_000);
       vi.advanceTimersByTime(RENDERER_ERROR_SUPPRESSION_REPORT_MS - 1);
       expect(warn).not.toHaveBeenCalled();
       vi.advanceTimersByTime(1);

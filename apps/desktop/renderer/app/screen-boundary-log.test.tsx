@@ -100,6 +100,52 @@ describe('ScreenBoundary reports a crash through the bridge', () => {
     expect(invoke).toHaveBeenCalledTimes(1);
   });
 
+  it.each([
+    ['null', null, 'null'],
+    ['undefined', undefined, 'undefined'],
+    ['a string', 'plain text failure', 'plain text failure'],
+    ['an object', { code: 7 }, '[object Object]'],
+  ])('shows the fallback and logs a readable message when a component throws %s', (_label, thrown, message) => {
+    const invoke = vi.fn(() => Promise.resolve(null));
+    (window as unknown as { bfc: unknown }).bfc = { invoke };
+    function ThrowsOddly(): never {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw thrown;
+    }
+
+    renderBoundary(
+      <ScreenBoundary screen="heroes">
+        <ThrowsOddly />
+      </ScreenBoundary>,
+    );
+
+    expect(container.querySelector('[data-testid="screen-crash"]')).not.toBeNull();
+    expect(invoke).toHaveBeenCalledTimes(1);
+    const [, record] = invoke.mock.calls[0] as unknown as [string, Record<string, string>];
+    expect(record.message).toBe(message);
+    expect(record.stack).not.toBe('');
+  });
+
+  it('shows the fallback and logs something when the thrown value cannot be turned into text', () => {
+    const invoke = vi.fn(() => Promise.resolve(null));
+    (window as unknown as { bfc: unknown }).bfc = { invoke };
+    const unprintable = Object.create(null) as object;
+    function ThrowsUnprintable(): never {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw unprintable;
+    }
+
+    renderBoundary(
+      <ScreenBoundary screen="heroes">
+        <ThrowsUnprintable />
+      </ScreenBoundary>,
+    );
+
+    expect(container.querySelector('[data-testid="screen-crash"]')).not.toBeNull();
+    const [, record] = invoke.mock.calls[0] as unknown as [string, Record<string, string>];
+    expect(record.message).toBe('unprintable thrown value');
+  });
+
   it('reports nothing while the children render', () => {
     const invoke = vi.fn(() => Promise.resolve(null));
     (window as unknown as { bfc: unknown }).bfc = { invoke };

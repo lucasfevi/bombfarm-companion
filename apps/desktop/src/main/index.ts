@@ -335,6 +335,12 @@ function requestAccountReadNow(): AccountReadResult {
 }
 
 function registerIpcHandlers(): void {
+  // Importing electron-log registers a listener and a handler here that take any record from any
+  // renderer process with no sender check, cap or rate limit; renderer errors arrive only through
+  // `log:rendererError`.
+  ipcMain.removeAllListeners('__ELECTRON_LOG__');
+  ipcMain.removeHandler('__ELECTRON_LOG__');
+
   const dispatch = createIpcDispatch(
     createIpcHandlers({
       now: () => Date.now(),
@@ -407,7 +413,6 @@ function registerIpcHandlers(): void {
       dispatch,
       log,
       rendererErrorGate: createRendererErrorGate({
-        now: () => Date.now(),
         warn: (record) => {
           log.warn(record);
         },
