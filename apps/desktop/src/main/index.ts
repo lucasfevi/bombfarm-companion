@@ -1,6 +1,17 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { app, BrowserWindow, clipboard, ipcMain, Menu, nativeImage, screen, shell, type WebContents } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  ipcMain,
+  Menu,
+  nativeImage,
+  screen,
+  session,
+  shell,
+  type WebContents,
+} from 'electron';
 import {
   DEFAULT_SETTINGS,
   resolveStartupLocale,
@@ -32,6 +43,8 @@ import { createPvpReader, type PvpReader } from './pvp/pvp-reader.js';
 import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
 import { createIpcDispatch, createIpcHandlers, defaultLiveView } from './ipc-handlers.js';
 import { createBridgeInvokeHandler, createSenderWindowResolver } from './ipc-bridge-handler.js';
+import { createIpcSenderPolicy } from './ipc-sender-policy.js';
+import { applySessionPermissionPolicy, cancelBluetoothSelection } from './session-permissions.js';
 import { createEventEmitter } from './event-emitter.js';
 import { createRedactingTokenReader } from './redacting-token-reader.js';
 import { LIVE_SOURCE_RELEASE_DEADLINE_MS, settleWithin, shutdownInOrder } from './shutdown.js';
@@ -1195,6 +1208,13 @@ async function bootstrap(): Promise<void> {
   registerIpcHandlers();
   const rendererRoot = path.join(__dirname, '../../renderer/out');
   registerRendererProtocol(rendererRoot, cspManifestForBoot(env.isDev, rendererRoot));
+  applySessionPermissionPolicy(session.defaultSession, {
+    trustedOrigins: createIpcSenderPolicy({ isDev: env.isDev, devRendererUrl: RENDERER_DEV_URL }).trustedOrigins,
+    log,
+  });
+  app.on('web-contents-created', (_event, contents) => {
+    cancelBluetoothSelection(contents);
+  });
   await createMainWindow();
   mainWindow?.setAlwaysOnTop(currentSettings.alwaysOnTopMain, 'normal');
   gameReader.start();

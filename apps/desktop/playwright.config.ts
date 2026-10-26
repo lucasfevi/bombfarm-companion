@@ -60,6 +60,7 @@ export default defineConfig({
         'csp.spec.mjs',
         'renderer-sandbox.spec.mjs',
         'ipc-sender.spec.mjs',
+        'navigation-hardening.spec.mjs',
       ],
     },
     {

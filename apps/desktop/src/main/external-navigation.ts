@@ -37,6 +37,44 @@ export function decideNavigation(
   return target.protocol === 'https:' ? 'open-external' : 'block';
 }
 
+export type InAppNavigationDecision = 'allow' | 'block';
+
+function isAppOrigin(rawUrl: string, internalUrls: readonly string[]): boolean {
+  if (isRendererUrl(rawUrl)) {
+    return true;
+  }
+  const target = parseUrl(rawUrl);
+  return (
+    target !== null &&
+    target.origin !== OPAQUE_ORIGIN &&
+    internalUrls.some((internalUrl) => parseUrl(internalUrl)?.origin === target.origin)
+  );
+}
+
+/** A page that leaves the app's own origin on its own (a meta refresh, `location`, a form) is
+ *  never followed and never handed to the browser: markup alone can start one. */
+export function decideTopLevelNavigation(
+  rawUrl: string,
+  internalUrls: readonly string[] = [],
+): InAppNavigationDecision {
+  return isAppOrigin(rawUrl, internalUrls) ? 'allow' : 'block';
+}
+
+const EMPTY_DOCUMENT_PATHS: ReadonlySet<string> = new Set(['blank', 'srcdoc']);
+
+/** `about:blank` and `about:srcdoc` have no content of their own and inherit the embedder's
+ *  origin, so they stand or fall with it. */
+export function decideFrameNavigation(
+  rawUrl: string,
+  internalUrls: readonly string[] = [],
+): InAppNavigationDecision {
+  const target = parseUrl(rawUrl);
+  if (target?.protocol === 'about:' && EMPTY_DOCUMENT_PATHS.has(target.pathname)) {
+    return 'allow';
+  }
+  return isAppOrigin(rawUrl, internalUrls) ? 'allow' : 'block';
+}
+
 export interface ExternalNavigationDeps {
   openExternal: (url: string) => Promise<void>;
   log: LogPort;
@@ -78,15 +116,18 @@ export function applyExternalNavigationPolicy(
   });
 
   contents.on('will-navigate', (details) => {
-    const decision = decideNavigation(details.url, internalUrls);
-    if (decision === 'allow-internal') {
+    if (decideTopLevelNavigation(details.url, internalUrls) === 'allow') {
       return;
     }
     details.preventDefault();
-    if (decision === 'open-external') {
-      openInBrowser(details.url, 'will-navigate');
-    } else {
-      refuse(details.url, 'will-navigate');
+    refuse(details.url, 'will-navigate');
+  });
+
+  contents.on('will-frame-navigate', (details) => {
+    if (details.isMainFrame || decideFrameNavigation(details.url, internalUrls) === 'allow') {
+      return;
     }
+    details.preventDefault();
+    refuse(details.url, 'will-frame-navigate');
   });
 }
