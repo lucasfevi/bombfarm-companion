@@ -20,8 +20,9 @@ Bare-element rules for `html` / `:root` / `*` / `body` and for `table` / `th` / 
 | `input[type=checkbox]` (+ `::after` masks) | `packages/ui/src/styles.css` | Appearance/mask-image checkbox chrome |
 | `.roster-summary::before` (+ open rotate) | `apps/web/src/app/globals.css` | Details chevron pseudo (roster expander; `.explain-summary::before` retired — `ExplainSection` migrated to the `Collapsible` primitive's `react-icons` chevron, `ui-accordion`) |
 | `.btn.coffee` / `.btn.coffee.full` | `packages/ui/src/styles.css` | Ko-fi brand hex `#ffdd00` / `#e5c700` — the one documented palette-literal exception; co-located with `button.recipe.ts`'s `coffee` / `coffee-full` variants, the recipe that emits the class string |
+| `.base-ui-disable-scrollbar` (+ `::-webkit-scrollbar`) | `apps/desktop/renderer/app/globals.css` | The class Base UI puts on the scroll areas and the Select list that draw their own scrollbar. Base UI would inject a `<style>` for it; the desktop window's CSP forbids inline `<style>`, so the root layout sets `CSPProvider disableStyleElements` and this rule replaces the injection ([`renderer-csp.md`](renderer-csp.md)) |
 
-**Group count:** **4** permanent exception groups — 3 shared (`packages/ui/src/styles.css`), 1 web-only (`apps/web/src/app/globals.css`). No temporary table families remain.
+**Group count:** **5** permanent exception groups — 3 shared (`packages/ui/src/styles.css`), 1 web-only (`apps/web/src/app/globals.css`), 1 desktop-only (`apps/desktop/renderer/app/globals.css`). No temporary table families remain.
 
 ## Cleared (do not resurrect as named CSS)
 

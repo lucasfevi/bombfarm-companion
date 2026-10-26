@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { LiveExplosion, LiveHit, LiveTickHero, UnattributedReason } from '@bombfarm/contracts';
-import type { LedgerStep, RetiredBomb } from './bomb-ledger.js';
+import type { LedgerStep, OwnerBasis, RetiredBomb } from './bomb-ledger.js';
 import { creditHits, creditLoot, createSignatureBook, type CreditHitsInput, type HitCredit } from './credit.js';
 
-const retired = (owner: string | null, radius = 2, reason?: UnattributedReason): RetiredBomb =>
-  reason === undefined ? { owner, radius } : { owner, radius, reason };
+const retired = (
+  owner: string | null,
+  radius = 2,
+  reason?: UnattributedReason,
+  basis: OwnerBasis = 'observed',
+): RetiredBomb =>
+  reason === undefined ? { owner, radius, basis } : { owner, radius, reason };
 
 function ledgerStep(
   thisFrame: Record<number, RetiredBomb> = {},
@@ -64,6 +69,18 @@ describe('creditHits — a single owned cross', () => {
     const ledger = ledgerStep({ [9 * 19 + 3]: retired('A') });
     expect(outcome(run({ hits: [hit(lowerRow)], explosions: [explosionOnLastRow], ledger, rows: 10 })[0])).toBe('explosionlessWithoutFantasma');
     expect(outcome(run({ hits: [hit(lowerRow)], explosions: [explosionOnLastRow], ledger, rows: 16 })[0])).toBe('A');
+  });
+
+  it('records no damage signature for a hit credited through a bomb whose owner came from the fingerprint alone', () => {
+    const signatures = createSignatureBook();
+    const [credit] = run({
+      hits: [hit(101, 77)],
+      explosions: [blast(100)],
+      ledger: ledgerStep({ 100: retired('A', 2, undefined, 'fingerprint') }),
+      signatures,
+    });
+    expect(credit?.credited).toBe('A');
+    expect(signatures.decisive(77, false, ['A', 'B'])).toBeNull();
   });
 
   it('credits a hit covered by two explosions of the same owner without recording a signature', () => {

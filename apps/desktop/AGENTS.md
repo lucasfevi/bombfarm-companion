@@ -68,6 +68,51 @@ a flip electron-builder skipped fails `pnpm package:*`. Consequences for tooling
 - Adding a fuse to the config means deciding it for every flavor; the config test fails until the
   new fuse has a stated value.
 
+## RULE: the renderer runs under a strict Content-Security-Policy built from the export
+
+Every response from the `app://` handler carries a policy with no `'unsafe-inline'` and no
+`'unsafe-eval'`; inline scripts, `<style>` elements and `style` attributes are allowed by SHA-256,
+from a manifest `pnpm build:renderer` writes beside the pages. Inline event handlers, `javascript:`
+URLs and anything the scanner does not model fail the build. **A new renderer dependency that
+injects a `<style>`, evals, opens a worker from a `blob:`, or reaches a new origin will be refused
+at runtime** — and every smoke spec fails on a violation, so you will see it. Route network
+access through the main process instead of widening the policy. `pnpm dev` is not covered.
+See [`docs/renderer-csp.md`](../../docs/renderer-csp.md).
+
+New smoke specs import `test`, `expect` and `electron` from `tests/smoke/smoke-test.mjs`, never
+from `@playwright/test`; a guard fails otherwise.
+
+## RULE: the preload runs in the renderer sandbox
+
+Both windows are built from `sandboxedWebPreferences` (`src/main/web-preferences.ts`), and
+`app.enableSandbox()` covers any window added later. A sandboxed preload can `require` only
+`electron`, `events`, `timers` and `url`, so everything else it imports (`electron-log/renderer`
+included) is bundled into `dist/preload/index.cjs` by `scripts/electron-bundles.mjs`, and anything
+that needs Node, a file or a native module belongs in the main process behind IPC. Importing
+`node:fs` or similar into the preload fails `scripts/preload-bundle.test.mjs`, not the user's launch.
+
+## RULE: every `bfc:invoke` is checked against its sender, and the compact window has an allowlist
+
+`src/main/ipc-sender-policy.ts` decides, before any handler runs, whether a call may proceed: the
+sender frame must be live, the top-level frame of its window, in a window the app owns, at the
+app's own origin (plus the dev renderer origin when unpackaged and in dev mode). The compact Live
+window is further held to `MINI_LIVE_INVOKE_CHANNELS`.
+
+**A new `invoke('…')` call in `renderer/app/mini-live/` or anything it imports needs its channel added
+to that set**, or the call is refused at runtime; `mini-live-channel-allowlist.test.ts` fails first and
+names the difference. It also fails if a channel is allowed that the window no longer calls, so the
+set stays exactly what the window needs. A new `ipcMain` listener of our own owes the same sender
+check: `ipc-listeners-guard.test.ts` reads the AST and fails on any `ipcMain`/`webContents.ipc`
+registration whose channel is not a string literal, on an aliased or destructured `ipcMain`, and on
+any registration beyond the one `bfc:invoke` handler built by `createBridgeInvokeHandler`.
+
+**Never embed a same-origin frame (`srcdoc`, `about:blank`, `app://`) in a window that has the
+bridge.** The sender check cannot tell such a child from the top frame: `window.top.bfc.invoke`
+runs in the top frame's context, so `senderFrame` is the top frame. A CSP `frame-src` does not close
+this (`srcdoc` and `about:blank` children still load). What does: give untrusted content an opaque
+origin (a sandboxed iframe without `allow-same-origin`) or its own window or partition that has no
+preload.
+
 ## Local checks
 
 ```bash

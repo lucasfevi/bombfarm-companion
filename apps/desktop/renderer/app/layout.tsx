@@ -1,3 +1,4 @@
+import { CSPProvider } from '@base-ui/react/csp-provider';
 import type { Metadata } from 'next';
 import './globals.css';
 
@@ -9,7 +10,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <CSPProvider disableStyleElements>{children}</CSPProvider>
+      </body>
     </html>
   );
 }

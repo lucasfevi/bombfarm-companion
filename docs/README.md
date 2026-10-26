@@ -39,6 +39,7 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [skill-tree.md](skill-tree.md) | The Skill Tree tab: what it draws, where the catalog and layout bundles come from, the rules it applies, how a node is priced against the Farm board's inputs, what is not priced, and why it never buys |
 | [deconstruct.md](deconstruct.md) | The Forge tab's Deconstruct page: the one batch burn route and its comma-joined `items`, all-or-nothing refusals, why essence is the server's number and never computed, the 100 cap, one attempt then a re-read, the writer lock shared with forge and apply, and where the eligibility rules live |
 | [hero-runes.md](hero-runes.md) | Hero runes: the timed stat buff on the account read — where it enters the sheet arithmetic (fitted, per axis), how every figure treats a buff that expires, and the two axes nothing prices yet |
+| [renderer-csp.md](renderer-csp.md) | The desktop renderer's Content-Security-Policy: the policy and why each directive reads as it does, how inline-script hashes are bound to the build, what fails the build, and the smoke guard that fails any test on a violation |
 
 ## Web-only
 

@@ -1,6 +1,7 @@
 import type { BrowserWindowConstructorOptions } from 'electron';
 import type { WindowLayoutStore } from './game-api/window-layout-store.js';
 import { RENDERER_HOST, RENDERER_SCHEME } from './renderer-protocol.js';
+import { sandboxedWebPreferences } from './web-preferences.js';
 import {
   clampMiniToWorkArea,
   fitMiniGrowthAxis,
@@ -41,16 +42,12 @@ export function buildMiniLiveWindowOptions(input: {
     show: false,
     backgroundColor: '#17100c',
     icon: input.iconPath,
-    webPreferences: {
-      preload: input.preloadPath,
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
-    },
+    webPreferences: sandboxedWebPreferences(input.preloadPath),
   };
 }
 
 export interface MiniLiveWebContents {
+  readonly id: number;
   loadURL(url: string): Promise<void>;
   on(event: string, listener: (...args: unknown[]) => void): void;
 }

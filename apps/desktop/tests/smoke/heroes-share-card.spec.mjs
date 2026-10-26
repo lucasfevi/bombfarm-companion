@@ -9,7 +9,7 @@
  * `SHARE_CARD_ARTIFACT_DIR`, when set, keeps a screenshot of the dialog and the copied PNG —
  * visible runs only, since a hidden window cannot be screenshotted.
  */
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect, electron } from './smoke-test.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

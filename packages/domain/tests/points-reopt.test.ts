@@ -13,8 +13,10 @@ import {
 import { computeCombatMults, derive } from '@bombfarm/domain/derive';
 import {
   budgetOf,
+  buildCandidateSheet,
   findGateCandidate,
   optimizeBuild,
+  optimizeBuildForPlayer,
   reoptBudget,
   resetBudget,
   REOPT_FULL_MAX_EVALUATIONS,
@@ -24,6 +26,7 @@ import {
   type ReoptInput,
   type ReoptResult,
 } from '@bombfarm/domain/points-reopt';
+import { POINTS_TRIM_MAX_LOSS_PCT } from '@bombfarm/domain/points-trim';
 import { SHEET_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
@@ -736,3 +739,63 @@ describe('reoptBudget / the per-tier point budgets', () => {
   });
 });
 
+
+describe('optimizeBuildForPlayer', () => {
+  const pointsMoved = (from: Record<SheetKey, number>, to: Record<SheetKey, number>) =>
+    RESPEC_KEYS.reduce((sum, key) => sum + Math.abs(to[key] - from[key]), 0);
+
+  it('gives up at most POINTS_TRIM_MAX_LOSS_PCT of the search, never drops below the current build, and asks for no more change', () => {
+    for (const { file, names } of FIXTURES) {
+      for (const [name, level] of names) {
+        const real = realHeroDerive(file, name, level);
+        const input = { pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context, level: levelFor(real.pts) };
+        const searched = optimizeBuild(input);
+        const shown = optimizeBuildForPlayer(input);
+        const label = `${file}:${name}L${level}`;
+        expect(shown.reoptDps, label).toBeGreaterThanOrEqual(shown.currentDps);
+        expect(shown.reoptDps, label).toBeGreaterThanOrEqual(searched.reoptDps * (1 - POINTS_TRIM_MAX_LOSS_PCT / 100) - 1e-6);
+        expect(pointsMoved(real.pts, shown.pts), label).toBeLessThanOrEqual(pointsMoved(real.pts, searched.pts));
+      }
+    }
+  });
+
+  it('reports the gain of the vector it hands back', () => {
+    for (const { file, names } of FIXTURES) {
+      for (const [name, level] of names) {
+        const real = realHeroDerive(file, name, level);
+        const shown = optimizeBuildForPlayer({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context, level: levelFor(real.pts) });
+        const scored = sustainedDps(buildCandidateSheet(real.effective, real.pts, real.effectiveDelta, shown.pts), context);
+        expect(shown.reoptDps, `${file}:${name}L${level}`).toBeCloseTo(Math.max(scored, shown.currentDps), 6);
+      }
+    }
+  });
+});
+
+describe('optimizeBuildForPlayer — a near-optimal build', () => {
+  it('keeps a build one point from the optimum, where the search alone would move that point', () => {
+    const synthetic = syntheticHero();
+    const sheetAt = (pts: Record<SheetKey, number>) =>
+      buildCandidateSheet(synthetic.effective, synthetic.pts, synthetic.effectiveDelta, pts);
+    const scaled = Object.fromEntries(RESPEC_KEYS.map((key) => [key, synthetic.pts[key] * 10])) as Record<SheetKey, number>;
+    const level = levelFor(scaled);
+    const optimum = optimizeBuild({ pts: scaled, effective: sheetAt(scaled), effectiveDelta: synthetic.effectiveDelta, context, level }).pts;
+    const optimumDps = sustainedDps(sheetAt(optimum), context);
+
+    const nearMisses = REOPT_KEYS.flatMap((from) =>
+      REOPT_KEYS.filter((to) => to !== from && optimum[from] > 0).map((to) => ({ ...optimum, [from]: optimum[from] - 1, [to]: optimum[to] + 1 })),
+    ).filter((pts) => {
+      const loss = 1 - sustainedDps(sheetAt(pts), context) / optimumDps;
+      return loss > 1e-6 && loss < POINTS_TRIM_MAX_LOSS_PCT / 200;
+    });
+    expect(nearMisses.length).toBeGreaterThan(0);
+
+    for (const pts of nearMisses) {
+      const input = { pts, effective: sheetAt(pts), effectiveDelta: synthetic.effectiveDelta, context, level };
+      expect(RESPEC_KEYS.some((key) => optimizeBuild(input).pts[key] !== pts[key])).toBe(true);
+      const shown = optimizeBuildForPlayer(input);
+      expect(shown.pts).toEqual(pts);
+      expect(shown.keptCurrent).toBe(true);
+      expect(shown.gainPct).toBe(0);
+    }
+  });
+});

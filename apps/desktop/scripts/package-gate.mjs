@@ -4,11 +4,12 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import minimatch from 'minimatch';
 import { createHash } from 'node:crypto';
-import { getRawHeader, listPackage } from '@electron/asar';
+import { extractFile, getRawHeader, listPackage } from '@electron/asar';
 import { FuseV1Options, getCurrentFuseWire } from '@electron/fuses';
 import { NtExecutable, NtExecutableResource } from 'resedit';
 import { resolveBuildFlavor } from '@bombfarm/contracts';
 import { createBuilderConfig } from './builder-config.mjs';
+import { CSP_MANIFEST_FILE, CspManifestError, verifyManifest } from './csp-manifest.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const desktopRoot = path.join(__dirname, '..');
@@ -244,6 +245,39 @@ export function assertRendererEntryPresent(entries) {
   }
 }
 
+const RENDERER_OUT_PREFIX = '/renderer/out/';
+
+/**
+ * The window's Content-Security-Policy is built at startup from the manifest the renderer build
+ * wrote, so what ships has to be the pair that was checked together: the manifest has to be in
+ * the archive, and every inline script, `<style>` and `style` attribute in the archived pages has
+ * to be hashed in it. A packaged app whose pages and manifest disagree opens to a blank window.
+ */
+export function assertRendererCspManifestIntact(asarPath, entries) {
+  const archived = entries.map((entry) => entry.path).filter((entryPath) => entryPath.startsWith(RENDERER_OUT_PREFIX));
+  const manifestPath = `${RENDERER_OUT_PREFIX}${CSP_MANIFEST_FILE}`;
+  if (!archived.includes(manifestPath)) {
+    throw new PackagingGateError(
+      `Packaging gate: "renderer/out/${CSP_MANIFEST_FILE}" is missing from app.asar. The window's Content-Security-Policy is built from it at startup, and the app refuses to boot without it.`,
+    );
+  }
+
+  const readArchived = (entryPath) => extractFile(asarPath, path.normalize(entryPath.slice(1))).toString('utf8');
+  const pages = new Map(
+    archived
+      .filter((entryPath) => /\.html?$/i.test(entryPath))
+      .map((entryPath) => [entryPath.slice(RENDERER_OUT_PREFIX.length), readArchived(entryPath)]),
+  );
+  try {
+    verifyManifest(JSON.parse(readArchived(manifestPath)), pages);
+  } catch (error) {
+    if (error instanceof CspManifestError || error instanceof SyntaxError) {
+      throw new PackagingGateError(`Packaging gate: the archived pages and their CSP manifest disagree.\n${error.message}`);
+    }
+    throw error;
+  }
+}
+
 /**
  * A `.node` file is machine code the OS loader maps directly off disk; it cannot be dlopen'd from
  * inside an asar archive. So a `.node` entry still sealed inside app.asar (`packed: true` — as
@@ -407,6 +441,7 @@ export async function runPackagingGateChecks(
     });
     if (entries) {
       await record(() => assertRendererEntryPresent(entries));
+      await record(() => assertRendererCspManifestIntact(asarPath, entries));
       await record(() => assertNoNativeBinariesInAsar(entries));
     }
   }

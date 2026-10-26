@@ -9,6 +9,7 @@ const ALL_REASONS: readonly UnattributedReason[] = [
   'explosionWithoutBomb',
   'streamDiscontinuity',
   'unresolvedOverlap',
+  'ambiguousPlanter',
   'explosionlessWithoutFantasma',
   'sharedOrUnattributedKill',
   'noHitOnLootCell',
@@ -141,14 +142,55 @@ describe('createLiveDamageAttributor — credit through ownership', () => {
     expect(credit.unattributed.streamDiscontinuity.damage).toBe(40);
   });
 
-  it('seeds a fingerprint from the roster so a unique fuse total owns a bomb the cell would name differently', () => {
+  it('credits the hero standing on the cell even when a unique roster fuse total names another hero', () => {
     const attributor = createLiveDamageAttributor();
     attributor.setRoster([fact('A', 0.2), fact('B', 0.5)]);
     const birth = feed(attributor, { heroes: [hero('A', 7), hero('B', 100)], bombs: [freshBomb(100, 1.6)] });
     const credit = feed(attributor, { heroes: [hero('A', 7), hero('B', 100)], explosions: [blast(100)], hits: [hit(101, 40)] });
     expect(birth.bombs.cellOwnerConflicts).toBe(1);
+    expect(credit.perHero.get('B')?.damage).toBe(40);
+    expect(credit.perHero.has('A')).toBe(false);
+  });
+
+  it('seeds a fingerprint from the roster so a unique fuse total owns a bomb planted where nobody stands', () => {
+    const attributor = createLiveDamageAttributor();
+    attributor.setRoster([fact('A', 0.2), fact('B', 0.5)]);
+    feed(attributor, { heroes: [hero('A', 7), hero('B', 8)], bombs: [freshBomb(100, 1.6)] });
+    const credit = feed(attributor, { heroes: [hero('A', 7), hero('B', 8)], explosions: [blast(100)], hits: [hit(101, 40)] });
     expect(credit.perHero.get('A')?.damage).toBe(40);
-    expect(credit.perHero.has('B')).toBe(false);
+  });
+
+  it('credits the hero on the cell when a buffed hero shares the capped fuse total and its group shrinks to one present member', () => {
+    const attributor = createLiveDamageAttributor();
+    const capped = 0.4;
+    attributor.setRoster([fact('A', 0.8), fact('B', 0.6), fact('C', 0.5)]);
+    attributor.setRoster([fact('A', 0.8), fact('B', 0.8), fact('C', 0.5)]);
+    const present = [hero('A', 7), hero('C', 100)];
+    const birth = feed(attributor, { heroes: present, bombs: [freshBomb(100, capped)] });
+    const credit = feed(attributor, { heroes: present, explosions: [blast(100)], hits: [hit(101, 40)] });
+    expect(birth.bombs.cellOwnerConflicts).toBe(1);
+    expect(credit.perHero.get('C')?.damage).toBe(40);
+    expect(credit.perHero.has('A')).toBe(false);
+  });
+
+  it('leaves a bomb unattributed when several heroes it cannot tell apart stand on its cell', () => {
+    const attributor = createLiveDamageAttributor();
+    attributor.setRoster([fact('A', 0.8), fact('B', 0.8)]);
+    const heroes = [hero('A', 100), hero('B', 100)];
+    feed(attributor, { heroes, bombs: [freshBomb(100, 0.4)] });
+    const credit = feed(attributor, { heroes, explosions: [blast(100)], hits: [hit(101, 40)] });
+    expect(credit.unattributed.ambiguousPlanter.damage).toBe(40);
+  });
+
+  it('does not let a bomb credited by the roster fuse alone teach a damage signature', () => {
+    const attributor = createLiveDamageAttributor();
+    attributor.setRoster([fact('A', 0.2), fact('B', 0.5)]);
+    const heroes = [hero('A', 7), hero('B', 104)];
+    feed(attributor, { heroes, bombs: [freshBomb(100, 1.6)] });
+    feed(attributor, { heroes, explosions: [blast(100)], hits: [hit(101, 77)] });
+    feed(attributor, { heroes, bombs: [freshBomb(102, 1.6), freshBomb(104, 1.0)] });
+    const overlap = feed(attributor, { heroes, explosions: [blast(102), blast(104)], hits: [hit(103, 77)] });
+    expect(overlap.unattributed.unresolvedOverlap.damage).toBe(77);
   });
 
   it('falls back to the hero on the cell when two roster heroes share a fuse total', () => {
@@ -163,9 +205,9 @@ describe('createLiveDamageAttributor — credit through ownership', () => {
     const attributor = createLiveDamageAttributor();
     attributor.setRoster([fact('A', 0.2)]);
     const first = feed(attributor, { heroes: [hero('A', 100)], bombs: [freshBomb(100, 1.5)] });
-    const second = feed(attributor, { heroes: [hero('A', 100)], bombs: [burningBomb(100, 1.2, 1.5), freshBomb(120, 1.5)] });
-    expect(first.disagreements).toEqual([{ heroId: 'A', seeded: 1.6, learned: 1.5 }]);
-    expect(second.disagreements).toEqual([]);
+    const second = feed(attributor, { heroes: [hero('A', 120)], bombs: [burningBomb(100, 1.2, 1.5), freshBomb(120, 1.5)] });
+    expect(first.disagreements).toEqual([]);
+    expect(second.disagreements).toEqual([{ heroId: 'A', seeded: 1.6, learned: 1.5 }]);
   });
 
   it('counts births, adopted bombs and owned births of a frame', () => {
@@ -437,7 +479,8 @@ function runStressStream(seed: number, frames: number) {
         if (onField.has(id)) onField.delete(id);
         else onField.set(id, Math.floor(rng() * CELLS));
       } else if (onField.has(id) && rng() < 0.3) {
-        onField.set(id, Math.floor(rng() * CELLS));
+        const neighbour = [...onField.values()].find((cell) => cell !== onField.get(id));
+        onField.set(id, rng() < 0.3 && neighbour !== undefined ? neighbour : Math.floor(rng() * CELLS));
       }
     }
 

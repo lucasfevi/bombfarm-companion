@@ -1,13 +1,14 @@
-import { createPackage, createPackageWithOptions, getRawHeader } from '@electron/asar';
+import { createPackage, createPackageWithOptions, extractFile, getRawHeader } from '@electron/asar';
 import { FuseV1Options } from '@electron/fuses';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NtExecutable, NtExecutableResource } from 'resedit';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createBuilderConfig } from './builder-config.mjs';
+import { buildManifest, CSP_MANIFEST_FILE } from './csp-manifest.mjs';
 import {
   assertAsarExists,
   assertAsarIntegrityMatches,
@@ -15,6 +16,7 @@ import {
   assertElectronFuses,
   assertNativeBinariesUnpacked,
   assertNoNativeBinariesInAsar,
+  assertRendererCspManifestIntact,
   assertRendererEntryPresent,
   collectNativeDependencyClosure,
   findMissingNativeBinaries,
@@ -44,6 +46,35 @@ function writeJson(filePath, data) {
 function writeFile(filePath, content = '') {
   mkdirSync(path.dirname(filePath), { recursive: true });
   writeFileSync(filePath, content);
+}
+
+function filesUnder(dir, relative = '') {
+  return readdirSync(path.join(dir, relative), { withFileTypes: true }).flatMap((entry) => {
+    const entryRelative = path.join(relative, entry.name);
+    return entry.isDirectory() ? filesUnder(dir, entryRelative) : [entryRelative];
+  });
+}
+
+/**
+ * `createPackage` can resolve before the archive's last file bytes are on disk (seen under load:
+ * the final file reads back as zeros). Listing needs only the header, which is written first, so
+ * the older tests never noticed; a test that reads file contents has to wait for them.
+ */
+async function createPackageOnceReadable(srcDir, asarPath) {
+  await createPackage(srcDir, asarPath);
+  const files = filesUnder(srcDir);
+  for (let attempt = 0; attempt < 150; attempt += 1) {
+    const readable = files.every((file) => {
+      try {
+        return extractFile(asarPath, file).equals(readFileSync(path.join(srcDir, file)));
+      } catch {
+        return false;
+      }
+    });
+    if (readable) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error(`${asarPath} never became readable`);
 }
 
 function expectPackagingGateError(fn, ...substrings) {
@@ -373,6 +404,54 @@ describe('assertRendererEntryPresent', () => {
   });
 });
 
+describe('assertRendererCspManifestIntact', () => {
+  const pageWith = (script) => `<!DOCTYPE html><html><head></head><body><script>${script}</script></body></html>`;
+
+  async function archiveRenderer({ pages, manifest }) {
+    const srcDir = makeTempDir('asar-src-csp');
+    for (const [relativePath, html] of Object.entries(pages)) {
+      writeFile(path.join(srcDir, 'renderer', 'out', relativePath), html);
+    }
+    if (manifest !== undefined) {
+      writeFile(path.join(srcDir, 'renderer', 'out', CSP_MANIFEST_FILE), JSON.stringify(manifest));
+    }
+    const asarPath = path.join(makeTempDir('asar-out-csp'), 'app.asar');
+    await createPackageOnceReadable(srcDir, asarPath);
+    return { asarPath, entries: listAsarEntries(asarPath) };
+  }
+
+  const manifestFor = (pages) => buildManifest(new Map(Object.entries(pages)));
+
+  it('passes when every archived page is hashed in the archived manifest', async () => {
+    const pages = { 'index.html': pageWith('one()'), 'mini-live/index.html': pageWith('two()') };
+    const { asarPath, entries } = await archiveRenderer({ pages, manifest: manifestFor(pages) });
+    expect(() => assertRendererCspManifestIntact(asarPath, entries)).not.toThrow();
+  });
+
+  it('throws when the manifest was not archived', async () => {
+    const { asarPath, entries } = await archiveRenderer({ pages: { 'index.html': pageWith('one()') } });
+    expectPackagingGateError(() => assertRendererCspManifestIntact(asarPath, entries), CSP_MANIFEST_FILE, 'missing');
+  });
+
+  it('throws when an archived page carries a script the manifest does not hash', async () => {
+    const written = { 'index.html': pageWith('one()') };
+    const { asarPath, entries } = await archiveRenderer({
+      pages: { 'index.html': pageWith('one(); injected()') },
+      manifest: manifestFor(written),
+    });
+    expectPackagingGateError(() => assertRendererCspManifestIntact(asarPath, entries), 'disagree', 'is not in the manifest');
+  });
+
+  it('throws when the archived manifest is not JSON', async () => {
+    const srcDir = makeTempDir('asar-src-csp-bad');
+    writeFile(path.join(srcDir, 'renderer', 'out', 'index.html'), pageWith('one()'));
+    writeFile(path.join(srcDir, 'renderer', 'out', CSP_MANIFEST_FILE), '{not json');
+    const asarPath = path.join(makeTempDir('asar-out-csp-bad'), 'app.asar');
+    await createPackageOnceReadable(srcDir, asarPath);
+    expectPackagingGateError(() => assertRendererCspManifestIntact(asarPath, listAsarEntries(asarPath)), 'disagree');
+  });
+});
+
 describe('assertNoNativeBinariesInAsar', () => {
   it('does nothing when the archive has no .node entries', () => {
     expect(() =>
@@ -418,7 +497,7 @@ describe('assertNoNativeBinariesInAsar', () => {
 });
 
 describe('runPackagingGateChecks', () => {
-  async function buildFakePackagedApp() {
+  async function buildFakePackagedApp({ manifest = 'matching' } = {}) {
     const desktopRootDir = makeTempDir('gate-run-root');
     writeJson(path.join(desktopRootDir, 'package.json'), {
       name: '@bombfarm/desktop',
@@ -435,9 +514,17 @@ describe('runPackagingGateChecks', () => {
     );
 
     const asarSrcDir = makeTempDir('gate-run-asar-src');
-    writeFile(path.join(asarSrcDir, 'renderer', 'out', 'index.html'), '<html></html>');
+    const indexHtml = '<html><body><script>boot()</script></body></html>';
+    writeFile(path.join(asarSrcDir, 'renderer', 'out', 'index.html'), indexHtml);
+    const hashedHtml = manifest === 'stale' ? indexHtml.replace('boot()', 'boot(); injected()') : indexHtml;
+    if (manifest !== 'missing') {
+      writeJson(
+        path.join(asarSrcDir, 'renderer', 'out', CSP_MANIFEST_FILE),
+        buildManifest(new Map([['index.html', hashedHtml]])),
+      );
+    }
     const asarPath = path.join(unpackedDir, 'resources', 'app.asar');
-    await createPackage(asarSrcDir, asarPath);
+    await createPackageOnceReadable(asarSrcDir, asarPath);
     writePackagedExecutable(path.join(unpackedDir, 'Bomb Farm Companion (Dev).exe'), {
       integrity: integrityOf(asarPath),
     });
@@ -454,6 +541,24 @@ describe('runPackagingGateChecks', () => {
     await expect(
       runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
     ).resolves.toBeUndefined();
+  });
+
+  it('fails the whole gate when the archive carries no CSP manifest', async () => {
+    const desktopRootDir = await buildFakePackagedApp({ manifest: 'missing' });
+    await expectPackagingGateRejection(
+      runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
+      CSP_MANIFEST_FILE,
+      'missing',
+    );
+  });
+
+  it('fails the whole gate when the archived manifest no longer matches the archived pages', async () => {
+    const desktopRootDir = await buildFakePackagedApp({ manifest: 'stale' });
+    await expectPackagingGateRejection(
+      runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
+      'disagree',
+      'is not in the manifest',
+    );
   });
 
   it('aggregates every failing check into one PackagingGateError', async () => {

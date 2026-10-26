@@ -5,7 +5,7 @@
  * record's import-time sheet, which leaves every spent point out, and a hero whose spent points
  * the read could not recover draws its card without figures, as its detail pane does.
  */
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect, electron } from './smoke-test.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

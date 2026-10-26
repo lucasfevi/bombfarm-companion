@@ -31,8 +31,61 @@ describe('fingerprint book', () => {
     const book = createFingerprintBook();
     book.seed('a', 1.2);
     book.learn('a', 1.3);
+    book.learn('a', 1.3);
     expect(book.resolve(1.3, present('a'))).toEqual({ kind: 'unique', heroId: 'a' });
     expect(book.resolve(1.2, present('a'))).toEqual({ kind: 'unknown' });
+  });
+
+  it('does not overwrite a learned value on a single contradicting observation', () => {
+    const book = createFingerprintBook();
+    book.learn('a', 1.3);
+    book.learn('a', 0.9);
+    expect(book.fuseOf('a')).toBe(1.3);
+  });
+
+  it('drops a pending observation when the established value is seen again', () => {
+    const book = createFingerprintBook();
+    book.learn('a', 1.3);
+    book.learn('a', 0.9);
+    book.learn('a', 1.3);
+    book.learn('a', 0.9);
+    expect(book.fuseOf('a')).toBe(1.3);
+  });
+
+  it('overwrites a learned value once the same new value is seen twice in a row', () => {
+    const book = createFingerprintBook();
+    book.learn('a', 1.3);
+    book.learn('a', 0.9);
+    book.learn('a', 0.9);
+    expect(book.fuseOf('a')).toBe(0.9);
+  });
+
+  it('clears a stale learned value when the seed moves beyond tolerance', () => {
+    const book = createFingerprintBook();
+    book.seed('a', 1.2);
+    book.learn('a', 1.3);
+    book.learn('a', 1.3);
+    book.seed('a', 0.4);
+    expect(book.fuseOf('a')).toBe(0.4);
+    expect(book.resolve(0.4, present('a'))).toEqual({ kind: 'unique', heroId: 'a' });
+  });
+
+  it('keeps a learned value when the seed is re-sent unchanged', () => {
+    const book = createFingerprintBook();
+    book.seed('a', 1.2);
+    book.learn('a', 1.3);
+    book.learn('a', 1.3);
+    book.seed('a', 1.2 + 1e-9);
+    expect(book.fuseOf('a')).toBe(1.3);
+  });
+
+  it('remembers a hero radius until cleared', () => {
+    const book = createFingerprintBook();
+    expect(book.radiusOf('a')).toBeUndefined();
+    book.learnRadius('a', 3);
+    expect(book.radiusOf('a')).toBe(3);
+    book.clear();
+    expect(book.radiusOf('a')).toBeUndefined();
   });
 
   it('reports two heroes with identical seeds as shared', () => {
@@ -78,12 +131,14 @@ describe('fingerprint book', () => {
   it('returns a disagreement when the learned fuse differs from the seed beyond tolerance', () => {
     const book = createFingerprintBook();
     book.seed('a', 1.2);
+    book.learn('a', 1.3);
     expect(book.learn('a', 1.3)).toEqual({ heroId: 'a', seeded: 1.2, learned: 1.3 });
   });
 
   it('returns the disagreement only once per hero', () => {
     const book = createFingerprintBook();
     book.seed('a', 1.2);
+    book.learn('a', 1.3);
     expect(book.learn('a', 1.3)).not.toBeNull();
     expect(book.learn('a', 1.3)).toBeNull();
     expect(book.learn('a', 1.4)).toBeNull();
@@ -103,6 +158,8 @@ describe('fingerprint book', () => {
     const book = createFingerprintBook();
     book.seed('a', 1.2);
     book.seed('b', 1.2);
+    book.learn('a', 1.3);
+    book.learn('b', 1.3);
     expect(book.learn('a', 1.3)?.heroId).toBe('a');
     expect(book.learn('b', 1.3)?.heroId).toBe('b');
   });
@@ -111,11 +168,13 @@ describe('fingerprint book', () => {
     const book = createFingerprintBook();
     book.seed('a', 1.2);
     book.learn('a', 1.3);
+    book.learn('a', 1.3);
     book.seed('b', 1.5);
     book.clear();
     expect(book.resolve(1.3, present('a', 'b'))).toEqual({ kind: 'unknown' });
     expect(book.resolve(1.5, present('a', 'b'))).toEqual({ kind: 'unknown' });
     book.seed('a', 1.2);
+    book.learn('a', 1.3);
     expect(book.learn('a', 1.3)).toEqual({ heroId: 'a', seeded: 1.2, learned: 1.3 });
   });
 });
