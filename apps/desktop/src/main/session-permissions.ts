@@ -1,5 +1,5 @@
-import type { Session, WebContents } from 'electron';
-import { trustedOriginKeyOf } from './ipc-sender-policy.js';
+import type { App, Session, WebContents } from 'electron';
+import { createIpcSenderPolicy, trustedOriginKeyOf } from './ipc-sender-policy.js';
 import type { LogPort } from './storage/index.js';
 
 /** Everything the renderer is allowed to ask the browser for. Anything not named here is refused,
@@ -82,5 +82,23 @@ export function cancelBluetoothSelection(contents: Pick<WebContents, 'on'>): voi
   contents.on('select-bluetooth-device', (event, _devices, callback) => {
     event.preventDefault();
     callback(CANCEL_SELECTION);
+  });
+}
+
+export interface SessionSecurityDeps {
+  app: Pick<App, 'on'>;
+  session: Session;
+  isDev: boolean;
+  devRendererUrl: string;
+  log: LogPort;
+}
+
+/** Everything the windows' shared session and every web contents created owe the policy; runs once
+ *  at boot, before the first window exists. */
+export function installSessionSecurity(deps: SessionSecurityDeps): void {
+  const { trustedOrigins } = createIpcSenderPolicy({ isDev: deps.isDev, devRendererUrl: deps.devRendererUrl });
+  applySessionPermissionPolicy(deps.session, { trustedOrigins, log: deps.log });
+  deps.app.on('web-contents-created', (_event, contents) => {
+    cancelBluetoothSelection(contents);
   });
 }

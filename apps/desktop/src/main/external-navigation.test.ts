@@ -97,6 +97,11 @@ describe('decideTopLevelNavigation', () => {
     expect(decideTopLevelNavigation(url, [DEV_RENDERER])).toBe('block');
   });
 
+  it('does not match one opaque origin against another', () => {
+    expect(decideTopLevelNavigation('file:///C:/secrets.txt', ['data:text/plain,x'])).toBe('block');
+    expect(decideFrameNavigation('file:///C:/secrets.txt', ['data:text/plain,x'])).toBe('block');
+  });
+
   it('allows the dev renderer origin only when it is declared', () => {
     expect(decideTopLevelNavigation(`${DEV_RENDERER}/live`)).toBe('block');
     expect(decideTopLevelNavigation(`${DEV_RENDERER}/live`, [DEV_RENDERER])).toBe('allow');
@@ -132,6 +137,8 @@ describe('decideFrameNavigation', () => {
 interface NavigateDetails {
   url: string;
   isMainFrame: boolean;
+  isSameDocument?: boolean;
+  initiator?: unknown;
   preventDefault(): void;
 }
 
@@ -141,11 +148,20 @@ function createWebContentsSpy(): {
   navigate(url: string): { prevented: boolean };
   navigateFrame(url: string, options?: { isMainFrame?: boolean }): { prevented: boolean };
   redirect(url: string, options: { isMainFrame: boolean }): { prevented: boolean };
+  startNavigation(
+    url: string,
+    options?: { isMainFrame?: boolean; isSameDocument?: boolean; initiated?: boolean },
+  ): Promise<void>;
+  commit(url: string): Promise<void>;
+  loadURL: ReturnType<typeof vi.fn<(url: string) => Promise<void>>>;
 } {
+  const loadURL = vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined);
   let openHandler: ((details: { url: string }) => { action: string }) | null = null;
   const listeners = new Map<string, (details: NavigateDetails) => void>();
 
   const contents = {
+    loadURL,
+    isDestroyed: () => false,
     setWindowOpenHandler(handler: (details: { url: string }) => { action: string }) {
       openHandler = handler;
     },
@@ -182,6 +198,29 @@ function createWebContentsSpy(): {
     navigate: (url) => emit('will-navigate', url, true),
     navigateFrame: (url, options) => emit('will-frame-navigate', url, options?.isMainFrame ?? false),
     redirect: (url, options) => emit('will-redirect', url, options.isMainFrame),
+    loadURL,
+    async commit(url) {
+      const listener = listeners.get('did-navigate') as unknown as (event: object, url: string) => void;
+      if (!listener) {
+        throw new Error('no did-navigate listener registered');
+      }
+      listener({}, url);
+      await new Promise((resolve) => setImmediate(resolve));
+    },
+    async startNavigation(url, options) {
+      const listener = listeners.get('did-start-navigation');
+      if (!listener) {
+        throw new Error('no did-start-navigation listener registered');
+      }
+      listener({
+        url,
+        isMainFrame: options?.isMainFrame ?? true,
+        isSameDocument: options?.isSameDocument ?? false,
+        initiator: options?.initiated === false ? null : {},
+        preventDefault: () => undefined,
+      } as never);
+      await new Promise((resolve) => setImmediate(resolve));
+    },
   };
 }
 
@@ -195,11 +234,18 @@ function createLogSpy(): LogPort & { records: Record<string, unknown>[] } {
   };
 }
 
+function applyPolicy(
+  contents: WebContents,
+  deps: Omit<Parameters<typeof applyExternalNavigationPolicy>[1], 'entryUrl'> & { entryUrl?: string },
+): void {
+  applyExternalNavigationPolicy(contents, { entryUrl: RENDERER_ENTRY, ...deps });
+}
+
 describe('applyExternalNavigationPolicy', () => {
   it('hands a target=_blank https link to the browser and creates no in-app window', () => {
     const openExternal = vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined);
     const spy = createWebContentsSpy();
-    applyExternalNavigationPolicy(spy.contents, { openExternal, log: createLogSpy() });
+    applyPolicy(spy.contents, { openExternal, log: createLogSpy() });
 
     expect(spy.openWindow(STEAM_LISTING)).toEqual({ action: 'deny' });
     expect(openExternal).toHaveBeenCalledWith(STEAM_LISTING);
@@ -209,7 +255,7 @@ describe('applyExternalNavigationPolicy', () => {
     const openExternal = vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined);
     const log = createLogSpy();
     const spy = createWebContentsSpy();
-    applyExternalNavigationPolicy(spy.contents, { openExternal, log });
+    applyPolicy(spy.contents, { openExternal, log });
 
     expect(spy.openWindow('javascript:alert(1)')).toEqual({ action: 'deny' });
     expect(openExternal).not.toHaveBeenCalled();
@@ -222,7 +268,7 @@ describe('applyExternalNavigationPolicy', () => {
     const openExternal = vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined);
     const log = createLogSpy();
     const spy = createWebContentsSpy();
-    applyExternalNavigationPolicy(spy.contents, { openExternal, log });
+    applyPolicy(spy.contents, { openExternal, log });
 
     expect(spy.navigate(STEAM_LISTING)).toEqual({ prevented: true });
     expect(openExternal).not.toHaveBeenCalled();
@@ -236,7 +282,7 @@ describe('applyExternalNavigationPolicy', () => {
     (url) => {
       const openExternal = vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined);
       const spy = createWebContentsSpy();
-      applyExternalNavigationPolicy(spy.contents, { openExternal, log: createLogSpy() });
+      applyPolicy(spy.contents, { openExternal, log: createLogSpy() });
 
       expect(spy.navigate(url)).toEqual({ prevented: true });
       expect(openExternal).not.toHaveBeenCalled();
@@ -246,7 +292,7 @@ describe('applyExternalNavigationPolicy', () => {
   it('lets the renderer navigate within its own bundle', () => {
     const openExternal = vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined);
     const spy = createWebContentsSpy();
-    applyExternalNavigationPolicy(spy.contents, { openExternal, log: createLogSpy() });
+    applyPolicy(spy.contents, { openExternal, log: createLogSpy() });
 
     expect(spy.navigate('app://bundle/live')).toEqual({ prevented: false });
     expect(openExternal).not.toHaveBeenCalled();
@@ -254,7 +300,7 @@ describe('applyExternalNavigationPolicy', () => {
 
   it('lets a dev run navigate within the dev renderer origin only', () => {
     const spy = createWebContentsSpy();
-    applyExternalNavigationPolicy(spy.contents, {
+    applyPolicy(spy.contents, {
       openExternal: vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined),
       log: createLogSpy(),
       internalUrls: [DEV_RENDERER],
@@ -268,7 +314,7 @@ describe('applyExternalNavigationPolicy', () => {
     const openExternal = vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined);
     const log = createLogSpy();
     const spy = createWebContentsSpy();
-    applyExternalNavigationPolicy(spy.contents, { openExternal, log });
+    applyPolicy(spy.contents, { openExternal, log });
 
     expect(spy.navigateFrame(STEAM_LISTING)).toEqual({ prevented: true });
     expect(spy.navigateFrame('data:text/html,x')).toEqual({ prevented: true });
@@ -280,7 +326,7 @@ describe('applyExternalNavigationPolicy', () => {
 
   it('lets a subframe stay on the app origin or an empty document', () => {
     const spy = createWebContentsSpy();
-    applyExternalNavigationPolicy(spy.contents, {
+    applyPolicy(spy.contents, {
       openExternal: vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined),
       log: createLogSpy(),
     });
@@ -294,7 +340,7 @@ describe('applyExternalNavigationPolicy', () => {
     const openExternal = vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined);
     const log = createLogSpy();
     const spy = createWebContentsSpy();
-    applyExternalNavigationPolicy(spy.contents, { openExternal, log, internalUrls: [DEV_RENDERER] });
+    applyPolicy(spy.contents, { openExternal, log, internalUrls: [DEV_RENDERER] });
 
     expect(spy.redirect(STEAM_LISTING, { isMainFrame: true })).toEqual({ prevented: true });
     expect(spy.redirect(STEAM_LISTING, { isMainFrame: false })).toEqual({ prevented: true });
@@ -309,7 +355,7 @@ describe('applyExternalNavigationPolicy', () => {
 
   it('leaves the main frame to the top-level handler', () => {
     const spy = createWebContentsSpy();
-    applyExternalNavigationPolicy(spy.contents, {
+    applyPolicy(spy.contents, {
       openExternal: vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined),
       log: createLogSpy(),
     });
@@ -323,13 +369,115 @@ describe('applyExternalNavigationPolicy', () => {
       .mockRejectedValue(new Error('no browser'));
     const log = createLogSpy();
     const spy = createWebContentsSpy();
-    applyExternalNavigationPolicy(spy.contents, { openExternal, log });
+    applyPolicy(spy.contents, { openExternal, log });
 
     spy.openWindow(STEAM_LISTING);
     await vi.waitFor(() => {
       expect(log.records).toContainEqual(
         expect.objectContaining({ event: 'navigation.open_external_failed' }),
       );
+    });
+  });
+
+  describe('a navigation the page starts by itself that commits off the app origin', () => {
+    function setup(overrides: Partial<Parameters<typeof applyPolicy>[1]> = {}) {
+      const spy = createWebContentsSpy();
+      const log = createLogSpy();
+      applyPolicy(spy.contents, {
+        openExternal: vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined),
+        log,
+        ...overrides,
+      });
+      return { spy, log };
+    }
+
+    it('loads the entry page again when the page itself lands on about:blank', async () => {
+      const { spy, log } = setup({ entryUrl: 'app://bundle/mini-live/index.html' });
+
+      await spy.startNavigation('about:blank');
+      expect(spy.loadURL).not.toHaveBeenCalled();
+      await spy.commit('about:blank');
+
+      expect(spy.loadURL).toHaveBeenCalledExactlyOnceWith('app://bundle/mini-live/index.html');
+      expect(log.records).toContainEqual(
+        expect.objectContaining({ event: 'navigation.blocked', trigger: 'did-navigate', url: 'about:blank' }),
+      );
+    });
+
+    it.each(['about:blank', 'about:srcdoc', 'data:text/html,x', 'https://example.com/', 'blob:app://bundle/1'])(
+      'recovers from a commit to %s',
+      async (url) => {
+        const { spy } = setup();
+        await spy.startNavigation(url);
+        await spy.commit(url);
+        expect(spy.loadURL).toHaveBeenCalledWith(RENDERER_ENTRY);
+      },
+    );
+
+    it('does not reload the page for a navigation the policy refused, which never commits', async () => {
+      const { spy } = setup();
+
+      await spy.startNavigation(STEAM_LISTING);
+      expect(spy.navigate(STEAM_LISTING)).toEqual({ prevented: true });
+      await spy.commit(RENDERER_ENTRY);
+
+      expect(spy.loadURL).not.toHaveBeenCalled();
+    });
+
+    it.each(['app://bundle/live', 'app://bundle/index.html?x=1#y'])('leaves an in-app commit to %s alone', async (url) => {
+      const { spy } = setup();
+      await spy.startNavigation(url);
+      await spy.commit(url);
+      expect(spy.loadURL).not.toHaveBeenCalled();
+    });
+
+    it('leaves a same-document route change alone', async () => {
+      const { spy } = setup();
+      await spy.startNavigation('about:blank', { isSameDocument: true });
+      await spy.commit('about:blank');
+      expect(spy.loadURL).not.toHaveBeenCalled();
+    });
+
+    it('leaves a subframe to the frame handler', async () => {
+      const { spy } = setup();
+      await spy.startNavigation('about:blank', { isMainFrame: false });
+      await spy.commit('about:blank');
+      expect(spy.loadURL).not.toHaveBeenCalled();
+    });
+
+    it('leaves a load the main process started itself alone, so its own recovery cannot loop', async () => {
+      const { spy } = setup();
+      await spy.startNavigation('about:blank', { initiated: false });
+      await spy.commit('about:blank');
+      expect(spy.loadURL).not.toHaveBeenCalled();
+    });
+
+    it('does not carry one navigation over to the next commit', async () => {
+      const { spy } = setup();
+      await spy.startNavigation('about:blank');
+      await spy.commit(RENDERER_ENTRY);
+      await spy.commit('about:blank');
+      expect(spy.loadURL).not.toHaveBeenCalled();
+    });
+
+    it('allows the dev origin and sends a foreign one back to the entry page in a dev run', async () => {
+      const { spy } = setup({ internalUrls: [DEV_RENDERER], entryUrl: `${DEV_RENDERER}/` });
+      await spy.startNavigation(`${DEV_RENDERER}/live`);
+      await spy.commit(`${DEV_RENDERER}/live`);
+      expect(spy.loadURL).not.toHaveBeenCalled();
+      await spy.startNavigation('http://127.0.0.1:3001/');
+      await spy.commit('http://127.0.0.1:3001/');
+      expect(spy.loadURL).toHaveBeenCalledExactlyOnceWith(`${DEV_RENDERER}/`);
+    });
+
+    it('logs a recovery that fails instead of throwing', async () => {
+      const { spy, log } = setup();
+      spy.loadURL.mockRejectedValueOnce(new Error('aborted'));
+      await spy.startNavigation('about:blank');
+      await spy.commit('about:blank');
+      await vi.waitFor(() => {
+        expect(log.records).toContainEqual(expect.objectContaining({ event: 'navigation.recover_failed' }));
+      });
     });
   });
 });

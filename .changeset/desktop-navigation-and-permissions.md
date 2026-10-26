@@ -2,4 +2,4 @@
 "@bombfarm/desktop": patch
 ---
 
-The desktop app's windows no longer follow a page that tries to leave the app by itself, and no longer open your browser for one: links open it only when you click them. Frames inside a window are held to the same rule, and every browser permission (notifications, location, camera, devices and the rest) is refused except copying to the clipboard.
+The desktop app's windows now stay on the app when a page tries to take them somewhere else, and a window sent to a blank page is put back. They no longer open your browser on their own: that happens only through a link or the app itself. Frames inside a window follow the same rule, the file pickers are switched off, and every browser permission (notifications, location, camera, devices and the rest) is refused except copying to the clipboard.

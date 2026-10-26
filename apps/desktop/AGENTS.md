@@ -91,23 +91,38 @@ this (`srcdoc` and `about:blank` children still load). What does: give untrusted
 origin (a sandboxed iframe without `allow-same-origin`) or its own window or partition that has no
 preload.
 
-## RULE: a page never opens the browser by navigating; only a click or a main-process call does
+## RULE: a page cannot take its window anywhere else, and only a link or the app itself opens the browser
 
 `src/main/external-navigation.ts` refuses every top-level navigation away from the app's own origin
 (`will-navigate`, which a `<meta http-equiv="refresh">` or a `location` assignment reaches with no
-script a CSP could stop) and every subframe navigation to anything but the app origin or an empty
-document (`will-frame-navigate`), and it refuses a redirect off the app origin the same way
-(`will-redirect`). None of them hands anything to `shell.openExternal`. The two ways a
-link reaches the browser are `target="_blank"` / `window.open` (the window-open handler, `https:`
-only) and a main-process call such as the Premium sign-in. **A new external link in the renderer
-must be `target="_blank"`**; a plain anchor is refused, and the smoke spec for this lists every
-link the UI shows.
+script a CSP could stop), every redirect off it (`will-redirect`), and every subframe navigation to
+anything but the app origin or an empty document (`will-frame-navigate`). None of them hands
+anything to `shell.openExternal`.
+
+Chromium commits a page's own navigation to `about:blank` without raising any of those events, so
+the policy also notes each navigation the page starts (`did-start-navigation`, initiating frame
+present) and, when it commits off the app origin (`did-navigate`), loads the entry page the window
+was created with again. A load the main process starts itself has no initiating frame and is never
+second-guessed. Calling `loadURL` from inside `did-start-navigation` itself crashes the app, hence
+the commit-time check and the deferred load.
+
+The ways a link reaches the browser are `target="_blank"` / `window.open` (the window-open handler,
+`https:` only; a script-driven `window.open` included, which a packaged run's CSP blocks) and a
+main-process call such as the Premium sign-in. **A new external link in the renderer must be
+`target="_blank"`**; a plain anchor is refused, and the smoke spec for this lists every link the UI
+shows.
 
 `src/main/session-permissions.ts` answers every permission request and check, and cancels every
-HID, USB, serial and Bluetooth device selection. `GRANTED_PERMISSIONS` is the allowlist and it is
-only ever granted to the app's own origin, and holds one entry today: `clipboard-sanitized-write`,
-which copying the referral code needs. **A feature that needs a permission adds one line there and
-a smoke assertion that the feature works.**
+HID, USB, serial and Bluetooth device selection. `GRANTED_PERMISSIONS` is the allowlist, pinned to
+its exact contents by a test, and it is only ever granted to the app's own origin. It holds one
+entry today: `clipboard-sanitized-write`, which copying the referral code needs. **A feature that
+needs a permission adds one line there, updates that pin, and adds a smoke assertion that the
+feature works.** The File System Access pickers never reach a permission handler, so
+`index.ts` switches that API off at startup instead; the renderer does not use it.
+
+Both are wired in `index.ts` (`installSessionSecurity`, `windowNavigationPolicy`), and
+`window-security-wiring-guard.test.ts` reads that file's syntax tree so a commented-out, conditional
+or emptied call fails a test.
 
 ## Local checks
 

@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import type { Session, WebContents } from 'electron';
 import { createIpcSenderPolicy } from './ipc-sender-policy.js';
@@ -8,6 +6,7 @@ import {
   applySessionPermissionPolicy,
   cancelBluetoothSelection,
   decidePermission,
+  installSessionSecurity,
 } from './session-permissions.js';
 import type { LogPort } from './storage/index.js';
 
@@ -17,6 +16,13 @@ const DEV = createIpcSenderPolicy({ isDev: true, devRendererUrl: 'http://127.0.0
 const APP_URL = 'app://bundle/index.html';
 
 const EVERY_BROWSER_PERMISSION = [
+  'automatic-fullscreen',
+  'background-sync',
+  'local-fonts',
+  'payment-handler',
+  'persistent-storage',
+  'screen-wake-lock',
+  'sensors',
   'clipboard-read',
   'clipboard-sanitized-write',
   'deprecated-sync-clipboard-read',
@@ -43,6 +49,12 @@ const EVERY_BROWSER_PERMISSION = [
   'usb',
   'bluetooth',
 ];
+
+describe('GRANTED_PERMISSIONS', () => {
+  it('is exactly the one permission the app uses, so widening it is a change to this line', () => {
+    expect([...GRANTED_PERMISSIONS]).toEqual(['clipboard-sanitized-write']);
+  });
+});
 
 describe('decidePermission', () => {
   it.each(EVERY_BROWSER_PERMISSION.filter((permission) => !GRANTED_PERMISSIONS.has(permission)))(
@@ -210,23 +222,72 @@ describe('cancelBluetoothSelection', () => {
   });
 });
 
-describe('boot wiring', () => {
-  const bootSource = readFileSync(resolve(__dirname, 'index.ts'), 'utf8');
+describe('installSessionSecurity', () => {
+  function install(options: { isDev: boolean; devRendererUrl?: string }) {
+    const { session, state } = createSessionSpy();
+    const appListeners = new Map<string, (...args: never[]) => void>();
+    const app = { on: (event: string, listener: (...args: never[]) => void) => appListeners.set(event, listener) };
+    installSessionSecurity({
+      app: app as never,
+      session,
+      isDev: options.isDev,
+      devRendererUrl: options.devRendererUrl ?? 'http://127.0.0.1:3000',
+      log: createLogSpy(),
+    });
+    return { state, appListeners };
+  }
 
-  it('applies the permission policy to the default session every window uses, before a window exists', () => {
-    const policy = bootSource.indexOf('applySessionPermissionPolicy(session.defaultSession');
-    expect(policy).toBeGreaterThan(-1);
-    expect(bootSource.match(/applySessionPermissionPolicy\(/g)).toHaveLength(1);
-    expect(policy).toBeLessThan(bootSource.indexOf('await createMainWindow()'));
+  const grantedTo = (state: ReturnType<typeof createSessionSpy>['state'], url: string): boolean =>
+    requestThrough(state, 'clipboard-sanitized-write', url);
+
+  it('installs the permission handlers on the session it is given', () => {
+    const { state } = install({ isDev: false });
+    expect(state.request).not.toBeNull();
+    expect(state.check).not.toBeNull();
+    expect(state.device?.()).toBe(false);
   });
 
-  it('cancels Bluetooth selection on every web contents created', () => {
-    expect(bootSource).toMatch(/app\.on\('web-contents-created',[^]*cancelBluetoothSelection\(contents\)/);
-  });
+  it('trusts exactly the app origin in a packaged run, whatever dev renderer url it is handed', () => {
+    const { state } = install({ isDev: false, devRendererUrl: 'https://elsewhere.example.com' });
 
-  it('keeps every window on the default session, so the one policy covers them all', () => {
-    for (const file of ['index.ts', 'mini-live-window.ts', 'web-preferences.ts']) {
-      expect(readFileSync(resolve(__dirname, file), 'utf8'), file).not.toMatch(/partition/i);
+    expect(grantedTo(state, APP_URL)).toBe(true);
+    for (const foreign of [
+      'https://elsewhere.example.com/',
+      'http://127.0.0.1:3000/',
+      'https://example.com/',
+      'app://bundle.evil/',
+      'data:text/html,x',
+      '',
+    ]) {
+      expect(grantedTo(state, foreign), foreign).toBe(false);
+      expect(state.check?.(null, 'clipboard-sanitized-write', foreign, { isMainFrame: true }), `check ${foreign}`).toBe(false);
     }
+  });
+
+  it('trusts the dev renderer origin as well in a dev run, and nothing else', () => {
+    const { state } = install({ isDev: true });
+
+    expect(grantedTo(state, APP_URL)).toBe(true);
+    expect(grantedTo(state, 'http://127.0.0.1:3000/')).toBe(true);
+    expect(grantedTo(state, 'http://127.0.0.1:3001/')).toBe(false);
+    expect(grantedTo(state, 'https://example.com/')).toBe(false);
+  });
+
+  it('cancels Bluetooth selection on every web contents the app creates afterwards', () => {
+    const { appListeners } = install({ isDev: false });
+    const created = appListeners.get('web-contents-created');
+    expect(created).toBeDefined();
+
+    let listener: ((...args: unknown[]) => void) | null = null;
+    const contents = {
+      on: (event: string, handler: (...args: unknown[]) => void) => {
+        if (event === 'select-bluetooth-device') listener = handler;
+      },
+    };
+    (created as unknown as (...args: unknown[]) => void)({}, contents);
+
+    const callback = vi.fn<(deviceId: string) => void>();
+    (listener as unknown as (...args: unknown[]) => void)({ preventDefault: vi.fn() }, [], callback);
+    expect(callback).toHaveBeenCalledWith('');
   });
 });

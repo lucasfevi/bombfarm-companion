@@ -14,6 +14,13 @@ function parseUrl(rawUrl: string): URL | null {
   }
 }
 
+function isDeclaredInternalOrigin(target: URL, internalUrls: readonly string[]): boolean {
+  return (
+    target.origin !== OPAQUE_ORIGIN &&
+    internalUrls.some((internalUrl) => parseUrl(internalUrl)?.origin === target.origin)
+  );
+}
+
 export function decideNavigation(
   rawUrl: string,
   internalUrls: readonly string[] = [],
@@ -27,10 +34,7 @@ export function decideNavigation(
     return 'allow-internal';
   }
 
-  if (
-    target.origin !== OPAQUE_ORIGIN &&
-    internalUrls.some((internalUrl) => parseUrl(internalUrl)?.origin === target.origin)
-  ) {
+  if (isDeclaredInternalOrigin(target, internalUrls)) {
     return 'allow-internal';
   }
 
@@ -44,11 +48,7 @@ function isAppOrigin(rawUrl: string, internalUrls: readonly string[]): boolean {
     return true;
   }
   const target = parseUrl(rawUrl);
-  return (
-    target !== null &&
-    target.origin !== OPAQUE_ORIGIN &&
-    internalUrls.some((internalUrl) => parseUrl(internalUrl)?.origin === target.origin)
-  );
+  return target !== null && isDeclaredInternalOrigin(target, internalUrls);
 }
 
 /** A page that leaves the app's own origin on its own (a meta refresh, `location`, a form) is
@@ -78,6 +78,9 @@ export function decideFrameNavigation(
 export interface ExternalNavigationDeps {
   openExternal: (url: string) => Promise<void>;
   log: LogPort;
+  /** The page the window was created with; a window that lands anywhere else by its own doing is
+   *  sent back to it. */
+  entryUrl: string;
   internalUrls?: readonly string[];
 }
 
@@ -87,7 +90,7 @@ export function applyExternalNavigationPolicy(
   contents: WebContents,
   deps: ExternalNavigationDeps,
 ): void {
-  const { openExternal, log, internalUrls = [] } = deps;
+  const { openExternal, log, entryUrl, internalUrls = [] } = deps;
 
   const openInBrowser = (url: string, trigger: string): void => {
     log.info({ scope: 'main', event: 'navigation.opened_externally', trigger, url });
@@ -132,6 +135,33 @@ export function applyExternalNavigationPolicy(
     refuse(details.url, 'will-redirect');
   });
 
+  // Chromium commits a page's own navigation to `about:blank` without raising any `will-*` event,
+  // and a window left there has no bridge and no script until the app restarts. `did-start-navigation`
+  // is raised for the navigations the policy refuses too, so it only notes what a page started; the
+  // window is sent back when that navigation actually commits somewhere off the app origin. A load
+  // the main process started itself has no initiating frame and is never second-guessed.
+  let startedByPage: string | null = null;
+  contents.on('did-start-navigation', (details) => {
+    startedByPage =
+      details.isMainFrame && !details.isSameDocument && details.initiator ? details.url : null;
+  });
+  contents.on('did-navigate', (_event, url) => {
+    const started = startedByPage;
+    startedByPage = null;
+    if (started === null || decideTopLevelNavigation(url, internalUrls) === 'allow') {
+      return;
+    }
+    refuse(url, 'did-navigate');
+    setImmediate(() => {
+      if (contents.isDestroyed()) {
+        return;
+      }
+      void contents.loadURL(entryUrl).catch((error: unknown) => {
+        log.error({ scope: 'main', event: 'navigation.recover_failed', url: entryUrl, error: String(error) });
+      });
+    });
+  });
+
   contents.on('will-frame-navigate', (details) => {
     if (details.isMainFrame || decideFrameNavigation(details.url, internalUrls) === 'allow') {
       return;
@@ -139,4 +169,20 @@ export function applyExternalNavigationPolicy(
     details.preventDefault();
     refuse(details.url, 'will-frame-navigate');
   });
+}
+
+export interface NavigationPolicyEnv {
+  isDev: boolean;
+  devRendererUrl: string;
+}
+
+/** The one navigation policy both windows are built with. */
+export function createNavigationPolicyApplier(
+  env: NavigationPolicyEnv,
+  deps: Pick<ExternalNavigationDeps, 'openExternal' | 'log'>,
+): (contents: WebContents, entryUrl: string) => void {
+  const internalUrls = env.isDev ? [env.devRendererUrl] : [];
+  return (contents, entryUrl) => {
+    applyExternalNavigationPolicy(contents, { ...deps, entryUrl, internalUrls });
+  };
 }

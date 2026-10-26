@@ -59,13 +59,15 @@ async function watchNavigations(app) {
     for (const win of BrowserWindow.getAllWindows()) {
       if (watched.has(win.id)) continue;
       watched.add(win.id);
-      for (const kind of ['will-navigate', 'will-frame-navigate', 'will-redirect']) {
+      for (const kind of ['will-navigate', 'will-frame-navigate', 'will-redirect', 'did-start-navigation']) {
         win.webContents.on(kind, (details) => {
           globalThis.__navigations.push({
             kind,
             url: details.url,
             isMainFrame: details.isMainFrame,
             prevented: details.defaultPrevented,
+            isSameDocument: details.isSameDocument,
+            initiated: details.initiator != null,
           });
         });
       }
@@ -118,6 +120,44 @@ async function openSettings(page) {
   await expect(page.getByTestId('settings-view')).toBeVisible({ timeout: 20_000 });
 }
 
+const BLANK = 'about:blank';
+
+const BLANK_NAVIGATIONS = {
+  'a meta refresh': () => {
+    document.head.insertAdjacentHTML('beforeend', `<meta http-equiv="refresh" content="0;url=about:blank">`);
+  },
+  'location.assign': () => {
+    window.location.assign('about:blank');
+  },
+  'a target=_top link inside a srcdoc child': () => {
+    const frame = document.createElement('iframe');
+    frame.srcdoc = '<a id="out" target="_top" href="about:blank">out</a>';
+    frame.addEventListener('load', () => frame.contentDocument.getElementById('out').click(), { once: true });
+    document.body.append(frame);
+  },
+};
+
+/** A window left on `about:blank` has no bridge and no script until the app restarts, so the spec
+ *  waits for it to be put back, and for it to stay put. */
+async function expectBackOnTheEntryPage(app, window, entryUrl, trigger) {
+  await expect
+    .poll(
+      async () =>
+        (await navigations(app)).some((entry) => entry.kind === 'did-start-navigation' && entry.isMainFrame && entry.url === BLANK),
+      { timeout: 15_000, message: `${trigger}: the navigation to about:blank started` },
+    )
+    .toBe(true);
+  await expect
+    .poll(() => window.evaluate(() => `${location.href}|${typeof window.bfc}`).catch(() => 'pending'), {
+      timeout: 30_000,
+      message: `${trigger}: the window is back on its entry page with its bridge`,
+    })
+    .toBe(`${entryUrl}|object`);
+  await window.waitForTimeout(1_500);
+  expect(await window.evaluate(() => `${location.href}|${typeof window.bfc}`), `${trigger}: it stayed there`).toBe(`${entryUrl}|object`);
+  expect(await openedUrls(app), `${trigger}: the browser was not opened`).toEqual([]);
+}
+
 const META_REFRESH = (url) => {
   document.head.insertAdjacentHTML('beforeend', `<meta http-equiv="refresh" content="0;url=${url}">`);
 };
@@ -154,6 +194,9 @@ async function expectRefused(app, page, expectedWindowUrl, trigger) {
   expect(attempts.every((entry) => entry.prevented), `${trigger}: every attempt was prevented ${JSON.stringify(attempts)}`).toBe(true);
   expect(await openedUrls(app), `${trigger}: the browser was not opened`).toEqual([]);
   expect(page.url().startsWith(expectedWindowUrl), `${trigger}: the window stayed on the app`).toBe(true);
+  await page.waitForTimeout(500);
+  const reloads = (await navigations(app)).filter((entry) => entry.kind === 'did-start-navigation' && !entry.initiated && entry.url.startsWith(expectedWindowUrl));
+  expect(reloads, `${trigger}: a refused navigation does not reload the page`).toEqual([]);
 }
 
 test.describe('navigation, frame and permission hardening', () => {
@@ -292,6 +335,15 @@ test.describe('navigation, frame and permission hardening', () => {
     }
   });
 
+  test('the file pickers are not offered to either window, since no permission handler sees them and each would open a native dialog', async () => {
+    for (const window of [page, mini]) {
+      const offered = await window.evaluate(() =>
+        ['showOpenFilePicker', 'showSaveFilePicker', 'showDirectoryPicker'].filter((name) => typeof window[name] === 'function'),
+      );
+      expect(offered).toEqual([]);
+    }
+  });
+
   test('copying the referral code still reaches the clipboard', async () => {
     await app.evaluate(({ clipboard }) => {
       clipboard.writeText('sentinel');
@@ -321,6 +373,20 @@ test.describe('navigation, frame and permission hardening', () => {
         const window = target();
         await window.evaluate(run, FOREIGN);
         await expectRefused(app, window, 'app://bundle/', name);
+      });
+    }
+  }
+
+  for (const [windowName, target] of [
+    ['main', () => page],
+    ['compact', () => mini],
+  ]) {
+    for (const [name, run] of Object.entries(BLANK_NAVIGATIONS)) {
+      test(`${name} to about:blank puts the ${windowName} window back on its entry page`, async () => {
+        const window = target();
+        const entryUrl = await window.evaluate(() => location.href);
+        await window.evaluate(run);
+        await expectBackOnTheEntryPage(app, window, entryUrl, name);
       });
     }
   }
@@ -459,6 +525,13 @@ test.describe('navigation hardening in a dev run, where no Content-Security-Poli
         return text;
       });
       expect(sameOrigin, 'an empty-document child frame is not refused').toBe('child');
+
+      await devApp.evaluate(() => {
+        globalThis.__navigations.length = 0;
+      });
+      const devEntry = await devPage.evaluate(() => location.href);
+      await devPage.evaluate(BLANK_NAVIGATIONS['location.assign']);
+      await expectBackOnTheEntryPage(devApp, devPage, devEntry, 'dev run location.assign');
 
       await devApp.evaluate(() => {
         globalThis.__navigations.length = 0;
