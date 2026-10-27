@@ -3,9 +3,12 @@ import {
   COMMIT_INDEX,
   COMMIT_ORDER,
   commitVectorEquals,
+  commitVectorToPoints,
+  isPointVector,
   derivePointsUnits,
   pointsToCommitVector,
   preflightPointsUnit,
+  preflightPointsUnitAgainstServer,
   preflightPointsUnitsOffline,
   type HeroAllocationReading,
 } from '@bombfarm/domain/team-plan';
@@ -89,6 +92,27 @@ describe('pointsToCommitVector', () => {
 
   it('throws RangeError for a non-integer value', () => {
     expect(() => pointsToCommitVector({ cdr: 1.5 })).toThrow(RangeError);
+  });
+});
+
+describe('isPointVector', () => {
+  it('accepts eight non-negative integers', () => {
+    expect(isPointVector([0, 1, 2, 3, 4, 5, 6, 7])).toBe(true);
+  });
+
+  it('rejects anything else', () => {
+    expect(isPointVector('12345678')).toBe(false);
+    expect(isPointVector([1, 2, 3])).toBe(false);
+    expect(isPointVector([0, 0, 0, 0, 0, 0, 0, '1'])).toBe(false);
+    expect(isPointVector([0, 0, 0, 0, 0, 0, 0, 1.5])).toBe(false);
+    expect(isPointVector([0, 0, 0, 0, 0, 0, 0, -1])).toBe(false);
+  });
+});
+
+describe('commitVectorToPoints', () => {
+  it('reads the eight values back onto their sheet keys, undoing pointsToCommitVector', () => {
+    const pts = { attack: 10, energy: 20, speed: 30, luck: 40, critChance: 50, critDmg: 60, penetration: 70, cdr: 80 };
+    expect(commitVectorToPoints(pointsToCommitVector(pts))).toEqual(pts);
   });
 });
 
@@ -219,6 +243,62 @@ describe('preflightPointsUnit — the four verdicts, in precedence order', () =>
       pointResets: [pointReset('hero-1', { attack: 0 }, { attack: 1 }, 0)],
     })[0]!;
     expect(preflightPointsUnit(unit, reading([0, 0, 0, 0, 0, 0, 0, 0], 0))).toEqual({ index: 0, status: 'pendingCommit' });
+  });
+});
+
+describe('preflightPointsUnitAgainstServer', () => {
+  function serverReading(pts: Record<string, number>, available: number | null) {
+    const alloc = pointsToCommitVector(pts);
+    return { alloc, spent: alloc.reduce((sum, value) => sum + value, 0), available };
+  }
+
+  const nyx = derivePointsUnits({
+    perHero: [perHeroRow('nyx', 422)],
+    pointResets: [
+      pointReset('nyx', { speed: 150, critDmg: 59, cdr: 209 }, { attack: 135, speed: 14, critDmg: 273 }, 422_000),
+    ],
+  })[0]!;
+
+  it('resets a hero whose capped cooldown hides three points the stat sheet could not recover', () => {
+    const server = serverReading({ speed: 150, critDmg: 59, cdr: 212 }, 1);
+    expect(preflightPointsUnit(nyx, server).status).toBe('conflict');
+    expect(preflightPointsUnitAgainstServer(nyx, server)).toEqual({ index: 0, status: 'pendingFull' });
+  });
+
+  it('keeps every verdict the inferred allocation already reaches', () => {
+    expect(preflightPointsUnitAgainstServer(nyx, serverReading({ speed: 150, critDmg: 59, cdr: 209 }, 4)).status).toBe('pendingFull');
+    expect(preflightPointsUnitAgainstServer(nyx, serverReading({ attack: 135, speed: 14, critDmg: 273 }, 0)).status).toBe('done');
+  });
+
+  it('skips allocationChanged when the hero owns fewer points than the target places', () => {
+    expect(preflightPointsUnitAgainstServer(nyx, serverReading({ speed: 150, cdr: 200 }, 0))).toEqual({
+      index: 0,
+      status: 'conflict',
+      reason: 'allocationChanged',
+    });
+  });
+
+  it('counts the planned level as the points owned when the server leaves the unspent count out', () => {
+    expect(preflightPointsUnitAgainstServer(nyx, serverReading({ speed: 150, critDmg: 59, cdr: 212 }, null)).status).toBe('pendingFull');
+    expect(preflightPointsUnitAgainstServer(nyx, serverReading({ speed: 10 }, null)).status).toBe('pendingFull');
+  });
+
+  describe('a plan that only adds points', () => {
+    const addOnly = derivePointsUnits({
+      perHero: [perHeroRow('h', 100)],
+      pointResets: [pointReset('h', { attack: 50, cdr: 40 }, { attack: 53, cdr: 45 }, 0)],
+    })[0]!;
+
+    it('commits when the server allocation still sits under the target everywhere', () => {
+      expect(preflightPointsUnitAgainstServer(addOnly, serverReading({ attack: 50, cdr: 42 }, 8))).toEqual({
+        index: 0,
+        status: 'pendingCommit',
+      });
+    });
+
+    it('skips allocationChanged rather than charge an unapproved reset when the server holds more somewhere', () => {
+      expect(preflightPointsUnitAgainstServer(addOnly, serverReading({ attack: 50, cdr: 47 }, 3)).status).toBe('conflict');
+    });
   });
 });
 

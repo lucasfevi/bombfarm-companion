@@ -1,6 +1,17 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { app, BrowserWindow, clipboard, ipcMain, Menu, nativeImage, screen, shell, type WebContents } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  ipcMain,
+  Menu,
+  nativeImage,
+  screen,
+  session,
+  shell,
+  type WebContents,
+} from 'electron';
 import {
   DEFAULT_SETTINGS,
   resolveStartupLocale,
@@ -31,15 +42,20 @@ import { createPvpHistory, type PvpHistory } from './pvp/pvp-history.js';
 import { createPvpReader, type PvpReader } from './pvp/pvp-reader.js';
 import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
 import { createIpcDispatch, createIpcHandlers, defaultLiveView } from './ipc-handlers.js';
+import { createBridgeInvokeHandler, createSenderWindowResolver } from './ipc-bridge-handler.js';
+import { installSessionSecurity } from './session-permissions.js';
 import { createEventEmitter } from './event-emitter.js';
+import { createIpcRejectionLogGate } from './ipc-rejection-log.js';
+import { createRendererErrorGate } from './renderer-error-log.js';
 import { createRedactingTokenReader } from './redacting-token-reader.js';
 import { LIVE_SOURCE_RELEASE_DEADLINE_MS, settleWithin, shutdownInOrder } from './shutdown.js';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { fuseSecondsForCdr } from './domain-edge.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
-import { applyExternalNavigationPolicy } from './external-navigation.js';
+import { createNavigationPolicyApplier } from './external-navigation.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
+import { cspManifestForBoot } from './renderer-csp.js';
 import {
   registerRendererProtocol,
   registerRendererSchemeAsPrivileged,
@@ -93,6 +109,7 @@ import { onlinePlayersHttpGet } from './online-players/online-players-transport.
 import { createPremiumWhenEnabled, type PremiumService } from './premium/index.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
+import { sandboxedWebPreferences } from './web-preferences.js';
 import {
   applyAlwaysOnTopMain as applyAlwaysOnTopMainSettings,
   applyAlwaysOnTopMini as applyAlwaysOnTopMiniSettings,
@@ -123,6 +140,7 @@ import {
   type ShellLifecycle,
   type WindowPort,
 } from './shell/window-lifecycle.js';
+import { refuseDebugSwitchesOfPackagedApp } from './shell/debug-switch-guard.js';
 import { isWindowRevealSuppressed } from './shell/window-reveal.js';
 import {
   createMiniLiveController,
@@ -135,6 +153,8 @@ import {
   type GameKeepAlive,
 } from './game-keep-alive/keep-alive-runtime.js';
 import { askSteam, createSteamLaunchDeps } from './game-keep-alive/steam-launch.js';
+
+refuseDebugSwitchesOfPackagedApp(app, process);
 
 let mainWindow: BrowserWindow | null = null;
 let storage: Storage | null = null;
@@ -331,11 +351,20 @@ function requestAccountReadNow(): AccountReadResult {
 }
 
 function registerIpcHandlers(): void {
+  // Importing electron-log registers a listener and a handler here that take any record from any
+  // renderer process with no sender check, cap or rate limit; renderer errors arrive only through
+  // `log:rendererError`.
+  ipcMain.removeAllListeners('__ELECTRON_LOG__');
+  ipcMain.removeHandler('__ELECTRON_LOG__');
+
   const dispatch = createIpcDispatch(
     createIpcHandlers({
       now: () => Date.now(),
       warn: (record) => {
         log.warn(record);
+      },
+      error: (record) => {
+        log.error(record);
       },
       resolveEnv: resolveAppEnv,
       appVersion: () => app.getVersion(),
@@ -368,6 +397,9 @@ function registerIpcHandlers(): void {
       isMiniAvailable,
       getAccountView: () => resolveAccountView({ gameReader, consentStore, accountRefresh, accountStore }),
       requestAccountReadNow,
+      readServerAllocations: (heroIds) => {
+        void accountRefresh?.readAllocations(heroIds);
+      },
       applyConsentEvent,
       emitMarketChanged: (view) => {
         emitEvent('market:changed', view);
@@ -388,7 +420,45 @@ function registerIpcHandlers(): void {
     }),
   );
 
-  ipcMain.handle('bfc:invoke', (_event, channel: string, ...args: unknown[]) => dispatch(channel, ...args));
+  ipcMain.handle(
+    'bfc:invoke',
+    createBridgeInvokeHandler({
+      env: resolveAppEnv(),
+      devRendererUrl: RENDERER_DEV_URL,
+      senderWindowOf: createSenderWindowResolver({
+        main: liveMainContents,
+        mini: liveMiniContents,
+      }),
+      dispatch,
+      log,
+      rendererErrorGate: createRendererErrorGate({
+        warn: (record) => {
+          log.warn(record);
+        },
+      }),
+      rejectionLogGate: createIpcRejectionLogGate({
+        warn: (record) => {
+          log.warn(record);
+        },
+      }),
+    }),
+  );
+}
+
+function liveMainContents(): { readonly id: number } | null {
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null;
+}
+
+function liveMiniContents(): { readonly id: number } | null {
+  const miniWindow = miniLiveController?.getWindow();
+  return miniWindow && !miniWindow.isDestroyed() ? miniWindow.webContents : null;
+}
+
+function windowNavigationPolicy(env: AppEnv): (contents: WebContents, entryUrl: string) => void {
+  return createNavigationPolicyApplier(
+    { isDev: env.isDev, devRendererUrl: RENDERER_DEV_URL },
+    { openExternal: (url) => shell.openExternal(url), log },
+  );
 }
 
 async function createMainWindow(): Promise<void> {
@@ -434,12 +504,7 @@ async function createMainWindow(): Promise<void> {
     // (`WindowControls`), which the OS overlay cannot be asked to do — Windows fixes those
     // buttons at 47px wide and only their height and colours are configurable.
     titleBarStyle: 'hidden',
-    webPreferences: {
-      preload: path.join(__dirname, '../preload/index.cjs'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
-    },
+    webPreferences: sandboxedWebPreferences(path.join(__dirname, '../preload/index.cjs')),
   });
 
   // `maximize()` shows a window that is not being displayed yet, so restoring a maximized layout
@@ -448,11 +513,8 @@ async function createMainWindow(): Promise<void> {
     mainWindow.maximize();
   }
 
-  applyExternalNavigationPolicy(mainWindow.webContents, {
-    openExternal: (url) => shell.openExternal(url),
-    log,
-    internalUrls: env.isDev ? [RENDERER_DEV_URL] : [],
-  });
+  const entryUrl = env.isDev ? RENDERER_DEV_URL : RENDERER_ENTRY_URL;
+  windowNavigationPolicy(env)(mainWindow.webContents, entryUrl);
 
   gameReader?.setWindowProvider(() => mainWindow);
 
@@ -493,13 +555,13 @@ async function createMainWindow(): Promise<void> {
     });
 
     log.info({ scope: 'main', event: 'renderer.load_url', url: RENDERER_DEV_URL });
-    await mainWindow.loadURL(RENDERER_DEV_URL);
+    await mainWindow.loadURL(entryUrl);
     if (process.env.BFC_OPEN_DEVTOOLS === '1') {
       mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
   } else {
     log.info({ scope: 'main', event: 'renderer.load_url', url: RENDERER_ENTRY_URL });
-    await mainWindow.loadURL(RENDERER_ENTRY_URL);
+    await mainWindow.loadURL(entryUrl);
   }
 
   setupShellLifecycle(env);
@@ -544,12 +606,8 @@ function createMiniLiveControllerInstance(env: ReturnType<typeof resolveAppEnv>)
     preloadPath: path.join(__dirname, '../preload/index.cjs'),
     iconPath: resolveAppIconPath(__dirname),
     suppressReveal: isWindowRevealSuppressed(process.env, env.isPackaged),
-    applyExternalNavigation: (webContents) => {
-      applyExternalNavigationPolicy(webContents as WebContents, {
-        openExternal: (url) => shell.openExternal(url),
-        log,
-        internalUrls: env.isDev ? [RENDERER_DEV_URL] : [],
-      });
+    applyExternalNavigation: (webContents, entryUrl) => {
+      windowNavigationPolicy(env)(webContents as WebContents, entryUrl);
     },
     getDisplays: () =>
       screen.getAllDisplays().map((display) => ({
@@ -1174,7 +1232,15 @@ async function bootstrap(): Promise<void> {
   });
 
   registerIpcHandlers();
-  registerRendererProtocol(path.join(__dirname, '../../renderer/out'));
+  const rendererRoot = path.join(__dirname, '../../renderer/out');
+  registerRendererProtocol(rendererRoot, cspManifestForBoot(env.isDev, rendererRoot));
+  installSessionSecurity({
+    app,
+    session: session.defaultSession,
+    isDev: env.isDev,
+    devRendererUrl: RENDERER_DEV_URL,
+    log,
+  });
   await createMainWindow();
   mainWindow?.setAlwaysOnTop(currentSettings.alwaysOnTopMain, 'normal');
   gameReader.start();
@@ -1251,6 +1317,14 @@ async function releaseLiveSource(): Promise<void> {
 }
 
 let liveSourceReleasedForQuit = false;
+
+// Sandboxes every renderer process whatever its window asks for, so a window added later cannot
+// opt out of it.
+app.enableSandbox();
+
+// The renderer never reads or writes the player's files itself, and no permission handler sees the
+// file pickers, so the API is taken out of the page rather than left to open a native dialog.
+app.commandLine.appendSwitch('disable-blink-features', 'FileSystemAccessLocal');
 
 const env = resolveBootEnv();
 registerRendererSchemeAsPrivileged();

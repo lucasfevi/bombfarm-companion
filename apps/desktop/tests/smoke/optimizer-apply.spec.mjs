@@ -11,7 +11,7 @@
  * which answers `offline`, and the row settles on Stopped with Run again — the confirms and the
  * modal are reachable by ANY smoke only because `apply:inject` arms a scripted answer first.
  */
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect, electron } from './smoke-test.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -215,9 +215,9 @@ test.describe('the Apply panel, solved, switched, confirmed and run through the 
   });
 
   // Values, not provenance: a hand run of this exact fixture at the eval cap above settles with
-  // a 3-hero reset step of three respecs (Minato L95, WB #2 L77 and Perrin L53 at 1,000 gold per
-  // level, 225,000 gold) and eight forge pieces to +10 whose expected gold and essence, summed over
-  // each piece's own climb on the published chance, fail-landing and cost tables, are 912,455 and
+  // a reset step of two respecs (Minato L95 and WB #2 L77 at 1,000 gold per level, 172,000 gold —
+  // Perrin L53's reset is trimmed as worth less than the trim's bound) and eight forge pieces to
+  // +10 whose expected gold and essence, summed over each piece's own climb on the published chance, fail-landing and cost tables, are 912,455 and
   // 385: two level-30 Rare pieces climbing +8 to +10 (63,519.5 gold, 39.84 essence each), one
   // level-30 Epic piece climbing +8 to +10 (74,862.3, 53.12), three level-30 Epic pieces climbing
   // +0 to +10 (136,327.1, 53.12 each), a level-70 Common piece (140,458.3, 30.99) and a level-70
@@ -229,12 +229,12 @@ test.describe('the Apply panel, solved, switched, confirmed and run through the 
     for (const testId of ['apply-ledger-total', 'apply-ledger-reset', 'apply-ledger-forge', 'apply-ledger-wallet']) {
       await expect(ledger.getByTestId(testId)).toBeVisible();
     }
-    await expect(ledger.getByTestId('apply-ledger-total')).toContainText('1,137,455');
-    await expect(ledger.getByTestId('apply-ledger-reset')).toContainText('225,000');
+    await expect(ledger.getByTestId('apply-ledger-total')).toContainText('1,084,455');
+    await expect(ledger.getByTestId('apply-ledger-reset')).toContainText('172,000');
     await expect(ledger.getByTestId('apply-ledger-forge')).toContainText('912,455');
     await expect(ledger.getByTestId('apply-ledger-forge')).toContainText('385 essence');
     await expect(ledger.getByTestId('apply-ledger-wallet')).toContainText('222,054,630');
-    await expect(ledger.getByTestId('apply-ledger-wallet')).toContainText('220,917,175');
+    await expect(ledger.getByTestId('apply-ledger-wallet')).toContainText('220,970,175');
   });
 
   test('the switch off disables both writing rows and names the switch', async () => {

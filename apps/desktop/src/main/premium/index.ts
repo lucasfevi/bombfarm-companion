@@ -3,6 +3,7 @@ import type { AppLocale, PremiumView } from '@bombfarm/contracts';
 import type { LogPort, SqliteDb } from '../storage/index.js';
 import { startLoopbackListener } from './loopback-listener.js';
 import { createPkce, createState } from './pkce.js';
+import { appPlayingAccount } from './playing-account-gate.js';
 import { createPremiumApi } from './premium-api.js';
 import { createPremiumCache } from './premium-cache.js';
 import { offlinePremiumHttp } from './premium-offline.js';
@@ -52,5 +53,6 @@ export function createElectronPremium(deps: ElectronPremiumDeps): PremiumService
     now: () => Date.now(),
     log: deps.log,
     onChanged: deps.onChanged,
+    playingAccount: appPlayingAccount,
   });
 }

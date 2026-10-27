@@ -13,7 +13,7 @@ const TARGET = { ...ZERO, critChance: 56 };
 const UNIT: ApplyPointsUnit = {
   index: 0,
   heroId: 'h7',
-  level: 30,
+  level: 56,
   needsRespec: true,
   respecGold: 30_000,
   vectorBefore: pointsToCommitVector(BEFORE),
@@ -39,8 +39,13 @@ function fakeContext(opts: { reading: HeroDetailReading | 'paused-out'; calls?: 
   return { ctx, recordedCalls };
 }
 
-function okReading(alloc = BEFORE, spent = 44, respecGold: number | null = 30_000): Extract<HeroDetailReading, { kind: 'ok' }> {
-  return { kind: 'ok', alloc: pointsToCommitVector(alloc), spent, available: null, respecGold };
+function okReading(
+  alloc = BEFORE,
+  spent = 44,
+  respecGold: number | null = 30_000,
+  available: number | null = null,
+): Extract<HeroDetailReading, { kind: 'ok' }> {
+  return { kind: 'ok', alloc: pointsToCommitVector(alloc), spent, available, respecGold };
 }
 
 describe('runPointsUnit — pendingFull', () => {
@@ -73,6 +78,16 @@ describe('runPointsUnit — pendingFull', () => {
   });
 });
 
+describe('runPointsUnit — a server allocation the inferred one undercounts', () => {
+  it('still resets and commits when a capped stat holds points the stat sheet could not show', async () => {
+    const hidden = { ...BEFORE, cdr: 3 };
+    const { ctx, recordedCalls } = fakeContext({ reading: okReading(hidden, 47, 30_000, 9), calls: [{ kind: 'ok' }, { kind: 'ok' }] });
+    const result = await runPointsUnit(UNIT, ctx);
+    expect(recordedCalls.map((call) => call.kind)).toEqual(['respec', 'commit']);
+    expect(result).toEqual({ kind: 'ok', goldSpent: 30_000 });
+  });
+});
+
 describe('runPointsUnit — pendingCommit (already reset)', () => {
   const PENDING_COMMIT_READING = okReading(ZERO, 0);
 
@@ -91,8 +106,8 @@ describe('runPointsUnit — preflight verdicts that skip before any call', () =>
     expect(recordedCalls).toHaveLength(0);
   });
 
-  it('conflict (the live allocation is neither before nor the target) skips allocationChanged', async () => {
-    const { ctx, recordedCalls } = fakeContext({ reading: okReading({ ...ZERO, speed: 12 }, 12) });
+  it('conflict (an unexpected allocation with too few points for the target) skips allocationChanged', async () => {
+    const { ctx, recordedCalls } = fakeContext({ reading: okReading({ ...ZERO, speed: 12 }, 12, 30_000, 20) });
     expect(await runPointsUnit(UNIT, ctx)).toEqual({ kind: 'skip', reason: 'allocationChanged' });
     expect(recordedCalls).toHaveLength(0);
   });

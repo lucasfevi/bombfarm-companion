@@ -40,6 +40,26 @@ function isValidSemver(version) {
 }
 
 /**
+ * Every Electron fuse, set explicitly: a fuse added by a later Electron upgrade is a decision the
+ * fuse-set test makes someone take, not a default that arrives unnoticed.
+ *
+ * `loadBrowserProcessSpecificV8Snapshot` stays off because the app builds no browser-process
+ * snapshot, and the fuse makes Electron look for one.
+ *
+ * @type {Readonly<Required<Omit<NonNullable<import('electron-builder').Configuration['electronFuses']>, 'resetAdHocDarwinSignature'>>>}
+ */
+export const ELECTRON_FUSES = Object.freeze({
+  runAsNode: false,
+  enableNodeOptionsEnvironmentVariable: false,
+  enableNodeCliInspectArguments: false,
+  enableEmbeddedAsarIntegrityValidation: true,
+  onlyLoadAppFromAsar: true,
+  enableCookieEncryption: true,
+  grantFileProtocolExtraPrivileges: false,
+  loadBrowserProcessSpecificV8Snapshot: false,
+});
+
+/**
  * @param {import('@bombfarm/contracts').AppFlavor} flavor
  * @returns {import('electron-builder').Configuration}
  */
@@ -77,6 +97,7 @@ export function createBuilderConfig(flavor) {
     // then gets an empty image and no tray; the main process resolves it through
     // `app.asar.unpacked` (see `src/main/shell/app-icon-path.ts`).
     asarUnpack: ['**/node_modules/frida/**/*', 'assets/icon.ico'],
+    electronFuses: { ...ELECTRON_FUSES },
     extraMetadata,
     artifactName: '${name}-${version}-setup.${ext}',
     publish,

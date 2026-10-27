@@ -14,6 +14,9 @@ export type FingerprintResolution =
 export interface FingerprintBook {
   seed(heroId: string, fuseTotal: number): void;
   learn(heroId: string, fuseTotal: number): FingerprintDisagreement | null;
+  fuseOf(heroId: string): number | undefined;
+  learnRadius(heroId: string, radius: number): void;
+  radiusOf(heroId: string): number | undefined;
   resolve(fuseTotal: number, present: ReadonlySet<string>): FingerprintResolution;
   clear(): void;
 }
@@ -21,11 +24,15 @@ export interface FingerprintBook {
 interface HeroFuse {
   seed?: number;
   learned?: number;
+  pending?: number;
 }
+
+const sameFuse = (a: number, b: number) => Math.abs(a - b) <= FUSE_TOLERANCE;
 
 export function createFingerprintBook(): FingerprintBook {
   const fuses = new Map<string, HeroFuse>();
   const disagreed = new Set<string>();
+  const radii = new Map<string, number>();
 
   const entryFor = (heroId: string): HeroFuse => {
     let entry = fuses.get(heroId);
@@ -38,16 +45,45 @@ export function createFingerprintBook(): FingerprintBook {
 
   return {
     seed(heroId, fuseTotal) {
-      entryFor(heroId).seed = fuseTotal;
+      const entry = entryFor(heroId);
+      if (entry.seed !== undefined && !sameFuse(entry.seed, fuseTotal)) {
+        delete entry.learned;
+        delete entry.pending;
+        disagreed.delete(heroId);
+      }
+      entry.seed = fuseTotal;
     },
 
     learn(heroId, fuseTotal) {
       const entry = entryFor(heroId);
+      const current = entry.learned ?? entry.seed;
+      if (current !== undefined && sameFuse(current, fuseTotal)) {
+        delete entry.pending;
+        return null;
+      }
+      if (current !== undefined && (entry.pending === undefined || !sameFuse(entry.pending, fuseTotal))) {
+        entry.pending = fuseTotal;
+        return null;
+      }
+      delete entry.pending;
       entry.learned = fuseTotal;
       if (entry.seed === undefined || disagreed.has(heroId)) return null;
-      if (Math.abs(entry.seed - fuseTotal) <= FUSE_TOLERANCE) return null;
+      if (sameFuse(entry.seed, fuseTotal)) return null;
       disagreed.add(heroId);
       return { heroId, seeded: entry.seed, learned: fuseTotal };
+    },
+
+    fuseOf(heroId) {
+      const entry = fuses.get(heroId);
+      return entry === undefined ? undefined : (entry.learned ?? entry.seed);
+    },
+
+    learnRadius(heroId, radius) {
+      radii.set(heroId, radius);
+    },
+
+    radiusOf(heroId) {
+      return radii.get(heroId);
     },
 
     resolve(fuseTotal, present) {
@@ -65,6 +101,7 @@ export function createFingerprintBook(): FingerprintBook {
     clear() {
       fuses.clear();
       disagreed.clear();
+      radii.clear();
     },
   };
 }

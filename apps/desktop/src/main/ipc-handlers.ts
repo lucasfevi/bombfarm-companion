@@ -5,6 +5,7 @@ import {
 } from './game-api/window-layout-store.js';
 import { writeClipboardImage, type ImageClipboard } from './shell/clipboard-image.js';
 import type { AppEnv } from './env.js';
+import { parseRendererErrorRecord, rendererErrorLogRecord } from './renderer-error-log.js';
 import {
   EMPTY_COLLECTIONS_VIEW,
   EMPTY_FORGE_HISTORY,
@@ -185,6 +186,7 @@ export type ClipboardImageLike = {
 export interface IpcHandlerDeps<Image extends ClipboardImageLike = ClipboardImageLike> {
   now: () => number;
   warn: (record: Record<string, unknown>) => void;
+  error: (record: Record<string, unknown>) => void;
 
   resolveEnv: () => AppEnv;
   appVersion: () => string;
@@ -219,6 +221,7 @@ export interface IpcHandlerDeps<Image extends ClipboardImageLike = ClipboardImag
   isMiniAvailable: () => boolean;
   getAccountView: () => AccountView;
   requestAccountReadNow: () => AccountReadResult;
+  readServerAllocations: (heroIds: readonly string[]) => void;
   applyConsentEvent: (event: ConsentEvent) => Promise<ConsentRecord>;
   emitMarketChanged: (view: MarketSnapshotView) => void;
 
@@ -253,6 +256,9 @@ export function defaultLiveView(nowIso: string): LiveView {
  *  button from becoming a stream of them: below the five-minute `max-age` the published file is
  *  served with, a second check could not see anything newer anyway. */
 export const MARKET_CHECK_FLOOR_MS = 30_000;
+
+/** A roster holds a few dozen heroes; a longer list is not a request the renderer makes. */
+export const MAX_ALLOCATION_READS = 40;
 
 export function createIpcHandlers<Image extends ClipboardImageLike>(
   deps: IpcHandlerDeps<Image>,
@@ -358,6 +364,12 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       },
     'account:get': (): AccountView => deps.getAccountView(),
     'account:readNow': (): AccountReadResult => deps.requestAccountReadNow(),
+    'account:readAllocations': (heroIds: unknown): null => {
+      if (Array.isArray(heroIds) && heroIds.every((id) => typeof id === 'string')) {
+        deps.readServerAllocations(heroIds.slice(0, MAX_ALLOCATION_READS));
+      }
+      return null;
+    },
     'consent:get': (): ConsentRecord => deps.getConsentStore()?.read() ?? initialConsent(),
     'consent:accept': (): Promise<ConsentRecord> =>
       deps.applyConsentEvent({ type: 'accept', now: nowIso(), locale: deps.getSettings().locale }),
@@ -466,6 +478,15 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       return null;
     },
     'clipboard:writeImage': (bytes: unknown) => writeClipboardImage(bytes, deps.imageClipboard),
+    'log:rendererError': (record: unknown) => {
+      const parsed = parseRendererErrorRecord(record);
+      if (parsed === null) {
+        deps.warn({ scope: 'renderer', event: 'error_record.rejected' });
+      } else {
+        deps.error(rendererErrorLogRecord(parsed));
+      }
+      return null;
+    },
   };
 }
 

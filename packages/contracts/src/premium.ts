@@ -49,8 +49,29 @@ export type PremiumActionResult =
       reason: 'already-signing-in' | 'already-signed-in' | 'signed-out' | 'too-soon' | 'failed' | 'unavailable';
     };
 
+export const PREMIUM_ACCOUNT_UNKNOWN_REASONS = [
+  'signed_out',
+  'no_session',
+  'no_steam_id64',
+  'checking',
+  'report_failed',
+] as const;
+export const PREMIUM_ACCOUNT_OTHER_REASONS = ['other_account', 'no_steam_link'] as const;
+
+/**
+ * Whether the game account playing right now is the signed-in user's linked one. Carries no id of
+ * any kind: the state and a fixed reason word are all that leave the main process.
+ */
+export type PremiumPlayingAccount =
+  | { readonly state: 'linked'; readonly reason: null }
+  | { readonly state: 'other'; readonly reason: (typeof PREMIUM_ACCOUNT_OTHER_REASONS)[number] }
+  | { readonly state: 'unknown'; readonly reason: (typeof PREMIUM_ACCOUNT_UNKNOWN_REASONS)[number] };
+
+export const signedOutPlayingAccount: PremiumPlayingAccount = { state: 'unknown', reason: 'signed_out' };
+
 export interface PremiumView {
   readonly session: 'signed-out' | 'signing-in' | 'signed-in';
+  readonly playingAccount: PremiumPlayingAccount;
   readonly rememberedAcrossRestarts: boolean;
   readonly lastSignInEnd: PremiumSignInEnd | null;
   readonly ended: 'expired' | null;
@@ -65,6 +86,7 @@ export interface PremiumView {
 
 export const signedOutPremiumView: PremiumView = {
   session: 'signed-out',
+  playingAccount: signedOutPlayingAccount,
   rememberedAcrossRestarts: true,
   lastSignInEnd: null,
   ended: null,

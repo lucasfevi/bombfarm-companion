@@ -1,6 +1,7 @@
 import type { BrowserWindowConstructorOptions } from 'electron';
 import type { WindowLayoutStore } from './game-api/window-layout-store.js';
 import { RENDERER_HOST, RENDERER_SCHEME } from './renderer-protocol.js';
+import { sandboxedWebPreferences } from './web-preferences.js';
 import {
   clampMiniToWorkArea,
   fitMiniGrowthAxis,
@@ -41,16 +42,12 @@ export function buildMiniLiveWindowOptions(input: {
     show: false,
     backgroundColor: '#17100c',
     icon: input.iconPath,
-    webPreferences: {
-      preload: input.preloadPath,
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
-    },
+    webPreferences: sandboxedWebPreferences(input.preloadPath),
   };
 }
 
 export interface MiniLiveWebContents {
+  readonly id: number;
   loadURL(url: string): Promise<void>;
   on(event: string, listener: (...args: unknown[]) => void): void;
 }
@@ -82,7 +79,7 @@ export function createMiniLiveBrowserWindow(
     width: number;
     height: number;
     loadUrl: string;
-    applyExternalNavigation?: ((webContents: MiniLiveWebContents) => void) | undefined;
+    applyExternalNavigation?: ((webContents: MiniLiveWebContents, entryUrl: string) => void) | undefined;
     suppressReveal?: boolean | undefined;
     log?: MiniLiveLog | undefined;
   },
@@ -98,7 +95,7 @@ export function createMiniLiveBrowserWindow(
     }),
   );
 
-  input.applyExternalNavigation?.(win.webContents);
+  input.applyExternalNavigation?.(win.webContents, input.loadUrl);
 
   // Revealed the moment it exists rather than at first paint. Spawning this window's renderer
   // measures ~150 ms, and waiting for it left the screen unchanged for that whole time, so the
@@ -234,7 +231,7 @@ export function createMiniLiveController(deps: {
   resolveLoadUrl: () => string;
   preloadPath: string;
   iconPath: string;
-  applyExternalNavigation: (webContents: MiniLiveWebContents) => void;
+  applyExternalNavigation: (webContents: MiniLiveWebContents, entryUrl: string) => void;
   getDisplays: () => readonly DisplayInfo[];
   getPrimaryWorkArea: () => WorkArea;
   getDisplayForBounds: (bounds: { x: number; y: number; width: number; height: number }) => DisplayInfo;

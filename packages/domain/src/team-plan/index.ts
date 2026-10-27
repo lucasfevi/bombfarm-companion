@@ -28,7 +28,14 @@ export { isCombatWindowObjective, isFarmSearchObjective, SET_FARM_SLOW_CLEAR_SEC
 export { itemLevelShareOnPhase, SET_FARM_SETS, setFarmBand, type SetFarmBand } from './set-farm';
 export { mayMoveGear, mayRespendPoints } from './allowed-changes';
 export { planFieldSlots, resolveCombatWindow, type ResolvedCombatWindow } from './combat-window';
-export { COMMIT_INDEX, COMMIT_ORDER, commitVectorEquals, pointsToCommitVector } from './apply-commit-vector';
+export {
+  COMMIT_INDEX,
+  COMMIT_ORDER,
+  commitVectorEquals,
+  commitVectorToPoints,
+  isPointVector,
+  pointsToCommitVector,
+} from './apply-commit-vector';
 export {
   deriveEquipUnits,
   liveGearStateFromRows,
@@ -40,8 +47,10 @@ export {
 export {
   derivePointsUnits,
   preflightPointsUnit,
+  preflightPointsUnitAgainstServer,
   preflightPointsUnitsOffline,
   type HeroAllocationReading,
+  type ServerAllocationReading,
 } from './apply-points';
 export { APPLY_CALL_MEAN_MS, computeApplyLedger, estimateApplyDurationMs, type ApplyLedger } from './apply-ledger';
 export { computeRosterAuras } from './auras';

@@ -32,6 +32,17 @@
   --animate-forge-ghost: forge-ghost 1400ms ease-in-out infinite;
 }
 
+/* Base UI tags the scroll areas and the Select list that draw their own scrollbar with this class
+   and would inject a <style> element to hide the native one. The window's CSP forbids inline
+   <style> elements, so the layout turns that injection off (CSPProvider) and the rule lives here. */
+.base-ui-disable-scrollbar {
+  scrollbar-width: none;
+}
+
+.base-ui-disable-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* The feeds rail's ring drains from full to empty over the feed's own cycle. The browser runs the
    whole drain from one render: the item sets the duration to the cycle and a negative delay to
    the age already spent, so nothing in React ticks while the rail sits still. */

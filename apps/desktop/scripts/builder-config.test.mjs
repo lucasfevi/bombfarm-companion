@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { FuseV1Options } from '@electron/fuses';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   APP_FLAVORS,
@@ -90,6 +91,26 @@ describe('createBuilderConfig', () => {
           allowToChangeInstallationDirectory: false,
         });
         expect(config.asarUnpack).toEqual(['**/node_modules/frida/**/*', 'assets/icon.ico']);
+      });
+
+      it('locks the binary down with exactly this fuse set', () => {
+        expect(config.electronFuses).toEqual({
+          runAsNode: false,
+          enableNodeOptionsEnvironmentVariable: false,
+          enableNodeCliInspectArguments: false,
+          enableEmbeddedAsarIntegrityValidation: true,
+          onlyLoadAppFromAsar: true,
+          enableCookieEncryption: true,
+          grantFileProtocolExtraPrivileges: false,
+          loadBrowserProcessSpecificV8Snapshot: false,
+        });
+      });
+
+      it('names a state for every fuse the installed @electron/fuses knows', () => {
+        const knownFuses = Object.keys(FuseV1Options)
+          .filter((name) => Number.isNaN(Number(name)))
+          .map((name) => name.charAt(0).toLowerCase() + name.slice(1));
+        expect(Object.keys(config.electronFuses ?? {}).sort()).toEqual(knownFuses.sort());
       });
 
       if (descriptor.updateChannel === null) {

@@ -268,6 +268,7 @@ export const en = {
   screenCrashTitle: "This screen couldn't load",
   screenCrashInfoLabel: 'What happened',
   screenCrashInfo: 'The rest of the app still works. Switch tabs or try again; the details were saved to the log file.',
+  screenCrashInfoCompact: 'The rest of the app still works. Try again; the details were saved to the log file.',
   screenCrashRetry: 'Try again',
   // dataNotice* / heroFlag* / dataField* — what the app says when the game stops sending a field it reads
   dataNoticeInfoLabel: 'What this means',
@@ -1565,8 +1566,15 @@ export const en = {
   premiumBannerGraceBody: 'Premium stays on until {date}.',
   premiumBannerPaymentFailedTitle: 'Your payment failed',
   premiumBannerPaymentFailedBody: 'Premium is off until it is paid.',
-  premiumBannerDisputeTitle: 'Premium is paused',
-  premiumBannerDisputeBody: 'Premium is paused while a payment dispute is open.',
+  premiumBannerDisputeTitle: 'Premium is suspended',
+  premiumBannerDisputeBody: 'Premium is suspended while a payment dispute is open.',
   premiumBannerUnreachableTitle: "Couldn't reach the server",
   premiumBannerUnreachableBody: 'Showing status from {time}.',
+  premiumPausedOtherAccount:
+    'Premium is paused — the game is signed in with a different account than the one linked to your Premium.',
+  premiumPausedNoSteamLink: 'Premium is paused — connect Steam on the Premium page to link your game account.',
+  premiumPausedNoSession: 'Premium is paused until the game is running with your linked account.',
+  premiumPausedUpdateGame: 'Update the game if this does not clear.',
+  premiumPausedReportFailed: "Couldn't confirm your game account — press Refresh to try again.",
+  premiumCheckingAccount: 'Checking your game account…',
 } as const;

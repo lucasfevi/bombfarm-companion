@@ -42,6 +42,7 @@ import {
   createIpcHandlers,
   defaultLiveView,
   MARKET_CHECK_FLOOR_MS,
+  MAX_ALLOCATION_READS,
   type ClipboardImageLike,
   type IpcHandlerDeps,
 } from './ipc-handlers.js';
@@ -224,10 +225,12 @@ function fakes() {
     },
     spies: {
       warn: vi.fn(),
+      error: vi.fn(),
       accountSource: vi.fn((): AccountSource => 'server'),
       isMiniAvailable: vi.fn(() => true),
       getAccountView: vi.fn(() => ACCOUNT_VIEW),
       requestAccountReadNow: vi.fn(() => ({ ok: true as const })),
+      readServerAllocations: vi.fn(),
       applyConsentEvent: vi.fn(() => Promise.resolve(grantedConsent(NOW_ISO))),
       emitMarketChanged: vi.fn(),
       applyLocale: vi.fn((next: AppLocale) => written({ ...DEFAULT_SETTINGS, locale: next })),
@@ -251,6 +254,7 @@ function wired(env: AppEnv = BETA_ENV) {
   const deps: IpcHandlerDeps = {
     now: () => f.clock.ms,
     warn: f.spies.warn,
+    error: f.spies.error,
     resolveEnv: () => env,
     appVersion: f.spies.appVersion,
     appIsPackaged: () => env.isPackaged,
@@ -282,6 +286,7 @@ function wired(env: AppEnv = BETA_ENV) {
     isMiniAvailable: f.spies.isMiniAvailable,
     getAccountView: f.spies.getAccountView,
     requestAccountReadNow: f.spies.requestAccountReadNow,
+    readServerAllocations: f.spies.readServerAllocations,
     applyConsentEvent: f.spies.applyConsentEvent,
     emitMarketChanged: f.spies.emitMarketChanged,
     applyLocale: f.spies.applyLocale,
@@ -532,6 +537,17 @@ describe('the account and the game reader', () => {
     const { handlers, f } = wired();
     expect(handlers['account:readNow']()).toEqual({ ok: true });
     expect(f.spies.requestAccountReadNow).toHaveBeenCalledTimes(1);
+  });
+
+  it('forwards the heroes to read allocations for, capped, and drops a malformed list', () => {
+    const { handlers, f } = wired();
+    const many = Array.from({ length: 60 }, (_, index) => `h${String(index)}`);
+    expect(handlers['account:readAllocations'](many)).toBeNull();
+    expect(f.spies.readServerAllocations).toHaveBeenCalledWith(many.slice(0, MAX_ALLOCATION_READS));
+
+    expect(handlers['account:readAllocations']([1, 2] as unknown as string[])).toBeNull();
+    expect(handlers['account:readAllocations']('h1' as unknown as string[])).toBeNull();
+    expect(f.spies.readServerAllocations).toHaveBeenCalledTimes(1);
   });
 
   it('serves the reader status when the reader exists', () => {
@@ -963,6 +979,36 @@ describe('the clipboard', () => {
     });
     expect(f.imageClipboard.decodePng).not.toHaveBeenCalled();
     expect(f.imageClipboard.writeImage).not.toHaveBeenCalled();
+  });
+});
+
+describe('the renderer error log', () => {
+  const crash = {
+    event: 'screen.crash',
+    screen: 'heroes',
+    message: 'boom',
+    stack: 'Error: boom\n    at render',
+    componentStack: '\n    at Heroes',
+  };
+
+  it('logs a crash at error level under a scope main stamps, and answers null', () => {
+    const { dispatch, f } = wired();
+    expect(dispatch('log:rendererError', crash)).toBeNull();
+    expect(f.spies.error).toHaveBeenCalledTimes(1);
+    expect(f.spies.error).toHaveBeenCalledWith({ scope: 'renderer', ...crash });
+  });
+
+  it('lets a page neither pick the scope nor add keys', () => {
+    const { dispatch, f } = wired();
+    dispatch('log:rendererError', { ...crash, scope: 'main', level: 'info', extra: 'x' });
+    expect(f.spies.error).toHaveBeenCalledWith({ scope: 'renderer', ...crash });
+  });
+
+  it('refuses something that is not a record with a warning that carries nothing from the page', () => {
+    const { dispatch, f } = wired();
+    expect(dispatch('log:rendererError', 'not a record')).toBeNull();
+    expect(f.spies.error).not.toHaveBeenCalled();
+    expect(f.spies.warn).toHaveBeenCalledWith({ scope: 'renderer', event: 'error_record.rejected' });
   });
 });
 

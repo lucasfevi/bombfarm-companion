@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { createNavigationPolicyApplier } from './external-navigation.js';
 import type { WindowLayoutStore } from './game-api/window-layout-store.js';
 import type { WindowLayoutDocument } from './shell/window-layout.js';
 import {
@@ -64,6 +65,7 @@ describe('createMiniLiveBrowserWindow', () => {
 
     class FakeBrowserWindow {
       webContents = {
+        id: 1,
         loadURL: vi.fn(() => Promise.resolve()),
         on: vi.fn(),
       };
@@ -127,6 +129,7 @@ function createFakeBrowserWindowCtor() {
 
   class FakeBrowserWindow {
     webContents = {
+      id: 1,
       loadURL: vi.fn(() => Promise.resolve()),
       on: vi.fn(),
     };
@@ -187,6 +190,61 @@ function controllerDeps(overrides: Partial<Parameters<typeof createMiniLiveContr
     ...overrides,
   };
 }
+
+describe('createMiniLiveController — navigation policy', () => {
+  it('applies the navigation policy to the window it builds, with the page it loads, before that page loads', () => {
+    const fake = createFakeBrowserWindowCtor();
+    const applyExternalNavigation = vi.fn();
+    const controller = createMiniLiveController(
+      controllerDeps({ BrowserWindowCtor: fake.Ctor, applyExternalNavigation }),
+    );
+
+    controller.open();
+
+    const webContents = fake.lastInstance?.webContents;
+    expect(applyExternalNavigation).toHaveBeenCalledExactlyOnceWith(webContents, 'http://127.0.0.1:3000/mini-live/');
+    expect(applyExternalNavigation.mock.invocationCallOrder[0]).toBeLessThan(
+      (webContents?.loadURL as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it('registers every navigation guard on the window when the real policy is the one applied', () => {
+    const fake = createFakeBrowserWindowCtor();
+    const apply = createNavigationPolicyApplier(
+      { isDev: false, devRendererUrl: 'http://127.0.0.1:3000' },
+      {
+        openExternal: vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined),
+        log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+      },
+    );
+    const setWindowOpenHandler = vi.fn();
+    const controller = createMiniLiveController(
+      controllerDeps({
+        BrowserWindowCtor: fake.Ctor,
+        applyExternalNavigation: (webContents, entryUrl) => {
+          Object.assign(webContents, { setWindowOpenHandler, getURL: () => '', isDestroyed: () => false });
+          apply(webContents as never, entryUrl);
+        },
+      }),
+    );
+
+    controller.open();
+
+    const events = (fake.lastInstance?.webContents.on as ReturnType<typeof vi.fn>).mock.calls.map((call: unknown[]) => call[0]);
+    expect(setWindowOpenHandler).toHaveBeenCalledOnce();
+    expect(events).toEqual(
+      expect.arrayContaining([
+        'will-navigate',
+        'will-redirect',
+        'will-frame-navigate',
+        'did-navigate',
+        'did-stop-loading',
+        'did-finish-load',
+        'did-fail-load',
+      ]),
+    );
+  });
+});
 
 describe('createMiniLiveController', () => {
   it('focuses an existing window on the second open instead of constructing twice', () => {
@@ -404,6 +462,7 @@ describe('createMiniLiveBrowserWindow — revealed at construction, exactly once
 
     class FakeBrowserWindow {
       webContents = {
+        id: 1,
         loadURL,
         on: (event: string, listener: (...args: unknown[]) => void) => {
           contentsListeners.set(event, listener);

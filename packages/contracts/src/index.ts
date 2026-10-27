@@ -12,6 +12,10 @@ import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
 import type { CollectionsView } from './collections.js';
 import type { ApplyEvent, ApplyStartRequest, ApplyStartResult } from './apply.js';
 import type { DeconstructEvent, DeconstructStartRequest, DeconstructStartResult } from './deconstruct.js';
+import type { RendererErrorRecord } from './renderer-error.js';
+
+export { RENDERER_ERROR_KEYS } from './renderer-error.js';
+export type { RendererErrorRecord } from './renderer-error.js';
 
 export { accountChangeKey, canonicalStringify } from './account-change-key.js';
 export {
@@ -202,6 +206,7 @@ export type {
   PremiumActionResult,
   PremiumKind,
   PremiumMe,
+  PremiumPlayingAccount,
   PremiumReportOutcome,
   PremiumReportRefusal,
   PremiumSignInEnd,
@@ -212,6 +217,8 @@ export type {
 export {
   GAME_ACCOUNT_REPORT_FIELDS,
   GAME_ACCOUNT_REPORT_FIELDS_ARE_EXHAUSTIVE,
+  PREMIUM_ACCOUNT_OTHER_REASONS,
+  PREMIUM_ACCOUNT_UNKNOWN_REASONS,
   PREMIUM_REFRESH_EVERY_MS,
   PREMIUM_REFRESH_FLOOR_MS,
   PREMIUM_SIGN_IN_TIMEOUT_MS,
@@ -225,6 +232,7 @@ export {
   readSessionTokenBody,
   readSignInRequestBody,
   reportablePlayerName,
+  signedOutPlayingAccount,
   signedOutPremiumView,
 } from './premium.js';
 export type {
@@ -572,6 +580,10 @@ export interface IpcChannels {
    *  the same manual-refresh floor the app's other triggered reads do, so a second press inside
    *  that window is refused rather than doubling the request rate. */
   'account:readNow': { args: []; result: AccountReadResult };
+  /** Names the heroes whose spent points the renderer's import could not recover exactly from the
+   *  stat sheet, for main to read the game's own allocation of and re-commit the account with. The
+   *  answer arrives as an `account:changed` push; ids that name no current hero are ignored. */
+  'account:readAllocations': { args: [readonly string[]]; result: null };
   /** Consent for the game-API account reader. All four are
    *  zero-arg by design: the existing `bfc:invoke` bridge forwards no arguments, so the
    *  player's answer is three verbs (`accept`/`decline`/`revoke`) rather than one call taking a
@@ -676,6 +688,10 @@ export interface IpcChannels {
   'premium:refresh': { args: []; result: PremiumActionResult };
   /** Opens the Premium page in the system browser. `ok` means a URL was opened. */
   'premium:manage': { args: []; result: PremiumActionResult };
+  /** A screen crash, reported by the window that drew it so it reaches the log file the renderer
+   *  cannot write to. Main validates the record rather than trusting its shape, caps every field,
+   *  stamps the scope itself and rate-limits each window; a call it drops answers the same `null`. */
+  'log:rendererError': { args: [RendererErrorRecord]; result: null };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -709,6 +725,7 @@ export const IPC_CHANNELS = [
   'game:getStatus',
   'account:get',
   'account:readNow',
+  'account:readAllocations',
   'consent:get',
   'consent:accept',
   'consent:decline',
@@ -747,6 +764,7 @@ export const IPC_CHANNELS = [
   'premium:signOut',
   'premium:refresh',
   'premium:manage',
+  'log:rendererError',
 ] as const satisfies readonly IpcInvokeChannel[];
 
 export type IpcEventChannel =

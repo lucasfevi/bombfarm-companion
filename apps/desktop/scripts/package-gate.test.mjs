@@ -1,23 +1,33 @@
-import { createPackage, createPackageWithOptions } from '@electron/asar';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { createPackage, createPackageWithOptions, extractFile, getRawHeader } from '@electron/asar';
+import { FuseV1Options } from '@electron/fuses';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { NtExecutable, NtExecutableResource } from 'resedit';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createBuilderConfig } from './builder-config.mjs';
+import { buildManifest, CSP_MANIFEST_FILE } from './csp-manifest.mjs';
 import {
   assertAsarExists,
+  assertAsarIntegrityMatches,
   assertAsarUnpackPatternsMatch,
+  assertElectronFuses,
   assertNativeBinariesUnpacked,
   assertNoNativeBinariesInAsar,
+  assertRendererCspManifestIntact,
   assertRendererEntryPresent,
   collectNativeDependencyClosure,
   findMissingNativeBinaries,
   findNodeBinaries,
+  findPackagedExecutable,
   listAsarEntries,
   normalizeAsarUnpack,
   PackagingGateError,
   resolveUnpackedDir,
   runPackagingGateChecks,
+  runPackagingGateOrExit,
 } from './package-gate.mjs';
 
 const tempDirs = [];
@@ -38,6 +48,35 @@ function writeFile(filePath, content = '') {
   writeFileSync(filePath, content);
 }
 
+function filesUnder(dir, relative = '') {
+  return readdirSync(path.join(dir, relative), { withFileTypes: true }).flatMap((entry) => {
+    const entryRelative = path.join(relative, entry.name);
+    return entry.isDirectory() ? filesUnder(dir, entryRelative) : [entryRelative];
+  });
+}
+
+/**
+ * `createPackage` can resolve before the archive's last file bytes are on disk (seen under load:
+ * the final file reads back as zeros). Listing needs only the header, which is written first, so
+ * the older tests never noticed; a test that reads file contents has to wait for them.
+ */
+async function createPackageOnceReadable(srcDir, asarPath) {
+  await createPackage(srcDir, asarPath);
+  const files = filesUnder(srcDir);
+  for (let attempt = 0; attempt < 150; attempt += 1) {
+    const readable = files.every((file) => {
+      try {
+        return extractFile(asarPath, file).equals(readFileSync(path.join(srcDir, file)));
+      } catch {
+        return false;
+      }
+    });
+    if (readable) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error(`${asarPath} never became readable`);
+}
+
 function expectPackagingGateError(fn, ...substrings) {
   try {
     fn();
@@ -49,6 +88,64 @@ function expectPackagingGateError(fn, ...substrings) {
     }
     return error;
   }
+}
+
+async function expectPackagingGateRejection(promise, ...substrings) {
+  try {
+    await promise;
+    expect.fail('expected promise to reject with PackagingGateError');
+  } catch (error) {
+    expect(error).toBeInstanceOf(PackagingGateError);
+    for (const substring of substrings) {
+      expect(error.message).toContain(substring);
+    }
+    return error;
+  }
+}
+
+const FUSE_SENTINEL = 'dL7pKGdnNz796PbbjQWNKmHXBZaB9tsX';
+const lowerFirst = (name) => name.charAt(0).toLowerCase() + name.slice(1);
+const fuseNamesInWireOrder = Object.keys(FuseV1Options)
+  .filter((name) => Number.isNaN(Number(name)))
+  .sort((a, b) => FuseV1Options[a] - FuseV1Options[b]);
+
+function integrityOf(asarPath) {
+  return [
+    {
+      file: 'resources\\app.asar',
+      alg: 'SHA256',
+      value: createHash('sha256').update(getRawHeader(asarPath).headerString).digest('hex'),
+    },
+  ];
+}
+
+/** A PE image that carries what the gate reads from the real executable: the integrity resource
+ *  and the fuse wire (sentinel, wire version, length, one state byte per fuse). */
+function writePackagedExecutable(
+  filePath,
+  { fuses = createBuilderConfig('dev').electronFuses, integrity, wireLength = fuseNamesInWireOrder.length } = {},
+) {
+  const image = NtExecutable.createEmpty(false, false);
+  const resources = NtExecutableResource.from(image);
+  if (integrity) {
+    resources.entries.push({
+      type: 'INTEGRITY',
+      id: 'ELECTRONASAR',
+      lang: 1033,
+      codepage: 1200,
+      bin: Buffer.from(JSON.stringify(integrity)),
+    });
+  }
+  resources.outputResource(image);
+  const states = fuseNamesInWireOrder.slice(0, wireLength).map((name) => (fuses[lowerFirst(name)] ? 0x31 : 0x30));
+  writeFile(
+    filePath,
+    Buffer.concat([
+      Buffer.from(image.generate()),
+      Buffer.from(FUSE_SENTINEL),
+      Buffer.from([1, states.length, ...states]),
+    ]),
+  );
 }
 
 afterEach(() => {
@@ -307,6 +404,54 @@ describe('assertRendererEntryPresent', () => {
   });
 });
 
+describe('assertRendererCspManifestIntact', () => {
+  const pageWith = (script) => `<!DOCTYPE html><html><head></head><body><script>${script}</script></body></html>`;
+
+  async function archiveRenderer({ pages, manifest }) {
+    const srcDir = makeTempDir('asar-src-csp');
+    for (const [relativePath, html] of Object.entries(pages)) {
+      writeFile(path.join(srcDir, 'renderer', 'out', relativePath), html);
+    }
+    if (manifest !== undefined) {
+      writeFile(path.join(srcDir, 'renderer', 'out', CSP_MANIFEST_FILE), JSON.stringify(manifest));
+    }
+    const asarPath = path.join(makeTempDir('asar-out-csp'), 'app.asar');
+    await createPackageOnceReadable(srcDir, asarPath);
+    return { asarPath, entries: listAsarEntries(asarPath) };
+  }
+
+  const manifestFor = (pages) => buildManifest(new Map(Object.entries(pages)));
+
+  it('passes when every archived page is hashed in the archived manifest', async () => {
+    const pages = { 'index.html': pageWith('one()'), 'mini-live/index.html': pageWith('two()') };
+    const { asarPath, entries } = await archiveRenderer({ pages, manifest: manifestFor(pages) });
+    expect(() => assertRendererCspManifestIntact(asarPath, entries)).not.toThrow();
+  });
+
+  it('throws when the manifest was not archived', async () => {
+    const { asarPath, entries } = await archiveRenderer({ pages: { 'index.html': pageWith('one()') } });
+    expectPackagingGateError(() => assertRendererCspManifestIntact(asarPath, entries), CSP_MANIFEST_FILE, 'missing');
+  });
+
+  it('throws when an archived page carries a script the manifest does not hash', async () => {
+    const written = { 'index.html': pageWith('one()') };
+    const { asarPath, entries } = await archiveRenderer({
+      pages: { 'index.html': pageWith('one(); injected()') },
+      manifest: manifestFor(written),
+    });
+    expectPackagingGateError(() => assertRendererCspManifestIntact(asarPath, entries), 'disagree', 'is not in the manifest');
+  });
+
+  it('throws when the archived manifest is not JSON', async () => {
+    const srcDir = makeTempDir('asar-src-csp-bad');
+    writeFile(path.join(srcDir, 'renderer', 'out', 'index.html'), pageWith('one()'));
+    writeFile(path.join(srcDir, 'renderer', 'out', CSP_MANIFEST_FILE), '{not json');
+    const asarPath = path.join(makeTempDir('asar-out-csp-bad'), 'app.asar');
+    await createPackageOnceReadable(srcDir, asarPath);
+    expectPackagingGateError(() => assertRendererCspManifestIntact(asarPath, listAsarEntries(asarPath)), 'disagree');
+  });
+});
+
 describe('assertNoNativeBinariesInAsar', () => {
   it('does nothing when the archive has no .node entries', () => {
     expect(() =>
@@ -352,7 +497,7 @@ describe('assertNoNativeBinariesInAsar', () => {
 });
 
 describe('runPackagingGateChecks', () => {
-  async function buildFakePackagedApp() {
+  async function buildFakePackagedApp({ manifest = 'matching' } = {}) {
     const desktopRootDir = makeTempDir('gate-run-root');
     writeJson(path.join(desktopRootDir, 'package.json'), {
       name: '@bombfarm/desktop',
@@ -369,8 +514,20 @@ describe('runPackagingGateChecks', () => {
     );
 
     const asarSrcDir = makeTempDir('gate-run-asar-src');
-    writeFile(path.join(asarSrcDir, 'renderer', 'out', 'index.html'), '<html></html>');
-    await createPackage(asarSrcDir, path.join(unpackedDir, 'resources', 'app.asar'));
+    const indexHtml = '<html><body><script>boot()</script></body></html>';
+    writeFile(path.join(asarSrcDir, 'renderer', 'out', 'index.html'), indexHtml);
+    const hashedHtml = manifest === 'stale' ? indexHtml.replace('boot()', 'boot(); injected()') : indexHtml;
+    if (manifest !== 'missing') {
+      writeJson(
+        path.join(asarSrcDir, 'renderer', 'out', CSP_MANIFEST_FILE),
+        buildManifest(new Map([['index.html', hashedHtml]])),
+      );
+    }
+    const asarPath = path.join(unpackedDir, 'resources', 'app.asar');
+    await createPackageOnceReadable(asarSrcDir, asarPath);
+    writePackagedExecutable(path.join(unpackedDir, 'Bomb Farm Companion (Dev).exe'), {
+      integrity: integrityOf(asarPath),
+    });
 
     return desktopRootDir;
   }
@@ -379,16 +536,77 @@ describe('runPackagingGateChecks', () => {
    *  satisfy them, and `assertAsarUnpackPatternsMatch` has its own dedicated tests above. */
   const configForFakeTree = () => ({ ...createBuilderConfig('dev'), asarUnpack: [] });
 
-  it('passes for a packaged tree with a matching native binary and a renderer entry', async () => {
+  it('passes for a packaged tree with a matching native binary, a renderer entry and a locked-down executable', async () => {
     const desktopRootDir = await buildFakePackagedApp();
-    expect(() => runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() })).not.toThrow();
+    await expect(
+      runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
+    ).resolves.toBeUndefined();
+  });
+
+  it('fails the whole gate when the archive carries no CSP manifest', async () => {
+    const desktopRootDir = await buildFakePackagedApp({ manifest: 'missing' });
+    await expectPackagingGateRejection(
+      runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
+      CSP_MANIFEST_FILE,
+      'missing',
+    );
+  });
+
+  it('fails the whole gate when the archived manifest no longer matches the archived pages', async () => {
+    const desktopRootDir = await buildFakePackagedApp({ manifest: 'stale' });
+    await expectPackagingGateRejection(
+      runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
+      'disagree',
+      'is not in the manifest',
+    );
   });
 
   it('aggregates every failing check into one PackagingGateError', async () => {
     const desktopRootDir = await buildFakePackagedApp();
     rmSync(path.join(desktopRootDir, 'release', 'dev', 'win-unpacked', 'resources', 'app.asar'));
 
-    expectPackagingGateError(() => runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }), 'resources/app.asar');
+    await expectPackagingGateRejection(
+      runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
+      'resources/app.asar',
+    );
+  });
+
+  it('fails when the packaged executable still has a fuse the config turned off', async () => {
+    const desktopRootDir = await buildFakePackagedApp();
+    const unpackedDir = path.join(desktopRootDir, 'release', 'dev', 'win-unpacked');
+    writePackagedExecutable(path.join(unpackedDir, 'Bomb Farm Companion (Dev).exe'), {
+      fuses: { ...createBuilderConfig('dev').electronFuses, runAsNode: true },
+      integrity: integrityOf(path.join(unpackedDir, 'resources', 'app.asar')),
+    });
+
+    await expectPackagingGateRejection(
+      runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
+      'RunAsNode',
+    );
+  });
+
+  it('fails when the packaged tree has no executable to read fuses from', async () => {
+    const desktopRootDir = await buildFakePackagedApp();
+    rmSync(path.join(desktopRootDir, 'release', 'dev', 'win-unpacked', 'Bomb Farm Companion (Dev).exe'));
+
+    await expectPackagingGateRejection(
+      runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
+      'expected exactly one .exe',
+    );
+  });
+
+  it('fails when the digest embedded in the executable is for a different archive', async () => {
+    const desktopRootDir = await buildFakePackagedApp();
+    const unpackedDir = path.join(desktopRootDir, 'release', 'dev', 'win-unpacked');
+    const [entry] = integrityOf(path.join(unpackedDir, 'resources', 'app.asar'));
+    writePackagedExecutable(path.join(unpackedDir, 'Bomb Farm Companion (Dev).exe'), {
+      integrity: [{ ...entry, value: '0'.repeat(64) }],
+    });
+
+    await expectPackagingGateRejection(
+      runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
+      'does not match',
+    );
   });
 
   it('fails when a .node binary is sealed inside app.asar, even when it belongs to no dependency in apps/desktop\'s own manifest', async () => {
@@ -403,16 +621,189 @@ describe('runPackagingGateChecks', () => {
     );
     await createPackage(asarSrcDir, path.join(unpackedDir, 'resources', 'app.asar'));
 
-    expectPackagingGateError(
-      () => runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
+    await expectPackagingGateRejection(
+      runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
       'sharp-win32-x64.node',
     );
   });
 
-  it('throws when the flavor output directory does not exist at all', () => {
+  it('throws when the flavor output directory does not exist at all', async () => {
     const desktopRootDir = makeTempDir('gate-run-no-output');
     writeJson(path.join(desktopRootDir, 'package.json'), { name: '@bombfarm/desktop' });
-    expect(() => runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() })).toThrow(PackagingGateError);
+    await expectPackagingGateRejection(
+      runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
+      'does not exist',
+    );
     expect(existsSync(path.join(desktopRootDir, 'release'))).toBe(false);
+  });
+
+  describe('runPackagingGateOrExit', () => {
+    function recorders() {
+      const exits = [];
+      const errors = [];
+      const logs = [];
+      return {
+        exits,
+        errors,
+        logs,
+        deps: {
+          log: { error: (message) => errors.push(message), log: (message) => logs.push(message) },
+          exit: (code) => exits.push(code),
+        },
+      };
+    }
+
+    it('exits 1 with the gate\'s message when the gate rejects, even though the gate is async', async () => {
+      const desktopRootDir = await buildFakePackagedApp();
+      rmSync(path.join(desktopRootDir, 'release', 'dev', 'win-unpacked', 'Bomb Farm Companion (Dev).exe'));
+      const { exits, errors, logs, deps } = recorders();
+
+      await runPackagingGateOrExit('dev', { desktopRootDir, config: configForFakeTree() }, deps);
+
+      expect(exits).toEqual([1]);
+      expect(errors.join('\n')).toContain('expected exactly one .exe');
+      expect(logs).toEqual([]);
+    });
+
+    it('reports success and does not exit when the gate passes', async () => {
+      const desktopRootDir = await buildFakePackagedApp();
+      const { exits, errors, logs, deps } = recorders();
+
+      await runPackagingGateOrExit('dev', { desktopRootDir, config: configForFakeTree() }, deps);
+
+      expect(exits).toEqual([]);
+      expect(errors).toEqual([]);
+      expect(logs).toEqual(['Packaging gate passed for flavor "dev".']);
+    });
+
+    it('is what the packaging entry awaits last', () => {
+      const entry = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'package.mjs'), 'utf8');
+      expect(entry).toMatch(/^await runPackagingGateOrExit\(flavor\);\s*$/m);
+      expect(entry.trimEnd().endsWith('await runPackagingGateOrExit(flavor);')).toBe(true);
+    });
+  });
+});
+
+describe('findPackagedExecutable', () => {
+  it('returns the one .exe at the top of the unpacked directory, ignoring nested ones', () => {
+    const unpackedDir = makeTempDir('exe-one');
+    writeFile(path.join(unpackedDir, 'App.exe'));
+    writeFile(path.join(unpackedDir, 'resources', 'elevate.exe'));
+    expect(findPackagedExecutable(unpackedDir)).toBe(path.join(unpackedDir, 'App.exe'));
+  });
+
+  it('throws when there is none', () => {
+    expectPackagingGateError(() => findPackagedExecutable(makeTempDir('exe-none')), 'found 0');
+  });
+
+  it('throws naming every candidate when there are several', () => {
+    const unpackedDir = makeTempDir('exe-many');
+    writeFile(path.join(unpackedDir, 'A.exe'));
+    writeFile(path.join(unpackedDir, 'B.exe'));
+    expectPackagingGateError(() => findPackagedExecutable(unpackedDir), 'A.exe', 'B.exe');
+  });
+});
+
+describe('assertElectronFuses', () => {
+  const config = createBuilderConfig('dev');
+
+  it('passes when every fuse reads back as configured', async () => {
+    const exe = path.join(makeTempDir('fuses-ok'), 'App.exe');
+    writePackagedExecutable(exe);
+    await expect(assertElectronFuses(config, exe)).resolves.toBeUndefined();
+  });
+
+  for (const [key, configured] of Object.entries(config.electronFuses)) {
+    it(`fails when ${key} reads back the opposite of ${configured}`, async () => {
+      const exe = path.join(makeTempDir('fuses-flipped'), 'App.exe');
+      writePackagedExecutable(exe, { fuses: { ...config.electronFuses, [key]: !configured } });
+      await expectPackagingGateRejection(
+        assertElectronFuses(config, exe),
+        key.charAt(0).toUpperCase() + key.slice(1),
+      );
+    });
+  }
+
+  it('fails when the config declares no fuses', async () => {
+    const exe = path.join(makeTempDir('fuses-none'), 'App.exe');
+    writePackagedExecutable(exe);
+    await expectPackagingGateRejection(assertElectronFuses({ ...config, electronFuses: undefined }, exe), 'no electronFuses');
+  });
+
+  it('fails on a fuse the binary carries and the config never mentions', async () => {
+    const exe = path.join(makeTempDir('fuses-unmentioned'), 'App.exe');
+    writePackagedExecutable(exe);
+    const { grantFileProtocolExtraPrivileges: _dropped, ...partial } = config.electronFuses;
+    await expectPackagingGateRejection(
+      assertElectronFuses({ ...config, electronFuses: partial }, exe),
+      'GrantFileProtocolExtraPrivileges: present in the binary but not configured',
+    );
+  });
+
+  it('fails on a fuse the config names that the binary\'s wire is too short to carry', async () => {
+    const exe = path.join(makeTempDir('fuses-short-wire'), 'App.exe');
+    writePackagedExecutable(exe, { wireLength: fuseNamesInWireOrder.length - 1 });
+    await expectPackagingGateRejection(
+      assertElectronFuses(config, exe),
+      'grantFileProtocolExtraPrivileges: configured but absent from the binary\'s fuse wire',
+    );
+  });
+
+  it('fails on a configured fuse no version of @electron/fuses defines', async () => {
+    const exe = path.join(makeTempDir('fuses-unknown'), 'App.exe');
+    writePackagedExecutable(exe);
+    await expectPackagingGateRejection(
+      assertElectronFuses({ ...config, electronFuses: { ...config.electronFuses, invented: true } }, exe),
+      'invented: configured but absent from the binary\'s fuse wire',
+    );
+  });
+
+  it('fails on a file with no fuse wire at all', async () => {
+    const exe = path.join(makeTempDir('fuses-no-wire'), 'App.exe');
+    writeFile(exe, 'MZ not an electron binary');
+    await expectPackagingGateRejection(assertElectronFuses(config, exe), 'could not read the Electron fuse wire');
+  });
+});
+
+describe('assertAsarIntegrityMatches', () => {
+  async function makeArchive() {
+    const dir = makeTempDir('integrity');
+    const srcDir = makeTempDir('integrity-src');
+    writeFile(path.join(srcDir, 'index.js'), 'console.log(1)');
+    const asarPath = path.join(dir, 'app.asar');
+    await createPackage(srcDir, asarPath);
+    return { dir, asarPath };
+  }
+
+  it('passes when the embedded digest is the archive header digest', async () => {
+    const { dir, asarPath } = await makeArchive();
+    const exe = path.join(dir, 'App.exe');
+    writePackagedExecutable(exe, { integrity: integrityOf(asarPath) });
+    await expect(assertAsarIntegrityMatches(exe, asarPath)).resolves.toBeUndefined();
+  });
+
+  it('fails when the executable embeds no integrity resource', async () => {
+    const { dir, asarPath } = await makeArchive();
+    const exe = path.join(dir, 'App.exe');
+    writePackagedExecutable(exe);
+    await expectPackagingGateRejection(assertAsarIntegrityMatches(exe, asarPath), 'embeds no asar integrity digest');
+  });
+
+  it('fails when the archive changed after the digest was embedded', async () => {
+    const { dir, asarPath } = await makeArchive();
+    const exe = path.join(dir, 'App.exe');
+    writePackagedExecutable(exe, { integrity: integrityOf(asarPath) });
+    const changedSrc = makeTempDir('integrity-changed-src');
+    writeFile(path.join(changedSrc, 'index.js'), 'console.log(2); // tampered');
+    await createPackage(changedSrc, asarPath);
+    await expectPackagingGateRejection(assertAsarIntegrityMatches(exe, asarPath), 'does not match');
+  });
+
+  it('fails when the digest is for a different file than resources/app.asar', async () => {
+    const { dir, asarPath } = await makeArchive();
+    const exe = path.join(dir, 'App.exe');
+    const [entry] = integrityOf(asarPath);
+    writePackagedExecutable(exe, { integrity: [{ ...entry, file: 'resources\\other.asar' }] });
+    await expectPackagingGateRejection(assertAsarIntegrityMatches(exe, asarPath), 'does not match');
   });
 });

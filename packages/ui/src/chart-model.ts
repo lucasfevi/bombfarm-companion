@@ -19,6 +19,23 @@ export type ChartTable = {
   summary: string;
   /** The heading of the first column, the one holding each x label. */
   labelHeading: string;
+  /** Also lists the `details` rows, one extra column per detail label (in order of first
+   *  appearance), after the series columns. */
+  detailColumns?: boolean;
+};
+
+/** An extra tooltip row for one data index: not drawn, only read. The value is pre-formatted. */
+export type ChartDetailRow = {
+  label: string;
+  value: string;
+};
+
+/** Marks the data from index `from` onward as still in progress. */
+export type ChartPartial = {
+  /** The first in-progress index; the last index alone is `labels.length - 1`. */
+  from: number;
+  /** The caller's copy for the marker, such as "(in progress)". Shown by the tooltip and table. */
+  label: string;
 };
 
 export type ChartProps = {
@@ -40,6 +57,14 @@ export type ChartProps = {
   maxXLabels?: number;
   /** Draw the legend. Defaults to on when there is more than one series. */
   legend?: boolean;
+  /** Extra tooltip rows per data index (`details[i]` belongs to index `i`), shown under the series
+   *  rows and, with `table.detailColumns`, as table columns. They are never drawn on the plot. */
+  details?: readonly (readonly ChartDetailRow[] | undefined)[];
+  /** Marks a trailing range as in progress: lines and areas draw the stretch into it dashed, and
+   *  the tooltip and table add `label` to each of its x labels. */
+  partial?: ChartPartial;
+  /** Keeps the y axis on whole numbers, for counts: no 2.5 or 0.5 steps. */
+  integerTicks?: boolean;
   /** Adds a disclosure holding the data as a table, for reading it without the graphic. */
   table?: ChartTable;
   className?: string;
@@ -105,6 +130,7 @@ export type ChartModelInput = {
   width?: number | undefined;
   height?: number | undefined;
   tickCount?: number | undefined;
+  integerTicks?: boolean | undefined;
 };
 
 export function buildChartModel(props: ChartModelInput): ChartModel {
@@ -120,7 +146,7 @@ export function buildChartModel(props: ChartModelInput): ChartModel {
   return {
     box,
     count,
-    scale: niceScale(peak, props.tickCount ?? DEFAULT_TICK_COUNT),
+    scale: niceScale(peak, props.tickCount ?? DEFAULT_TICK_COUNT, props.integerTicks === true),
     series,
     labels: props.labels,
     hasData: readings.length > 0,

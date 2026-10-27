@@ -20,6 +20,7 @@ vi.mock('electron', () => ({
 
 import type { PremiumView } from '@bombfarm/contracts';
 import { createElectronPremium, createSafeStorageBox } from './index.js';
+import { appPlayingAccount, premiumAccountAllows } from './playing-account-gate.js';
 import { PREMIUM_API_ORIGIN } from './premium-transport.js';
 import { settle } from './premium-test-support.js';
 
@@ -163,5 +164,21 @@ describe('opening the sign-in page', () => {
 
     expect(service.cancelSignIn()).toBe(true);
     service.stop();
+  });
+
+  it('writes the playing-account state the app gate reads', () => {
+    electron.fetch.mockImplementation(() => Promise.resolve(json(200, { visible: false })));
+    const before = appPlayingAccount.current();
+    appPlayingAccount.set({ state: 'linked', reason: null });
+    try {
+      const { service } = build('http://127.0.0.1:4555');
+      service.start();
+      service.stop();
+
+      expect(premiumAccountAllows()).toBe(false);
+      expect(appPlayingAccount.current()).toEqual({ state: 'unknown', reason: 'signed_out' });
+    } finally {
+      appPlayingAccount.set(before);
+    }
   });
 });

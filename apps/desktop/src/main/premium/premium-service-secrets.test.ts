@@ -19,6 +19,7 @@ const LITERAL_EVENTS = [
   'report.outcome',
   'handoff.failed',
   'signout.unreachable',
+  'account_state',
 ];
 
 const NEVER_LOGGED = [...NEVER_LOGGED_OR_EMITTED, SECRETS.accountId, SECRETS.steamId64];
@@ -267,6 +268,59 @@ describe('secrets stay out of logs and views', () => {
 
     for (const view of h.views) {
       for (const key of Object.keys(view)) expect(forbidden).not.toContain(key);
+    }
+  });
+});
+
+describe('the playing-account state carries no id', () => {
+  const OTHER = { accountId: 'account-fixture-7781', steamId64: '76561198055555555', playerName: null };
+  const UNLINKED = { accountId: 'account-fixture-6602', steamId64: '76561198066666666', playerName: null };
+
+  it('through switches between accounts, a refusal of each kind, a failure and a sign-out', async () => {
+    const h = createHarness({ vault: createFakeVault(session(SECRETS.token)) });
+    const notified: unknown[] = [];
+    h.playing.subscribe((next) => notified.push(next));
+    h.stub.on('report', (request) => {
+      const steamId = (request.body as { steam_id64: string }).steam_id64;
+      if (steamId === OTHER.steamId64) return { status: 409, body: { reason: 'steam_mismatch' } };
+      if (steamId === UNLINKED.steamId64) return { status: 409, body: { reason: 'no_steam_id' } };
+      return { status: 200, body: { outcome: 'linked' } };
+    });
+    h.service.start();
+    await settle();
+
+    for (const next of [OTHER, UNLINKED, null, { ...OTHER, steamId64: 'not-a-steam-id' }]) {
+      h.identity.current = next;
+      h.service.noteAccountChanged();
+      await settle();
+    }
+    h.stub.on('report', unreachable);
+    h.identity.current = { ...OTHER, accountId: 'account-fixture-1199' };
+    h.service.noteAccountChanged();
+    await settle();
+    h.identity.current = { accountId: SECRETS.accountId, steamId64: SECRETS.steamId64, playerName: null };
+    h.service.noteAccountChanged();
+    await settle();
+    await h.service.signOut();
+
+    const reasons = new Set(h.views.map((view) => view.playingAccount.reason));
+    for (const reason of ['checking', 'other_account', 'no_steam_link', 'no_session', 'no_steam_id64', 'report_failed', 'signed_out']) {
+      expect(reasons, `a view with ${reason}`).toContain(reason);
+    }
+    expectClean(h);
+
+    const steamIds = [SECRETS.steamId64, OTHER.steamId64, UNLINKED.steamId64];
+    const accountIds = [SECRETS.accountId, OTHER.accountId, UNLINKED.accountId, 'account-fixture-1199'];
+    const states = JSON.stringify([notified, h.views.map((view) => view.playingAccount)]);
+    const logs = JSON.stringify(h.log.records);
+    const views = everyEmittedView(h);
+    for (const id of [...steamIds, ...accountIds]) {
+      expect(states, `playing-account state holds ${id}`).not.toContain(id);
+      expect(logs, `log record holds ${id}`).not.toContain(id);
+    }
+    for (const id of steamIds) expect(views, `emitted view holds ${id}`).not.toContain(id);
+    for (const value of [...notified, ...h.views.map((view) => view.playingAccount)]) {
+      expect(Object.keys(value as object).sort()).toEqual(['reason', 'state']);
     }
   });
 });

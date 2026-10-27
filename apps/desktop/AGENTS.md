@@ -46,6 +46,138 @@ The website draws this window too, as an interactive section of the download pag
 (`apps/web/src/features/download/components/mini-live/`), so a change here has a third drawing to
 follow — see the rule above and [`apps/web/AGENTS.md`](../web/AGENTS.md).
 
+## RULE: the packaged binary is fused; nothing may need it unfused
+
+`ELECTRON_FUSES` in `scripts/builder-config.mjs` is flipped into every packaged flavor, and the
+packaging gate reads the fuse wire and the embedded asar digest back out of the produced `.exe` —
+a flip electron-builder skipped fails `pnpm package:*`. Consequences for tooling:
+
+- **Playwright's `_electron.launch` cannot drive a packaged build.** It passes `--inspect` and
+  `--remote-debugging-port`: the fuses make the main process ignore the first, and no fuse covers
+  the second, so `src/main/shell/debug-switch-guard.ts` makes a packaged main exit at startup
+  when it sees either. **That guard must stay synchronous and ahead of every `await` in
+  `src/main/index.ts`:** measured, the DevTools server opens only after main's synchronous part
+  returns, so the port never answers while the guard runs first, and moving the call later (behind
+  an `await`, `whenReady` or any async setup) reopens it. A test pins the position. The smoke
+  suite launches the unpackaged `node_modules/electron/dist/electron.exe` with the project
+  directory, which carries no fuses and is never refused.
+- **Nothing may spawn the app with `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS` or `--inspect`.** The
+  app has no `fork()`; background work that needs its own process belongs in a `utilityProcess`.
+- **Nothing may load `file://` pages** or put code outside `app.asar` / `app.asar.unpacked` (the
+  unpacked tree is not covered by the integrity digest, so it holds only what must be a real file).
+- Adding a fuse to the config means deciding it for every flavor; the config test fails until the
+  new fuse has a stated value.
+
+## RULE: the renderer runs under a strict Content-Security-Policy built from the export
+
+Every response from the `app://` handler carries a policy with no `'unsafe-inline'` and no
+`'unsafe-eval'`; inline scripts, `<style>` elements and `style` attributes are allowed by SHA-256,
+from a manifest `pnpm build:renderer` writes beside the pages. Inline event handlers, `javascript:`
+URLs and anything the scanner does not model fail the build. **A new renderer dependency that
+injects a `<style>`, evals, opens a worker from a `blob:`, or reaches a new origin will be refused
+at runtime** — and every smoke spec fails on a violation, so you will see it. Route network
+access through the main process instead of widening the policy. `pnpm dev` is not covered.
+See [`docs/renderer-csp.md`](../../docs/renderer-csp.md).
+
+New smoke specs import `test`, `expect` and `electron` from `tests/smoke/smoke-test.mjs`, never
+from `@playwright/test`; a guard fails otherwise.
+
+## RULE: the preload runs in the renderer sandbox
+
+Both windows are built from `sandboxedWebPreferences` (`src/main/web-preferences.ts`), and
+`app.enableSandbox()` covers any window added later. A sandboxed preload can `require` only
+`electron`, `events`, `timers` and `url`, so everything else it imports is bundled into
+`dist/preload/index.cjs` by `scripts/electron-bundles.mjs`, and anything that needs Node, a file or
+a native module belongs in the main process behind IPC. Importing `node:fs` or similar into the
+preload fails `scripts/preload-bundle.test.mjs`, not the user's launch.
+
+## RULE: a renderer reaches the log file only through `log:rendererError`
+
+The preload carries no logger and the main process never calls electron-log's `log.initialize()`
+(it would inject a second preload and expose `__electronLog` to the page's world). A screen crash is
+reported with `window.bfc.invoke('log:rendererError', record)`, as `ScreenBoundary` does for every
+screen of the main window and for the compact window. Main (`src/main/renderer-error-log.ts`) keeps
+only the five contract keys, caps each, strips control characters (including the Unicode
+direction, isolate and separator controls), stamps `scope: 'renderer'` itself, and admits each
+window a burst of five then one record every ten seconds on a monotonic clock; what it drops is
+reported as one `error_log.suppressed` line. **A new renderer-side log call goes through that
+channel, not through a new bridge function** — the compact window's allowlist and the sender check
+then cover it with no further work.
+
+The sender check's own refusals are logged through a gate keyed by the sending window and the
+reason, never by the channel string (`src/main/ipc-rejection-log.ts`), with one summary line of
+what was left out; only the log line is limited, every refused call still throws. Both gates are
+built by `createKeyedLogGate` on a monotonic clock, and a test pins that `index.ts` builds them
+with the log alone.
+
+Importing `electron-log/main` registers its own `ipcMain` listener and handler on
+`__ELECTRON_LOG__`, which would take any record from any renderer process with no check, cap or
+gate. `registerIpcHandlers` removes both before the bridge handler is registered, and
+`renderer-error-wiring.test.ts` and the error-log smoke spec fail if that is undone.
+
+## RULE: every `bfc:invoke` is checked against its sender, and the compact window has an allowlist
+
+`src/main/ipc-sender-policy.ts` decides, before any handler runs, whether a call may proceed: the
+sender frame must be live, the top-level frame of its window, in a window the app owns, at the
+app's own origin (plus the dev renderer origin when unpackaged and in dev mode). The compact Live
+window is further held to `MINI_LIVE_INVOKE_CHANNELS`.
+
+**A new `invoke('…')` call in `renderer/app/mini-live/` or anything it imports needs its channel added
+to that set**, or the call is refused at runtime; `mini-live-channel-allowlist.test.ts` fails first and
+names the difference. It also fails if a channel is allowed that the window no longer calls, so the
+set stays exactly what the window needs. A new `ipcMain` listener of our own owes the same sender
+check: `ipc-listeners-guard.test.ts` reads the AST and fails on any `ipcMain`/`webContents.ipc`
+registration whose channel is not a string literal, on an aliased or destructured `ipcMain`, and on
+any registration beyond the one `bfc:invoke` handler built by `createBridgeInvokeHandler`.
+
+**Never embed a same-origin frame (`srcdoc`, `about:blank`, `app://`) in a window that has the
+bridge.** The sender check cannot tell such a child from the top frame: `window.top.bfc.invoke`
+runs in the top frame's context, so `senderFrame` is the top frame. A CSP `frame-src` does not close
+this (`srcdoc` and `about:blank` children still load). What does: give untrusted content an opaque
+origin (a sandboxed iframe without `allow-same-origin`) or its own window or partition that has no
+preload.
+
+## RULE: a page cannot take its window anywhere else, and only a link or the app itself opens the browser
+
+`src/main/external-navigation.ts` refuses every top-level navigation away from the app's own origin
+(`will-navigate`, which a `<meta http-equiv="refresh">` or a `location` assignment reaches with no
+script a CSP could stop), every redirect off it (`will-redirect`), and every subframe navigation to
+anything but the app origin or an empty document (`will-frame-navigate`). None of them hands
+anything to `shell.openExternal`.
+
+Chromium commits a page's own navigation to `about:blank` or `about:srcdoc` without raising any of
+those events, whoever started it (a removed child frame leaves no initiating frame at all). So the
+policy checks where the window *is*, not how it got there: on `did-navigate`, `did-stop-loading`,
+`did-finish-load` and `did-fail-load`, a main frame that is off the app origin is sent back to the
+entry page the window was created with. The one exemption is a page the main process loaded on
+purpose: the policy wraps the window's `loadURL`, and a page that load settled on is trusted until
+the window leaves it. Never call the original `loadURL` around the wrapper. Recovery is limited to 3
+per 10 s per window, one per off-origin document (the load is not started while that document is
+still loading, since its own stop would cut the load short and cost a second recovery); past that it logs `navigation.recovery_stopped` once and leaves the window
+blank (the user restarts the app), so a page that always sends its window back to a blank cannot
+burn CPU. Calling `loadURL` from inside a navigation event crashes the app, hence the deferred
+load.
+
+The ways a link reaches the browser are `target="_blank"` / `window.open` (the window-open handler,
+`https:` only; a script-driven `window.open` included, which a packaged run's CSP blocks) and a
+main-process call such as the Premium sign-in. **A new external link in the renderer must be
+`target="_blank"`**; a plain anchor is refused, and the smoke spec for this lists every link the UI
+shows.
+
+`src/main/session-permissions.ts` answers every permission request and check, and cancels every
+HID, USB, serial and Bluetooth device selection. `GRANTED_PERMISSIONS` is the allowlist, pinned to
+its exact contents by a test, and it is only ever granted to the app's own origin. It holds one
+entry today: `clipboard-sanitized-write`, which copying the referral code needs. **A feature that
+needs a permission adds one line there, updates that pin, and adds a smoke assertion that the
+feature works.** The File System Access pickers never reach a permission handler, so
+`index.ts` switches that API off at startup instead; the renderer does not use it.
+
+Both are wired in `index.ts` (`installSessionSecurity`, `windowNavigationPolicy`), and
+`window-security-wiring-guard.test.ts` reads that file's syntax tree so a commented-out, conditional
+or emptied call fails a test, and so does a local binding, parameter or reassignment that replaces
+`installSessionSecurity` or `createNavigationPolicyApplier` with something other than the module's
+own export.
+
 ## Local checks
 
 ```bash
