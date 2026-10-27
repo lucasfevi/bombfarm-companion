@@ -29,8 +29,8 @@ import { ACCOUNT_SECTIONS, sectionHasData } from './account-fidelity';
 import { missingRequiredAccountFields, type RequiredAccountField } from './account-required-fields';
 import { missingPostUpdateKeys } from './save-schema';
 import { WIKI_PHASE_LINES } from './phase-wiki';
-import { isCommitVector, type AccountPayload, type DataIssue } from '@bombfarm/contracts';
-import { commitVectorToPoints } from './team-plan/apply-commit-vector';
+import type { AccountPayload, DataIssue } from '@bombfarm/contracts';
+import { commitVectorToPoints, isPointVector } from './team-plan/apply-commit-vector';
 import { parseSkillTreeState } from './skill-tree';
 
 const RARITY_BY_IDX: RarityKey[] = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendária', 'Mítico'];
@@ -829,7 +829,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       const sheet = saveSheetUnits(statsRaw);
       // `alloc` is the server's own allocation, which the roster omits; the desktop attaches it
       // for a hero whose sheet a capped stat keeps from inverting exactly.
-      const inferred = isCommitVector(rawHero.alloc)
+      const inferred = isPointVector(rawHero.alloc)
         ? { pts: commitVectorToPoints(rawHero.alloc), issues: [] }
         : inferSpentPoints({ birth, level, stars, sheetOther, loadout, tree, sheet, statPointsAvailable,
             runes,

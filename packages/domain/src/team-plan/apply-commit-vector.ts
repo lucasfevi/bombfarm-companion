@@ -30,6 +30,16 @@ export function pointsToCommitVector(pts: Readonly<Record<string, number>>): Com
   return values as unknown as CommitVector;
 }
 
+/** Domain imports `@bombfarm/contracts` as types only — the web build does not transpile it — so
+ *  this mirrors its `isCommitVector` rather than calling it. */
+export function isPointVector(value: unknown): value is CommitVector {
+  return (
+    Array.isArray(value) &&
+    value.length === COMMIT_ORDER.length &&
+    value.every((entry) => typeof entry === 'number' && Number.isSafeInteger(entry) && entry >= 0)
+  );
+}
+
 export function commitVectorToPoints(vector: CommitVector): Record<keyof SheetStats, number> {
   return Object.fromEntries(COMMIT_ORDER.map((key, index) => [key, vector[index] ?? 0])) as Record<keyof SheetStats, number>;
 }
