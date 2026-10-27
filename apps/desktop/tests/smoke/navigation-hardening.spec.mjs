@@ -23,6 +23,9 @@ const REFERRAL_SOURCE = path.join(desktopRoot, '..', '..', 'packages', 'domain',
  */
 const FOREIGN = 'https://navigation-probe.invalid/landing';
 
+/** Windows can hold a profile directory for a moment after the app exits (the filed `EPERM` teardown flake). */
+const REMOVE_OPTIONS = { recursive: true, force: true, maxRetries: 10, retryDelay: 300 };
+
 /** Mirrors `RECOVERY_WINDOW_MS` in `external-navigation.ts`, which a plain `.mjs` cannot import. */
 const RECOVERY_WINDOW_MS = 10_000;
 
@@ -270,7 +273,7 @@ test.describe('navigation, frame and permission hardening', () => {
 
   test.afterAll(async () => {
     await app?.close().catch(() => undefined);
-    if (userDataDir) fs.rmSync(userDataDir, { recursive: true, force: true });
+    if (userDataDir) fs.rmSync(userDataDir, REMOVE_OPTIONS);
   });
 
   test.beforeEach(async () => {
@@ -624,7 +627,7 @@ test.describe('navigation hardening in a dev run, where no Content-Security-Poli
     } finally {
       await devApp?.close().catch(() => undefined);
       await new Promise((resolve) => server.close(resolve));
-      fs.rmSync(devUserData, { recursive: true, force: true });
+      fs.rmSync(devUserData, REMOVE_OPTIONS);
     }
   });
 
@@ -662,7 +665,7 @@ test.describe('navigation hardening in a dev run, where no Content-Security-Poli
     } finally {
       await devApp?.close().catch(() => undefined);
       await new Promise((resolve) => server.close(resolve));
-      fs.rmSync(devUserData, { recursive: true, force: true });
+      fs.rmSync(devUserData, REMOVE_OPTIONS);
     }
   });
 });
