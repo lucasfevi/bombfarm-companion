@@ -8,7 +8,8 @@ import {
   menuPopupClass,
   menuSeparatorClass,
 } from '../menu.recipe';
-import { DetailsMenu, Menu } from './index';
+import { Menu } from '../menu';
+import { DetailsMenu } from './index';
 
 let mount: DomMount | undefined;
 

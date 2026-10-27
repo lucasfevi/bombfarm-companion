@@ -29,8 +29,8 @@ function barPath(x: number, width: number, top: number, bottom: number): string 
  * Bar chart over a fixed coordinate space. Server-safe, like the line chart. A zero reading is a
  * 1px baseline in the line colour, so it reads as "measured, nothing" rather than as a missing bar.
  */
-export function BarChart({ series: input, labels, width: chartWidth, height, tickCount, ...frame }: BarChartProps) {
-  const model = buildChartModel({ series: input, labels, width: chartWidth, height, tickCount });
+export function BarChart({ series: input, labels, width: chartWidth, height, tickCount, integerTicks, ...frame }: BarChartProps) {
+  const model = buildChartModel({ series: input, labels, width: chartWidth, height, tickCount, integerTicks });
   const xs = barXs(model);
   const { box } = model;
   const slot = (box.right - box.left) / Math.max(model.count, 1);
