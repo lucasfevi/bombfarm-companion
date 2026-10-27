@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import type { AccountView } from '@bombfarm/contracts';
 import { createLazySingleton, createSharedStore, type SharedStore } from '../shared-store';
 import { accept, initialAccountViewState } from './account-view-store';
+import { createServerAllocationRequester } from './server-allocation-request';
 import type { AccountViewState, Arrival } from './account-view-store';
 
 export type { AccountViewState };
@@ -48,6 +49,9 @@ export function createAccountViewStore(): SharedStore<AccountViewState> {
       }
 
       const loader = createAccountViewLoader(bridge);
+      const requestServerAllocations = createServerAllocationRequester((heroIds) => {
+        void bridge.invoke('account:readAllocations', heroIds).catch(() => undefined);
+      });
       // The boot fetch's `issuedAt` — always `initialAccountViewState.applied` (0), because this
       // is the ONE fetch this seam ever issues. It is kept, not removed: main only pushes on
       // change, and an emit before the renderer subscribed is silently dropped by
@@ -60,6 +64,7 @@ export function createAccountViewStore(): SharedStore<AccountViewState> {
         .load()
         .then((view) => {
           dispatch({ kind: 'fetched', view, issuedAt });
+          requestServerAllocations(view);
         })
         .catch((err: unknown) => {
           // Surface the failure — never an all-zero account, never an empty roster presented as
@@ -74,6 +79,7 @@ export function createAccountViewStore(): SharedStore<AccountViewState> {
       // current while the player is on a tab that does not read it.
       bridge.on('account:changed', (view) => {
         dispatch({ kind: 'pushed', view });
+        requestServerAllocations(view);
       });
     },
   });

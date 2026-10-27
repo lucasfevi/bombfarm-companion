@@ -30,6 +30,10 @@ export function pointsToCommitVector(pts: Readonly<Record<string, number>>): Com
   return values as unknown as CommitVector;
 }
 
+export function commitVectorToPoints(vector: CommitVector): Record<keyof SheetStats, number> {
+  return Object.fromEntries(COMMIT_ORDER.map((key, index) => [key, vector[index] ?? 0])) as Record<keyof SheetStats, number>;
+}
+
 export function commitVectorEquals(a: CommitVector, b: CommitVector): boolean {
   return a.length === b.length && a.every((value, index) => value === b[index]);
 }

@@ -7,10 +7,19 @@ import type {
   SectionOutcome,
   SessionToken,
 } from '@bombfarm/game-api';
-import { ROUTES, assembleAccountPayload, collapseIndexedPaths, grantSession, isGranted, readSection } from '@bombfarm/game-api';
+import {
+  ROUTES,
+  assembleAccountPayload,
+  collapseIndexedPaths,
+  grantSession,
+  isGranted,
+  readHeroDetail,
+  readSection,
+} from '@bombfarm/game-api';
 import type { AccountCommitter } from '../game-reader/game-reader-service.js';
 import type { LogPort } from '../storage/index.js';
 import type { ConsentStore } from './consent-store.js';
+import { createServerAllocations } from './server-allocations.js';
 import { readSessionToken, type SessionTokenFileResult } from './session-token-file.js';
 
 /**
@@ -118,6 +127,11 @@ export interface AccountRefreshHandle {
    *  same commit and the same `onView` as a cycle, so the notifier decides whether it changed
    *  anything. `null` when nothing has been committed yet, so there is nothing to patch. */
   applyPatch(patch: (payload: AccountPayload) => AccountPayload): AccountView | null;
+  /** Reads the server's own stat-point allocation for the named heroes of the last committed view
+   *  and re-commits it with each attached — the renderer names the heroes whose points its import
+   *  could not recover from the sheet. Every later cycle carries a reading forward while its hero's
+   *  sheet is unchanged. `null` when nothing has been committed yet. */
+  readAllocations(heroIds: readonly string[]): Promise<AccountView | null>;
 }
 
 interface CachedToken {
@@ -138,6 +152,8 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
   let currentAbort: AbortController | null = null;
   let lastView: AccountView | null = null;
   const lastUnreadAbsence = new Map<AccountSection, string>();
+  const serverAllocations = createServerAllocations();
+  let readingAllocations = false;
 
   function logUnreadAbsence(section: AccountSection, absentUnreadKeys: readonly string[]): void {
     const absentKeys = collapseIndexedPaths(absentUnreadKeys);
@@ -181,10 +197,39 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
       deps.log.info({ scope: 'account-refresh', event: 'cycle.no-data' });
       return lastView;
     }
-    const payload = assembleAccountPayload(outcomes, deps.now());
+    const payload = serverAllocations.withCached(assembleAccountPayload(outcomes, deps.now()));
     commitAndNotify(payload);
     deps.log.info({ scope: 'account-refresh', event: 'cycle.committed' });
     return lastView;
+  }
+
+  function sessionFor(consent: GrantedConsent, fileResult: Extract<SessionTokenFileResult, { ok: true }>) {
+    if (!cachedToken || cachedToken.mtimeMs !== fileResult.mtimeMs) {
+      cachedToken = { accountId: fileResult.accountId, token: fileResult.token, mtimeMs: fileResult.mtimeMs };
+      deps.gate.resetAuth();
+    }
+    return grantSession(consent, { accountId: cachedToken.accountId, token: cachedToken.token });
+  }
+
+  async function readAllocations(heroIds: readonly string[]): Promise<AccountView | null> {
+    if (lastView === null || readingAllocations || heroIds.length === 0) return lastView;
+    const consent = deps.consentStore.read();
+    if (!isGranted(consent) || !deps.isGameRunning()) return lastView;
+    const fileResult = readToken(consent);
+    if (!fileResult.ok) return lastView;
+    const session = sessionFor(consent, fileResult);
+
+    readingAllocations = true;
+    try {
+      const landed = await serverAllocations.read(lastView.payload, heroIds, (heroId) =>
+        readHeroDetail(session, deps.transport, deps.gate, heroId),
+      );
+      if (!landed) return lastView;
+      deps.log.info({ scope: 'account-refresh', event: 'allocations.attached' });
+      return commitAndNotify(serverAllocations.withCached(lastView.payload));
+    } finally {
+      readingAllocations = false;
+    }
   }
 
   async function runCycle(): Promise<AccountView | null> {
@@ -211,12 +256,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
         return commitIfAnyResolved(allSectionsFailed('token_unavailable'));
       }
 
-      if (!cachedToken || cachedToken.mtimeMs !== fileResult.mtimeMs) {
-        cachedToken = { accountId: fileResult.accountId, token: fileResult.token, mtimeMs: fileResult.mtimeMs };
-        deps.gate.resetAuth();
-      }
-
-      const session = grantSession(consent, { accountId: cachedToken.accountId, token: cachedToken.token });
+      const session = sessionFor(consent, fileResult);
 
       const abortController = new AbortController();
       currentAbort = abortController;
@@ -305,5 +345,6 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
       if (lastView === null) return null;
       return commitAndNotify(patch(lastView.payload));
     },
+    readAllocations,
   };
 }

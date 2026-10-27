@@ -1195,3 +1195,43 @@ describe('account-refresh — the account travels in the query, the way the game
     ]);
   });
 });
+
+describe('account-refresh — server allocations', () => {
+  const ALLOC = [1, 0, 0, 0, 0, 0, 0, 0];
+
+  function allocationTransport(calls: string[]): HttpTransport {
+    const roster = okTransport(calls);
+    return (req) => {
+      if (!req.path.startsWith('/hero/detail')) return roster(req);
+      calls.push(req.path);
+      return Promise.resolve({
+        status: 200,
+        body: JSON.stringify({ alloc: ALLOC, stat_points_spent: 1, stat_points_available: 0, respec_gold_cost: 1000 }),
+      });
+    };
+  }
+
+  it('re-commits the named hero with its allocation, and carries it through the next cycle without reading again', async () => {
+    const store = createAccountStore(openTestAccountDb(firstBinding()));
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const calls: string[] = [];
+    const refresh = createAccountRefresh(
+      baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport: allocationTransport(calls), readToken }),
+    );
+    await refresh.refreshNow();
+
+    const withAlloc = await refresh.readAllocations(['1', 'not-a-hero']);
+    expect(withAlloc?.payload.heroes?.[0]).toMatchObject({ id: '1', alloc: ALLOC });
+
+    const nextCycle = await refresh.refreshNow();
+    await refresh.readAllocations(['1']);
+    expect(nextCycle?.payload.heroes?.[0]).toMatchObject({ id: '1', alloc: ALLOC });
+    expect(calls.filter((path) => path.startsWith('/hero/detail'))).toHaveLength(1);
+  });
+
+  it('reads nothing before any cycle has committed', async () => {
+    const store = createAccountStore(openTestAccountDb(firstBinding()));
+    const refresh = createAccountRefresh(baseDeps({ store, consentStore: fixedConsentStore(GRANTED) }));
+    expect(await refresh.readAllocations(['1'])).toBeNull();
+  });
+});

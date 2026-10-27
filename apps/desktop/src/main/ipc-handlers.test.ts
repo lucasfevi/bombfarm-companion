@@ -42,6 +42,7 @@ import {
   createIpcHandlers,
   defaultLiveView,
   MARKET_CHECK_FLOOR_MS,
+  MAX_ALLOCATION_READS,
   type ClipboardImageLike,
   type IpcHandlerDeps,
 } from './ipc-handlers.js';
@@ -228,6 +229,7 @@ function fakes() {
       isMiniAvailable: vi.fn(() => true),
       getAccountView: vi.fn(() => ACCOUNT_VIEW),
       requestAccountReadNow: vi.fn(() => ({ ok: true as const })),
+      readServerAllocations: vi.fn(),
       applyConsentEvent: vi.fn(() => Promise.resolve(grantedConsent(NOW_ISO))),
       emitMarketChanged: vi.fn(),
       applyLocale: vi.fn((next: AppLocale) => written({ ...DEFAULT_SETTINGS, locale: next })),
@@ -282,6 +284,7 @@ function wired(env: AppEnv = BETA_ENV) {
     isMiniAvailable: f.spies.isMiniAvailable,
     getAccountView: f.spies.getAccountView,
     requestAccountReadNow: f.spies.requestAccountReadNow,
+    readServerAllocations: f.spies.readServerAllocations,
     applyConsentEvent: f.spies.applyConsentEvent,
     emitMarketChanged: f.spies.emitMarketChanged,
     applyLocale: f.spies.applyLocale,
@@ -532,6 +535,17 @@ describe('the account and the game reader', () => {
     const { handlers, f } = wired();
     expect(handlers['account:readNow']()).toEqual({ ok: true });
     expect(f.spies.requestAccountReadNow).toHaveBeenCalledTimes(1);
+  });
+
+  it('forwards the heroes to read allocations for, capped, and drops a malformed list', () => {
+    const { handlers, f } = wired();
+    const many = Array.from({ length: 60 }, (_, index) => `h${String(index)}`);
+    expect(handlers['account:readAllocations'](many)).toBeNull();
+    expect(f.spies.readServerAllocations).toHaveBeenCalledWith(many.slice(0, MAX_ALLOCATION_READS));
+
+    expect(handlers['account:readAllocations']([1, 2] as unknown as string[])).toBeNull();
+    expect(handlers['account:readAllocations']('h1' as unknown as string[])).toBeNull();
+    expect(f.spies.readServerAllocations).toHaveBeenCalledTimes(1);
   });
 
   it('serves the reader status when the reader exists', () => {
