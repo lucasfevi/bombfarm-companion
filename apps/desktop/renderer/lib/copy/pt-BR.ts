@@ -1496,8 +1496,8 @@ export const ptBR: Copy = {
   premiumBannerGraceBody: 'O Premium continua ligado até {date}.',
   premiumBannerPaymentFailedTitle: 'Seu pagamento falhou',
   premiumBannerPaymentFailedBody: 'O Premium fica desligado até o pagamento ser feito.',
-  premiumBannerDisputeTitle: 'O Premium está pausado',
-  premiumBannerDisputeBody: 'O Premium fica pausado enquanto uma contestação de pagamento estiver aberta.',
+  premiumBannerDisputeTitle: 'O Premium está suspenso',
+  premiumBannerDisputeBody: 'O Premium fica suspenso enquanto uma contestação de pagamento estiver aberta.',
   premiumBannerUnreachableTitle: 'Não foi possível conectar ao servidor',
   premiumBannerUnreachableBody: 'Mostrando o último status, atualizado {time}.',
   premiumPausedOtherAccount:
