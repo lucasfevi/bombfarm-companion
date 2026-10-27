@@ -168,7 +168,21 @@ describe('the Premium tab when signed in', () => {
     expect(order).toEqual([...order].sort((a, b) => a - b));
     expect(text(html)).toContain('A boleto is waiting to be paid');
     expect(text(html)).toContain('Your payment failed');
-    expect(text(html)).toContain('Premium is paused while a payment dispute is open.');
+    expect(text(html)).toContain('Premium is suspended while a payment dispute is open.');
+  });
+
+  // "Paused" is the playing-account hold; a dispute hold is "suspended", in both languages.
+  it.each([
+    ['en', 'Premium is suspended', 'Premium is suspended while a payment dispute is open.', /paused/i],
+    ['pt-BR', 'O Premium está suspenso', 'O Premium fica suspenso enquanto uma contestação de pagamento estiver aberta.', /pausad/i],
+  ] as const)('calls the dispute hold suspended, never paused, in %s', (locale, title, body, paused) => {
+    const html = render(signedIn({ disputeHold: true }), locale);
+    const shown = text(html);
+
+    expect(html).toContain('data-testid="premium-banner-disputeHold"');
+    expect(shown).toContain(title);
+    expect(shown).toContain(body);
+    expect(shown).not.toMatch(paused);
   });
 
   it('keeps the last status and says when the server could not be reached', () => {
