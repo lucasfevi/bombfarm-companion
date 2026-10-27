@@ -33,6 +33,8 @@ import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
 import { createIpcDispatch, createIpcHandlers, defaultLiveView } from './ipc-handlers.js';
 import { createBridgeInvokeHandler, createSenderWindowResolver } from './ipc-bridge-handler.js';
 import { createEventEmitter } from './event-emitter.js';
+import { createIpcRejectionLogGate } from './ipc-rejection-log.js';
+import { createRendererErrorGate } from './renderer-error-log.js';
 import { createRedactingTokenReader } from './redacting-token-reader.js';
 import { LIVE_SOURCE_RELEASE_DEADLINE_MS, settleWithin, shutdownInOrder } from './shutdown.js';
 import { applyAppIdentity } from './app-identity.js';
@@ -337,11 +339,20 @@ function requestAccountReadNow(): AccountReadResult {
 }
 
 function registerIpcHandlers(): void {
+  // Importing electron-log registers a listener and a handler here that take any record from any
+  // renderer process with no sender check, cap or rate limit; renderer errors arrive only through
+  // `log:rendererError`.
+  ipcMain.removeAllListeners('__ELECTRON_LOG__');
+  ipcMain.removeHandler('__ELECTRON_LOG__');
+
   const dispatch = createIpcDispatch(
     createIpcHandlers({
       now: () => Date.now(),
       warn: (record) => {
         log.warn(record);
+      },
+      error: (record) => {
+        log.error(record);
       },
       resolveEnv: resolveAppEnv,
       appVersion: () => app.getVersion(),
@@ -408,6 +419,16 @@ function registerIpcHandlers(): void {
       }),
       dispatch,
       log,
+      rendererErrorGate: createRendererErrorGate({
+        warn: (record) => {
+          log.warn(record);
+        },
+      }),
+      rejectionLogGate: createIpcRejectionLogGate({
+        warn: (record) => {
+          log.warn(record);
+        },
+      }),
     }),
   );
 }

@@ -27,7 +27,7 @@ async function exerciseBridge(page, channel) {
     dispose();
     let loggingThrew = false;
     try {
-      bridge.logRendererError({
+      await bridge.invoke('log:rendererError', {
         event: 'sandbox.smoke',
         screen: 'sandbox-smoke',
         message: 'sandbox smoke probe',
@@ -40,10 +40,10 @@ async function exerciseBridge(page, channel) {
     return {
       keys: Object.keys(bridge).sort(),
       ping: bridge.ping(),
-      logBoot: bridge.logBoot(),
       invoked: await bridge.invoke(channel),
       disposerIsFunction,
       loggingThrew,
+      loggerGlobals: Object.getOwnPropertyNames(window).filter((name) => /electron.?log/i.test(name)),
       nodeGlobals: {
         require: typeof window.require,
         process: typeof window.process,
@@ -54,11 +54,11 @@ async function exerciseBridge(page, channel) {
 }
 
 function expectBridge(result) {
-  expect(result.keys).toEqual(['invoke', 'logBoot', 'logRendererError', 'on', 'ping']);
+  expect(result.keys).toEqual(['invoke', 'on', 'ping']);
   expect(result.ping).toEqual({ ok: true, from: 'preload' });
-  expect(result.logBoot).toEqual({ ok: true, from: 'preload' });
   expect(result.disposerIsFunction).toBe(true);
   expect(result.loggingThrew).toBe(false);
+  expect(result.loggerGlobals).toEqual([]);
   expect(result.nodeGlobals).toEqual({ require: 'undefined', process: 'undefined', Buffer: 'undefined' });
 }
 

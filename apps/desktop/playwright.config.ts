@@ -59,6 +59,7 @@ export default defineConfig({
         'mini-live.spec.mjs',
         'csp.spec.mjs',
         'renderer-sandbox.spec.mjs',
+        'renderer-error-log.spec.mjs',
         'ipc-sender.spec.mjs',
       ],
     },

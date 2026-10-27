@@ -260,6 +260,7 @@ export const ptBR: Copy = {
   screenCrashTitle: 'Não foi possível carregar esta tela',
   screenCrashInfoLabel: 'O que aconteceu',
   screenCrashInfo: 'O resto do app continua funcionando. Troque de aba ou tente novamente; os detalhes foram salvos no arquivo de log.',
+  screenCrashInfoCompact: 'O resto do app continua funcionando. Tente novamente; os detalhes foram salvos no arquivo de log.',
   screenCrashRetry: 'Tentar novamente',
   // dataNotice* / heroFlag* / dataField* — o que o app diz quando o jogo para de enviar um campo que ele lê
   dataNoticeInfoLabel: 'O que isso significa',

@@ -5,7 +5,8 @@ import {
   createSenderWindowResolver,
   type BridgeSender,
 } from './ipc-bridge-handler.js';
-import type { SenderFrameLike } from './ipc-sender-policy.js';
+import { createIpcRejectionLogGate } from './ipc-rejection-log.js';
+import type { IpcSenderRefusal, SenderFrameLike, SenderWindow } from './ipc-sender-policy.js';
 
 const MAIN_ID = 1;
 const MINI_ID = 2;
@@ -29,14 +30,18 @@ function frameAt(url: string, overrides: Partial<SenderFrameLike> = {}): SenderF
 function harness(env: { isDev: boolean } = { isDev: false }) {
   const dispatch = vi.fn((channel: string, ...args: unknown[]) => ({ channel, args }));
   const log = { warn: vi.fn() };
+  const gate = { admit: vi.fn((_window: SenderWindow) => true) };
+  const rejectionGate = { admit: vi.fn((_window: SenderWindow | null, _reason: IpcSenderRefusal) => true) };
   const handler = createBridgeInvokeHandler<BridgeSender>({
     env,
     devRendererUrl: DEV_URL,
     senderWindowOf,
     dispatch,
     log,
+    rendererErrorGate: gate,
+    rejectionLogGate: rejectionGate,
   });
-  return { handler, dispatch, log };
+  return { handler, dispatch, log, gate, rejectionGate };
 }
 
 describe('createSenderWindowResolver', () => {
@@ -121,6 +126,116 @@ describe('the bridge invoke handler', () => {
     };
     expect(() => handler({ sender, senderFrame: frameAt(APP_URL) }, 'app:ping')).toThrow('IPC sender not permitted');
     expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  describe('the renderer error channel', () => {
+    const miniEvent = { sender: senderOf(MINI_ID), senderFrame: frameAt('app://bundle/mini-live/index.html') };
+    const mainEvent = { sender: senderOf(MAIN_ID), senderFrame: frameAt(APP_URL) };
+
+    it('asks the gate about the window the call came from, then dispatches an admitted call from either window', () => {
+      const { handler, dispatch, gate } = harness();
+      expect(handler(mainEvent, 'log:rendererError', { message: 'a' })).toMatchObject({ channel: 'log:rendererError' });
+      expect(handler(miniEvent, 'log:rendererError', { message: 'b' })).toMatchObject({ channel: 'log:rendererError' });
+      expect(gate.admit.mock.calls).toEqual([['main'], ['mini-live']]);
+      expect(dispatch).toHaveBeenCalledTimes(2);
+    });
+
+    it('answers null without dispatching a call the gate drops', () => {
+      const { handler, dispatch, gate } = harness();
+      gate.admit.mockReturnValue(false);
+      expect(handler(miniEvent, 'log:rendererError', { message: 'a' })).toBeNull();
+      expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('does not spend the allowance on a refused sender, and consults the gate for no other channel', () => {
+      const { handler, gate } = harness();
+      const stranger = { sender: senderOf(STRANGER_ID), senderFrame: frameAt(APP_URL) };
+      expect(() => handler(stranger, 'log:rendererError', {})).toThrow('IPC sender not permitted');
+      handler(mainEvent, 'app:ping');
+      expect(gate.admit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('logging of refusals', () => {
+    function flooded() {
+      const warn = vi.fn();
+      const scheduled: (() => void)[] = [];
+      const handler = createBridgeInvokeHandler<BridgeSender>({
+        env: { isDev: false },
+        devRendererUrl: DEV_URL,
+        senderWindowOf,
+        dispatch: vi.fn(),
+        log: { warn },
+        rendererErrorGate: { admit: () => true },
+        rejectionLogGate: createIpcRejectionLogGate({
+          now: () => 0,
+          warn,
+          schedule: (callback) => {
+            scheduled.push(callback);
+          },
+        }),
+      });
+      return { handler, warn, scheduled };
+    }
+    const stranger = { sender: senderOf(STRANGER_ID), senderFrame: frameAt(APP_URL) };
+    const mini = { sender: senderOf(MINI_ID), senderFrame: frameAt('app://bundle/mini-live/index.html') };
+
+    it('refuses every call of a flood of varied channel names, and writes a bounded number of lines', () => {
+      const { handler, warn } = flooded();
+      let refused = 0;
+      for (let index = 0; index < 3000; index += 1) {
+        try {
+          handler(stranger, `varied:channel-${String(index)}`);
+        } catch (error) {
+          expect((error as Error).message).toBe('IPC sender not permitted');
+          refused += 1;
+        }
+      }
+      expect(refused).toBe(3000);
+      expect(warn).toHaveBeenCalledTimes(10);
+      expect(warn.mock.calls.every(([record]) => (record as { event: string }).event === 'ipc.sender_rejected')).toBe(true);
+    });
+
+    it('still logs a refusal from another window, or for another reason, while one flood is being held', () => {
+      const { handler, warn } = flooded();
+      for (let index = 0; index < 100; index += 1) {
+        expect(() => handler(stranger, `varied:${String(index)}`)).toThrow('IPC sender not permitted');
+      }
+      warn.mockClear();
+
+      expect(() => handler(mini, 'window:minimize')).toThrow('IPC sender not permitted');
+      expect(warn).toHaveBeenCalledWith(expect.objectContaining({ window: 'mini-live', reason: 'channel_not_allowed' }));
+
+      const foreign = { sender: senderOf(MAIN_ID), senderFrame: frameAt('https://example.com/') };
+      expect(() => handler(foreign, 'app:ping')).toThrow('IPC sender not permitted');
+      expect(warn).toHaveBeenLastCalledWith(expect.objectContaining({ window: 'main', reason: 'untrusted_origin' }));
+    });
+
+    it('reports how many refusals it left out, once, with the window and the reason', () => {
+      const { handler, warn, scheduled } = flooded();
+      for (let index = 0; index < 25; index += 1) {
+        expect(() => handler(stranger, `varied:${String(index)}`)).toThrow('IPC sender not permitted');
+      }
+      expect(scheduled).toHaveLength(1);
+      warn.mockClear();
+      scheduled[0]?.();
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith({
+        scope: 'main',
+        event: 'ipc.sender_rejections_suppressed',
+        window: 'unknown',
+        reason: 'unknown_window',
+        suppressed: 15,
+      });
+    });
+
+    it('still lets an allowed call through while a refused flood is being held', () => {
+      const { handler } = flooded();
+      for (let index = 0; index < 100; index += 1) {
+        expect(() => handler(stranger, `varied:${String(index)}`)).toThrow('IPC sender not permitted');
+      }
+      expect(handler({ sender: senderOf(MAIN_ID), senderFrame: frameAt(APP_URL) }, 'app:ping')).toBeUndefined();
+    });
   });
 
   describe('which environment may use the dev renderer origin', () => {

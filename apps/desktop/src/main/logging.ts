@@ -1,9 +1,7 @@
 import rawLog from 'electron-log/main.js';
 import type { BoundaryLog } from './boundary-log/index.js';
 import { createBoundaryLog } from './boundary-log/index.js';
-import { createBootRecord } from './boot-record.js';
 import type { AppEnv } from './env.js';
-import { resolveAppEnv } from './env.js';
 
 export type MainLog = BoundaryLog;
 
@@ -35,8 +33,4 @@ export function configureLogging(env: AppEnv): MainLog {
   });
 
   return log;
-}
-
-export function logBootLine(scope: 'main' | 'preload' | 'renderer'): void {
-  log.info(createBootRecord(resolveAppEnv(), scope));
 }

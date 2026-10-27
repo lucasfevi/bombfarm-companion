@@ -1,4 +1,7 @@
+import type { IpcInvokeChannel } from '@bombfarm/contracts';
 import type { AppEnv } from './env.js';
+import type { IpcRejectionLogGate } from './ipc-rejection-log.js';
+import type { RendererErrorGate } from './renderer-error-log.js';
 import {
   createIpcSenderPolicy,
   decideIpcSender,
@@ -7,6 +10,8 @@ import {
   type SenderFrameLike,
   type SenderWindow,
 } from './ipc-sender-policy.js';
+
+const RENDERER_ERROR_CHANNEL: IpcInvokeChannel = 'log:rendererError';
 
 type FrameIds = Pick<SenderFrameLike, 'processId' | 'routingId'>;
 
@@ -41,6 +46,8 @@ export function createBridgeInvokeHandler<Sender extends BridgeSender>(deps: {
   senderWindowOf: (sender: Sender) => SenderWindow | null;
   dispatch: (channel: string, ...args: unknown[]) => unknown;
   log: { warn: (record: Record<string, unknown>) => void };
+  rendererErrorGate: RendererErrorGate;
+  rejectionLogGate: IpcRejectionLogGate;
 }): (event: BridgeInvokeEvent<Sender>, channel: string, ...args: unknown[]) => unknown {
   const policy = createIpcSenderPolicy({ isDev: deps.env.isDev, devRendererUrl: deps.devRendererUrl });
 
@@ -52,8 +59,14 @@ export function createBridgeInvokeHandler<Sender extends BridgeSender>(deps: {
     };
     const verdict = decideIpcSender(request, policy);
     if (!verdict.allowed) {
-      deps.log.warn(ipcSenderRejectionRecord(request, verdict.reason));
+      if (deps.rejectionLogGate.admit(request.senderWindow, verdict.reason)) {
+        deps.log.warn(ipcSenderRejectionRecord(request, verdict.reason));
+      }
       throw new Error('IPC sender not permitted');
+    }
+    const { senderWindow } = request;
+    if (channel === RENDERER_ERROR_CHANNEL && (senderWindow === null || !deps.rendererErrorGate.admit(senderWindow))) {
+      return null;
     }
     return deps.dispatch(channel, ...args);
   };

@@ -5,6 +5,7 @@ import {
 } from './game-api/window-layout-store.js';
 import { writeClipboardImage, type ImageClipboard } from './shell/clipboard-image.js';
 import type { AppEnv } from './env.js';
+import { parseRendererErrorRecord, rendererErrorLogRecord } from './renderer-error-log.js';
 import {
   EMPTY_COLLECTIONS_VIEW,
   EMPTY_FORGE_HISTORY,
@@ -185,6 +186,7 @@ export type ClipboardImageLike = {
 export interface IpcHandlerDeps<Image extends ClipboardImageLike = ClipboardImageLike> {
   now: () => number;
   warn: (record: Record<string, unknown>) => void;
+  error: (record: Record<string, unknown>) => void;
 
   resolveEnv: () => AppEnv;
   appVersion: () => string;
@@ -476,6 +478,15 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       return null;
     },
     'clipboard:writeImage': (bytes: unknown) => writeClipboardImage(bytes, deps.imageClipboard),
+    'log:rendererError': (record: unknown) => {
+      const parsed = parseRendererErrorRecord(record);
+      if (parsed === null) {
+        deps.warn({ scope: 'renderer', event: 'error_record.rejected' });
+      } else {
+        deps.error(rendererErrorLogRecord(parsed));
+      }
+      return null;
+    },
   };
 }
 

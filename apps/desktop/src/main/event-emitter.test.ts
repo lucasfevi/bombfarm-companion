@@ -18,13 +18,6 @@ vi.mock('electron', () => ({
   },
 }));
 
-vi.mock('electron-log/renderer.js', () => ({
-  default: {
-    transports: { console: { level: 'silly' as string } },
-    info: vi.fn(),
-  },
-}));
-
 import {
   idleUpdateStatus,
   IPC_EVENT_CHANNELS,

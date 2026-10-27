@@ -1,5 +1,4 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import log from 'electron-log/renderer.js';
 import {
   createPingResponse,
   ipcEventName,
@@ -10,17 +9,6 @@ import {
   type IpcInvokeChannel,
   type IpcInvokeResult,
 } from '@bombfarm/contracts';
-
-interface RendererErrorRecord {
-  event: string;
-  screen: string;
-  message: string;
-  stack: string;
-  componentStack: string;
-}
-
-log.transports.console.level = 'debug';
-log.info({ scope: 'preload', event: 'boot' });
 
 async function invoke<C extends IpcInvokeChannel>(
   channel: C,
@@ -47,13 +35,6 @@ contextBridge.exposeInMainWorld('bfc', {
   invoke,
   on,
   ping: () => createPingResponse('preload'),
-  logRendererError: (record: RendererErrorRecord) => {
-    log.error({ scope: 'renderer', ...record });
-  },
-  logBoot: () => {
-    log.info({ scope: 'preload', event: 'boot.bridge' });
-    return createPingResponse('preload');
-  },
 });
 
 declare global {
@@ -62,8 +43,6 @@ declare global {
       invoke: typeof invoke;
       on: typeof on;
       ping: () => ReturnType<typeof createPingResponse>;
-      logBoot: () => ReturnType<typeof createPingResponse>;
-      logRendererError: (record: RendererErrorRecord) => void;
     };
   }
 }
