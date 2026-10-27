@@ -219,6 +219,7 @@ export interface IpcHandlerDeps<Image extends ClipboardImageLike = ClipboardImag
   isMiniAvailable: () => boolean;
   getAccountView: () => AccountView;
   requestAccountReadNow: () => AccountReadResult;
+  readServerAllocations: (heroIds: readonly string[]) => void;
   applyConsentEvent: (event: ConsentEvent) => Promise<ConsentRecord>;
   emitMarketChanged: (view: MarketSnapshotView) => void;
 
@@ -253,6 +254,9 @@ export function defaultLiveView(nowIso: string): LiveView {
  *  button from becoming a stream of them: below the five-minute `max-age` the published file is
  *  served with, a second check could not see anything newer anyway. */
 export const MARKET_CHECK_FLOOR_MS = 30_000;
+
+/** A roster holds a few dozen heroes; a longer list is not a request the renderer makes. */
+export const MAX_ALLOCATION_READS = 40;
 
 export function createIpcHandlers<Image extends ClipboardImageLike>(
   deps: IpcHandlerDeps<Image>,
@@ -358,6 +362,12 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       },
     'account:get': (): AccountView => deps.getAccountView(),
     'account:readNow': (): AccountReadResult => deps.requestAccountReadNow(),
+    'account:readAllocations': (heroIds: unknown): null => {
+      if (Array.isArray(heroIds) && heroIds.every((id) => typeof id === 'string')) {
+        deps.readServerAllocations(heroIds.slice(0, MAX_ALLOCATION_READS));
+      }
+      return null;
+    },
     'consent:get': (): ConsentRecord => deps.getConsentStore()?.read() ?? initialConsent(),
     'consent:accept': (): Promise<ConsentRecord> =>
       deps.applyConsentEvent({ type: 'accept', now: nowIso(), locale: deps.getSettings().locale }),

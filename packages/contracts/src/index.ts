@@ -576,6 +576,10 @@ export interface IpcChannels {
    *  the same manual-refresh floor the app's other triggered reads do, so a second press inside
    *  that window is refused rather than doubling the request rate. */
   'account:readNow': { args: []; result: AccountReadResult };
+  /** Names the heroes whose spent points the renderer's import could not recover exactly from the
+   *  stat sheet, for main to read the game's own allocation of and re-commit the account with. The
+   *  answer arrives as an `account:changed` push; ids that name no current hero are ignored. */
+  'account:readAllocations': { args: [readonly string[]]; result: null };
   /** Consent for the game-API account reader. All four are
    *  zero-arg by design: the existing `bfc:invoke` bridge forwards no arguments, so the
    *  player's answer is three verbs (`accept`/`decline`/`revoke`) rather than one call taking a
@@ -713,6 +717,7 @@ export const IPC_CHANNELS = [
   'game:getStatus',
   'account:get',
   'account:readNow',
+  'account:readAllocations',
   'consent:get',
   'consent:accept',
   'consent:decline',

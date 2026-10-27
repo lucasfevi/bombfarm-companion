@@ -40,6 +40,7 @@ const IPC_CHANNEL_LIST = [
   'game:getStatus',
   'account:get',
   'account:readNow',
+  'account:readAllocations',
   'consent:get',
   'consent:accept',
   'consent:decline',

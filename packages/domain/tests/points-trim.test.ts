@@ -31,10 +31,26 @@ function trim(current: Pts, proposed: Pts, evaluate: (vectors: Map<string, Pts>)
 }
 
 describe('trimTowardCurrent', () => {
-  it('leaves a banked point unspent when spending it buys almost nothing, and keeps the change that pays', () => {
+  it('keeps a banked point placed even when spending it buys almost nothing', () => {
     const result = trim(pts({ attack: 10 }), pts({ attack: 30, speed: 1 }), linear({ attack: 10, speed: 0.01 }));
 
-    expect(result.vectors.get('h')).toEqual(pts({ attack: 30 }));
+    expect(result.vectors.get('h')).toEqual(pts({ attack: 30, speed: 1 }));
+  });
+
+  it('keeps level-up points placed when they buy nothing at all', () => {
+    const result = trim(pts({ attack: 10 }), pts({ attack: 10, speed: 3 }), linear({ attack: 10 }));
+
+    expect(result.vectors.get('h')).toEqual(pts({ attack: 10, speed: 3 }));
+  });
+
+  it('still walks back a near-worthless transfer on a hero that also places banked points', () => {
+    const result = trim(
+      pts({ attack: 50, critDmg: 10 }),
+      pts({ attack: 50, critDmg: 8, speed: 3 }),
+      linear({ attack: 10, critDmg: 0.02, speed: 0.03 }),
+    );
+
+    expect(result.vectors.get('h')).toEqual(pts({ attack: 50, critDmg: 10, speed: 1 }));
   });
 
   it('moves a near-worthless reallocation back where the player had it', () => {
@@ -48,9 +64,9 @@ describe('trimTowardCurrent', () => {
   });
 
   it('bounds the loss in total, so many small changes are not all dropped together', () => {
-    // Each of the five one-point changes is worth 0.2% of the proposal's value.
+    // Each of the five one-point moves out of Luck is worth 0.2% of the proposal's value.
     const result = trim(
-      pts({}),
+      pts({ luck: 5 }),
       pts({ attack: 1, energy: 1, speed: 1, critChance: 1, critDmg: 1 }),
       linear({ attack: 2, energy: 2, speed: 2, critChance: 2, critDmg: 2 }, 990),
     );
@@ -77,7 +93,7 @@ describe('trimTowardCurrent', () => {
   });
 
   it('stops at its evaluation bound', () => {
-    const result = trim(pts({}), pts({ attack: 1, speed: 1 }), linear({ attack: 100, speed: 0.001 }, 10), 1);
+    const result = trim(pts({ luck: 2 }), pts({ attack: 1, speed: 1 }), linear({ attack: 100, speed: 0.001 }, 10), 1);
 
     expect(result.evaluations).toBe(1);
   });
@@ -101,7 +117,26 @@ describe('trimTowardCurrent', () => {
       maxEvaluations: 500,
     });
 
-    expect(result.vectors.get('a')).toEqual(pts({ attack: 30 }));
+    expect(result.vectors.get('a')).toEqual(pts({ attack: 30, speed: 1 }));
     expect(result.vectors.get('b')).toEqual(pts({ attack: 10 }));
+  });
+
+  it('keeps a hero with no current vector as proposed', () => {
+    const evaluate = linear({ attack: 10, speed: 0.01 });
+    const current = new Map([['a', pts({ attack: 10 })]]);
+    const proposed = new Map([
+      ['a', pts({ attack: 9, speed: 1 })],
+      ['new', pts({ speed: 5 })],
+    ]);
+    const result = trimTowardCurrent({
+      current,
+      proposed,
+      proposedValue: evaluate(proposed),
+      currentValue: evaluate(current),
+      evaluate,
+      maxEvaluations: 500,
+    });
+
+    expect(result.vectors.get('new')).toEqual(pts({ speed: 5 }));
   });
 });

@@ -371,6 +371,9 @@ function registerIpcHandlers(): void {
       isMiniAvailable,
       getAccountView: () => resolveAccountView({ gameReader, consentStore, accountRefresh, accountStore }),
       requestAccountReadNow,
+      readServerAllocations: (heroIds) => {
+        void accountRefresh?.readAllocations(heroIds);
+      },
       applyConsentEvent,
       emitMarketChanged: (view) => {
         emitEvent('market:changed', view);

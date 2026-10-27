@@ -39,7 +39,8 @@ type Slot = SheetKey | typeof UNPLACED;
 /**
  * Every way to walk one hero back toward its current vector: each (grown, shrunk) pair settled
  * by the smaller of the two moves, and — when there is more than one pair — the whole hero.
- * Banked points are a slot of their own, so undoing "spend 1 banked point on Speed" is a pair.
+ * Placing a banked point costs nothing, so no revert takes one off the sheet again: a hero left
+ * holding level-up points would be re-proposed the same trimmed build, and bank more, every run.
  */
 function revertsFor(
   heroId: string,
@@ -60,6 +61,7 @@ function revertsFor(
   const reverts: Revert[] = [];
   for (const [from, grew] of grown) {
     for (const [to, shrank] of shrunk) {
+      if (to === UNPLACED) continue;
       const points = Math.min(grew, -shrank);
       reverts.push({
         heroId,
@@ -67,17 +69,25 @@ function revertsFor(
         apply: (pts) => {
           const next = { ...pts };
           if (from !== UNPLACED) next[from] -= points;
-          if (to !== UNPLACED) next[to] += points;
+          next[to] += points;
           return next;
         },
       });
     }
   }
-  if (reverts.length > 1) {
+  if (reverts.length > 1 && placedDiff <= 0) {
     const points = grown.reduce((sum, [, delta]) => sum + delta, 0);
     reverts.push({ heroId, points, apply: () => ({ ...current }) });
   }
   return reverts;
+}
+
+function placesBankedPoints(
+  current: Readonly<Record<SheetKey, number>> | undefined,
+  proposed: Readonly<Record<SheetKey, number>>,
+): boolean {
+  if (current === undefined) return false;
+  return RESPEC_KEYS.reduce((sum, key) => sum + proposed[key] - current[key], 0) > 0;
 }
 
 /**
@@ -92,7 +102,7 @@ export function trimTowardCurrent(input: TrimTowardCurrentInput): TrimTowardCurr
   if (!Number.isFinite(proposedValue)) return { vectors: copy(proposed), value: proposedValue, evaluations: 0 };
 
   const target = Math.max(currentValue, proposedValue - (Math.abs(proposedValue) * POINTS_TRIM_MAX_LOSS_PCT) / 100);
-  if (currentValue >= target) {
+  if (currentValue >= target && ![...proposed].some(([heroId, pts]) => placesBankedPoints(current.get(heroId), pts))) {
     const vectors = copy(proposed);
     for (const [heroId, pts] of current) if (vectors.has(heroId)) vectors.set(heroId, { ...pts });
     return { vectors, value: currentValue, evaluations: 0 };

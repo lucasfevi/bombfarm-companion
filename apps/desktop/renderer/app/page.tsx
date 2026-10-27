@@ -30,6 +30,7 @@ import { screenForStripId, screenWhenPremiumVisibility, stripIdForScreen } from 
 import { ScreenBoundary } from './screen-boundary';
 import { DataNoticesBanner } from './data-notices-banner';
 import { useDataNotices } from '../lib/account/use-data-notices';
+import { useServerAllocationRequests } from '../lib/account/use-server-allocation-requests';
 import { AccountHeroDataFlags } from '../lib/account/account-hero-data-flags';
 import { createSettingsHandlers, loadStoredSettings, type SettingsSink } from './settings-handlers';
 import { ShellActions } from './shell-actions';
@@ -341,6 +342,7 @@ function HomePageContent({
   // would still claim the strip's height on every screen.
   const forgeQueueShown = isForgeQueueShown(useForgeQueue());
   const dataNotices = useDataNotices();
+  useServerAllocationRequests();
   // The status strip's rail: every feed the app keeps asking for, with the account item speaking
   // for the screen on show when that screen computes from a copy of its own.
   const feeds = useFeeds({ activeTabId: activeNavId, updateStatus, onUpdateCheck });
