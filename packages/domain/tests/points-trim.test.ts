@@ -120,4 +120,23 @@ describe('trimTowardCurrent', () => {
     expect(result.vectors.get('a')).toEqual(pts({ attack: 30, speed: 1 }));
     expect(result.vectors.get('b')).toEqual(pts({ attack: 10 }));
   });
+
+  it('keeps a hero with no current vector as proposed', () => {
+    const evaluate = linear({ attack: 10, speed: 0.01 });
+    const current = new Map([['a', pts({ attack: 10 })]]);
+    const proposed = new Map([
+      ['a', pts({ attack: 9, speed: 1 })],
+      ['new', pts({ speed: 5 })],
+    ]);
+    const result = trimTowardCurrent({
+      current,
+      proposed,
+      proposedValue: evaluate(proposed),
+      currentValue: evaluate(current),
+      evaluate,
+      maxEvaluations: 500,
+    });
+
+    expect(result.vectors.get('new')).toEqual(pts({ speed: 5 }));
+  });
 });

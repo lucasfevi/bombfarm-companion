@@ -3,6 +3,8 @@ import {
   COMMIT_INDEX,
   COMMIT_ORDER,
   commitVectorEquals,
+  commitVectorToPoints,
+  isPointVector,
   derivePointsUnits,
   pointsToCommitVector,
   preflightPointsUnit,
@@ -90,6 +92,27 @@ describe('pointsToCommitVector', () => {
 
   it('throws RangeError for a non-integer value', () => {
     expect(() => pointsToCommitVector({ cdr: 1.5 })).toThrow(RangeError);
+  });
+});
+
+describe('isPointVector', () => {
+  it('accepts eight non-negative integers', () => {
+    expect(isPointVector([0, 1, 2, 3, 4, 5, 6, 7])).toBe(true);
+  });
+
+  it('rejects anything else', () => {
+    expect(isPointVector('12345678')).toBe(false);
+    expect(isPointVector([1, 2, 3])).toBe(false);
+    expect(isPointVector([0, 0, 0, 0, 0, 0, 0, '1'])).toBe(false);
+    expect(isPointVector([0, 0, 0, 0, 0, 0, 0, 1.5])).toBe(false);
+    expect(isPointVector([0, 0, 0, 0, 0, 0, 0, -1])).toBe(false);
+  });
+});
+
+describe('commitVectorToPoints', () => {
+  it('reads the eight values back onto their sheet keys, undoing pointsToCommitVector', () => {
+    const pts = { attack: 10, energy: 20, speed: 30, luck: 40, critChance: 50, critDmg: 60, penetration: 70, cdr: 80 };
+    expect(commitVectorToPoints(pointsToCommitVector(pts))).toEqual(pts);
   });
 });
 

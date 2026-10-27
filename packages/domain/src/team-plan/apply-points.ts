@@ -58,7 +58,7 @@ export function preflightPointsUnitAgainstServer(unit: ApplyPointsUnit, reading:
   const pointsOwned = reading.available === null ? unit.level : reading.spent + reading.available;
   if (vectorTotal(unit.vector) > pointsOwned) return verdict;
   if (unit.needsRespec) return { index: unit.index, status: 'pendingFull' };
-  const onlyAdds = unit.vector.every((value, index) => value >= (reading.alloc[index] ?? 0));
+  const onlyAdds = unit.vector.every((value, index) => value >= reading.alloc[index]);
   return onlyAdds ? { index: unit.index, status: 'pendingCommit' } : verdict;
 }
 

@@ -41,7 +41,7 @@ export function isPointVector(value: unknown): value is CommitVector {
 }
 
 export function commitVectorToPoints(vector: CommitVector): Record<keyof SheetStats, number> {
-  return Object.fromEntries(COMMIT_ORDER.map((key, index) => [key, vector[index] ?? 0])) as Record<keyof SheetStats, number>;
+  return Object.fromEntries(COMMIT_ORDER.map((key, index) => [key, vector[index]])) as Record<keyof SheetStats, number>;
 }
 
 export function commitVectorEquals(a: CommitVector, b: CommitVector): boolean {
