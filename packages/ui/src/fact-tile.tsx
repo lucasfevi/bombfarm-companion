@@ -1,9 +1,10 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { cloneElement, lazy, Suspense, useState, type ReactElement, type ReactNode } from 'react';
 import { cn } from './cn';
 import { factTileDetailClass, factTileLabelRecipe, factTileRecipe, factTileValueRecipe, type FactTileSize } from './fact-tile.recipe';
-import { Tooltip } from './tooltip';
+
+const FactTileNote = lazy(() => import('./fact-tile-note').then((module) => ({ default: module.FactTileNote })));
 
 export type FactTileProps = {
   label: string;
@@ -40,16 +41,25 @@ export function FactTile({ label, value, detail, note, size = 'default', valueCl
     </div>
   );
   if (note === undefined) return tile;
+  return <NotedTile tile={tile} note={note} />;
+}
+
+/**
+ * Until the tooltip arrives the tile is the same element with the trigger's attributes, so the
+ * markup does not change; a tile hovered before then opens its note on arrival.
+ */
+function NotedTile({ tile, note }: { tile: ReactElement; note: string }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger render={tile} />
-      <Tooltip.Portal>
-        <Tooltip.Positioner sideOffset={6}>
-          <Tooltip.Popup>
-            <p className="m-0 max-w-[36ch]">{note}</p>
-          </Tooltip.Popup>
-        </Tooltip.Positioner>
-      </Tooltip.Portal>
-    </Tooltip.Root>
+    <Suspense
+      fallback={cloneElement(tile, {
+        'data-base-ui-tooltip-trigger': '',
+        'data-slot': 'tooltip-trigger',
+        onMouseEnter: () => setHovered(true),
+        onMouseLeave: () => setHovered(false),
+      } as Record<string, unknown>)}
+    >
+      <FactTileNote tile={tile} note={note} arrived={hovered} />
+    </Suspense>
   );
 }

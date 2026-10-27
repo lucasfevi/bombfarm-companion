@@ -146,6 +146,18 @@ Series colours default to `--color-series-1` … `-4` by position (a fifth serie
 and can be overridden per series with `color`. Each clears 3:1 against `surface`, but hue alone should
 not carry the meaning, so pass `table` to add a disclosure with the data as a table.
 
+Three opt-in props add detail without changing a chart that does not pass them. All of it is
+computed where the chart draws and reaches the pointer island as plain tooltip content:
+
+- `details` (`readonly (readonly { label: string; value: string }[] | undefined)[]`) — extra
+  tooltip rows per data index, label plus pre-formatted value, shown under the series rows and
+  never drawn. `table.detailColumns: true` also lists them as table columns.
+- `partial` (`{ from: number; label: string }`) — marks index `from` onward as in progress: a line
+  or area draws the stretch into it dashed, and the tooltip and table add the caller's `label`
+  (e.g. "(in progress)") after those x labels. A bar chart takes the marker text only.
+- `integerTicks` (`boolean`; `niceScale(max, tickCount, integerTicks?)`) — the y step is a whole
+  number, never 2.5 or 0.5, for count data.
+
 The y axis starts at zero. A negative reading is unsupported and draws as zero; a `null` (or
 non-finite) reading is a gap that breaks a line and leaves a bar out. No readings at all shows the
 `empty` text in place of an SVG. The kit carries no copy of its own: `ariaLabel`, `empty`, the table
@@ -506,6 +518,15 @@ export default {
   root layout; importing components never pulls it in.
 - **`AppNav` loads its tooltip lazily**, only when an item is `compact` or otherwise needs one.
   A plain nav ships no tooltip code.
+- **`InfoTip` loads its tooltip lazily**, the same way. Until the tooltip arrives the glyph is the
+  same `<button>` with the same accessible name and markup, so a page that only renders a tip (a
+  `PanelHeader info`, say) ships no `motion` in its first load. A glyph hovered or focused before the
+  tooltip arrives opens it on arrival.
+- **`FactTile` loads its tooltip lazily**, and only when it carries a `note`. A tile without one
+  ships no tooltip or `motion` code; with one, it is the same element until the tooltip arrives.
+- **`DetailsMenu` lives in its own module** (`@bombfarm/ui/details-menu`), apart from `Menu`. A
+  client component that imports only `DetailsMenu` from the barrel pulls in none of Base UI's menu
+  or floating code. `@bombfarm/ui/menu` still exports both.
 
 The executable example is the fixture under
 [`packages/ui/test-fixtures/server-consumer/`](../packages/ui/test-fixtures/server-consumer): a

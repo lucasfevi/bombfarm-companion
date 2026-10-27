@@ -94,7 +94,7 @@ export { ChartGrid, type ChartGridProps } from './chart-grid';
 export { ChartLegend, type ChartLegendItem, type ChartLegendProps } from './chart-legend';
 export { ChartPointer, type ChartPointerProps } from './chart-pointer';
 export { niceScale, type NiceScale } from './chart-scale';
-export type { ChartSeries, ChartProps, ChartTable } from './chart-model';
+export type { ChartSeries, ChartProps, ChartTable, ChartDetailRow, ChartPartial } from './chart-model';
 export { Num } from './num';
 export {
   Select,
@@ -228,7 +228,8 @@ export { FileDropZone, type FileDropZoneProps } from './file-drop-zone';
 export { fileDropZoneRecipe } from './file-drop-zone.recipe';
 export { Banner, type BannerProps } from './banner';
 export { Dialog } from './dialog';
-export { Menu, DetailsMenu } from './menu';
+export { Menu } from './menu';
+export { DetailsMenu } from './details-menu';
 export { SiteHeader, type SiteHeaderProps } from './site-header';
 export { siteHeaderBrandClass } from './site-header.recipe';
 export { SiteFooter, type SiteFooterProps } from './site-footer';
