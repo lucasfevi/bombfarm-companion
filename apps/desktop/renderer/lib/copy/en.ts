@@ -1565,8 +1565,8 @@ export const en = {
   premiumBannerGraceBody: 'Premium stays on until {date}.',
   premiumBannerPaymentFailedTitle: 'Your payment failed',
   premiumBannerPaymentFailedBody: 'Premium is off until it is paid.',
-  premiumBannerDisputeTitle: 'Premium is paused',
-  premiumBannerDisputeBody: 'Premium is paused while a payment dispute is open.',
+  premiumBannerDisputeTitle: 'Premium is suspended',
+  premiumBannerDisputeBody: 'Premium is suspended while a payment dispute is open.',
   premiumBannerUnreachableTitle: "Couldn't reach the server",
   premiumBannerUnreachableBody: 'Showing status from {time}.',
   premiumPausedOtherAccount:
