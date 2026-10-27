@@ -76,10 +76,42 @@ describe('Detonação Dupla in hits-to-kill', () => {
     }
   });
 
-  it('far past the exact sum, a blast is worth one plus half a blast at its chance', () => {
-    expect(hitsToKillWithSecondBlast(1, 500, 0.5)).toBeCloseTo(400, 9);
-    expect(expectedHitsToKill(500, 1, 0, 2, 0.5)).toBeCloseTo(400, 9);
-    expect(expectedHitsToKill(500, 1, 0.5, 3, 0.5)).toBeCloseTo(500 / (2 * 1.25), 9);
+  it('far past the exact sum, a blast is worth one plus half a blast at its chance, and the killing blast overshoots', () => {
+    // One blast is 1 or 1.5 hits, half each: mean 1.25, mean square 1.625.
+    expect(hitsToKillWithSecondBlast(1, 500, 0.5)).toBeCloseTo(500 / 1.25 + 1.625 / (2 * 1.25 ** 2), 9);
+    expect(expectedHitsToKill(500, 1, 0, 2, 0.5)).toBeCloseTo(500 / 1.25 + 1.625 / (2 * 1.25 ** 2), 9);
+    // Crit ×3 at half: the crit factor's mean is 2 and its mean square 5, each part rolling its own.
+    const meanSquare = 5 * (1 + 0.5 * 0.25) + 2 * 0.5 * 0.5 * 2 ** 2;
+    expect(expectedHitsToKill(500, 1, 0.5, 3, 0.5)).toBeCloseTo(500 / (2 * 1.25) + meanSquare / (2 * 2.5 ** 2), 9);
+  });
+
+  it('never needs more blasts as the second-blast chance rises, through a certain one', () => {
+    for (const hp of [7.3, 59.3, 60.4, 103, 1_030]) {
+      let previous = Infinity;
+      for (let step = 0; step <= 200; step++) {
+        const blasts = hitsToKillWithSecondBlast(1, hp, step / 200);
+        expect(blasts, `hp ${hp}, chance ${step / 200}`).toBeLessThanOrEqual(previous + 1e-9);
+        previous = blasts;
+      }
+    }
+  });
+
+  it('past the exact sum, no second blast and a certain one still read whole blasts, and the chances beside them approach those', () => {
+    expect(hitsToKillWithSecondBlast(1, 103.3, 1e-9)).toBeCloseTo(104, 5);
+    expect(hitsToKillWithSecondBlast(1, 103.3, 1)).toBeCloseTo(69, 9);
+    expect(expectedHitsToKill(103.3, 1, 1e-9, 5, 0.5)).toBeCloseTo(hitsToKillWithSecondBlast(1, 103.3, 0.5), 5);
+    expect(expectedHitsToKill(103.3, 1, 1 - 1e-9, 5, 0.5)).toBeCloseTo(hitsToKillWithSecondBlast(5, 103.3, 0.5), 5);
+  });
+
+  it('never needs more blasts as the crit chance rises, through a certain crit', () => {
+    for (const hp of [7.3, 59.3, 60.4, 103, 1_030, 4_321.7]) {
+      let previous = Infinity;
+      for (let step = 0; step <= 200; step++) {
+        const blasts = expectedHitsToKill(hp, 1, step / 200, 5, 0.5);
+        expect(blasts).toBeLessThanOrEqual(previous + 1e-9);
+        previous = blasts;
+      }
+    }
   });
 
   it('the binomial lower tail is empty below one, whole past the trials, and exact between', () => {

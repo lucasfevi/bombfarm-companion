@@ -9,6 +9,7 @@ import {
   type ClearHero,
   type ClearPropType,
 } from '../src/model/clear-time';
+import { averagedHitsToKill } from '../src/phases';
 import { WIKI_PROPS } from '../src/phase-wiki';
 
 /** A prop mix at a stone HP, the wiki's spawn weights. */
@@ -96,6 +97,54 @@ describe('expectedHitsToKill rolls the crit per hit', () => {
       const hits = expectedHitsToKill(2_000, hit, 0.3, 5);
       expect(hits).toBeLessThanOrEqual(previous + 1e-9);
       previous = hits;
+    }
+  });
+
+  it('never needs more hits as the crit chance rises, from no crit through a certain crit', () => {
+    for (const critMult of [1.2, 2, 5, 20]) {
+      for (const hp of [10.5, 59.3, 60.4, 103, 1_030, 4_321.7]) {
+        let previous = Infinity;
+        for (let step = 0; step <= 1_000; step++) {
+          const hits = expectedHitsToKill(hp, 1, step / 1_000, critMult);
+          expect(hits, `hp ${hp}, crit ×${critMult}, chance ${step / 1_000}`).toBeLessThanOrEqual(previous + 1e-9);
+          previous = hits;
+        }
+      }
+    }
+  });
+
+  it('past the exact sum, no crit and a certain crit still read whole hits, and the chances beside them approach those', () => {
+    expect(expectedHitsToKill(103.3, 1, 0, 5)).toBe(104);
+    expect(expectedHitsToKill(103.3, 1, 1e-9, 5)).toBeCloseTo(104, 5);
+    expect(expectedHitsToKill(103.3, 1, 1, 5)).toBe(21);
+    expect(expectedHitsToKill(103.3, 1, 1 - 1e-9, 5)).toBeCloseTo(21, 5);
+  });
+
+  it('past the exact sum, more HP never needs fewer hits', () => {
+    for (const critChance of [1e-4, 0.01, 0.3, 0.99]) {
+      let previous = 0;
+      for (let hp = 61; hp <= 400; hp += 0.37) {
+        const hits = expectedHitsToKill(hp, 1, critChance, 4);
+        expect(hits, `hp ${hp}, chance ${critChance}`).toBeGreaterThanOrEqual(previous - 1e-9);
+        previous = hits;
+      }
+    }
+  });
+
+  it('the averaged reading carries the killing hit’s overshoot, landing on the exact sum on average over HPs', () => {
+    for (const [critChance, critMult] of [[0.3, 5], [0.7, 3], [0.95, 4], [0.05, 2]] as const) {
+      const meanHit = 1 - critChance + critChance * critMult;
+      const meanSquare = 1 - critChance + critChance * critMult * critMult;
+      let gap = 0;
+      let count = 0;
+      for (let hp = 40; hp <= 60; hp += 0.037) {
+        const averaged = averagedHitsToKill(hp, meanHit, meanSquare, critChance,
+          { mean: 1, meanSquare: 1, hits: Math.ceil(hp) },
+          { mean: critMult, meanSquare: critMult * critMult, hits: Math.ceil(hp / critMult) });
+        gap += averaged - expectedHitsToKill(hp, 1, critChance, critMult);
+        count++;
+      }
+      expect(Math.abs(gap / count), `chance ${critChance}, crit ×${critMult}`).toBeLessThan(0.02);
     }
   });
 
