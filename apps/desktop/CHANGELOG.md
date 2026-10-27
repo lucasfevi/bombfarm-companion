@@ -1,5 +1,41 @@
 # @bombfarm/desktop
 
+## 0.32.2
+
+### Patch Changes
+
+- 7ea9736: Applying an optimizer plan no longer skips the same hero on every run with "allocation changed". When a stat sits at its cap, its stat sheet cannot show every point placed in it, so the app's reading of that hero's points came up a few short of what the game holds — and every sync read it the same way. The point reset now checks the game's own allocation instead: a planned reset goes ahead whenever the hero owns enough points for the new build, since the reset refunds whatever was placed before.
+
+  The desktop app now also reads the game's own allocation for those heroes when it syncs the account, so the optimizer plans from the points they really have rather than the short reading. It asks only for a hero whose points the stat sheet cannot account for, and only again once that hero changes.
+
+  The optimizer no longer leaves level-up points unspent. Dropping near-worthless changes could undo spending a banked point, so a hero that levelled up was offered the same build every run while its free points piled up; placing a banked point costs nothing, so it now always stays in the plan.
+
+- e009108: The desktop app now checks who is calling before it answers a request from a window: only the app's own top-level pages are served, and the compact Live window is limited to the requests it actually makes.
+- 510d207: The desktop app's windows now stay on the app when a page tries to take them somewhere else. A window that a page sends to a blank page is put back on the app, up to three times in ten seconds; past that it is left blank until you restart the app. They no longer open your browser on their own: that happens only through a link or the app itself. Frames inside a window follow the same rule, the file pickers are switched off, and every browser permission (notifications, location, camera, devices and the rest) is refused except copying to the clipboard.
+- 42b5c9a: The desktop app's window now runs under a strict Content-Security-Policy: it only runs the app's own scripts, and loads art, fonts and styles from the app itself.
+- b174378: A screen that crashes in either window is now written to the app's log file, which it never was before; the compact Live window, which used to go blank, shows a retry prompt instead. Each report is checked, size-capped and rate-limited per window, so a crash loop cannot push the earlier log entries out of the rotating log file.
+- 8014b2c: The Live screen now credits each bomb to the hero standing on its cell when it is planted, instead of guessing from the bomb's fuse time. Late in a run, when several heroes share the same capped fuse time, damage could be credited to a hero who was nowhere near the bomb. When two or more heroes stand on the same cell and nothing tells them apart, the damage now counts as unattributed rather than going to the wrong hero.
+- a350e37: Harden the installed app: it can no longer be run as a plain Node runtime, ignores `NODE_OPTIONS` and the Node inspector flags, exits at startup when launched with a remote-debugging switch, only loads its code from its own packaged archive, and checks that archive's integrity at startup.
+- ddcd119: The optimizer no longer asks you to move points that make no real difference. After it finds the best build, it puts back any change from your current build that is worth almost nothing (such as a single point in Speed), as long as the plan as a whole stays within 0.5% of the best it found. That cap covers all the dropped changes together, not each one. The gain each plan shows is now the gain of the trimmed plan you are asked to apply. A plan whose whole gain is under 0.5% now keeps your current build. This applies to the Team Plan on desktop and web, the Farm respec, and the Optimize button on each hero's points.
+- 6e18682: Both app windows now run in Chromium's renderer sandbox, so the pages they show no longer share a process with any Node access.
+- Updated dependencies [7ea9736]
+- Updated dependencies [a15897a]
+- Updated dependencies [b174378]
+- Updated dependencies [8014b2c]
+- Updated dependencies [ddcd119]
+- Updated dependencies [96cc454]
+  - @bombfarm/domain@1.15.2
+  - @bombfarm/contracts@0.16.1
+  - @bombfarm/game-data@0.0.26
+  - @bombfarm/hero@0.7.6
+  - @bombfarm/ui@0.20.1
+  - @bombfarm/account@0.3.22
+  - @bombfarm/farm@1.5.4
+  - @bombfarm/game-api@0.8.7
+  - @bombfarm/game-art@0.8.11
+  - @bombfarm/team-plan@0.8.4
+  - @bombfarm/pricing@0.4.8
+
 ## 0.32.1
 
 ### Patch Changes
