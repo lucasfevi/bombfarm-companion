@@ -27,8 +27,7 @@ export function derivePointsUnits(plan: Pick<TeamPlan, 'pointResets' | 'perHero'
 
 /** After a refund every point goes on again; with nothing refunded only the points added do. */
 function pointsPlacedByStep(vectorBefore: CommitVector, vector: CommitVector, needsRespec: boolean): number {
-  const total = (values: CommitVector) => values.reduce((sum, value) => sum + value, 0);
-  return needsRespec ? total(vector) : total(vector) - total(vectorBefore);
+  return needsRespec ? vectorTotal(vector) : vectorTotal(vector) - vectorTotal(vectorBefore);
 }
 
 export function preflightPointsUnit(unit: ApplyPointsUnit, reading: HeroAllocationReading): ApplyUnitVerdict {
@@ -42,6 +41,29 @@ export function preflightPointsUnit(unit: ApplyPointsUnit, reading: HeroAllocati
     return { index: unit.index, status: unit.needsRespec ? 'pendingFull' : 'pendingCommit' };
   }
   return { index: unit.index, status: 'conflict', reason: 'allocationChanged' };
+}
+
+export type ServerAllocationReading = HeroAllocationReading & { available: number | null };
+
+/**
+ * `vectorBefore` is inferred from the stat sheet, and a stat at its cap hides points the sheet
+ * cannot show — so against the server's own allocation a mismatch is not evidence the player moved
+ * anything, and treating it as one skipped such a hero on every run. A paid reset refunds whatever
+ * is placed before the absolute commit, so it holds whatever the allocation; only a target the hero
+ * does not own enough points for, or an add-only commit that would have to take points off, cannot.
+ */
+export function preflightPointsUnitAgainstServer(unit: ApplyPointsUnit, reading: ServerAllocationReading): ApplyUnitVerdict {
+  const verdict = preflightPointsUnit(unit, reading);
+  if (verdict.status !== 'conflict') return verdict;
+  const pointsOwned = reading.available === null ? unit.level : reading.spent + reading.available;
+  if (vectorTotal(unit.vector) > pointsOwned) return verdict;
+  if (unit.needsRespec) return { index: unit.index, status: 'pendingFull' };
+  const onlyAdds = unit.vector.every((value, index) => value >= (reading.alloc[index] ?? 0));
+  return onlyAdds ? { index: unit.index, status: 'pendingCommit' } : verdict;
+}
+
+function vectorTotal(values: CommitVector): number {
+  return values.reduce((sum, value) => sum + value, 0);
 }
 
 export function preflightPointsUnitsOffline(

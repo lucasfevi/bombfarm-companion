@@ -1,6 +1,6 @@
 import type { ApplyPointsUnit, ApplyStopReason } from '@bombfarm/contracts';
 import { WRITE_ROUTES, type HeroDetailReading } from '@bombfarm/game-api';
-import { preflightPointsUnit } from '@bombfarm/domain/team-plan';
+import { preflightPointsUnitAgainstServer } from '@bombfarm/domain/team-plan';
 import type { ApplyRunContext, UnitResult } from './apply-run-context.js';
 
 type ReadingStop = { readonly kind: 'stop'; readonly stop: Exclude<ApplyStopReason, 'finished'>; readonly code: string | null };
@@ -47,7 +47,7 @@ export async function runPointsUnit(unit: ApplyPointsUnit, ctx: ApplyRunContext)
     return mapped.kind === 'skip' ? mapped : toStopResult(mapped, null, false);
   }
 
-  const verdict = preflightPointsUnit(unit, { alloc: reading.alloc, spent: reading.spent });
+  const verdict = preflightPointsUnitAgainstServer(unit, reading);
   if (verdict.status === 'done') {
     return { kind: 'skip', reason: 'alreadyDone' };
   }

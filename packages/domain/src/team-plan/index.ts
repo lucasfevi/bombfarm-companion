@@ -40,8 +40,10 @@ export {
 export {
   derivePointsUnits,
   preflightPointsUnit,
+  preflightPointsUnitAgainstServer,
   preflightPointsUnitsOffline,
   type HeroAllocationReading,
+  type ServerAllocationReading,
 } from './apply-points';
 export { APPLY_CALL_MEAN_MS, computeApplyLedger, estimateApplyDurationMs, type ApplyLedger } from './apply-ledger';
 export { computeRosterAuras } from './auras';
