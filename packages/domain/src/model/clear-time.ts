@@ -46,7 +46,7 @@
  */
 
 import { BASE_BLAST_RANGE, EXTRA_RANGE_FRAC, SECOND_BLAST_FRAC, SHATTER_FRAC } from '../phase-wiki';
-import { hitsToKillWithSecondBlast } from '../phases';
+import { averagedHitsToKill, hitsToKillWithSecondBlast } from '../phases';
 import {
   REPLANT_HOP_CELLS,
   freeHopCells,
@@ -191,7 +191,7 @@ export const ACTIVE_EXTRA = 0.29;
 /** Standing props per prop killed in one integration step; under this many, one prop per step. */
 const COARSE_STEP_ABOVE = 10;
 
-/** Above this many hits the crit-averaged hit is exact to under 1% (central limit) and cheaper. */
+/** Above this many hits {@link averagedHitsToKill} replaces the exact sum, which grows with the square of the hits. */
 const CRIT_ROLL_MAX_HITS = 60;
 
 export type ClearHero = {
@@ -254,7 +254,7 @@ function unclearable(heroCount: number): ClearResult {
  * `E[hits] = Σ_k P(alive after k hits)`, and the prop is alive after `k` hits while fewer than
  * `c*(k) = ceil((hp − k × hit) / (crit − hit))` of them were crits, so each term is a binomial
  * lower tail. Exact, and cheap: at most `ceil(hp / hit)` terms. Past {@link CRIT_ROLL_MAX_HITS}
- * the sum is replaced by `hp / E[hit]`, which the central limit theorem makes accurate there.
+ * the sum is replaced by {@link averagedHitsToKill}.
  *
  * With a `secondBlastChance` one hit is one bomb's blast, second blast included
  * ({@link expectedHitsWithSecondBlast}).
@@ -271,10 +271,19 @@ export function expectedHitsToKill(
   if (!(hp > 0)) return 0;
   const p = Math.min(1, Math.max(0, critChance));
   const crit = hitNoCrit * Math.max(1, critMult);
-  if (p >= 1) return Math.ceil(hp / crit);
   const maxHits = Math.ceil(hp / hitNoCrit);
   if (p <= 0 || crit <= hitNoCrit) return maxHits;
-  if (maxHits > CRIT_ROLL_MAX_HITS) return hp / ((1 - p) * hitNoCrit + p * crit);
+  if (p >= 1) return Math.ceil(hp / crit);
+  if (maxHits > CRIT_ROLL_MAX_HITS) {
+    return averagedHitsToKill(
+      hp,
+      (1 - p) * hitNoCrit + p * crit,
+      (1 - p) * hitNoCrit * hitNoCrit + p * crit * crit,
+      p,
+      { mean: hitNoCrit, meanSquare: hitNoCrit * hitNoCrit, hits: maxHits },
+      { mean: crit, meanSquare: crit * crit, hits: Math.ceil(hp / crit) },
+    );
+  }
 
   // Summed by crit count instead of by hit count: with exactly `c` crits the prop survives `k`
   // hits while `k < K_c = ceil((hp − c × crit) / hit) + c`, and `c` runs only to the crits that
@@ -310,15 +319,36 @@ export function expectedHitsToKill(
  * likely a blast sequence is to reach it does not depend on the HP — only which states are alive
  * does. One table per crit and second-blast chance, sorted by damage, answers every HP.
  */
+/** A blast's mean damage: the hit and its second blast, each rolling its own crit. */
+function blastMean(hit: number, p: number, cm: number, s: number): number {
+  return hit * (1 - p + p * cm) * (1 + s * SECOND_BLAST_FRAC);
+}
+
+/** A blast's mean square damage. The two crits are independent, so the cross term squares the
+ *  mean crit factor while each part's own term takes its mean square. */
+function blastMeanSquare(hit: number, p: number, cm: number, s: number): number {
+  const critMean = 1 - p + p * cm;
+  const critMeanSquare = 1 - p + p * cm * cm;
+  return hit * hit * (critMeanSquare * (1 + s * SECOND_BLAST_FRAC * SECOND_BLAST_FRAC) + 2 * s * SECOND_BLAST_FRAC * critMean * critMean);
+}
+
 function expectedHitsWithSecondBlast(hp: number, hitNoCrit: number, critChance: number, critMult: number, s: number): number {
   if (!(hitNoCrit > 0) || !Number.isFinite(hitNoCrit)) return Infinity;
   if (!(hp > 0)) return 0;
   const p = Math.min(1, Math.max(0, critChance));
   const cm = Math.max(1, critMult);
-  if (p >= 1) return hitsToKillWithSecondBlast(hitNoCrit * cm, hp, s);
   if (p <= 0 || cm <= 1) return hitsToKillWithSecondBlast(hitNoCrit, hp, s);
+  if (p >= 1) return hitsToKillWithSecondBlast(hitNoCrit * cm, hp, s);
   if (Math.ceil(hp / hitNoCrit) > CRIT_ROLL_MAX_HITS) {
-    return hp / (hitNoCrit * (1 - p + p * cm) * (1 + s * SECOND_BLAST_FRAC));
+    const crit = hitNoCrit * cm;
+    return averagedHitsToKill(
+      hp,
+      blastMean(hitNoCrit, p, cm, s),
+      blastMeanSquare(hitNoCrit, p, cm, s),
+      p,
+      { mean: blastMean(hitNoCrit, 0, cm, s), meanSquare: blastMeanSquare(hitNoCrit, 0, cm, s), hits: hitsToKillWithSecondBlast(hitNoCrit, hp, s) },
+      { mean: blastMean(hitNoCrit, 1, cm, s), meanSquare: blastMeanSquare(hitNoCrit, 1, cm, s), hits: hitsToKillWithSecondBlast(crit, hp, s) },
+    );
   }
   const table = secondBlastTable(p, cm, s);
   const aliveBelow = hp / (hitNoCrit * SECOND_BLAST_FRAC) - 1e-12;
