@@ -99,12 +99,17 @@ script a CSP could stop), every redirect off it (`will-redirect`), and every sub
 anything but the app origin or an empty document (`will-frame-navigate`). None of them hands
 anything to `shell.openExternal`.
 
-Chromium commits a page's own navigation to `about:blank` without raising any of those events, so
-the policy also notes each navigation the page starts (`did-start-navigation`, initiating frame
-present) and, when it commits off the app origin (`did-navigate`), loads the entry page the window
-was created with again. A load the main process starts itself has no initiating frame and is never
-second-guessed. Calling `loadURL` from inside `did-start-navigation` itself crashes the app, hence
-the commit-time check and the deferred load.
+Chromium commits a page's own navigation to `about:blank` or `about:srcdoc` without raising any of
+those events, whoever started it (a removed child frame leaves no initiating frame at all). So the
+policy checks where the window *is*, not how it got there: on `did-navigate`, `did-stop-loading`,
+`did-finish-load` and `did-fail-load`, a main frame that is off the app origin is sent back to the
+entry page the window was created with. The one exemption is a page the main process loaded on
+purpose: the policy wraps the window's `loadURL`, and a page that load settled on is trusted until
+the window leaves it. Never call the original `loadURL` around the wrapper. Recovery is limited to 3
+per 10 s per window; past that it logs `navigation.recovery_stopped` once and leaves the window
+blank (the user restarts the app), so a page that always sends its window back to a blank cannot
+burn CPU. Calling `loadURL` from inside a navigation event crashes the app, hence the deferred
+load.
 
 The ways a link reaches the browser are `target="_blank"` / `window.open` (the window-open handler,
 `https:` only; a script-driven `window.open` included, which a packaged run's CSP blocks) and a
@@ -122,7 +127,9 @@ feature works.** The File System Access pickers never reach a permission handler
 
 Both are wired in `index.ts` (`installSessionSecurity`, `windowNavigationPolicy`), and
 `window-security-wiring-guard.test.ts` reads that file's syntax tree so a commented-out, conditional
-or emptied call fails a test.
+or emptied call fails a test, and so does a local binding, parameter or reassignment that replaces
+`installSessionSecurity` or `createNavigationPolicyApplier` with something other than the module's
+own export.
 
 ## Local checks
 

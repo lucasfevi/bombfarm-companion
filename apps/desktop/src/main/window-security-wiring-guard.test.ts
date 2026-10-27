@@ -157,6 +157,80 @@ export function findFilePickerSwitch(source: string): string[] {
   return found ? [] : ['index.ts must switch off the file pickers at the top level, before the app is ready'];
 }
 
+const IMPORTED_BINDINGS: readonly (readonly [string, string])[] = [
+  ['installSessionSecurity', './session-permissions.js'],
+  ['createNavigationPolicyApplier', './external-navigation.js'],
+];
+const DECLARED_LOCALLY: readonly string[] = ['windowNavigationPolicy'];
+
+function declaresName(node: ts.Node, name: string): boolean {
+  const declared =
+    (ts.isVariableDeclaration(node) ||
+      ts.isParameter(node) ||
+      ts.isBindingElement(node) ||
+      ts.isFunctionDeclaration(node) ||
+      ts.isFunctionExpression(node) ||
+      ts.isClassDeclaration(node) ||
+      ts.isClassExpression(node) ||
+      ts.isImportSpecifier(node) ||
+      ts.isImportClause(node) ||
+      ts.isNamespaceImport(node) ||
+      ts.isImportEqualsDeclaration(node)) &&
+    node.name !== undefined &&
+    ts.isIdentifier(node.name) &&
+    node.name.text === name;
+  return declared;
+}
+
+export function findBindingProblems(source: string): string[] {
+  const sourceFile = parse(source);
+  const problems: string[] = [];
+  const names = [...IMPORTED_BINDINGS.map(([name]) => name), ...DECLARED_LOCALLY];
+  const declarations = new Map<string, ts.Node[]>(names.map((name) => [name, []]));
+
+  const visit = (node: ts.Node): void => {
+    for (const name of names) {
+      if (declaresName(node, name)) declarations.get(name)?.push(node);
+    }
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+      node.operatorToken.kind <= ts.SyntaxKind.LastAssignment &&
+      ts.isIdentifier(node.left) &&
+      names.includes(node.left.text)
+    ) {
+      problems.push(`${node.left.text} is reassigned`);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+
+  for (const [name, module] of IMPORTED_BINDINGS) {
+    const found = declarations.get(name) ?? [];
+    const legitimate = found.filter(
+      (node) =>
+        ts.isImportSpecifier(node) &&
+        node.propertyName === undefined &&
+        !node.isTypeOnly &&
+        ts.isNamedImports(node.parent) &&
+        node.parent.parent.phaseModifier !== ts.SyntaxKind.TypeKeyword &&
+        ts.isImportDeclaration(node.parent.parent.parent) &&
+        ts.isStringLiteral(node.parent.parent.parent.moduleSpecifier) &&
+        node.parent.parent.parent.moduleSpecifier.text === module,
+    );
+    if (legitimate.length !== 1 || found.length !== 1) {
+      problems.push(`${name} must be bound once, by a plain named import from ${module}, and by nothing else`);
+    }
+  }
+  for (const name of DECLARED_LOCALLY) {
+    const found = declarations.get(name) ?? [];
+    if (found.length !== 1 || !ts.isFunctionDeclaration(found[0] as ts.Node)) {
+      problems.push(`${name} must be declared once, as a function declaration`);
+    }
+  }
+  return problems;
+}
+
 const source = readFileSync(MAIN_INDEX, 'utf8');
 
 describe('window and session security wiring in index.ts', () => {
@@ -166,6 +240,45 @@ describe('window and session security wiring in index.ts', () => {
 
   it('applies the navigation policy to both windows with the page each was created with', () => {
     expect(findNavigationPolicyWiring(source)).toEqual([]);
+  });
+
+  it('binds the wiring functions to the real modules and nothing else', () => {
+    expect(findBindingProblems(source)).toEqual([]);
+
+    const wired = `
+      import { installSessionSecurity } from './session-permissions.js';
+      import { createNavigationPolicyApplier } from './external-navigation.js';
+      function windowNavigationPolicy(env) { return createNavigationPolicyApplier(env, {}); }
+      async function bootstrap() { installSessionSecurity({}); }`;
+    expect(findBindingProblems(wired)).toEqual([]);
+
+    const mutants: Record<string, string> = {
+      'import replaced by a local no-op': wired.replace(
+        "import { installSessionSecurity } from './session-permissions.js';",
+        'function installSessionSecurity() {}',
+      ),
+      'import from another module': wired.replace("'./session-permissions.js'", "'./elsewhere.js'"),
+      'import under an alias': wired.replace(
+        '{ createNavigationPolicyApplier }',
+        '{ somethingElse as createNavigationPolicyApplier }',
+      ),
+      'import of a type only': wired.replace('{ installSessionSecurity }', '{ type installSessionSecurity }'),
+      'shadowing parameter': wired.replace('async function bootstrap()', 'async function bootstrap(installSessionSecurity)'),
+      'shadowing constant': wired.replace('installSessionSecurity({});', 'const installSessionSecurity = () => {}; installSessionSecurity({});'),
+      'reassignment': wired.replace('installSessionSecurity({});', 'installSessionSecurity = () => {}; installSessionSecurity({});'),
+      'applier replaced by a local no-op': wired.replace(
+        "import { createNavigationPolicyApplier } from './external-navigation.js';",
+        'const createNavigationPolicyApplier = () => () => {};',
+      ),
+      'policy function turned into a constant': wired.replace(
+        'function windowNavigationPolicy(env) {',
+        'const windowNavigationPolicy = (env) => { return () => {}; }; function other(env) {',
+      ),
+      'policy function declared twice': `${wired} function windowNavigationPolicy() {}`,
+    };
+    for (const [name, mutant] of Object.entries(mutants)) {
+      expect(findBindingProblems(mutant), name).not.toEqual([]);
+    }
   });
 
   it('switches the file pickers off at the top level', () => {

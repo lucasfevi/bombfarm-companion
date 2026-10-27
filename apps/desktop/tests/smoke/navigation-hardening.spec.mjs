@@ -23,6 +23,9 @@ const REFERRAL_SOURCE = path.join(desktopRoot, '..', '..', 'packages', 'domain',
  */
 const FOREIGN = 'https://navigation-probe.invalid/landing';
 
+/** Mirrors `RECOVERY_WINDOW_MS` in `external-navigation.ts`, which a plain `.mjs` cannot import. */
+const RECOVERY_WINDOW_MS = 10_000;
+
 function electronExecutable() {
   return path.join(
     desktopRoot,
@@ -121,30 +124,79 @@ async function openSettings(page) {
 }
 
 const BLANK = 'about:blank';
+const SRCDOC = 'about:srcdoc';
 
-const BLANK_NAVIGATIONS = {
-  'a meta refresh': () => {
-    document.head.insertAdjacentHTML('beforeend', `<meta http-equiv="refresh" content="0;url=about:blank">`);
+/** Each way a page can leave its window on an empty document, with the url the navigation starts
+ *  with. None of them raises a `will-*` event, whoever started it. */
+const EMPTY_DOCUMENT_NAVIGATIONS = {
+  'a meta refresh to about:blank': {
+    starts: BLANK,
+    run: () => {
+      document.head.insertAdjacentHTML('beforeend', `<meta http-equiv="refresh" content="0;url=about:blank">`);
+    },
   },
-  'location.assign': () => {
-    window.location.assign('about:blank');
+  'a meta refresh to about:srcdoc': {
+    starts: SRCDOC,
+    run: () => {
+      document.head.insertAdjacentHTML('beforeend', `<meta http-equiv="refresh" content="0;url=about:srcdoc">`);
+    },
   },
-  'a target=_top link inside a srcdoc child': () => {
-    const frame = document.createElement('iframe');
-    frame.srcdoc = '<a id="out" target="_top" href="about:blank">out</a>';
-    frame.addEventListener('load', () => frame.contentDocument.getElementById('out').click(), { once: true });
-    document.body.append(frame);
+  'location.assign to about:blank': {
+    starts: BLANK,
+    run: () => {
+      window.location.assign('about:blank');
+    },
+  },
+  'a target=_top link inside a srcdoc child': {
+    starts: BLANK,
+    run: () => {
+      const frame = document.createElement('iframe');
+      frame.srcdoc = '<a id="out" target="_top" href="about:blank">out</a>';
+      frame.addEventListener('load', () => frame.contentDocument.getElementById('out').click(), { once: true });
+      document.body.append(frame);
+    },
+  },
+  'a target=_top link whose child frame is removed in the same task': {
+    starts: BLANK,
+    run: () => {
+      const frame = document.createElement('iframe');
+      frame.srcdoc = '<a id="out" target="_top" href="about:blank">out</a>';
+      frame.addEventListener(
+        'load',
+        () => {
+          frame.contentDocument.getElementById('out').click();
+          frame.remove();
+        },
+        { once: true },
+      );
+      document.body.append(frame);
+    },
   },
 };
 
-/** A window left on `about:blank` has no bridge and no script until the app restarts, so the spec
- *  waits for it to be put back, and for it to stay put. */
-async function expectBackOnTheEntryPage(app, window, entryUrl, trigger) {
+/** Needs script that a page's CSP forbids, so it only runs where no policy is delivered. */
+const REMOVED_CHILD_FORM_TO_BLANK = () => {
+  const frame = document.createElement('iframe');
+  frame.srcdoc = '<form id="f" method="get" action="about:blank" target="_top"><input name="a" value="1"></form>';
+  frame.addEventListener(
+    'load',
+    () => {
+      frame.contentDocument.getElementById('f').submit();
+      frame.remove();
+    },
+    { once: true },
+  );
+  document.body.append(frame);
+};
+
+/** A window left on an empty document has no bridge and no script until the app restarts, so the
+ *  spec waits for it to be put back, and for it to stay put. */
+async function expectBackOnTheEntryPage(app, window, entryUrl, trigger, starts = BLANK) {
   await expect
     .poll(
       async () =>
-        (await navigations(app)).some((entry) => entry.kind === 'did-start-navigation' && entry.isMainFrame && entry.url === BLANK),
-      { timeout: 15_000, message: `${trigger}: the navigation to about:blank started` },
+        (await navigations(app)).some((entry) => entry.kind === 'did-start-navigation' && entry.isMainFrame && entry.url.startsWith(starts)),
+      { timeout: 15_000, message: `${trigger}: the navigation to ${starts} started` },
     )
     .toBe(true);
   await expect
@@ -377,16 +429,23 @@ test.describe('navigation, frame and permission hardening', () => {
     }
   }
 
-  for (const [windowName, target] of [
-    ['main', () => page],
-    ['compact', () => mini],
-  ]) {
-    for (const [name, run] of Object.entries(BLANK_NAVIGATIONS)) {
-      test(`${name} to about:blank puts the ${windowName} window back on its entry page`, async () => {
+  // A window is put back at most RECOVERY_LIMIT times in RECOVERY_WINDOW_MS, so probes on the same
+  // window are spaced further apart than that, and alternate windows to let one cool while the other
+  // is probed.
+  const lastProbeAt = new Map();
+  for (const [name, { starts, run }] of Object.entries(EMPTY_DOCUMENT_NAVIGATIONS)) {
+    for (const [windowName, target] of [
+      ['main', () => page],
+      ['compact', () => mini],
+    ]) {
+      test(`${name} puts the ${windowName} window back on its entry page`, async () => {
         const window = target();
+        const cooling = RECOVERY_WINDOW_MS + 500 - (Date.now() - (lastProbeAt.get(windowName) ?? 0));
+        if (cooling > 0) await window.waitForTimeout(cooling);
+        lastProbeAt.set(windowName, Date.now());
         const entryUrl = await window.evaluate(() => location.href);
-        await window.evaluate(run);
-        await expectBackOnTheEntryPage(app, window, entryUrl, name);
+        await window.evaluate(run).catch(() => undefined);
+        await expectBackOnTheEntryPage(app, window, entryUrl, name, starts);
       });
     }
   }
@@ -443,6 +502,7 @@ const STATIC_MIME_TYPES = {
   '.ico': 'image/x-icon',
 };
 
+/** `server.injectBlank` makes every page it serves send its window straight to `about:blank`. */
 function serveRendererOverLoopback(root) {
   const server = http.createServer((request, response) => {
     const pathname = decodeURIComponent(new URL(request.url, 'http://127.0.0.1').pathname);
@@ -455,10 +515,16 @@ function serveRendererOverLoopback(root) {
       response.writeHead(404).end();
       return;
     }
+    if (server.injectBlank && target.endsWith('.html')) {
+      const page = fs.readFileSync(target, 'utf8').replace(/<head[^>]*>/, (head) => `${head}<meta http-equiv="refresh" content="0;url=about:blank">`);
+      response.writeHead(200, { 'content-type': 'text/html' }).end(page);
+      return;
+    }
     response.writeHead(200, { 'content-type': STATIC_MIME_TYPES[path.extname(target)] ?? 'application/octet-stream' });
     fs.createReadStream(target).pipe(response);
   });
   return new Promise((resolve) => {
+    server.injectBlank = false;
     server.listen(0, '127.0.0.1', () => resolve(server));
   });
 }
@@ -530,8 +596,14 @@ test.describe('navigation hardening in a dev run, where no Content-Security-Poli
         globalThis.__navigations.length = 0;
       });
       const devEntry = await devPage.evaluate(() => location.href);
-      await devPage.evaluate(BLANK_NAVIGATIONS['location.assign']);
+      await devPage.evaluate(EMPTY_DOCUMENT_NAVIGATIONS['location.assign to about:blank'].run);
       await expectBackOnTheEntryPage(devApp, devPage, devEntry, 'dev run location.assign');
+
+      await devApp.evaluate(() => {
+        globalThis.__navigations.length = 0;
+      });
+      await devPage.evaluate(REMOVED_CHILD_FORM_TO_BLANK).catch(() => undefined);
+      await expectBackOnTheEntryPage(devApp, devPage, devEntry, 'dev run removed child form');
 
       await devApp.evaluate(() => {
         globalThis.__navigations.length = 0;
@@ -549,6 +621,44 @@ test.describe('navigation hardening in a dev run, where no Content-Security-Poli
       expect(redirects.every((entry) => entry.prevented)).toBe(true);
       expect(await openedUrls(devApp)).toEqual([]);
       expect(devPage.url().startsWith(origin)).toBe(true);
+    } finally {
+      await devApp?.close().catch(() => undefined);
+      await new Promise((resolve) => server.close(resolve));
+      fs.rmSync(devUserData, { recursive: true, force: true });
+    }
+  });
+
+  test('an entry page that sends its window to about:blank every time is recovered a few times, then left alone', async () => {
+    const devUserData = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-navigation-persistent-'));
+    const server = await serveRendererOverLoopback(path.join(desktopRoot, 'renderer', 'out'));
+    const origin = `http://127.0.0.1:${String(server.address().port)}`;
+    let devApp;
+
+    try {
+      devApp = await launch({
+        userDataDir: devUserData,
+        extraEnv: { NODE_ENV: 'development', BFC_RENDERER_URL: origin },
+      });
+      const devPage = await devApp.firstWindow();
+      await devPage.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
+      await watchNavigations(devApp);
+
+      server.injectBlank = true;
+      await devPage.evaluate(EMPTY_DOCUMENT_NAVIGATIONS['location.assign to about:blank'].run);
+
+      const recoveryLoads = async () =>
+        (await navigations(devApp)).filter(
+          (entry) => entry.kind === 'did-start-navigation' && !entry.initiated && entry.url.startsWith(origin),
+        ).length;
+      await expect.poll(recoveryLoads, { timeout: 20_000, message: 'the window was put back at least once' }).toBeGreaterThan(0);
+      await devPage.waitForTimeout(12_000);
+      const settled = await recoveryLoads();
+      // each load starts twice in the event log; three recoveries at most
+      expect(settled, 'recoveries stop at the limit instead of cycling').toBeLessThanOrEqual(8);
+      await devPage.waitForTimeout(3_000);
+      expect(await recoveryLoads(), 'and stay stopped').toBe(settled);
+      expect(devPage.url(), 'the window is left on the blank page').toBe('about:blank');
+      expect(await openedUrls(devApp)).toEqual([]);
     } finally {
       await devApp?.close().catch(() => undefined);
       await new Promise((resolve) => server.close(resolve));

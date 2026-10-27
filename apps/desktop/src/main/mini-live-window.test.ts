@@ -222,7 +222,7 @@ describe('createMiniLiveController — navigation policy', () => {
       controllerDeps({
         BrowserWindowCtor: fake.Ctor,
         applyExternalNavigation: (webContents, entryUrl) => {
-          Object.assign(webContents, { setWindowOpenHandler });
+          Object.assign(webContents, { setWindowOpenHandler, getURL: () => '', isDestroyed: () => false });
           apply(webContents as never, entryUrl);
         },
       }),
@@ -233,7 +233,15 @@ describe('createMiniLiveController — navigation policy', () => {
     const events = (fake.lastInstance?.webContents.on as ReturnType<typeof vi.fn>).mock.calls.map((call: unknown[]) => call[0]);
     expect(setWindowOpenHandler).toHaveBeenCalledOnce();
     expect(events).toEqual(
-      expect.arrayContaining(['will-navigate', 'will-redirect', 'will-frame-navigate', 'did-start-navigation', 'did-navigate']),
+      expect.arrayContaining([
+        'will-navigate',
+        'will-redirect',
+        'will-frame-navigate',
+        'did-navigate',
+        'did-stop-loading',
+        'did-finish-load',
+        'did-fail-load',
+      ]),
     );
   });
 });

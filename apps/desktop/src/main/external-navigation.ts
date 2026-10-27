@@ -82,7 +82,11 @@ export interface ExternalNavigationDeps {
    *  sent back to it. */
   entryUrl: string;
   internalUrls?: readonly string[];
+  now?: () => number;
 }
+
+export const RECOVERY_LIMIT = 3;
+export const RECOVERY_WINDOW_MS = 10_000;
 
 const DENY_NEW_WINDOW = { action: 'deny' } as const;
 
@@ -90,7 +94,7 @@ export function applyExternalNavigationPolicy(
   contents: WebContents,
   deps: ExternalNavigationDeps,
 ): void {
-  const { openExternal, log, entryUrl, internalUrls = [] } = deps;
+  const { openExternal, log, entryUrl, internalUrls = [], now = Date.now } = deps;
 
   const openInBrowser = (url: string, trigger: string): void => {
     log.info({ scope: 'main', event: 'navigation.opened_externally', trigger, url });
@@ -135,31 +139,91 @@ export function applyExternalNavigationPolicy(
     refuse(details.url, 'will-redirect');
   });
 
-  // Chromium commits a page's own navigation to `about:blank` without raising any `will-*` event,
-  // and a window left there has no bridge and no script until the app restarts. `did-start-navigation`
-  // is raised for the navigations the policy refuses too, so it only notes what a page started; the
-  // window is sent back when that navigation actually commits somewhere off the app origin. A load
-  // the main process started itself has no initiating frame and is never second-guessed.
-  let startedByPage: string | null = null;
-  contents.on('did-start-navigation', (details) => {
-    startedByPage =
-      details.isMainFrame && !details.isSameDocument && details.initiator ? details.url : null;
-  });
-  contents.on('did-navigate', (_event, url) => {
-    const started = startedByPage;
-    startedByPage = null;
-    if (started === null || decideTopLevelNavigation(url, internalUrls) === 'allow') {
+  // Chromium commits a page's own navigation to `about:blank` or `about:srcdoc` without raising any
+  // `will-*` event, whoever started it, and a window left there has no bridge and no script until the
+  // app restarts. So the window's state is checked instead of the navigation's cause: whenever the
+  // main frame is off the app origin it is sent back to the entry page, unless the main process
+  // deliberately loaded that page through `loadURL`, which this policy wraps to know.
+  const loadEntry = contents.loadURL.bind(contents);
+  let mainProcessLoads = 0;
+  let trustedHref: string | null = null;
+  contents.loadURL = (url, options) => {
+    mainProcessLoads += 1;
+    const loading = loadEntry(url, options);
+    const settled = (): void => {
+      mainProcessLoads -= 1;
+    };
+    loading.then(() => {
+      settled();
+      if (!contents.isDestroyed()) {
+        trustedHref = contents.getURL();
+      }
+    }, settled);
+    return loading;
+  };
+
+  let recovering = false;
+  let gaveUp = false;
+  let recoveryStarts: number[] = [];
+
+  const recoverIfOffOrigin = (trigger: string): void => {
+    if (mainProcessLoads > 0 || recovering || contents.isDestroyed()) {
       return;
     }
-    refuse(url, 'did-navigate');
+    const url = contents.getURL();
+    if (url === '' || url === trustedHref) {
+      return;
+    }
+    if (decideTopLevelNavigation(url, internalUrls) === 'allow') {
+      gaveUp = false;
+      return;
+    }
+    const at = now();
+    recoveryStarts = recoveryStarts.filter((started) => at - started < RECOVERY_WINDOW_MS);
+    if (recoveryStarts.length >= RECOVERY_LIMIT) {
+      if (!gaveUp) {
+        gaveUp = true;
+        log.error({
+          scope: 'main',
+          event: 'navigation.recovery_stopped',
+          trigger,
+          url,
+          limit: RECOVERY_LIMIT,
+          windowMs: RECOVERY_WINDOW_MS,
+        });
+      }
+      return;
+    }
+    recoveryStarts.push(at);
+    recovering = true;
+    trustedHref = null;
+    refuse(url, trigger);
     setImmediate(() => {
       if (contents.isDestroyed()) {
         return;
       }
-      void contents.loadURL(entryUrl).catch((error: unknown) => {
-        log.error({ scope: 'main', event: 'navigation.recover_failed', url: entryUrl, error: String(error) });
-      });
+      loadEntry(entryUrl)
+        .catch((error: unknown) => {
+          log.error({ scope: 'main', event: 'navigation.recover_failed', url: entryUrl, error: String(error) });
+        })
+        .finally(() => {
+          recovering = false;
+          recoverIfOffOrigin('recovery-settled');
+        });
     });
+  };
+
+  contents.on('did-navigate', () => {
+    recoverIfOffOrigin('did-navigate');
+  });
+  contents.on('did-stop-loading', () => {
+    recoverIfOffOrigin('did-stop-loading');
+  });
+  contents.on('did-finish-load', () => {
+    recoverIfOffOrigin('did-finish-load');
+  });
+  contents.on('did-fail-load', () => {
+    recoverIfOffOrigin('did-fail-load');
   });
 
   contents.on('will-frame-navigate', (details) => {

@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { WebContents } from 'electron';
 import {
+  RECOVERY_LIMIT,
+  RECOVERY_WINDOW_MS,
   applyExternalNavigationPolicy,
+  createNavigationPolicyApplier,
   decideFrameNavigation,
   decideNavigation,
   decideTopLevelNavigation,
@@ -137,10 +140,12 @@ describe('decideFrameNavigation', () => {
 interface NavigateDetails {
   url: string;
   isMainFrame: boolean;
-  isSameDocument?: boolean;
-  initiator?: unknown;
   preventDefault(): void;
 }
+
+type RecoveryEvent = 'did-navigate' | 'did-stop-loading' | 'did-finish-load' | 'did-fail-load';
+
+const tick = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
 
 function createWebContentsSpy(): {
   contents: WebContents;
@@ -148,31 +153,42 @@ function createWebContentsSpy(): {
   navigate(url: string): { prevented: boolean };
   navigateFrame(url: string, options?: { isMainFrame?: boolean }): { prevented: boolean };
   redirect(url: string, options: { isMainFrame: boolean }): { prevented: boolean };
-  startNavigation(
-    url: string,
-    options?: { isMainFrame?: boolean; isSameDocument?: boolean; initiated?: boolean },
-  ): Promise<void>;
-  commit(url: string): Promise<void>;
+  /** The window lands on `url` by its own doing, then `events` are raised and the chain settles. */
+  landOn(url: string, events?: readonly RecoveryEvent[]): Promise<void>;
+  settle(): Promise<void>;
+  destroy(): void;
+  showing(url: string): void;
   loadURL: ReturnType<typeof vi.fn<(url: string) => Promise<void>>>;
 } {
-  const loadURL = vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined);
+  let currentUrl = '';
+  let destroyed = false;
+  const loadURL = vi.fn<(url: string) => Promise<void>>().mockImplementation((url) => {
+    currentUrl = url;
+    return Promise.resolve();
+  });
   let openHandler: ((details: { url: string }) => { action: string }) | null = null;
-  const listeners = new Map<string, (details: NavigateDetails) => void>();
+  const listeners = new Map<string, (...args: unknown[]) => void>();
 
   const contents = {
     loadURL,
-    isDestroyed: () => false,
+    getURL: () => {
+      if (destroyed) {
+        throw new Error('Object has been destroyed');
+      }
+      return currentUrl;
+    },
+    isDestroyed: () => destroyed,
     setWindowOpenHandler(handler: (details: { url: string }) => { action: string }) {
       openHandler = handler;
     },
-    on(event: string, listener: (details: NavigateDetails) => void) {
+    on(event: string, listener: (...args: unknown[]) => void) {
       listeners.set(event, listener);
       return contents;
     },
   };
 
   const emit = (event: string, url: string, isMainFrame: boolean): { prevented: boolean } => {
-    const listener = listeners.get(event);
+    const listener = listeners.get(event) as unknown as ((details: NavigateDetails) => void) | undefined;
     if (!listener) {
       throw new Error(`no ${event} listener registered`);
     }
@@ -187,6 +203,12 @@ function createWebContentsSpy(): {
     return { prevented };
   };
 
+  const settle = async (): Promise<void> => {
+    for (let round = 0; round < 8; round += 1) {
+      await tick();
+    }
+  };
+
   return {
     contents: contents as unknown as WebContents,
     openWindow(url) {
@@ -199,27 +221,23 @@ function createWebContentsSpy(): {
     navigateFrame: (url, options) => emit('will-frame-navigate', url, options?.isMainFrame ?? false),
     redirect: (url, options) => emit('will-redirect', url, options.isMainFrame),
     loadURL,
-    async commit(url) {
-      const listener = listeners.get('did-navigate') as unknown as ((event: object, url: string) => void) | undefined;
-      if (!listener) {
-        throw new Error('no did-navigate listener registered');
+    async landOn(url, events = ['did-navigate']) {
+      currentUrl = url;
+      for (const event of events) {
+        const listener = listeners.get(event);
+        if (!listener) {
+          throw new Error(`no ${event} listener registered`);
+        }
+        listener({}, url);
       }
-      listener({}, url);
-      await new Promise((resolve) => setImmediate(resolve));
+      await settle();
     },
-    async startNavigation(url, options) {
-      const listener = listeners.get('did-start-navigation');
-      if (!listener) {
-        throw new Error('no did-start-navigation listener registered');
-      }
-      listener({
-        url,
-        isMainFrame: options?.isMainFrame ?? true,
-        isSameDocument: options?.isSameDocument ?? false,
-        initiator: options?.initiated === false ? null : {},
-        preventDefault: () => undefined,
-      });
-      await new Promise((resolve) => setImmediate(resolve));
+    settle,
+    showing(url) {
+      currentUrl = url;
+    },
+    destroy() {
+      destroyed = true;
     },
   };
 }
@@ -379,7 +397,7 @@ describe('applyExternalNavigationPolicy', () => {
     });
   });
 
-  describe('a navigation the page starts by itself that commits off the app origin', () => {
+  describe('a window left off the app origin by its own page', () => {
     function setup(overrides: Partial<Parameters<typeof applyPolicy>[1]> = {}) {
       const spy = createWebContentsSpy();
       const log = createLogSpy();
@@ -391,93 +409,279 @@ describe('applyExternalNavigationPolicy', () => {
       return { spy, log };
     }
 
-    it('loads the entry page again when the page itself lands on about:blank', async () => {
+    it('loads the entry page again when the page lands on about:blank', async () => {
       const { spy, log } = setup({ entryUrl: 'app://bundle/mini-live/index.html' });
 
-      await spy.startNavigation('about:blank');
-      expect(spy.loadURL).not.toHaveBeenCalled();
-      await spy.commit('about:blank');
+      await spy.landOn('about:blank');
 
       expect(spy.loadURL).toHaveBeenCalledExactlyOnceWith('app://bundle/mini-live/index.html');
+      expect(spy.contents.getURL()).toBe('app://bundle/mini-live/index.html');
       expect(log.records).toContainEqual(
         expect.objectContaining({ event: 'navigation.blocked', trigger: 'did-navigate', url: 'about:blank' }),
       );
     });
 
-    it.each(['about:blank', 'about:srcdoc', 'data:text/html,x', 'https://example.com/', 'blob:app://bundle/1'])(
-      'recovers from a commit to %s',
+    it.each(['about:blank', 'about:blank?', 'about:srcdoc', 'data:text/html,x', 'https://example.com/', 'blob:app://bundle/1'])(
+      'recovers from %s, whoever started the navigation and whichever event noticed it',
       async (url) => {
-        const { spy } = setup();
-        await spy.startNavigation(url);
-        await spy.commit(url);
-        expect(spy.loadURL).toHaveBeenCalledWith(RENDERER_ENTRY);
+        for (const event of ['did-navigate', 'did-stop-loading', 'did-finish-load', 'did-fail-load'] as const) {
+          const { spy } = setup();
+          await spy.landOn(url, [event]);
+          expect(spy.loadURL, event).toHaveBeenCalledExactlyOnceWith(RENDERER_ENTRY);
+        }
       },
     );
 
-    it('does not reload the page for a navigation the policy refused, which never commits', async () => {
+    it('notices a window that never raised did-navigate, such as about:srcdoc at the top level', async () => {
       const { spy } = setup();
+      await spy.landOn('about:srcdoc', ['did-stop-loading']);
+      expect(spy.loadURL).toHaveBeenCalledExactlyOnceWith(RENDERER_ENTRY);
+    });
 
-      await spy.startNavigation(STEAM_LISTING);
-      expect(spy.navigate(STEAM_LISTING)).toEqual({ prevented: true });
-      await spy.commit(RENDERER_ENTRY);
-
+    it.each(['app://bundle/live', 'app://bundle/index.html?x=1#y'])('leaves a window on %s alone', async (url) => {
+      const { spy } = setup();
+      await spy.landOn(url, ['did-navigate', 'did-stop-loading', 'did-finish-load', 'did-fail-load']);
       expect(spy.loadURL).not.toHaveBeenCalled();
     });
 
-    it.each(['app://bundle/live', 'app://bundle/index.html?x=1#y'])('leaves an in-app commit to %s alone', async (url) => {
+    it('leaves a window with no page yet alone', async () => {
       const { spy } = setup();
-      await spy.startNavigation(url);
-      await spy.commit(url);
-      expect(spy.loadURL).not.toHaveBeenCalled();
-    });
-
-    it('leaves a same-document route change alone', async () => {
-      const { spy } = setup();
-      await spy.startNavigation('about:blank', { isSameDocument: true });
-      await spy.commit('about:blank');
-      expect(spy.loadURL).not.toHaveBeenCalled();
-    });
-
-    it('leaves a subframe to the frame handler', async () => {
-      const { spy } = setup();
-      await spy.startNavigation('about:blank', { isMainFrame: false });
-      await spy.commit('about:blank');
-      expect(spy.loadURL).not.toHaveBeenCalled();
-    });
-
-    it('leaves a load the main process started itself alone, so its own recovery cannot loop', async () => {
-      const { spy } = setup();
-      await spy.startNavigation('about:blank', { initiated: false });
-      await spy.commit('about:blank');
-      expect(spy.loadURL).not.toHaveBeenCalled();
-    });
-
-    it('does not carry one navigation over to the next commit', async () => {
-      const { spy } = setup();
-      await spy.startNavigation('about:blank');
-      await spy.commit(RENDERER_ENTRY);
-      await spy.commit('about:blank');
+      await spy.landOn('', ['did-stop-loading']);
       expect(spy.loadURL).not.toHaveBeenCalled();
     });
 
     it('allows the dev origin and sends a foreign one back to the entry page in a dev run', async () => {
       const { spy } = setup({ internalUrls: [DEV_RENDERER], entryUrl: `${DEV_RENDERER}/` });
-      await spy.startNavigation(`${DEV_RENDERER}/live`);
-      await spy.commit(`${DEV_RENDERER}/live`);
+      await spy.landOn(`${DEV_RENDERER}/live`);
       expect(spy.loadURL).not.toHaveBeenCalled();
-      await spy.startNavigation('http://127.0.0.1:3001/');
-      await spy.commit('http://127.0.0.1:3001/');
+      await spy.landOn('http://127.0.0.1:3001/');
       expect(spy.loadURL).toHaveBeenCalledExactlyOnceWith(`${DEV_RENDERER}/`);
+    });
+
+    it('does not load again for each of several events that notice the same stranded window', async () => {
+      const { spy } = setup();
+      await spy.landOn('about:blank', ['did-navigate', 'did-stop-loading', 'did-finish-load', 'did-fail-load']);
+      expect(spy.loadURL).toHaveBeenCalledOnce();
+    });
+
+    it('defers the load, so it never runs inside the event that noticed the window', async () => {
+      const { spy } = setup();
+      const pending = spy.landOn('about:blank');
+      expect(spy.loadURL).not.toHaveBeenCalled();
+      await pending;
+      expect(spy.loadURL).toHaveBeenCalledOnce();
+    });
+
+    it('does not touch a window that is gone by the time the deferred load would run', async () => {
+      const { spy } = setup();
+      const pending = spy.landOn('about:blank');
+      spy.destroy();
+      await pending;
+      expect(spy.loadURL).not.toHaveBeenCalled();
+    });
+
+    it('does nothing for a window that is already destroyed when an event arrives', async () => {
+      const { spy } = setup();
+      spy.destroy();
+      await spy.landOn('about:blank');
+      expect(spy.loadURL).not.toHaveBeenCalled();
+    });
+
+    it('checks again once its own load has settled, so a blank that arrived meanwhile is not missed', async () => {
+      const { spy } = setup();
+      spy.loadURL.mockImplementationOnce(() => {
+        spy.showing('about:blank');
+        return Promise.resolve();
+      });
+      await spy.landOn('about:blank');
+      expect(spy.loadURL).toHaveBeenCalledTimes(2);
+      expect(spy.contents.getURL()).toBe(RENDERER_ENTRY);
     });
 
     it('logs a recovery that fails instead of throwing', async () => {
       const { spy, log } = setup();
       spy.loadURL.mockRejectedValueOnce(new Error('aborted'));
-      await spy.startNavigation('about:blank');
-      await spy.commit('about:blank');
-      await vi.waitFor(() => {
-        expect(log.records).toContainEqual(expect.objectContaining({ event: 'navigation.recover_failed' }));
+      await spy.landOn('about:blank');
+      expect(log.records).toContainEqual(expect.objectContaining({ event: 'navigation.recover_failed' }));
+    });
+
+    describe('a page the main process loaded on purpose', () => {
+      it('is left alone, and so is the window while that load is still going', async () => {
+        const { spy } = setup();
+        const data = 'data:text/html,<title>navigated away</title>';
+        let finish: () => void = () => undefined;
+        spy.loadURL.mockImplementationOnce(
+          () =>
+            new Promise<void>((resolve) => {
+              finish = () => {
+                spy.showing(data);
+                resolve();
+              };
+            }),
+        );
+
+        const loading = spy.contents.loadURL(data);
+        await spy.landOn('about:blank', ['did-navigate', 'did-stop-loading']);
+        expect(spy.loadURL).toHaveBeenCalledOnce();
+
+        finish();
+        await loading;
+        await spy.landOn(data, ['did-navigate', 'did-stop-loading', 'did-finish-load']);
+        expect(spy.loadURL).toHaveBeenCalledOnce();
+        expect(spy.contents.getURL()).toBe(data);
       });
+
+      it('stops being trusted once the page itself moves on', async () => {
+        const { spy } = setup();
+        await spy.contents.loadURL('data:text/html,x');
+        await spy.landOn('data:text/html,x');
+        expect(spy.loadURL).toHaveBeenCalledOnce();
+
+        await spy.landOn('about:blank');
+
+        expect(spy.loadURL).toHaveBeenCalledTimes(2);
+        expect(spy.loadURL).toHaveBeenLastCalledWith(RENDERER_ENTRY);
+      });
+
+      it('passes the url and options through and returns the load', async () => {
+        const { spy } = setup();
+        const options = { userAgent: 'x' };
+        const loading = spy.contents.loadURL('app://bundle/live', options);
+        expect(spy.loadURL).toHaveBeenCalledExactlyOnceWith('app://bundle/live', options);
+        await expect(loading).resolves.toBeUndefined();
+      });
+
+      it('does not trust a load that failed', async () => {
+        const { spy } = setup();
+        spy.loadURL.mockImplementationOnce((url) => {
+          spy.showing(url);
+          return Promise.reject(new Error('ERR_FAILED'));
+        });
+        await spy.contents.loadURL('data:text/html,x').catch(() => undefined);
+        await spy.landOn('data:text/html,x', ['did-fail-load']);
+        expect(spy.loadURL).toHaveBeenLastCalledWith(RENDERER_ENTRY);
+      });
+
+      it('does not trust the same page again after the window was sent back from it', async () => {
+        const { spy } = setup();
+        await spy.contents.loadURL('data:text/html,x');
+        await spy.landOn('about:blank');
+        expect(spy.loadURL).toHaveBeenCalledTimes(2);
+
+        await spy.landOn('data:text/html,x');
+
+        expect(spy.loadURL).toHaveBeenCalledTimes(3);
+        expect(spy.loadURL).toHaveBeenLastCalledWith(RENDERER_ENTRY);
+      });
+    });
+
+    describe('under a persistent injection', () => {
+      function alwaysBlank(spy: ReturnType<typeof createWebContentsSpy>): void {
+        spy.loadURL.mockImplementation(() => {
+          spy.showing('about:blank');
+          return Promise.resolve();
+        });
+      }
+
+      it('stops after the limit within the window and says so once', async () => {
+        const clock = 0;
+        const { spy, log } = setup({ now: () => clock });
+        alwaysBlank(spy);
+
+        await spy.landOn('about:blank', ['did-navigate', 'did-stop-loading']);
+        await spy.landOn('about:blank', ['did-navigate']);
+        await spy.landOn('about:blank', ['did-fail-load']);
+
+        expect(spy.loadURL).toHaveBeenCalledTimes(RECOVERY_LIMIT);
+        expect(log.records.filter((record) => record.event === 'navigation.recovery_stopped')).toEqual([
+          expect.objectContaining({ limit: RECOVERY_LIMIT, windowMs: RECOVERY_WINDOW_MS, url: 'about:blank' }),
+        ]);
+      });
+
+      it('recovers again once the window has passed', async () => {
+        let clock = 0;
+        const { spy } = setup({ now: () => clock });
+        alwaysBlank(spy);
+        await spy.landOn('about:blank');
+        expect(spy.loadURL).toHaveBeenCalledTimes(RECOVERY_LIMIT);
+
+        clock += RECOVERY_WINDOW_MS;
+        await spy.landOn('about:blank');
+
+        expect(spy.loadURL.mock.calls.length).toBeGreaterThan(RECOVERY_LIMIT);
+      });
+
+      it('announces a new stop after the window got back on the app in between', async () => {
+        let clock = 0;
+        const { spy, log } = setup({ now: () => clock });
+        alwaysBlank(spy);
+        await spy.landOn('about:blank');
+        spy.loadURL.mockImplementation((url) => {
+          spy.showing(url);
+          return Promise.resolve();
+        });
+        await spy.landOn(RENDERER_ENTRY);
+        clock += RECOVERY_WINDOW_MS / 2;
+        alwaysBlank(spy);
+        await spy.landOn('about:blank');
+
+        expect(log.records.filter((record) => record.event === 'navigation.recovery_stopped')).toHaveLength(2);
+      });
+    });
+  });
+
+  describe('createNavigationPolicyApplier', () => {
+    const DEV_ENV = { isDev: true, devRendererUrl: DEV_RENDERER };
+    const PACKAGED_ENV = { isDev: false, devRendererUrl: DEV_RENDERER };
+
+    function applied(env: { isDev: boolean; devRendererUrl: string }, entryUrl = RENDERER_ENTRY) {
+      const spy = createWebContentsSpy();
+      const openExternal = vi.fn<(url: string) => Promise<void>>().mockResolvedValue(undefined);
+      const log = createLogSpy();
+      createNavigationPolicyApplier(env, { openExternal, log })(spy.contents, entryUrl);
+      return { spy, openExternal, log };
+    }
+
+    it.each([
+      { env: DEV_ENV, url: `${DEV_RENDERER}/live`, prevented: false },
+      { env: DEV_ENV, url: 'http://127.0.0.1:3001/live', prevented: true },
+      { env: DEV_ENV, url: 'app://bundle/live', prevented: false },
+      { env: DEV_ENV, url: STEAM_LISTING, prevented: true },
+      { env: PACKAGED_ENV, url: `${DEV_RENDERER}/live`, prevented: true },
+      { env: PACKAGED_ENV, url: 'app://bundle/live', prevented: false },
+      { env: PACKAGED_ENV, url: STEAM_LISTING, prevented: true },
+    ])('isDev $env.isDev: a top-level navigation to $url is prevented: $prevented', ({ env, url, prevented }) => {
+      const { spy } = applied(env);
+      expect(spy.navigate(url)).toEqual({ prevented });
+    });
+
+    it.each([
+      { env: DEV_ENV, url: `${DEV_RENDERER}/`, prevented: false },
+      { env: PACKAGED_ENV, url: `${DEV_RENDERER}/`, prevented: true },
+    ])('isDev $env.isDev: a subframe navigation to $url is prevented: $prevented', ({ env, url, prevented }) => {
+      const { spy } = applied(env);
+      expect(spy.navigateFrame(url)).toEqual({ prevented });
+    });
+
+    it.each([
+      { env: DEV_ENV, stays: true },
+      { env: PACKAGED_ENV, stays: false },
+    ])('isDev $env.isDev: a window on the dev origin stays there: $stays', async ({ env, stays }) => {
+      const { spy } = applied(env, 'app://bundle/index.html');
+      await spy.landOn(`${DEV_RENDERER}/live`);
+      expect(spy.loadURL.mock.calls.length > 0).toBe(!stays);
+    });
+
+    it('sends a stranded window back to the entry page it was given', async () => {
+      const { spy } = applied(PACKAGED_ENV, 'app://bundle/mini-live/index.html');
+      await spy.landOn('about:blank');
+      expect(spy.loadURL).toHaveBeenCalledExactlyOnceWith('app://bundle/mini-live/index.html');
+    });
+
+    it('hands https window-open urls to the openExternal it was given', () => {
+      const { spy, openExternal } = applied(PACKAGED_ENV);
+      spy.openWindow(STEAM_LISTING);
+      expect(openExternal).toHaveBeenCalledWith(STEAM_LISTING);
     });
   });
 });
