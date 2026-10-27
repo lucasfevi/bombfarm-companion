@@ -82,6 +82,12 @@ reported as one `error_log.suppressed` line. **A new renderer-side log call goes
 channel, not through a new bridge function** — the compact window's allowlist and the sender check
 then cover it with no further work.
 
+The sender check's own refusals are logged through a gate keyed by the sending window and the
+reason, never by the channel string (`src/main/ipc-rejection-log.ts`), with one summary line of
+what was left out; only the log line is limited, every refused call still throws. Both gates are
+built by `createKeyedLogGate` on a monotonic clock, and a test pins that `index.ts` builds them
+with the log alone.
+
 Importing `electron-log/main` registers its own `ipcMain` listener and handler on
 `__ELECTRON_LOG__`, which would take any record from any renderer process with no check, cap or
 gate. `registerIpcHandlers` removes both before the bridge handler is registered, and
