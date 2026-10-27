@@ -106,7 +106,8 @@ policy checks where the window *is*, not how it got there: on `did-navigate`, `d
 entry page the window was created with. The one exemption is a page the main process loaded on
 purpose: the policy wraps the window's `loadURL`, and a page that load settled on is trusted until
 the window leaves it. Never call the original `loadURL` around the wrapper. Recovery is limited to 3
-per 10 s per window; past that it logs `navigation.recovery_stopped` once and leaves the window
+per 10 s per window, one per off-origin document (the load is not started while that document is
+still loading, since its own stop would cut the load short and cost a second recovery); past that it logs `navigation.recovery_stopped` once and leaves the window
 blank (the user restarts the app), so a page that always sends its window back to a blank cannot
 burn CPU. Calling `loadURL` from inside a navigation event crashes the app, hence the deferred
 load.

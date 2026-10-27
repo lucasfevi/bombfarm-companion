@@ -453,6 +453,39 @@ test.describe('navigation, frame and permission hardening', () => {
     }
   }
 
+  test('attacks 2.5 s apart in one window are each put back, because one attack costs one recovery', async () => {
+    const cooling = RECOVERY_WINDOW_MS + 500 - (Date.now() - (lastProbeAt.get('main') ?? 0));
+    if (cooling > 0) await page.waitForTimeout(cooling);
+    lastProbeAt.set('main', Date.now());
+    const entryUrl = await page.evaluate(() => location.href);
+    const attacks = 3;
+    for (let attack = 1; attack <= attacks; attack += 1) {
+      const startedAt = Date.now();
+      await page.evaluate(EMPTY_DOCUMENT_NAVIGATIONS['location.assign to about:blank'].run).catch(() => undefined);
+      await expect
+        .poll(
+          async () =>
+            (await navigations(app)).filter((entry) => entry.kind === 'did-start-navigation' && entry.isMainFrame && entry.url === BLANK).length,
+          { timeout: 15_000, message: `attack ${String(attack)} started` },
+        )
+        .toBe(attack);
+      await expect
+        .poll(() => page.evaluate(() => `${location.href}|${typeof window.bfc}`).catch(() => 'pending'), {
+          timeout: 20_000,
+          message: `attack ${String(attack)}: the window is back on its entry page`,
+        })
+        .toBe(`${entryUrl}|object`);
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 2_500) await page.waitForTimeout(2_500 - elapsed);
+    }
+    const entryLoads = (await navigations(app)).filter(
+      (entry) => entry.kind === 'did-start-navigation' && !entry.initiated && entry.url === entryUrl,
+    ).length;
+    // every load of the entry page starts twice in the event log, and one attack is one load
+    expect(entryLoads, 'one attack costs one recovery').toBeLessThanOrEqual(2 * attacks);
+    expect(await page.evaluate(() => `${location.href}|${typeof window.bfc}`)).toBe(`${entryUrl}|object`);
+  });
+
   test('a foreign subframe never starts under the policy: the CSP refuses it before the main process sees a navigation', async ({ csp }) => {
     await page.evaluate(async (url) => {
       const frame = document.createElement('iframe');

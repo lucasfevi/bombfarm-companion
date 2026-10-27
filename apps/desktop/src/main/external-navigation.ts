@@ -149,7 +149,13 @@ export function applyExternalNavigationPolicy(
   let trustedHref: string | null = null;
   contents.loadURL = (url, options) => {
     mainProcessLoads += 1;
-    const loading = loadEntry(url, options);
+    let loading: Promise<void>;
+    try {
+      loading = loadEntry(url, options);
+    } catch (error) {
+      mainProcessLoads -= 1;
+      throw error;
+    }
     const settled = (): void => {
       mainProcessLoads -= 1;
     };
@@ -176,6 +182,12 @@ export function applyExternalNavigationPolicy(
     }
     if (decideTopLevelNavigation(url, internalUrls) === 'allow') {
       gaveUp = false;
+      return;
+    }
+    // A load started while the stranded document is still loading is cut short by that document's
+    // own stop, which leaves the window where it was and costs a second recovery. The
+    // `did-stop-loading` listener comes back here once the document has stopped.
+    if (contents.isLoading()) {
       return;
     }
     const at = now();

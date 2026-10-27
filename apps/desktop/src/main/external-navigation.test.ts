@@ -158,10 +158,13 @@ function createWebContentsSpy(): {
   settle(): Promise<void>;
   destroy(): void;
   showing(url: string): void;
+  /** What `isLoading()` answers: true while a navigation is pending or a document is loading. */
+  loading(value: boolean): void;
   loadURL: ReturnType<typeof vi.fn<(url: string) => Promise<void>>>;
 } {
   let currentUrl = '';
   let destroyed = false;
+  let isLoading = false;
   const loadURL = vi.fn<(url: string) => Promise<void>>().mockImplementation((url) => {
     currentUrl = url;
     return Promise.resolve();
@@ -178,6 +181,7 @@ function createWebContentsSpy(): {
       return currentUrl;
     },
     isDestroyed: () => destroyed,
+    isLoading: () => isLoading,
     setWindowOpenHandler(handler: (details: { url: string }) => { action: string }) {
       openHandler = handler;
     },
@@ -233,6 +237,9 @@ function createWebContentsSpy(): {
       await settle();
     },
     settle,
+    loading(value) {
+      isLoading = value;
+    },
     showing(url) {
       currentUrl = url;
     },
@@ -496,6 +503,92 @@ describe('applyExternalNavigationPolicy', () => {
       await spy.landOn('about:blank');
       expect(spy.loadURL).toHaveBeenCalledTimes(2);
       expect(spy.contents.getURL()).toBe(RENDERER_ENTRY);
+    });
+
+    it('waits for the stranded document to stop loading, so the entry load is not cut short and charged twice', async () => {
+      const { spy } = setup();
+      spy.loading(true);
+      await spy.landOn('about:blank', ['did-navigate']);
+      expect(spy.loadURL).not.toHaveBeenCalled();
+
+      spy.loading(false);
+      await spy.landOn('about:blank', ['did-stop-loading']);
+
+      expect(spy.loadURL).toHaveBeenCalledExactlyOnceWith(RENDERER_ENTRY);
+    });
+
+    it('charges one recovery for one off-origin commit, even when its load settles before the entry page commits', async () => {
+      const { spy } = setup();
+      spy.loadURL.mockImplementationOnce(() => {
+        spy.loading(true);
+        return Promise.resolve();
+      });
+
+      await spy.landOn('about:blank');
+      expect(spy.loadURL).toHaveBeenCalledOnce();
+
+      spy.showing(RENDERER_ENTRY);
+      spy.loading(false);
+      await spy.landOn(RENDERER_ENTRY, ['did-navigate', 'did-stop-loading', 'did-finish-load']);
+      expect(spy.loadURL).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the budget whole: three separate attacks inside the window are three recoveries, and the fourth is refused', async () => {
+      const { spy } = setup({ now: () => 0 });
+      for (let attack = 1; attack <= RECOVERY_LIMIT; attack += 1) {
+        spy.loadURL.mockImplementationOnce(() => {
+          spy.loading(true);
+          return Promise.resolve();
+        });
+        await spy.landOn('about:blank');
+        expect(spy.loadURL, `attack ${String(attack)}`).toHaveBeenCalledTimes(attack);
+        spy.showing(RENDERER_ENTRY);
+        spy.loading(false);
+        await spy.landOn(RENDERER_ENTRY, ['did-navigate', 'did-stop-loading', 'did-finish-load']);
+      }
+
+      await spy.landOn('about:blank');
+
+      expect(spy.loadURL).toHaveBeenCalledTimes(RECOVERY_LIMIT);
+    });
+
+    it('still recovers a blank that lands after a recovery load settled mid-navigation', async () => {
+      const { spy } = setup();
+      spy.loadURL.mockImplementationOnce(() => {
+        spy.loading(true);
+        return Promise.resolve();
+      });
+      await spy.landOn('about:blank');
+      expect(spy.loadURL).toHaveBeenCalledOnce();
+
+      spy.loading(false);
+      await spy.landOn('about:blank', ['did-navigate', 'did-stop-loading']);
+
+      expect(spy.loadURL).toHaveBeenCalledTimes(2);
+      expect(spy.contents.getURL()).toBe(RENDERER_ENTRY);
+    });
+
+    it('keeps recovering after a loadURL call that throws', async () => {
+      const { spy } = setup();
+      spy.loadURL.mockImplementationOnce(() => {
+        throw new Error('invalid url');
+      });
+      expect(() => spy.contents.loadURL('not a url')).toThrow('invalid url');
+
+      await spy.landOn('about:blank');
+
+      expect(spy.loadURL).toHaveBeenLastCalledWith(RENDERER_ENTRY);
+      expect(spy.loadURL).toHaveBeenCalledTimes(2);
+    });
+
+    it('hands the caller the load\'s own promise, rejection included', async () => {
+      const { spy } = setup();
+      const failure = new Error('ERR_FAILED');
+      const load = Promise.reject(failure);
+      spy.loadURL.mockReturnValueOnce(load);
+      const returned = spy.contents.loadURL('data:text/html,x');
+      expect(returned).toBe(load);
+      await expect(returned).rejects.toBe(failure);
     });
 
     it('logs a recovery that fails instead of throwing', async () => {
