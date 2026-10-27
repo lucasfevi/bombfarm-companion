@@ -1,6 +1,17 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { app, BrowserWindow, clipboard, ipcMain, Menu, nativeImage, screen, shell, type WebContents } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  ipcMain,
+  Menu,
+  nativeImage,
+  screen,
+  session,
+  shell,
+  type WebContents,
+} from 'electron';
 import {
   DEFAULT_SETTINGS,
   resolveStartupLocale,
@@ -32,6 +43,7 @@ import { createPvpReader, type PvpReader } from './pvp/pvp-reader.js';
 import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
 import { createIpcDispatch, createIpcHandlers, defaultLiveView } from './ipc-handlers.js';
 import { createBridgeInvokeHandler, createSenderWindowResolver } from './ipc-bridge-handler.js';
+import { installSessionSecurity } from './session-permissions.js';
 import { createEventEmitter } from './event-emitter.js';
 import { createIpcRejectionLogGate } from './ipc-rejection-log.js';
 import { createRendererErrorGate } from './renderer-error-log.js';
@@ -41,7 +53,7 @@ import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { fuseSecondsForCdr } from './domain-edge.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
-import { applyExternalNavigationPolicy } from './external-navigation.js';
+import { createNavigationPolicyApplier } from './external-navigation.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
 import { cspManifestForBoot } from './renderer-csp.js';
 import {
@@ -442,6 +454,13 @@ function liveMiniContents(): { readonly id: number } | null {
   return miniWindow && !miniWindow.isDestroyed() ? miniWindow.webContents : null;
 }
 
+function windowNavigationPolicy(env: AppEnv): (contents: WebContents, entryUrl: string) => void {
+  return createNavigationPolicyApplier(
+    { isDev: env.isDev, devRendererUrl: RENDERER_DEV_URL },
+    { openExternal: (url) => shell.openExternal(url), log },
+  );
+}
+
 async function createMainWindow(): Promise<void> {
   const env = resolveAppEnv();
   const revealSuppressed = isWindowRevealSuppressed(process.env, env.isPackaged);
@@ -494,11 +513,8 @@ async function createMainWindow(): Promise<void> {
     mainWindow.maximize();
   }
 
-  applyExternalNavigationPolicy(mainWindow.webContents, {
-    openExternal: (url) => shell.openExternal(url),
-    log,
-    internalUrls: env.isDev ? [RENDERER_DEV_URL] : [],
-  });
+  const entryUrl = env.isDev ? RENDERER_DEV_URL : RENDERER_ENTRY_URL;
+  windowNavigationPolicy(env)(mainWindow.webContents, entryUrl);
 
   gameReader?.setWindowProvider(() => mainWindow);
 
@@ -539,13 +555,13 @@ async function createMainWindow(): Promise<void> {
     });
 
     log.info({ scope: 'main', event: 'renderer.load_url', url: RENDERER_DEV_URL });
-    await mainWindow.loadURL(RENDERER_DEV_URL);
+    await mainWindow.loadURL(entryUrl);
     if (process.env.BFC_OPEN_DEVTOOLS === '1') {
       mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
   } else {
     log.info({ scope: 'main', event: 'renderer.load_url', url: RENDERER_ENTRY_URL });
-    await mainWindow.loadURL(RENDERER_ENTRY_URL);
+    await mainWindow.loadURL(entryUrl);
   }
 
   setupShellLifecycle(env);
@@ -590,12 +606,8 @@ function createMiniLiveControllerInstance(env: ReturnType<typeof resolveAppEnv>)
     preloadPath: path.join(__dirname, '../preload/index.cjs'),
     iconPath: resolveAppIconPath(__dirname),
     suppressReveal: isWindowRevealSuppressed(process.env, env.isPackaged),
-    applyExternalNavigation: (webContents) => {
-      applyExternalNavigationPolicy(webContents as WebContents, {
-        openExternal: (url) => shell.openExternal(url),
-        log,
-        internalUrls: env.isDev ? [RENDERER_DEV_URL] : [],
-      });
+    applyExternalNavigation: (webContents, entryUrl) => {
+      windowNavigationPolicy(env)(webContents as WebContents, entryUrl);
     },
     getDisplays: () =>
       screen.getAllDisplays().map((display) => ({
@@ -1222,6 +1234,13 @@ async function bootstrap(): Promise<void> {
   registerIpcHandlers();
   const rendererRoot = path.join(__dirname, '../../renderer/out');
   registerRendererProtocol(rendererRoot, cspManifestForBoot(env.isDev, rendererRoot));
+  installSessionSecurity({
+    app,
+    session: session.defaultSession,
+    isDev: env.isDev,
+    devRendererUrl: RENDERER_DEV_URL,
+    log,
+  });
   await createMainWindow();
   mainWindow?.setAlwaysOnTop(currentSettings.alwaysOnTopMain, 'normal');
   gameReader.start();
@@ -1302,6 +1321,10 @@ let liveSourceReleasedForQuit = false;
 // Sandboxes every renderer process whatever its window asks for, so a window added later cannot
 // opt out of it.
 app.enableSandbox();
+
+// The renderer never reads or writes the player's files itself, and no permission handler sees the
+// file pickers, so the API is taken out of the page rather than left to open a native dialog.
+app.commandLine.appendSwitch('disable-blink-features', 'FileSystemAccessLocal');
 
 const env = resolveBootEnv();
 registerRendererSchemeAsPrivileged();

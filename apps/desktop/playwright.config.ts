@@ -61,6 +61,7 @@ export default defineConfig({
         'renderer-sandbox.spec.mjs',
         'renderer-error-log.spec.mjs',
         'ipc-sender.spec.mjs',
+        'navigation-hardening.spec.mjs',
       ],
     },
     {

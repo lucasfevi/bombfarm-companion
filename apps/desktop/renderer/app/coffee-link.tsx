@@ -6,9 +6,8 @@
  * No IPC and no `shell.openExternal` call of its own — `applyExternalNavigationPolicy`
  * (`src/main/external-navigation.ts`) already answers `window-open` for any `https:` target by
  * handing it to the default browser and refusing the new window, so a plain anchor is the whole
- * implementation. `target="_blank"` picks that path deliberately: without it the click arrives as
- * `will-navigate`, which the same policy also redirects, but only after the renderer has already
- * been asked to leave the page it is the only copy of.
+ * implementation. `target="_blank"` is required, not stylistic: it is the only path that reaches
+ * the browser. A same-window click arrives as `will-navigate`, which the policy refuses outright.
  */
 import { Icon, Menu, Tooltip, buttonRecipe } from '@bombfarm/ui';
 import { useCopy } from '../lib/copy';

@@ -79,7 +79,7 @@ export function createMiniLiveBrowserWindow(
     width: number;
     height: number;
     loadUrl: string;
-    applyExternalNavigation?: ((webContents: MiniLiveWebContents) => void) | undefined;
+    applyExternalNavigation?: ((webContents: MiniLiveWebContents, entryUrl: string) => void) | undefined;
     suppressReveal?: boolean | undefined;
     log?: MiniLiveLog | undefined;
   },
@@ -95,7 +95,7 @@ export function createMiniLiveBrowserWindow(
     }),
   );
 
-  input.applyExternalNavigation?.(win.webContents);
+  input.applyExternalNavigation?.(win.webContents, input.loadUrl);
 
   // Revealed the moment it exists rather than at first paint. Spawning this window's renderer
   // measures ~150 ms, and waiting for it left the screen unchanged for that whole time, so the
@@ -231,7 +231,7 @@ export function createMiniLiveController(deps: {
   resolveLoadUrl: () => string;
   preloadPath: string;
   iconPath: string;
-  applyExternalNavigation: (webContents: MiniLiveWebContents) => void;
+  applyExternalNavigation: (webContents: MiniLiveWebContents, entryUrl: string) => void;
   getDisplays: () => readonly DisplayInfo[];
   getPrimaryWorkArea: () => WorkArea;
   getDisplayForBounds: (bounds: { x: number; y: number; width: number; height: number }) => DisplayInfo;

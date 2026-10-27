@@ -1,0 +1,704 @@
+import { test, expect, electron } from './smoke-test.mjs';
+import fs from 'node:fs';
+import http from 'node:http';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { shellControl, closeShellOverflow } from './shell-control.mjs';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const desktopRoot = path.join(__dirname, '..', '..');
+const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-full.json');
+const REFERRAL_SOURCE = path.join(desktopRoot, '..', '..', 'packages', 'domain', 'src', 'referral.ts');
+
+/**
+ * What stops a page from sending the player's browser somewhere, from loading a foreign frame, and
+ * from asking Chromium for a capability. `shell.openExternal` is replaced by a recorder before
+ * anything is probed, so no probe here can open a real browser; the foreign hosts are reserved
+ * `.invalid` names for the same reason.
+ *
+ * Navigation events are watched from the main process by a second listener registered after the
+ * app's own, so the spec can tell which layer refused a probe: the policy under test, or the CSP
+ * before the navigation ever started.
+ */
+const FOREIGN = 'https://navigation-probe.invalid/landing';
+
+/** Windows can hold a profile directory for a moment after the app exits (the filed `EPERM` teardown flake). */
+const REMOVE_OPTIONS = { recursive: true, force: true, maxRetries: 10, retryDelay: 300 };
+
+/** Mirrors `RECOVERY_WINDOW_MS` in `external-navigation.ts`, which a plain `.mjs` cannot import. */
+const RECOVERY_WINDOW_MS = 10_000;
+
+function electronExecutable() {
+  return path.join(
+    desktopRoot,
+    'node_modules',
+    'electron',
+    'dist',
+    process.platform === 'win32' ? 'electron.exe' : 'electron',
+  );
+}
+
+function referralCode() {
+  const match = /REFERRAL_CODE\s*=\s*'([^']+)'/.exec(fs.readFileSync(REFERRAL_SOURCE, 'utf8'));
+  if (!match) throw new Error(`could not read the referral code from ${REFERRAL_SOURCE}`);
+  return match[1];
+}
+
+async function stubBrowser(app) {
+  await app.evaluate(({ shell }) => {
+    globalThis.__openedUrls = [];
+    shell.openExternal = (url) => {
+      globalThis.__openedUrls.push(String(url));
+      return Promise.resolve();
+    };
+  });
+}
+
+const openedUrls = (app) => app.evaluate(() => globalThis.__openedUrls.slice());
+
+/** Registers after the app's own listeners, so `defaultPrevented` is what the policy decided. */
+async function watchNavigations(app) {
+  await app.evaluate(({ BrowserWindow }) => {
+    globalThis.__navigations ??= [];
+    const watched = (globalThis.__watchedWindowIds ??= new Set());
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (watched.has(win.id)) continue;
+      watched.add(win.id);
+      for (const kind of ['will-navigate', 'will-frame-navigate', 'will-redirect', 'did-start-navigation']) {
+        win.webContents.on(kind, (details) => {
+          globalThis.__navigations.push({
+            kind,
+            url: details.url,
+            isMainFrame: details.isMainFrame,
+            prevented: details.defaultPrevented,
+            isSameDocument: details.isSameDocument,
+            initiated: details.initiator != null,
+          });
+        });
+      }
+    }
+  });
+}
+
+const navigations = (app) => app.evaluate(() => globalThis.__navigations.slice());
+
+async function launch({ userDataDir, extraEnv = {} }) {
+  const app = await electron.launch({
+    executablePath: electronExecutable(),
+    args: [desktopRoot],
+    env: {
+      ...process.env,
+      NODE_ENV: 'production',
+      BFC_FLAVOR: 'dev',
+      BFC_GAME_READER: 'fixture',
+      BFC_FIXTURE_ACCOUNT_FILE: ACCOUNT_FULL_FIXTURE,
+      BFC_LIVE_SOURCE: 'replay',
+      BFC_USER_DATA_DIR: userDataDir,
+      BFC_TOKEN_PATH_OVERRIDE: path.join(desktopRoot, 'tests', 'smoke', '.no-such-session.cfg'),
+      ELECTRON_ENABLE_LOGGING: '1',
+      ...extraEnv,
+    },
+  });
+  await stubBrowser(app);
+  return app;
+}
+
+async function acceptConsent(page) {
+  await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
+  await expect(page.getByTestId('consent-modal')).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId('consent-accept').click();
+  await expect(page.getByTestId('consent-modal')).toBeHidden({ timeout: 30_000 });
+  await page.waitForSelector('[data-testid="live-hero-list"]', { timeout: 60_000 });
+}
+
+async function openMini(app, page) {
+  const opened = app.waitForEvent('window', { timeout: 30_000 });
+  await (await shellControl(page, 'open-mini')).click();
+  const mini = await opened;
+  await expect(mini.getByTestId('mini-live-page')).toBeVisible({ timeout: 30_000 });
+  await watchNavigations(app);
+  return mini;
+}
+
+async function openSettings(page) {
+  await page.getByTestId('shell-settings').click();
+  await expect(page.getByTestId('settings-view')).toBeVisible({ timeout: 20_000 });
+}
+
+const BLANK = 'about:blank';
+const SRCDOC = 'about:srcdoc';
+
+/** Each way a page can leave its window on an empty document, with the url the navigation starts
+ *  with. None of them raises a `will-*` event, whoever started it. */
+const EMPTY_DOCUMENT_NAVIGATIONS = {
+  'a meta refresh to about:blank': {
+    starts: BLANK,
+    run: () => {
+      document.head.insertAdjacentHTML('beforeend', `<meta http-equiv="refresh" content="0;url=about:blank">`);
+    },
+  },
+  'a meta refresh to about:srcdoc': {
+    starts: SRCDOC,
+    run: () => {
+      document.head.insertAdjacentHTML('beforeend', `<meta http-equiv="refresh" content="0;url=about:srcdoc">`);
+    },
+  },
+  'location.assign to about:blank': {
+    starts: BLANK,
+    run: () => {
+      window.location.assign('about:blank');
+    },
+  },
+  'a target=_top link inside a srcdoc child': {
+    starts: BLANK,
+    run: () => {
+      const frame = document.createElement('iframe');
+      frame.srcdoc = '<a id="out" target="_top" href="about:blank">out</a>';
+      frame.addEventListener('load', () => frame.contentDocument.getElementById('out').click(), { once: true });
+      document.body.append(frame);
+    },
+  },
+  'a target=_top link whose child frame is removed in the same task': {
+    starts: BLANK,
+    run: () => {
+      const frame = document.createElement('iframe');
+      frame.srcdoc = '<a id="out" target="_top" href="about:blank">out</a>';
+      frame.addEventListener(
+        'load',
+        () => {
+          frame.contentDocument.getElementById('out').click();
+          frame.remove();
+        },
+        { once: true },
+      );
+      document.body.append(frame);
+    },
+  },
+};
+
+/** Needs script that a page's CSP forbids, so it only runs where no policy is delivered. */
+const REMOVED_CHILD_FORM_TO_BLANK = () => {
+  const frame = document.createElement('iframe');
+  frame.srcdoc = '<form id="f" method="get" action="about:blank" target="_top"><input name="a" value="1"></form>';
+  frame.addEventListener(
+    'load',
+    () => {
+      frame.contentDocument.getElementById('f').submit();
+      frame.remove();
+    },
+    { once: true },
+  );
+  document.body.append(frame);
+};
+
+/** A window left on an empty document has no bridge and no script until the app restarts, so the
+ *  spec waits for it to be put back, and for it to stay put. */
+async function expectBackOnTheEntryPage(app, window, entryUrl, trigger, starts = BLANK) {
+  await expect
+    .poll(
+      async () =>
+        (await navigations(app)).some((entry) => entry.kind === 'did-start-navigation' && entry.isMainFrame && entry.url.startsWith(starts)),
+      { timeout: 15_000, message: `${trigger}: the navigation to ${starts} started` },
+    )
+    .toBe(true);
+  await expect
+    .poll(() => window.evaluate(() => `${location.href}|${typeof window.bfc}`).catch(() => 'pending'), {
+      timeout: 30_000,
+      message: `${trigger}: the window is back on its entry page with its bridge`,
+    })
+    .toBe(`${entryUrl}|object`);
+  await window.waitForTimeout(1_500);
+  expect(await window.evaluate(() => `${location.href}|${typeof window.bfc}`), `${trigger}: it stayed there`).toBe(`${entryUrl}|object`);
+  expect(await openedUrls(app), `${trigger}: the browser was not opened`).toEqual([]);
+}
+
+const META_REFRESH = (url) => {
+  document.head.insertAdjacentHTML('beforeend', `<meta http-equiv="refresh" content="0;url=${url}">`);
+};
+
+const SCRIPTED_NAVIGATIONS = {
+  'location.assign': (url) => {
+    window.location.assign(url);
+  },
+  'a same-window link': (url) => {
+    const link = document.createElement('a');
+    link.href = url;
+    document.body.append(link);
+    link.click();
+  },
+};
+
+const FORM_POST = (url) => {
+  const form = document.createElement('form');
+  form.method = 'post';
+  form.action = url;
+  document.body.append(form);
+  form.submit();
+};
+
+async function expectRefused(app, page, expectedWindowUrl, trigger) {
+  await expect
+    .poll(async () => (await navigations(app)).some((entry) => entry.kind === 'will-navigate' && entry.url === FOREIGN), {
+      timeout: 15_000,
+      message: `${trigger}: the navigation reached the main process`,
+    })
+    .toBe(true);
+  const attempts = (await navigations(app)).filter((entry) => entry.kind === 'will-navigate' && entry.url === FOREIGN);
+  expect(attempts.length, `${trigger}: at least one top-level attempt`).toBeGreaterThan(0);
+  expect(attempts.every((entry) => entry.prevented), `${trigger}: every attempt was prevented ${JSON.stringify(attempts)}`).toBe(true);
+  expect(await openedUrls(app), `${trigger}: the browser was not opened`).toEqual([]);
+  expect(page.url().startsWith(expectedWindowUrl), `${trigger}: the window stayed on the app`).toBe(true);
+  await page.waitForTimeout(500);
+  const reloads = (await navigations(app)).filter((entry) => entry.kind === 'did-start-navigation' && !entry.initiated && entry.url.startsWith(expectedWindowUrl));
+  expect(reloads, `${trigger}: a refused navigation does not reload the page`).toEqual([]);
+}
+
+test.describe('navigation, frame and permission hardening', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  let userDataDir;
+  let app;
+  let page;
+  let mini;
+
+  test.beforeAll(async () => {
+    userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-navigation-'));
+    app = await launch({ userDataDir });
+    page = await app.firstWindow();
+    await acceptConsent(page);
+    await watchNavigations(app);
+    mini = await openMini(app, page);
+  });
+
+  test.afterAll(async () => {
+    await app?.close().catch(() => undefined);
+    if (userDataDir) fs.rmSync(userDataDir, REMOVE_OPTIONS);
+  });
+
+  test.beforeEach(async () => {
+    await app.evaluate(() => {
+      globalThis.__openedUrls.length = 0;
+      globalThis.__navigations.length = 0;
+    });
+  });
+
+  test('every external link the UI shows reaches the browser with exactly its own url', async () => {
+    await openSettings(page);
+
+    const links = [];
+    for (const testId of ['settings-support-coffee', 'settings-usage-privacy-policy']) {
+      const link = page.getByTestId(testId);
+      await link.scrollIntoViewIfNeeded();
+      const href = await link.getAttribute('href');
+      expect(href, testId).toMatch(/^https:\/\//);
+      await app.evaluate(() => {
+        globalThis.__openedUrls.length = 0;
+      });
+      await link.click();
+      await expect.poll(() => openedUrls(app), { message: `${testId} opened the browser` }).toEqual([href]);
+      links.push(href);
+    }
+    expect(new Set(links).size).toBe(2);
+
+    const topBar = await shellControl(page, 'shell-coffee');
+    const topBarHref = await topBar.getAttribute('href');
+    await app.evaluate(() => {
+      globalThis.__openedUrls.length = 0;
+    });
+    await topBar.click();
+    await expect.poll(() => openedUrls(app), { message: 'the top-bar link opened the browser' }).toEqual([topBarHref]);
+    await closeShellOverflow(page);
+
+    expect((await navigations(app)).filter((entry) => entry.kind === 'will-navigate')).toEqual([]);
+  });
+
+  test('a script cannot ask the browser for a capability, and the permission queries say so', async () => {
+    const answers = await page.evaluate(async () => {
+      const queried = {};
+      for (const name of ['notifications', 'geolocation', 'camera', 'microphone', 'midi', 'clipboard-read', 'clipboard-write']) {
+        try {
+          queried[name] = (await navigator.permissions.query({ name })).state;
+        } catch (error) {
+          queried[name] = `unsupported:${error.name}`;
+        }
+      }
+      const position = await new Promise((resolve) =>
+        navigator.geolocation.getCurrentPosition(
+          () => resolve('granted'),
+          (error) => resolve(`error:${String(error.code)}`),
+          { timeout: 5_000 },
+        ),
+      );
+      return {
+        queried,
+        notification: await Notification.requestPermission(),
+        position,
+        media: await navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(
+          () => 'granted',
+          (error) => error.name,
+        ),
+      };
+    });
+
+    const { 'clipboard-write': clipboardWrite, ...refused } = answers.queried;
+    expect(clipboardWrite, 'the one permission the app needs').toBe('granted');
+    expect(refused).toEqual({
+      notifications: 'denied',
+      geolocation: 'denied',
+      camera: 'denied',
+      microphone: 'denied',
+      midi: 'denied',
+      'clipboard-read': 'denied',
+    });
+    expect(answers.notification).toBe('denied');
+    expect(answers.position).toBe('error:1');
+    expect(answers.media).toMatch(/NotAllowedError|NotFoundError/);
+  });
+
+  test('no device is ever offered to a script that asks for one after a click', async () => {
+    await openSettings(page);
+    const heading = page.locator('[data-testid="settings-view"] h2').first();
+    for (const kind of ['hid', 'usb', 'serial', 'bluetooth']) {
+      const outcome = page.evaluate(
+        (name) =>
+          new Promise((resolve) => {
+            const requests = {
+              hid: () => navigator.hid?.requestDevice({ filters: [] }),
+              usb: () => navigator.usb?.requestDevice({ filters: [] }),
+              serial: () => navigator.serial?.requestPort(),
+              bluetooth: () => navigator.bluetooth?.requestDevice({ acceptAllDevices: true }),
+            };
+            document.addEventListener(
+              'click',
+              () => {
+                Promise.resolve()
+                  .then(() => requests[name]())
+                  .then(
+                    (value) => resolve(value === undefined ? 'unsupported' : Array.isArray(value) ? `devices:${String(value.length)}` : 'device'),
+                    (error) => resolve(`rejected:${error.name}`),
+                  );
+              },
+              { once: true },
+            );
+          }),
+        kind,
+      );
+      await heading.click();
+      const result = await outcome;
+      expect(['unsupported', 'devices:0'].includes(result) || result.startsWith('rejected:'), `${kind}: ${result}`).toBe(true);
+    }
+  });
+
+  test('the file pickers are not offered to either window, since no permission handler sees them and each would open a native dialog', async () => {
+    for (const window of [page, mini]) {
+      const offered = await window.evaluate(() =>
+        ['showOpenFilePicker', 'showSaveFilePicker', 'showDirectoryPicker'].filter((name) => typeof window[name] === 'function'),
+      );
+      expect(offered).toEqual([]);
+    }
+  });
+
+  test('copying the referral code still reaches the clipboard', async () => {
+    await app.evaluate(({ clipboard }) => {
+      clipboard.writeText('sentinel');
+    });
+    const control = await shellControl(page, 'shell-referral');
+    await control.click();
+    await expect
+      .poll(() => app.evaluate(({ clipboard }) => clipboard.readText()), { message: 'the code reached the clipboard' })
+      .toBe(referralCode());
+    await closeShellOverflow(page);
+  });
+
+  // Playwright keeps waiting on a navigation the app refused, so every probe below runs after the
+  // specs that click something.
+  for (const [windowName, target] of [
+    ['main', () => page],
+    ['compact', () => mini],
+  ]) {
+    test(`a meta refresh to an https url does not open the browser or leave the app (${windowName} window)`, async () => {
+      const window = target();
+      await window.evaluate(META_REFRESH, FOREIGN);
+      await expectRefused(app, window, 'app://bundle/', 'meta refresh');
+    });
+
+    for (const [name, run] of Object.entries(SCRIPTED_NAVIGATIONS)) {
+      test(`${name} to an https url does not open the browser or leave the app (${windowName} window)`, async () => {
+        const window = target();
+        await window.evaluate(run, FOREIGN);
+        await expectRefused(app, window, 'app://bundle/', name);
+      });
+    }
+  }
+
+  // A window is put back at most RECOVERY_LIMIT times in RECOVERY_WINDOW_MS, so probes on the same
+  // window are spaced further apart than that, and alternate windows to let one cool while the other
+  // is probed.
+  const lastProbeAt = new Map();
+  for (const [name, { starts, run }] of Object.entries(EMPTY_DOCUMENT_NAVIGATIONS)) {
+    for (const [windowName, target] of [
+      ['main', () => page],
+      ['compact', () => mini],
+    ]) {
+      test(`${name} puts the ${windowName} window back on its entry page`, async () => {
+        const window = target();
+        const cooling = RECOVERY_WINDOW_MS + 500 - (Date.now() - (lastProbeAt.get(windowName) ?? 0));
+        if (cooling > 0) await window.waitForTimeout(cooling);
+        lastProbeAt.set(windowName, Date.now());
+        const entryUrl = await window.evaluate(() => location.href);
+        await window.evaluate(run).catch(() => undefined);
+        await expectBackOnTheEntryPage(app, window, entryUrl, name, starts);
+      });
+    }
+  }
+
+  test('attacks 2.5 s apart in one window are each put back, because one attack costs one recovery', async () => {
+    const cooling = RECOVERY_WINDOW_MS + 500 - (Date.now() - (lastProbeAt.get('main') ?? 0));
+    if (cooling > 0) await page.waitForTimeout(cooling);
+    lastProbeAt.set('main', Date.now());
+    const entryUrl = await page.evaluate(() => location.href);
+    const attacks = 3;
+    for (let attack = 1; attack <= attacks; attack += 1) {
+      const startedAt = Date.now();
+      await page.evaluate(EMPTY_DOCUMENT_NAVIGATIONS['location.assign to about:blank'].run).catch(() => undefined);
+      await expect
+        .poll(
+          async () =>
+            (await navigations(app)).filter((entry) => entry.kind === 'did-start-navigation' && entry.isMainFrame && entry.url === BLANK).length,
+          { timeout: 15_000, message: `attack ${String(attack)} started` },
+        )
+        .toBe(attack);
+      await expect
+        .poll(() => page.evaluate(() => `${location.href}|${typeof window.bfc}`).catch(() => 'pending'), {
+          timeout: 20_000,
+          message: `attack ${String(attack)}: the window is back on its entry page`,
+        })
+        .toBe(`${entryUrl}|object`);
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 2_500) await page.waitForTimeout(2_500 - elapsed);
+    }
+    const entryLoads = (await navigations(app)).filter(
+      (entry) => entry.kind === 'did-start-navigation' && !entry.initiated && entry.url === entryUrl,
+    ).length;
+    // every load of the entry page starts twice in the event log, and one attack is one load
+    expect(entryLoads, 'one attack costs one recovery').toBeLessThanOrEqual(2 * attacks);
+    expect(await page.evaluate(() => `${location.href}|${typeof window.bfc}`)).toBe(`${entryUrl}|object`);
+  });
+
+  test('a foreign subframe never starts under the policy: the CSP refuses it before the main process sees a navigation', async ({ csp }) => {
+    await page.evaluate(async (url) => {
+      const frame = document.createElement('iframe');
+      frame.id = 'foreign-frame';
+      frame.src = url;
+      document.body.append(frame);
+      await new Promise((resolve) => {
+        frame.addEventListener('load', resolve, { once: true });
+        setTimeout(resolve, 3_000);
+      });
+    }, FOREIGN);
+
+    // One refusal reaches the guard twice, as the browser's console line and as the page-side
+    // event, a few milliseconds apart; both are claimed here, and nothing else.
+    const claimed = [];
+    const consoleLines = () =>
+      claimed.filter((entry) => entry.includes('Refused to frame') && entry.includes("frame-src 'none'"));
+    const events = () =>
+      claimed.filter((entry) => entry.includes('__bfc_csp_violation__') && entry.includes('"directive":"frame-src"'));
+    await expect
+      .poll(
+        () => {
+          claimed.push(...csp.takeViolations());
+          return [consoleLines().length > 0, events().length > 0];
+        },
+        { timeout: 10_000, message: 'the CSP refused the foreign frame, as a console line and as an event' },
+      )
+      .toEqual([true, true]);
+    await page.waitForTimeout(500);
+    claimed.push(...csp.takeViolations());
+    expect([consoleLines().length, events().length, claimed.length], claimed.join('\n')).toEqual([1, 1, 2]);
+
+    const frameAttempts = (await navigations(app)).filter((entry) => entry.kind === 'will-frame-navigate' && !entry.isMainFrame);
+    expect(frameAttempts, 'the policy is the second layer; the dev-run spec below is the one that reaches it').toEqual([]);
+    expect(page.frames().some((frame) => frame.url() === FOREIGN)).toBe(false);
+    await page.evaluate(() => document.getElementById('foreign-frame')?.remove());
+  });
+});
+
+const STATIC_MIME_TYPES = {
+  '.html': 'text/html',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.ttf': 'font/ttf',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+};
+
+/** `server.injectBlank` makes every page it serves send its window straight to `about:blank`. */
+function serveRendererOverLoopback(root) {
+  const server = http.createServer((request, response) => {
+    const pathname = decodeURIComponent(new URL(request.url, 'http://127.0.0.1').pathname);
+    if (pathname === '/redirect-away') {
+      response.writeHead(302, { location: FOREIGN }).end();
+      return;
+    }
+    const target = path.join(root, pathname.endsWith('/') ? `${pathname}index.html` : pathname);
+    if (path.relative(root, target).startsWith('..') || !fs.existsSync(target) || fs.statSync(target).isDirectory()) {
+      response.writeHead(404).end();
+      return;
+    }
+    if (server.injectBlank && target.endsWith('.html')) {
+      const page = fs.readFileSync(target, 'utf8').replace(/<head[^>]*>/, (head) => `${head}<meta http-equiv="refresh" content="0;url=about:blank">`);
+      response.writeHead(200, { 'content-type': 'text/html' }).end(page);
+      return;
+    }
+    response.writeHead(200, { 'content-type': STATIC_MIME_TYPES[path.extname(target)] ?? 'application/octet-stream' });
+    fs.createReadStream(target).pipe(response);
+  });
+  return new Promise((resolve) => {
+    server.injectBlank = false;
+    server.listen(0, '127.0.0.1', () => resolve(server));
+  });
+}
+
+test.describe('navigation hardening in a dev run, where no Content-Security-Policy is in the way', () => {
+  test('with no CSP in the way, the policy alone refuses a foreign navigation, subframe and redirect, and still serves the dev origin', async () => {
+    const devUserData = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-navigation-dev-'));
+    const server = await serveRendererOverLoopback(path.join(desktopRoot, 'renderer', 'out'));
+    const origin = `http://127.0.0.1:${String(server.address().port)}`;
+    let devApp;
+
+    try {
+      devApp = await launch({
+        userDataDir: devUserData,
+        extraEnv: { NODE_ENV: 'development', BFC_RENDERER_URL: origin },
+      });
+      const devPage = await devApp.firstWindow();
+      await devPage.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
+      expect(devPage.url().startsWith(origin)).toBe(true);
+      await watchNavigations(devApp);
+
+      const policyHeader = await devPage.evaluate(async () => (await fetch(location.href)).headers.get('content-security-policy'));
+      expect(policyHeader, 'no policy is delivered in this run, so only the main-process policy can refuse').toBeNull();
+
+      await devPage.evaluate(META_REFRESH, FOREIGN);
+      await expectRefused(devApp, devPage, origin, 'meta refresh');
+
+      await devApp.evaluate(() => {
+        globalThis.__navigations.length = 0;
+      });
+      await devPage.evaluate(FORM_POST, FOREIGN);
+      await expectRefused(devApp, devPage, origin, 'form post');
+
+      await devPage.evaluate(async (url) => {
+        const frame = document.createElement('iframe');
+        frame.id = 'foreign-frame';
+        frame.src = url;
+        document.body.append(frame);
+        await new Promise((resolve) => {
+          frame.addEventListener('load', resolve, { once: true });
+          setTimeout(resolve, 3_000);
+        });
+      }, FOREIGN);
+      await expect
+        .poll(async () => (await navigations(devApp)).some((entry) => entry.kind === 'will-frame-navigate' && entry.url === FOREIGN), {
+          timeout: 15_000,
+          message: 'the foreign subframe navigation reached the main process',
+        })
+        .toBe(true);
+      const attempts = (await navigations(devApp)).filter(
+        (entry) => entry.kind === 'will-frame-navigate' && !entry.isMainFrame && entry.url === FOREIGN,
+      );
+      expect(attempts.length).toBeGreaterThan(0);
+      expect(attempts.every((entry) => entry.prevented)).toBe(true);
+      expect(devPage.frames().some((frame) => frame.url() === FOREIGN)).toBe(false);
+
+      const sameOrigin = await devPage.evaluate(async () => {
+        const frame = document.createElement('iframe');
+        frame.srcdoc = '<p>child</p>';
+        document.body.append(frame);
+        await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+        const text = frame.contentDocument?.body.textContent;
+        frame.remove();
+        return text;
+      });
+      expect(sameOrigin, 'an empty-document child frame is not refused').toBe('child');
+
+      await devApp.evaluate(() => {
+        globalThis.__navigations.length = 0;
+      });
+      const devEntry = await devPage.evaluate(() => location.href);
+      await devPage.evaluate(EMPTY_DOCUMENT_NAVIGATIONS['location.assign to about:blank'].run);
+      await expectBackOnTheEntryPage(devApp, devPage, devEntry, 'dev run location.assign');
+
+      await devApp.evaluate(() => {
+        globalThis.__navigations.length = 0;
+      });
+      await devPage.evaluate(REMOVED_CHILD_FORM_TO_BLANK).catch(() => undefined);
+      await expectBackOnTheEntryPage(devApp, devPage, devEntry, 'dev run removed child form');
+
+      await devApp.evaluate(() => {
+        globalThis.__navigations.length = 0;
+      });
+      await devPage.evaluate((target) => {
+        window.location.assign(target);
+      }, `${origin}/redirect-away`);
+      await expect
+        .poll(async () => (await navigations(devApp)).some((entry) => entry.kind === 'will-redirect' && entry.url === FOREIGN), {
+          timeout: 15_000,
+          message: 'the server redirect reached the main process',
+        })
+        .toBe(true);
+      const redirects = (await navigations(devApp)).filter((entry) => entry.kind === 'will-redirect' && entry.url === FOREIGN);
+      expect(redirects.every((entry) => entry.prevented)).toBe(true);
+      expect(await openedUrls(devApp)).toEqual([]);
+      expect(devPage.url().startsWith(origin)).toBe(true);
+    } finally {
+      await devApp?.close().catch(() => undefined);
+      await new Promise((resolve) => server.close(resolve));
+      fs.rmSync(devUserData, REMOVE_OPTIONS);
+    }
+  });
+
+  test('an entry page that sends its window to about:blank every time is recovered a few times, then left alone', async () => {
+    const devUserData = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-navigation-persistent-'));
+    const server = await serveRendererOverLoopback(path.join(desktopRoot, 'renderer', 'out'));
+    const origin = `http://127.0.0.1:${String(server.address().port)}`;
+    let devApp;
+
+    try {
+      devApp = await launch({
+        userDataDir: devUserData,
+        extraEnv: { NODE_ENV: 'development', BFC_RENDERER_URL: origin },
+      });
+      const devPage = await devApp.firstWindow();
+      await devPage.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
+      await watchNavigations(devApp);
+
+      server.injectBlank = true;
+      await devPage.evaluate(EMPTY_DOCUMENT_NAVIGATIONS['location.assign to about:blank'].run);
+
+      const recoveryLoads = async () =>
+        (await navigations(devApp)).filter(
+          (entry) => entry.kind === 'did-start-navigation' && !entry.initiated && entry.url.startsWith(origin),
+        ).length;
+      await expect.poll(recoveryLoads, { timeout: 20_000, message: 'the window was put back at least once' }).toBeGreaterThan(0);
+      await devPage.waitForTimeout(12_000);
+      const settled = await recoveryLoads();
+      // each load starts twice in the event log; three recoveries at most
+      expect(settled, 'recoveries stop at the limit instead of cycling').toBeLessThanOrEqual(8);
+      await devPage.waitForTimeout(3_000);
+      expect(await recoveryLoads(), 'and stay stopped').toBe(settled);
+      expect(devPage.url(), 'the window is left on the blank page').toBe('about:blank');
+      expect(await openedUrls(devApp)).toEqual([]);
+    } finally {
+      await devApp?.close().catch(() => undefined);
+      await new Promise((resolve) => server.close(resolve));
+      fs.rmSync(devUserData, REMOVE_OPTIONS);
+    }
+  });
+});

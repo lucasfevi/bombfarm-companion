@@ -137,6 +137,47 @@ this (`srcdoc` and `about:blank` children still load). What does: give untrusted
 origin (a sandboxed iframe without `allow-same-origin`) or its own window or partition that has no
 preload.
 
+## RULE: a page cannot take its window anywhere else, and only a link or the app itself opens the browser
+
+`src/main/external-navigation.ts` refuses every top-level navigation away from the app's own origin
+(`will-navigate`, which a `<meta http-equiv="refresh">` or a `location` assignment reaches with no
+script a CSP could stop), every redirect off it (`will-redirect`), and every subframe navigation to
+anything but the app origin or an empty document (`will-frame-navigate`). None of them hands
+anything to `shell.openExternal`.
+
+Chromium commits a page's own navigation to `about:blank` or `about:srcdoc` without raising any of
+those events, whoever started it (a removed child frame leaves no initiating frame at all). So the
+policy checks where the window *is*, not how it got there: on `did-navigate`, `did-stop-loading`,
+`did-finish-load` and `did-fail-load`, a main frame that is off the app origin is sent back to the
+entry page the window was created with. The one exemption is a page the main process loaded on
+purpose: the policy wraps the window's `loadURL`, and a page that load settled on is trusted until
+the window leaves it. Never call the original `loadURL` around the wrapper. Recovery is limited to 3
+per 10 s per window, one per off-origin document (the load is not started while that document is
+still loading, since its own stop would cut the load short and cost a second recovery); past that it logs `navigation.recovery_stopped` once and leaves the window
+blank (the user restarts the app), so a page that always sends its window back to a blank cannot
+burn CPU. Calling `loadURL` from inside a navigation event crashes the app, hence the deferred
+load.
+
+The ways a link reaches the browser are `target="_blank"` / `window.open` (the window-open handler,
+`https:` only; a script-driven `window.open` included, which a packaged run's CSP blocks) and a
+main-process call such as the Premium sign-in. **A new external link in the renderer must be
+`target="_blank"`**; a plain anchor is refused, and the smoke spec for this lists every link the UI
+shows.
+
+`src/main/session-permissions.ts` answers every permission request and check, and cancels every
+HID, USB, serial and Bluetooth device selection. `GRANTED_PERMISSIONS` is the allowlist, pinned to
+its exact contents by a test, and it is only ever granted to the app's own origin. It holds one
+entry today: `clipboard-sanitized-write`, which copying the referral code needs. **A feature that
+needs a permission adds one line there, updates that pin, and adds a smoke assertion that the
+feature works.** The File System Access pickers never reach a permission handler, so
+`index.ts` switches that API off at startup instead; the renderer does not use it.
+
+Both are wired in `index.ts` (`installSessionSecurity`, `windowNavigationPolicy`), and
+`window-security-wiring-guard.test.ts` reads that file's syntax tree so a commented-out, conditional
+or emptied call fails a test, and so does a local binding, parameter or reassignment that replaces
+`installSessionSecurity` or `createNavigationPolicyApplier` with something other than the module's
+own export.
+
 ## Local checks
 
 ```bash
