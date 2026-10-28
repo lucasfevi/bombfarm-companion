@@ -30,3 +30,10 @@ export const WithRetryLink: Story = {
     headingLevel: 1,
   },
 };
+
+export const WithNodeCopy: Story = {
+  args: {
+    title: <em>Something went wrong</em>,
+    message: <span>The page could not be loaded.</span>,
+  },
+};
