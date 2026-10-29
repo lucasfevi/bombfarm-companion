@@ -25,7 +25,7 @@ brand button).
 | Surfaces | `bg`, `bg-2`, `surface` |
 | Text | `ink`, `muted`, `accent-ink` |
 | Lines | `line` |
-| Accent / status | `accent`, `up`, `down`, `warn` |
+| Accent / status | `accent`, `up`, `down`, `warn` (`text-warn` clears 4.5:1 on `bg`, `bg-2`, `surface` and the 12% warn tint of a banner; one token serves text, dots and borders) |
 | Rarity | `rar-0` … `rar-5` |
 | Chart series | `series-1` … `series-4` (by position), `chart-grid` |
 | Type | `font-sans` (`--font`), `font-mono` (`--mono`) |
