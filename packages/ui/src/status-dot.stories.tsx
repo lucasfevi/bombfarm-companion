@@ -19,6 +19,10 @@ export const ColoredLabel: Story = {
   args: { tone: 'down', label: 'Offline', colorLabel: true },
 };
 
+export const ColoredWarnLabel: Story = {
+  args: { tone: 'warn', label: 'Degraded', colorLabel: true },
+};
+
 export const WithNodeLabel: Story = {
   args: { tone: 'warn', label: <em>Degraded</em> },
 };
