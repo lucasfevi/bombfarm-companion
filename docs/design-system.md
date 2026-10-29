@@ -52,9 +52,9 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `Stepper` | `@base-ui/react/button` (×2) | `−`/value/`+` trio | `stepper.recipe.ts` |
 | `RankControl` | `@base-ui/react/button` | level readout + inc/dec (public props unchanged) | `stepper.recipe.ts` |
 | `AbilityCard` | `<div>` | compound `onSheet × selected` + `lockedOut` | `ability-card.recipe.ts` |
-| `Banner` | `<aside role="status">` | `tone`: `warn` \| `ok` \| `danger` (the down colour, for what cannot be undone) \| `info` (neutral, bordered on `bg-2`); `layout`: `page` \| `embedded` \| `flush` (full width, no outer margin, for a banner a parent already spaces); optional `title`. Server-safe | `panel-field.recipe.ts` (`setupBannerRecipe`) |
+| `Banner` | `<aside role="status">` | `tone`: `warn` \| `ok` \| `danger` (the down colour, for what cannot be undone) \| `info` (neutral, bordered on `bg-2`); `layout`: `page` \| `embedded` \| `flush` (full width, no outer margin, for a banner a parent already spaces); optional `title`; `body="sm"` gives an `ok` banner the small body-line paragraph rule the other tones already carry (no effect on them). Server-safe | `panel-field.recipe.ts` (`setupBannerRecipe`) |
 | `Panel` | `<section>` | `focus` / `aligned` / `unverified` booleans (`need` is a no-op — required uses `FieldRequired`); `overflow="visible"` lets a popover spill out of the panel on narrow screens instead of scrolling inside it | `panel-field.recipe.ts` |
-| `PanelHeader` | `<div>` + `<h2>` | `title` (required); optional `children` for the row's right-hand side (counters, actions). Section titles only — a hero name keeps bold sentence case | `panel-field.recipe.ts` (`panelHClass`/`panelTitleClass`) |
+| `PanelHeader` | `<div>` + `<h2>` | `title` (required; a string or a node, drawn inside the `h2`); optional `children` for the row's right-hand side (counters, actions). Section titles only — a hero name keeps bold sentence case | `panel-field.recipe.ts` (`panelHClass`/`panelTitleClass`) |
 | `Fields` | `<div>` | `layout`: `inline` \| `inline-dense` \| `stack` | `panel-field.recipe.ts` |
 | `FactTile` | `<div>` | one labelled figure of a facts cluster; `size`: `default` (bordered cell, as the hero identity panel's grid) \| `headline` (unboxed, the Live earnings panel's figure) \| `display` (the same block at 34px with a wrapping label, for the one or two figures a dialog turns on); `detail` is a small muted line under the figure; `note` as a tooltip over the tile — promoted from the hero identity panel for the PVP standing (2026-09-16) | `fact-tile.recipe.ts` |
 | `Bar` | `<div>` | `pct` + `variant`: `fill` \| `best` | `bar.recipe.ts` |
@@ -86,12 +86,12 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `NativeSelect` | `<select>` | the browser's own select, on the same field chrome as `TextInput`; every `<select>` prop and `<option>` child passes through. For a form that must submit with scripting off — otherwise prefer `Select`. Server-safe | `panel-field.recipe.ts` (`textFieldClass`) |
 | `TextLink` | `<a>` | `tone`: `accent` \| `muted`; `as` renders a link component (a router link) in place of `<a>`, taking that component's own props. Server-safe | inline Tailwind |
 | `Skeleton` | `<div>` | `shape`: `line` \| `block` \| `rows` (`rows` sets how many); pulses only under `motion-safe`. Decorative unless `label` is given, which wraps it in a `role="status"` busy region. Server-safe | inline Tailwind |
-| `ErrorScreen` | `<div>` + heading | `title`, optional `message`, `action` (a node: a link or form from a server page, a button from a client one), `headingLevel` 1–4 (default 2). Server-safe | inline Tailwind |
+| `ErrorScreen` | `<div>` + heading | `title` and optional `message` (strings or nodes), `action` (a node: a link or form from a server page, a button from a client one), `headingLevel` 1–4 (default 2). Server-safe | inline Tailwind |
 | `Pagination` | `<nav>` | `page` (1-based, clamped), `pageCount`, `hrefFor(page)`; previous and next are plain links (`rel="prev"` / `rel="next"`), inert text at either end; `linkAs` swaps in a router link; `label`, `previousLabel`, `nextLabel` and `formatStatus` carry the copy. Server-safe | inline Tailwind (`TextLink`) |
 | `DefinitionList` | `<dl>` | `items` of `{ term, detail }`; `variant`: `grid` (term column and value) \| `ruled` (each row on a hairline, value right-aligned and bold). Server-safe | inline Tailwind |
 | `TitledList` | `<section>` + `<ul>` | `title` (a small uppercase heading, `headingLevel` 2–6, default 3), `items` (nodes, each a ruled row), `empty` (shown in place of the list when there are no items). Server-safe | inline Tailwind |
 | `Disclosure` | native `<details>` | `summary`, `children`, `defaultOpen`; opens and closes with JavaScript off. Where a script is available, `Collapsible` / `Accordion` animate; this is the plain form. Server-safe | inline Tailwind |
-| `StatusDot` | `<span>` | `tone`: `live` \| `warn` \| `down` \| `muted`; `label` beside the dot; `live` announces label changes politely. Server-safe | inline Tailwind |
+| `StatusDot` | `<span>` | `tone`: `live` \| `warn` \| `down` \| `muted`; `label` beside the dot (a string or a node); `live` announces label changes politely; `colorLabel` colours the label by the tone; `id` and `data-*` attributes land on the root. Server-safe | inline Tailwind |
 | `StepProgress` | `<ol>` | `label`, `steps` (nodes), `current` (1-based, clamped); numbered badges joined by rules, done / current / next, the current one `aria-current="step"`; below the `sm` breakpoint only the badges show and the step names stay for screen readers. Server-safe | inline Tailwind |
 | `SegmentedToggleForm` | `<form>` + `<button type="submit">` | `SegmentedToggle`'s look as a form: `options`, `value`, `name` (the field each option button submits its id under), `ariaLabel`, `action`, `method` (`get` default \| `post`), `hidden` (extra fields submitted alongside), `className`. Works with JavaScript off. Server-safe | `segmented-toggle.recipe.ts` |
 | `AppShell` | `<header>`/`<main>`/`<footer>` | desktop-only top-bar shell (used solely by `apps/desktop/renderer/app/page.tsx`): sticky header (brand `title`/`badge` lockup, an `AppNav` pill built from `items`/`activeId`/`onNavigate`, and a right-hand `actions` slot), a single scrolling `<main>`, and a slim status strip (`status`/`progress`/`version`). Same top-bar shape as the web's `SiteHeader`, replacing the desktop's earlier icon-rail sidebar. `draggable`/`overlayInset` are implemented for a later custom-title-bar task and default off | `AppShell.recipe.ts` |
@@ -121,7 +121,7 @@ server page can render it; the `onSort` form needs a client component. `ConfirmD
 component.
 
 `EmptyState` takes `size="inline"` for the spot inside a panel or list: paragraph-scale type and no
-icon, in place of the default's page-scale block.
+icon, in place of the default's page-scale block. `title` and `description` take a string or a node (a translated span, say), and `headingLevel` runs 1–4, with the same classes at every level.
 
 ### Charts
 
