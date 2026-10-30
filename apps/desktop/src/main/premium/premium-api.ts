@@ -3,6 +3,7 @@ import {
   readHandOffBody,
   readPremiumMeBody,
   readPremiumStatusBody,
+  readPremiumUserId,
   readPremiumVisibilityBody,
   readReportBody,
   readSessionTokenBody,
@@ -95,6 +96,11 @@ export interface PremiumApi {
   rotate(token: string): Promise<RotateResult>;
   fetchStatus(token: string): Promise<FetchResult<PremiumStatus>>;
   fetchMe(token: string): Promise<FetchResult<PremiumMe>>;
+  /**
+   * The user id that came with a `fetchMe` answer, or null. It rides beside the answer, never in it,
+   * so the account view and its cache stay free of the id.
+   */
+  subjectOf?(me: PremiumMe): string | null;
   fetchVisibility(): Promise<VisibilityResult>;
   reportGameAccount(token: string, input: GameAccountReport): Promise<ReportResult>;
   requestHandOff(token: string): Promise<HandOffResult>;
@@ -227,6 +233,8 @@ function decodeLicence(response: PremiumHttpResponse, route: LicenceRoute): Lice
 }
 
 export function createPremiumApi(http: PremiumHttp): PremiumApi {
+  const subjects = new WeakMap<PremiumMe, string>();
+
   async function licenceCall(req: PremiumHttpRequest, route: LicenceRoute): Promise<LicenceAnswer> {
     const reached = await reach(http, req);
     if (!reached.reached) return { outcome: { kind: 'failed' }, dateMs: null };
@@ -305,8 +313,15 @@ export function createPremiumApi(http: PremiumHttp): PremiumApi {
     },
 
     fetchMe(token) {
-      return readJson({ path: 'me', method: 'GET', token }, readPremiumMeBody);
+      return readJson({ path: 'me', method: 'GET', token }, (value) => {
+        const me = readPremiumMeBody(value);
+        const userId = readPremiumUserId(value);
+        if (me !== null && userId !== null) subjects.set(me, userId);
+        return me;
+      });
     },
+
+    subjectOf: (me) => subjects.get(me) ?? null,
 
     async fetchVisibility() {
       const result = await readJson({ path: 'visibility', method: 'GET' }, readPremiumVisibilityBody);

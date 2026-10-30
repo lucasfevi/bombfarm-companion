@@ -6,6 +6,7 @@ import { createPremiumApi, type PremiumApi } from './premium-api.js';
 import type { PremiumHttp, PremiumHttpRequest, PremiumHttpResponse, PremiumPath } from './premium-transport.js';
 import { createPremiumService, type GameIdentity, type PremiumService } from './premium-service.js';
 import { createPremiumCache, type PremiumCache, type PremiumCacheEntry } from './premium-cache.js';
+import type { SubjectStore } from './subject-store.js';
 import type { StoredSession, TokenVault } from './token-vault.js';
 
 export const SECRETS = {
@@ -232,6 +233,31 @@ export function createFakeVault(
   return vault;
 }
 
+export interface FakeSubjectStore extends SubjectStore {
+  stores: string[];
+  clears: number;
+  held(): string | null;
+}
+
+export function createFakeSubjectStore(initial: string | null = null): FakeSubjectStore {
+  let held = initial;
+  const store: FakeSubjectStore = {
+    stores: [],
+    clears: 0,
+    held: () => held,
+    load: () => held,
+    store(next) {
+      store.stores.push(next);
+      held = next;
+    },
+    clear() {
+      store.clears += 1;
+      held = null;
+    },
+  };
+  return store;
+}
+
 export interface SpiedCache extends PremiumCache {
   writes: PremiumCacheEntry[];
   clears: number;
@@ -330,6 +356,7 @@ export interface Harness {
   clock: FakeClock;
   vault: FakeVault;
   cache: SpiedCache;
+  subjects: FakeSubjectStore;
   log: LogSink;
   listeners: ListenerStarts;
   opened: string[];
@@ -343,6 +370,7 @@ export interface Harness {
 export interface HarnessOptions {
   vault?: FakeVault;
   cache?: SpiedCache;
+  subjects?: FakeSubjectStore;
   listener?: (clock: FakeClock) => typeof startLoopbackListener;
   api?: (real: PremiumApi) => PremiumApi;
   locale?: () => AppLocale;
@@ -353,6 +381,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
   const clock = createFakeClock();
   const vault = options.vault ?? createFakeVault();
   const cache = options.cache ?? createSpiedCache();
+  const subjects = options.subjects ?? createFakeSubjectStore();
   const log = createLogSink();
   const listeners = createListenerFactory();
   const opened: string[] = [];
@@ -388,6 +417,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
       views.push(view);
     },
     playingAccount: playing,
+    subjectStore: subjects,
   });
 
   return {
@@ -397,6 +427,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     clock,
     vault,
     cache,
+    subjects,
     log,
     listeners,
     opened,

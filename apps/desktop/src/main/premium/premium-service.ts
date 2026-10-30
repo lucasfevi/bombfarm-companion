@@ -15,12 +15,14 @@ import {
   type PremiumView,
 } from '@bombfarm/contracts';
 import type { LogPort } from '../storage/index.js';
+import type { Pair } from './licence/licence-machine.js';
 import type { LoopbackListener, startLoopbackListener } from './loopback-listener.js';
 import { loopbackPage } from './loopback-page.js';
 import { createPlayingAccount, type PlayingAccount } from './playing-account.js';
 import type { FetchResult, PremiumApi } from './premium-api.js';
 import type { PremiumCache } from './premium-cache.js';
 import type { createPkce, createState } from './pkce.js';
+import type { SubjectStore } from './subject-store.js';
 import type { StoredSession, TokenVault } from './token-vault.js';
 
 const BACKOFF_DEFAULT_MS = 600_000;
@@ -47,6 +49,33 @@ export interface PremiumServiceDeps {
   onChanged(view: PremiumView): void;
   /** Where the playing-account state is kept; the service is its only writer. */
   playingAccount?: PlayingAccount;
+  /** Where the signed-in user's id is kept between runs; without it the id lives for this run only. */
+  subjectStore?: SubjectStore;
+}
+
+/**
+ * What the licence service may use of the Premium service: who is signed in, a bearer-carrying call,
+ * and the news it acts on. Four small hooks, a fifth for the playing pair; none changes what the
+ * service does. Listeners are told after the service's own state is updated, and one that throws
+ * does not stop the others.
+ */
+export interface LicenceHostPort {
+  /** The signed-in user's id, or null while signed out or before the account has named them. */
+  subject(): string | null;
+  /**
+   * Runs `call` with a current bearer token (rotating it first when due) and the service's `401`
+   * path: when `rejected` says the result is a bearer refusal the session ends as for any other
+   * request. `'unauthorized'` when there is no token to send.
+   */
+  withBearer<T>(call: (token: string) => Promise<T>, rejected?: (result: T) => boolean): Promise<T | 'unauthorized'>;
+  /** Told with the user's id when it becomes known, and with null when the session ends. */
+  onSession(listener: (subject: string | null) => void): () => void;
+  /** Told with `active` after every status fetch that answered. */
+  onStatus(listener: (active: boolean) => void): () => void;
+  /** The game-account pair the session currently reads, or null. */
+  pair(): Pair | null;
+  /** Told when that pair changes, after `pair()` already answers the new one. */
+  onPair(listener: () => void): () => void;
 }
 
 export interface PremiumService {
@@ -59,6 +88,7 @@ export interface PremiumService {
   refresh(reason: 'open' | 'button'): Promise<PremiumActionResult>;
   manage(): Promise<PremiumActionResult>;
   noteAccountChanged(): void;
+  readonly host: LicenceHostPort;
 }
 
 type Session = PremiumView['session'];
@@ -112,6 +142,12 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
   let reportedName: string | null = null;
   let reporting: string | null = null;
   let currentPair: string | null = null;
+  let currentPairValue: Pair | null = null;
+  let pairChanged = false;
+  let subject: string | null = null;
+  const sessionListeners = new Set<(subject: string | null) => void>();
+  const statusListeners = new Set<(active: boolean) => void>();
+  const pairListeners = new Set<() => void>();
 
   let listener: LoopbackListener | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -137,6 +173,35 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       reportedAccountId,
       licence: null,
     };
+  }
+
+  function tell<A extends unknown[]>(listeners: ReadonlySet<(...args: A) => void>, ...args: A): void {
+    for (const listener of [...listeners]) {
+      try {
+        listener(...args);
+      } catch {
+        // One listener's fault must not stop the others hearing of the change, nor the service.
+      }
+    }
+  }
+
+  function setSubject(next: string | null): void {
+    if (next === subject) return;
+    subject = next;
+    tell(sessionListeners, next);
+  }
+
+  /** Records the pair; listeners are told by `flushPair`, once the playing-account state has followed. */
+  function setPair(key: string | null, value: Pair | null): void {
+    if (key !== currentPair) pairChanged = true;
+    currentPair = key;
+    currentPairValue = value;
+  }
+
+  function flushPair(): void {
+    if (!pairChanged) return;
+    pairChanged = false;
+    tell(pairListeners);
   }
 
   function publish(): void {
@@ -194,11 +259,14 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     reportedPair = null;
     reportedName = null;
     reporting = null;
-    currentPair = null;
+    setPair(null, null);
     setPlayingAccount(signedOutPlayingAccount);
+    flushPair();
     remembered = true;
     deps.vault.clear();
     deps.cache.clear();
+    deps.subjectStore?.clear();
+    setSubject(null);
   }
 
   function leaveSession(next: { ended: 'expired' | null }): void {
@@ -310,12 +378,18 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
         status = statusResult.value;
         fetchedAt = isoNow();
         learned = true;
+        tell(statusListeners, statusResult.value.active);
       } else {
         noteFailure(statusResult);
       }
       if (meResult.ok) {
         me = meResult.value;
         learned = true;
+        const named = deps.api.subjectOf?.(meResult.value) ?? null;
+        if (named !== null && named !== subject) {
+          deps.subjectStore?.store(named);
+          setSubject(named);
+        }
       } else {
         noteFailure(meResult);
       }
@@ -360,8 +434,9 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     const startedIn = generation;
     const identity = deps.readGameIdentity();
     if (identity === null) {
-      currentPair = null;
+      setPair(null, null);
       setPlayingAccount({ state: 'unknown', reason: 'no_session' });
+      flushPair();
       report = { kind: 'not-sent', reason: 'no-game-account' };
       reportedAccountId = null;
       publish();
@@ -369,8 +444,9 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     }
     const { accountId, steamId64 } = identity;
     if (steamId64 === null || !isSteamId64(steamId64)) {
-      currentPair = null;
+      setPair(null, null);
       setPlayingAccount({ state: 'unknown', reason: 'no_steam_id64' });
+      flushPair();
       report = { kind: 'not-sent', reason: 'no-steam-id' };
       reportedAccountId = null;
       publish();
@@ -381,8 +457,9 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     // A new pair is never vouched for by the old one's answer: the state leaves `linked` here,
     // before anything is sent, unless this very pair already answered linked in this session.
     if (pair !== currentPair) {
-      currentPair = pair;
+      setPair(pair, { accountId, steamId64 });
       setPlayingAccount(pair === reportedPair ? LINKED : CHECKING);
+      flushPair();
       publish();
     }
     const nameIsCurrent = playerName === null || playerName === reportedName;
@@ -577,7 +654,9 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
           fetchedAt = cached.status === null ? null : cached.fetchedAt;
         }
       }
+      if (stored !== null) subject = deps.subjectStore?.load() ?? null;
       publish();
+      if (subject !== null) tell(sessionListeners, subject);
       void runFetch();
       void reportAccount();
     },
@@ -591,8 +670,9 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       open?.close();
       clearTimer();
       if (session === 'signing-in') session = 'signed-out';
-      currentPair = null;
+      setPair(null, null);
       setPlayingAccount(signedOutPlayingAccount);
+      flushPair();
     },
 
     getView: buildView,
@@ -626,6 +706,37 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
 
     noteAccountChanged() {
       void reportAccount();
+    },
+
+    host: {
+      subject: () => subject,
+      async withBearer(call, rejected) {
+        const startedIn = generation;
+        const bearerToken = await bearer(startedIn);
+        if (bearerToken === null) return 'unauthorized';
+        const result = await call(bearerToken);
+        if (rejected?.(result) === true) handleUnauthorized(startedIn);
+        return result;
+      },
+      onSession(listener) {
+        sessionListeners.add(listener);
+        return () => {
+          sessionListeners.delete(listener);
+        };
+      },
+      onStatus(listener) {
+        statusListeners.add(listener);
+        return () => {
+          statusListeners.delete(listener);
+        };
+      },
+      pair: () => currentPairValue,
+      onPair(listener) {
+        pairListeners.add(listener);
+        return () => {
+          pairListeners.delete(listener);
+        };
+      },
     },
   };
 }

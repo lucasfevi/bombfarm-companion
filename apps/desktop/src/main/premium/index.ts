@@ -9,6 +9,7 @@ import { createPremiumCache } from './premium-cache.js';
 import { offlinePremiumHttp } from './premium-offline.js';
 import { createPremiumService, type GameIdentity, type PremiumService } from './premium-service.js';
 import { PREMIUM_API_ORIGIN, createPremiumHttp, type PremiumHttp } from './premium-transport.js';
+import { createSubjectStore } from './subject-store.js';
 import { createTokenVault, type SecretBox } from './token-vault.js';
 
 export type { PremiumService } from './premium-service.js';
@@ -41,9 +42,11 @@ export function createPremiumWhenEnabled(enabled: boolean, deps: ElectronPremium
 }
 
 export function createElectronPremium(deps: ElectronPremiumDeps): PremiumService {
+  const box = createSafeStorageBox();
   return createPremiumService({
     api: createPremiumApi(chooseHttp(deps.offline, deps.originOverride)),
-    vault: createTokenVault(deps.db, createSafeStorageBox()),
+    vault: createTokenVault(deps.db, box),
+    subjectStore: createSubjectStore(deps.db, box),
     cache: createPremiumCache(deps.db),
     openExternal: (url) => shell.openExternal(url),
     readGameIdentity: deps.readGameIdentity,

@@ -227,6 +227,7 @@ export {
   readHandOffBody,
   readPremiumMeBody,
   readPremiumStatusBody,
+  readPremiumUserId,
   readPremiumVisibilityBody,
   readReportBody,
   readSessionTokenBody,
