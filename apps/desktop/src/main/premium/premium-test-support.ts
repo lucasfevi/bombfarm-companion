@@ -49,7 +49,7 @@ export interface RecordedRequest {
   /** The `BFC-Device` header of a device-signed request. */
   device?: string;
   /** Set on a licence route: the method the request used. */
-  method?: 'GET' | 'POST';
+  method?: PremiumHttpRequest['method'];
 }
 
 type Handler = (request: RecordedRequest, count: number) => StubReply | Promise<StubReply>;

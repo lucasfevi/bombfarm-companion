@@ -192,6 +192,8 @@ export interface LicenceHarnessOptions {
   sealedSubject?: string | null;
   removal?: 'stub' | 'default';
   guid?: string | null;
+  /** The Premium surface is on for the flavour. Default: true. */
+  enabled?: boolean;
 }
 
 export interface LicenceHarness {
@@ -251,7 +253,7 @@ export function createLicenceHarness(options: LicenceHarnessOptions = {}): Licen
       log: premium.log,
       appVersion: '9.9.9',
       flavor: 'dev',
-      enabled: true,
+      enabled: options.enabled ?? true,
       onChanged: (view) => {
         views.push(view);
       },

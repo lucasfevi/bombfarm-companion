@@ -110,6 +110,20 @@ describe('renewal rhythm', () => {
     expect(present(renewals(h).at(-1)).body).toMatchObject({ playing: other });
   });
 
+  it('sends one renewal for a resume from sleep and one for a Refresh', async () => {
+    const { h } = await restartedHolder();
+    await h.premium.clock.advance(0);
+    const before = renewals(h).length;
+
+    h.licence.trigger('resume');
+    await settle();
+    expect(renewals(h)).toHaveLength(before + 1);
+    h.licence.trigger('refresh');
+    await settle();
+
+    expect(renewals(h)).toHaveLength(before + 2);
+  });
+
   it('sends one renewal for two triggers in the same second', async () => {
     const { h } = await restartedHolder();
     await h.premium.clock.advance(0);

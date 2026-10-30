@@ -20,6 +20,9 @@ export const PREMIUM_API_PATHS = {
 
 export type PremiumPath = keyof typeof PREMIUM_API_PATHS;
 
+/** The one method a device-signed request uses; the signature covers it. */
+export const SIGNED_METHOD = 'POST' as const;
+
 /** The only headers a caller may add: the device signature and the body's content type. */
 export interface PremiumExtraHeaders {
   readonly 'BFC-Device'?: string;

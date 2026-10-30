@@ -140,6 +140,22 @@ describe('device identity: reuse and separation', () => {
   });
 });
 
+describe('device identity: a flavour without Premium', () => {
+  it('generates no key, sends no request, keeps the state signed out and the gate closed', async () => {
+    const h = createLicenceHarness({ enabled: false });
+    h.scriptHolder();
+
+    await h.boot();
+    await h.premium.clock.advance(60 * MINUTE);
+
+    expect(h.store.deviceWrites).toEqual([]);
+    expect(h.licenceRequests()).toEqual([]);
+    expect(h.identity.reads).toBe(0);
+    expect(h.licence.view().state).toBe('signed_out');
+    expect(h.gate.allows()).toBe(false);
+  });
+});
+
 describe('device identity: what blocks an activation', () => {
   it('generates no key and sends nothing while the OS cannot seal secrets', async () => {
     const h = createLicenceHarness();

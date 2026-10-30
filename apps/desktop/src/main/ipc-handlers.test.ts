@@ -695,6 +695,20 @@ describe('the premium channels', () => {
     expect(await handlers['premium:manage']()).toEqual({ ok: true });
     expect(f.premiumService.manage).toHaveBeenCalledTimes(1);
   });
+
+  it('answer the unavailable result for "use Premium here" before the service is built, and when it cannot', () => {
+    expect(bare().handlers['premium:useHere']()).toEqual({ ok: false, reason: 'unavailable' });
+    expect(wired().handlers['premium:useHere']()).toEqual({ ok: false, reason: 'unavailable' });
+  });
+
+  it('reach the press of "use Premium here" and return its result', () => {
+    const { f, handlers } = wired();
+    const useHere = vi.fn((): PremiumActionResult => ({ ok: true }));
+    Object.assign(f.premiumService, { useHere });
+
+    expect(handlers['premium:useHere']()).toEqual({ ok: true });
+    expect(useHere).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('the online-players count', () => {

@@ -7,6 +7,7 @@ import {
   signedOutPlayingAccount,
   type AppLocale,
   type PremiumActionResult,
+  type PremiumLicenceView,
   type PremiumMe,
   type PremiumPlayingAccount,
   type PremiumReportOutcome,
@@ -51,6 +52,8 @@ export interface PremiumServiceDeps {
   playingAccount?: PlayingAccount;
   /** Where the signed-in user's id is kept between runs; without it the id lives for this run only. */
   subjectStore?: SubjectStore;
+  /** The licence line of the view; without it the view carries none. */
+  licenceView?(): PremiumLicenceView | null;
 }
 
 /**
@@ -88,6 +91,8 @@ export interface PremiumService {
   refresh(reason: 'open' | 'button'): Promise<PremiumActionResult>;
   manage(): Promise<PremiumActionResult>;
   noteAccountChanged(): void;
+  /** The licence view changed: publish the Premium view again with it. */
+  noteLicenceChanged(): void;
   readonly host: LicenceHostPort;
 }
 
@@ -171,7 +176,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       lastRefreshFailed,
       report,
       reportedAccountId,
-      licence: null,
+      licence: deps.licenceView?.() ?? null,
     };
   }
 
@@ -706,6 +711,10 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
 
     noteAccountChanged() {
       void reportAccount();
+    },
+
+    noteLicenceChanged() {
+      publish();
     },
 
     host: {

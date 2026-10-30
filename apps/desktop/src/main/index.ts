@@ -7,6 +7,7 @@ import {
   ipcMain,
   Menu,
   nativeImage,
+  powerMonitor,
   screen,
   session,
   shell,
@@ -106,7 +107,7 @@ import { gamePingProbe } from './game-ping/game-ping-transport.js';
 import { offlineOnlinePlayersGet } from './online-players/online-players-offline.js';
 import { createOnlinePlayersService, type OnlinePlayersService } from './online-players/online-players-service.js';
 import { onlinePlayersHttpGet } from './online-players/online-players-transport.js';
-import { createPremiumWhenEnabled, type PremiumService } from './premium/index.js';
+import { createPremiumWhenEnabled, type ElectronPremium } from './premium/index.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 import { sandboxedWebPreferences } from './web-preferences.js';
@@ -171,7 +172,7 @@ let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
 let onlinePlayersService: OnlinePlayersService | null = null;
 let gamePingService: GamePingService | null = null;
-let premium: PremiumService | null = null;
+let premium: ElectronPremium | null = null;
 let forgeService: ForgeService | null = null;
 let forgeHistory: ForgeHistory | null = null;
 let applyService: ApplyService | null = null;
@@ -1228,6 +1229,14 @@ async function bootstrap(): Promise<void> {
     log,
     onChanged: (view) => {
       emitEvent('premium:changed', view);
+    },
+    appVersion: app.getVersion(),
+    flavor: env.descriptor.flavor,
+    onResume: (listener) => {
+      powerMonitor.on('resume', listener);
+      return () => {
+        powerMonitor.removeListener('resume', listener);
+      };
     },
   });
 
