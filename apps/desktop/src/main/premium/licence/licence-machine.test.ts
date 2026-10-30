@@ -422,6 +422,20 @@ describe('rule 4: identity first', () => {
     expect(machine.device).toEqual({ keyId: 'new-key', deviceId: null, hasSalt: true });
   });
 
+  it('does not follow an activation with a second one when the status arrives during the identity steps', () => {
+    const { machine, effects } = run(initialMachine(true), [
+      { t: 'started', enabled: true, ...begin({ device: null }) },
+      { t: 'status', active: true },
+      { t: 'deviceReady', device: { keyId: 'new-key', deviceId: null, hasSalt: false } },
+      { t: 'status', active: true },
+      answer('salt', { kind: 'salt' }),
+      answer('activate', { kind: 'failed' }),
+    ]);
+    expect(effects.flat().filter((e) => e.e === 'activate')).toHaveLength(1);
+    expect(machine.followUp).toBe(false);
+    expect(machine.inFlight).toBeNull();
+  });
+
   it('ignores a device that was not asked for', () => {
     const from = signedIn({ inFlight: null });
     const out = step(from, { t: 'deviceReady', device: DEVICE });

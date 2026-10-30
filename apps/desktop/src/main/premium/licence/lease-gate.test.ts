@@ -9,8 +9,8 @@ import { createLeaseGate } from './lease-gate';
  */
 const PREMIUM_LEASE_GATE_CALLERS: readonly string[] = [];
 
-/** The files that hold the app's gate and write its value. */
-const LEASE_GATE_WRITERS: readonly string[] = [];
+/** The one file that holds the app's gate and writes its value: the licence service. */
+const LEASE_GATE_WRITERS: readonly string[] = ['src/main/premium/licence/licence-runner.ts'];
 
 const DESKTOP_ROOT = resolve(__dirname, '..', '..', '..', '..');
 const GATE_MODULE = join(__dirname, 'lease-gate.ts');
@@ -109,7 +109,7 @@ describe('who may call the lease gate', () => {
     expect(PREMIUM_LEASE_GATE_CALLERS).toEqual([]);
   });
 
-  it('hands the app gate itself to nothing but its listed writers', () => {
+  it('hands the app gate itself to nothing but the licence service', () => {
     const holders = desktopSources()
       .filter((file) => file.path !== GATE_MODULE && !isTestFile(file.path))
       .filter((file) => STATE_NAME.test(stripComments(file.source)))

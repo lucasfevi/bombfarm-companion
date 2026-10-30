@@ -284,7 +284,9 @@ function pump(w: Work): void {
 /** Ask for a request now, or remember to after the one in flight when the news is fresh. */
 function want(w: Work, news: boolean): void {
   if (w.m.inFlight !== null) {
-    if (news) w.m.followUp = true;
+    // The identity steps (`ensure`, `salt`) end by picking the request from the state as it is then,
+    // so news that arrives during one is already in it; only a request on the wire can miss it.
+    if (news && w.m.inFlight !== 'ensure' && w.m.inFlight !== 'salt') w.m.followUp = true;
     return;
   }
   pump(w);

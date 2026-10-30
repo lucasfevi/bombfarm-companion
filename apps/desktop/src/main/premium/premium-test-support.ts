@@ -37,6 +37,8 @@ export interface StubReply {
   status: number;
   body?: unknown;
   retryAfterSec?: number;
+  /** The server's clock for the `Date` header, in epoch ms. */
+  dateMs?: number;
 }
 
 export interface RecordedRequest {
@@ -44,6 +46,10 @@ export interface RecordedRequest {
   token: string | undefined;
   body: unknown;
   raw: string;
+  /** The `BFC-Device` header of a device-signed request. */
+  device?: string;
+  /** Set on a licence route: the method the request used. */
+  method?: 'GET' | 'POST';
 }
 
 type Handler = (request: RecordedRequest, count: number) => StubReply | Promise<StubReply>;
@@ -118,8 +124,11 @@ export function createStubApi(): StubApi {
       const request: RecordedRequest = {
         path: req.path,
         token: req.token,
-        body: req.body,
-        raw: req.body === undefined ? '' : JSON.stringify(req.body),
+        // A pre-serialised body is recorded as sent: its exact text, and what it parses to.
+        body: req.rawBody === undefined ? req.body : (JSON.parse(req.rawBody) as unknown),
+        raw: req.rawBody ?? (req.body === undefined ? '' : JSON.stringify(req.body)),
+        ...(req.headers?.['BFC-Device'] === undefined ? {} : { device: req.headers['BFC-Device'] }),
+        method: req.method,
       };
       requests.push(request);
       const count = (counts.get(req.path) ?? 0) + 1;
@@ -129,6 +138,7 @@ export function createStubApi(): StubApi {
         status: reply.status,
         body: reply.body === undefined ? '' : JSON.stringify(reply.body),
         retryAfterSec: reply.retryAfterSec ?? null,
+        ...(reply.dateMs === undefined ? {} : { dateMs: reply.dateMs }),
       };
     },
   };
@@ -159,10 +169,14 @@ export function settle(): Promise<void> {
 
 export interface FakeClock {
   now(): number;
+  /** A monotonic clock that moves with `advance` exactly as `now` does, and starts elsewhere. */
+  mono(): number;
   advance(ms: number): Promise<void>;
   pending(): number;
   scheduler: { setTimeout: typeof setTimeout; clearTimeout: typeof clearTimeout };
 }
+
+const MONO_BASE_MS = 7_000_000;
 
 export function createFakeClock(start: number = START_MS): FakeClock {
   let current = start;
@@ -179,6 +193,7 @@ export function createFakeClock(start: number = START_MS): FakeClock {
 
   return {
     now: () => current,
+    mono: () => current - start + MONO_BASE_MS,
     pending: () => timers.size,
     async advance(ms) {
       const target = current + ms;
