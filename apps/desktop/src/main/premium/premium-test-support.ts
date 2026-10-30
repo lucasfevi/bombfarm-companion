@@ -88,6 +88,11 @@ function defaultHandlers(): Record<PremiumPath, Handler> {
     handOff: () => ({ status: 200, body: { url: SECRETS.handOffUrl, expiresAt: '2026-10-20T12:05:00.000Z' } }),
     status: () => ({ status: 200, body: INACTIVE_STATUS_BODY }),
     visibility: () => ({ status: 200, body: { visible: false } }),
+    // The licence routes answer "not configured" until a test scripts them.
+    licence: () => ({ status: 503, body: { reason: 'licence_unconfigured' } }),
+    licenceActivate: () => ({ status: 503, body: { reason: 'licence_unconfigured' } }),
+    lease: () => ({ status: 503, body: { reason: 'licence_unconfigured' } }),
+    licenceCleanup: () => ({ status: 503, body: { reason: 'licence_unconfigured' } }),
   };
 }
 
