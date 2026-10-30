@@ -287,6 +287,10 @@ function pump(w: Work): void {
 /** Ask for a request now, or remember to after the one in flight when the news is fresh. */
 function want(w: Work, news: boolean): void {
   if (w.m.inFlight !== null) {
+    // SPEC_DEVIATION: a plain trigger (resume, refresh, timer) that arrives while a request is in
+    // flight is absorbed, not queued, so two triggers within a second send one renewal.
+    // Reason: the answer in flight already settles what the second would ask; only news that
+    // changes the request (below) earns a follow-up.
     // The identity steps (`ensure`, `salt`) end by picking the request from the state as it is then,
     // so news that arrives during one is already in it; only a request on the wire can miss it.
     if (news && w.m.inFlight !== 'ensure' && w.m.inFlight !== 'salt') w.m.followUp = true;
@@ -343,6 +347,10 @@ function begin(w: Work, input: Begin, enabled: boolean): void {
   m.moveFailed = false;
   m.cleanup = { owed: input.cleanupOwed, folderGone: false };
 
+  // SPEC_DEVIATION: a restart restores moved, released or ended from the cleanup marker or the
+  // sealed Lease instead of always starting unconfirmed.
+  // Reason: a PC that was told to remove the premium code must not start over as "unconfirmed" and
+  // look entitled again before the API answers.
   // A restart never restores `holds`: only a removal state the sealed records vouch for comes back.
   const sealedState = input.sealedLease?.state;
   const restored: RemovalReason | null =
@@ -527,6 +535,10 @@ function onAnswer(w: Work, ev: Extract<Event, { t: 'answer' }>): void {
       return;
     case 'notLeft':
     case 'cleanup':
+      // SPEC_DEVIATION: a removal report answered not_left clears the marker and renews, as a
+      // confirmed one does, instead of reporting again.
+      // Reason: the API has no departure to record for this PC, so reporting again cannot help; the
+      // next renewal decides the state.
       m.retryStep = 0;
       m.cleanup = { owed: null, folderGone: false };
       fx.push({ e: 'clearCleanupOwed' });
