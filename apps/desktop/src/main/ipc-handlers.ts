@@ -403,6 +403,7 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.getPremiumService()?.refresh('button') ?? premiumUnavailable,
     'premium:manage': (): Promise<PremiumActionResult> | PremiumActionResult =>
       deps.getPremiumService()?.manage() ?? premiumUnavailable,
+    'premium:useHere': (): PremiumActionResult => premiumUnavailable,
     'market:refreshItem': refreshMarketItem,
     'market:check': checkMarketNow,
     'forge:start': (request: ForgeStartRequest): ForgeStartResult =>

@@ -135,6 +135,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       lastRefreshFailed,
       report,
       reportedAccountId,
+      licence: null,
     };
   }
 
