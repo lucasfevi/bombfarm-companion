@@ -1590,4 +1590,6 @@ export const en = {
   premiumLicenceMoveLimit: 'You moved Premium on {date}. You can move it again on {next}, or contact support.',
   premiumLicenceUseHere: 'Use Premium on this PC',
   premiumLicenceMoveFailed: "Couldn't move Premium — try again.",
+  // The words of premiumLicenceMoveLimit that become a link once a support channel exists.
+  premiumSupportWords: 'contact support',
 } as const;

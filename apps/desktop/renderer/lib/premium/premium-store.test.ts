@@ -132,3 +132,41 @@ describe('the premium store', () => {
     expect(store.getState().view).toBe(signedOutPremiumView);
   });
 });
+
+describe('the premium store — use Premium on this PC', () => {
+  it('sends one premium:useHere for a double press and shares its answer', async () => {
+    let answer: (value: unknown) => void = () => {};
+    const { bridge, invoke } = fakeBridge();
+    invoke.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          answer = resolve;
+        }),
+    );
+    const store = createPremiumStore(() => bridge);
+
+    const first = store.actions.moveHere();
+    const second = store.actions.moveHere();
+    answer({ ok: true });
+
+    expect(await first).toEqual({ ok: true });
+    expect(await second).toEqual({ ok: true });
+    expect(invoke.mock.calls.filter(([channel]) => channel === 'premium:useHere')).toHaveLength(1);
+  });
+
+  it('sends again once the first press was answered', async () => {
+    const { bridge, invoke } = fakeBridge({ 'premium:useHere': { ok: true } });
+    const store = createPremiumStore(() => bridge);
+
+    await store.actions.moveHere();
+    await store.actions.moveHere();
+
+    expect(invoke.mock.calls.filter(([channel]) => channel === 'premium:useHere')).toHaveLength(2);
+  });
+
+  it('answers unavailable without a bridge', async () => {
+    const store = createPremiumStore(() => undefined);
+
+    expect(await store.actions.moveHere()).toEqual({ ok: false, reason: 'unavailable' });
+  });
+});

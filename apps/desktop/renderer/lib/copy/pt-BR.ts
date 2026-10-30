@@ -1521,4 +1521,6 @@ export const ptBR: Copy = {
   premiumLicenceMoveLimit: 'Você moveu o Premium em {date}. Você pode movê-lo de novo em {next} ou falar com o suporte.',
   premiumLicenceUseHere: 'Usar o Premium neste PC',
   premiumLicenceMoveFailed: 'Não foi possível mover o Premium — tente de novo.',
+  // The words of premiumLicenceMoveLimit that become a link once a support channel exists.
+  premiumSupportWords: 'falar com o suporte',
 };
