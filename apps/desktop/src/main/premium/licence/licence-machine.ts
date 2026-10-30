@@ -63,6 +63,8 @@ export interface Machine {
   readonly followUp: boolean;
   /** Index into the retry schedule of the next failure. */
   readonly retryStep: number;
+  /** A device_foreign answer already restarted this sign-in at once; the next one waits its turn. */
+  readonly foreignRetried: boolean;
   /** A removal report is owed for this reason; `folderGone` once the premium host answered. */
   readonly cleanup: { readonly owed: RemovalReason | null; readonly folderGone: boolean };
   /** The user pressed Move and no answer has settled it. */
@@ -86,6 +88,7 @@ export function initialMachine(enabled: boolean): Machine {
     inFlight: null,
     followUp: false,
     retryStep: 0,
+    foreignRetried: false,
     cleanup: { owed: null, folderGone: false },
     moveIntent: false,
     moveFailed: false,
@@ -335,6 +338,7 @@ function begin(w: Work, input: Begin, enabled: boolean): void {
   m.inFlight = null;
   m.followUp = false;
   m.retryStep = 0;
+  m.foreignRetried = false;
   m.moveIntent = false;
   m.moveFailed = false;
   m.cleanup = { owed: input.cleanupOwed, folderGone: false };
@@ -366,6 +370,7 @@ function signedOutInPlace(w: Work): void {
   m.inFlight = null;
   m.followUp = false;
   m.retryStep = 0;
+  m.foreignRetried = false;
   m.cleanup = { owed: null, folderGone: false };
   m.moveIntent = false;
   m.moveFailed = false;
@@ -385,6 +390,7 @@ function armRetry(w: Work, retryAfterSec?: number): void {
 
 function settled(m: Draft): void {
   m.retryStep = 0;
+  m.foreignRetried = false;
   m.moveIntent = false;
   m.moveFailed = false;
 }
@@ -498,9 +504,15 @@ function onAnswer(w: Work, ev: Extract<Event, { t: 'answer' }>): void {
         fx.push({ e: 'clearCleanupOwed' });
       }
       m.device = null;
-      m.retryStep = 0;
       if (m.state === 'holds') setState(m, 'unconfirmed', 'network');
-      pump(w);
+      if (m.foreignRetried) {
+        // The API keeps refusing fresh keys: wait out the normal backoff instead of looping.
+        armRetry(w);
+      } else {
+        m.foreignRetried = true;
+        m.retryStep = 0;
+        pump(w);
+      }
       break;
     case 'deviceSignature':
       if (ev.of === 'move') {

@@ -75,7 +75,7 @@ describe('device identity: the first activation', () => {
     h.scriptHolder();
 
     await h.boot();
-    await h.premium.clock.advance(16 * MINUTE);
+    await h.premium.clock.advance(15 * MINUTE);
 
     const everything = JSON.stringify([
       h.premium.stub.requests,
@@ -136,6 +136,56 @@ describe('device identity: reuse and separation', () => {
     expect(h.store.clearedDevices).toContain(USER);
     expect(activations).toHaveLength(2);
     expect(keyIdOf(present(activations[1]))).not.toBe(keyIdOf(present(activations[0])));
+    expect(h.licence.view().state).toBe('holds');
+  });
+
+  it('restarts at once only for the first refusal, then waits the retry steps while the API keeps refusing keys', async () => {
+    const h = createLicenceHarness();
+    h.scriptHolder();
+    const times: number[] = [];
+    h.premium.stub.on('licenceActivate', () => {
+      times.push(h.premium.clock.now());
+      return { status: 403, body: { reason: 'device_foreign' } };
+    });
+
+    await h.boot();
+    await settle();
+    const t0 = present(times[0]);
+    expect(times).toHaveLength(2);
+    expect(times[1]).toBe(t0);
+
+    await h.premium.clock.advance(MINUTE - 1);
+    expect(times).toHaveLength(2);
+    await h.premium.clock.advance(1);
+    await settle();
+    expect(times.map((at) => (at - t0) / MINUTE)).toEqual([0, 0, 1]);
+
+    await h.premium.clock.advance(2 * MINUTE);
+    await settle();
+    await h.premium.clock.advance(5 * MINUTE);
+    await settle();
+    expect(times.map((at) => (at - t0) / MINUTE)).toEqual([0, 0, 1, 3, 8]);
+  });
+
+  it('gives the immediate restart back once an answer is accepted', async () => {
+    const h = createLicenceHarness();
+    h.scriptHolder();
+    let refusals = 0;
+    h.premium.stub.on('licenceActivate', (request) => {
+      refusals += 1;
+      return refusals === 1 ? { status: 403, body: { reason: 'device_foreign' } } : h.activation(request);
+    });
+    await h.boot();
+    expect(h.licence.view().state).toBe('holds');
+    const before = h.licenceRequests().filter((request) => request.path === 'licenceActivate').length;
+
+    h.premium.stub.on('lease', (request, count) =>
+      count === 1 ? { status: 403, body: { reason: 'device_foreign' } } : h.lease(request),
+    );
+    await h.premium.clock.advance(15 * MINUTE);
+    await settle();
+
+    expect(h.licenceRequests().filter((request) => request.path === 'licenceActivate').length).toBe(before + 1);
     expect(h.licence.view().state).toBe('holds');
   });
 });
