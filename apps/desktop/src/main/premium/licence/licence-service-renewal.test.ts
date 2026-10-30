@@ -307,3 +307,57 @@ describe('the lease gate', () => {
     expect(h.stubRemoval?.requests).toEqual([]);
   });
 });
+
+describe('the latest bundle sequence', () => {
+  const withSequence = (reply: StubReply, latestSequence: unknown): StubReply => ({
+    ...reply,
+    body: { ...(reply.body as object), bundle: { latestSequence } },
+  });
+
+  it('is handed to the removal port exactly as the API sent it, from activations and renewals alike', async () => {
+    const h = createLicenceHarness();
+    h.scriptHolder();
+    h.premium.stub.on('licenceActivate', (request) => h.activation(request, {}, 41));
+    let renewal = 0;
+    h.premium.stub.on('lease', (request) => {
+      renewal += 1;
+      return withSequence(h.lease(request), renewal === 1 ? 42 : null);
+    });
+
+    await h.boot();
+    await h.premium.clock.advance(30 * MINUTE);
+    await settle();
+
+    expect(h.stubRemoval?.latest).toEqual([41, 42, null]);
+  });
+
+  it('changes nothing about the licence: same state, requests and gate with or without a sequence', async () => {
+    async function observe(sequence: number | null) {
+      const h = createLicenceHarness();
+      h.scriptHolder();
+      h.premium.stub.on('licenceActivate', (request) => h.activation(request, {}, sequence));
+      h.premium.stub.on('lease', (request) => withSequence(h.lease(request), sequence));
+      await h.boot();
+      await h.premium.clock.advance(15 * MINUTE);
+      await settle();
+      return {
+        view: h.licence.view(),
+        paths: h.licenceRequests().map((request) => request.path),
+        gate: h.gate.allows(),
+        requested: h.stubRemoval?.requests,
+      };
+    }
+
+    expect(await observe(999)).toEqual(await observe(null));
+  });
+
+  it('is not handed anything when the answer carries no Lease', async () => {
+    const h = createLicenceHarness();
+    h.scriptHolder();
+    h.premium.stub.on('licenceActivate', { status: 503, body: { reason: 'busy' } });
+
+    await h.boot();
+
+    expect(h.stubRemoval?.latest).toEqual([]);
+  });
+});

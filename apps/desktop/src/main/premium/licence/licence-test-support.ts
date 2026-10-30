@@ -163,6 +163,8 @@ export function createFakeIdentity(guid: string | null = MACHINE_GUID): MachineI
 export interface StubRemovalPort extends PremiumRemovalPort {
   requests: PremiumRemovalReason[];
   sequence: number | null;
+  /** Every value handed over by noteLatestSequence, in order. */
+  latest: (number | null)[];
   /** The premium host answers that its folder is gone. */
   answerGone(): void;
 }
@@ -173,10 +175,14 @@ export function createStubRemovalPort(): StubRemovalPort {
   const port: StubRemovalPort = {
     requests: [],
     sequence: null,
+    latest: [],
     requestPremiumRemoval(reason) {
       port.requests.push(reason);
     },
     runningSequence: () => port.sequence,
+    noteLatestSequence(sequence) {
+      port.latest.push(sequence);
+    },
     attach(next) {
       noteFolderGone = next;
     },
@@ -212,7 +218,7 @@ export interface LicenceHarness {
   /** A signed Lease for the device that sent `request`, issued now. */
   lease(request: RecordedRequest, spec?: Partial<LeaseSpec>): StubReply;
   /** The Lease answer for `request` on the activation route, which also carries the device id. */
-  activation(request: RecordedRequest, spec?: Partial<LeaseSpec>): StubReply;
+  activation(request: RecordedRequest, spec?: Partial<LeaseSpec>, latestSequence?: number | null): StubReply;
   /** Answers every licence route as a healthy, active holder would. */
   scriptHolder(): void;
   /** Starts the Premium service, then the licence service, and lets both settle. */
@@ -283,9 +289,9 @@ export function createLicenceHarness(options: LicenceHarnessOptions = {}): Licen
         body: signedLease({ deviceKeyId: keyIdOf(request), issuedAtMs: premium.clock.now(), ...spec }),
       };
     },
-    activation(request, spec = {}) {
+    activation(request, spec = {}, latestSequence = null) {
       const reply = harness.lease(request, spec);
-      return { ...reply, body: { ...(reply.body as object), deviceId: DEVICE_ID, bundle: { latestSequence: null } } };
+      return { ...reply, body: { ...(reply.body as object), deviceId: DEVICE_ID, bundle: { latestSequence } } };
     },
     scriptHolder() {
       premium.stub.on('status', { status: 200, body: ACTIVE_STATUS_BODY });

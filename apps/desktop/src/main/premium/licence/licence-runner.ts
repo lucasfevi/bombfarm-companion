@@ -401,6 +401,14 @@ export function createLicenceService(deps: LicenceServiceDeps): LicenceService {
   function finish(of: RequestKind, generation: number, answer: LicenceAnswer, held: DeviceRecord | null): void {
     if (!running) return;
     if (answer.dateMs !== null) offsetMs = answer.dateMs - deps.now();
+    if (answer.outcome.kind === 'lease') {
+      // One way only: the premium host decides what to do with it; no licence state depends on it.
+      try {
+        deps.removal.noteLatestSequence(answer.outcome.latestSequence);
+      } catch {
+        // A host that fails to take the note changes nothing here.
+      }
+    }
     dispatch({
       t: 'answer',
       of,

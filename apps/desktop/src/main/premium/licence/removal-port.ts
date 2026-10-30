@@ -9,6 +9,11 @@ export interface PremiumRemovalPort {
   requestPremiumRemoval(reason: PremiumRemovalReason): void;
   /** The sequence of the bundle running now, or null when none is. */
   runningSequence(): number | null;
+  /**
+   * The newest bundle sequence the API named in a Lease answer, unsigned and passed on unchanged
+   * (null when the answer named none). The licence feature never acts on it.
+   */
+  noteLatestSequence(sequence: number | null): void;
   /** Hands the port the function it calls once the premium folder is gone. */
   attach(noteFolderGone: () => void): void;
 }
@@ -23,6 +28,9 @@ export function createDefaultRemovalPort(defer: (run: () => void) => void = queu
       });
     },
     runningSequence: () => null,
+    noteLatestSequence() {
+      // Nothing is downloaded, so there is nothing to compare it with.
+    },
     attach(next) {
       noteFolderGone = next;
     },

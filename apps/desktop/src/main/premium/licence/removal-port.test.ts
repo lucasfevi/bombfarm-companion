@@ -42,4 +42,21 @@ describe('the default removal port', () => {
     }).not.toThrow();
     await Promise.resolve();
   });
+
+  it('takes the latest bundle sequence without acting on it', async () => {
+    const port = createDefaultRemovalPort();
+    let gone = 0;
+    port.attach(() => {
+      gone += 1;
+    });
+
+    expect(() => {
+      port.noteLatestSequence(7);
+      port.noteLatestSequence(null);
+    }).not.toThrow();
+    await Promise.resolve();
+
+    expect(gone).toBe(0);
+    expect(port.runningSequence()).toBeNull();
+  });
 });
