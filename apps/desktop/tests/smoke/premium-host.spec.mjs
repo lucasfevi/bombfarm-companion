@@ -14,6 +14,7 @@ const EN_COPY_PATH = path.join(desktopRoot, 'renderer', 'lib', 'copy', 'en.ts');
 const SHIMS_PATH = path.join(desktopRoot, 'dist', 'main', 'premium-shims.json');
 
 const LINKED_PAIR = { accountId: '424242', steamId64: '76561198000000001', token: 'fixture-game-token-linked-0001' };
+const OTHER_PAIR = { accountId: '515151', steamId64: '76561198000000002', token: 'fixture-game-token-other-0002' };
 const PLAYER_NAME = 'Smoke Fixture Player';
 const MARKER = 'bfc-premium-fixture-marker';
 const FILE_ROUTE = /^\/v1\/premium\/bundle\/(\d+)\/files\//;
@@ -82,6 +83,7 @@ test.describe.serial('The Premium host runs a signed bundle', () => {
     stub.state.visible = true;
     stub.state.status = activeStatusBody();
     stub.publishBundle(fixtureOne);
+    stub.state.reportReplies[OTHER_PAIR.steamId64] = { status: 409, body: { reason: 'steam_mismatch' } };
 
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-premium-host-'));
     userDataDir = path.join(tempDir, 'user-data');
@@ -112,6 +114,22 @@ test.describe.serial('The Premium host runs a signed bundle', () => {
     });
     page = await app.firstWindow();
     await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
+
+    // What main tells the window, in order: the host phase of every Premium view and every page load.
+    await app.evaluate(({ BrowserWindow }) => {
+      globalThis.__bfcRecord = [];
+      for (const win of BrowserWindow.getAllWindows()) {
+        const contents = win.webContents;
+        const realSend = contents.send.bind(contents);
+        contents.send = (channel, ...args) => {
+          if (channel.endsWith('premium:changed')) {
+            globalThis.__bfcRecord.push({ kind: 'phase', phase: args[0]?.host?.phase ?? null, uiUrl: args[0]?.host?.uiUrl ?? null });
+          }
+          return realSend(channel, ...args);
+        };
+        contents.on('did-finish-load', () => globalThis.__bfcRecord.push({ kind: 'load' }));
+      }
+    });
 
     const modal = page.getByTestId('consent-modal');
     await expect(modal).toBeVisible({ timeout: 30_000 });
@@ -210,5 +228,108 @@ test.describe.serial('The Premium host runs a signed bundle', () => {
       expect(live[name].length, `${name} has exports`).toBeGreaterThan(0);
       expect([...shims[name]].sort(), `${name} shim names`).toEqual(live[name]);
     }
+  });
+
+  const bundleRequestCount = () =>
+    stub.requests.filter((request) => request.path === STUB_PATHS.bundle || FILE_ROUTE.test(request.path)).length;
+  const recorded = () => app.evaluate(() => globalThis.__bfcRecord ?? []);
+  const premiumFolders = () => {
+    const dir = path.join(userDataDir, 'premium');
+    return fs.existsSync(dir) ? fs.readdirSync(dir).sort() : [];
+  };
+
+  /** Presses Refresh until `read` returns a value `done` accepts: the renewal it triggers is what carries news. */
+  async function refreshUntil(read, done, timeout = 120_000) {
+    await expect
+      .poll(
+        async () => {
+          try {
+            await page.evaluate(() => window.bfc.invoke('premium:refresh'));
+            return done(await read());
+          } catch {
+            return false; // The page was reloading.
+          }
+        },
+        { timeout, intervals: [1_000, 2_000, 5_000] },
+      )
+      .toBe(true);
+  }
+
+  test('another account playing pauses Premium without deleting or downloading anything', async () => {
+    const requestsBefore = bundleRequestCount();
+
+    playAs(files, OTHER_PAIR);
+
+    await expect.poll(async () => (await premiumView(page)).host?.phase, { timeout: 30_000 }).toBe('paused');
+    await expect(page.getByTestId('premium-host-mount')).toHaveCount(0);
+    await expect(page.locator('body')).not.toContainText(MARKER);
+    await expect(page.locator('[data-testid^="premium-banner-paused-"]')).toHaveCount(1);
+    expect(premiumFolders()).toEqual(['1']);
+    expect(bundleRequestCount()).toBe(requestsBefore);
+  });
+
+  test('switching back runs the same bundle again without a download', async () => {
+    const requestsBefore = bundleRequestCount();
+    const loadsBefore = (await recorded()).filter((entry) => entry.kind === 'load').length;
+
+    playAs(files, LINKED_PAIR);
+
+    await expect.poll(async () => (await premiumView(page)).host?.phase, { timeout: 30_000 }).toBe('running');
+    await expect(page.getByTestId('premium-host-mount')).toContainText(MARKER);
+    await expect(page.locator('[data-testid^="premium-banner-paused-"]')).toHaveCount(0);
+    expect(bundleRequestCount()).toBe(requestsBefore);
+    expect(premiumFolders()).toEqual(['1']);
+    expect((await recorded()).filter((entry) => entry.kind === 'load')).toHaveLength(loadsBefore);
+  });
+
+  test('a Lease with a higher floor reloads into Updating Premium, then runs the newer bundle', async () => {
+    const loadsBefore = (await recorded()).filter((entry) => entry.kind === 'load').length;
+    const manifestsBefore = stub.at(STUB_PATHS.bundle).length;
+    stub.publishBundle(signFixture({ sequence: 2, version: '1.1.0' }));
+    stub.state.minSequence = 2;
+
+    await refreshUntil(
+      async () => (await premiumView(page)).host?.uiUrl ?? null,
+      (uiUrl) => uiUrl === 'app://bundle/_premium/2/ui/index.js',
+    );
+
+    const since = await recorded();
+    expect(since.filter((entry) => entry.kind === 'load').length).toBeGreaterThan(loadsBefore);
+    const phases = since.filter((entry) => entry.kind === 'phase').map((entry) => entry.phase);
+    expect(phases).toContain('updating');
+    expect(phases.lastIndexOf('updating')).toBeLessThan(phases.lastIndexOf('running'));
+
+    // The newer bundle was asked for through a fresh manifest request, all of it device-signed.
+    expect(stub.at(STUB_PATHS.bundle).length).toBeGreaterThan(manifestsBefore);
+    const secondFiles = stub.requests.filter((request) => /^\/v1\/premium\/bundle\/2\/files\//.test(request.path));
+    expect(secondFiles).toHaveLength(3);
+    for (const request of secondFiles) expect(request.deviceSigned).toBe(true);
+
+    await expect.poll(premiumFolders, { timeout: 30_000 }).toEqual(['2']);
+    await premiumTab(page).click();
+    await expect(page.getByTestId('premium-host-mount')).toContainText(MARKER, { timeout: 30_000 });
+  });
+
+  test('an ended Lease removes the bundle from the data folder before the cleanup report goes out', async () => {
+    expect(premiumFolders()).toEqual(['2']);
+    stub.state.cleanupProbe = () => ({ premiumFolderPresent: fs.existsSync(path.join(userDataDir, 'premium')) });
+    stub.state.leaseState = 'ended';
+
+    await refreshUntil(
+      () => stub.at(STUB_PATHS.licenceCleanup).length,
+      (count) => count === 1,
+    );
+
+    const requests = stub.requests;
+    const cleanup = stub.at(STUB_PATHS.licenceCleanup)[0];
+    // The report followed the renewal that said ended.
+    expect(requests.slice(0, requests.indexOf(cleanup)).some((request) => request.path === STUB_PATHS.lease)).toBe(true);
+    // The folder check ran when the report reached the stub: nothing was left to delete.
+    expect(cleanup.extra.probe).toEqual({ premiumFolderPresent: false });
+    expect(cleanup.deviceSigned).toBe(true);
+
+    expect(fs.readdirSync(userDataDir).filter((name) => name.startsWith('premium'))).toEqual([]);
+    await expect.poll(async () => (await premiumView(page)).host?.phase, { timeout: 30_000 }).toBe('none');
+    await expect(page.getByTestId('premium-host-mount')).toHaveCount(0);
   });
 });
