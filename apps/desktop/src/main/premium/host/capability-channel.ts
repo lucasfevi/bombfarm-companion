@@ -1,0 +1,193 @@
+import {
+  type CapabilityReply,
+  type HostToWorker,
+  PREMIUM_CAPABILITIES,
+} from '@bombfarm/contracts';
+import type { LogPort } from '../../storage/index.js';
+
+/**
+ * The only way a Premium worker asks the host for anything: typed calls over one port, each
+ * answered `{id, ok, value | error}`. A call is refused unless the capability is granted (the
+ * bundle declared it AND the host allowlist has it), the worker is not paused, and its per-capability
+ * budget has a token left. Every call writes one log record; arguments are never logged.
+ */
+
+export type CapabilityHandler = (args: unknown) => unknown;
+
+/** What the channel needs from a message port; `MessagePortMain` satisfies it. */
+export interface CapabilityPort {
+  on(event: 'message', listener: (event: { data: unknown }) => void): unknown;
+  postMessage(message: HostToWorker): void;
+  start(): void;
+  close(): void;
+}
+
+export interface CapabilityChannelDeps {
+  readonly port: CapabilityPort;
+  /** The capabilities the bundle's manifest declares. */
+  readonly requested: readonly string[];
+  /** The capabilities the host offers; empty until one is designed. */
+  readonly allowlist: ReadonlyMap<string, CapabilityHandler>;
+  /** The bundle's sequence, for the audit record. */
+  readonly sequence: number;
+  /** Milliseconds from any steady clock. */
+  readonly now: () => number;
+  readonly log: LogPort;
+  /** Calls per capability per minute; 60 unless a test says otherwise. */
+  readonly ratePerMinute?: number;
+  /** The names that may appear in the audit record; any other name is logged as `unknown`. */
+  readonly knownCapabilities?: readonly string[];
+}
+
+export interface CapabilityChannel {
+  /** The capabilities this worker may call: the declared ones the host offers. */
+  readonly granted: readonly string[];
+  /** Refuse every call from now on and tell the worker. */
+  pause(): void;
+  resume(): void;
+  /** Answer every pending call `stopped`, then close the port. */
+  close(): void;
+}
+
+export const DEFAULT_RATE_PER_MINUTE = 60;
+
+type ErrorCode = Extract<CapabilityReply, { ok: false }>['error'];
+
+interface ParsedCall {
+  readonly id: number;
+  readonly capability: string;
+  readonly args: unknown;
+}
+
+function parseCall(data: unknown): ParsedCall | { readonly id: number } {
+  if (typeof data !== 'object' || data === null) return { id: -1 };
+  const { id, capability, args } = data as Record<string, unknown>;
+  const safeId = typeof id === 'number' && Number.isSafeInteger(id) ? id : -1;
+  if (safeId === -1 || typeof capability !== 'string') return { id: safeId };
+  return { id: safeId, capability, args };
+}
+
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return typeof (value as { then?: unknown } | null)?.then === 'function';
+}
+
+export function createCapabilityChannel(deps: CapabilityChannelDeps): CapabilityChannel {
+  const { port, allowlist, sequence, now, log } = deps;
+  const perMinute = deps.ratePerMinute ?? DEFAULT_RATE_PER_MINUTE;
+  const known = new Set<string>(deps.knownCapabilities ?? PREMIUM_CAPABILITIES);
+  const granted = [...new Set(deps.requested)].filter((name) => allowlist.has(name));
+  const grantedSet = new Set(granted);
+  const buckets = new Map<string, { tokens: number; at: number }>();
+  const pending = new Map<number, string>();
+  let paused = false;
+  let closed = false;
+
+  function audit(capability: string | null, outcome: string): void {
+    log.info({
+      scope: 'premium',
+      event: 'premium.capability',
+      capability: capability !== null && known.has(capability) ? capability : 'unknown',
+      outcome,
+      sequence,
+    });
+  }
+
+  function post(message: HostToWorker): void {
+    try {
+      port.postMessage(message);
+    } catch {
+      // The worker is gone; there is nobody to tell.
+    }
+  }
+
+  function refuse(id: number, capability: string | null, error: ErrorCode, outcome: string = error): void {
+    audit(capability, outcome);
+    post({ id, ok: false, error });
+  }
+
+  function takeToken(capability: string): boolean {
+    const at = now();
+    const bucket = buckets.get(capability) ?? { tokens: perMinute, at };
+    const tokens = Math.min(perMinute, bucket.tokens + ((at - bucket.at) * perMinute) / 60_000);
+    if (tokens < 1) {
+      buckets.set(capability, { tokens, at });
+      return false;
+    }
+    buckets.set(capability, { tokens: tokens - 1, at });
+    return true;
+  }
+
+  function onMessage(data: unknown): void {
+    if (closed) return;
+    const call = parseCall(data);
+    if (!('capability' in call)) {
+      refuse(call.id, null, 'bad_call');
+      return;
+    }
+    const { id, capability, args } = call;
+    if (!grantedSet.has(capability)) {
+      refuse(id, capability, 'not_granted');
+      return;
+    }
+    if (paused) {
+      refuse(id, capability, 'paused');
+      return;
+    }
+    if (!takeToken(capability)) {
+      refuse(id, capability, 'rate_limited');
+      return;
+    }
+
+    const handler = allowlist.get(capability) as CapabilityHandler;
+    let result: unknown;
+    try {
+      result = handler(args);
+    } catch {
+      refuse(id, capability, 'bad_call', 'error');
+      return;
+    }
+    if (!isPromiseLike(result)) {
+      audit(capability, 'ok');
+      post({ id, ok: true, value: result });
+      return;
+    }
+    pending.set(id, capability);
+    result.then(
+      (value) => {
+        if (!pending.delete(id)) return;
+        audit(capability, 'ok');
+        post({ id, ok: true, value });
+      },
+      () => {
+        if (!pending.delete(id)) return;
+        refuse(id, capability, 'bad_call', 'error');
+      },
+    );
+  }
+
+  port.on('message', (event) => {
+    onMessage(event.data);
+  });
+  port.start();
+
+  return {
+    granted,
+    pause() {
+      if (closed || paused) return;
+      paused = true;
+      post({ t: 'paused' });
+    },
+    resume() {
+      if (closed || !paused) return;
+      paused = false;
+      post({ t: 'resumed' });
+    },
+    close() {
+      if (closed) return;
+      closed = true;
+      for (const [id, capability] of pending) refuse(id, capability, 'stopped');
+      pending.clear();
+      port.close();
+    },
+  };
+}
