@@ -1,3 +1,4 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const MAIN_EXTERNALS = [
@@ -14,7 +15,33 @@ const MAIN_EXTERNALS = [
 /** The only modules a sandboxed preload can `require`; anything else throws when the preload loads. */
 export const SANDBOX_PRELOAD_MODULES = ['electron', 'events', 'timers', 'url'];
 
-export function electronBundles({ src, dist }) {
+/**
+ * The two build-time constants the main bundle is compiled with. The dev-only flag is a boolean so
+ * esbuild drops an `if (__BFC_PREMIUM_DEV__)` body without having to fold a string comparison.
+ *
+ * @param {import('@bombfarm/contracts').AppFlavor} flavor
+ */
+export function flavorDefines(flavor) {
+  return {
+    __BFC_BUILD_FLAVOR__: JSON.stringify(flavor),
+    __BFC_PREMIUM_DEV__: String(flavor === 'dev'),
+  };
+}
+
+/** The flavour a build was made for, written beside the bundles so packaging can compare it. */
+export function writeBuildInfo(dist, flavor) {
+  const file = path.join(dist, 'main', 'build-info.json');
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, `${JSON.stringify({ flavor })}
+`);
+  return file;
+}
+
+/**
+ * @param {{ src: string, dist: string, flavor?: import('@bombfarm/contracts').AppFlavor }} options
+ *   `flavor` defaults to `prod`, the same answer an unset `BFC_FLAVOR` gets.
+ */
+export function electronBundles({ src, dist, flavor = 'prod' }) {
   const shared = {
     bundle: true,
     platform: 'node',
@@ -28,6 +55,7 @@ export function electronBundles({ src, dist }) {
     main: {
       ...shared,
       external: MAIN_EXTERNALS,
+      define: flavorDefines(flavor),
       entryPoints: [path.join(src, 'main/index.ts')],
       outfile: path.join(dist, 'main/index.cjs'),
     },

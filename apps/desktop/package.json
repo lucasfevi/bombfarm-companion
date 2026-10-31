@@ -16,7 +16,7 @@
     "pretest:smoke": "cross-env NODE_ENV=production BFC_FLAVOR=dev BFC_GAME_READER=fixture pnpm build",
     "pretest:render-count": "cross-env NODE_ENV=production BFC_FLAVOR=dev BFC_GAME_READER=fixture pnpm build",
     "build": "pnpm build:electron && pnpm build:renderer",
-    "dev": "pnpm build:electron && node scripts/dev.mjs",
+    "dev": "node scripts/dev.mjs",
     "dev:offline": "node scripts/dev-offline.mjs",
     "dev:capture": "node scripts/dev-capture.mjs",
     "dev:pids": "node scripts/list-game-pids.mjs",
