@@ -6,6 +6,7 @@ import type { MarketQuoteCurrency, MarketQuoteResult, MarketQuoteTarget, MarketS
 import { DEFAULT_MARKET_QUOTE_CURRENCY } from './market.js';
 import type { OnlinePlayersView } from './online-players.js';
 import type { GamePingView } from './game-ping.js';
+import type { CapabilityReply } from './premium-host.js';
 import type { PremiumActionResult, PremiumView } from './premium.js';
 import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
 import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
@@ -227,6 +228,7 @@ export {
   readHandOffBody,
   readPremiumMeBody,
   readPremiumStatusBody,
+  readPremiumMeAudience,
   readPremiumUserId,
   readPremiumVisibilityBody,
   readReportBody,
@@ -246,8 +248,15 @@ export type {
   PremiumHostView,
   PremiumManifest,
   PremiumManifestFile,
+  PremiumPauseReason,
+  PremiumStatusAnswer,
 } from './premium-host.js';
-export { BUNDLE_PUBLIC_KEYS, PREMIUM_CAPABILITIES, PREMIUM_SHARED_MODULES } from './premium-host.js';
+export {
+  BUNDLE_PUBLIC_KEYS,
+  PREMIUM_CAPABILITIES,
+  PREMIUM_NOTIFICATIONS,
+  PREMIUM_SHARED_MODULES,
+} from './premium-host.js';
 export type { LeasePublicKey, LicenceReason, LicenceState, PremiumLicenceView } from './premium-licence.js';
 export {
   LEASE_PUBLIC_KEYS,
@@ -714,6 +723,9 @@ export interface IpcChannels {
   /** The Premium tab could not mount the bundle's screen. Main stops the bundle's worker and
    *  falls back to the app without it. */
   'premium:hostMountFailed': { args: []; result: null };
+  /** A capability call from the Premium screen, answered by the same channel the bundle's worker
+   *  uses. Main window only. */
+  'premium:uiCall': { args: [string, unknown]; result: CapabilityReply };
   /** A screen crash, reported by the window that drew it so it reaches the log file the renderer
    *  cannot write to. Main validates the record rather than trusting its shape, caps every field,
    *  stamps the scope itself and rate-limits each window; a call it drops answers the same `null`. */
@@ -792,6 +804,7 @@ export const IPC_CHANNELS = [
   'premium:manage',
   'premium:useHere',
   'premium:hostMountFailed',
+  'premium:uiCall',
   'log:rendererError',
 ] as const satisfies readonly IpcInvokeChannel[];
 
@@ -811,6 +824,7 @@ export type IpcEventChannel =
   | 'pvp:changed'
   | 'collections:changed'
   | 'premium:changed'
+  | 'premium:showTab'
   | 'window:changed';
 
 export interface IpcEvents {
@@ -859,6 +873,8 @@ export interface IpcEvents {
   'collections:changed': CollectionsView;
   /** Fired whenever the Premium session or its status changes. */
   'premium:changed': PremiumView;
+  /** Fired when the main window should show the Premium tab, such as from a Premium notification. */
+  'premium:showTab': null;
   /** Fired on every maximize and unmaximize of the main window, so the header's own caption
    *  buttons follow a state change the OS made (a double-clicked title bar, a snap, Win+Up)
    *  and not only the ones they asked for. */
@@ -881,6 +897,7 @@ export const IPC_EVENT_CHANNELS = [
   'pvp:changed',
   'collections:changed',
   'premium:changed',
+  'premium:showTab',
   'window:changed',
 ] as const satisfies readonly IpcEventChannel[];
 

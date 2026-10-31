@@ -235,6 +235,15 @@ export function readPremiumUserId(value: unknown): string | null {
   return typeof userId === 'string' && userId !== '' ? userId : null;
 }
 
+/**
+ * Who the signed-in account is for, from the account answer, kept apart from `readPremiumMeBody`
+ * like the user id: the view never carries it. Anything but the three known values is null.
+ */
+export function readPremiumMeAudience(value: unknown): 'owner' | 'tester' | 'public' | null {
+  const audience = asRecord(value)?.['audience'];
+  return audience === 'owner' || audience === 'tester' || audience === 'public' ? audience : null;
+}
+
 export function readPremiumVisibilityBody(value: unknown): boolean | null {
   const body = asRecord(value);
   if (body === null) return null;

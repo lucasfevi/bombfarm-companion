@@ -26,6 +26,7 @@ import {
   type AppSettings,
   type ApplyStartRequest,
   type ApplyStartResult,
+  type CapabilityReply,
   type CollectionsView,
   type ConsentRecord,
   type DeconstructStartRequest,
@@ -412,6 +413,8 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.getPremiumService()?.hostMountFailed?.();
       return null;
     },
+    // Answers `stopped` until the host's channel is reachable from here.
+    'premium:uiCall': (): CapabilityReply => ({ id: -1, ok: false, error: 'stopped' }),
     'market:refreshItem': refreshMarketItem,
     'market:check': checkMarketNow,
     'forge:start': (request: ForgeStartRequest): ForgeStartResult =>

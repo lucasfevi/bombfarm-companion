@@ -92,7 +92,7 @@ describe('renewal rhythm', () => {
     expect(request.body).toEqual({
       playing: PAIR,
       fingerprint: expect.stringMatching(/^[0-9a-f]{64}$/) as unknown,
-      bundle: { sequence: 7, hostApi: '1.0.0', appVersion: '9.9.9', flavor: 'dev' },
+      bundle: { sequence: 7, hostApi: '1.1.0', appVersion: '9.9.9', flavor: 'dev' },
     });
   });
 
