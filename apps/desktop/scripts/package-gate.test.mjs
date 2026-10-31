@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { NtExecutable, NtExecutableResource } from 'resedit';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createBuilderConfig } from './builder-config.mjs';
+import { TEST_BUNDLE_KEYPAIR, TEST_LEASE_KEYPAIR } from '../tests/fixtures/premium/keys.mjs';
 import { buildManifest, CSP_MANIFEST_FILE } from './csp-manifest.mjs';
 import {
   assertAsarExists,
@@ -837,6 +838,24 @@ describe('assertNoDevPremiumTrust', () => {
       const { asarPath, entries } = await archiveOf(stamped(flavor));
       expect(() => assertNoDevPremiumTrust(flavor, asarPath, entries)).not.toThrow();
     }
+  });
+
+  it('searches for exactly the dev-only values, each stated here rather than read from the gate', () => {
+    const fixtureUi = readFileSync(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), '../tests/fixtures/premium/bundle/ui/index.js'),
+      'utf8',
+    );
+    const marker = /'(bfc-[a-z-]*marker)'/.exec(fixtureUi)?.[1];
+    expect(marker).toBeTruthy();
+    expect(DEV_PREMIUM_NEEDLES.map((needle) => needle.value).sort()).toEqual(
+      [
+        TEST_BUNDLE_KEYPAIR.x,
+        TEST_LEASE_KEYPAIR.x,
+        marker,
+        'BFC_PREMIUM_DEV_BUNDLE_DIR',
+        'dev-trust',
+      ].sort(),
+    );
   });
 
   it.each(DEV_PREMIUM_NEEDLES.map((needle) => [needle.label, needle.value]))(
