@@ -81,4 +81,18 @@ describe('signFixture', () => {
     });
     expect(verify(null, manifestBytes, publicKey, sig)).toBe(false);
   });
+
+  it('builds from another fixture folder when asked, signed the same way', () => {
+    const plain = signFixture();
+    const check = signFixture({ dir: 'check-bundle', capabilities: ['premium.status', 'store', 'log', 'notify'] });
+    expect(verify(null, check.manifestBytes, publicKey, check.sig)).toBe(true);
+    expect(parse(check.manifestBytes).files.map((f) => f.path)).toEqual([...FIXTURE_FILES]);
+    expect(Buffer.from(check.files.get('worker/index.cjs') ?? []).toString('utf8')).toContain("host.call('notify'");
+    expect(check.files.get('worker/index.cjs')).not.toEqual(plain.files.get('worker/index.cjs'));
+  });
+
+  it('refuses a folder name that could leave the fixtures folder', () => {
+    expect(() => signFixture({ dir: '../bundle' })).toThrow(/fixture folder/);
+    expect(() => signFixture({ dir: 'nowhere' })).toThrow();
+  });
 });

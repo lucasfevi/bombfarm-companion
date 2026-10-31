@@ -43,7 +43,6 @@ const LICENCE_ROUTES = ['licence', 'licenceActivate', 'lease', 'licenceCleanup',
 const BUNDLE_FILE = /^\/v1\/premium\/bundle\/(\d+)\/files\/(.+)$/;
 
 const DAY_MS = 86_400_000;
-const MINUTE_MS = 60_000;
 const FINGERPRINT_SALT = Buffer.alloc(32, 9).toString('base64url');
 
 const NO_STATES = {
@@ -114,6 +113,15 @@ function deviceKeyIdOf(request) {
  * @param {{ userId: string, playing: { accountId: string, steamId64: string } | null }} [options.licence]
  *   When given, `/v1/me` names the user and the licence and bundle routes are served. Without it
  *   those paths are unknown, as they were before the licence existed.
+ * @param {{ audience?: 'owner' | 'tester' | 'public' }} [options.me]
+ *   The `audience` `/v1/me` names for the signed-in user (default `owner`); changeable at run time
+ *   through `state.me`. Only a stub playing the licence names one.
+ * @param {number} [options.leaseSeconds]
+ *   How long each Lease lives (default 3600). The app's window is `min(lifetime, 60 min)`, so a short
+ *   one makes the window end in seconds without any clock seam. Changeable through `state.leaseSeconds`.
+ * @param {'owner' | 'tester' | 'public' | null} [options.bundleAudience]
+ *   When set, the bundle routes answer only while `me.audience` equals it, as the API's Audience rule
+ *   does; otherwise they answer 404. Default null: no rule. Changeable through `state.bundleAudience`.
  */
 export async function startPremiumApiStub(options = {}) {
   const licence = options.licence ?? null;
@@ -137,6 +145,11 @@ export async function startPremiumApiStub(options = {}) {
     /** Signed fixtures by sequence, and the sequence the manifest route offers. */
     bundles: new Map(),
     offered: null,
+    me: { audience: options.me?.audience ?? 'owner' },
+    leaseSeconds: options.leaseSeconds ?? 3600,
+    bundleAudience: options.bundleAudience ?? null,
+    /** When a number, every renewal (not activation) is answered with that status and no Lease. */
+    renewalStatus: null,
     /** Called when a cleanup report arrives; its answer is kept on the request record as `extra.probe`. */
     cleanupProbe: null,
     /** Device public keys by key id, learned at activation. */
@@ -183,7 +196,7 @@ export async function startPremiumApiStub(options = {}) {
       playing: body?.playing ?? licence.playing ?? null,
       until: new Date(issuedAt + 30 * DAY_MS).toISOString(),
       issuedAt: new Date(issuedAt).toISOString(),
-      expiresAt: new Date(issuedAt + 60 * MINUTE_MS).toISOString(),
+      expiresAt: new Date(issuedAt + state.leaseSeconds * 1000).toISOString(),
       minSequence: state.minSequence,
       ...(state.leaseState === 'moved' ? { holderName: 'OTHER-PC' } : {}),
     };
@@ -251,6 +264,22 @@ export async function startPremiumApiStub(options = {}) {
         json(response, 401, { reason: 'device_signature' });
         return;
       }
+    }
+
+    const audienceRefused =
+      licence !== null &&
+      state.bundleAudience !== null &&
+      state.me.audience !== state.bundleAudience &&
+      (url.pathname === PATHS.bundle || fileMatch !== null);
+    if (audienceRefused) {
+      record.extra.audienceRefused = true;
+      json(response, 404, { reason: 'none' });
+      return;
+    }
+    if (url.pathname === PATHS.lease && state.renewalStatus !== null) {
+      record.extra.refused = state.renewalStatus;
+      json(response, state.renewalStatus, { reason: 'unavailable' });
+      return;
     }
 
     if (url.pathname === PATHS.licence) {
@@ -328,7 +357,7 @@ export async function startPremiumApiStub(options = {}) {
         steamVerified: true,
         gameAccountLinked: true,
         admitted: false,
-        ...(licence === null ? {} : { userId: licence.userId }),
+        ...(licence === null ? {} : { userId: licence.userId, audience: state.me.audience }),
       });
     } else if (url.pathname === PATHS.report) {
       const reply = state.reportReplies[body?.steam_id64];

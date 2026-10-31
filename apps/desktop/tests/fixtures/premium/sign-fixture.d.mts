@@ -8,6 +8,8 @@ export interface SignedFixture {
 }
 
 export interface FixtureOptions {
+  /** The fixture folder beside this file to build from; default `bundle`. */
+  dir?: string;
   sequence?: number;
   /** ISO timestamps; default now and now + 180 days. */
   createdAt?: string;
