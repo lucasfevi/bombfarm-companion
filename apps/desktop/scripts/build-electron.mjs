@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveBuildFlavor } from '@bombfarm/contracts';
 import { electronBundles, writeBuildInfo } from './electron-bundles.mjs';
+import { writePremiumShims } from './write-premium-shims.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -23,5 +24,6 @@ await esbuild.build(main);
 await esbuild.build(worker);
 await esbuild.build(preload);
 writeBuildInfo(dist, flavor);
+await writePremiumShims(dist, { root });
 
 console.log(`Built Electron main + worker + preload (${flavor})`);
