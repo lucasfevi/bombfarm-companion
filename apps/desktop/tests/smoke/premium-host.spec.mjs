@@ -167,10 +167,18 @@ test.describe.serial('The Premium host runs a signed bundle', () => {
       });
 
     // The worker is a real utility process, started from the loader inside the app's own files.
-    const utilities = await app.evaluate(({ app: electronApp }) =>
-      electronApp.getAppMetrics().filter((metric) => metric.type === 'Utility').map((metric) => metric.name ?? metric.serviceName),
-    );
-    expect(utilities).toContain('Premium');
+    await expect
+      .poll(
+        () =>
+          app.evaluate(({ app: electronApp }) =>
+            electronApp
+              .getAppMetrics()
+              .filter((metric) => metric.type === 'Utility')
+              .map((metric) => metric.name ?? metric.serviceName),
+          ),
+        { timeout: 20_000 },
+      )
+      .toContain('Premium');
 
     // The fixture worker asked for a capability nobody granted and the host refused it, in its log.
     await expect
