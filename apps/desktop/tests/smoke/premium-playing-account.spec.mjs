@@ -207,13 +207,17 @@ test.describe.serial('Premium pauses when the game is played with another accoun
     const firstStubRequest = order.findIndex((entry) => entry.kind === 'fetch' && entry.url.startsWith(stub.origin));
     expect(firstStubRequest).toBeGreaterThan(dropped);
 
-    const banner = page.getByTestId('premium-banner-paused-other_account');
-    await expect(banner).toBeVisible({ timeout: 20_000 });
-    await expect(banner).toContainText(en('premiumPausedOtherAccount'));
-    expect((await page.evaluate(() => window.bfc.invoke('premium:get'))).playingAccount).toEqual({
-      state: 'other',
-      reason: 'other_account',
-    });
+    // The paused banners show only while this PC holds the licence, and this stub cannot issue a
+    // lease the app trusts, so none renders here. The positive case (holds plus another account)
+    // is proven by the renderer unit tests.
+    await expect
+      .poll(async () => (await page.evaluate(() => window.bfc.invoke('premium:get'))).playingAccount, {
+        timeout: 20_000,
+      })
+      .toEqual({ state: 'other', reason: 'other_account' });
+    const view = await page.evaluate(() => window.bfc.invoke('premium:get'));
+    expect(view.licence?.state).not.toBe('holds');
+    await expect(page.locator('[data-testid^="premium-banner-paused-"]')).toHaveCount(0);
   });
 
   test('switching back to the linked account reopens the gate at once, with no request', async () => {
@@ -221,7 +225,13 @@ test.describe.serial('Premium pauses when the game is played with another accoun
 
     playAs(files, LINKED_PAIR);
 
-    await expect(page.getByTestId('premium-banner-paused-other_account')).toHaveCount(0, { timeout: 20_000 });
+    // No paused banner renders without the licence, so wait on the reported account instead.
+    await expect
+      .poll(async () => (await page.evaluate(() => window.bfc.invoke('premium:get'))).playingAccount, {
+        timeout: 20_000,
+      })
+      .toEqual({ state: 'linked', reason: null });
+    await expect(page.locator('[data-testid^="premium-banner-paused-"]')).toHaveCount(0);
     expect((await page.evaluate(() => window.bfc.invoke('premium:get'))).playingAccount).toEqual({
       state: 'linked',
       reason: null,

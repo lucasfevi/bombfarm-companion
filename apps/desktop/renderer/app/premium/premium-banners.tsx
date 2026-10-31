@@ -101,7 +101,8 @@ export function premiumAccountNoticeFor(view: PremiumView): PremiumAccountNotice
 
 function PremiumAccountNoticeView({ view }: { view: PremiumView }) {
   const t = useCopy();
-  const notice = premiumAccountNoticeFor(view);
+  // The paused notices describe a Premium this PC is using, so they show only while it holds it.
+  const notice = view.licence?.state === 'holds' ? premiumAccountNoticeFor(view) : null;
   if (notice === null) return null;
   if (notice.kind === 'checking') {
     return (

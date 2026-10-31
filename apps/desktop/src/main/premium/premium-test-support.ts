@@ -6,6 +6,7 @@ import { createPremiumApi, type PremiumApi } from './premium-api.js';
 import type { PremiumHttp, PremiumHttpRequest, PremiumHttpResponse, PremiumPath } from './premium-transport.js';
 import { createPremiumService, type GameIdentity, type PremiumService } from './premium-service.js';
 import { createPremiumCache, type PremiumCache, type PremiumCacheEntry } from './premium-cache.js';
+import type { SubjectStore } from './subject-store.js';
 import type { StoredSession, TokenVault } from './token-vault.js';
 
 export const SECRETS = {
@@ -36,6 +37,8 @@ export interface StubReply {
   status: number;
   body?: unknown;
   retryAfterSec?: number;
+  /** The server's clock for the `Date` header, in epoch ms. */
+  dateMs?: number;
 }
 
 export interface RecordedRequest {
@@ -43,6 +46,10 @@ export interface RecordedRequest {
   token: string | undefined;
   body: unknown;
   raw: string;
+  /** The `BFC-Device` header of a device-signed request. */
+  device?: string;
+  /** Set on a licence route: the method the request used. */
+  method?: PremiumHttpRequest['method'];
 }
 
 type Handler = (request: RecordedRequest, count: number) => StubReply | Promise<StubReply>;
@@ -88,6 +95,11 @@ function defaultHandlers(): Record<PremiumPath, Handler> {
     handOff: () => ({ status: 200, body: { url: SECRETS.handOffUrl, expiresAt: '2026-10-20T12:05:00.000Z' } }),
     status: () => ({ status: 200, body: INACTIVE_STATUS_BODY }),
     visibility: () => ({ status: 200, body: { visible: false } }),
+    // The licence routes answer "not configured" until a test scripts them.
+    licence: () => ({ status: 503, body: { reason: 'licence_unconfigured' } }),
+    licenceActivate: () => ({ status: 503, body: { reason: 'licence_unconfigured' } }),
+    lease: () => ({ status: 503, body: { reason: 'licence_unconfigured' } }),
+    licenceCleanup: () => ({ status: 503, body: { reason: 'licence_unconfigured' } }),
   };
 }
 
@@ -112,8 +124,11 @@ export function createStubApi(): StubApi {
       const request: RecordedRequest = {
         path: req.path,
         token: req.token,
-        body: req.body,
-        raw: req.body === undefined ? '' : JSON.stringify(req.body),
+        // A pre-serialised body is recorded as sent: its exact text, and what it parses to.
+        body: req.rawBody === undefined ? req.body : (JSON.parse(req.rawBody) as unknown),
+        raw: req.rawBody ?? (req.body === undefined ? '' : JSON.stringify(req.body)),
+        ...(req.headers?.['BFC-Device'] === undefined ? {} : { device: req.headers['BFC-Device'] }),
+        method: req.method,
       };
       requests.push(request);
       const count = (counts.get(req.path) ?? 0) + 1;
@@ -123,6 +138,7 @@ export function createStubApi(): StubApi {
         status: reply.status,
         body: reply.body === undefined ? '' : JSON.stringify(reply.body),
         retryAfterSec: reply.retryAfterSec ?? null,
+        ...(reply.dateMs === undefined ? {} : { dateMs: reply.dateMs }),
       };
     },
   };
@@ -153,10 +169,14 @@ export function settle(): Promise<void> {
 
 export interface FakeClock {
   now(): number;
+  /** A monotonic clock that moves with `advance` exactly as `now` does, and starts elsewhere. */
+  mono(): number;
   advance(ms: number): Promise<void>;
   pending(): number;
   scheduler: { setTimeout: typeof setTimeout; clearTimeout: typeof clearTimeout };
 }
+
+const MONO_BASE_MS = 7_000_000;
 
 export function createFakeClock(start: number = START_MS): FakeClock {
   let current = start;
@@ -173,6 +193,7 @@ export function createFakeClock(start: number = START_MS): FakeClock {
 
   return {
     now: () => current,
+    mono: () => current - start + MONO_BASE_MS,
     pending: () => timers.size,
     async advance(ms) {
       const target = current + ms;
@@ -225,6 +246,31 @@ export function createFakeVault(
     },
   };
   return vault;
+}
+
+export interface FakeSubjectStore extends SubjectStore {
+  stores: string[];
+  clears: number;
+  held(): string | null;
+}
+
+export function createFakeSubjectStore(initial: string | null = null): FakeSubjectStore {
+  let held = initial;
+  const store: FakeSubjectStore = {
+    stores: [],
+    clears: 0,
+    held: () => held,
+    load: () => held,
+    store(next) {
+      store.stores.push(next);
+      held = next;
+    },
+    clear() {
+      store.clears += 1;
+      held = null;
+    },
+  };
+  return store;
 }
 
 export interface SpiedCache extends PremiumCache {
@@ -325,6 +371,7 @@ export interface Harness {
   clock: FakeClock;
   vault: FakeVault;
   cache: SpiedCache;
+  subjects: FakeSubjectStore;
   log: LogSink;
   listeners: ListenerStarts;
   opened: string[];
@@ -338,6 +385,7 @@ export interface Harness {
 export interface HarnessOptions {
   vault?: FakeVault;
   cache?: SpiedCache;
+  subjects?: FakeSubjectStore;
   listener?: (clock: FakeClock) => typeof startLoopbackListener;
   api?: (real: PremiumApi) => PremiumApi;
   locale?: () => AppLocale;
@@ -348,6 +396,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
   const clock = createFakeClock();
   const vault = options.vault ?? createFakeVault();
   const cache = options.cache ?? createSpiedCache();
+  const subjects = options.subjects ?? createFakeSubjectStore();
   const log = createLogSink();
   const listeners = createListenerFactory();
   const opened: string[] = [];
@@ -383,6 +432,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
       views.push(view);
     },
     playingAccount: playing,
+    subjectStore: subjects,
   });
 
   return {
@@ -392,6 +442,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     clock,
     vault,
     cache,
+    subjects,
     log,
     listeners,
     opened,

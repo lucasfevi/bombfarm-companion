@@ -151,6 +151,17 @@ test.describe.serial('Premium sign-in and status against a stand-in API', () => 
     await expect(premiumTab(page)).toHaveCount(0);
   });
 
+  test('carries the licence line signed out and sends no licence request without a session', async () => {
+    const view = await page.evaluate(() => window.bfc.invoke('premium:get'));
+
+    expect(view.session).toBe('signed-out');
+    expect(view.licence).toMatchObject({ state: 'signed_out', moveInFlight: false });
+    expect(Object.keys(view.licence).sort()).toEqual(['moveFailed', 'moveInFlight', 'removalDone', 'state']);
+    const licencePaths = ['/v1/premium/licence', '/v1/premium/licence/activate', '/v1/premium/lease', '/v1/premium/licence/cleanup'];
+    expect(stub.requests.filter((request) => licencePaths.includes(request.path))).toEqual([]);
+    expect(stub.unknown).toEqual([]);
+  });
+
   test('signs in through the browser callback and keeps the token out of the stored row', async () => {
     await page.getByTestId('settings-premium-sign-in').click();
 

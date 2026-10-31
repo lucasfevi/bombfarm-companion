@@ -227,6 +227,7 @@ export {
   readHandOffBody,
   readPremiumMeBody,
   readPremiumStatusBody,
+  readPremiumUserId,
   readPremiumVisibilityBody,
   readReportBody,
   readSessionTokenBody,
@@ -235,6 +236,14 @@ export {
   signedOutPlayingAccount,
   signedOutPremiumView,
 } from './premium.js';
+export type { LeasePublicKey, LicenceReason, LicenceState, PremiumLicenceView } from './premium-licence.js';
+export {
+  LEASE_PUBLIC_KEYS,
+  LICENCE_REASONS,
+  LICENCE_STATES,
+  PLUGIN_API_VERSION,
+  SUPPORT_URL,
+} from './premium-licence.js';
 export type {
   AccountStoreReason,
   AccountStoreStatus,
@@ -688,6 +697,8 @@ export interface IpcChannels {
   'premium:refresh': { args: []; result: PremiumActionResult };
   /** Opens the Premium page in the system browser. `ok` means a URL was opened. */
   'premium:manage': { args: []; result: PremiumActionResult };
+  /** Moves Premium to this PC: the button on the licence line. `ok` means the Move was sent. */
+  'premium:useHere': { args: []; result: PremiumActionResult };
   /** A screen crash, reported by the window that drew it so it reaches the log file the renderer
    *  cannot write to. Main validates the record rather than trusting its shape, caps every field,
    *  stamps the scope itself and rate-limits each window; a call it drops answers the same `null`. */
@@ -764,6 +775,7 @@ export const IPC_CHANNELS = [
   'premium:signOut',
   'premium:refresh',
   'premium:manage',
+  'premium:useHere',
   'log:rendererError',
 ] as const satisfies readonly IpcInvokeChannel[];
 

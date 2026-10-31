@@ -102,6 +102,8 @@ export interface PremiumServicePort {
   signOut(): Promise<PremiumView>;
   refresh(reason: 'open' | 'button'): Promise<PremiumActionResult>;
   manage(): Promise<PremiumActionResult>;
+  /** The player pressed "Use Premium on this PC". */
+  useHere?(): PremiumActionResult;
 }
 
 export interface MarketServicePort {
@@ -403,6 +405,7 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.getPremiumService()?.refresh('button') ?? premiumUnavailable,
     'premium:manage': (): Promise<PremiumActionResult> | PremiumActionResult =>
       deps.getPremiumService()?.manage() ?? premiumUnavailable,
+    'premium:useHere': (): PremiumActionResult => deps.getPremiumService()?.useHere?.() ?? premiumUnavailable,
     'market:refreshItem': refreshMarketItem,
     'market:check': checkMarketNow,
     'forge:start': (request: ForgeStartRequest): ForgeStartResult =>

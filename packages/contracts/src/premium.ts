@@ -1,3 +1,5 @@
+import type { PremiumLicenceView } from './premium-licence.js';
+
 export const PREMIUM_REFRESH_FLOOR_MS = 30_000;
 export const PREMIUM_REFRESH_EVERY_MS = 3_600_000;
 export const PREMIUM_SIGN_IN_TIMEOUT_MS = 300_000;
@@ -82,6 +84,7 @@ export interface PremiumView {
   readonly lastRefreshFailed: boolean;
   readonly report: PremiumReportOutcome | null;
   readonly reportedAccountId: string | null;
+  readonly licence: PremiumLicenceView | null;
 }
 
 export const signedOutPremiumView: PremiumView = {
@@ -97,6 +100,7 @@ export const signedOutPremiumView: PremiumView = {
   lastRefreshFailed: false,
   report: null,
   reportedAccountId: null,
+  licence: null,
 };
 
 export interface GameAccountReportBody {
@@ -217,6 +221,15 @@ export function readPremiumMeBody(value: unknown): PremiumMe | null {
     return null;
   }
   return { methods, steamVerified, gameAccountLinked, admitted };
+}
+
+/**
+ * The signed-in user's id from the account answer, kept apart from `readPremiumMeBody` on purpose:
+ * the view never carries it. Null for a missing, empty or non-text value.
+ */
+export function readPremiumUserId(value: unknown): string | null {
+  const userId = asRecord(value)?.['userId'];
+  return typeof userId === 'string' && userId !== '' ? userId : null;
 }
 
 export function readPremiumVisibilityBody(value: unknown): boolean | null {

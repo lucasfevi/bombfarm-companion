@@ -1,5 +1,21 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('electron', () => ({ net: { fetch: vi.fn() } }));
+
 import { SECRETS, createFakeVault, createHarness, session, settle, unreachable, type Harness } from './premium-test-support.js';
+import { fingerprint } from './licence/fingerprint.js';
+import {
+  DEVICE_ID,
+  MACHINE_GUID,
+  MINUTE,
+  SALT,
+  USER,
+  createLicenceHarness,
+  keyIdOf,
+  present,
+  signedLease,
+  type LicenceHarness,
+} from './licence/licence-test-support.js';
 
 const NEVER_LOGGED_OR_EMITTED = [
   SECRETS.token,
@@ -322,5 +338,275 @@ describe('the playing-account state carries no id', () => {
     for (const value of [...notified, ...h.views.map((view) => view.playingAccount)]) {
       expect(Object.keys(value as object).sort()).toEqual(['reason', 'state']);
     }
+  });
+});
+
+describe('the licence keeps its secrets out of logs and IPC', () => {
+  const VIEW_KEYS = ['state', 'reason', 'holderName', 'lastMoveAt', 'nextMoveAt', 'moveInFlight', 'moveFailed', 'removalDone'];
+  type Reply = { status: number; body: unknown };
+  const HELD_ELSEWHERE: Reply = { status: 409, body: { reason: 'held_elsewhere', holderName: 'OTHER-PC', nextMoveAt: null } };
+  const MOVE_LIMIT: Reply = {
+    status: 409,
+    body: { reason: 'move_limit', lastMoveAt: '2026-10-20T00:00:00.000Z', nextMoveAt: '2026-11-19T00:00:00.000Z' },
+  };
+
+  interface Sweep {
+    h: LicenceHarness;
+    /** Every Lease envelope the stub handed out, sealed or not. */
+    issued: Array<{ lease: string; sig: string }>;
+  }
+
+  function sweepHarness(): Sweep {
+    const h = createLicenceHarness();
+    const issued: Sweep['issued'] = [];
+    const lease = h.lease.bind(h);
+    h.lease = (request, spec) => {
+      const reply = lease(request, spec);
+      issued.push(reply.body as { lease: string; sig: string });
+      return reply;
+    };
+    return { h, issued };
+  }
+
+  /** Marker values for every secret the licence handles, read from what the run actually produced. */
+  function markers({ h, issued }: Sweep): Array<[string, string]> {
+    const named: Array<[string, string]> = [
+      ['subject', USER],
+      ['machine guid', MACHINE_GUID],
+      ['salt', SALT],
+      ['salt bytes (hex)', Buffer.from(SALT, 'base64url').toString('hex')],
+      ['salt bytes (base64)', Buffer.from(SALT, 'base64url').toString('base64')],
+      ['fingerprint', fingerprint(SALT, MACHINE_GUID)],
+      ['device id', DEVICE_ID],
+      ['steam id', SECRETS.steamId64],
+      ['account id', SECRETS.accountId],
+    ];
+    for (const record of h.store.deviceWrites) {
+      const der = record.privateKey.export({ type: 'pkcs8', format: 'der' });
+      named.push(
+        ['private key (base64url)', der.toString('base64url')],
+        ['private key (base64)', der.toString('base64')],
+        ['public key', record.publicKey],
+        ['device key id', record.keyId],
+      );
+      if (record.fingerprintSalt !== null) named.push(['sealed salt', record.fingerprintSalt]);
+      if (record.deviceId !== null) named.push(['sealed device id', record.deviceId]);
+    }
+    for (const envelope of [...issued, ...h.store.leaseWrites.map((r) => ({ lease: r.leaseB64, sig: r.sig }))]) {
+      named.push(['lease bytes', envelope.lease], ['lease signature', envelope.sig]);
+    }
+    return named;
+  }
+
+  function expectLicenceClean(sweep: Sweep, options: { leases?: boolean } = {}): void {
+    const { h } = sweep;
+    const all = markers(sweep);
+    expect(
+      all.some(([name]) => name === 'private key (base64url)'),
+      'a device key was generated',
+    ).toBe(true);
+    if (options.leases !== false) expect(all.some(([name]) => name === 'lease bytes')).toBe(true);
+
+    const logs = JSON.stringify(h.premium.log.records);
+    // The Premium view shows the game account id to the player under `reportedAccountId`; nothing else may carry it.
+    const emitted = JSON.stringify([...h.views, h.licence.view(), ...h.premium.views], (key, value: unknown) =>
+      key === 'reportedAccountId' ? null : value,
+    );
+    const secrets: Array<[string, string]> = [...all, ['session token', SECRETS.token]];
+    for (const [name, value] of secrets) {
+      expect(logs, `a log record holds the ${name}`).not.toContain(value);
+      expect(emitted, `an emitted view holds the ${name}`).not.toContain(value);
+    }
+
+    for (const view of [...h.views, h.licence.view()]) {
+      for (const key of Object.keys(view)) expect(VIEW_KEYS, `view key ${key}`).toContain(key);
+    }
+    for (const record of h.premium.log.records) {
+      if (typeof record['event'] !== 'string' || !record['event'].startsWith('premium.')) continue;
+      const keys = Object.keys(record).sort();
+      if (record['event'] === 'premium.licence_state') {
+        expect(keys).toEqual(record['reason'] === undefined ? ['event', 'scope', 'state'] : ['event', 'reason', 'scope', 'state']);
+      } else {
+        expect(record['event']).toBe('premium.lease_rejected');
+        expect(keys).toEqual(['check', 'event', 'scope']);
+      }
+    }
+  }
+
+  async function holder(): Promise<Sweep> {
+    const sweep = sweepHarness();
+    sweep.h.scriptHolder();
+    await sweep.h.boot();
+    await sweep.h.premium.clock.advance(0);
+    return sweep;
+  }
+
+  it('through an activation and the renewals that follow', async () => {
+    const sweep = await holder();
+    await sweep.h.premium.clock.advance(31 * MINUTE);
+
+    expect(sweep.h.licence.view().state).toBe('holds');
+    expectLicenceClean(sweep);
+  });
+
+  it.each<[string, Reply]>([
+    ['held elsewhere', HELD_ELSEWHERE],
+    ['the move limit', MOVE_LIMIT],
+    ['a device mismatch', { status: 409, body: { reason: 'device_mismatch' } }],
+    ['Premium inactive', { status: 403, body: { reason: 'premium_inactive' } }],
+    ['a foreign device', { status: 403, body: { reason: 'device_foreign' } }],
+    ['a device signature refusal', { status: 401, body: { reason: 'device_signature' } }],
+    ['a bearer refusal', { status: 401, body: '' }],
+    ['a busy server', { status: 503, body: { reason: 'busy' } }],
+    ['an unreadable answer', { status: 200, body: { nothing: true } }],
+  ])('through an activation answered with %s', async (_name, reply) => {
+    const sweep = sweepHarness();
+    sweep.h.scriptHolder();
+    // A refused fresh key is only answered once: the machine starts again at once after it, so a server
+    // that kept saying "foreign" would be asked without pause.
+    let asked = 0;
+    sweep.h.premium.stub.on('licenceActivate', (request) =>
+      (reply.body as { reason?: string }).reason === 'device_foreign' && (asked += 1) > 1 ? sweep.h.activation(request) : reply,
+    );
+
+    await sweep.h.boot();
+    await sweep.h.premium.clock.advance(6 * MINUTE);
+    await sweep.h.restart();
+
+    expectLicenceClean(sweep, { leases: false });
+  });
+
+  it('through a salt the server refuses to give', async () => {
+    const sweep = sweepHarness();
+    sweep.h.scriptHolder();
+    sweep.h.premium.stub.on('licence', { status: 503, body: { reason: 'busy' } });
+
+    await sweep.h.boot();
+
+    expectLicenceClean(sweep, { leases: false });
+  });
+
+  it.each<[string, Reply | null, boolean]>([
+    ['pressed twice and answered', null, true],
+    ['answered with the move limit', MOVE_LIMIT, false],
+    ['answered with a busy server', { status: 503, body: { reason: 'busy' } }, false],
+  ])('through a Move %s', async (_name, moveReply, leases) => {
+    const sweep = sweepHarness();
+    const { h } = sweep;
+    h.scriptHolder();
+    h.premium.stub.on('licenceActivate', (request) =>
+      (request.body as { move: boolean }).move ? (moveReply ?? h.activation(request)) : HELD_ELSEWHERE,
+    );
+    await h.boot();
+
+    h.licence.pressMove();
+    h.licence.pressMove();
+    await h.premium.clock.advance(0);
+    await h.restart();
+
+    expectLicenceClean(sweep, { leases });
+  });
+
+  it.each<[string, Reply | 'moved' | 'released' | 'ended']>([
+    ['a Lease that says moved', 'moved'],
+    ['a Lease that says released', 'released'],
+    ['a Lease that says ended', 'ended'],
+    ['a device mismatch', { status: 409, body: { reason: 'device_mismatch' } }],
+    ['a foreign device', { status: 403, body: { reason: 'device_foreign' } }],
+    ['a device signature refusal', { status: 401, body: { reason: 'device_signature' } }],
+    ['a bearer refusal', { status: 401, body: '' }],
+    ['a rate limit', { status: 429, body: '' }],
+    ['a busy server', { status: 503, body: { reason: 'busy' } }],
+    ['an unreadable answer', { status: 200, body: { nothing: true } }],
+  ])('through a renewal answered with %s', async (_name, answer) => {
+    const sweep = await holder();
+    const { h } = sweep;
+    h.premium.stub.on(
+      'lease',
+      typeof answer === 'string' ? (request) => h.lease(request, { state: answer, holderName: 'NEW-PC' }) : answer,
+    );
+
+    h.licence.trigger('refresh');
+    await settle();
+    await h.premium.clock.advance(16 * MINUTE);
+    await h.restart();
+
+    expectLicenceClean(sweep);
+  });
+
+  it('through Leases that fail a check, one check at a time', async () => {
+    const sweep = await holder();
+    const { h } = sweep;
+    const at = () => h.premium.clock.now();
+    const bad = [
+      (deviceKeyId: string) => signedLease({ deviceKeyId, issuedAtMs: at(), user: 'someone-else-marker-9' }),
+      () => signedLease({ deviceKeyId: 'other-device-key-marker', issuedAtMs: at() }),
+      (deviceKeyId: string) => ({ ...signedLease({ deviceKeyId, issuedAtMs: at() }), sig: 'AAAA' }),
+    ];
+    for (const make of bad) {
+      h.premium.stub.on('lease', (request) => {
+        const body = make(keyIdOf(request));
+        sweep.issued.push(body);
+        return { status: 200, body };
+      });
+      h.licence.trigger('refresh');
+      await settle();
+      await h.premium.clock.advance(16 * MINUTE);
+    }
+
+    expect(h.premium.log.events()).toContain('premium.lease_rejected');
+    expectLicenceClean(sweep);
+  });
+
+  it('through a cleanup that reports, one that is refused or turned away, and a sign-out and restart with one owed', async () => {
+    const reported = await holder();
+    reported.h.premium.stub.on('lease', (request) => reported.h.lease(request, { state: 'moved', holderName: 'NEW-PC' }));
+    reported.h.licence.trigger('refresh');
+    await settle();
+    await reported.h.restart();
+    present(reported.h.stubRemoval).answerGone();
+    await settle();
+    expect(reported.h.licence.view().removalDone).toBe(true);
+    expectLicenceClean(reported);
+
+    const refused = await holder();
+    refused.h.premium.stub.on('lease', (request) => refused.h.lease(request, { state: 'ended' }));
+    refused.h.premium.stub.on('licenceCleanup', { status: 409, body: { reason: 'device_mismatch' } });
+    refused.h.licence.trigger('refresh');
+    await settle();
+    present(refused.h.stubRemoval).answerGone();
+    await settle();
+    await refused.h.premium.clock.advance(6 * MINUTE);
+    refused.h.premium.stub.on('licenceCleanup', { status: 503, body: { reason: 'busy' } });
+    await refused.h.premium.clock.advance(6 * MINUTE);
+    await refused.h.premium.service.signOut();
+    await refused.h.restart();
+    expectLicenceClean(refused);
+  });
+
+  it('through a restart that reads the sealed Lease and a sign-out that clears the session', async () => {
+    const sweep = await holder();
+
+    await sweep.h.restart();
+    await sweep.h.premium.service.signOut();
+    await settle();
+
+    expect(sweep.h.licence.view().state).toBe('signed_out');
+    expectLicenceClean(sweep);
+  });
+});
+
+describe('the licence does nothing when the Premium surface is off', () => {
+  it('generates no key, sends nothing and keeps the gate shut', async () => {
+    const h = createLicenceHarness({ enabled: false });
+    h.scriptHolder();
+
+    await h.boot();
+    await h.premium.clock.advance(2 * 60 * MINUTE);
+
+    expect(h.store.deviceWrites).toEqual([]);
+    expect(h.licenceRequests()).toEqual([]);
+    expect(h.licence.view().state).toBe('signed_out');
+    expect(h.gate.allows()).toBe(false);
   });
 });
