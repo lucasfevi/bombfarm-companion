@@ -22,9 +22,11 @@ export const PREMIUM_API_PATHS = {
 
 export type PremiumPath = keyof typeof PREMIUM_API_PATHS;
 
-/** The methods a device-signed request may use; the signature covers the one chosen. */
-export const SIGNED_METHODS = ['GET', 'POST'] as const;
-export type SignedMethod = (typeof SIGNED_METHODS)[number];
+/** The method the licence routes are signed with; the signature covers it. */
+export const SIGNED_METHOD = 'POST' as const;
+/** The method a bundle route is signed with. */
+export const SIGNED_GET_METHOD = 'GET' as const;
+export type SignedMethod = typeof SIGNED_METHOD | typeof SIGNED_GET_METHOD;
 
 /** The only headers a caller may add: the device signature and the body's content type. */
 export interface PremiumExtraHeaders {

@@ -6,6 +6,8 @@ import {
   BytesTooLargeError,
   PREMIUM_API_ORIGIN,
   PREMIUM_API_PATHS,
+  SIGNED_GET_METHOD,
+  SIGNED_METHOD,
   bundleRoutePath,
   createBytesFetch,
   type BundleRoute,
@@ -398,7 +400,7 @@ export function createLicenceService(deps: LicenceServiceDeps): LicenceService {
       const device = deviceHeader({
         keyId: held.keyId,
         privateKey: held.privateKey,
-        method: 'POST',
+        method: SIGNED_METHOD,
         path: PREMIUM_API_PATHS[path],
         body,
         nowMs: deps.now(),
@@ -437,7 +439,7 @@ export function createLicenceService(deps: LicenceServiceDeps): LicenceService {
       const device = deviceHeader({
         keyId: held.keyId,
         privateKey: held.privateKey,
-        method: 'GET',
+        method: SIGNED_GET_METHOD,
         path: bundleRoutePath(req.route),
         body: '',
         nowMs: deps.now(),
