@@ -208,6 +208,8 @@ let gameKeepAlive: GameKeepAlive | null = null;
 let usagePing: UsagePing | null = null;
 
 const emitEvent = createEventEmitter({ getWindows: () => BrowserWindow.getAllWindows() });
+/** For an event only the main window's screens act on; the compact window never hears it. */
+const emitToMainWindow = createEventEmitter({ getWindows: () => (mainWindow === null ? [] : [mainWindow]) });
 
 /** Reads, transitions, persists, and announces one consent event — the single path every
  *  consent:* handler below goes through. Every dep below reads the module-level
@@ -1247,6 +1249,10 @@ async function bootstrap(): Promise<void> {
       mainDir: __dirname,
       reloadWindow: reloadMainWindow,
       uiOnAppScheme: !env.isDev,
+      openPremiumTab: () => {
+        shellLifecycle?.show();
+        emitToMainWindow('premium:showTab', null);
+      },
     },
     build: { isPackaged: env.isPackaged, bakedFlavor: readBakedFlavor(), builtFlavor: __BFC_BUILD_FLAVOR__ },
   });
