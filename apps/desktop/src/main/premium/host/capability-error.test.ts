@@ -16,7 +16,7 @@ function channelWith(handler: CapabilityHandler) {
 }
 
 describe('a handler that refuses with a reason', () => {
-  it.each(['bad_args', 'too_large', 'unavailable'] as const)('answers %s and audits it', async (code) => {
+  it.each(['bad_args', 'too_large', 'unavailable', 'rate_limited'] as const)('answers %s and audits it', async (code) => {
     const { channel, logs } = channelWith(() => {
       throw new CapabilityError(code);
     });

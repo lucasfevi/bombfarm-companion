@@ -20,7 +20,7 @@ export type CapabilityHandler = (args: unknown) => unknown;
 
 /** What a handler throws (or rejects with) to refuse a call with a named reason. */
 export class CapabilityError extends Error {
-  constructor(readonly code: 'bad_args' | 'too_large' | 'unavailable') {
+  constructor(readonly code: 'bad_args' | 'too_large' | 'unavailable' | 'rate_limited') {
     super(code);
     this.name = 'CapabilityError';
   }
