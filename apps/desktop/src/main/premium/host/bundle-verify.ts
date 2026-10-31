@@ -107,19 +107,22 @@ function readFile(value: unknown): PremiumManifestFile | undefined {
   return { path, role: role as PremiumBundleRole, size: size as number, sha256 };
 }
 
-/** The manifest as parsed, or undefined when it is not schema 1 or a field is missing or mistyped. */
-function readManifest(value: unknown): PremiumManifest | undefined {
+/**
+ * The manifest as parsed, or undefined when it is not schema 1 or a field is missing or mistyped.
+ * A local development manifest is unsigned: its key id may be null and its sequence is 0.
+ */
+function readManifest(value: unknown, local = false): PremiumManifest | undefined {
   if (!isRecord(value)) return undefined;
   const { schema, keyId, bundle, version, sequence, createdAt, expiresAt, hostApi, minAppVersion, flavors, capabilities } =
     value;
   const rawFiles = value['files'];
   if (
     schema !== 1 ||
-    !isString(keyId) ||
+    !(isString(keyId) || (local && keyId === null)) ||
     bundle !== 'premium' ||
     !isString(version) ||
     !Number.isSafeInteger(sequence) ||
-    (sequence as number) < 1 ||
+    (sequence as number) < (local ? 0 : 1) ||
     !isTimestamp(createdAt) ||
     !isTimestamp(expiresAt) ||
     !isString(hostApi) ||
@@ -140,7 +143,7 @@ function readManifest(value: unknown): PremiumManifest | undefined {
   }
   return {
     schema: 1,
-    keyId,
+    keyId: keyId ?? '',
     bundle: 'premium',
     version,
     sequence: sequence as number,
@@ -152,6 +155,16 @@ function readManifest(value: unknown): PremiumManifest | undefined {
     capabilities,
     files,
   };
+}
+
+/** A local development manifest's bytes parsed with the same schema rules, minus the signature's. */
+export function parseLocalManifest(raw: Uint8Array): PremiumManifest | null {
+  if (raw.length > MANIFEST_MAX_BYTES) return null;
+  try {
+    return readManifest(JSON.parse(Buffer.from(raw).toString('utf8')), true) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** The key id the raw bytes name, found without parsing them. */
