@@ -13,6 +13,7 @@ import { createPremiumCache } from './premium-cache.js';
 import { offlineBytesFetch, offlinePremiumHttp } from './premium-offline.js';
 import { createPremiumService, type GameIdentity, type PremiumService } from './premium-service.js';
 import { PREMIUM_API_ORIGIN, createBytesFetch, createPremiumHttp, type FetchBytes, type PremiumHttp } from './premium-transport.js';
+import { runtimeLeaseKeys } from './runtime-lease-keys.js';
 import { createSubjectStore } from './subject-store.js';
 import { createTokenVault, type SecretBox } from './token-vault.js';
 
@@ -90,6 +91,7 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
     identity: createSystemMachineIdentity(),
     removal: createDefaultRemovalPort(),
     bytes: chooseBytes(deps.offline, deps.originOverride),
+    keys: runtimeLeaseKeys(deps.flavor, process.env),
     account: { allows: () => appPlayingAccount.allows(), subscribe: (listener) => appPlayingAccount.subscribe(() => { listener(); }) },
     now: () => Date.now(),
     mono: () => performance.now(),

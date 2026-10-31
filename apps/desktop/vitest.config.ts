@@ -10,6 +10,8 @@ export default defineConfig({
   test: {
     // Capped here too, so a standalone `pnpm --filter` run is bounded — see vitest.workers.ts.
     maxWorkers: MAX_TEST_WORKERS,
+    // Lets main-process code `require` its dev-only TypeScript module, as the bundler does.
+    setupFiles: ['./vitest.setup.mjs'],
     include: [
       'src/**/*.test.ts',
       'scripts/**/*.test.mjs',
