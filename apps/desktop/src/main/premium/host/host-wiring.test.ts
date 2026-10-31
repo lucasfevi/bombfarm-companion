@@ -6,7 +6,7 @@ import type { AppFlavor } from '@bombfarm/contracts';
 import { appLeaseGate } from '../licence/lease-gate';
 import { createLogSink } from '../premium-test-support';
 import { createBundleCache } from './bundle-cache';
-import { DEV_BUNDLE_DIR_ENV } from './dev-trust';
+import { DEV_APP_VERSION_ENV, DEV_BUNDLE_DIR_ENV } from './dev-trust';
 import { createFakeFork } from './host-fakes';
 import { HOST_NOW, signedInput, verifiedFixture } from './host-test-support';
 import { createPremiumHost, followSession, mainAssetPath, type PremiumHostWiringDeps } from './host-wiring';
@@ -38,11 +38,11 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-function wire(flavor: AppFlavor, vars: Record<string, string | undefined> = {}) {
+function wire(flavor: AppFlavor, vars: Record<string, string | undefined> = {}, appVersion = '1.0.0') {
   const fakes = createFakeFork({ loader: true });
   const parts: PremiumHostWiringDeps = {
     flavor,
-    appVersion: '1.0.0',
+    appVersion,
     userDataPath: root,
     db: null,
     deviceGet: () => Promise.resolve({ ok: false, reason: 'unreachable' }),
@@ -103,6 +103,39 @@ describe('the keys the host trusts', () => {
       await other.host.idle();
       expect({ flavor, running: other.host.view().phase === 'running' }).toEqual({ flavor, running: false });
       expect(other.fakes.forks).toHaveLength(0);
+      other.host.stop();
+    }
+  });
+});
+
+describe('the version a bundle must fit', () => {
+  const OLD_APP = '0.32.1';
+
+  it('is the version the dev override names, in a dev build only', async () => {
+    await cacheFixture();
+    appLeaseGate.set(true, 'holds');
+
+    // A bundle that does not fit at start is discarded, so each run below gets a fresh copy.
+    const overridden = wire('dev', { [DEV_APP_VERSION_ENV]: '0.32.2' }, OLD_APP);
+    await overridden.host.start('subject-one');
+    await overridden.host.idle();
+    expect(overridden.host.view().phase).toBe('running');
+    overridden.host.stop();
+    await overridden.host.idle();
+
+    const plain = wire('dev', {}, OLD_APP);
+    await plain.host.start('subject-one');
+    await plain.host.idle();
+    expect(plain.host.view().phase).not.toBe('running');
+    plain.host.stop();
+    await plain.host.idle();
+    await cacheFixture();
+
+    for (const flavor of ['beta', 'prod'] as const) {
+      const other = wire(flavor, { [DEV_APP_VERSION_ENV]: '0.32.2' }, OLD_APP);
+      await other.host.start('subject-one');
+      await other.host.idle();
+      expect({ flavor, running: other.host.view().phase === 'running' }).toEqual({ flavor, running: false });
       other.host.stop();
     }
   });

@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { guardScanner } from '../../guard-scan';
 import { TEST_BUNDLE_KEYPAIR, TEST_LEASE_KEYPAIR } from '../../../../tests/fixtures/premium/keys.mjs';
 import {
+  DEV_APP_VERSION_ENV,
   DEV_BUNDLE_DIR_ENV,
   TEST_BUNDLE_PUBLIC_KEY,
   TEST_LEASE_PUBLIC_KEY,
@@ -65,6 +66,18 @@ describe('devTrust', () => {
 
   it('reads the local bundle folder from the environment', () => {
     expect(devTrust(env('dev', { [DEV_BUNDLE_DIR_ENV]: 'C:/local/bundle' }))?.devBundleDir).toBe('C:/local/bundle');
+  });
+
+  it('reads the version bundle fit is judged against from the environment', () => {
+    expect(devTrust(env('dev', { [DEV_APP_VERSION_ENV]: ' 0.32.2 ' }))?.appVersion).toBe('0.32.2');
+  });
+
+  it.each([undefined, '', 'not-a-version', '0.32'])('sets no version override for %j', (value) => {
+    expect(devTrust(env('dev', { [DEV_APP_VERSION_ENV]: value }))).not.toHaveProperty('appVersion');
+  });
+
+  it.each(['beta', 'prod'] as const)('sets no version override as %s', (flavor) => {
+    expect(devTrust(env(flavor, { [DEV_APP_VERSION_ENV]: '0.32.2' }))).toBeNull();
   });
 
   it.each([undefined, '', '   '])('treats %j as no local bundle folder', (value) => {
@@ -133,6 +146,7 @@ describe('who may name the test keys and the folder variable', () => {
     ['the test bundle public key', TEST_BUNDLE_KEYPAIR.x],
     ['the test lease public key', TEST_LEASE_KEYPAIR.x],
     ['the local bundle folder variable', DEV_BUNDLE_DIR_ENV],
+    ['the app version override variable', DEV_APP_VERSION_ENV],
   ];
 
   it('finds them in no file under src other than the dev trust module', () => {

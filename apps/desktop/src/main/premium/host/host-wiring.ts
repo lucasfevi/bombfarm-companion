@@ -75,11 +75,13 @@ export function createPremiumHost(deps: PremiumHostWiringDeps): HostRunner {
   const trust = loadDevTrust({ flavor: deps.flavor, vars: deps.vars });
   const keys = createBundleKeyTable([...BUNDLE_PUBLIC_KEYS, ...(trust?.bundleKeys ?? [])]);
   const devBundleDir = trust?.devBundleDir ?? null;
+  // A dev build may judge bundle fit against another version (see `DEV_APP_VERSION_ENV`).
+  const fitVersion = trust?.appVersion ?? deps.appVersion;
 
   return createHostRunner({
     enabled: true,
     flavor: deps.flavor,
-    appVersion: deps.appVersion,
+    appVersion: fitVersion,
     gate: leaseGate(),
     cache: createBundleCache({ root: deps.userDataPath, db: deps.db, now: deps.now }),
     deviceGet: deps.deviceGet,
@@ -98,7 +100,7 @@ export function createPremiumHost(deps: PremiumHostWiringDeps): HostRunner {
       ? {}
       : {
           localBundle: () =>
-            loadLocalBundle(devBundleDir, { hostApi: PLUGIN_API_VERSION, appVersion: deps.appVersion, flavor: deps.flavor }),
+            loadLocalBundle(devBundleDir, { hostApi: PLUGIN_API_VERSION, appVersion: fitVersion, flavor: deps.flavor }),
         }),
     reloadWindow: deps.reloadWindow,
     uiOnAppScheme: deps.uiOnAppScheme,
