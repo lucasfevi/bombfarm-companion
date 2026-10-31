@@ -3,9 +3,10 @@ import { runInThisContext } from 'node:vm';
 import { describe, expect, it, vi } from 'vitest';
 import { PREMIUM_SHARED_MODULES } from '@bombfarm/contracts';
 import { parseCspManifest } from '../../renderer-csp.js';
-import { registerRendererProtocol, serveRendererRequest } from '../../renderer-protocol.js';
+import { isRendererUrl, registerRendererProtocol, serveRendererRequest } from '../../renderer-protocol.js';
 import {
   createPremiumRoutes,
+  premiumUiUrl,
   shimFileName,
   SHARED_GLOBAL,
   type PremiumRoutes,
@@ -209,5 +210,15 @@ describe('registerRendererProtocol with Premium routes', () => {
     const reply = await handler({ url: 'app://bundle/_premium/4/ui/index.css' });
     expect(reply.status).toBe(200);
     expect(reply.headers.get('content-type')).toBe('text/css');
+  });
+});
+
+describe('premiumUiUrl', () => {
+  it('names an address on the renderer origin that the handler serves', async () => {
+    const url = premiumUiUrl(4, 'ui/index.js');
+    expect(url).toBe('app://bundle/_premium/4/ui/index.js');
+    expect(isRendererUrl(url)).toBe(true);
+    const reply = await serveRendererRequest(url, ROOT, MANIFEST, forbiddenRead(), routesFor(served()));
+    expect(reply.status).toBe(200);
   });
 });

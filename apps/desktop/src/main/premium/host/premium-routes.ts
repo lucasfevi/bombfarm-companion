@@ -30,6 +30,11 @@ export interface PremiumRoutesDeps {
 }
 
 export const PREMIUM_PATH_PREFIX = '/_premium/';
+
+/** The address the renderer imports a served file from; the `app://` handler answers it. */
+export function premiumUiUrl(sequence: number, file: 'ui/index.js' | 'ui/index.css'): string {
+  return `app://bundle${PREMIUM_PATH_PREFIX}${String(sequence)}/${file}`;
+}
 /** The name of the global the renderer sets to the table of live shared modules. */
 export const SHARED_GLOBAL = '__bfcPremiumShared';
 

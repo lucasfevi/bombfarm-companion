@@ -1,103 +1,9 @@
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { createLogSink } from '../premium-test-support.js';
-import { runLoader, type LoaderPort } from './worker-loader.js';
-import {
-  createWorkerSupervisor,
-  workerEnv,
-  type ForkWorker,
-  type PortPair,
-  type SupervisorPort,
-  type WorkerChild,
-  type WorkerForkOptions,
-} from './worker-supervisor.js';
-
-const nodeRequire = createRequire(__filename);
-
-type Listener = (event: { data: unknown; ports?: readonly LoaderPort[] }) => void;
-
-/** One end of an in-memory channel with Electron's event shape (`{data}`), delivered a tick later. */
-class FakePort implements SupervisorPort, LoaderPort {
-  peer: FakePort | null = null;
-  readonly sent: unknown[] = [];
-  closed = false;
-  private readonly listeners: Listener[] = [];
-  private started = false;
-  private readonly queue: unknown[] = [];
-
-  on(_event: 'message', listener: Listener): this {
-    this.listeners.push(listener);
-    return this;
-  }
-  postMessage(message: unknown): void {
-    this.sent.push(message);
-    const target = this.peer;
-    if (target === null || this.closed) return;
-    queueMicrotask(() => {
-      target.deliver(message);
-    });
-  }
-  start(): void {
-    this.started = true;
-    for (const message of this.queue.splice(0)) this.deliver(message);
-  }
-  close(): void {
-    this.closed = true;
-  }
-  deliver(message: unknown): void {
-    if (!this.started) {
-      this.queue.push(message);
-      return;
-    }
-    for (const listener of this.listeners) listener({ data: message });
-  }
-}
-
-function pair(): PortPair & { port1: FakePort; port2: FakePort } {
-  const port1 = new FakePort();
-  const port2 = new FakePort();
-  port1.peer = port2;
-  port2.peer = port1;
-  return { port1, port2 };
-}
-
-interface ForkRecord {
-  modulePath: string;
-  args: string[];
-  options: WorkerForkOptions;
-  child: FakeChild;
-}
-
-class FakeChild implements WorkerChild {
-  pid: number | undefined;
-  killed = 0;
-  posted: Array<{ message: unknown; transfer: unknown[] | undefined }> = [];
-  private readonly exits: Array<(code: number) => void> = [];
-  constructor(pid: number) {
-    this.pid = pid;
-  }
-  postMessage(message: unknown, transfer?: unknown[]): void {
-    this.posted.push({ message, transfer });
-    this.onPost?.(message, transfer);
-  }
-  onPost: ((message: unknown, transfer: unknown[] | undefined) => void) | null = null;
-  kill(): boolean {
-    this.killed += 1;
-    queueMicrotask(() => {
-      this.exit(0);
-    });
-    return true;
-  }
-  on(_event: 'exit', listener: (code: number) => void): this {
-    this.exits.push(listener);
-    return this;
-  }
-  exit(code: number): void {
-    for (const listener of this.exits) listener(code);
-  }
-}
+import { createFakeFork, FakeChild, pair, type FakePair, type ForkRecord } from './host-fakes.js';
+import { createWorkerSupervisor, workerEnv } from './worker-supervisor.js';
 
 const VARS = {
   SYSTEMROOT: 'C:\\Windows',
@@ -110,49 +16,17 @@ const VARS = {
 
 function rig(options: { loader?: boolean } = {}): {
   forks: ForkRecord[];
-  channels: Array<ReturnType<typeof pair>>;
+  channels: FakePair[];
   supervisor: ReturnType<typeof createWorkerSupervisor>;
   log: ReturnType<typeof createLogSink>;
   exits: boolean[];
   exitCodes: number[];
 } {
-  const forks: ForkRecord[] = [];
-  const channels: Array<ReturnType<typeof pair>> = [];
-  const exitCodes: number[] = [];
+  const fakes = createFakeFork(options);
   const log = createLogSink();
-  const fork: ForkWorker = (modulePath, args, forkOptions) => {
-    const child = new FakeChild(1000 + forks.length);
-    forks.push({ modulePath, args, options: forkOptions, child });
-    if (options.loader === true) {
-      // The child side: the real loader, fed the init message and ports the supervisor posts.
-      let deliver: Listener | null = null;
-      runLoader({
-        parentPort: {
-          on: (_event, listener) => {
-            deliver = listener;
-          },
-        },
-        nodeRequire: (id): unknown => nodeRequire(id) as unknown,
-        exit: (code) => {
-          exitCodes.push(code);
-          child.exit(code);
-        },
-      });
-      child.onPost = (message, transfer) => {
-        queueMicrotask(() => {
-          deliver?.({ data: message, ports: (transfer ?? []) as LoaderPort[] });
-        });
-      };
-    }
-    return child;
-  };
   const supervisor = createWorkerSupervisor({
-    fork,
-    createChannel: () => {
-      const made = pair();
-      channels.push(made);
-      return made;
-    },
+    fork: fakes.fork,
+    createChannel: fakes.createChannel,
     loaderPath: '/app/dist/main/premium-worker.cjs',
     vars: VARS,
     allowlist: new Map(),
@@ -161,7 +35,7 @@ function rig(options: { loader?: boolean } = {}): {
   });
   const exits: boolean[] = [];
   supervisor.onExit((requested) => exits.push(requested));
-  return { forks, channels, supervisor, log, exits, exitCodes };
+  return { forks: fakes.forks, channels: fakes.channels, supervisor, log, exits, exitCodes: fakes.exitCodes };
 }
 
 const flush = async (): Promise<void> => {
@@ -240,7 +114,7 @@ describe('stop and exit', () => {
   it('answers a call that is still pending when it stops', async () => {
     // A handler that never settles keeps the call pending; stop must still answer it.
     const forks: FakeChild[] = [];
-    const channels: Array<ReturnType<typeof pair>> = [];
+    const channels: FakePair[] = [];
     const supervisor = createWorkerSupervisor({
       fork: () => {
         const child = new FakeChild(1);
