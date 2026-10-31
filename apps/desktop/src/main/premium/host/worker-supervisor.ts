@@ -1,4 +1,4 @@
-import type { HostToWorker, PremiumPauseReason } from '@bombfarm/contracts';
+import type { CapabilityCall, CapabilityReply, HostToWorker, PremiumPauseReason } from '@bombfarm/contracts';
 import type { LogPort } from '../../storage/index.js';
 import {
   createCapabilityChannel,
@@ -63,6 +63,8 @@ export interface WorkerSupervisor {
   pid(): number | null;
   /** The running bundle's sequence, or null while no worker runs. */
   sequence(): number | null;
+  /** A call from the Premium screen, through the running worker's channel; `stopped` with none. */
+  callFromUi(call: CapabilityCall): Promise<CapabilityReply>;
 }
 
 export interface WorkerSupervisorDeps {
@@ -184,5 +186,10 @@ export function createWorkerSupervisor(deps: WorkerSupervisorDeps): WorkerSuperv
     pid: () => current?.child.pid ?? null,
 
     sequence: () => current?.sequence ?? null,
+
+    callFromUi(call) {
+      if (current === null) return Promise.resolve({ id: call.id, ok: false, error: 'stopped' });
+      return current.channel.callFromUi(call);
+    },
   };
 }

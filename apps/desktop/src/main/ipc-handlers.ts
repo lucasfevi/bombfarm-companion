@@ -26,6 +26,7 @@ import {
   type AppSettings,
   type ApplyStartRequest,
   type ApplyStartResult,
+  type CapabilityCall,
   type CapabilityReply,
   type CollectionsView,
   type ConsentRecord,
@@ -107,6 +108,8 @@ export interface PremiumServicePort {
   useHere?(): PremiumActionResult;
   /** The Premium tab could not mount the bundle's screen. */
   hostMountFailed?(): void;
+  /** A capability call from the Premium screen; absent when the app built no host. */
+  callFromUi?(call: CapabilityCall): Promise<CapabilityReply>;
 }
 
 export interface MarketServicePort {
@@ -413,8 +416,8 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.getPremiumService()?.hostMountFailed?.();
       return null;
     },
-    // Answers `stopped` until the host's channel is reachable from here.
-    'premium:uiCall': (): CapabilityReply => ({ id: -1, ok: false, error: 'stopped' }),
+    'premium:uiCall': (capability: string, args: unknown): Promise<CapabilityReply> | CapabilityReply =>
+      deps.getPremiumService()?.callFromUi?.({ id: 0, capability, args }) ?? { id: 0, ok: false, error: 'unavailable' },
     'market:refreshItem': refreshMarketItem,
     'market:check': checkMarketNow,
     'forge:start': (request: ForgeStartRequest): ForgeStartResult =>

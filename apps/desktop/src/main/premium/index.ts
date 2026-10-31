@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { MessageChannelMain, safeStorage, shell, utilityProcess } from 'electron';
-import { isAppFlavor, type AppFlavor, type AppLocale, type PremiumActionResult, type PremiumView } from '@bombfarm/contracts';
+import { isAppFlavor, type AppFlavor, type AppLocale, type CapabilityCall, type CapabilityReply, type PremiumActionResult, type PremiumView } from '@bombfarm/contracts';
 import type { LogPort, SqliteDb } from '../storage/index.js';
 import { createLicenceService, type LicenceService } from './licence/licence-runner.js';
 import { createLicenceStore } from './licence/licence-store.js';
@@ -101,6 +101,8 @@ export interface ElectronPremium extends PremiumService {
   useHere(): PremiumActionResult;
   /** The Premium tab could not mount the screen of the bundle. */
   hostMountFailed(): void;
+  /** A capability call from the Premium screen; `stopped` unless the host is running. */
+  callFromUi(call: CapabilityCall): Promise<CapabilityReply>;
   /** What the `app://` handler serves under `_premium`; null when there is no host. */
   readonly routes: PremiumRoutes | null;
 }
@@ -226,6 +228,9 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
     },
     hostMountFailed() {
       host?.mountFailed();
+    },
+    callFromUi(call) {
+      return host?.callFromUi(call) ?? Promise.resolve({ id: call.id, ok: false, error: 'unavailable' });
     },
   };
 }

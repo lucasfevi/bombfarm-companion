@@ -1,6 +1,8 @@
 import {
   PLUGIN_API_VERSION,
   type AppFlavor,
+  type CapabilityCall,
+  type CapabilityReply,
   type PremiumHostView,
   type PremiumManifest,
   type PremiumPauseReason,
@@ -110,6 +112,8 @@ export interface HostRunner extends PremiumRemovalPort {
   mountFailed(): void;
   /** What the Premium tab is told about the host. */
   view(): PremiumHostView;
+  /** A capability call from the Premium screen: answered by the worker's channel while running or paused, else `stopped`. */
+  callFromUi(call: CapabilityCall): Promise<CapabilityReply>;
   /** What the `app://` handler serves under `_premium`. */
   readonly routes: PremiumRoutes;
   /** Called after the view changes. */
@@ -512,6 +516,13 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
 
     requestPremiumRemoval(reason: PremiumRemovalReason) {
       dispatch({ t: 'removalRequested', reason });
+    },
+
+    callFromUi(call) {
+      // A paused host still has its worker and channel; the channel answers `paused` itself.
+      const phase = hostPhase(state);
+      if (phase !== 'running' && phase !== 'paused') return Promise.resolve({ id: call.id, ok: false, error: 'stopped' });
+      return deps.supervisor.callFromUi(call);
     },
 
     runningSequence() {
