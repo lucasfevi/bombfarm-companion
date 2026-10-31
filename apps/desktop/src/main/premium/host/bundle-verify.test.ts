@@ -324,6 +324,15 @@ describe('verifyFiles', () => {
     }
   });
 
+  it.each([1, -1])('refuses a file whose listed size is off by %i though its hash is right', (delta) => {
+    const edit: NonNullable<FixtureOptions['edit']> = ({ manifest: m }) => {
+      find(m, 'renderer')['size'] = Number(find(m, 'renderer')['size']) + delta;
+    };
+    const { manifest, files } = manifestOf({ edit });
+    expect(verifyFiles(manifest, files)).toEqual({ ok: false, reason: 'file_mismatch' });
+    expect(reasonOf(fixture({ edit }))).toBe('file_mismatch');
+  });
+
   it('refuses a hash that is not lower-case hex', () => {
     const { manifest, files } = manifestOf({
       edit: ({ manifest: m }) => void (find(m, 'style')['sha256'] = String(find(m, 'style')['sha256']).toUpperCase()),
