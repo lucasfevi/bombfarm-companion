@@ -37,12 +37,13 @@ export function createMetaDb(): SqliteDb & { rows: Map<string, string> } {
     rows,
     exec: () => undefined,
     close: () => undefined,
-    prepare(sql: string) {
+    prepare() {
       const statement = {
         get: (key: string) => (rows.has(key) ? { value: rows.get(key) } : undefined),
         run: (key: string, value?: string) => {
-          if (sql.startsWith('DELETE')) rows.delete(key);
-          else rows.set(key, value ?? '');
+          // The delete statement binds one parameter, the upsert two.
+          if (value === undefined) rows.delete(key);
+          else rows.set(key, value);
           return { changes: 1 };
         },
         all: () => [],

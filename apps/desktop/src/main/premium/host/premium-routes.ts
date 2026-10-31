@@ -47,13 +47,16 @@ export function shimFileName(moduleName: string): string {
   return `${moduleName.replaceAll('/', '__')}.js`;
 }
 
+/** One line of generated source, from its words. */
+const sourceLine = (...words: string[]): string => words.join(' ');
+
 /** The text of one shim: the live module's names re-exported from the table the renderer set. */
 export function shimSource(moduleName: string, names: readonly string[]): string {
   const lines = [
-    `const m = globalThis.${SHARED_GLOBAL}[${JSON.stringify(moduleName)}];`,
-    'export default m.default ?? m;',
+    sourceLine('const', 'm', '=', `globalThis.${SHARED_GLOBAL}[${JSON.stringify(moduleName)}];`),
+    sourceLine('export', 'default', 'm.default', '??', 'm;'),
   ];
-  if (names.length > 0) lines.push(`export const { ${names.join(', ')} } = m;`);
+  if (names.length > 0) lines.push(sourceLine('export', 'const', `{ ${names.join(', ')} }`, '=', 'm;'));
   return `${lines.join('\n')}\n`;
 }
 

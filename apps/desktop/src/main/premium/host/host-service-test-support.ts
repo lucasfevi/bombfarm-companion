@@ -214,8 +214,12 @@ export async function createHostRig(options: RigOptions = {}): Promise<HostRig> 
 }
 
 /** The fixture worker stand-in: `start` keeps the `host` object on a global the test can read. */
-export const TEST_WORKER_CODE =
-  "'use strict';\nmodule.exports.start = function start(host) { globalThis.__bfcTestHost = host; };\n";
+export const TEST_WORKER_CODE = [
+  'module.exports.start = (host) => {',
+  '  globalThis.__bfcTestHost = host;',
+  '};',
+  '',
+].join('\n');
 
 /** A bundle that declares the capability the rig's host offers, and a worker the test can drive. */
 export function workerOptions(extra: FixtureOptions = {}): FixtureOptions {
