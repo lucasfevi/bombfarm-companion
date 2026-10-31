@@ -59,6 +59,13 @@ export function electronBundles({ src, dist, flavor = 'prod' }) {
       entryPoints: [path.join(src, 'main/index.ts')],
       outfile: path.join(dist, 'main/index.cjs'),
     },
+    /** The fixed entry the Premium worker process runs; it compiles the bundle's worker from a buffer. */
+    worker: {
+      ...shared,
+      define: flavorDefines(flavor),
+      entryPoints: [path.join(src, 'main/premium/host/worker-loader.ts')],
+      outfile: path.join(dist, 'main/premium-worker.cjs'),
+    },
     preload: {
       ...shared,
       external: ['electron'],

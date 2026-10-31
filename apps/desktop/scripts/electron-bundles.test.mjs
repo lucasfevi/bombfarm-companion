@@ -36,6 +36,18 @@ describe('electronBundles flavour defines', () => {
     expect(main.define.__BFC_PREMIUM_DEV__).toBe('false');
   });
 
+  it.each(['dev', 'beta', 'prod'])('the %s worker loader entry has the same defines as main', (flavor) => {
+    const { main, worker } = electronBundles({ src: 'src', dist: 'dist', flavor });
+    expect(worker.define).toEqual(main.define);
+  });
+
+  it('emits the worker loader beside the main bundle', () => {
+    const { worker } = electronBundles({ src: 'src', dist: 'dist' });
+    expect(worker.entryPoints).toEqual([path.join('src', 'main/premium/host/worker-loader.ts')]);
+    expect(worker.outfile).toBe(path.join('dist', 'main/premium-worker.cjs'));
+    expect(worker.external ?? []).not.toContain('electron');
+  });
+
   it('leaves the preload bundle without the flavour defines', () => {
     const { preload } = electronBundles({ src: 'src', dist: 'dist', flavor: 'dev' });
     expect(preload.define).toBeUndefined();
@@ -100,5 +112,25 @@ describe('dead-code elimination of the dev-only branch', () => {
 
   it('keeps the probe module in a dev build', async () => {
     expect(await buildProbe('dev')).toContain(MARKER);
+  });
+});
+
+describe('the worker loader build', () => {
+  async function buildLoader(flavor) {
+    const { worker } = electronBundles({ src: path.join(__dirname, '..', 'src'), dist: makeTempDir(), flavor });
+    const result = await esbuild.build({ ...worker, write: false, sourcemap: false, logLevel: 'silent' });
+    return result.outputFiles[0].text;
+  }
+
+  it('is a self-contained bundle that never loads electron', async () => {
+    const output = await buildLoader('prod');
+    expect(output).not.toMatch(/require\(["']electron["']\)/);
+    expect(output).toContain('module_not_allowed');
+  });
+
+  it.each(['beta', 'prod'])('carries no dev-only trust in a %s build', async (flavor) => {
+    const output = await buildLoader(flavor);
+    expect(output).not.toContain('dev-trust');
+    expect(output).not.toContain('BFC_PREMIUM_DEV_BUNDLE_DIR');
   });
 });

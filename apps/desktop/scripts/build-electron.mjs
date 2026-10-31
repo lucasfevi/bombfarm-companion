@@ -17,10 +17,11 @@ try {
 }
 
 const dist = path.join(root, 'dist');
-const { main, preload } = electronBundles({ src: path.join(root, 'src'), dist, flavor });
+const { main, worker, preload } = electronBundles({ src: path.join(root, 'src'), dist, flavor });
 
 await esbuild.build(main);
+await esbuild.build(worker);
 await esbuild.build(preload);
 writeBuildInfo(dist, flavor);
 
-console.log(`Built Electron main + preload (${flavor})`);
+console.log(`Built Electron main + worker + preload (${flavor})`);
