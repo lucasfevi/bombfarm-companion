@@ -1592,4 +1592,9 @@ export const en = {
   premiumLicenceMoveFailed: "Couldn't move Premium — try again.",
   // The words of premiumLicenceMoveLimit that become a link once a support channel exists.
   premiumSupportWords: 'contact support',
+  // premiumHost* — the Premium page's mount point
+  premiumHostUpdating: 'Updating Premium…',
+  premiumHostStopped: 'Premium stopped unexpectedly — restart the app',
+  premiumHostLocalBuild: 'Local premium build',
+  premiumHostLocalBuildHint: 'Use pnpm dev:premium to load it',
 } as const;

@@ -236,6 +236,18 @@ export {
   signedOutPlayingAccount,
   signedOutPremiumView,
 } from './premium.js';
+export type {
+  BundlePublicKey,
+  CapabilityCall,
+  CapabilityReply,
+  HostToWorker,
+  PremiumBundleRole,
+  PremiumCapability,
+  PremiumHostView,
+  PremiumManifest,
+  PremiumManifestFile,
+} from './premium-host.js';
+export { BUNDLE_PUBLIC_KEYS, PREMIUM_CAPABILITIES, PREMIUM_SHARED_MODULES } from './premium-host.js';
 export type { LeasePublicKey, LicenceReason, LicenceState, PremiumLicenceView } from './premium-licence.js';
 export {
   LEASE_PUBLIC_KEYS,
@@ -699,6 +711,9 @@ export interface IpcChannels {
   'premium:manage': { args: []; result: PremiumActionResult };
   /** Moves Premium to this PC: the button on the licence line. `ok` means the Move was sent. */
   'premium:useHere': { args: []; result: PremiumActionResult };
+  /** The Premium tab could not mount the bundle's screen. Main stops the bundle's worker and
+   *  falls back to the app without it. */
+  'premium:hostMountFailed': { args: []; result: null };
   /** A screen crash, reported by the window that drew it so it reaches the log file the renderer
    *  cannot write to. Main validates the record rather than trusting its shape, caps every field,
    *  stamps the scope itself and rate-limits each window; a call it drops answers the same `null`. */
@@ -776,6 +791,7 @@ export const IPC_CHANNELS = [
   'premium:refresh',
   'premium:manage',
   'premium:useHere',
+  'premium:hostMountFailed',
   'log:rendererError',
 ] as const satisfies readonly IpcInvokeChannel[];
 

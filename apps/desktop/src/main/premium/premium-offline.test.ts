@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PREMIUM_API_PATHS, type PremiumPath } from './premium-transport.js';
-import { offlinePremiumHttp } from './premium-offline.js';
+import { offlineBytesFetch, offlinePremiumHttp } from './premium-offline.js';
 
 describe('the offline premium transport', () => {
   it('answers the visibility check with a hidden tab', async () => {
@@ -18,4 +18,18 @@ describe('the offline premium transport', () => {
       expect(response).toEqual({ status: 503, body: '', retryAfterSec: null });
     },
   );
+});
+
+describe('the offline bytes transport', () => {
+  it('answers every bundle route with an empty 503', async () => {
+    const reply = await offlineBytesFetch({
+      route: { r: 'file', sequence: 1, path: 'ui/index.js' },
+      token: 'token-fixture',
+      device: 'key.1.sig',
+      maxBytes: 10,
+      signal: new AbortController().signal,
+    });
+
+    expect(reply).toEqual({ status: 503, bytes: new Uint8Array(0), retryAfterSec: null });
+  });
 });

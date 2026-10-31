@@ -371,6 +371,7 @@ describe('signedOutPremiumView', () => {
       report: null,
       reportedAccountId: null,
       licence: null,
+      host: null,
     });
   });
 });

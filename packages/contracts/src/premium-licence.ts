@@ -20,8 +20,7 @@ export const LEASE_PUBLIC_KEYS: readonly LeasePublicKey[] = [
   { keyId: 'zkPxZDIt', x: 'RmEnI-p1uw7dqT7D9DP79Z_7s4VWjIHSschX1pseCio' },
 ];
 
-/** The host API version a renewal reports to the server. */
-export const PLUGIN_API_VERSION = '1.0.0';
+export { PLUGIN_API_VERSION } from './premium-host.js';
 
 /** Where "contact support" points. Plain text while null; a link once a channel exists. */
 export const SUPPORT_URL: string | null = null;

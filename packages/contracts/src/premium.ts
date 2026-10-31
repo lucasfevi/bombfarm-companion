@@ -1,3 +1,4 @@
+import type { PremiumHostView } from './premium-host.js';
 import type { PremiumLicenceView } from './premium-licence.js';
 
 export const PREMIUM_REFRESH_FLOOR_MS = 30_000;
@@ -85,6 +86,7 @@ export interface PremiumView {
   readonly report: PremiumReportOutcome | null;
   readonly reportedAccountId: string | null;
   readonly licence: PremiumLicenceView | null;
+  readonly host: PremiumHostView | null;
 }
 
 export const signedOutPremiumView: PremiumView = {
@@ -101,6 +103,7 @@ export const signedOutPremiumView: PremiumView = {
   report: null,
   reportedAccountId: null,
   licence: null,
+  host: null,
 };
 
 export interface GameAccountReportBody {

@@ -2,7 +2,17 @@ import { PLUGIN_API_VERSION, type PremiumLicenceView } from '@bombfarm/contracts
 import type { LogPort } from '../../storage/index.js';
 import type { DeviceSignedCall, LicenceAnswer, LicenceOutcome, PremiumApi } from '../premium-api.js';
 import type { LicenceHostPort } from '../premium-service.js';
-import { PREMIUM_API_PATHS, SIGNED_METHOD } from '../premium-transport.js';
+import {
+  BytesTooLargeError,
+  PREMIUM_API_ORIGIN,
+  PREMIUM_API_PATHS,
+  SIGNED_GET_METHOD,
+  SIGNED_METHOD,
+  bundleRoutePath,
+  createBytesFetch,
+  type BundleRoute,
+  type FetchBytes,
+} from '../premium-transport.js';
 import { deviceHeader } from './device-signature.js';
 import { fingerprint } from './fingerprint.js';
 import { shippedLeaseKeys, verifyLease, type LeaseKeyTable, type LeasePayload } from './lease-verify.js';
@@ -53,7 +63,25 @@ export interface LicenceServiceDeps {
   /** Where the gate's value is written; the app's own gate by default. */
   gate?: LeaseGate;
   keys?: LeaseKeyTable;
+  /** How bundle bytes are fetched; the API's own origin by default. */
+  bytes?: FetchBytes;
 }
+
+export interface DeviceGetRequest {
+  readonly route: BundleRoute;
+  /** The most bytes the answer may hold; a longer one is cut off and reported `too_large`. */
+  readonly maxBytes: number;
+  readonly signal: AbortSignal;
+}
+
+/**
+ * What a device-signed GET came to. `ok` means an answer arrived, whatever its status: the caller
+ * judges the status. A refusal is `gate_closed` (no request was made), `unauthorized` (no bearer
+ * token, or the server refused it and the session ended), `too_large` or `unreachable`.
+ */
+export type DeviceGetResult =
+  | { readonly ok: true; readonly status: number; readonly bytes: Uint8Array; readonly retryAfterSec: number | null }
+  | { readonly ok: false; readonly reason: 'gate_closed' | 'unauthorized' | 'too_large' | 'unreachable' };
 
 export interface LicenceService {
   start(): void;
@@ -64,6 +92,11 @@ export interface LicenceService {
   trigger(why: 'resume' | 'refresh'): void;
   /** The premium host reports that its folder is gone. */
   noteFolderGone(): void;
+  /**
+   * A GET to a bundle route, signed with this PC's device key like the licence routes are. Sends
+   * nothing while the Lease gate is closed.
+   */
+  deviceGet(req: DeviceGetRequest): Promise<DeviceGetResult>;
 }
 
 type TimerName = 'renew' | 'window';
@@ -85,6 +118,7 @@ export function createLicenceService(deps: LicenceServiceDeps): LicenceService {
   const clearTimeoutFn = deps.scheduler?.clearTimeout ?? clearTimeout;
   const gate = deps.gate ?? appLeaseGate;
   const keys = deps.keys ?? shippedLeaseKeys();
+  const fetchBytes = deps.bytes ?? createBytesFetch(PREMIUM_API_ORIGIN);
 
   let machine: Machine = initialMachine(deps.enabled);
   let record: DeviceRecord | null = null;
@@ -262,6 +296,7 @@ export function createLicenceService(deps: LicenceServiceDeps): LicenceService {
         return;
       case 'sealLease':
         if (subject !== null) deps.store.writeLease(subject, effect.seal);
+        noteLeaseFloor();
         return;
       case 'markCleanupOwed':
         if (subject !== null && record !== null) deps.store.writeCleanup(subject, { keyId: record.keyId, reason: effect.reason });
@@ -285,6 +320,17 @@ export function createLicenceService(deps: LicenceServiceDeps): LicenceService {
           deps.log.warn({ scope: 'premium', event: effect.event, ...effect.fields });
         }
         return;
+    }
+  }
+
+  /** Tells the removal port the floor of the Lease the machine has just accepted. */
+  function noteLeaseFloor(): void {
+    const lease = machine.lease;
+    if (lease === null) return;
+    try {
+      deps.removal.noteLeaseFloor(lease.payload.minSequence);
+    } catch {
+      // A host that fails to take the note changes nothing here.
     }
   }
 
@@ -372,6 +418,45 @@ export function createLicenceService(deps: LicenceServiceDeps): LicenceService {
       );
     } catch {
       finish(of, generation, { outcome: { kind: 'failed' }, dateMs: null }, held);
+    }
+  }
+
+  /** True when a 401 body names the device signature rather than the bearer token. */
+  function isDeviceSignatureRefusal(bytes: Uint8Array): boolean {
+    try {
+      const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
+      return typeof parsed === 'object' && parsed !== null && (parsed as { reason?: unknown }).reason === 'device_signature';
+    } catch {
+      return false;
+    }
+  }
+
+  async function deviceGet(req: DeviceGetRequest): Promise<DeviceGetResult> {
+    if (!running || !gate.allows()) return { ok: false, reason: 'gate_closed' };
+    const held = record;
+    if (held === null) return { ok: false, reason: 'unreachable' };
+    try {
+      const device = deviceHeader({
+        keyId: held.keyId,
+        privateKey: held.privateKey,
+        method: SIGNED_GET_METHOD,
+        path: bundleRoutePath(req.route),
+        body: '',
+        nowMs: deps.now(),
+        offsetMs,
+      });
+      const answer = await deps.host.withBearer(
+        (token) => fetchBytes({ route: req.route, token, device, maxBytes: req.maxBytes, signal: req.signal }),
+        // A 401 that is not about the device signature is the bearer token's: the session ends, as
+        // for any other request.
+        (reply) => reply.status === 401 && !isDeviceSignatureRefusal(reply.bytes),
+      );
+      if (answer === 'unauthorized') return { ok: false, reason: 'unauthorized' };
+      if (answer.dateMs !== undefined) offsetMs = answer.dateMs - deps.now();
+      if (answer.status === 401 && !isDeviceSignatureRefusal(answer.bytes)) return { ok: false, reason: 'unauthorized' };
+      return { ok: true, status: answer.status, bytes: answer.bytes, retryAfterSec: answer.retryAfterSec };
+    } catch (error) {
+      return { ok: false, reason: error instanceof BytesTooLargeError ? 'too_large' : 'unreachable' };
     }
   }
 
@@ -465,6 +550,8 @@ export function createLicenceService(deps: LicenceServiceDeps): LicenceService {
     noteFolderGone() {
       if (running) dispatch({ t: 'folderGone' });
     },
+
+    deviceGet,
   };
   return service;
 }

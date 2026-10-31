@@ -16,8 +16,9 @@
     "pretest:smoke": "cross-env NODE_ENV=production BFC_FLAVOR=dev BFC_GAME_READER=fixture pnpm build",
     "pretest:render-count": "cross-env NODE_ENV=production BFC_FLAVOR=dev BFC_GAME_READER=fixture pnpm build",
     "build": "pnpm build:electron && pnpm build:renderer",
-    "dev": "pnpm build:electron && node scripts/dev.mjs",
+    "dev": "node scripts/dev.mjs",
     "dev:offline": "node scripts/dev-offline.mjs",
+    "dev:premium": "node scripts/dev-premium.mjs",
     "dev:capture": "node scripts/dev-capture.mjs",
     "dev:pids": "node scripts/list-game-pids.mjs",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p renderer/tsconfig.json --noEmit",
@@ -52,7 +53,8 @@
     "html-to-image": "^1.11.13",
     "next": "^15.4.2",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "semver": "7.8.5"
   },
   "optionalDependencies": {
     "better-sqlite3": "^11.10.0"

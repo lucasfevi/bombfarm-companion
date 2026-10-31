@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('electron', () => ({ net: { fetch: vi.fn() } }));
 
 import { SECRETS, createFakeVault, createHarness, session, settle, unreachable, type Harness } from './premium-test-support.js';
 import { fingerprint } from './licence/fingerprint.js';
+import { createHostRig, ECHO_CAPABILITY, flush, SUBJECT, workerOptions, type HostRig } from './host/host-service-test-support.js';
 import {
   DEVICE_ID,
   MACHINE_GUID,
@@ -608,5 +609,76 @@ describe('the licence does nothing when the Premium surface is off', () => {
     expect(h.licenceRequests()).toEqual([]);
     expect(h.licence.view().state).toBe('signed_out');
     expect(h.gate.allows()).toBe(false);
+  });
+});
+
+describe('the Premium host adds nothing secret to the view or the log', () => {
+  const HOST_EVENTS = [
+    'premium.bundle_fetch',
+    'premium.bundle_verify',
+    'premium.capability',
+    'premium.host_start_failed',
+    'premium.removal',
+    'premium.ui_mount',
+    'premium.worker_exit',
+  ];
+  const HOST_ARGS_MARKER = 'host-capability-args-marker-7741';
+  let rig: HostRig | null = null;
+  afterEach(async () => {
+    await rig?.dispose();
+    rig = null;
+  });
+
+  it('puts only a phase, two bundle URLs and the local-build flag in the view', async () => {
+    rig = await createHostRig();
+    const r = rig;
+    const input = r.server.publish(workerOptions({ sequence: 4 }));
+    await r.runner.start(SUBJECT);
+    r.runner.noteLatestSequence(4);
+    r.gate.set(true);
+    await flush(r);
+    const h = createHarness({
+      vault: createFakeVault(session(SECRETS.token)),
+      hostView: () => r.runner.view(),
+    });
+    h.service.start();
+    await settle();
+
+    const view = h.service.getView();
+    expect(view.host).toEqual({
+      phase: 'running',
+      uiUrl: 'app://bundle/_premium/4/ui/index.js',
+      styleUrl: 'app://bundle/_premium/4/ui/index.css',
+      localBuild: false,
+    });
+    expect(Object.keys(view.host ?? {}).sort()).toEqual(['localBuild', 'phase', 'styleUrl', 'uiUrl']);
+    const emitted = everyEmittedView(h);
+    for (const secret of NEVER_EMITTED) expect(emitted, `emitted view holds ${secret}`).not.toContain(secret);
+    for (const bytes of input.files.values()) {
+      expect(emitted, 'emitted view holds bundle bytes').not.toContain(Buffer.from(bytes).toString('utf8'));
+    }
+  });
+
+  it('logs only literal host events, each carrying strings, numbers and booleans, never an argument', async () => {
+    rig = await createHostRig();
+    const r = rig;
+    r.server.publish(workerOptions({ sequence: 4 }));
+    await r.runner.start(SUBJECT);
+    r.runner.noteLatestSequence(4);
+    r.gate.set(true);
+    await flush(r);
+    await r.workerHost()?.call(ECHO_CAPABILITY, { marker: HOST_ARGS_MARKER, token: SECRETS.token });
+    r.runner.mountFailed();
+    r.runner.requestPremiumRemoval('ended');
+    await flush(r);
+
+    expect(r.log.records.length).toBeGreaterThan(0);
+    for (const record of r.log.records) {
+      expect(record['scope']).toBe('premium');
+      expect(HOST_EVENTS).toContain(record['event']);
+      for (const value of Object.values(record)) expect(['string', 'number', 'boolean']).toContain(typeof value);
+    }
+    const logs = JSON.stringify(r.log.records);
+    for (const secret of [...NEVER_LOGGED, HOST_ARGS_MARKER]) expect(logs, `log holds ${secret}`).not.toContain(secret);
   });
 });

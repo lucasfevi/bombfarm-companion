@@ -1,4 +1,4 @@
-import type { AppLocale, PremiumView } from '@bombfarm/contracts';
+import type { AppLocale, PremiumHostView, PremiumView } from '@bombfarm/contracts';
 import type { LogPort } from '../storage/index.js';
 import type { LoopbackListener, LoopbackResult, startLoopbackListener } from './loopback-listener.js';
 import { createPlayingAccount, type PlayingAccount } from './playing-account.js';
@@ -389,6 +389,7 @@ export interface HarnessOptions {
   listener?: (clock: FakeClock) => typeof startLoopbackListener;
   api?: (real: PremiumApi) => PremiumApi;
   locale?: () => AppLocale;
+  hostView?: () => PremiumHostView | null;
 }
 
 export function createHarness(options: HarnessOptions = {}): Harness {
@@ -433,6 +434,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     },
     playingAccount: playing,
     subjectStore: subjects,
+    ...(options.hostView === undefined ? {} : { hostView: options.hostView }),
   });
 
   return {

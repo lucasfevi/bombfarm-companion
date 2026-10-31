@@ -1523,4 +1523,9 @@ export const ptBR: Copy = {
   premiumLicenceMoveFailed: 'Não foi possível mover o Premium — tente de novo.',
   // The words of premiumLicenceMoveLimit that become a link once a support channel exists.
   premiumSupportWords: 'falar com o suporte',
+  // premiumHost* — the Premium page's mount point
+  premiumHostUpdating: 'Atualizando o Premium…',
+  premiumHostStopped: 'O Premium parou inesperadamente — reinicie o app',
+  premiumHostLocalBuild: 'Build local do Premium',
+  premiumHostLocalBuildHint: 'Use pnpm dev:premium para carregá-lo',
 };
