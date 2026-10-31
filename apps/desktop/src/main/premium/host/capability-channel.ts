@@ -18,6 +18,14 @@ import type { LogPort } from '../../storage/index.js';
 
 export type CapabilityHandler = (args: unknown) => unknown;
 
+/** What a handler throws (or rejects with) to refuse a call with a named reason. */
+export class CapabilityError extends Error {
+  constructor(readonly code: 'bad_args' | 'too_large' | 'unavailable') {
+    super(code);
+    this.name = 'CapabilityError';
+  }
+}
+
 /** What the channel needs from a message port; `MessagePortMain` satisfies it. */
 export interface CapabilityPort {
   on(event: 'message', listener: (event: { data: unknown }) => void): unknown;
@@ -122,6 +130,12 @@ export function createCapabilityChannel(deps: CapabilityChannelDeps): Capability
     reply({ id, ok: false, error });
   }
 
+  /** A handler's refusal keeps its reason; any other failure is a `bad_call` audited as `error`. */
+  function refuseThrown(reply: Reply, id: number, capability: string, thrown: unknown): void {
+    if (thrown instanceof CapabilityError) refuse(reply, id, capability, thrown.code);
+    else refuse(reply, id, capability, 'bad_call', 'error');
+  }
+
   function takeToken(capability: string): boolean {
     const at = now();
     const bucket = buckets.get(capability) ?? { tokens: perMinute, at };
@@ -158,8 +172,8 @@ export function createCapabilityChannel(deps: CapabilityChannelDeps): Capability
     let result: unknown;
     try {
       result = handler(args);
-    } catch {
-      refuse(reply, id, capability, 'bad_call', 'error');
+    } catch (thrown) {
+      refuseThrown(reply, id, capability, thrown);
       return;
     }
     if (!isPromiseLike(result)) {
@@ -175,9 +189,9 @@ export function createCapabilityChannel(deps: CapabilityChannelDeps): Capability
         audit(capability, 'ok');
         reply({ id, ok: true, value });
       },
-      () => {
+      (thrown: unknown) => {
         if (!pending.delete(key)) return;
-        refuse(reply, id, capability, 'bad_call', 'error');
+        refuseThrown(reply, id, capability, thrown);
       },
     );
   }

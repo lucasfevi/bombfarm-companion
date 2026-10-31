@@ -56,7 +56,7 @@ interface MetaRow {
   value: string;
 }
 
-type Parse<T> = (value: Record<string, unknown>) => T | null;
+export type Parse<T> = (value: Record<string, unknown>) => T | null;
 
 const isString = (value: unknown): value is string => typeof value === 'string';
 const isStringOrNull = (value: unknown): value is string | null => value === null || typeof value === 'string';
@@ -91,13 +91,26 @@ const serializeDevice = (record: DeviceRecord): string =>
     deviceId: record.deviceId,
   });
 
-export function createLicenceStore(db: SqliteDb | null, box: SecretBox): LicenceStore {
-  function deleteRow(key: string): void {
-    if (!db) return;
+/** Sealed rows of the app database: JSON objects encrypted with the secret box, one per key. */
+export interface SealedRows {
+  /** Whether a row can be read or written at all: there is a database and the secret box is available. */
+  available: () => boolean;
+  /** The row parsed, or null when there is none, the box is unavailable, or the row is unreadable (and then deleted). */
+  read: <T>(key: string, parse: Parse<T>) => T | null;
+  write: (key: string, json: () => string) => WriteOutcome;
+  /** Removes the row; false only when the database refused, so the caller can try again. */
+  delete: (key: string) => boolean;
+}
+
+export function createSealedRows(db: SqliteDb | null, box: SecretBox): SealedRows {
+  function deleteRow(key: string): boolean {
+    if (!db) return true;
     try {
       db.prepare('DELETE FROM account_meta WHERE key = ?').run(key);
+      return true;
     } catch {
       // A row that cannot be deleted is read again, and deleted again, on the next read.
+      return false;
     }
   }
 
@@ -135,6 +148,12 @@ export function createLicenceStore(db: SqliteDb | null, box: SecretBox): Licence
       return 'unavailable';
     }
   }
+
+  return { available: () => db !== null && box.isAvailable(), read, write, delete: deleteRow };
+}
+
+export function createLicenceStore(db: SqliteDb | null, box: SecretBox): LicenceStore {
+  const { read, write, delete: deleteRow } = createSealedRows(db, box);
 
   return {
     readDevice: (subject) => read(`${DEVICE_PREFIX}:${subject}`, parseDevice),
