@@ -1,4 +1,10 @@
-import { PLUGIN_API_VERSION, type AppFlavor, type PremiumHostView, type PremiumManifest } from '@bombfarm/contracts';
+import {
+  PLUGIN_API_VERSION,
+  type AppFlavor,
+  type PremiumHostView,
+  type PremiumManifest,
+  type PremiumPauseReason,
+} from '@bombfarm/contracts';
 import type { LogPort } from '../../storage/index.js';
 import type { DeviceGetRequest, DeviceGetResult } from '../licence/licence-runner.js';
 import type { PremiumRemovalPort, PremiumRemovalReason } from '../licence/removal-port.js';
@@ -35,6 +41,13 @@ import type { WorkerSupervisor } from './worker-supervisor.js';
 export interface HostGate {
   allows(): boolean;
   subscribe(listener: (allows: boolean) => void): () => void;
+  /**
+   * Why the gate is closed, asked when the host pauses the worker. A gate with no way to tell leaves
+   * it out, and the worker is paused without a reason.
+   */
+  // SPEC_DEVIATION: the reason source is optional on the gate.
+  // Reason: gates that cannot tell (and the tests that pin a reasonless pause) stay valid.
+  reason?(): PremiumPauseReason;
 }
 
 /** What reading the local development bundle answers (the dev-only reader's result, structurally). */
@@ -78,6 +91,11 @@ export interface HostRunnerDeps {
   readonly log: LogPort;
   /** Waits between folder-removal attempts; 1, 4, 16 and 60 seconds unless a test says otherwise. */
   readonly removalRetryMs?: readonly number[];
+  /**
+   * Deletes the user's `store` data; false when it could not, and then the removal is tried again
+   * with the folder. Called before the folder is reported gone.
+   */
+  readonly deleteStore?: (subject: string) => boolean;
 }
 
 export interface HostRunner extends PremiumRemovalPort {
@@ -132,6 +150,7 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
   let restartTimer: ReturnType<typeof setTimeout> | null = null;
   let removalTimer: ReturnType<typeof setTimeout> | null = null;
   let removalRun = 0;
+  let pausedReason: PremiumPauseReason | null = null;
   const listeners = new Set<() => void>();
   /** Cache operations run one after another, so a removal never overtakes a write in flight. */
   let ioTail: Promise<unknown> = Promise.resolve();
@@ -246,8 +265,10 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
     });
   }
 
-  function attemptRemoval(run: number, attempt: number): void {
-    void io(() => deps.cache.remove())
+  function attemptRemoval(run: number, attempt: number, owner: string | null): void {
+    // The user's store goes first, so the folder is never reported gone while it is still there.
+    const storeGone = (): boolean => owner === null || deps.deleteStore === undefined || deps.deleteStore(owner);
+    void io(() => (storeGone() ? deps.cache.remove() : Promise.resolve({ done: false })))
       .then(
         (result) => result.done,
         () => false,
@@ -263,7 +284,7 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
         if (wait === undefined) return;
         removalTimer = setTimeoutFn(() => {
           removalTimer = null;
-          attemptRemoval(run, attempt + 1);
+          attemptRemoval(run, attempt + 1, owner);
         }, wait);
       });
   }
@@ -297,13 +318,17 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
       }
       case 'stopWorker':
         clearRestart();
+        pausedReason = null;
         deps.supervisor.stop();
         return;
-      case 'pauseWorker':
+      case 'pauseWorker': {
         clearRestart();
-        deps.supervisor.pause();
+        pausedReason = deps.gate.reason?.() ?? null;
+        deps.supervisor.pause(pausedReason ?? undefined);
         return;
+      }
       case 'resumeWorker':
+        pausedReason = null;
         if (deps.supervisor.pid() === null) startWorkerNow();
         else deps.supervisor.resume();
         return;
@@ -333,7 +358,7 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
         fetchAbort = null;
         clearRemovalTimer();
         removalRun += 1;
-        attemptRemoval(removalRun, 0);
+        attemptRemoval(removalRun, 0, subject);
         return;
       case 'folderGone':
         try {
@@ -441,7 +466,14 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
       const sequence = activeSequence;
       const localBuild = state.active?.dev === true;
       if (phase !== 'running' || bundle === null || sequence === null || deps.uiOnAppScheme === false) {
-        return { phase, uiUrl: null, styleUrl: null, localBuild };
+        // The key is there only while paused with a known reason, so a view without one is unchanged.
+        return {
+          phase,
+          uiUrl: null,
+          styleUrl: null,
+          localBuild,
+          ...(phase === 'paused' && pausedReason !== null ? { paused: { reason: pausedReason } } : {}),
+        };
       }
       return {
         phase,
