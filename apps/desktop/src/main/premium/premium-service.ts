@@ -177,6 +177,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       report,
       reportedAccountId,
       licence: deps.licenceView?.() ?? null,
+      host: null,
     };
   }
 

@@ -80,6 +80,7 @@ const IPC_CHANNEL_LIST = [
   'premium:refresh',
   'premium:manage',
   'premium:useHere',
+  'premium:hostMountFailed',
   'log:rendererError',
 ] as const;
 
