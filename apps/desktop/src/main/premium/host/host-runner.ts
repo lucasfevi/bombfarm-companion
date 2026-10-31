@@ -65,6 +65,12 @@ export interface HostRunnerDeps {
   readonly localBundle?: () => Promise<LocalBundleReading | null>;
   /** Reloads the main window, if there is one. */
   readonly reloadWindow: () => void;
+  /**
+   * Whether the window is on the `app://` scheme, where the bundle's UI can be imported. False under
+   * the renderer's dev server: the view then carries no address, and a local build says so.
+   * Default true.
+   */
+  readonly uiOnAppScheme?: boolean;
   readonly now: () => number;
   /** A monotonic clock in milliseconds. */
   readonly mono: () => number;
@@ -434,7 +440,7 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
       const bundle = activeHeld();
       const sequence = activeSequence;
       const localBuild = state.active?.dev === true;
-      if (phase !== 'running' || bundle === null || sequence === null) {
+      if (phase !== 'running' || bundle === null || sequence === null || deps.uiOnAppScheme === false) {
         return { phase, uiUrl: null, styleUrl: null, localBuild };
       }
       return {

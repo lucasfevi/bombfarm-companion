@@ -47,6 +47,7 @@ function wire(flavor: AppFlavor, vars: Record<string, string | undefined> = {}) 
     db: null,
     deviceGet: () => Promise.resolve({ ok: false, reason: 'unreachable' }),
     reloadWindow: () => undefined,
+    uiOnAppScheme: true,
     log: createLogSink(),
     fork: fakes.fork,
     createChannel: fakes.createChannel,

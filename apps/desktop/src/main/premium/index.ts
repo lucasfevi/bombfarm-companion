@@ -76,6 +76,8 @@ export interface ElectronHostDeps {
   readonly mainDir: string;
   /** Reloads the main window, if there is one. */
   readonly reloadWindow: () => void;
+  /** Whether the window is on the `app://` scheme rather than the renderer's dev server. */
+  readonly uiOnAppScheme: boolean;
   /** Builds the host from its parts; the real one unless a test says otherwise. */
   readonly create?: (parts: PremiumHostWiringDeps) => HostRunner;
 }
@@ -244,6 +246,7 @@ function buildHost(deps: ElectronPremiumDeps, deviceGet: PremiumHostWiringDeps['
     db: deps.db,
     deviceGet,
     reloadWindow: wiring.reloadWindow,
+    uiOnAppScheme: wiring.uiOnAppScheme,
     log: deps.log,
     fork: forkWorker,
     createChannel: createPortPair,

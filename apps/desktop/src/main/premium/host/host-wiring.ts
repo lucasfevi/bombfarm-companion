@@ -43,6 +43,8 @@ export interface PremiumHostWiringDeps {
   /** The licence service's signed GET. */
   readonly deviceGet: (req: DeviceGetRequest) => Promise<DeviceGetResult>;
   readonly reloadWindow: () => void;
+  /** Whether the window is on the `app://` scheme rather than the renderer's dev server. */
+  readonly uiOnAppScheme: boolean;
   readonly log: LogPort;
   /** Starts a utility process; Electron's `utilityProcess.fork` fits. */
   readonly fork: ForkWorker;
@@ -99,6 +101,7 @@ export function createPremiumHost(deps: PremiumHostWiringDeps): HostRunner {
             loadLocalBundle(devBundleDir, { hostApi: PLUGIN_API_VERSION, appVersion: deps.appVersion, flavor: deps.flavor }),
         }),
     reloadWindow: deps.reloadWindow,
+    uiOnAppScheme: deps.uiOnAppScheme,
     now: deps.now,
     mono: deps.mono,
     log: deps.log,

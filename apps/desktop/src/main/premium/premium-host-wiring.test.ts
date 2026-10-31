@@ -141,6 +141,7 @@ function build(extra: Partial<ElectronPremiumDeps> = {}, withHost = true) {
             userDataPath: 'C:\\data',
             mainDir,
             reloadWindow: () => undefined,
+            uiOnAppScheme: true,
             create: (wiring: PremiumHostWiringDeps) => {
               parts.push(wiring);
               return host.runner;
@@ -265,6 +266,7 @@ describe('a packaged app built for another flavour', () => {
         userDataPath: 'C:\\data',
         mainDir,
         reloadWindow: () => undefined,
+        uiOnAppScheme: true,
         create: (wiring) => {
           parts.push(wiring);
           return fakeHost().runner;

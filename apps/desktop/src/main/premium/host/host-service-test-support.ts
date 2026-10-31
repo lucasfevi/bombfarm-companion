@@ -136,6 +136,7 @@ export interface RigOptions {
   fs?: CacheFs;
   server?: BundleServer;
   localBundle?: HostRunnerDeps['localBundle'];
+  uiOnAppScheme?: boolean;
   removalRetryMs?: readonly number[];
   appVersion?: string;
   enabled?: boolean;
@@ -195,6 +196,7 @@ export async function createHostRig(options: RigOptions = {}): Promise<HostRig> 
     keys: TEST_KEYS,
     shims: {},
     ...(options.localBundle ? { localBundle: options.localBundle } : {}),
+    ...(options.uiOnAppScheme === undefined ? {} : { uiOnAppScheme: options.uiOnAppScheme }),
     reloadWindow: () => {
       rig.reloads += 1;
     },

@@ -329,3 +329,54 @@ describe('a local development bundle', () => {
     }
   });
 });
+
+describe('a window on the renderer dev server', () => {
+  async function localRig(uiOnAppScheme: boolean): Promise<{ r: HostRig; dir: string }> {
+    const dir = await mkdtemp(join(tmpdir(), 'bfc-host-local-'));
+    const local = signedInput({
+      ...workerOptions(),
+      edit: (draft) => {
+        workerOptions().edit?.(draft);
+        draft.manifest['sequence'] = 0;
+        draft.manifest['keyId'] = null;
+      },
+    });
+    await writeFile(join(dir, 'manifest.json'), local.manifestBytes);
+    for (const [path, bytes] of local.files) {
+      await mkdir(dirname(join(dir, path)), { recursive: true });
+      await writeFile(join(dir, path), bytes);
+    }
+    const r = await started({
+      uiOnAppScheme,
+      localBundle: () => readLocalBundle(dir, { hostApi: '1.0.0', appVersion: '1.0.0', flavor: 'dev' }),
+    });
+    return { r, dir };
+  }
+
+  it('runs the local build and badges it, but names no address to import', async () => {
+    const { r, dir } = await localRig(false);
+    try {
+      await r.runner.start(SUBJECT);
+      r.gate.set(true);
+      await flush(r);
+
+      expect(r.runner.view()).toEqual({ phase: 'running', uiUrl: null, styleUrl: null, localBuild: true });
+      expect(r.fakes.forks).toHaveLength(1);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('names the address on the app scheme', async () => {
+    const { r, dir } = await localRig(true);
+    try {
+      await r.runner.start(SUBJECT);
+      r.gate.set(true);
+      await flush(r);
+
+      expect(r.runner.view().uiUrl).toBe('app://bundle/_premium/0/ui/index.js');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});

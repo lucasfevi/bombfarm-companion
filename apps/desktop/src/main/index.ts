@@ -1246,6 +1246,7 @@ async function bootstrap(): Promise<void> {
       userDataPath: env.userDataPath,
       mainDir: __dirname,
       reloadWindow: reloadMainWindow,
+      uiOnAppScheme: !env.isDev,
     },
     build: { isPackaged: env.isPackaged, bakedFlavor: readBakedFlavor(), builtFlavor: __BFC_BUILD_FLAVOR__ },
   });
