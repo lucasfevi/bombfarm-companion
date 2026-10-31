@@ -48,8 +48,8 @@ export const appLeaseGate: LeaseGate = createLeaseGate();
 
 /**
  * May premium code run now? True only while this PC holds a current Lease for the playing account.
- * No arguments, no I/O: it reads the value the licence service already derived. Nothing calls it
- * yet — its callers are allowlisted by a guard test.
+ * No arguments, no I/O: it reads the value the licence service already derived. Its callers are
+ * allowlisted by a guard test.
  */
 export function premiumLeaseAllows(): boolean {
   return appLeaseGate.allows();

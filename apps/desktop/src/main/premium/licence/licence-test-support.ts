@@ -14,7 +14,7 @@ import {
   type RecordedRequest,
   type StubReply,
 } from '../premium-test-support.js';
-import type { PremiumPath } from '../premium-transport.js';
+import type { BytesRequest, BytesResponse, FetchBytes, PremiumPath } from '../premium-transport.js';
 import { createLeaseGate, type LeaseGate } from './lease-gate.js';
 import type { LeaseKeyTable, LeasePayload } from './lease-verify.js';
 import { createLicenceService, type LicenceService } from './licence-runner.js';
@@ -58,6 +58,7 @@ export interface LeaseSpec {
   until?: string | null;
   issuedAtMs: number;
   lifetimeMs?: number;
+  minSequence?: number;
   holderName?: string;
 }
 
@@ -71,7 +72,7 @@ export function signedLease(spec: LeaseSpec): { lease: string; sig: string; keyI
     until: spec.until === undefined ? '2026-12-01T00:00:00.000Z' : spec.until,
     issuedAt: new Date(spec.issuedAtMs).toISOString(),
     expiresAt: new Date(spec.issuedAtMs + (spec.lifetimeMs ?? 60 * MINUTE)).toISOString(),
-    minSequence: 0,
+    minSequence: spec.minSequence ?? 0,
     ...(spec.holderName === undefined ? {} : { holderName: spec.holderName }),
   };
   const bytes = Buffer.from(JSON.stringify(payload), 'utf8');
@@ -165,6 +166,8 @@ export interface StubRemovalPort extends PremiumRemovalPort {
   sequence: number | null;
   /** Every value handed over by noteLatestSequence, in order. */
   latest: (number | null)[];
+  /** Every floor handed over by noteLeaseFloor, in order. */
+  floors: number[];
   /** The premium host answers that its folder is gone. */
   answerGone(): void;
 }
@@ -176,12 +179,16 @@ export function createStubRemovalPort(): StubRemovalPort {
     requests: [],
     sequence: null,
     latest: [],
+    floors: [],
     requestPremiumRemoval(reason) {
       port.requests.push(reason);
     },
     runningSequence: () => port.sequence,
     noteLatestSequence(sequence) {
       port.latest.push(sequence);
+    },
+    noteLeaseFloor(minSequence) {
+      port.floors.push(minSequence);
     },
     attach(next) {
       noteFolderGone = next;
@@ -191,6 +198,25 @@ export function createStubRemovalPort(): StubRemovalPort {
     },
   };
   return port;
+}
+
+/** The byte transport under a licence service: records each request, answers from `reply`. */
+export interface StubBytes {
+  fetch: FetchBytes;
+  requests: BytesRequest[];
+  reply: BytesResponse | ((req: BytesRequest) => BytesResponse | Promise<BytesResponse>);
+}
+
+export function createStubBytes(): StubBytes {
+  const stub: StubBytes = {
+    requests: [],
+    reply: { status: 200, bytes: new Uint8Array([1, 2, 3]), retryAfterSec: null },
+    fetch: async (req) => {
+      stub.requests.push(req);
+      return typeof stub.reply === 'function' ? stub.reply(req) : stub.reply;
+    },
+  };
+  return stub;
 }
 
 export interface LicenceHarnessOptions {
@@ -207,6 +233,7 @@ export interface LicenceHarness {
   store: MemoryLicenceStore;
   subjects: FakeSubjectStore;
   gate: LeaseGate;
+  bytes: StubBytes;
   identity: ReturnType<typeof createFakeIdentity>;
   removal: StubRemovalPort | PremiumRemovalPort;
   stubRemoval: StubRemovalPort | null;
@@ -236,6 +263,7 @@ export function createLicenceHarness(options: LicenceHarnessOptions = {}): Licen
   const store = createMemoryLicenceStore();
   const identity = createFakeIdentity(options.guid === undefined ? MACHINE_GUID : options.guid);
   const secure = { value: true };
+  const bytes = createStubBytes();
   const views: PremiumLicenceView[] = [];
   const gateHistory: Array<[boolean, string]> = [];
   const stubRemoval = options.removal === 'default' ? null : createStubRemovalPort();
@@ -265,6 +293,7 @@ export function createLicenceHarness(options: LicenceHarnessOptions = {}): Licen
       },
       gate,
       keys: testLeaseKeys(),
+      bytes: bytes.fetch,
     });
   }
 
@@ -275,6 +304,7 @@ export function createLicenceHarness(options: LicenceHarnessOptions = {}): Licen
     get gate() {
       return gate;
     },
+    bytes,
     identity,
     removal,
     stubRemoval,

@@ -5,9 +5,10 @@ import { createLeaseGate } from './lease-gate';
 
 /**
  * The files outside tests that may ask the gate whether premium code may run, or subscribe to its
- * changes. Empty until premium code exists: adding a caller means adding it here, on purpose.
+ * changes: the Premium host's wiring, which hands the host its view of the gate. Adding a caller
+ * means adding it here, on purpose.
  */
-const PREMIUM_LEASE_GATE_CALLERS: readonly string[] = [];
+const PREMIUM_LEASE_GATE_CALLERS: readonly string[] = ['src/main/premium/host/host-wiring.ts'];
 
 /** The one file that holds the app's gate and writes its value: the licence service. */
 const LEASE_GATE_WRITERS: readonly string[] = ['src/main/premium/licence/licence-runner.ts'];
@@ -99,14 +100,13 @@ describe('who may call the lease gate', () => {
     expect(GATE_NAMES.test(stripComments(gate?.source ?? ''))).toBe(true);
   });
 
-  it('is called from no file outside tests except the listed callers, and none are listed yet', () => {
+  it('is called from no file outside tests except the listed callers', () => {
     const callers = desktopSources()
       .filter((file) => file.path !== GATE_MODULE && !isTestFile(file.path))
       .filter((file) => GATE_NAMES.test(stripComments(file.source)))
       .map((file) => asListed(file.path));
 
     expect(callers).toEqual([...PREMIUM_LEASE_GATE_CALLERS]);
-    expect(PREMIUM_LEASE_GATE_CALLERS).toEqual([]);
   });
 
   it('hands the app gate itself to nothing but the licence service', () => {

@@ -104,6 +104,8 @@ export interface PremiumServicePort {
   manage(): Promise<PremiumActionResult>;
   /** The player pressed "Use Premium on this PC". */
   useHere?(): PremiumActionResult;
+  /** The Premium tab could not mount the bundle's screen. */
+  hostMountFailed?(): void;
 }
 
 export interface MarketServicePort {
@@ -406,6 +408,10 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
     'premium:manage': (): Promise<PremiumActionResult> | PremiumActionResult =>
       deps.getPremiumService()?.manage() ?? premiumUnavailable,
     'premium:useHere': (): PremiumActionResult => deps.getPremiumService()?.useHere?.() ?? premiumUnavailable,
+    'premium:hostMountFailed': (): null => {
+      deps.getPremiumService()?.hostMountFailed?.();
+      return null;
+    },
     'market:refreshItem': refreshMarketItem,
     'market:check': checkMarketNow,
     'forge:start': (request: ForgeStartRequest): ForgeStartResult =>

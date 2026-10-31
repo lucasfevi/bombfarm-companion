@@ -8,6 +8,7 @@ import { formatCapturedAt, formatDate } from '../../lib/format';
 import { usePremium } from '../../lib/premium/use-premium';
 import { PremiumBanners } from './premium-banners';
 import { PremiumLicenceLine } from './premium-licence-line';
+import { PremiumMount } from './premium-mount';
 import { noticeAfterManage, noticeAfterRefresh, type PremiumNotice } from './premium-notice';
 
 const KIND_ORDER = ['subscription', 'pass', 'manual_grant'] as const satisfies readonly PremiumKind[];
@@ -107,6 +108,7 @@ export function PremiumScreenView({
           {sub(t.premiumUpdated, { time: formatCapturedAt(view.fetchedAt, t) })}
         </p>
       ) : null}
+      <PremiumMount host={view.host} />
       <div className="flex items-center gap-2">
         <Button type="button" variant="ghost" data-testid="premium-refresh" onClick={onRefresh}>
           {t.premiumRefreshAction}

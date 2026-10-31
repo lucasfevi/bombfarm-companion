@@ -201,3 +201,10 @@ flat ~2 s per launch plus a much steeper penalty on the specs that resize the wi
 0.96 s → 11.6 s). `backgroundThrottling: false` was measured and changes nothing, so the cause is
 not timer throttling — do not reach for it again. Reach for the hidden run when you want your
 machine back, not when you want a fast loop.
+
+## Local Premium build
+
+`pnpm dev:premium --bundle <folder>` builds main and the renderer in the dev flavour and starts the app from `app://` with that folder as the local Premium build; plain `pnpm dev` is on the dev server's origin, so it only badges the build and cannot mount it.
+The folder holds an unsigned manifest and the files it lists; it is read in dev builds only, needs a current Lease like any bundle, and a rebuilt bundle is picked up at the next start.
+
+A dev build also reads `BFC_PREMIUM_DEV_APP_VERSION` (a semver): bundle fit is judged as if the app were that version, so a bundle that asks for an app version not yet released can be tried. Beta and prod builds do not have the variable.

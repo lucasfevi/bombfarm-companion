@@ -81,6 +81,11 @@ export function shippedLeaseKeys(): LeaseKeyTable {
   return createLeaseKeyTable(LEASE_PUBLIC_KEYS);
 }
 
+/** The shipped keys plus whatever extra Lease keys the caller's trust adds (none when it has none). */
+export function leaseKeysFor(trust: { readonly leaseKeys: readonly LeasePublicKey[] } | null): LeaseKeyTable {
+  return createLeaseKeyTable([...LEASE_PUBLIC_KEYS, ...(trust?.leaseKeys ?? [])]);
+}
+
 const BASE64URL = /^[A-Za-z0-9_-]*$/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
