@@ -1,7 +1,9 @@
 import {
+  type CapabilityCall,
   type CapabilityReply,
   type HostToWorker,
   PREMIUM_CAPABILITIES,
+  type PremiumPauseReason,
 } from '@bombfarm/contracts';
 import type { LogPort } from '../../storage/index.js';
 
@@ -10,6 +12,8 @@ import type { LogPort } from '../../storage/index.js';
  * answered `{id, ok, value | error}`. Checks run in this order: shape (`bad_call`), paused (`paused`,
  * for every capability, granted or not), granted (`not_granted`: the bundle declared it AND the host
  * allowlist has it), then the per-capability budget (`rate_limited`). Every call writes one log record; arguments are never logged.
+ * The Premium screen's calls take the same road through `callFromUi`: one grant, one pause, one
+ * budget and one audit stream for the worker and the screen.
  */
 
 export type CapabilityHandler = (args: unknown) => unknown;
@@ -42,9 +46,11 @@ export interface CapabilityChannelDeps {
 export interface CapabilityChannel {
   /** The capabilities this worker may call: the declared ones the host offers. */
   readonly granted: readonly string[];
-  /** Refuse every call from now on and tell the worker. */
-  pause(): void;
+  /** Refuse every call from now on and tell the worker why, when the host knows. */
+  pause(reason?: PremiumPauseReason): void;
   resume(): void;
+  /** A call from the Premium screen: the same checks, budget and audit as a call from the worker. */
+  callFromUi(call: CapabilityCall): Promise<CapabilityReply>;
   /** Answer every pending call `stopped`, then close the port. */
   close(): void;
 }
@@ -52,6 +58,9 @@ export interface CapabilityChannel {
 export const DEFAULT_RATE_PER_MINUTE = 60;
 
 type ErrorCode = Extract<CapabilityReply, { ok: false }>['error'];
+
+/** Where an answer goes: the worker's port, or the promise of a call from the screen. */
+type Reply = (reply: CapabilityReply) => void;
 
 interface ParsedCall {
   readonly id: number;
@@ -78,7 +87,9 @@ export function createCapabilityChannel(deps: CapabilityChannelDeps): Capability
   const granted = [...new Set(deps.requested)].filter((name) => allowlist.has(name));
   const grantedSet = new Set(granted);
   const buckets = new Map<string, { tokens: number; at: number }>();
-  const pending = new Map<number, string>();
+  /** Calls still waiting on their handler, each with the way to answer it. */
+  const pending = new Map<number, { id: number; capability: string; reply: Reply }>();
+  let nextKey = 0;
   let paused = false;
   let closed = false;
 
@@ -100,9 +111,15 @@ export function createCapabilityChannel(deps: CapabilityChannelDeps): Capability
     }
   }
 
-  function refuse(id: number, capability: string | null, error: ErrorCode, outcome: string = error): void {
+  function refuse(
+    reply: Reply,
+    id: number,
+    capability: string | null,
+    error: ErrorCode,
+    outcome: string = error,
+  ): void {
     audit(capability, outcome);
-    post({ id, ok: false, error });
+    reply({ id, ok: false, error });
   }
 
   function takeToken(capability: string): boolean {
@@ -117,24 +134,23 @@ export function createCapabilityChannel(deps: CapabilityChannelDeps): Capability
     return true;
   }
 
-  function onMessage(data: unknown): void {
-    if (closed) return;
+  function handle(data: unknown, reply: Reply): void {
     const call = parseCall(data);
     if (!('capability' in call)) {
-      refuse(call.id, null, 'bad_call');
+      refuse(reply, call.id, null, 'bad_call');
       return;
     }
     const { id, capability, args } = call;
     if (paused) {
-      refuse(id, capability, 'paused');
+      refuse(reply, id, capability, 'paused');
       return;
     }
     if (!grantedSet.has(capability)) {
-      refuse(id, capability, 'not_granted');
+      refuse(reply, id, capability, 'not_granted');
       return;
     }
     if (!takeToken(capability)) {
-      refuse(id, capability, 'rate_limited');
+      refuse(reply, id, capability, 'rate_limited');
       return;
     }
 
@@ -143,26 +159,32 @@ export function createCapabilityChannel(deps: CapabilityChannelDeps): Capability
     try {
       result = handler(args);
     } catch {
-      refuse(id, capability, 'bad_call', 'error');
+      refuse(reply, id, capability, 'bad_call', 'error');
       return;
     }
     if (!isPromiseLike(result)) {
       audit(capability, 'ok');
-      post({ id, ok: true, value: result });
+      reply({ id, ok: true, value: result });
       return;
     }
-    pending.set(id, capability);
+    const key = nextKey++;
+    pending.set(key, { id, capability, reply });
     result.then(
       (value) => {
-        if (!pending.delete(id)) return;
+        if (!pending.delete(key)) return;
         audit(capability, 'ok');
-        post({ id, ok: true, value });
+        reply({ id, ok: true, value });
       },
       () => {
-        if (!pending.delete(id)) return;
-        refuse(id, capability, 'bad_call', 'error');
+        if (!pending.delete(key)) return;
+        refuse(reply, id, capability, 'bad_call', 'error');
       },
     );
+  }
+
+  function onMessage(data: unknown): void {
+    if (closed) return;
+    handle(data, post);
   }
 
   port.on('message', (event) => {
@@ -172,21 +194,31 @@ export function createCapabilityChannel(deps: CapabilityChannelDeps): Capability
 
   return {
     granted,
-    pause() {
+    pause(reason) {
       if (closed || paused) return;
       paused = true;
-      post({ t: 'paused' });
+      post(reason === undefined ? { t: 'paused' } : { t: 'paused', reason });
     },
     resume() {
       if (closed || !paused) return;
       paused = false;
       post({ t: 'resumed' });
     },
+    callFromUi(call) {
+      return new Promise((resolve) => {
+        if (closed) {
+          resolve({ id: typeof call.id === 'number' ? call.id : -1, ok: false, error: 'stopped' });
+          return;
+        }
+        handle(call, resolve);
+      });
+    },
     close() {
       if (closed) return;
       closed = true;
-      for (const [id, capability] of pending) refuse(id, capability, 'stopped');
+      const waiting = [...pending.values()];
       pending.clear();
+      for (const { id, capability, reply } of waiting) refuse(reply, id, capability, 'stopped');
       port.close();
     },
   };
