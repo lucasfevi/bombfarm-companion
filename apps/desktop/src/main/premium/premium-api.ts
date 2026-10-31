@@ -3,6 +3,7 @@ import {
   readHandOffBody,
   readPremiumMeBody,
   readPremiumStatusBody,
+  readPremiumMeAudience,
   readPremiumUserId,
   readPremiumVisibilityBody,
   readReportBody,
@@ -101,6 +102,8 @@ export interface PremiumApi {
    * so the account view and its cache stay free of the id.
    */
   subjectOf?(me: PremiumMe): string | null;
+  /** The audience that came with a `fetchMe` answer, or null; it rides beside the answer like the id. */
+  audienceOf?(me: PremiumMe): 'owner' | 'tester' | 'public' | null;
   fetchVisibility(): Promise<VisibilityResult>;
   reportGameAccount(token: string, input: GameAccountReport): Promise<ReportResult>;
   requestHandOff(token: string): Promise<HandOffResult>;
@@ -234,6 +237,7 @@ function decodeLicence(response: PremiumHttpResponse, route: LicenceRoute): Lice
 
 export function createPremiumApi(http: PremiumHttp): PremiumApi {
   const subjects = new WeakMap<PremiumMe, string>();
+  const audiences = new WeakMap<PremiumMe, 'owner' | 'tester' | 'public'>();
 
   async function licenceCall(req: PremiumHttpRequest, route: LicenceRoute): Promise<LicenceAnswer> {
     const reached = await reach(http, req);
@@ -317,11 +321,15 @@ export function createPremiumApi(http: PremiumHttp): PremiumApi {
         const me = readPremiumMeBody(value);
         const userId = readPremiumUserId(value);
         if (me !== null && userId !== null) subjects.set(me, userId);
+        const audience = readPremiumMeAudience(value);
+        if (me !== null && audience !== null) audiences.set(me, audience);
         return me;
       });
     },
 
     subjectOf: (me) => subjects.get(me) ?? null,
+
+    audienceOf: (me) => audiences.get(me) ?? null,
 
     async fetchVisibility() {
       const result = await readJson({ path: 'visibility', method: 'GET' }, readPremiumVisibilityBody);
