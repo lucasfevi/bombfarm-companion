@@ -1,6 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { PREMIUM_SHARED_MODULES } from '@bombfarm/contracts';
@@ -37,6 +38,15 @@ describe('premium shim export lists', () => {
         expect(name).toMatch(/^[A-Za-z_$][\w$]*$/);
         expect(name).not.toBe('default');
       }
+    }
+  });
+
+  it('promises no React name that the renderer own copy of React lacks', async () => {
+    const requireFrom = createRequire(path.join(root, 'package.json'));
+    const shims = await premiumShimExports({ root });
+    for (const name of ['react', 'react/jsx-runtime', 'react-dom', 'react/compiler-runtime']) {
+      const vendored = new Set(Object.keys(requireFrom(`next/dist/compiled/${name}`)));
+      expect(shims[name].filter((exported) => !vendored.has(exported)), `${name} names the renderer lacks`).toEqual([]);
     }
   });
 

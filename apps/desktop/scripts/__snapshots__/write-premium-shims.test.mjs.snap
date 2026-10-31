@@ -183,7 +183,6 @@ exports[`premium shim export lists > matches the recorded lists, so a vanished e
     "workspaceShellClass",
   ],
   "react": [
-    "Activity",
     "Children",
     "Component",
     "Fragment",
@@ -214,7 +213,6 @@ exports[`premium shim export lists > matches the recorded lists, so a vanished e
     "useDebugValue",
     "useDeferredValue",
     "useEffect",
-    "useEffectEvent",
     "useId",
     "useImperativeHandle",
     "useInsertionEffect",

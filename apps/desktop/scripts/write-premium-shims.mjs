@@ -10,7 +10,10 @@ import { PREMIUM_SHARED_MODULES } from '@bombfarm/contracts';
  * names from the live module, so a named import in the bundle resolves.
  *
  * `@bombfarm/ui` ships TypeScript source, so its names come from an esbuild metafile; the React
- * entries are plain CommonJS and are read with `Object.keys(require(name))`.
+ * entries are plain CommonJS and are read with `Object.keys(require(name))`. The renderer is built
+ * with the React copy Next vendors, which can lag the installed package (it lacked `Activity` and
+ * `useEffectEvent` while the package had them), so that copy is read when it is there: a name the
+ * live module does not have must not be promised to a bundle.
  */
 
 const UI_MODULE = '@bombfarm/ui';
@@ -19,6 +22,18 @@ const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 /** Valid export names only, `default` excluded (the shim exports that itself), sorted. */
 function cleanNames(names) {
   return [...new Set(names)].filter((name) => name !== 'default' && IDENTIFIER.test(name)).sort();
+}
+
+/** The module the renderer really bundles for a React entry: Next's vendored copy, else the package. */
+function reactExports(requireFrom, name) {
+  let live = name;
+  try {
+    live = `next/dist/compiled/${name}`;
+    requireFrom.resolve(live);
+  } catch {
+    live = name;
+  }
+  return cleanNames(Object.keys(requireFrom(live)));
 }
 
 async function uiExports(requireFrom) {
@@ -49,7 +64,7 @@ export async function premiumShimExports({ root }) {
   const requireFrom = createRequire(path.join(root, 'package.json'));
   const shims = {};
   for (const name of PREMIUM_SHARED_MODULES) {
-    shims[name] = name === UI_MODULE ? await uiExports(requireFrom) : cleanNames(Object.keys(requireFrom(name)));
+    shims[name] = name === UI_MODULE ? await uiExports(requireFrom) : reactExports(requireFrom, name);
   }
   return shims;
 }
