@@ -14,6 +14,12 @@ export interface PremiumRemovalPort {
    * (null when the answer named none). The licence feature never acts on it.
    */
   noteLatestSequence(sequence: number | null): void;
+  /**
+   * The `minSequence` of a Lease the licence machine accepted, in the order they are accepted. A
+   * stale answer, a Lease that fails verification and a failed renewal send nothing. A bundle
+   * older than this floor must not run.
+   */
+  noteLeaseFloor(minSequence: number): void;
   /** Hands the port the function it calls once the premium folder is gone. */
   attach(noteFolderGone: () => void): void;
 }
@@ -30,6 +36,9 @@ export function createDefaultRemovalPort(defer: (run: () => void) => void = queu
     runningSequence: () => null,
     noteLatestSequence() {
       // Nothing is downloaded, so there is nothing to compare it with.
+    },
+    noteLeaseFloor() {
+      // Nothing is downloaded, so there is no bundle for a floor to retire.
     },
     attach(next) {
       noteFolderGone = next;

@@ -10,9 +10,9 @@ import { createPkce, createState } from './pkce.js';
 import { appPlayingAccount } from './playing-account-gate.js';
 import { createPremiumApi } from './premium-api.js';
 import { createPremiumCache } from './premium-cache.js';
-import { offlinePremiumHttp } from './premium-offline.js';
+import { offlineBytesFetch, offlinePremiumHttp } from './premium-offline.js';
 import { createPremiumService, type GameIdentity, type PremiumService } from './premium-service.js';
-import { PREMIUM_API_ORIGIN, createPremiumHttp, type PremiumHttp } from './premium-transport.js';
+import { PREMIUM_API_ORIGIN, createBytesFetch, createPremiumHttp, type FetchBytes, type PremiumHttp } from './premium-transport.js';
 import { createSubjectStore } from './subject-store.js';
 import { createTokenVault, type SecretBox } from './token-vault.js';
 
@@ -29,6 +29,11 @@ export function createSafeStorageBox(): SecretBox {
 function chooseHttp(offline: boolean, originOverride: string | null): PremiumHttp {
   if (originOverride !== null) return createPremiumHttp(originOverride);
   return offline ? offlinePremiumHttp : createPremiumHttp(PREMIUM_API_ORIGIN);
+}
+
+function chooseBytes(offline: boolean, originOverride: string | null): FetchBytes {
+  if (originOverride !== null) return createBytesFetch(originOverride);
+  return offline ? offlineBytesFetch : createBytesFetch(PREMIUM_API_ORIGIN);
 }
 
 export interface ElectronPremiumDeps {
@@ -84,6 +89,7 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
     secureStorage: () => box.isAvailable(),
     identity: createSystemMachineIdentity(),
     removal: createDefaultRemovalPort(),
+    bytes: chooseBytes(deps.offline, deps.originOverride),
     account: { allows: () => appPlayingAccount.allows(), subscribe: (listener) => appPlayingAccount.subscribe(() => { listener(); }) },
     now: () => Date.now(),
     mono: () => performance.now(),
