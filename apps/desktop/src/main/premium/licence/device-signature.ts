@@ -1,10 +1,10 @@
 import { createHash, type KeyObject, sign } from 'node:crypto';
-import type { SIGNED_METHOD } from '../premium-transport.js';
+import type { SignedMethod } from '../premium-transport.js';
 
 export interface DeviceHeaderInput {
   readonly keyId: string;
   readonly privateKey: KeyObject;
-  readonly method: typeof SIGNED_METHOD;
+  readonly method: SignedMethod;
   readonly path: string;
   /** The exact string that is sent as the request body. */
   readonly body: string;

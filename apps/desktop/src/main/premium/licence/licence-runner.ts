@@ -2,7 +2,7 @@ import { PLUGIN_API_VERSION, type PremiumLicenceView } from '@bombfarm/contracts
 import type { LogPort } from '../../storage/index.js';
 import type { DeviceSignedCall, LicenceAnswer, LicenceOutcome, PremiumApi } from '../premium-api.js';
 import type { LicenceHostPort } from '../premium-service.js';
-import { PREMIUM_API_PATHS, SIGNED_METHOD } from '../premium-transport.js';
+import { PREMIUM_API_PATHS } from '../premium-transport.js';
 import { deviceHeader } from './device-signature.js';
 import { fingerprint } from './fingerprint.js';
 import { shippedLeaseKeys, verifyLease, type LeaseKeyTable, type LeasePayload } from './lease-verify.js';
@@ -354,7 +354,7 @@ export function createLicenceService(deps: LicenceServiceDeps): LicenceService {
       const device = deviceHeader({
         keyId: held.keyId,
         privateKey: held.privateKey,
-        method: SIGNED_METHOD,
+        method: 'POST',
         path: PREMIUM_API_PATHS[path],
         body,
         nowMs: deps.now(),
