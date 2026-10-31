@@ -7,9 +7,9 @@ import type { LogPort } from '../../storage/index.js';
 
 /**
  * The only way a Premium worker asks the host for anything: typed calls over one port, each
- * answered `{id, ok, value | error}`. A call is refused unless the capability is granted (the
- * bundle declared it AND the host allowlist has it), the worker is not paused, and its per-capability
- * budget has a token left. Every call writes one log record; arguments are never logged.
+ * answered `{id, ok, value | error}`. Checks run in this order: shape (`bad_call`), paused (`paused`,
+ * for every capability, granted or not), granted (`not_granted`: the bundle declared it AND the host
+ * allowlist has it), then the per-capability budget (`rate_limited`). Every call writes one log record; arguments are never logged.
  */
 
 export type CapabilityHandler = (args: unknown) => unknown;
@@ -125,12 +125,12 @@ export function createCapabilityChannel(deps: CapabilityChannelDeps): Capability
       return;
     }
     const { id, capability, args } = call;
-    if (!grantedSet.has(capability)) {
-      refuse(id, capability, 'not_granted');
-      return;
-    }
     if (paused) {
       refuse(id, capability, 'paused');
+      return;
+    }
+    if (!grantedSet.has(capability)) {
+      refuse(id, capability, 'not_granted');
       return;
     }
     if (!takeToken(capability)) {

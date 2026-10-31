@@ -185,11 +185,28 @@ describe('capability channel: the order of the checks', () => {
     expect(errorOf(1)(s)).toBe('bad_call');
   });
 
-  it('reports not granted before paused', () => {
+  it('reports paused before not granted, for a capability that was never granted', () => {
     const s = setup({ requested: [], allowlist: new Map() });
     s.channel.pause();
     s.port.send(call(1, 'alpha'));
-    expect(errorOf(1)(s)).toBe('not_granted');
+    expect(errorOf(1)(s)).toBe('paused');
+  });
+
+  it('reports a malformed call as bad_call even while paused', () => {
+    const s = setup({ requested: [], allowlist: new Map() });
+    s.channel.pause();
+    s.port.send({ id: 1, capability: 4 });
+    expect(errorOf(1)(s)).toBe('bad_call');
+  });
+
+  it('reports not granted again once resumed', () => {
+    const s = setup({ requested: [], allowlist: new Map() });
+    s.channel.pause();
+    s.port.send(call(1, 'alpha'));
+    s.channel.resume();
+    s.port.send(call(2, 'alpha'));
+    expect(errorOf(1)(s)).toBe('paused');
+    expect(errorOf(3)(s)).toBe('not_granted');
   });
 
   it('reports paused before rate limited, and a paused call does not spend a token', () => {
@@ -276,7 +293,7 @@ describe('capability channel: the audit log', () => {
       { scope: 'premium', event: 'premium.capability', capability: 'alpha', outcome: 'ok', sequence: 7 },
       { scope: 'premium', event: 'premium.capability', capability: 'alpha', outcome: 'rate_limited', sequence: 7 },
       { scope: 'premium', event: 'premium.capability', capability: 'alpha', outcome: 'paused', sequence: 7 },
-      { scope: 'premium', event: 'premium.capability', capability: 'beta', outcome: 'not_granted', sequence: 7 },
+      { scope: 'premium', event: 'premium.capability', capability: 'beta', outcome: 'paused', sequence: 7 },
       { scope: 'premium', event: 'premium.capability', capability: 'unknown', outcome: 'bad_call', sequence: 7 },
     ]);
   });
