@@ -7,6 +7,7 @@ import {
   signedOutPlayingAccount,
   type AppLocale,
   type PremiumActionResult,
+  type PremiumHostView,
   type PremiumLicenceView,
   type PremiumMe,
   type PremiumPlayingAccount,
@@ -54,6 +55,8 @@ export interface PremiumServiceDeps {
   subjectStore?: SubjectStore;
   /** The licence line of the view; without it the view carries none. */
   licenceView?(): PremiumLicenceView | null;
+  /** The host line of the view; without it the view carries none. */
+  hostView?(): PremiumHostView | null;
 }
 
 /**
@@ -177,7 +180,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       report,
       reportedAccountId,
       licence: deps.licenceView?.() ?? null,
-      host: null,
+      host: deps.hostView?.() ?? null,
     };
   }
 

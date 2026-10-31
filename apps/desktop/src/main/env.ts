@@ -79,7 +79,8 @@ export const RENDERER_DEV_URL =
 
 let cachedEnv: AppEnv | null = null;
 
-function readBakedFlavor(): AppFlavor | null {
+/** The flavour written into the packaged app's package file; null when there is none. */
+export function readBakedFlavor(): AppFlavor | null {
   try {
     const packageJsonPath = path.join(app.getAppPath(), 'package.json');
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {

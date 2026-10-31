@@ -1,10 +1,22 @@
-import { safeStorage, shell } from 'electron';
-import type { AppLocale, PremiumActionResult, PremiumView } from '@bombfarm/contracts';
+import { existsSync, readFileSync } from 'node:fs';
+import { MessageChannelMain, safeStorage, shell, utilityProcess } from 'electron';
+import { isAppFlavor, type AppFlavor, type AppLocale, type PremiumActionResult, type PremiumView } from '@bombfarm/contracts';
 import type { LogPort, SqliteDb } from '../storage/index.js';
 import { createLicenceService, type LicenceService } from './licence/licence-runner.js';
 import { createLicenceStore } from './licence/licence-store.js';
 import { createSystemMachineIdentity } from './licence/machine-id.js';
 import { createDefaultRemovalPort } from './licence/removal-port.js';
+import {
+  SHIMS_FILE,
+  WORKER_LOADER_FILE,
+  createPremiumHost,
+  followSession,
+  mainAssetPath,
+  type PremiumHostWiringDeps,
+} from './host/host-wiring.js';
+import type { HostRunner } from './host/host-runner.js';
+import type { PremiumRoutes } from './host/premium-routes.js';
+import type { ForkWorker, PortPair } from './host/worker-supervisor.js';
 import { startLoopbackListener } from './loopback-listener.js';
 import { createPkce, createState } from './pkce.js';
 import { appPlayingAccount } from './playing-account-gate.js';
@@ -51,22 +63,79 @@ export interface ElectronPremiumDeps {
   readonly flavor?: string;
   /** Subscribes to the PC waking from sleep; returns what unsubscribes. */
   readonly onResume?: (listener: () => void) => () => void;
+  /** What the Premium host needs from the app; without it no host is built. */
+  readonly host?: ElectronHostDeps;
+  /** Which build this is and what was packaged; a packaged app built for another flavour builds nothing. */
+  readonly build?: PremiumBuild;
+}
+
+export interface ElectronHostDeps {
+  /** The data folder of the app; the bundle cache lives under it. */
+  readonly userDataPath: string;
+  /** The folder holding the built main process files. */
+  readonly mainDir: string;
+  /** Reloads the main window, if there is one. */
+  readonly reloadWindow: () => void;
+  /** Builds the host from its parts; the real one unless a test says otherwise. */
+  readonly create?: (parts: PremiumHostWiringDeps) => HostRunner;
+}
+
+export interface PremiumBuild {
+  readonly isPackaged: boolean;
+  /** The flavour written into the packaged package file; null when it names none. */
+  readonly bakedFlavor: AppFlavor | null;
+  /** The flavour this main bundle was compiled for. */
+  readonly builtFlavor: AppFlavor;
+}
+
+/** A packaged app must be the flavour its code was compiled for. */
+export function premiumBuildMismatch(build: PremiumBuild): boolean {
+  return build.isPackaged && build.bakedFlavor !== build.builtFlavor;
 }
 
 /** The Premium service with the licence service built beside it, started and stopped with it. */
 export interface ElectronPremium extends PremiumService {
   /** The player pressed "Use Premium on this PC". */
   useHere(): PremiumActionResult;
+  /** The Premium tab could not mount the screen of the bundle. */
+  hostMountFailed(): void;
+  /** What the `app://` handler serves under `_premium`; null when there is no host. */
+  readonly routes: PremiumRoutes | null;
 }
 
 export function createPremiumWhenEnabled(enabled: boolean, deps: ElectronPremiumDeps): ElectronPremium | null {
-  return enabled ? createElectronPremium(deps) : null;
+  if (!enabled) return null;
+  if (deps.build !== undefined && premiumBuildMismatch(deps.build)) {
+    deps.log.error({ scope: 'premium', event: 'premium.build_mismatch' });
+    return null;
+  }
+  return createElectronPremium(deps);
 }
+
+function readShims(mainDir: string): Record<string, readonly string[]> | null {
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(mainAssetPath(mainDir, SHIMS_FILE, existsSync), 'utf8'));
+    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, readonly string[]>) : null;
+  } catch {
+    return null;
+  }
+}
+
+const forkWorker: ForkWorker = (modulePath, args, options) =>
+  utilityProcess.fork(modulePath, args, {
+    serviceName: options.serviceName,
+    stdio: options.stdio,
+    env: { ...options.env },
+    execArgv: [...options.execArgv],
+  });
+
+const createPortPair = (): PortPair => new MessageChannelMain();
 
 export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremium {
   const box = createSafeStorageBox();
   const api = createPremiumApi(chooseHttp(deps.offline, deps.originOverride));
   let licence: LicenceService | null = null;
+  let host: HostRunner | null = null;
   const premium = createPremiumService({
     api,
     vault: createTokenVault(deps.db, box),
@@ -82,6 +151,11 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
     onChanged: deps.onChanged,
     playingAccount: appPlayingAccount,
     licenceView: () => licence?.view() ?? null,
+    hostView: () => host?.view() ?? null,
+  });
+  host = buildHost(deps, (req) => {
+    if (licence === null) throw new Error('premium_licence_missing');
+    return licence.deviceGet(req);
   });
   const service = createLicenceService({
     host: premium.host,
@@ -89,7 +163,7 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
     store: createLicenceStore(deps.db, box),
     secureStorage: () => box.isAvailable(),
     identity: createSystemMachineIdentity(),
-    removal: createDefaultRemovalPort(),
+    removal: host ?? createDefaultRemovalPort(),
     bytes: chooseBytes(deps.offline, deps.originOverride),
     keys: runtimeLeaseKeys(deps.flavor, process.env),
     account: { allows: () => appPlayingAccount.allows(), subscribe: (listener) => appPlayingAccount.subscribe(() => { listener(); }) },
@@ -105,12 +179,26 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
   });
   licence = service;
   let stopResume: (() => void) | null = null;
+  let stopHostWatch: (() => void) | null = null;
+
+  function startHost(runner: HostRunner): void {
+    const stopSession = followSession(premium.host, runner, deps.log);
+    const stopView = runner.subscribe(() => {
+      premium.noteLicenceChanged();
+    });
+    stopHostWatch = () => {
+      stopSession();
+      stopView();
+    };
+  }
 
   return {
     ...premium,
+    routes: host?.routes ?? null,
     start() {
       premium.start();
       service.start();
+      if (host !== null) startHost(host);
       stopResume ??= deps.onResume?.(() => {
         service.trigger('resume');
       }) ?? null;
@@ -118,6 +206,9 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
     stop() {
       stopResume?.();
       stopResume = null;
+      stopHostWatch?.();
+      stopHostWatch = null;
+      host?.stop();
       service.stop();
       premium.stop();
     },
@@ -131,5 +222,36 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
       service.pressMove();
       return { ok: true };
     },
+    hostMountFailed() {
+      host?.mountFailed();
+    },
   };
+}
+
+/** The Premium host, or null when the app gave it nothing to be built from. */
+function buildHost(deps: ElectronPremiumDeps, deviceGet: PremiumHostWiringDeps['deviceGet']): HostRunner | null {
+  const wiring = deps.host;
+  if (wiring === undefined) return null;
+  const shims = readShims(wiring.mainDir);
+  if (shims === null) {
+    deps.log.error({ scope: 'premium', event: 'premium.host_unavailable', reason: 'shims_unreadable' });
+    return null;
+  }
+  const parts: PremiumHostWiringDeps = {
+    flavor: isAppFlavor(deps.flavor) ? deps.flavor : 'prod',
+    appVersion: deps.appVersion ?? '0.0.0',
+    userDataPath: wiring.userDataPath,
+    db: deps.db,
+    deviceGet,
+    reloadWindow: wiring.reloadWindow,
+    log: deps.log,
+    fork: forkWorker,
+    createChannel: createPortPair,
+    loaderPath: mainAssetPath(wiring.mainDir, WORKER_LOADER_FILE, existsSync),
+    shims,
+    vars: process.env,
+    now: () => Date.now(),
+    mono: () => performance.now(),
+  };
+  return (wiring.create ?? createPremiumHost)(parts);
 }
