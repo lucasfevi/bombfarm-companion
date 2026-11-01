@@ -1,5 +1,22 @@
 # @bombfarm/desktop
 
+## 0.32.3
+
+### Patch Changes
+
+- Updated dependencies [8e9c020]
+- Updated dependencies [4219c4e]
+- Updated dependencies [8247b1e]
+- Updated dependencies [f97ab4a]
+  - @bombfarm/domain@1.15.3
+  - @bombfarm/ui@0.20.2
+  - @bombfarm/account@0.3.23
+  - @bombfarm/farm@1.5.5
+  - @bombfarm/game-api@0.8.8
+  - @bombfarm/game-art@0.8.12
+  - @bombfarm/hero@0.7.7
+  - @bombfarm/team-plan@0.8.5
+
 ## 0.32.2
 
 ### Patch Changes

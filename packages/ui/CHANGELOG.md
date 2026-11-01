@@ -1,5 +1,12 @@
 # @bombfarm/ui
 
+## 0.20.2
+
+### Patch Changes
+
+- 8247b1e: `EmptyState`, `ErrorScreen` and `PanelHeader` now accept a node, not just a string, for their title and message, so copy that re-renders with the language can sit in the same heading and paragraph. `EmptyState` can also draw its heading as an `h1`, with the same look as the other levels. `StatusDot` takes a node label, passes `id` and `data-*` attributes to its root, and can colour its label by tone. `Banner` takes `body="sm"` so an `ok` banner can show small body lines like the other tones. Existing renderings are unchanged.
+- f97ab4a: Warn-coloured text now meets 4.5:1 contrast on the page background, panels and warning banners. The warning colour is lighter wherever it appears, including status dots and borders.
+
 ## 0.20.1
 
 ### Patch Changes
