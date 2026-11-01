@@ -5,7 +5,7 @@
 //   activeDPS = dano_avg × bombas/s × blocos/bomba × eficiência_IA
 //   dano_avg  = ataque × (1 − mitig × (1 − pen)) × (1 + critChance × critDmg)
 //   bombas/s  = plants per field second over a clear of the band      (cadence.ts)
-//               cycle = E[max(fuse + 0.47, hop / w + 0.58)]              (plant-cycle.ts)
+//               cycle = E[max(fuse + 0.33…0.47, hop / w + 0.24…0.58)]    (plant-cycle.ts)
 //   fuse      = 2 × (1 − cdr) floored at 0.4s ("piso de 20% do ciclo" — the floor
 //               lands exactly at the 80% CDR cap)
 //   w         = velocidade × 0.0386 cells/s; hop from the band's standing props,
@@ -108,7 +108,9 @@ export {
 } from './clear-time';
 export {
   FUSE_CYCLE_OVERHEAD_SEC,
+  FUSE_CYCLE_OVERHEAD_FLOOR_SEC,
   WALK_CYCLE_OVERHEAD_SEC,
+  WALK_CYCLE_OVERHEAD_FLOOR_SEC,
   FREE_HOP_BASE_CELLS,
   FREE_HOP_SQRT_CELLS,
   FREE_HOP_SHAPE,
@@ -120,6 +122,7 @@ export {
   freeHopCells,
   fuseHopFactor,
   hopSpeedFactor,
+  fuseCycleOverheadSeconds,
   walkCycleOverheadSeconds,
   plantCycleSeconds,
   meanPlantCycleSeconds,
