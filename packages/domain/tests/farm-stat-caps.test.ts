@@ -3,6 +3,7 @@ import { capFirstPts, capOf, generateCapMoves, pointsToCap, speedPointsToWalkIns
 import { buildCandidateSheet, budgetOf, REOPT_KEYS, zeroedRespecKeys } from '@bombfarm/domain/points-reopt-core';
 import type { HeroFarmBasis } from '@bombfarm/domain/farm-rate';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
+import type { HeroSheet } from '@bombfarm/domain/model';
 
 const ZERO: Record<SheetKey, number> = {
   attack: 0,
@@ -15,11 +16,24 @@ const ZERO: Record<SheetKey, number> = {
   cdr: 0,
 };
 
+const SHEET: HeroSheet = {
+  rarity: 'Raro',
+  attack: 1000,
+  energy: 500,
+  speed: 100,
+  critChance: 60,
+  critDmg: 300,
+  penetration: 20,
+  cdr: 30,
+  attackPerPoint: 5,
+  energyPerPoint: 3,
+};
+
 function basisWith(overrides: Partial<HeroFarmBasis> = {}): HeroFarmBasis {
   return {
     heroId: 'h1',
     pts: { ...ZERO },
-    effective: { attack: 1000, energy: 500, speed: 100, critChance: 60, critDmg: 300, penetration: 20, cdr: 30 },
+    effective: SHEET,
     effectiveDelta: { attack: 5, energy: 3, speed: 0.5, critChance: 0.7, critDmg: 6, penetration: 0.4, cdr: 0.23, luck: 0.03 },
     ...overrides,
   } as HeroFarmBasis;
@@ -109,7 +123,7 @@ describe('capFirstPts', () => {
 
 describe('speedPointsToWalkInsideFuse', () => {
   const basis = basisWith({
-    effective: { attack: 1000, energy: 500, speed: 40, critChance: 60, critDmg: 300, penetration: 20, cdr: 80 },
+    effective: { ...SHEET, speed: 40, cdr: 80 },
   });
 
   it('buys the fewest speed points at which the walk fits inside the fuse', () => {

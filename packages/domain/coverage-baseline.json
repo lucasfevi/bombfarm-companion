@@ -23,6 +23,7 @@
     "src/farm-optimize.ts": { "statements": 90.53, "branches": 67.86, "functions": 91.18, "lines": 91.84 },
     "src/farm-point-rank.ts": { "statements": 83.87, "branches": 68.75, "functions": 83.33, "lines": 88.46 },
     "src/farm-rate.ts": { "statements": 98.6, "branches": 93.7, "functions": 100, "lines": 100 },
+    "src/farm-stat-caps.ts": { "statements": 100, "branches": 93.84, "functions": 100, "lines": 100 },
     "src/forge/forecast.ts": { "statements": 97.79, "branches": 91.67, "functions": 100, "lines": 100 },
     "src/forge/index.ts": { "statements": 100, "branches": 100, "functions": 100, "lines": 100 },
     "src/forge/rules.ts": { "statements": 100, "branches": 100, "functions": 100, "lines": 100 },
