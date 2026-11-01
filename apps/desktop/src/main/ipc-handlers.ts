@@ -26,6 +26,8 @@ import {
   type AppSettings,
   type ApplyStartRequest,
   type ApplyStartResult,
+  type CapabilityCall,
+  type CapabilityReply,
   type CollectionsView,
   type ConsentRecord,
   type DeconstructStartRequest,
@@ -102,6 +104,12 @@ export interface PremiumServicePort {
   signOut(): Promise<PremiumView>;
   refresh(reason: 'open' | 'button'): Promise<PremiumActionResult>;
   manage(): Promise<PremiumActionResult>;
+  /** The player pressed "Use Premium on this PC". */
+  useHere?(): PremiumActionResult;
+  /** The Premium tab could not mount the bundle's screen. */
+  hostMountFailed?(): void;
+  /** A capability call from the Premium screen; absent when the app built no host. */
+  callFromUi?(call: CapabilityCall): Promise<CapabilityReply>;
 }
 
 export interface MarketServicePort {
@@ -403,6 +411,13 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.getPremiumService()?.refresh('button') ?? premiumUnavailable,
     'premium:manage': (): Promise<PremiumActionResult> | PremiumActionResult =>
       deps.getPremiumService()?.manage() ?? premiumUnavailable,
+    'premium:useHere': (): PremiumActionResult => deps.getPremiumService()?.useHere?.() ?? premiumUnavailable,
+    'premium:hostMountFailed': (): null => {
+      deps.getPremiumService()?.hostMountFailed?.();
+      return null;
+    },
+    'premium:uiCall': (capability: string, args: unknown): Promise<CapabilityReply> | CapabilityReply =>
+      deps.getPremiumService()?.callFromUi?.({ id: 0, capability, args }) ?? { id: 0, ok: false, error: 'unavailable' },
     'market:refreshItem': refreshMarketItem,
     'market:check': checkMarketNow,
     'forge:start': (request: ForgeStartRequest): ForgeStartResult =>

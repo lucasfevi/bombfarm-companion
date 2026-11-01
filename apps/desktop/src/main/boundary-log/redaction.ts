@@ -16,6 +16,7 @@ export const SENSITIVE_KEY_NAMES = [
   'authorization',
   'cookie',
   'password',
+  'steamId64',
   'secret',
 ] as const;
 

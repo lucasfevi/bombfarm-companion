@@ -1,5 +1,15 @@
 # @bombfarm/domain
 
+## 1.15.3
+
+### Patch Changes
+
+- 8e9c020: The optimizer can now reach a stat cap in one step. It used to move points 10–50 at a time, and every step toward the crit-chance or cooldown cap lost a little gold before the cap paid off, so it never got there. It now also tries moving exactly the points a hero needs to hit a cap — crit chance at the ceiling the team's crit aura leaves, cooldown at 80%, penetration at 100 — and moves points sitting uselessly past a cap onto another stat.
+
+  It also starts from builds that buy the caps first, then Speed until the hero can walk to its next target before its last bomb goes off, then crit damage and attack. Only one of those keeps points in energy, for young accounts whose heroes still run short of field time.
+
+- 4219c4e: Heroes near the cooldown cap are now predicted to plant as fast as they really do. Frame captures showed that a hero with a short fuse wastes less time between bombs than the model assumed — both waiting for the fuse and walking to the next target — so heroes at the 80% cap read 7–38% too slow. The pause between bombs now shrinks from about 0.5 s at a 1.3 s fuse to about 0.3 s at the cap. A wave's first kill now comes 0.9 s after the squad's average fuse instead of at a fixed 3 s, so fast squads start clearing sooner. The Farm board and the Optimizer predict faster clears for high-cooldown heroes, and cooldown is worth more near the cap. Heroes with a fuse of 1.3 s or longer plant at the same rate as before.
+
 ## 1.15.2
 
 ### Patch Changes

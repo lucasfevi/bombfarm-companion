@@ -3,7 +3,7 @@ import { panelHClass, panelTitleClass } from './panel-field.recipe';
 import { cn } from './cn';
 
 export type PanelHeaderProps = {
-  title: string;
+  title: ReactNode;
   /** An `InfoTip` drawn right after the title, in place of an intro paragraph under it. */
   info?: ReactNode;
   /** Right-hand side of the header row — counters, actions, a rank-mode select. */

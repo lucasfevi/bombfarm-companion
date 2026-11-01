@@ -64,4 +64,25 @@ describe('EmptyState', () => {
     expect(html).not.toContain('fixed');
     expect(html).toContain('items-center');
   });
+
+  it('renders a node title inside the heading, and a node description inside the paragraph', () => {
+    const html = render({
+      title: createElement('em', null, 'No game'),
+      description: createElement('span', null, 'Launch it.'),
+    });
+    expect(html).toMatch(/<h2[^>]*><em>No game<\/em><\/h2>/);
+    expect(html).toMatch(/<p[^>]*><span>Launch it\.<\/span><\/p>/);
+  });
+
+  it('renders a node description in the paragraph of the inline size too', () => {
+    const html = render({ title: 'None', size: 'inline', description: createElement('span', null, 'Try again.') });
+    expect(html).toMatch(/<p[^>]*><span>Try again\.<\/span><\/p>/);
+  });
+
+  it('renders the title as an h1 with the same classes as the other levels, at both sizes', () => {
+    expect(render({ title: 'Lost', headingLevel: 1 })).toContain('<h1 class="text-base font-semibold text-ink">Lost</h1>');
+    expect(render({ title: 'Lost', headingLevel: 1, size: 'inline' })).toContain(
+      '<h1 class="text-[13px] font-semibold text-ink">Lost</h1>',
+    );
+  });
 });

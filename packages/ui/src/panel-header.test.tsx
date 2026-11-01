@@ -44,4 +44,9 @@ describe('PanelHeader', () => {
     expect(html).toContain('mb-0');
     expect(html).not.toContain('mb-2.5');
   });
+
+  it('renders a node title inside the h2, with the panel title classes', () => {
+    const html = render({ title: createElement('span', { 'data-testid': 'node-title' }, 'Points') });
+    expect(html).toMatch(/<h2 class="[^"]*uppercase[^"]*"><span data-testid="node-title">Points<\/span><\/h2>/);
+  });
 });

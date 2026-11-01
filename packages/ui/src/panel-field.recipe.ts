@@ -227,6 +227,9 @@ export const setupBannerRecipe = cva('', {
 
 export type SetupBannerVariant = VariantProps<typeof setupBannerRecipe>;
 
+/** Body-line rule for the ok tone, which has none by default; the other tones carry it in their chrome. */
+export const setupBannerOkBodyClass = '[&_p]:m-0 [&_p]:text-xs [&_p]:leading-[1.45] [&_p]:text-ink';
+
 export const setupBannerTitleClass = 'mb-1.5 m-0 text-[13px] font-bold';
 export const setupBannerOkTitleClass = 'm-0 text-[13px] font-bold text-up';
 export const setupBannerDangerTitleClass = 'mb-1 m-0 text-[13px] font-bold text-down';

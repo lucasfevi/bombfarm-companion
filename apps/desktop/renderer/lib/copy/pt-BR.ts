@@ -1508,4 +1508,24 @@ export const ptBR: Copy = {
   premiumPausedUpdateGame: 'Atualize o jogo se este aviso não sumir.',
   premiumPausedReportFailed: 'Não foi possível confirmar sua conta do jogo — clique em Atualizar para tentar de novo.',
   premiumCheckingAccount: 'Verificando sua conta do jogo…',
+  // premiumLicence* — which PC holds Premium, and the button that brings it here
+  premiumLicenceHolds: 'O Premium está neste PC.',
+  premiumLicenceElsewhere: 'O Premium está em outro PC ({name}).',
+  premiumLicenceUnconfirmed: 'Não foi possível confirmar seu Premium — verifique sua conexão.',
+  premiumLicenceMismatch: 'Esta cópia do app não é o PC que tem o seu Premium.',
+  premiumLicenceMoved: 'O Premium foi para {name}. Ele foi removido deste PC.',
+  premiumLicenceMovedPending: 'O Premium foi para {name}.',
+  premiumLicenceReleased: 'O suporte removeu o Premium deste PC.',
+  premiumLicenceEnded: 'O Premium terminou. Ele foi removido deste PC.',
+  premiumLicenceEndedPending: 'O Premium terminou.',
+  premiumLicenceMoveLimit: 'Você moveu o Premium em {date}. Você pode movê-lo de novo em {next} ou falar com o suporte.',
+  premiumLicenceUseHere: 'Usar o Premium neste PC',
+  premiumLicenceMoveFailed: 'Não foi possível mover o Premium — tente de novo.',
+  // The words of premiumLicenceMoveLimit that become a link once a support channel exists.
+  premiumSupportWords: 'falar com o suporte',
+  // premiumHost* — the Premium page's mount point
+  premiumHostUpdating: 'Atualizando o Premium…',
+  premiumHostStopped: 'O Premium parou inesperadamente — reinicie o app',
+  premiumHostLocalBuild: 'Build local do Premium',
+  premiumHostLocalBuildHint: 'Use pnpm dev:premium para carregá-lo',
 };

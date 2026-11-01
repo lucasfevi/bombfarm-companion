@@ -10,6 +10,7 @@ import { NtExecutable, NtExecutableResource } from 'resedit';
 import { resolveBuildFlavor } from '@bombfarm/contracts';
 import { createBuilderConfig } from './builder-config.mjs';
 import { CSP_MANIFEST_FILE, CspManifestError, verifyManifest } from './csp-manifest.mjs';
+import { TEST_BUNDLE_KEYPAIR, TEST_LEASE_KEYPAIR } from '../tests/fixtures/premium/keys.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const desktopRoot = path.join(__dirname, '..');
@@ -296,6 +297,91 @@ export function assertNoNativeBinariesInAsar(entries) {
   }
 }
 
+/** A string only the fixture bundle's screen renders; the build must not ship it. */
+export const FIXTURE_MARKER = 'bfc-premium-fixture-marker';
+
+/**
+ * What a beta or prod package must not contain anywhere in its JavaScript or JSON: the two test
+ * public keys, the fixture's marker, the local-bundle folder variable, and the dev-only module's
+ * name. Each is searched for as plain bytes, so it does not matter how the bundler arranged the
+ * code around it.
+ */
+export const DEV_PREMIUM_NEEDLES = Object.freeze([
+  { label: 'the test bundle public key', value: TEST_BUNDLE_KEYPAIR.x },
+  { label: 'the test lease public key', value: TEST_LEASE_KEYPAIR.x },
+  { label: 'the fixture bundle marker', value: FIXTURE_MARKER },
+  { label: 'the local bundle folder variable', value: 'BFC_PREMIUM_DEV_BUNDLE_DIR' },
+  { label: 'the dev trust module', value: 'dev-trust' },
+]);
+
+const BUILD_INFO_ENTRY = '/dist/main/build-info.json';
+const MAIN_BUNDLE_ENTRY = '/dist/main/index.cjs';
+
+/**
+ * The flavour the package was stamped with, read from the archived manifest; the flavour the gate
+ * runs for stands in when the archive carries none.
+ */
+function bakedFlavor(asarPath, entries, fallback) {
+  if (!entries.some((entry) => entry.path === '/package.json')) return fallback;
+  try {
+    const manifest = JSON.parse(extractFile(asarPath, 'package.json').toString('utf8'));
+    return typeof manifest.bfcFlavor === 'string' ? manifest.bfcFlavor : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * A beta or prod package must not trust a test key or carry the local-bundle path, and every
+ * package's build must have been made for the flavour it was stamped with. A dev package may hold
+ * the test material; it still has to agree with its stamp.
+ *
+ * @param {import('@bombfarm/contracts').AppFlavor} flavor
+ * @param {string} asarPath
+ * @param {{ path: string, packed: boolean }[]} entries
+ */
+export function assertNoDevPremiumTrust(flavor, asarPath, entries) {
+  const failures = [];
+
+  if (flavor !== 'dev') {
+    const scanned = entries.filter((entry) => entry.packed && /\.(?:js|cjs|json)$/.test(entry.path));
+    for (const entry of scanned) {
+      const content = extractFile(asarPath, path.normalize(entry.path.slice(1)));
+      for (const { label, value } of DEV_PREMIUM_NEEDLES) {
+        if (content.includes(value)) failures.push(`  - ${label} ("${value}") is in ${entry.path}`);
+      }
+    }
+  }
+
+  // SPEC_DEVIATION: the build-info comparison applies only to an archive that holds the main bundle.
+  // Reason: an archive without it is not a runnable package and the gate's other checks already
+  // fail it; requiring the stamp there would fail trees that exist only to exercise those checks.
+  if (entries.some((entry) => entry.path === MAIN_BUNDLE_ENTRY)) {
+    const baked = bakedFlavor(asarPath, entries, flavor);
+    if (!entries.some((entry) => entry.path === BUILD_INFO_ENTRY)) {
+      failures.push(`  - "dist/main/build-info.json" is missing, so the build's flavour cannot be checked against "${baked}"`);
+    } else {
+      let built;
+      try {
+        built = JSON.parse(extractFile(asarPath, path.normalize(BUILD_INFO_ENTRY.slice(1))).toString('utf8')).flavor;
+      } catch {
+        built = undefined;
+      }
+      if (built !== baked) {
+        failures.push(
+          `  - the bundles were built for "${String(built)}" but the package is stamped "${baked}" ("dist/main/build-info.json" vs "package.json")`,
+        );
+      }
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new PackagingGateError(
+      `Packaging gate: a ${flavor} package must not trust test keys, and must be built for its own flavour:\n${failures.join('\n')}`,
+    );
+  }
+}
+
 const FUSE_DISABLED = 0x30;
 const FUSE_ENABLED = 0x31;
 
@@ -443,6 +529,7 @@ export async function runPackagingGateChecks(
       await record(() => assertRendererEntryPresent(entries));
       await record(() => assertRendererCspManifestIntact(asarPath, entries));
       await record(() => assertNoNativeBinariesInAsar(entries));
+      await record(() => assertNoDevPremiumTrust(flavor, asarPath, entries));
     }
   }
 

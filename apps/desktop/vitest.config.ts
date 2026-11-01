@@ -2,9 +2,16 @@ import { defineConfig } from 'vitest/config';
 import { MAX_TEST_WORKERS } from '../../vitest.workers';
 
 export default defineConfig({
+  // The build-time constants the main bundle is compiled with; tests run as the dev flavour.
+  define: {
+    __BFC_BUILD_FLAVOR__: JSON.stringify('dev'),
+    __BFC_PREMIUM_DEV__: 'true',
+  },
   test: {
     // Capped here too, so a standalone `pnpm --filter` run is bounded — see vitest.workers.ts.
     maxWorkers: MAX_TEST_WORKERS,
+    // Lets main-process code `require` its dev-only TypeScript module, as the bundler does.
+    setupFiles: ['./vitest.setup.mjs'],
     include: [
       'src/**/*.test.ts',
       'scripts/**/*.test.mjs',

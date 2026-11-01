@@ -36,6 +36,7 @@ export interface PremiumActions {
   readonly signOut: () => Promise<void>;
   readonly refresh: () => Promise<PremiumActionResult>;
   readonly manage: () => Promise<PremiumActionResult>;
+  readonly moveHere: () => Promise<PremiumActionResult>;
 }
 
 export interface PremiumStore extends SharedStore<PremiumState> {
@@ -77,6 +78,17 @@ export function createPremiumStore(getBridge: () => PremiumBridge | undefined): 
   const act = (call: (b: PremiumBridge) => Promise<PremiumActionResult>): Promise<PremiumActionResult> =>
     withBridge((bridge) => call(bridge).catch(() => UNAVAILABLE), UNAVAILABLE);
 
+  // One Move press at a time: a second press while the first is unanswered shares its answer.
+  let moving: Promise<PremiumActionResult> | null = null;
+  const moveHere = (): Promise<PremiumActionResult> => {
+    if (moving !== null) return moving;
+    const pending = act((b) => b.invoke('premium:useHere')).finally(() => {
+      moving = null;
+    });
+    moving = pending;
+    return pending;
+  };
+
   const actions: PremiumActions = {
     signIn: () => act((b) => b.invoke('premium:signIn')),
     cancelSignIn: () => withBridge((bridge) => bridge.invoke('premium:cancelSignIn').catch(() => false), false),
@@ -86,6 +98,7 @@ export function createPremiumStore(getBridge: () => PremiumBridge | undefined): 
     },
     refresh: () => act((b) => b.invoke('premium:refresh')),
     manage: () => act((b) => b.invoke('premium:manage')),
+    moveHere,
   };
 
   return { ...store, actions };

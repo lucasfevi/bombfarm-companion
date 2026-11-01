@@ -60,6 +60,14 @@ describe('decideIpcSender', () => {
       expect(decide({ senderWindow: 'main', channel: 'window:minimize' })).toEqual({ allowed: true });
     });
 
+    it('refuses the Premium capability channel from the compact window, and lets the main window call it', () => {
+      expect(decide({ senderWindow: 'mini-live', channel: 'premium:uiCall' })).toEqual({
+        allowed: false,
+        reason: 'channel_not_allowed',
+      });
+      expect(decide({ senderWindow: 'main', channel: 'premium:uiCall' })).toEqual({ allowed: true });
+    });
+
     it.each([undefined, null, 7, {}, ['settings:get'], '__proto__', 'toString', ''])(
       'refuses the non-channel value %j',
       (channel) => {

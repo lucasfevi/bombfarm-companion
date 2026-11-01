@@ -370,6 +370,8 @@ describe('signedOutPremiumView', () => {
       lastRefreshFailed: false,
       report: null,
       reportedAccountId: null,
+      licence: null,
+      host: null,
     });
   });
 });
