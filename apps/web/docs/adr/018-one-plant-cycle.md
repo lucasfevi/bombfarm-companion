@@ -96,3 +96,22 @@ The walk overhead keeps that knee: 0.58 s from a 1.3 s fuse up, falling linearly
 floor. It does not depend on walk speed. The duel cadence multiplier, defined against the farm
 cadence, was refitted with it. One two-stage screen miss returned with this change and is held to
 the documented cost bound rather than exact agreement.
+
+## Amendment — 2026-11-01
+
+Both overheads now share the knee. From a 1.3 s fuse up they stay 0.47 s and 0.58 s. Below it
+each falls linearly, to 0.33 s past the fuse and 0.24 s past `hop ÷ w` at the 0.40 s floor. The
+two values were fitted together by least squares, with the long-fuse pair held, on every clean
+cycle of six compact-field captures of one account taken 2026-10-17 to 2026-10-31. The same
+captures' heroes above 1.3 s fit 0.50 s and 0.56 s, so the original pair still holds there. The
+old walk-only knee read heroes at the floor 7–38% slow, cycle by cycle against their own measured
+hops. Both overheads have to move together because the cycle takes the max of the two branches: a
+shorter wait on only one side just hands the cycle to the other.
+
+The clear's head is now `0.9 s + the squad's presence-weighted fuse` instead of a flat 3 s. Over
+nine captures the median first kill ran 1.0–2.8 s, about 0.9 s past the mean fuse, so the flat
+value read squads near the cooldown cap 1.4–2.0 s slow to their first kill.
+
+Known limits: a slow walker at the floor (2.8 cells/s) reads 10–13% fast now, where it read 3–6%
+fast before. Its fuse-bound waits run ~0.6 s, against ~0.3 s for heroes walking 4+ cells/s. The
+model has no walk-speed term in the overheads.
