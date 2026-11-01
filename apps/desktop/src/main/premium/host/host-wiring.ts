@@ -1,13 +1,29 @@
 import { join } from 'node:path';
-import { BUNDLE_PUBLIC_KEYS, PLUGIN_API_VERSION, type AppFlavor } from '@bombfarm/contracts';
+import {
+  BUNDLE_PUBLIC_KEYS,
+  PLUGIN_API_VERSION,
+  PREMIUM_CAPABILITIES,
+  type AppFlavor,
+  type LicenceState,
+} from '@bombfarm/contracts';
 import type { LogPort, SqliteDb } from '../../storage/index.js';
 import type { DeviceGetRequest, DeviceGetResult } from '../licence/licence-runner.js';
 import { onPremiumLeaseChange, premiumLeaseAllows } from '../licence/lease-gate.js';
 import { createBundleCache } from './bundle-cache.js';
 import { createBundleKeyTable } from './bundle-verify.js';
 import { loadDevTrust, loadLocalBundle } from './dev-loader.js';
+import type { CapabilityHandler } from './capability-channel.js';
+import { createLogCapability } from './capabilities/log.js';
+import { createNotifyCapability, type NotifyCapabilityDeps } from './capabilities/notify.js';
+import { createStatusCapability, type StatusCapabilityDeps } from './capabilities/status.js';
+import { createStoreCapability, storeRowKey, type StoreCapabilityDeps } from './capabilities/store.js';
 import { createHostRunner, type HostGate, type HostRunner } from './host-runner.js';
-import { createWorkerSupervisor, type ForkWorker, type PortPair } from './worker-supervisor.js';
+import {
+  createWorkerSupervisor,
+  type ForkWorker,
+  type PortPair,
+  type WorkerSupervisor,
+} from './worker-supervisor.js';
 
 /**
  * Builds the Premium host from the app's parts. This is the one place the lease gate is read for the
@@ -31,6 +47,13 @@ export function mainAssetPath(mainDir: string, file: string, exists: (path: stri
   if (!ASAR.test(inPlace)) return inPlace;
   const unpacked = inPlace.replace(ASAR, '$1app.asar.unpacked');
   return exists(unpacked) ? unpacked : inPlace;
+}
+
+/** What the four capabilities are made of; the app supplies each part. */
+export interface PremiumHostCapabilityDeps {
+  readonly status: StatusCapabilityDeps;
+  readonly store: StoreCapabilityDeps;
+  readonly notify: Omit<NotifyCapabilityDeps, 'log'>;
 }
 
 export interface PremiumHostWiringDeps {
@@ -58,17 +81,48 @@ export interface PremiumHostWiringDeps {
   readonly vars: Readonly<Record<string, string | undefined>>;
   readonly now: () => number;
   readonly mono: () => number;
+  /** The capabilities a bundle may be granted; without them the host offers none. */
+  readonly capabilities?: PremiumHostCapabilityDeps;
+  /** Whether the game account playing now is the signed-in user's, for the reason a pause gives. */
+  readonly playingAccountAllows?: () => boolean;
 }
 
-/** The host's view of the app's lease gate. */
-function leaseGate(): HostGate {
+/**
+ * The host's view of the app's lease gate. While the licence is held and the gate is shut, the
+ * reason is `other_account` if the account playing is not the signed-in user's, else `unconfirmed`;
+ * the licence state is the one the gate announced with its last change.
+ */
+function leaseGate(playingAccountAllows: (() => boolean) | undefined): HostGate {
+  let licence: LicenceState | null = null;
   return {
     allows: () => premiumLeaseAllows(),
     subscribe: (listener) =>
-      onPremiumLeaseChange((allows) => {
+      onPremiumLeaseChange((allows, state) => {
+        licence = state;
         listener(allows);
       }),
+    ...(playingAccountAllows === undefined
+      ? {}
+      : {
+          reason: () => (licence === 'holds' && !playingAccountAllows() ? 'other_account' : 'unconfirmed'),
+        }),
   };
+}
+
+/** The four handlers by name, in the order the contract lists them. */
+function buildAllowlist(
+  parts: PremiumHostCapabilityDeps | undefined,
+  log: LogPort,
+  sequence: () => number,
+): Map<string, CapabilityHandler> {
+  if (parts === undefined) return new Map();
+  const handlers: Record<(typeof PREMIUM_CAPABILITIES)[number], CapabilityHandler> = {
+    'premium.status': createStatusCapability(parts.status),
+    store: createStoreCapability(parts.store),
+    log: createLogCapability({ log, sequence }),
+    notify: createNotifyCapability({ ...parts.notify, log }),
+  };
+  return new Map(PREMIUM_CAPABILITIES.map((name) => [name, handlers[name]]));
 }
 
 export function createPremiumHost(deps: PremiumHostWiringDeps): HostRunner {
@@ -78,22 +132,27 @@ export function createPremiumHost(deps: PremiumHostWiringDeps): HostRunner {
   // A dev build may judge bundle fit against another version (see `DEV_APP_VERSION_ENV`).
   const fitVersion = trust?.appVersion ?? deps.appVersion;
 
+  let supervisor: WorkerSupervisor | null = null;
+  supervisor = createWorkerSupervisor({
+    fork: deps.fork,
+    createChannel: deps.createChannel,
+    loaderPath: deps.loaderPath,
+    vars: deps.vars,
+    allowlist: buildAllowlist(deps.capabilities, deps.log, () => supervisor?.sequence() ?? 0),
+    now: deps.now,
+    log: deps.log,
+  });
+  const store = deps.capabilities?.store;
+
   return createHostRunner({
     enabled: true,
     flavor: deps.flavor,
     appVersion: fitVersion,
-    gate: leaseGate(),
+    gate: leaseGate(deps.playingAccountAllows),
     cache: createBundleCache({ root: deps.userDataPath, db: deps.db, now: deps.now }),
     deviceGet: deps.deviceGet,
-    supervisor: createWorkerSupervisor({
-      fork: deps.fork,
-      createChannel: deps.createChannel,
-      loaderPath: deps.loaderPath,
-      vars: deps.vars,
-      allowlist: new Map(),
-      now: deps.now,
-      log: deps.log,
-    }),
+    supervisor,
+    ...(store === undefined ? {} : { deleteStore: (subject: string) => store.rows.delete(storeRowKey(subject)) }),
     keys,
     shims: deps.shims,
     ...(devBundleDir === null

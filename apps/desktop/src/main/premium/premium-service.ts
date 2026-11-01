@@ -96,6 +96,10 @@ export interface PremiumService {
   noteAccountChanged(): void;
   /** The licence view changed: publish the Premium view again with it. */
   noteLicenceChanged(): void;
+  /** What a bundle may learn of Premium: whether it is active and until when; null before any answer. */
+  statusSnapshot(): { readonly active: boolean; readonly until: string | null } | null;
+  /** The signed-in user's audience from the last account answer; never part of the view. */
+  audience(): 'owner' | 'tester' | 'public' | null;
   readonly host: LicenceHostPort;
 }
 
@@ -141,6 +145,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
   let ended: 'expired' | null = null;
   let visibleFlag: boolean | null = null;
   let me: PremiumMe | null = null;
+  let audience: 'owner' | 'tester' | 'public' | null = null;
   let status: PremiumStatus | null = null;
   let fetchedAt: string | null = null;
   let lastRefreshFailed = false;
@@ -260,6 +265,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
   function forgetSession(): void {
     token = null;
     me = null;
+    audience = null;
     status = null;
     fetchedAt = null;
     lastRefreshFailed = false;
@@ -393,6 +399,7 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
       }
       if (meResult.ok) {
         me = meResult.value;
+        audience = deps.api.audienceOf?.(meResult.value) ?? null;
         learned = true;
         const named = deps.api.subjectOf?.(meResult.value) ?? null;
         if (named !== null && named !== subject) {
@@ -720,6 +727,10 @@ export function createPremiumService(deps: PremiumServiceDeps): PremiumService {
     noteLicenceChanged() {
       publish();
     },
+
+    statusSnapshot: () => (status === null ? null : { active: status.active, until: status.until }),
+
+    audience: () => audience,
 
     host: {
       subject: () => subject,

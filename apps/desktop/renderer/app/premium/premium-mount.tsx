@@ -4,11 +4,12 @@ import { createElement, useCallback, useEffect, useRef, useState, type Component
 import type { PremiumHostView } from '@bombfarm/contracts';
 import { ErrorBoundary } from '@bombfarm/ui';
 import { useCopy } from '../../lib/copy';
+import { createPremiumBridge, type PremiumProp } from '../../lib/premium/premium-bridge';
 import { installSharedModules } from '../../lib/premium/shared-modules';
 
 /** What a bundle's UI file exports: a component as its default. */
 export interface PremiumUiModule {
-  readonly default: ComponentType;
+  readonly default: ComponentType<{ premium: PremiumProp }>;
 }
 
 export type PremiumUiLoader = (url: string) => Promise<PremiumUiModule>;
@@ -25,14 +26,16 @@ function PremiumUi({
   uiUrl,
   styleUrl,
   load,
+  premium,
   onFailed,
 }: {
+  premium: PremiumProp;
   uiUrl: string;
   styleUrl: string | null;
   load: PremiumUiLoader;
   onFailed: () => void;
 }) {
-  const [Ui, setUi] = useState<ComponentType | null>(null);
+  const [Ui, setUi] = useState<PremiumUiModule['default'] | null>(null);
 
   useEffect(() => {
     installSharedModules();
@@ -58,7 +61,7 @@ function PremiumUi({
     };
   }, [uiUrl, styleUrl, load, onFailed]);
 
-  return Ui === null ? null : createElement(Ui);
+  return Ui === null ? null : createElement(Ui, { premium });
 }
 
 /**
@@ -77,6 +80,11 @@ export function PremiumMount({
   const t = useCopy();
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const reported = useRef<string | null>(null);
+  // One bridge per mount: the screen's subscriptions outlive the host view that feeds them.
+  const [bridge] = useState(() => createPremiumBridge());
+  useEffect(() => {
+    bridge.feed(host);
+  }, [bridge, host]);
   const uiUrl = host?.uiUrl ?? null;
 
   const onFailed = useCallback(() => {
@@ -116,7 +124,7 @@ export function PremiumMount({
       {mounted ? (
         <div data-testid="premium-host-mount">
           <ErrorBoundary resetKey={uiUrl} onError={onFailed} fallback={() => null}>
-            <PremiumUi uiUrl={uiUrl} styleUrl={host.styleUrl} load={load} onFailed={onFailed} />
+            <PremiumUi premium={bridge.prop} uiUrl={uiUrl} styleUrl={host.styleUrl} load={load} onFailed={onFailed} />
           </ErrorBoundary>
         </div>
       ) : null}

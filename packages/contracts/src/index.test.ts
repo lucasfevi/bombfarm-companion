@@ -81,6 +81,7 @@ const IPC_CHANNEL_LIST = [
   'premium:manage',
   'premium:useHere',
   'premium:hostMountFailed',
+  'premium:uiCall',
   'log:rendererError',
 ] as const;
 
@@ -100,6 +101,7 @@ const IPC_EVENT_CHANNEL_LIST = [
   'pvp:changed',
   'collections:changed',
   'premium:changed',
+  'premium:showTab',
   'window:changed',
 ] as const;
 

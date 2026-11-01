@@ -39,7 +39,7 @@ describe('lease public keys', () => {
 
 describe('licence constants', () => {
   it('pins the plugin API version', () => {
-    expect(PLUGIN_API_VERSION).toBe('1.0.0');
+    expect(PLUGIN_API_VERSION).toBe('1.1.0');
   });
 
   it('has no support link yet', () => {

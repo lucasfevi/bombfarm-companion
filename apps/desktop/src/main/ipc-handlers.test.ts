@@ -34,6 +34,7 @@ import {
   type SettingsWriteResult,
   type UpdateStatus,
 } from '@bombfarm/contracts';
+import type { CapabilityCall, CapabilityReply } from '@bombfarm/contracts';
 import { grantedConsent } from '@bombfarm/game-api/test-fixtures';
 import { initialConsent } from '@bombfarm/game-api';
 import type { AppEnv } from './env.js';
@@ -1068,5 +1069,33 @@ describe('the pre-boot nulls', () => {
     expect(handlers['storage:health']()).toEqual({ binding: 'unknown', ok: false });
     storage = fakes().storage;
     expect(handlers['storage:health']()).toEqual({ binding: 'node:sqlite', ok: true });
+  });
+});
+
+describe('the premium capability channel from the Premium screen', () => {
+  it('answers unavailable before the service is built and when it has no host', async () => {
+    expect(await bare().handlers['premium:uiCall']('store', null)).toEqual({ id: 0, ok: false, error: 'unavailable' });
+    expect(await wired().handlers['premium:uiCall']('store', null)).toEqual({ id: 0, ok: false, error: 'unavailable' });
+  });
+
+  it('hands the capability and its arguments to the host and returns its answer', async () => {
+    const { f, handlers } = wired();
+    const callFromUi = vi.fn(
+      (call: CapabilityCall): Promise<CapabilityReply> => Promise.resolve({ id: call.id, ok: true, value: 7 }),
+    );
+    Object.assign(f.premiumService, { callFromUi });
+
+    expect(await handlers['premium:uiCall']('store', { op: 'keys' })).toEqual({ id: 0, ok: true, value: 7 });
+    expect(callFromUi).toHaveBeenCalledWith({ id: 0, capability: 'store', args: { op: 'keys' } });
+  });
+
+  it('passes a stopped host answer through', async () => {
+    const { f, handlers } = wired();
+    Object.assign(f.premiumService, {
+      callFromUi: (call: CapabilityCall): Promise<CapabilityReply> =>
+        Promise.resolve({ id: call.id, ok: false, error: 'stopped' }),
+    });
+
+    expect(await handlers['premium:uiCall']('premium.status', null)).toEqual({ id: 0, ok: false, error: 'stopped' });
   });
 });

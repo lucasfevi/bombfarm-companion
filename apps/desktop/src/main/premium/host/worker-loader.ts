@@ -1,4 +1,5 @@
 import { compileFunction } from 'node:vm';
+import type { PremiumPauseReason } from '@bombfarm/contracts';
 
 /**
  * The fixed entry of the Premium worker process. It holds no Premium logic: it waits for the init
@@ -22,7 +23,9 @@ export interface LoaderDeps {
   readonly exit: (code: number) => void;
 }
 
-type PauseListener = () => void;
+/** What a listener is told: the reason on `paused`, nothing known on `resumed`. */
+export type PauseInfo = { readonly reason: PremiumPauseReason | undefined };
+type PauseListener = (info: PauseInfo) => void;
 
 export interface WorkerHost {
   readonly info: Readonly<{ sequence: number; version: string; granted: readonly string[] }>;
@@ -69,8 +72,16 @@ function createHost(init: InitMessage, port: LoaderPort): WorkerHost {
   port.on('message', ({ data }) => {
     if (typeof data !== 'object' || data === null) return;
     const message = data as Record<string, unknown>;
-    if (message['t'] === 'paused' || message['t'] === 'resumed') {
-      for (const listener of listeners[message['t']]) listener();
+    if (message['t'] === 'paused') {
+      const reason = message['reason'];
+      const info: PauseInfo = {
+        reason: reason === 'other_account' || reason === 'unconfirmed' ? reason : undefined,
+      };
+      for (const listener of listeners.paused) listener(info);
+      return;
+    }
+    if (message['t'] === 'resumed') {
+      for (const listener of listeners.resumed) listener({ reason: undefined });
       return;
     }
     const id = message['id'];

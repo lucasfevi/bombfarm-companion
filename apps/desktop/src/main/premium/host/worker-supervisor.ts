@@ -1,4 +1,4 @@
-import type { HostToWorker } from '@bombfarm/contracts';
+import type { CapabilityCall, CapabilityReply, HostToWorker, PremiumPauseReason } from '@bombfarm/contracts';
 import type { LogPort } from '../../storage/index.js';
 import {
   createCapabilityChannel,
@@ -53,7 +53,7 @@ export interface WorkerBundle {
 export interface WorkerSupervisor {
   /** Starts a worker for this bundle, replacing (and stopping) any running one. */
   start(bundle: WorkerBundle): void;
-  pause(): void;
+  pause(reason?: PremiumPauseReason): void;
   resume(): void;
   /** Kills the worker, if any; every pending call is answered `stopped`. */
   stop(): void;
@@ -61,6 +61,10 @@ export interface WorkerSupervisor {
   onExit(listener: (requested: boolean) => void): () => void;
   /** The running worker's process id, or null; for tests. */
   pid(): number | null;
+  /** The running bundle's sequence, or null while no worker runs. */
+  sequence(): number | null;
+  /** A call from the Premium screen, through the running worker's channel; `stopped` with none. */
+  callFromUi(call: CapabilityCall): Promise<CapabilityReply>;
 }
 
 export interface WorkerSupervisorDeps {
@@ -93,6 +97,7 @@ function toWorker(message: HostToWorker): HostToWorker {
 }
 
 interface Running {
+  readonly sequence: number;
   readonly child: WorkerChild;
   readonly channel: CapabilityChannel;
   requested: boolean;
@@ -131,7 +136,7 @@ export function createWorkerSupervisor(deps: WorkerSupervisorDeps): WorkerSuperv
         env: workerEnv(deps.vars),
         execArgv: [],
       });
-      const running: Running = { child, channel, requested: false };
+      const running: Running = { sequence: bundle.sequence, child, channel, requested: false };
       current = running;
 
       child.on('exit', (exitCode) => {
@@ -156,8 +161,8 @@ export function createWorkerSupervisor(deps: WorkerSupervisorDeps): WorkerSuperv
       code.port1.postMessage(bundle.workerBytes.slice().buffer);
     },
 
-    pause() {
-      current?.channel.pause();
+    pause(reason) {
+      current?.channel.pause(reason);
     },
 
     resume() {
@@ -179,5 +184,12 @@ export function createWorkerSupervisor(deps: WorkerSupervisorDeps): WorkerSuperv
     },
 
     pid: () => current?.child.pid ?? null,
+
+    sequence: () => current?.sequence ?? null,
+
+    callFromUi(call) {
+      if (current === null) return Promise.resolve({ id: call.id, ok: false, error: 'stopped' });
+      return current.channel.callFromUi(call);
+    },
   };
 }

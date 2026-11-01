@@ -14,6 +14,7 @@ import {
 import { createFakeFork, type FakeFork } from './host-fakes.js';
 import { createMetaDb, signedInput, TEST_KEYS } from './host-test-support.js';
 import { createHostRunner, type HostGate, type HostRunner, type HostRunnerDeps } from './host-runner.js';
+import type { CapabilityHandler } from './capability-channel.js';
 import { createWorkerSupervisor, type WorkerSupervisor } from './worker-supervisor.js';
 import type { BundleInput } from './bundle-verify.js';
 
@@ -140,6 +141,10 @@ export interface RigOptions {
   removalRetryMs?: readonly number[];
   appVersion?: string;
   enabled?: boolean;
+  /** Replaces the one echo capability the host offers. */
+  allowlist?: ReadonlyMap<string, CapabilityHandler>;
+  /** Hands the runner a way to delete the user's store data. */
+  deleteStore?: HostRunnerDeps['deleteStore'];
 }
 
 /** The one capability the rig's host offers to a worker. */
@@ -159,7 +164,7 @@ export async function createHostRig(options: RigOptions = {}): Promise<HostRig> 
     createChannel: fakes.createChannel,
     loaderPath: 'premium-worker.cjs',
     vars: { SYSTEMROOT: 'C:\\Windows', TEMP: 'C:\\Temp', TMP: 'C:\\Temp' },
-    allowlist: new Map([[ECHO_CAPABILITY, () => 'pong']]),
+    allowlist: options.allowlist ?? new Map([[ECHO_CAPABILITY, () => 'pong']]),
     now: () => clock.mono(),
     log,
   });
@@ -205,6 +210,7 @@ export async function createHostRig(options: RigOptions = {}): Promise<HostRig> 
     scheduler: clock.scheduler,
     log,
     ...(options.removalRetryMs ? { removalRetryMs: options.removalRetryMs } : {}),
+    ...(options.deleteStore ? { deleteStore: options.deleteStore } : {}),
   });
   rig.runner.attach(() => {
     rig.goneCalls += 1;

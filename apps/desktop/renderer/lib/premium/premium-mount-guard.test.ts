@@ -28,4 +28,12 @@ describe('Premium UI has one way in', () => {
   it('loads the table from the mount point alone', () => {
     expect(naming('premium/shared-modules')).toEqual(['app/premium/premium-mount.tsx']);
   });
+
+  it('names the capability channel only in the bridge', () => {
+    expect(naming('premium:uiCall')).toEqual(['lib/premium/premium-bridge.ts']);
+  });
+
+  it('imports the bridge from the mount point alone', () => {
+    expect(naming('premium/premium-bridge')).toEqual(['app/premium/premium-mount.tsx']);
+  });
 });

@@ -383,3 +383,130 @@ describe('capability channel: close', () => {
     expect(s.port.closed).toBe(1);
   });
 });
+
+describe('capability channel: the pause reason', () => {
+  it.each(['other_account', 'unconfirmed'] as const)('tells the worker %s', (reason) => {
+    const s = setup();
+    s.channel.pause(reason);
+    expect(s.port.posted).toEqual([{ t: 'paused', reason }]);
+  });
+
+  it('keeps the first reason when a second pause arrives', () => {
+    const s = setup();
+    s.channel.pause('other_account');
+    s.channel.pause('unconfirmed');
+    expect(s.port.posted).toEqual([{ t: 'paused', reason: 'other_account' }]);
+  });
+});
+
+describe('capability channel: calls from the Premium screen', () => {
+  const ui = (s: Setup, id: number, capability: string, args: unknown = null) =>
+    s.channel.callFromUi({ id, capability, args });
+
+  it('answers a granted call with the handler value, handing it the arguments', async () => {
+    const handler = vi.fn((args: unknown) => ({ echoed: args }));
+    const s = setup({ allowlist: new Map([['alpha', handler]]) });
+    await expect(ui(s, 1, 'alpha', { n: 1 })).resolves.toEqual({ id: 1, ok: true, value: { echoed: { n: 1 } } });
+    expect(handler).toHaveBeenCalledWith({ n: 1 });
+    expect(s.port.posted).toEqual([]);
+  });
+
+  it('answers an asynchronous handler when it settles', async () => {
+    let finish: (v: string) => void = () => undefined;
+    const s = setup({ allowlist: new Map([['alpha', () => new Promise<string>((r) => (finish = r))]]) });
+    const answer = ui(s, 1, 'alpha');
+    finish('later');
+    await expect(answer).resolves.toEqual({ id: 1, ok: true, value: 'later' });
+  });
+
+  it.each([
+    ['null', null],
+    ['no capability', { id: 1, args: null }],
+    ['a fractional id', { id: 1.5, capability: 'alpha', args: null }],
+  ])('answers %s with bad_call', async (_name, data) => {
+    const s = setup();
+    const reply = await s.channel.callFromUi(data as never);
+    expect(reply).toMatchObject({ ok: false, error: 'bad_call' });
+  });
+
+  it('refuses a capability the bundle never declared', async () => {
+    const s = setup({ requested: [], allowlist: new Map([['alpha', () => 1]]) });
+    await expect(ui(s, 2, 'alpha')).resolves.toEqual({ id: 2, ok: false, error: 'not_granted' });
+  });
+
+  it('refuses a handler that throws or rejects with bad_call', async () => {
+    const s = setup({
+      requested: ['alpha', 'beta'],
+      allowlist: new Map<string, CapabilityHandler>([
+        [
+          'alpha',
+          () => {
+            throw new Error('boom');
+          },
+        ],
+        ['beta', () => Promise.reject(new Error('later'))],
+      ]),
+    });
+    await expect(ui(s, 1, 'alpha')).resolves.toEqual({ id: 1, ok: false, error: 'bad_call' });
+    await expect(ui(s, 2, 'beta')).resolves.toEqual({ id: 2, ok: false, error: 'bad_call' });
+  });
+
+  it('reports paused before not granted, for a capability that was never granted', async () => {
+    const s = setup({ requested: [], allowlist: new Map() });
+    s.channel.pause();
+    await expect(ui(s, 1, 'alpha')).resolves.toEqual({ id: 1, ok: false, error: 'paused' });
+  });
+
+  it('reports a malformed call as bad_call even while paused', async () => {
+    const s = setup({ requested: [], allowlist: new Map() });
+    s.channel.pause();
+    await expect(s.channel.callFromUi({ id: 1, capability: 4 } as never)).resolves.toMatchObject({
+      ok: false,
+      error: 'bad_call',
+    });
+  });
+
+  it('reports paused before rate limited, and a paused call does not spend a token', async () => {
+    const s = setup({ ratePerMinute: 1 });
+    await ui(s, 1, 'alpha');
+    s.channel.pause();
+    await expect(ui(s, 2, 'alpha')).resolves.toEqual({ id: 2, ok: false, error: 'paused' });
+    s.clock.ms += 60_000;
+    s.channel.resume();
+    await expect(ui(s, 3, 'alpha')).resolves.toEqual({ id: 3, ok: true, value: 'done' });
+  });
+
+  it('shares one bucket with the worker: 59 port calls and 2 screen calls in a minute refuse the 61st', async () => {
+    const s = setup();
+    for (let id = 1; id <= 59; id += 1) s.port.send(call(id, 'alpha'));
+    await expect(ui(s, 100, 'alpha')).resolves.toEqual({ id: 100, ok: true, value: 'done' });
+    await expect(ui(s, 101, 'alpha')).resolves.toEqual({ id: 101, ok: false, error: 'rate_limited' });
+  });
+
+  it('shares the audit stream with the worker', async () => {
+    const s = setup();
+    s.port.send(call(1, 'alpha'));
+    await ui(s, 2, 'alpha');
+    expect(s.logs).toEqual([
+      { scope: 'premium', event: 'premium.capability', capability: 'alpha', outcome: 'ok', sequence: 7 },
+      { scope: 'premium', event: 'premium.capability', capability: 'alpha', outcome: 'ok', sequence: 7 },
+    ]);
+  });
+
+  it('answers a pending screen call stopped on close, keeping its own id', async () => {
+    const s = setup({ allowlist: new Map([['alpha', () => new Promise<string>(() => undefined)]]) });
+    const answer = ui(s, 5, 'alpha');
+    s.port.send(call(5, 'alpha'));
+    s.channel.close();
+    await expect(answer).resolves.toEqual({ id: 5, ok: false, error: 'stopped' });
+    expect(s.port.posted).toEqual([{ id: 5, ok: false, error: 'stopped' }]);
+  });
+
+  it('answers stopped after close without running the handler', async () => {
+    const handler = vi.fn(() => 'done');
+    const s = setup({ allowlist: new Map([['alpha', handler]]) });
+    s.channel.close();
+    await expect(ui(s, 6, 'alpha')).resolves.toEqual({ id: 6, ok: false, error: 'stopped' });
+    expect(handler).not.toHaveBeenCalled();
+  });
+});

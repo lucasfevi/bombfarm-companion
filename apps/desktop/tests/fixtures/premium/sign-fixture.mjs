@@ -11,7 +11,8 @@ import { TEST_BUNDLE_KEYPAIR } from './keys.mjs';
  * in contract field order; its bytes are signed as they are and never re-serialised.
  */
 
-const BUNDLE_DIR = join(dirname(fileURLToPath(import.meta.url)), 'bundle');
+const FIXTURES_DIR = dirname(fileURLToPath(import.meta.url));
+const DEFAULT_DIR = 'bundle';
 const DAY_MS = 86_400_000;
 
 const FILES = [
@@ -27,12 +28,15 @@ export const FIXTURE_FILES = Object.freeze(FILES.map((f) => f.path));
  * @returns {import('./sign-fixture.d.mts').SignedFixture}
  */
 export function signFixture(options = {}) {
+  const dir = options.dir ?? DEFAULT_DIR;
+  if (!/^[a-z][a-z0-9-]*$/.test(dir)) throw new Error(`signFixture: "${dir}" is not a fixture folder name`);
+  const bundleDir = join(FIXTURES_DIR, dir);
   const createdAt = options.createdAt ?? new Date().toISOString();
   const expiresAt = options.expiresAt ?? new Date(Date.parse(createdAt) + 180 * DAY_MS).toISOString();
 
   /** @type {Map<string, Uint8Array>} */
   const files = new Map();
-  for (const { path } of FILES) files.set(path, new Uint8Array(readFileSync(join(BUNDLE_DIR, path))));
+  for (const { path } of FILES) files.set(path, new Uint8Array(readFileSync(join(bundleDir, path))));
 
   const manifest = {
     schema: 1,

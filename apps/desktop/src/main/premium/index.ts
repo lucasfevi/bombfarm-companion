@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { MessageChannelMain, safeStorage, shell, utilityProcess } from 'electron';
-import { isAppFlavor, type AppFlavor, type AppLocale, type PremiumActionResult, type PremiumView } from '@bombfarm/contracts';
+import { isAppFlavor, type AppFlavor, type AppLocale, type CapabilityCall, type CapabilityReply, type PremiumActionResult, type PremiumView } from '@bombfarm/contracts';
 import type { LogPort, SqliteDb } from '../storage/index.js';
 import { createLicenceService, type LicenceService } from './licence/licence-runner.js';
-import { createLicenceStore } from './licence/licence-store.js';
+import { createLicenceStore, createSealedRows } from './licence/licence-store.js';
 import { createSystemMachineIdentity } from './licence/machine-id.js';
 import { createDefaultRemovalPort } from './licence/removal-port.js';
 import {
@@ -18,6 +18,7 @@ import type { HostRunner } from './host/host-runner.js';
 import type { PremiumRoutes } from './host/premium-routes.js';
 import type { ForkWorker, PortPair } from './host/worker-supervisor.js';
 import { startLoopbackListener } from './loopback-listener.js';
+import { createPremiumNotifier } from './notifier.js';
 import { createPkce, createState } from './pkce.js';
 import { appPlayingAccount } from './playing-account-gate.js';
 import { createPremiumApi } from './premium-api.js';
@@ -78,6 +79,8 @@ export interface ElectronHostDeps {
   readonly reloadWindow: () => void;
   /** Whether the window is on the `app://` scheme rather than the renderer's dev server. */
   readonly uiOnAppScheme: boolean;
+  /** Brings the main window forward on the Premium tab; a click on a Premium notification calls it. */
+  readonly openPremiumTab?: () => void;
   /** Builds the host from its parts; the real one unless a test says otherwise. */
   readonly create?: (parts: PremiumHostWiringDeps) => HostRunner;
 }
@@ -101,6 +104,8 @@ export interface ElectronPremium extends PremiumService {
   useHere(): PremiumActionResult;
   /** The Premium tab could not mount the screen of the bundle. */
   hostMountFailed(): void;
+  /** A capability call from the Premium screen; `stopped` unless the host is running. */
+  callFromUi(call: CapabilityCall): Promise<CapabilityReply>;
   /** What the `app://` handler serves under `_premium`; null when there is no host. */
   readonly routes: PremiumRoutes | null;
 }
@@ -155,10 +160,15 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
     licenceView: () => licence?.view() ?? null,
     hostView: () => host?.view() ?? null,
   });
-  host = buildHost(deps, (req) => {
-    if (licence === null) throw new Error('premium_licence_missing');
-    return licence.deviceGet(req);
-  });
+  host = buildHost(
+    deps,
+    (req) => {
+      if (licence === null) throw new Error('premium_licence_missing');
+      return licence.deviceGet(req);
+    },
+    premium,
+    box,
+  );
   const service = createLicenceService({
     host: premium.host,
     api,
@@ -227,11 +237,19 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
     hostMountFailed() {
       host?.mountFailed();
     },
+    callFromUi(call) {
+      return host?.callFromUi(call) ?? Promise.resolve({ id: call.id, ok: false, error: 'unavailable' });
+    },
   };
 }
 
 /** The Premium host, or null when the app gave it nothing to be built from. */
-function buildHost(deps: ElectronPremiumDeps, deviceGet: PremiumHostWiringDeps['deviceGet']): HostRunner | null {
+function buildHost(
+  deps: ElectronPremiumDeps,
+  deviceGet: PremiumHostWiringDeps['deviceGet'],
+  premium: PremiumService,
+  box: SecretBox,
+): HostRunner | null {
   const wiring = deps.host;
   if (wiring === undefined) return null;
   const shims = readShims(wiring.mainDir);
@@ -255,6 +273,20 @@ function buildHost(deps: ElectronPremiumDeps, deviceGet: PremiumHostWiringDeps['
     vars: process.env,
     now: () => Date.now(),
     mono: () => performance.now(),
+    capabilities: {
+      status: { premiumStatus: () => premium.statusSnapshot(), audience: () => premium.audience() },
+      store: { subject: () => premium.host.subject(), rows: createSealedRows(deps.db, box) },
+      notify: {
+        locale: deps.locale,
+        now: () => Date.now(),
+        // Built when a toast is shown, so nothing of Electron's is touched while wiring.
+        show: (toast) => createPremiumNotifier()(toast),
+        openPremiumTab: () => {
+          wiring.openPremiumTab?.();
+        },
+      },
+    },
+    playingAccountAllows: () => appPlayingAccount.allows(),
   };
   return (wiring.create ?? createPremiumHost)(parts);
 }
