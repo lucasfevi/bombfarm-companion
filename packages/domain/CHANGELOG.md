@@ -1,5 +1,25 @@
 # @bombfarm/domain
 
+## 1.15.2
+
+### Patch Changes
+
+- 7ea9736: Applying an optimizer plan no longer skips the same hero on every run with "allocation changed". When a stat sits at its cap, its stat sheet cannot show every point placed in it, so the app's reading of that hero's points came up a few short of what the game holds — and every sync read it the same way. The point reset now checks the game's own allocation instead: a planned reset goes ahead whenever the hero owns enough points for the new build, since the reset refunds whatever was placed before.
+
+  The desktop app now also reads the game's own allocation for those heroes when it syncs the account, so the optimizer plans from the points they really have rather than the short reading. It asks only for a hero whose points the stat sheet cannot account for, and only again once that hero changes.
+
+  The optimizer no longer leaves level-up points unspent. Dropping near-worthless changes could undo spending a banked point, so a hero that levelled up was offered the same build every run while its free points piled up; placing a banked point costs nothing, so it now always stays in the plan.
+
+- a15897a: More crit chance no longer lowers the predicted gold/hr. When a hero needing many hits per prop reached exactly 100% crit chance, the farm model counted up to one extra hit per kill, so a Skill Tree node or a point that pushed a hero onto the cap could price as a loss. The same fix covers Detonação Dupla's second blast.
+
+  Hits-to-kill on tough props (more than 60 hits) is also more accurate now: it counts the damage the killing hit wastes past the prop's HP, which the model used to leave out, so it read about half a hit per kill low. Expect slightly lower clear rates and gold/hr on high phases; phases where heroes need 60 hits or fewer do not change.
+
+- ddcd119: The optimizer no longer asks you to move points that make no real difference. After it finds the best build, it puts back any change from your current build that is worth almost nothing (such as a single point in Speed), as long as the plan as a whole stays within 0.5% of the best it found. That cap covers all the dropped changes together, not each one. The gain each plan shows is now the gain of the trimmed plan you are asked to apply. A plan whose whole gain is under 0.5% now keeps your current build. This applies to the Team Plan on desktop and web, the Farm respec, and the Optimize button on each hero's points.
+- Updated dependencies [7ea9736]
+- Updated dependencies [b174378]
+- Updated dependencies [8014b2c]
+  - @bombfarm/contracts@0.16.1
+
 ## 1.15.1
 
 ### Patch Changes
