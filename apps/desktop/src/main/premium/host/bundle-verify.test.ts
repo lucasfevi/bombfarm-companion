@@ -386,6 +386,13 @@ describe('verifyFit', () => {
     expect(verifyFit(manifest, { ...fits, hostApi: '1.1.0' })).toEqual({ ok: false, reason: 'host_range' });
   });
 
+  it('takes a bundle written for any 1.x host on plugin API 1.1.0', () => {
+    const input = fixture({ hostApi: '>=1.0.0 <2.0.0', minAppVersion: '0.40.0', flavors: ['dev', 'beta'] });
+    const result = verifyManifest(input.manifestBytes, input.sig, { keys: TEST_KEYS });
+    if (!result.ok) throw new Error('fixture refused');
+    expect(verifyFit(result.manifest, { ...fits, hostApi: '1.1.0' })).toEqual({ ok: true });
+  });
+
   it('refuses an app one patch below the minimum', () => {
     expect(verifyFit(manifest, { ...fits, appVersion: '0.39.9' })).toEqual({ ok: false, reason: 'app_too_old' });
   });

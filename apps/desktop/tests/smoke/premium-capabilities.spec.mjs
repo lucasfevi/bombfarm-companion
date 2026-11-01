@@ -20,19 +20,28 @@ const SHORT_LEASE_SECONDS = 20;
 const LONG_LEASE_SECONDS = 3600;
 // A manual refresh is held to one per 30 s, so the checks that wait on renewals need room.
 const LONG_TEST_MS = 300_000;
+// The shipped strings for `premium.test`, by page language: the toast must carry these exactly.
+const TEST_TOAST = {
+  en: { title: 'Premium is working', body: 'This is a test notification from Premium.' },
+  'pt-BR': { title: 'O Premium está funcionando', body: 'Esta é uma notificação de teste do Premium.' },
+};
 
 /**
  * The first four Premium capabilities from end to end, against a local stand-in for the API that
  * signs Leases with the public test Lease key and serves a signed check bundle: a worker that calls
  * each capability once and writes what came back into `store`, and a panel that prints it.
  *
- * Eight checks, in order, on one stub and one data folder: signed out; activation; a restart;
- * the Lease window ending; the licence ending and moving away; the wrong audience; an update; and a
- * raised floor. Everything is read through `window.bfc.invoke` and the page's text, never a
- * screenshot, so the spec runs with hidden windows (`pnpm test:smoke:hidden`).
+ * Nine checks, in order, on one stub and one data folder: signed out; activation; a restart; a
+ * recorded toast and its click; the Lease window ending; the licence ending and moving away; the
+ * wrong audience; an update; and a raised floor. Everything is read through `window.bfc.invoke` and
+ * the page's text, never a screenshot, so the spec runs with hidden windows
+ * (`pnpm test:smoke:hidden`).
  *
  * The system toast is switched off in the main process (`Notification.isSupported` answers false),
- * so `notify` answers `unavailable` and no toast appears on the machine running the suite.
+ * so `notify` answers `unavailable` and no toast appears on the machine running the suite. Check
+ * four instead records the toast: `Notification.prototype.show` is replaced by a recorder that
+ * never calls the original, and the window's own show and focus are recorded too, so the click
+ * paints nothing either.
  */
 function en(key) {
   const source = fs.readFileSync(EN_COPY_PATH, 'utf8');
@@ -93,7 +102,8 @@ test.describe.serial('The Premium capabilities, end to end', () => {
   };
   const mainLog = () => fs.readFileSync(path.join(userDataDir, 'logs', 'main.log'), 'utf8');
 
-  async function launch() {
+  /** `toast: 'recorded'` keeps the system toast supported but records each one instead of showing it. */
+  async function launch({ toast = 'off' } = {}) {
     app = await electron.launch({
       executablePath: electronExecutable(),
       args: [desktopRoot],
@@ -111,11 +121,20 @@ test.describe.serial('The Premium capabilities, end to end', () => {
         BFC_PREMIUM_DEV_APP_VERSION: '0.32.2',
       },
     });
-    await app.evaluate(({ shell, Notification }) => {
+    await app.evaluate(({ shell, Notification }, recordToasts) => {
       shell.openExternal = () => Promise.resolve();
+      if (recordToasts) {
+        // The notifier sees a system that shows toasts, and each one is kept here, never shown.
+        globalThis.bfcRecordedToasts = [];
+        Notification.isSupported = () => true;
+        Notification.prototype.show = function record() {
+          globalThis.bfcRecordedToasts.push(this);
+        };
+        return;
+      }
       // No toast on the machine running the suite: the host then answers `unavailable`.
       Notification.isSupported = () => false;
-    });
+    }, toast === 'recorded');
     page = await app.firstWindow();
     await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
   }
@@ -246,7 +265,49 @@ test.describe.serial('The Premium capabilities, end to end', () => {
     await expect(mount.getByTestId('check-store')).toHaveText('store: ok read-back=2');
   });
 
-  test('check four: when the Lease window ends the host pauses, refuses a call, and resumes on renewal', async () => {
+  test('check four: notify shows the app-held strings in the page language, and a click opens the Premium tab', async () => {
+    await quit();
+    await launch({ toast: 'recorded' });
+
+    await waitForRunning(1);
+    const mount = await showPanel();
+    await expect(mount.getByTestId('check-notify')).toHaveText('notify: ok shown', { timeout: 30_000 });
+
+    const toasts = await app.evaluate(() =>
+      globalThis.bfcRecordedToasts.map((toast) => ({ title: toast.title, body: toast.body })),
+    );
+    const lang = await page.evaluate(() => document.documentElement.lang);
+    expect(Object.keys(TEST_TOAST), `page language "${lang}"`).toContain(lang);
+    expect(toasts).toEqual([TEST_TOAST[lang]]);
+
+    // Leave the Premium tab, and record the window's own show and focus so the click paints nothing.
+    const nav = page.locator('nav[aria-label="Main"]');
+    await nav.getByRole('button').first().click();
+    await expect(premiumTab(page)).not.toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('premium-host-mount')).toHaveCount(0);
+    await app.evaluate(({ BrowserWindow }) => {
+      globalThis.bfcWindowCalls = [];
+      for (const win of BrowserWindow.getAllWindows()) {
+        for (const name of ['show', 'focus', 'restore']) {
+          win[name] = () => {
+            globalThis.bfcWindowCalls.push(name);
+          };
+        }
+      }
+    });
+
+    await app.evaluate(() => {
+      globalThis.bfcRecordedToasts[0].emit('click');
+    });
+    await expect(premiumTab(page)).toHaveAttribute('aria-current', 'page', { timeout: 15_000 });
+    await expect(page.getByTestId('premium-host-mount')).toContainText(MARKER, { timeout: 20_000 });
+    // The click asked for the window to come forward.
+    expect(await app.evaluate(() => globalThis.bfcWindowCalls)).not.toEqual([]);
+    // Still one toast: the click showed nothing new.
+    expect(await app.evaluate(() => globalThis.bfcRecordedToasts.length)).toBe(1);
+  });
+
+  test('check five: when the Lease window ends the host pauses, refuses a call, and resumes on renewal', async () => {
     test.setTimeout(LONG_TEST_MS);
     // A short Lease, then renewals that fail: nothing extends the window.
     stub.state.leaseSeconds = SHORT_LEASE_SECONDS;
@@ -278,7 +339,7 @@ test.describe.serial('The Premium capabilities, end to end', () => {
     await showPanel();
   });
 
-  test('check five: ended, then moved, each unmounts, deletes the code and its store, and reports once', async () => {
+  test('check six: ended, then moved, each unmounts, deletes the code and its store, and reports once', async () => {
     test.setTimeout(LONG_TEST_MS);
     stub.state.cleanupProbe = () => ({ premiumFolderPresent: fs.existsSync(path.join(userDataDir, 'premium')) });
 
@@ -311,7 +372,7 @@ test.describe.serial('The Premium capabilities, end to end', () => {
     }
   });
 
-  test('check six: a public user is not offered an owner-only bundle, so nothing mounts', async () => {
+  test('check seven: a public user is not offered an owner-only bundle, so nothing mounts', async () => {
     test.setTimeout(LONG_TEST_MS);
     // Start from nothing on disk: the licence ends, then the user is a public one.
     stub.state.cleanupProbe = null;
@@ -343,7 +404,7 @@ test.describe.serial('The Premium capabilities, end to end', () => {
     expect(stub.at(STUB_PATHS.bundle).every((entry) => entry.extra.audienceRefused === true || entry.extra.audienceRefused === undefined)).toBe(true);
   });
 
-  test('check seven: a newer bundle waits for the next start while the older one keeps running', async () => {
+  test('check eight: a newer bundle waits for the next start while the older one keeps running', async () => {
     test.setTimeout(LONG_TEST_MS);
     stub.state.me.audience = 'owner';
     stub.state.bundleAudience = 'owner';
@@ -373,7 +434,7 @@ test.describe.serial('The Premium capabilities, end to end', () => {
     await expect(next.getByTestId('check-sequence')).toHaveText('sequence: 2', { timeout: 30_000 });
   });
 
-  test('check eight: a Lease whose floor is above the running bundle stops it on the next renewal', async () => {
+  test('check nine: a Lease whose floor is above the running bundle stops it on the next renewal', async () => {
     test.setTimeout(LONG_TEST_MS);
     expect((await hostView())?.phase).toBe('running');
 
