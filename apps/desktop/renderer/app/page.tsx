@@ -68,7 +68,7 @@ import { UsageSection } from './settings/usage-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { PremiumSection } from './settings/premium-section';
 import { PremiumScreen } from './premium/premium-view';
-import { usePremiumTabRequest } from '../lib/premium/use-premium-tab-request';
+import { usePremiumTabRequest } from '../lib/premium/premium-tab-request';
 import { usePremiumVisible } from '../lib/premium/use-premium';
 import { LanguageSection } from './settings/language-section';
 import { MarketSection } from './settings/market-section';
