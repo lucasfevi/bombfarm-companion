@@ -29,6 +29,7 @@ export default defineConfig({
         'premium.spec.mjs',
         'premium-playing-account.spec.mjs',
         'premium-host.spec.mjs',
+        'premium-capabilities.spec.mjs',
         'farm-board.spec.mjs',
         'auto-recompute.spec.mjs',
         'i18n.spec.mjs',
