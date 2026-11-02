@@ -83,6 +83,18 @@ async function watchNavigations(app) {
 
 const navigations = (app) => app.evaluate(() => globalThis.__navigations.slice());
 
+/** `app-ready` is drawn before the entry page's own load has stopped. A page that sends its window
+ *  away while that first load is still pending aborts it, which is a failed boot and quits the app,
+ *  not the recovery the spec means to observe. */
+async function waitForEntryLoad(app) {
+  await expect
+    .poll(
+      () => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every((win) => !win.webContents.isLoading())),
+      { timeout: 30_000, message: 'the entry page finished its first load' },
+    )
+    .toBe(true);
+}
+
 async function launch({ userDataDir, extraEnv = {} }) {
   const app = await electron.launch({
     executablePath: electronExecutable(),
@@ -250,7 +262,11 @@ async function expectRefused(app, page, expectedWindowUrl, trigger) {
   expect(await openedUrls(app), `${trigger}: the browser was not opened`).toEqual([]);
   expect(page.url().startsWith(expectedWindowUrl), `${trigger}: the window stayed on the app`).toBe(true);
   await page.waitForTimeout(500);
-  const reloads = (await navigations(app)).filter((entry) => entry.kind === 'did-start-navigation' && !entry.initiated && entry.url.startsWith(expectedWindowUrl));
+  // A same-document navigation (the app's router rewriting its own url) keeps the document, so it is
+  // not a reload; only a navigation that replaces the document counts.
+  const reloads = (await navigations(app)).filter(
+    (entry) => entry.kind === 'did-start-navigation' && !entry.initiated && !entry.isSameDocument && entry.url.startsWith(expectedWindowUrl),
+  );
   expect(reloads, `${trigger}: a refused navigation does not reload the page`).toEqual([]);
 }
 
@@ -579,6 +595,7 @@ test.describe('navigation hardening in a dev run, where no Content-Security-Poli
       });
       const devPage = await devApp.firstWindow();
       await devPage.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
+      await waitForEntryLoad(devApp);
       expect(devPage.url().startsWith(origin)).toBe(true);
       await watchNavigations(devApp);
 
@@ -677,6 +694,7 @@ test.describe('navigation hardening in a dev run, where no Content-Security-Poli
       });
       const devPage = await devApp.firstWindow();
       await devPage.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
+      await waitForEntryLoad(devApp);
       await watchNavigations(devApp);
 
       server.injectBlank = true;

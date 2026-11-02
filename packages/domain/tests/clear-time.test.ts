@@ -4,7 +4,8 @@ import {
   COMPACT_FIELD,
   expectedHitsToKill,
   simulateClear,
-  FIRST_KILL_SEC,
+  FIRST_KILL_LEAD_SEC,
+  firstKillSeconds,
   UNCLEARABLE,
   type ClearHero,
   type ClearPropType,
@@ -241,7 +242,22 @@ describe('simulateClear', () => {
   });
 
   it('an empty map costs only the head', () => {
-    expect(simulateClear([hero()], mixAt(525_000), 0).clearSecs).toBe(FIRST_KILL_SEC);
+    expect(simulateClear([hero()], mixAt(525_000), 0).clearSecs).toBe(firstKillSeconds(hero().fuseSecs));
+  });
+
+  it('the first kill lands 0.9 s past the squad presence-weighted fuse: 1.3 s for a squad at the 0.40 s floor, 2.75 s at 1.85 s', () => {
+    expect(FIRST_KILL_LEAD_SEC).toBe(0.9);
+    expect(firstKillSeconds(0.4)).toBeCloseTo(1.3, 12);
+    expect(firstKillSeconds(1.85)).toBeCloseTo(2.75, 12);
+    const mixed = [hero({ presence: 1, fuseSecs: 0.4 }), hero({ presence: 3, fuseSecs: 1.6 }), hero({ presence: 0, fuseSecs: 9 })];
+    expect(simulateClear(mixed, mixAt(525_000), 0).clearSecs).toBeCloseTo(firstKillSeconds((0.4 + 3 * 1.6) / 4), 12);
+  });
+
+  it('a squad near the cooldown cap clears sooner partly because its first kill comes sooner', () => {
+    const props = mixAt(525_000);
+    const capped = simulateClear([hero({ fuseSecs: 0.4 })], props, 100).clearSecs;
+    const uncapped = simulateClear([hero({ fuseSecs: 1.85 })], props, 100).clearSecs;
+    expect(uncapped - capped).toBeGreaterThan(firstKillSeconds(1.85) - firstKillSeconds(0.4));
   });
 
   it('a hero absent from the field contributes nothing', () => {
@@ -259,7 +275,7 @@ describe('simulateClear', () => {
       const b = simulateClear(squad, props, 100);
       expect(a).toEqual(b);
       expect(Number.isFinite(a.clearSecs)).toBe(true);
-      expect(a.clearSecs).toBeGreaterThan(FIRST_KILL_SEC);
+      expect(a.clearSecs).toBeGreaterThan(firstKillSeconds(hero().fuseSecs));
     }
   });
 

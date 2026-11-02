@@ -3,7 +3,7 @@
  *
  * `clearHeadSeconds` is the measured wave shape the per-hero DPS surfaces still read (activation
  * stagger of 0.5 s per hero, then one fuse). The row itself prices the head inside the
- * standing-props integral (`model/clear-time.ts`): nothing dies before `FIRST_KILL_SEC`, and the
+ * standing-props integral (`model/clear-time.ts`): nothing dies before `firstKillSeconds`, and the
  * first kills come at a reduced rate while heroes cross the map. The row claims below are the
  * ones that survive either form: the head is paid once per wave, not per hero, and it costs a fast
  * clear a bigger share of its throughput than a slow one.
@@ -16,7 +16,7 @@ import {
   HERO_ACTIVATION_STAGGER_SEC,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
-import { FIRST_KILL_SEC } from '@bombfarm/domain/model/clear-time';
+import { firstKillSeconds } from '@bombfarm/domain/model/clear-time';
 import { propCountForAto } from '@bombfarm/domain/phase-wiki';
 import { FUSE_FLOOR, STAT_CAPS } from '@bombfarm/domain/model';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
@@ -64,7 +64,7 @@ describe('the fuse burns before the first kill', () => {
   it('nothing dies before the first fuse has burnt, whatever the squad', () => {
     for (const count of [1, 4, 9]) {
       const squad = Array.from({ length: count }, (_, i) => syntheticHero({ heroId: `h${i}` }));
-      expect(rowFor(squad, NON_GATE_ATO_1).clearSecs).toBeGreaterThan(FIRST_KILL_SEC);
+      expect(rowFor(squad, NON_GATE_ATO_1).clearSecs).toBeGreaterThan(firstKillSeconds(squad[0].fuseSecs));
     }
   });
 
@@ -122,10 +122,11 @@ describe('what the head does to the board', () => {
   it('so it costs a FAST clear a bigger share of its throughput than a slow one', () => {
     const fast = rowFor(squad, NON_GATE_ATO_1);
     const slower = rowFor(
-      squad.map((hero) => ({ ...hero, walkSpeedCells: hero.walkSpeedCells / 4, fuseSecs: hero.fuseSecs * 4 })),
+      squad.map((hero) => ({ ...hero, walkSpeedCells: hero.walkSpeedCells / 4 })),
       NON_GATE_ATO_1,
     );
+    const head = firstKillSeconds(squad[0].fuseSecs);
     expect(slower.clearSecs).toBeGreaterThan(fast.clearSecs);
-    expect(FIRST_KILL_SEC / fast.clearSecs).toBeGreaterThan(FIRST_KILL_SEC / slower.clearSecs);
+    expect(head / fast.clearSecs).toBeGreaterThan(head / slower.clearSecs);
   });
 });

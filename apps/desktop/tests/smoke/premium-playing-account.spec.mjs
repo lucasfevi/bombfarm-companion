@@ -93,7 +93,12 @@ test.describe.serial('Premium pauses when the game is played with another accoun
   let page;
 
   test.beforeAll(async () => {
-    stub = await startPremiumApiStub();
+    stub = await startPremiumApiStub({
+      licence: {
+        userId: 'stub-user-0001',
+        playing: { accountId: LINKED_PAIR.accountId, steamId64: LINKED_PAIR.steamId64 },
+      },
+    });
     stub.state.visible = true;
     stub.state.status = activeStatusBody();
     stub.state.reportReplies[OTHER_PAIR.steamId64] = { status: 409, body: { reason: 'steam_mismatch' } };
@@ -174,6 +179,7 @@ test.describe.serial('Premium pauses when the game is played with another accoun
     await expect(premiumTab(page)).toBeVisible({ timeout: 20_000 });
     await premiumTab(page).click();
     await expect(page.getByTestId('premium-headline')).toHaveText(en('premiumActive'), { timeout: 20_000 });
+    await expect.poll(async () => (await page.evaluate(() => window.bfc.invoke('premium:get'))).licence?.state, { timeout: 20_000 }).toBe('holds');
     await expect(page.locator('[data-testid^="premium-banner-paused-"]')).toHaveCount(0);
     expect(stub.at(STUB_PATHS.report).map((request) => request.body.steam_id64)).toEqual([LINKED_PAIR.steamId64]);
 
@@ -207,13 +213,15 @@ test.describe.serial('Premium pauses when the game is played with another accoun
     const firstStubRequest = order.findIndex((entry) => entry.kind === 'fetch' && entry.url.startsWith(stub.origin));
     expect(firstStubRequest).toBeGreaterThan(dropped);
 
-    const banner = page.getByTestId('premium-banner-paused-other_account');
-    await expect(banner).toBeVisible({ timeout: 20_000 });
-    await expect(banner).toContainText(en('premiumPausedOtherAccount'));
-    expect((await page.evaluate(() => window.bfc.invoke('premium:get'))).playingAccount).toEqual({
-      state: 'other',
-      reason: 'other_account',
-    });
+    // The paused banners show while this PC holds the licence and another account is playing.
+    await expect
+      .poll(async () => (await page.evaluate(() => window.bfc.invoke('premium:get'))).playingAccount, {
+        timeout: 20_000,
+      })
+      .toEqual({ state: 'other', reason: 'other_account' });
+    const view = await page.evaluate(() => window.bfc.invoke('premium:get'));
+    expect(view.licence?.state).toBe('holds');
+    await expect(page.locator('[data-testid^="premium-banner-paused-"]')).toHaveCount(1);
   });
 
   test('switching back to the linked account reopens the gate at once, with no request', async () => {
@@ -221,7 +229,13 @@ test.describe.serial('Premium pauses when the game is played with another accoun
 
     playAs(files, LINKED_PAIR);
 
-    await expect(page.getByTestId('premium-banner-paused-other_account')).toHaveCount(0, { timeout: 20_000 });
+    await expect
+      .poll(async () => (await page.evaluate(() => window.bfc.invoke('premium:get'))).playingAccount, {
+        timeout: 20_000,
+      })
+      .toEqual({ state: 'linked', reason: null });
+    await expect(page.locator('[data-testid^="premium-banner-paused-"]')).toHaveCount(0);
+    expect((await page.evaluate(() => window.bfc.invoke('premium:get'))).licence?.state).toBe('holds');
     expect((await page.evaluate(() => window.bfc.invoke('premium:get'))).playingAccount).toEqual({
       state: 'linked',
       reason: null,

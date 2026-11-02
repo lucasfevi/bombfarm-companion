@@ -4,6 +4,7 @@ import {
   setupBannerEmbeddedClass,
   setupBannerFlushClass,
   setupBannerInfoTitleClass,
+  setupBannerOkBodyClass,
   setupBannerOkTitleClass,
   setupBannerPClass,
   setupBannerRecipe,
@@ -17,6 +18,8 @@ export type BannerProps = Omit<ComponentPropsWithoutRef<'div'>, 'title'> & {
   /** Page-centered (default), full-width in a stage / dialog, or full-width with no outer margin. */
   layout?: 'page' | 'embedded' | 'flush';
   title?: ReactNode;
+  /** `sm` gives the `ok` tone the small body-line paragraph rule the other tones already have; a no-op on them. */
+  body?: 'sm';
 };
 
 const TITLE_CLASS = {
@@ -34,6 +37,7 @@ export function Banner({
   tone = 'warn',
   layout = 'page',
   title,
+  body,
   className,
   children,
   ...props
@@ -49,6 +53,7 @@ export function Banner({
         setupBannerRecipe({ tone }),
         layout === 'embedded' && setupBannerEmbeddedClass,
         layout === 'flush' && setupBannerFlushClass,
+        tone === 'ok' && body === 'sm' && setupBannerOkBodyClass,
         className,
       )}
       {...props}

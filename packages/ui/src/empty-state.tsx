@@ -4,17 +4,18 @@ import { cn } from './cn';
 
 export interface EmptyStateProps extends PropsWithChildren {
   icon?: IconName;
-  title: string;
-  description?: string | undefined;
+  title: ReactNode;
+  description?: ReactNode;
   action?: ReactNode;
   /** Heading tag for `title` — defaults to `h2` so it nests correctly under different pages. */
-  headingLevel?: 2 | 3 | 4;
+  headingLevel?: 1 | 2 | 3 | 4;
   /** `inline` is a compact form for inside a panel or list: paragraph-scale type, no icon. */
   size?: 'default' | 'inline';
   className?: string | undefined;
 }
 
 const HEADING_TAG = {
+  1: 'h1',
   2: 'h2',
   3: 'h3',
   4: 'h4',

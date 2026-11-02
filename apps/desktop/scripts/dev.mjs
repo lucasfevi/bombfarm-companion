@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import net from 'node:net';
 import process from 'node:process';
 import { parseFlavorToken } from '@bombfarm/contracts';
+import { runElectronBuild } from './dev-build.mjs';
 import { findFreePort } from './dev-port.mjs';
 import { terminateBoxedElectron } from './dev-sandbox.mjs';
 
@@ -55,6 +56,9 @@ if (parsedFlavor !== null) {
   console.error(`Invalid BFC_FLAVOR: ${rawFlavor.trim()}`);
   process.exit(1);
 }
+
+const buildStatus = runElectronBuild(flavor);
+if (buildStatus !== 0) process.exit(buildStatus);
 
 /**
  * `--pid <n>` attaches the app to one instance of the game when several are running; without it

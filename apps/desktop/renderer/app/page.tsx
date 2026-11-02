@@ -68,6 +68,7 @@ import { UsageSection } from './settings/usage-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { PremiumSection } from './settings/premium-section';
 import { PremiumScreen } from './premium/premium-view';
+import { usePremiumTabRequest } from '../lib/premium/premium-tab-request';
 import { usePremiumVisible } from '../lib/premium/use-premium';
 import { LanguageSection } from './settings/language-section';
 import { MarketSection } from './settings/market-section';
@@ -225,6 +226,10 @@ function HomePageContent({
     const next = screenWhenPremiumVisibility(activeNavId, premiumTabShown);
     if (next !== activeNavId) setActiveNavId(next);
   }, [activeNavId, premiumTabShown, setActiveNavId]);
+  const showPremiumTab = useCallback(() => {
+    setActiveNavId('premium');
+  }, [setActiveNavId]);
+  usePremiumTabRequest(showPremiumTab);
   const openSettings = useCallback(() => {
     setActiveNavId('settings');
   }, [setActiveNavId]);

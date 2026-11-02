@@ -96,3 +96,12 @@ describe('page.tsx routes every nav item', () => {
     expect(line).not.toContain('premiumTabShown');
   });
 });
+
+describe('the Premium tab request', () => {
+  it('switches the shell to the Premium tab', () => {
+    const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8');
+    expect(source).toMatch(
+      /const showPremiumTab = useCallback\(\(\) => \{\s*setActiveNavId\('premium'\);\s*\}, \[setActiveNavId\]\);\s*usePremiumTabRequest\(showPremiumTab\);/,
+    );
+  });
+});

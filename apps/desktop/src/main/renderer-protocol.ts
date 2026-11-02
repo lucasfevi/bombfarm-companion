@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { protocol } from 'electron';
+import type { PremiumRoutes } from './premium/host/premium-routes.js';
 import { documentPolicy, SUBRESOURCE_POLICY, type CspManifest } from './renderer-csp.js';
 
 export const RENDERER_SCHEME = 'app';
@@ -122,12 +123,51 @@ function notFound(): Response {
   });
 }
 
+/**
+ * The pathname of a request that belongs to the Premium routes, or null for any other request.
+ * Recognised the way the file lookup reads a path, so no spelling of `_premium` (dot segments,
+ * doubled slashes, case) can reach the file lookup instead. The routes get the decoded path as
+ * sent and match it exactly, so only the canonical spelling is ever served.
+ */
+function premiumPathname(requestUrl: string): string | null {
+  if (!isRendererUrl(requestUrl)) return null;
+  const raw = extractPathname(requestUrl);
+  let pathname: string;
+  try {
+    pathname = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  const segments = pathname.split('/').filter((segment) => segment !== '' && segment !== '.');
+  if (segments[0]?.toLowerCase() !== '_premium') return null;
+  // No Premium path contains a percent sign, so an encoded spelling is handed over as sent and misses.
+  return raw.includes('%') ? raw : pathname;
+}
+
+function servePremium(pathname: string, premium: PremiumRoutes | undefined): Response {
+  const resource = premium?.resolve(pathname) ?? null;
+  if (resource === null) return notFound();
+  return new Response(resource.bytes, {
+    headers: {
+      'content-type': resource.mimeType,
+      'content-security-policy': SUBRESOURCE_POLICY,
+      'x-content-type-options': 'nosniff',
+      'cache-control': 'no-store',
+    },
+  });
+}
+
 export async function serveRendererRequest(
   requestUrl: string,
   root: string,
   manifest: CspManifest,
   read: (filePath: string) => Promise<Uint8Array> = readFile,
+  premium?: PremiumRoutes,
 ): Promise<Response> {
+  // Anything under `_premium` is answered from memory or not at all; the disk is never asked.
+  const premiumPath = premiumPathname(requestUrl);
+  if (premiumPath !== null) return servePremium(premiumPath, premium);
+
   const resolved = resolveRendererFile(requestUrl, root);
   if (!resolved) {
     return notFound();
@@ -147,6 +187,6 @@ export async function serveRendererRequest(
   }
 }
 
-export function registerRendererProtocol(root: string, manifest: CspManifest): void {
-  protocol.handle(RENDERER_SCHEME, (request) => serveRendererRequest(request.url, root, manifest));
+export function registerRendererProtocol(root: string, manifest: CspManifest, premium?: PremiumRoutes): void {
+  protocol.handle(RENDERER_SCHEME, (request) => serveRendererRequest(request.url, root, manifest, readFile, premium));
 }

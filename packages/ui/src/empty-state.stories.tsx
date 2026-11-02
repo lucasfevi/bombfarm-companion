@@ -25,3 +25,16 @@ export const WithAction: Story = {
 export const WithoutAction: Story = {
   args: {},
 };
+
+export const WithNodeCopy: Story = {
+  args: {
+    title: <em>No game running</em>,
+    description: <span>Launch Bomb Farm to see your live gold here.</span>,
+  },
+};
+
+export const PageHeading: Story = {
+  args: {
+    headingLevel: 1,
+  },
+};

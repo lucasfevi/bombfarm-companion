@@ -243,7 +243,7 @@ describe('explain-tab copy (advice-column IA alignment)', () => {
     expect(STRINGS.en.explainSections[2].p[1]).toMatch(/Blocks per bomb/);
     expect(STRINGS.en.explainSections[2].p[2]).toMatch(/One cycle model/);
     expect(STRINGS.en.explainSections[2].p[3]).toMatch(/over a whole clear/);
-    expect(STRINGS.en.explainSections[2].code).toMatch(/max\(fuse \+ 0\.47, hop \/ walk \+ 0\.58\)/);
+    expect(STRINGS.en.explainSections[2].code).toMatch(/max\(fuse \+ 0\.33…0\.47, hop \/ walk \+ 0\.24…0\.58\)/);
     expect(STRINGS.pt.explainSections[1].p[0]).toMatch(/fase de farm sincronizada/);
     expect(STRINGS.pt.explainSections[2].p[0]).toMatch(/velocidade de caminhada/i);
     expect(STRINGS.pt.explainSections[2].p[2]).toMatch(/Um único modelo de ciclo/);

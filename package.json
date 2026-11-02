@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "pnpm --filter @bombfarm/desktop dev",
     "dev:offline": "pnpm --filter @bombfarm/desktop dev:offline",
+    "dev:premium": "pnpm --filter @bombfarm/desktop dev:premium",
     "dev:capture": "pnpm --filter @bombfarm/desktop dev:capture",
     "dev:pids": "pnpm --filter @bombfarm/desktop dev:pids",
     "dev:web": "pnpm --filter @bombfarm/web dev",

@@ -48,6 +48,7 @@ function render(view: PremiumView, locale: 'en' | 'pt-BR' = 'en', notice: Premiu
         onSignIn: () => {},
         onRefresh: () => {},
         onManage: () => {},
+        onUseHere: () => {},
       }),
     }),
   );
@@ -282,6 +283,8 @@ describe('what a button press leaves behind', () => {
 });
 
 describe('the paused notice for the account playing', () => {
+  // The paused notices show only while this PC holds Premium.
+  const HOLDS = { state: 'holds', moveInFlight: false, moveFailed: false, removalDone: false } as const;
   const CASES: [PremiumPlayingAccount, string | null][] = [
     [{ state: 'other', reason: 'other_account' }, 'premiumPausedOtherAccount'],
     [{ state: 'other', reason: 'no_steam_link' }, 'premiumPausedNoSteamLink'],
@@ -303,7 +306,7 @@ describe('the paused notice for the account playing', () => {
   it.each(['en', 'pt-BR'] as const)('shows exactly the matching text for each state, in %s', (locale) => {
     const copy = locale === 'en' ? en : ptBR;
     for (const [playingAccount, key] of CASES) {
-      const shown = text(render(signedIn({}, { playingAccount }), locale));
+      const shown = text(render(signedIn({}, { playingAccount, licence: HOLDS }), locale));
       for (const other of ALL_KEYS) {
         const expected = other === key || (other === 'premiumPausedUpdateGame' && playingAccount.reason === 'no_steam_id64');
         expect(shown.includes(copy[other]), `${String(playingAccount.reason)} → ${other}`).toBe(expected);
@@ -312,7 +315,7 @@ describe('the paused notice for the account playing', () => {
   });
 
   it('uses a warning banner for another account, a missing Steam link and a failed check, an info banner while waiting for the game, and a plain line while checking', () => {
-    const html = (playingAccount: PremiumPlayingAccount) => render(signedIn({}, { playingAccount }));
+    const html = (playingAccount: PremiumPlayingAccount) => render(signedIn({}, { playingAccount, licence: HOLDS }));
 
     expect(html({ state: 'other', reason: 'other_account' })).toContain('data-testid="premium-banner-paused-other_account"');
     expect(html({ state: 'other', reason: 'no_steam_link' })).toContain('data-testid="premium-banner-paused-no_steam_link"');
@@ -325,7 +328,7 @@ describe('the paused notice for the account playing', () => {
 
   it('shows nothing about the account when Premium is not active, or when status is unknown', () => {
     for (const [playingAccount] of CASES) {
-      for (const view of [signedIn({ active: false }, { playingAccount }), signedIn(null, { playingAccount })]) {
+      for (const view of [signedIn({ active: false }, { playingAccount, licence: HOLDS }), signedIn(null, { playingAccount, licence: HOLDS })]) {
         const shown = text(render(view));
         for (const key of ALL_KEYS) expect(shown).not.toContain(en[key]);
       }
@@ -334,7 +337,7 @@ describe('the paused notice for the account playing', () => {
 
   it('renders the warning reasons in the warning tone and the waiting reasons in the info tone', () => {
     const classOf = (playingAccount: PremiumPlayingAccount, testId: string, status: Partial<PremiumStatus> = {}) => {
-      const html = render(signedIn(status, { playingAccount }));
+      const html = render(signedIn(status, { playingAccount, licence: HOLDS }));
       const tag = new RegExp(`<[^>]*data-testid="${testId}"[^>]*>`).exec(html)?.[0] ?? '';
       return /class="([^"]*)"/.exec(tag)?.[1] ?? null;
     };
@@ -357,7 +360,7 @@ describe('the paused notice for the account playing', () => {
     const html = render(
       signedIn(
         { graceUntil: MIDDAY('2026-10-30'), disputeHold: true },
-        { playingAccount: { state: 'other', reason: 'other_account' } },
+        { playingAccount: { state: 'other', reason: 'other_account' }, licence: HOLDS },
       ),
     );
     const paused = html.indexOf('premium-banner-paused-other_account');

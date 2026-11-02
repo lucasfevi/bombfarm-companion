@@ -28,3 +28,9 @@ export const WithTrailingContent: Story = {
     children: <span className="text-xs text-muted">Spent 3 / 10</span>,
   },
 };
+
+export const WithNodeTitle: Story = {
+  args: {
+    title: <em>Points</em>,
+  },
+};

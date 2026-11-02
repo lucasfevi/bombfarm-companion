@@ -26,18 +26,19 @@ import {
   clearHeadSeconds,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
-import { FIRST_KILL_SEC } from '@bombfarm/domain/model/clear-time';
+import { firstKillSeconds } from '@bombfarm/domain/model/clear-time';
 import { FUSE_FLOOR, STAT_CAPS } from '@bombfarm/domain/model';
 import { loadFarmRateFixture, withAbilityLevels } from './helpers/farm-rate-fixtures';
 
 const { heroes, account } = loadFarmRateFixture();
+const SYNTHETIC_FUSE_SECS = 2;
 
 function syntheticHero(overrides: Partial<HeroFarmFacts> & { heroId: string }): HeroFarmFacts {
   return {
     heroName: overrides.heroId,
     avgHitBase: 100,
     penetrationPct: 0,
-    fuseSecs: 2,
+    fuseSecs: SYNTHETIC_FUSE_SECS,
     fuseFloorSecs: FUSE_FLOOR,
     cdrCapPct: STAT_CAPS.cdr,
     walkSpeedCells: 2,
@@ -90,7 +91,7 @@ describe('field-slot cap (row.concurrencyScale)', () => {
     // props-only remainder, not the whole clear, that the scale acts on.
     // The scale acts on the hit rate inside the clear; the head and the starved tail do not
     // stretch with it, so the whole clear stretches by a little under 4/3.
-    const head = FIRST_KILL_SEC;
+    const head = firstKillSeconds(SYNTHETIC_FUSE_SECS);
     expect(referenceRow.heroesOnField).toBe(scaledRow.heroesOnField);
     const stretch = (scaledRow.clearSecs - head) / (referenceRow.clearSecs - head);
     expect(stretch).toBeGreaterThan(1.2);
@@ -235,7 +236,7 @@ describe('House recovery-slot ceiling', () => {
     // The throttle is proportional in the props-only clear time, NOT in the hourly rate: a mean
     // occupancy under one hero owes no activation stagger, so both clears pay the same one-fuse
     // head and the halved squad loses less per hour than it loses per second.
-    const head = FIRST_KILL_SEC;
+    const head = firstKillSeconds(SYNTHETIC_FUSE_SECS);
     const stretch = (halfRow.clearSecs - head) / (row.clearSecs - head);
     expect(stretch).toBeGreaterThan(1.5);
     expect(stretch).toBeLessThanOrEqual(0.8 / 0.5 + 1e-9);
@@ -294,7 +295,7 @@ describe('House recovery-slot ceiling', () => {
     // pay the same head, which the scale never reaches.
     const referenceRow = computeFarmRateRow(42, computeSquadFarmFacts(facts, { ...bothBinding, fieldSlots: 1000 }))!;
     expect(referenceRow.concurrencyScale).toBe(1);
-    const head = FIRST_KILL_SEC;
+    const head = firstKillSeconds(SYNTHETIC_FUSE_SECS);
     expect(referenceRow.heroesOnField).toBeCloseTo(row.heroesOnField, 12);
     const stretch = (referenceRow.clearSecs - head) / (row.clearSecs - head);
     expect(stretch).toBeGreaterThan(row.concurrencyScale * 0.95);

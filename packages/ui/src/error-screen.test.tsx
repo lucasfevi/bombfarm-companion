@@ -55,4 +55,10 @@ describe('ErrorScreen', () => {
     expect(html).not.toContain('style=');
     expect(html).not.toMatch(/#[\da-f]{3,8}\b|oklch|rgb\(|hsl\(/i);
   });
+
+  it('renders a node title inside the heading and a node message inside the paragraph', () => {
+    const html = renderToStaticMarkup(<ErrorScreen title={<em>Oops</em>} message={<span>Try again.</span>} />);
+    expect(html).toContain('<h2 class="text-lg font-semibold text-ink"><em>Oops</em></h2>');
+    expect(html).toContain('<p class="m-0 max-w-prose text-sm text-muted"><span>Try again.</span></p>');
+  });
 });

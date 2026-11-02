@@ -7,6 +7,8 @@ import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
 import { formatCapturedAt, formatDate } from '../../lib/format';
 import { usePremium } from '../../lib/premium/use-premium';
 import { PremiumBanners } from './premium-banners';
+import { PremiumLicenceLine } from './premium-licence-line';
+import { PremiumMount } from './premium-mount';
 import { noticeAfterManage, noticeAfterRefresh, type PremiumNotice } from './premium-notice';
 
 const KIND_ORDER = ['subscription', 'pass', 'manual_grant'] as const satisfies readonly PremiumKind[];
@@ -28,12 +30,14 @@ export function PremiumScreenView({
   onSignIn,
   onRefresh,
   onManage,
+  onUseHere,
 }: {
   view: PremiumView;
   notice: PremiumNotice | null;
   onSignIn: () => void;
   onRefresh: () => void;
   onManage: () => void;
+  onUseHere: () => void;
 }) {
   const t = useCopy();
   const { locale } = useLocale();
@@ -67,6 +71,7 @@ export function PremiumScreenView({
   return (
     <div data-testid="premium-view" className="flex flex-1 flex-col gap-3">
       <PremiumBanners view={view} />
+      <PremiumLicenceLine licence={view.licence} onUseHere={onUseHere} />
       {status === null ? (
         <p data-testid="premium-unavailable" className="text-sm text-muted">
           {t.premiumStatusUnavailable}
@@ -103,6 +108,7 @@ export function PremiumScreenView({
           {sub(t.premiumUpdated, { time: formatCapturedAt(view.fetchedAt, t) })}
         </p>
       ) : null}
+      <PremiumMount host={view.host} />
       <div className="flex items-center gap-2">
         <Button type="button" variant="ghost" data-testid="premium-refresh" onClick={onRefresh}>
           {t.premiumRefreshAction}
@@ -124,7 +130,7 @@ export function PremiumScreenView({
 }
 
 export function PremiumScreen() {
-  const { view, signIn, refresh, manage } = usePremium();
+  const { view, signIn, refresh, manage, moveHere } = usePremium();
   const [notice, setNotice] = useState<PremiumNotice | null>(null);
 
   return (
@@ -144,6 +150,9 @@ export function PremiumScreen() {
         void manage().then((result) => {
           setNotice(noticeAfterManage(result));
         });
+      }}
+      onUseHere={() => {
+        void moveHere();
       }}
     />
   );

@@ -40,3 +40,12 @@ export const Embedded: Story = {
     children: 'Gale and Brick may gain from reallocating points — try Optimize build on Points.',
   },
 };
+
+export const OkWithBodyLines: Story = {
+  args: {
+    tone: 'ok',
+    body: 'sm',
+    title: 'Setup complete',
+    children: <p>Ranking uses every point you have spent.</p>,
+  },
+};

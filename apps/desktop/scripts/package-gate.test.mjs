@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { NtExecutable, NtExecutableResource } from 'resedit';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createBuilderConfig } from './builder-config.mjs';
+import { TEST_BUNDLE_KEYPAIR, TEST_LEASE_KEYPAIR } from '../tests/fixtures/premium/keys.mjs';
 import { buildManifest, CSP_MANIFEST_FILE } from './csp-manifest.mjs';
 import {
   assertAsarExists,
@@ -15,10 +16,12 @@ import {
   assertAsarUnpackPatternsMatch,
   assertElectronFuses,
   assertNativeBinariesUnpacked,
+  assertNoDevPremiumTrust,
   assertNoNativeBinariesInAsar,
   assertRendererCspManifestIntact,
   assertRendererEntryPresent,
   collectNativeDependencyClosure,
+  DEV_PREMIUM_NEEDLES,
   findMissingNativeBinaries,
   findNodeBinaries,
   findPackagedExecutable,
@@ -805,5 +808,165 @@ describe('assertAsarIntegrityMatches', () => {
     const [entry] = integrityOf(asarPath);
     writePackagedExecutable(exe, { integrity: [{ ...entry, file: 'resources\\other.asar' }] });
     await expectPackagingGateRejection(assertAsarIntegrityMatches(exe, asarPath), 'does not match');
+  });
+});
+
+describe('assertNoDevPremiumTrust', () => {
+  const MAIN_BUNDLE = 'dist/main/index.cjs';
+
+  /** An archive holding the files given, keyed by path inside the archive. */
+  async function archiveOf(files) {
+    const srcDir = makeTempDir('dev-trust-src');
+    for (const [name, content] of Object.entries(files)) {
+      writeFile(path.join(srcDir, name), typeof content === 'string' ? content : JSON.stringify(content));
+    }
+    const asarPath = path.join(makeTempDir('dev-trust-asar'), 'app.asar');
+    await createPackageOnceReadable(srcDir, asarPath);
+    return { asarPath, entries: listAsarEntries(asarPath) };
+  }
+
+  /** The files of a runnable package for `flavor`, stamped and built consistently. */
+  const stamped = (flavor, extra = {}) => ({
+    'package.json': { name: 'app', bfcFlavor: flavor },
+    [MAIN_BUNDLE]: 'module.exports = {};',
+    'dist/main/build-info.json': { flavor },
+    ...extra,
+  });
+
+  it('passes a clean beta or prod package', async () => {
+    for (const flavor of ['beta', 'prod']) {
+      const { asarPath, entries } = await archiveOf(stamped(flavor));
+      expect(() => assertNoDevPremiumTrust(flavor, asarPath, entries)).not.toThrow();
+    }
+  });
+
+  it('searches for exactly the dev-only values, each stated here rather than read from the gate', () => {
+    const fixtureUi = readFileSync(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), '../tests/fixtures/premium/bundle/ui/index.js'),
+      'utf8',
+    );
+    const marker = /'(bfc-[a-z-]*marker)'/.exec(fixtureUi)?.[1];
+    expect(marker).toBeTruthy();
+    expect(DEV_PREMIUM_NEEDLES.map((needle) => needle.value).sort()).toEqual(
+      [
+        TEST_BUNDLE_KEYPAIR.x,
+        TEST_LEASE_KEYPAIR.x,
+        marker,
+        'BFC_PREMIUM_DEV_BUNDLE_DIR',
+        'dev-trust',
+      ].sort(),
+    );
+  });
+
+  it.each(DEV_PREMIUM_NEEDLES.map((needle) => [needle.label, needle.value]))(
+    'fails a prod package with %s in its main bundle, naming it',
+    async (label, value) => {
+      const { asarPath, entries } = await archiveOf(
+        stamped('prod', { [MAIN_BUNDLE]: `module.exports = "${value}";` }),
+      );
+      expectPackagingGateError(() => assertNoDevPremiumTrust('prod', asarPath, entries), label, value, MAIN_BUNDLE);
+    },
+  );
+
+  it.each(DEV_PREMIUM_NEEDLES.map((needle) => [needle.label, needle.value]))(
+    'fails a beta package with %s in a JSON file',
+    async (label, value) => {
+      const { asarPath, entries } = await archiveOf(stamped('beta', { 'renderer/out/data.json': { leak: value } }));
+      expectPackagingGateError(() => assertNoDevPremiumTrust('beta', asarPath, entries), label, 'renderer/out/data.json');
+    },
+  );
+
+  it('names every needle a package leaks, not only the first', async () => {
+    const { asarPath, entries } = await archiveOf(
+      stamped('prod', {
+        [MAIN_BUNDLE]: `// ${DEV_PREMIUM_NEEDLES[0].value}`,
+        'dist/other.js': `// ${DEV_PREMIUM_NEEDLES[3].value}`,
+      }),
+    );
+    expectPackagingGateError(
+      () => assertNoDevPremiumTrust('prod', asarPath, entries),
+      DEV_PREMIUM_NEEDLES[0].label,
+      DEV_PREMIUM_NEEDLES[3].label,
+    );
+  });
+
+  it('passes a dev package that holds every needle', async () => {
+    const leaked = DEV_PREMIUM_NEEDLES.map((needle) => needle.value).join(' ');
+    const { asarPath, entries } = await archiveOf(stamped('dev', { [MAIN_BUNDLE]: `module.exports = "${leaked}";` }));
+    expect(() => assertNoDevPremiumTrust('dev', asarPath, entries)).not.toThrow();
+  });
+
+  it('ignores a needle in a file that is neither JavaScript nor JSON', async () => {
+    const { asarPath, entries } = await archiveOf(stamped('prod', { 'renderer/out/notes.txt': DEV_PREMIUM_NEEDLES[2].value }));
+    expect(() => assertNoDevPremiumTrust('prod', asarPath, entries)).not.toThrow();
+  });
+
+  const FLAVORS = ['dev', 'beta', 'prod'];
+  it.each(FLAVORS.flatMap((baked) => FLAVORS.filter((built) => built !== baked).map((built) => [baked, built])))(
+    'fails a %s package whose bundles were built for %s',
+    async (baked, built) => {
+      const { asarPath, entries } = await archiveOf(
+        stamped(baked, { 'dist/main/build-info.json': { flavor: built } }),
+      );
+      expectPackagingGateError(() => assertNoDevPremiumTrust(baked, asarPath, entries), `"${built}"`, `"${baked}"`);
+    },
+  );
+
+  it.each(FLAVORS)('fails a %s package with a main bundle and no build-info.json', async (flavor) => {
+    const { asarPath, entries } = await archiveOf({
+      'package.json': { bfcFlavor: flavor },
+      [MAIN_BUNDLE]: 'module.exports = {};',
+    });
+    expectPackagingGateError(() => assertNoDevPremiumTrust(flavor, asarPath, entries), 'build-info.json');
+  });
+
+  it.each(FLAVORS)('passes a %s package whose build-info.json matches its stamp', async (flavor) => {
+    const { asarPath, entries } = await archiveOf(stamped(flavor));
+    expect(() => assertNoDevPremiumTrust(flavor, asarPath, entries)).not.toThrow();
+  });
+
+  describe('inside the packaging gate', () => {
+    async function packagedTree(flavor, files) {
+      const desktopRootDir = makeTempDir('dev-trust-gate-root');
+      writeJson(path.join(desktopRootDir, 'package.json'), { name: '@bombfarm/desktop' });
+      const config = { ...createBuilderConfig(flavor), asarUnpack: [] };
+      const unpackedDir = path.join(desktopRootDir, config.directories.output, 'win-unpacked');
+      const asarSrcDir = makeTempDir('dev-trust-gate-asar-src');
+      const indexHtml = '<html><body><script>boot()</script></body></html>';
+      writeFile(path.join(asarSrcDir, 'renderer', 'out', 'index.html'), indexHtml);
+      writeJson(
+        path.join(asarSrcDir, 'renderer', 'out', CSP_MANIFEST_FILE),
+        buildManifest(new Map([['index.html', indexHtml]])),
+      );
+      for (const [name, content] of Object.entries(files)) {
+        writeFile(path.join(asarSrcDir, name), typeof content === 'string' ? content : JSON.stringify(content));
+      }
+      const asarPath = path.join(unpackedDir, 'resources', 'app.asar');
+      await createPackageOnceReadable(asarSrcDir, asarPath);
+      writePackagedExecutable(path.join(unpackedDir, 'Bomb Farm Companion.exe'), {
+        fuses: config.electronFuses,
+        integrity: integrityOf(asarPath),
+      });
+      return { desktopRootDir, config };
+    }
+
+    it('passes a clean prod tree', async () => {
+      const options = await packagedTree('prod', stamped('prod'));
+      await expect(runPackagingGateChecks('prod', options)).resolves.toBeUndefined();
+    });
+
+    it('fails a prod tree that leaks a test key, naming it', async () => {
+      const options = await packagedTree('prod', stamped('prod', { [MAIN_BUNDLE]: `// ${DEV_PREMIUM_NEEDLES[1].value}` }));
+      await expectPackagingGateRejection(
+        runPackagingGateChecks('prod', options),
+        DEV_PREMIUM_NEEDLES[1].label,
+        DEV_PREMIUM_NEEDLES[1].value,
+      );
+    });
+
+    it('fails a tree whose build-info.json disagrees with its stamp', async () => {
+      const options = await packagedTree('prod', stamped('prod', { 'dist/main/build-info.json': { flavor: 'dev' } }));
+      await expectPackagingGateRejection(runPackagingGateChecks('prod', options), '"dev"', '"prod"');
+    });
   });
 });

@@ -11,17 +11,31 @@
  */
 
 /**
- * Seconds a fuse-bound cycle spends past the fuse. The MEAN, not the median: the median plant
- * lands 0.17–0.20 s after the fuse, but a tail of waits for other heroes' live crosses puts the
- * mean at 0.47 s, and the mean is what sets a rate.
+ * Seconds a fuse-bound cycle spends past the fuse, at a 1.3 s fuse and longer. The MEAN, not the
+ * median: the median plant lands 0.17–0.20 s after the fuse, but a tail of waits for other heroes'
+ * live crosses puts the mean at 0.47 s, and the mean is what sets a rate.
  */
 export const FUSE_CYCLE_OVERHEAD_SEC = 0.47;
 
 /**
- * Seconds a walk-bound cycle spends past `hop / w`. Median 0.18 s like the fuse branch; the mean
- * carries detours and dodges around live crosses. The path walked is the Manhattan hop to 2%.
+ * Seconds a walk-bound cycle spends past `hop / w`, at a 1.3 s fuse and longer. Median 0.18 s like
+ * the fuse branch; the mean carries detours and dodges around live crosses. The path walked is the
+ * Manhattan hop to 2%.
  */
 export const WALK_CYCLE_OVERHEAD_SEC = 0.58;
+
+/**
+ * Both overheads at the 0.40 s fuse floor; between 1.3 s and the floor each falls linearly, with
+ * the long-fuse values held. The walk value was fitted by least squares on every clean cycle of six
+ * compact-field captures of one account (2026-10-17 to 2026-10-31). The fuse value is the mean wait
+ * past the fuse of floor heroes on a squad with five of eight at the cap: 0.06 s over ~1,300
+ * fuse-bound cycles, the same 0.06–0.08 s on two earlier captures, pulse lit or dark. Even at 0.06 s
+ * those heroes plant 13–24% faster than the model prices them; the shorter hop that closes the rest
+ * waits on a second account with a hero at the cap. Measured from frame captures held out of band,
+ * not in this repo.
+ */
+export const FUSE_CYCLE_OVERHEAD_FLOOR_SEC = 0.06;
+export const WALK_CYCLE_OVERHEAD_FLOOR_SEC = 0.24;
 
 /**
  * Free hop between props, cells: `FREE_HOP_BASE_CELLS + FREE_HOP_SQRT_CELLS / sqrt(n)` with `n`
@@ -73,12 +87,7 @@ export const HOP_FUSE_PIVOT_SEC = 1.61;
 /** The fuse at the 80% cooldown-reduction cap: a fifth of the 2 s base. */
 export const FUSE_FLOOR = 0.4;
 
-/**
- * The walk overhead past `hop / w` is 0.58 s down to a 1.3 s fuse and falls linearly to ×0.57 of
- * that at the floor: the same hero's overhead read 0.34 s there. It does not depend on walk speed.
- */
-const WALK_OVERHEAD_KNEE_SEC = 1.3;
-const WALK_OVERHEAD_FLOOR_FACTOR = 0.57;
+const OVERHEAD_KNEE_SEC = 1.3;
 
 export function freeHopCells(standing: number): number {
   return FREE_HOP_BASE_CELLS + FREE_HOP_SQRT_CELLS / Math.sqrt(Math.max(1, standing));
@@ -89,14 +98,17 @@ export function fuseHopFactor(fuseSecs: number): number {
   return Math.exp(HOP_SPEED_EXPONENT * Math.log(Math.max(FUSE_FLOOR, fuseSecs) / HOP_FUSE_PIVOT_SEC));
 }
 
-function walkOverheadFuseFactor(fuseSecs: number): number {
-  if (fuseSecs >= WALK_OVERHEAD_KNEE_SEC) return 1;
-  const depth = (WALK_OVERHEAD_KNEE_SEC - Math.max(FUSE_FLOOR, fuseSecs)) / (WALK_OVERHEAD_KNEE_SEC - FUSE_FLOOR);
-  return 1 - (1 - WALK_OVERHEAD_FLOOR_FACTOR) * depth;
+function depthBelowKnee(fuseSecs: number): number {
+  if (fuseSecs >= OVERHEAD_KNEE_SEC) return 0;
+  return (OVERHEAD_KNEE_SEC - Math.max(FUSE_FLOOR, fuseSecs)) / (OVERHEAD_KNEE_SEC - FUSE_FLOOR);
+}
+
+export function fuseCycleOverheadSeconds(fuseSecs: number): number {
+  return FUSE_CYCLE_OVERHEAD_SEC - (FUSE_CYCLE_OVERHEAD_SEC - FUSE_CYCLE_OVERHEAD_FLOOR_SEC) * depthBelowKnee(fuseSecs);
 }
 
 export function walkCycleOverheadSeconds(fuseSecs: number): number {
-  return WALK_CYCLE_OVERHEAD_SEC * walkOverheadFuseFactor(fuseSecs);
+  return WALK_CYCLE_OVERHEAD_SEC - (WALK_CYCLE_OVERHEAD_SEC - WALK_CYCLE_OVERHEAD_FLOOR_SEC) * depthBelowKnee(fuseSecs);
 }
 
 /**
@@ -109,7 +121,10 @@ export function hopSpeedFactor(walkSpeedCells: number): number {
 }
 
 export function plantCycleSeconds(fuseSecs: number, walkSpeedCells: number, hopCells: number): number {
-  return Math.max(fuseSecs + FUSE_CYCLE_OVERHEAD_SEC, hopCells / walkSpeedCells + WALK_CYCLE_OVERHEAD_SEC);
+  return Math.max(
+    fuseSecs + fuseCycleOverheadSeconds(fuseSecs),
+    hopCells / walkSpeedCells + walkCycleOverheadSeconds(fuseSecs),
+  );
 }
 
 /** `FREE_HOP_SUFFIX_SUMS[k]` is the sum of {@link FREE_HOP_SHAPE} from index `k` to the end. */
@@ -132,9 +147,9 @@ export function meanPlantCycleSeconds(
   walkSpeedCells: number,
   meanFreeHop: number,
   replantCycle: number = plantCycleSeconds(fuseSecs, walkSpeedCells, REPLANT_HOP_CELLS),
-  walkOverheadSecs: number = WALK_CYCLE_OVERHEAD_SEC,
+  walkOverheadSecs: number = walkCycleOverheadSeconds(fuseSecs),
 ): number {
-  const fuseBound = fuseSecs + FUSE_CYCLE_OVERHEAD_SEC;
+  const fuseBound = fuseSecs + fuseCycleOverheadSeconds(fuseSecs);
   const walkPerMultiplier = meanFreeHop / walkSpeedCells;
   const threshold = (fuseBound - walkOverheadSecs) / walkPerMultiplier;
   let fuseBoundHops = 0;

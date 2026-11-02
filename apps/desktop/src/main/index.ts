@@ -7,6 +7,7 @@ import {
   ipcMain,
   Menu,
   nativeImage,
+  powerMonitor,
   screen,
   session,
   shell,
@@ -52,7 +53,7 @@ import { LIVE_SOURCE_RELEASE_DEADLINE_MS, settleWithin, shutdownInOrder } from '
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { fuseSecondsForCdr } from './domain-edge.js';
-import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
+import { InvalidFlavorError, readBakedFlavor, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
 import { createNavigationPolicyApplier } from './external-navigation.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
 import { cspManifestForBoot } from './renderer-csp.js';
@@ -106,7 +107,7 @@ import { gamePingProbe } from './game-ping/game-ping-transport.js';
 import { offlineOnlinePlayersGet } from './online-players/online-players-offline.js';
 import { createOnlinePlayersService, type OnlinePlayersService } from './online-players/online-players-service.js';
 import { onlinePlayersHttpGet } from './online-players/online-players-transport.js';
-import { createPremiumWhenEnabled, type PremiumService } from './premium/index.js';
+import { createPremiumWhenEnabled, type ElectronPremium } from './premium/index.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 import { sandboxedWebPreferences } from './web-preferences.js';
@@ -157,6 +158,10 @@ import { askSteam, createSteamLaunchDeps } from './game-keep-alive/steam-launch.
 refuseDebugSwitchesOfPackagedApp(app, process);
 
 let mainWindow: BrowserWindow | null = null;
+
+function reloadMainWindow(): void {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.reload();
+}
 let storage: Storage | null = null;
 let gameReader: GameReaderService | null = null;
 let accountStore: AccountStore | null = null;
@@ -171,7 +176,7 @@ let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
 let onlinePlayersService: OnlinePlayersService | null = null;
 let gamePingService: GamePingService | null = null;
-let premium: PremiumService | null = null;
+let premium: ElectronPremium | null = null;
 let forgeService: ForgeService | null = null;
 let forgeHistory: ForgeHistory | null = null;
 let applyService: ApplyService | null = null;
@@ -203,6 +208,8 @@ let gameKeepAlive: GameKeepAlive | null = null;
 let usagePing: UsagePing | null = null;
 
 const emitEvent = createEventEmitter({ getWindows: () => BrowserWindow.getAllWindows() });
+/** For an event only the main window's screens act on; the compact window never hears it. */
+const emitToMainWindow = createEventEmitter({ getWindows: () => (mainWindow === null ? [] : [mainWindow]) });
 
 /** Reads, transitions, persists, and announces one consent event — the single path every
  *  consent:* handler below goes through. Every dep below reads the module-level
@@ -1229,11 +1236,30 @@ async function bootstrap(): Promise<void> {
     onChanged: (view) => {
       emitEvent('premium:changed', view);
     },
+    appVersion: app.getVersion(),
+    flavor: env.descriptor.flavor,
+    onResume: (listener) => {
+      powerMonitor.on('resume', listener);
+      return () => {
+        powerMonitor.removeListener('resume', listener);
+      };
+    },
+    host: {
+      userDataPath: env.userDataPath,
+      mainDir: __dirname,
+      reloadWindow: reloadMainWindow,
+      uiOnAppScheme: !env.isDev,
+      openPremiumTab: () => {
+        shellLifecycle?.show();
+        emitToMainWindow('premium:showTab', null);
+      },
+    },
+    build: { isPackaged: env.isPackaged, bakedFlavor: readBakedFlavor(), builtFlavor: __BFC_BUILD_FLAVOR__ },
   });
 
   registerIpcHandlers();
   const rendererRoot = path.join(__dirname, '../../renderer/out');
-  registerRendererProtocol(rendererRoot, cspManifestForBoot(env.isDev, rendererRoot));
+  registerRendererProtocol(rendererRoot, cspManifestForBoot(env.isDev, rendererRoot), premium?.routes ?? undefined);
   installSessionSecurity({
     app,
     session: session.defaultSession,

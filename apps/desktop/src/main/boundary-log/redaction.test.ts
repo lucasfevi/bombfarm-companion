@@ -10,6 +10,14 @@ describe('createRedactor', () => {
     expect((result.nested as Record<string, unknown>)[key]).toBe('[redacted]');
   });
 
+  it('redacts a SteamID under both its camel-case and its snake-case key', () => {
+    const redactor = createRedactor();
+
+    const result = redactor.redact({ steamId64: '76561198012345678', steam_id64: '76561198012345678', STEAMID64: 'x' });
+
+    expect(result).toEqual({ steamId64: '[redacted]', steam_id64: '[redacted]', STEAMID64: '[redacted]' });
+  });
+
   it('matches sensitive key names regardless of case and separator style', () => {
     const redactor = createRedactor();
 

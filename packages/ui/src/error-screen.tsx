@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { cn } from './cn';
 
 export type ErrorScreenProps = {
-  title: string;
-  message?: string | undefined;
+  title: ReactNode;
+  message?: ReactNode;
   /** The retry control, as a node: a link or form from a server page, a button from a client one. */
   action?: ReactNode;
   /** Heading tag for `title` — defaults to `h2`, as in `EmptyState`. */

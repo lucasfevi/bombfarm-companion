@@ -168,8 +168,31 @@ export const HITS_PER_PLANT_CAP_PER_CELL = 0.23;
  */
 export const BLAST_YIELD_SPEED_EXPONENT = 0.14;
 
-/** Seconds from the wave start to the first kill: activation stagger plus one fuse. */
-export const FIRST_KILL_SEC = 3.0;
+/**
+ * Seconds from the wave start to the first kill beyond the squad's presence-weighted fuse. Heroes
+ * come up one by one and the first of them plant within ~0.3 s of activating, so the first kill is
+ * one early hero's fuse plus a short walk. Over nine frame captures of two accounts (2026-09-26 to
+ * 2026-10-31, mean fuses 0.62–1.89 s), the median first kill ran 1.0–2.8 s and its excess over the
+ * mean fuse 0.2–1.2 s, median 0.88 s; one sparse ten-hero capture read 3.1 s. A flat 3 s, fitted
+ * when every squad fused at ~1.8 s, read the fast squads' heads 1.4–2.0 s long. Measured from frame
+ * captures held out of band, not in this repo.
+ */
+export const FIRST_KILL_LEAD_SEC = 0.9;
+
+export function firstKillSeconds(meanFuseSecs: number): number {
+  return FIRST_KILL_LEAD_SEC + meanFuseSecs;
+}
+
+function presenceWeightedFuse(heroes: readonly ClearHero[]): number {
+  let presence = 0;
+  let weighted = 0;
+  for (const hero of heroes) {
+    if (!(hero.presence > 0)) continue;
+    presence += hero.presence;
+    weighted += hero.presence * hero.fuseSecs;
+  }
+  return presence > 0 ? weighted / presence : 0;
+}
 /** The kill rate the head starts at, as a share of steady state, ramping to 1 over `HEAD_RAMP_PROPS`. */
 export const HEAD_RAMP_START = 0.4;
 export const HEAD_RAMP_PROPS = 10;
@@ -446,7 +469,7 @@ export function simulateClear(
     : classicHeroes.map((hero) => ({ ...hero, walkSpeedCells: fieldWalkSpeedCells(hero.walkSpeedCells, field) }));
   if (!(propCount > 0) || props.length === 0) {
     const zeros = new Array<number>(heroes.length).fill(0);
-    return { clearSecs: FIRST_KILL_SEC, expectedHtk: 0, killShareByHero: zeros, plantRateByHero: zeros };
+    return { clearSecs: firstKillSeconds(presenceWeightedFuse(heroes)), expectedHtk: 0, killShareByHero: zeros, plantRateByHero: zeros };
   }
   const weightSum = props.reduce((sum, prop) => sum + Math.max(0, prop.weight), 0);
   if (!(weightSum > 0)) return unclearable(heroes.length);
@@ -540,7 +563,7 @@ export function simulateClear(
   const killsPerHitByType = hitsToKill.map((row) => row.map((hits) => 1 / hits));
   const cells = fieldCells(field);
   const headHop = classicDistanceOn(HEAD_HOP_CELLS, field);
-  let seconds = FIRST_KILL_SEC;
+  let seconds = firstKillSeconds(meanFuse);
   let hitsLanded = 0;
   let killed = 0;
   let killRatePrev = 0;

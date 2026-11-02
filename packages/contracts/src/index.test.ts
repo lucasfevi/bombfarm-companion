@@ -79,6 +79,9 @@ const IPC_CHANNEL_LIST = [
   'premium:signOut',
   'premium:refresh',
   'premium:manage',
+  'premium:useHere',
+  'premium:hostMountFailed',
+  'premium:uiCall',
   'log:rendererError',
 ] as const;
 
@@ -98,6 +101,7 @@ const IPC_EVENT_CHANNEL_LIST = [
   'pvp:changed',
   'collections:changed',
   'premium:changed',
+  'premium:showTab',
   'window:changed',
 ] as const;
 
@@ -139,6 +143,7 @@ describe('contracts IPC surface', () => {
     expect(isIpcChannel('premium:signOut')).toBe(true);
     expect(isIpcChannel('premium:refresh')).toBe(true);
     expect(isIpcChannel('premium:manage')).toBe(true);
+    expect(isIpcChannel('premium:useHere')).toBe(true);
     expect(isIpcChannel('premium:changed')).toBe(false);
     expect(isIpcChannel('apply:preflight')).toBe(false);
     expect(isIpcChannel('not-a-channel')).toBe(false);

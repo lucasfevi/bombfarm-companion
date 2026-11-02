@@ -1577,4 +1577,24 @@ export const en = {
   premiumPausedUpdateGame: 'Update the game if this does not clear.',
   premiumPausedReportFailed: "Couldn't confirm your game account — press Refresh to try again.",
   premiumCheckingAccount: 'Checking your game account…',
+  // premiumLicence* — which PC holds Premium, and the button that brings it here
+  premiumLicenceHolds: 'Premium is on this PC.',
+  premiumLicenceElsewhere: 'Premium is on another PC ({name}).',
+  premiumLicenceUnconfirmed: "Can't confirm your Premium — check your connection.",
+  premiumLicenceMismatch: "This copy of the app isn't the PC that holds your Premium.",
+  premiumLicenceMoved: "Premium moved to {name}. It's been removed from this PC.",
+  premiumLicenceMovedPending: 'Premium moved to {name}.',
+  premiumLicenceReleased: 'Support removed Premium from this PC.',
+  premiumLicenceEnded: "Premium has ended. It's been removed from this PC.",
+  premiumLicenceEndedPending: 'Premium has ended.',
+  premiumLicenceMoveLimit: 'You moved Premium on {date}. You can move it again on {next}, or contact support.',
+  premiumLicenceUseHere: 'Use Premium on this PC',
+  premiumLicenceMoveFailed: "Couldn't move Premium — try again.",
+  // The words of premiumLicenceMoveLimit that become a link once a support channel exists.
+  premiumSupportWords: 'contact support',
+  // premiumHost* — the Premium page's mount point
+  premiumHostUpdating: 'Updating Premium…',
+  premiumHostStopped: 'Premium stopped unexpectedly — restart the app',
+  premiumHostLocalBuild: 'Local premium build',
+  premiumHostLocalBuildHint: 'Use pnpm dev:premium to load it',
 } as const;

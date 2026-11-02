@@ -32,6 +32,7 @@ import {
   type ResolvedFarmObjective,
 } from './farm-optimize-objective';
 import type { SheetKey } from './planner-constants';
+import { capFirstPts, generateCapMoves, type CapSeedShape } from './farm-stat-caps';
 
 const EPS_REL = 1e-9;
 
@@ -184,7 +185,7 @@ export function compareFarmCandidates(a: FarmCandidate, b: FarmCandidate, bases:
  * spent everything on crit damage, and attack when it had spent everything on attack. It is the
  * incumbent instead (see `runFarmSearch`): the bar a proposal has to clear, never its start.
  */
-type SeedDef = { name: string; energyShare: number | null; luckShare?: number };
+type SeedDef = { name: string; energyShare: number | null; luckShare?: number; capShape?: CapSeedShape };
 
 const SEED_DEFS: readonly SeedDef[] = [
   { name: 'dpsGreedy', energyShare: null },
@@ -193,6 +194,10 @@ const SEED_DEFS: readonly SeedDef[] = [
   { name: 'e050', energyShare: FARM_OPT_SEED_ENERGY_SHARES[1] },
   { name: 'e075', energyShare: FARM_OPT_SEED_ENERGY_SHARES[2] },
   { name: 'allEnergy', energyShare: 1 },
+  { name: 'capCritSpeed', energyShare: null, capShape: { cdr: false, speed: true, energyShare: 0, critDmgShare: 0.5 } },
+  { name: 'capCdrSpeed', energyShare: null, capShape: { cdr: true, speed: true, energyShare: 0, critDmgShare: 0.5 } },
+  { name: 'capCdrSpeedCritDmg', energyShare: null, capShape: { cdr: true, speed: true, energyShare: 0, critDmgShare: 0.8 } },
+  { name: 'capCdrSpeedE025', energyShare: null, capShape: { cdr: true, speed: true, energyShare: 0.25, critDmgShare: 0.5 } },
 ];
 
 /**
@@ -249,8 +254,15 @@ function buildSeedAssignment(
   budgetById: ReadonlyMap<string, number>,
   seed: SeedDef,
 ): Map<string, Record<SheetKey, number>> {
-  const { energyShare, luckShare = 0 } = seed;
+  const { energyShare, luckShare = 0, capShape } = seed;
   const assignment = new Map<string, Record<SheetKey, number>>();
+  if (capShape) {
+    for (const basis of bases) {
+      if (!searchableSet.has(basis.heroId)) continue;
+      assignment.set(basis.heroId, capFirstPts(basis, budgetById.get(basis.heroId) ?? 0, capShape));
+    }
+    return assignment;
+  }
   if (energyShare === null) {
     for (const basis of bases) {
       if (!searchableSet.has(basis.heroId)) continue;
@@ -493,6 +505,9 @@ export function runFarmSearch(
     ...generateStepMoves(destinations),
     ...generateMoves(destinations),
   ];
+  const movesByHero = new Map(
+    searchableIds.map((heroId) => [heroId, [...generateCapMoves(basesById.get(heroId)!, destinations), ...moves]] as const),
+  );
 
   let evaluations = 0;
   let budgetExhausted = false;
@@ -563,7 +578,7 @@ export function runFarmSearch(
       for (const heroId of orderedHeroes) {
         for (let innerSweep = 0; innerSweep < REOPT_FULL_MAX_SWEEPS; innerSweep++) {
           let applied = false;
-          for (const move of moves) {
+          for (const move of movesByHero.get(heroId)!) {
             const screening = winner.pick !== null && phaseOptions.pinnedPhase == null;
             if (!canAfford(screening ? FARM_OPT_SCREEN_COST : 1)) {
               budgetExhausted = true;
