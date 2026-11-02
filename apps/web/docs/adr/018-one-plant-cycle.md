@@ -115,3 +115,19 @@ value read squads near the cooldown cap 1.4–2.0 s slow to their first kill.
 Known limits: a slow walker at the floor (2.8 cells/s) reads 10–13% fast now, where it read 3–6%
 fast before. Its fuse-bound waits run ~0.6 s, against ~0.3 s for heroes walking 4+ cells/s. The
 model has no walk-speed term in the overheads.
+
+## Amendment — 2026-11-01, the fuse floor
+
+The fuse overhead at the 0.40 s floor drops from 0.33 s to 0.06 s; the walk floor stays 0.24 s.
+A one-hour capture of a squad with five of eight heroes at the cap timed ~1,300 fuse-bound cycles
+of floor heroes at a mean 0.06 s past the fuse, and two earlier captures of the same account read
+0.06–0.08 s, with the Baton Pass pulse lit or dark. Those heroes planted every 0.66–0.83 s where
+the model priced ~1.0 s, and they still plant 13–24% faster than it prices after this change.
+
+The squad's clear moves from 30.0 s to 28.6 s against 24.6 s measured, and the capped squad now
+reads 3.8% faster than the build it replaced, where it read 1.0%; the game measured ~10%. The rest
+of the gap is the hop: floor heroes hop ~2 cells on a full field where the model prices 2.7. Only
+one account has heroes at the cap, so the hop waits on a second account's capture.
+
+Known limit: the single-hero A/B at the floor (one hero capped among uncapped teammates) now reads
+15% fast, 0.88 s against 1.04 s, while its cap gain moves closer: ×1.98 against ×2.09 measured.

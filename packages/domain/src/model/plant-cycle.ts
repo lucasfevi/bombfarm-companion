@@ -25,15 +25,16 @@ export const FUSE_CYCLE_OVERHEAD_SEC = 0.47;
 export const WALK_CYCLE_OVERHEAD_SEC = 0.58;
 
 /**
- * Both overheads at the 0.40 s fuse floor; between 1.3 s and the floor each falls linearly. Fitted
- * together by least squares on every clean cycle of six compact-field captures of one account
- * (2026-10-17 to 2026-10-31, eight heroes at fuses of 0.40–0.65 s), with the long-fuse values
- * held, which the same captures reproduce: their heroes above 1.3 s fit 0.50 s and 0.56 s. The
- * medians are lower still, 0.07–0.13 s past the fuse and ~0.10 s past `hop / w`; a rate needs the
- * mean. The earlier knee, walk only and to 0.33 s, read the floor heroes' cycles 7–38% slow.
- * Measured from frame captures held out of band, not in this repo.
+ * Both overheads at the 0.40 s fuse floor; between 1.3 s and the floor each falls linearly, with
+ * the long-fuse values held. The walk value was fitted by least squares on every clean cycle of six
+ * compact-field captures of one account (2026-10-17 to 2026-10-31). The fuse value is the mean wait
+ * past the fuse of floor heroes on a squad with five of eight at the cap: 0.06 s over ~1,300
+ * fuse-bound cycles, the same 0.06–0.08 s on two earlier captures, pulse lit or dark. Even at 0.06 s
+ * those heroes plant 13–24% faster than the model prices them; the shorter hop that closes the rest
+ * waits on a second account with a hero at the cap. Measured from frame captures held out of band,
+ * not in this repo.
  */
-export const FUSE_CYCLE_OVERHEAD_FLOOR_SEC = 0.33;
+export const FUSE_CYCLE_OVERHEAD_FLOOR_SEC = 0.06;
 export const WALK_CYCLE_OVERHEAD_FLOOR_SEC = 0.24;
 
 /**
