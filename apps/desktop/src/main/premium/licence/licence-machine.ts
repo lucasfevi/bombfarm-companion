@@ -570,7 +570,7 @@ function onStatus(w: Work, active: boolean): void {
 
 function onMovePressed(w: Work): void {
   const { m } = w;
-  const eligible = m.state === 'elsewhere' || m.state === 'mismatch' || m.state === 'released';
+  const eligible = m.state === 'elsewhere' || m.state === 'mismatch' || m.state === 'released' || m.state === 'moved';
   if (!eligible || m.inFlight !== null || m.moveIntent || m.cleanup.owed !== null) return;
   m.moveIntent = true;
   m.moveFailed = false;

@@ -27,6 +27,11 @@ const EXPECTED: Record<string, { en: string; ptBR: string }> = {
     ptBR: 'O Premium foi para {name}. Ele foi removido deste PC.',
   },
   premiumLicenceMovedPending: { en: 'Premium moved to {name}.', ptBR: 'O Premium foi para {name}.' },
+  premiumLicenceMovedAway: {
+    en: "Premium moved to another PC. It's been removed from this PC.",
+    ptBR: 'O Premium foi para outro PC. Ele foi removido deste PC.',
+  },
+  premiumLicenceMovedAwayPending: { en: 'Premium moved to another PC.', ptBR: 'O Premium foi para outro PC.' },
   premiumLicenceReleased: {
     en: 'Support removed Premium from this PC.',
     ptBR: 'O suporte removeu o Premium deste PC.',

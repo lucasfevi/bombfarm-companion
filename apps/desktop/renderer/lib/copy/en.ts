@@ -1584,6 +1584,8 @@ export const en = {
   premiumLicenceMismatch: "This copy of the app isn't the PC that holds your Premium.",
   premiumLicenceMoved: "Premium moved to {name}. It's been removed from this PC.",
   premiumLicenceMovedPending: 'Premium moved to {name}.',
+  premiumLicenceMovedAway: "Premium moved to another PC. It's been removed from this PC.",
+  premiumLicenceMovedAwayPending: 'Premium moved to another PC.',
   premiumLicenceReleased: 'Support removed Premium from this PC.',
   premiumLicenceEnded: "Premium has ended. It's been removed from this PC.",
   premiumLicenceEndedPending: 'Premium has ended.',
