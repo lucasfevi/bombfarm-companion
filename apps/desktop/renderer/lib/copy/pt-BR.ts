@@ -1515,6 +1515,8 @@ export const ptBR: Copy = {
   premiumLicenceMismatch: 'Esta cópia do app não é o PC que tem o seu Premium.',
   premiumLicenceMoved: 'O Premium foi para {name}. Ele foi removido deste PC.',
   premiumLicenceMovedPending: 'O Premium foi para {name}.',
+  premiumLicenceMovedAway: 'O Premium foi para outro PC. Ele foi removido deste PC.',
+  premiumLicenceMovedAwayPending: 'O Premium foi para outro PC.',
   premiumLicenceReleased: 'O suporte removeu o Premium deste PC.',
   premiumLicenceEnded: 'O Premium terminou. Ele foi removido deste PC.',
   premiumLicenceEndedPending: 'O Premium terminou.',
