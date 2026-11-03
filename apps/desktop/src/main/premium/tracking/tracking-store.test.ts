@@ -115,6 +115,7 @@ function fakeEngine(options: { probe?: EngineProbe; failOpen?: EngineOpenReason 
           state.live -= 1;
         },
         query: () => Promise.resolve([]),
+        session: () => Promise.reject(new Error('the fake engine has no sessions')),
         close: () => {
           state.closed += 1;
         },

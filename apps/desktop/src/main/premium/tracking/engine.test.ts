@@ -65,6 +65,7 @@ function fakeBinding(options: { answer?: number; failOn?: RegExp; failCreate?: b
     allow_unsigned_extensions: 'false',
   };
   const binding: DuckBinding = {
+    StatementType: {},
     DuckDBInstance: {
       create: () => {
         if (options.failCreate) return Promise.reject(new Error('create failed'));
@@ -82,6 +83,9 @@ function fakeBinding(options: { answer?: number; failOn?: RegExp; failCreate?: b
                 const row = setting === undefined ? { v: 'v1.5.5', answer: options.answer ?? 42 } : { v: settings[setting] };
                 return Promise.resolve({ getRowObjectsJS: () => [row] });
               },
+              streamAndReadUntil: () => Promise.reject(new Error('the fake has no streams')),
+              extractStatements: () => Promise.reject(new Error('the fake has no statements')),
+              interrupt: () => undefined,
               closeSync: () => undefined,
             }),
           closeSync: () => {
@@ -297,6 +301,7 @@ describe('a failed open', () => {
   it('closes the instance and throws when a setting does not read back as locked', async () => {
     const fake = fakeBinding({});
     const lying: DuckBinding = {
+      StatementType: {},
       DuckDBInstance: {
         create: async (path, options) => {
           const instance = await fake.binding.DuckDBInstance.create(path, options);
@@ -308,6 +313,11 @@ describe('a failed open', () => {
               const c = await instance.connect();
               return {
                 run: (sql, values) => c.run(sql, values),
+                streamAndReadUntil: (sql, target, values) => c.streamAndReadUntil(sql, target, values),
+                extractStatements: (sql) => c.extractStatements(sql),
+                interrupt: () => {
+                  c.interrupt();
+                },
                 closeSync: () => {
                   c.closeSync();
                 },

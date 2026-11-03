@@ -125,6 +125,7 @@ export function createTrackingStore(deps: TrackingStoreDeps): TrackingStore {
     return {
       run: (sql, params) => call(() => handle.raw.run(sql, params)),
       query: (sql, params) => call(() => handle.raw.query(sql, params)),
+      session: (fn) => call(() => handle.raw.session(fn)),
       close: () => undefined,
     };
   }

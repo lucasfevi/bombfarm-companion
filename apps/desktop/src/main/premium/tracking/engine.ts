@@ -7,22 +7,82 @@ export type EngineProbe =
 
 /** The part of the DuckDB binding the engine uses; no other module names the package. */
 export interface DuckConnection {
+  /** Resolves with a result that carries `rowsChanged`. */
   run(sql: string, values?: unknown[]): Promise<unknown>;
   runAndReadAll(sql: string, values?: unknown[]): Promise<{ getRowObjectsJS(): Record<string, unknown>[] }>;
+  streamAndReadUntil(sql: string, targetRowCount: number, values?: unknown[]): Promise<DuckRows>;
+  extractStatements(sql: string): Promise<{
+    readonly count: number;
+    prepare(index: number): Promise<{ readonly statementType: number; readonly parameterCount: number }>;
+  }>;
+  interrupt(): void;
   closeSync(): void;
+}
+export interface DuckRows {
+  columnNames(): string[];
+  getRowsJson(): unknown[][];
 }
 export interface DuckInstance {
   connect(): Promise<DuckConnection>;
   closeSync(): void;
 }
 export interface DuckBinding {
+  /** The statement-type enum: numeric value to name. */
+  StatementType: Record<number, string | undefined>;
   DuckDBInstance: { create(path: string, options: Record<string, string>): Promise<DuckInstance> };
+}
+
+/** What the engine knows about the first statement of a string, from DuckDB's own parser. */
+export interface StatementInfo {
+  /** How many statements the string holds. */
+  count: number;
+  /** DuckDB's name for the first statement's type (`SELECT`, `INSERT`, `MERGE_INTO` …). */
+  type: string;
+  /** How many positional parameters the first statement takes. */
+  parameters: number;
+}
+
+/** Why a statement failed, by DuckDB's error type; never its text. */
+export type StatementErrorKind =
+  | 'bind'
+  | 'disk_full'
+  | 'constraint'
+  | 'catalog'
+  | 'conversion'
+  | 'interrupted'
+  | 'other';
+
+export class EngineStatementError extends Error {
+  constructor(readonly kind: StatementErrorKind) {
+    super(kind);
+    this.name = 'EngineStatementError';
+  }
+}
+
+export interface DbRows {
+  columns: string[];
+  /** DuckDB's JSON form of each value: BIGINT, HUGEINT, DECIMAL and dates are strings. */
+  rows: unknown[][];
+}
+
+/** One connection for the length of a `session` call; every method rejects `EngineStatementError`. */
+export interface DbSession {
+  /** Parses and prepares the string's first statement; a parse or bind failure is kind `bind`. */
+  inspect(sql: string): Promise<StatementInfo>;
+  /** Runs one statement; answers the rows it changed. */
+  run(sql: string, params?: readonly unknown[]): Promise<number>;
+  /** Runs one statement and reads at least `maxRows` rows (possibly a chunk more) or all of them. */
+  query(sql: string, params: readonly unknown[] | undefined, maxRows: number): Promise<DbRows>;
+  /** Aborts the statement in flight; safe from any timer. */
+  interrupt(): void;
 }
 
 /** An open, locked database: the first statement a caller runs is already under the lock. */
 export interface LockedDb {
   run(sql: string, params?: readonly unknown[]): Promise<void>;
   query(sql: string, params?: readonly unknown[]): Promise<Record<string, unknown>[]>;
+  /** `fn` runs alone on the connection: no other call interleaves until it settles. */
+  session<T>(fn: (session: DbSession) => Promise<T>): Promise<T>;
   /** Idempotent. */
   close(): void;
 }
@@ -79,6 +139,66 @@ function lit(value: string): string {
 function lazyBinding(): DuckBinding {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   return require('@duckdb/node-api') as DuckBinding;
+}
+
+function statementKind(error: unknown): StatementErrorKind {
+  const message = error instanceof Error ? error.message : '';
+  switch (/^([A-Za-z ]+?) Error:/.exec(message)?.[1]?.toLowerCase()) {
+    case 'constraint':
+      return 'constraint';
+    case 'catalog':
+      return 'catalog';
+    case 'conversion':
+      return 'conversion';
+    case 'interrupt':
+      return 'interrupted';
+    case 'io':
+      return /no space left|not enough space|enospc/i.test(message) ? 'disk_full' : 'other';
+    default:
+      return 'other';
+  }
+}
+
+async function classified<T>(work: () => Promise<T>): Promise<T> {
+  try {
+    return await work();
+  } catch (error) {
+    throw new EngineStatementError(statementKind(error));
+  }
+}
+
+function sessionOf(binding: DuckBinding, db: DuckConnection): DbSession {
+  return {
+    async inspect(sql) {
+      try {
+        const extracted = await db.extractStatements(sql);
+        // Only a lone statement is prepared: with two, the caller refuses on the count alone.
+        if (extracted.count !== 1) return { count: extracted.count, type: '', parameters: 0 };
+        const prepared = await extracted.prepare(0);
+        return {
+          count: extracted.count,
+          type: binding.StatementType[prepared.statementType] ?? 'INVALID',
+          parameters: prepared.parameterCount,
+        };
+      } catch {
+        throw new EngineStatementError('bind');
+      }
+    },
+    async run(sql, params) {
+      const result = await classified(() => db.run(sql, params === undefined ? undefined : [...params]));
+      const changed = (result as { rowsChanged?: unknown } | null)?.rowsChanged;
+      return typeof changed === 'number' ? changed : 0;
+    },
+    async query(sql, params, maxRows) {
+      const reader = await classified(() =>
+        db.streamAndReadUntil(sql, maxRows, params === undefined ? undefined : [...params]),
+      );
+      return { columns: reader.columnNames(), rows: reader.getRowsJson() };
+    },
+    interrupt() {
+      db.interrupt();
+    },
+  };
 }
 
 function closeQuietly(instance: DuckInstance, connection: DuckConnection | null): void {
@@ -198,6 +318,7 @@ export function createTrackingEngine(deps: TrackingEngineDeps): TrackingEngine {
         const reader = await db.runAndReadAll(sql, params === undefined ? undefined : [...params]);
         return reader.getRowObjectsJS();
       },
+      session: (fn) => fn(sessionOf(binding, db)),
       close() {
         if (closed) return;
         closed = true;

@@ -617,6 +617,7 @@ describe('the Premium host adds nothing secret to the view or the log', () => {
     'premium.bundle_fetch',
     'premium.bundle_verify',
     'premium.capability',
+    'premium.db',
     'premium.host_start_failed',
     'premium.removal',
     'premium.ui_mount',
