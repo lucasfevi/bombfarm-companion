@@ -136,7 +136,7 @@ const DRIVES: readonly Drive[] = [
 
 /** Every stored field differing from its default, so a read proves it came from the answer. */
 const STORED: AppSettings = {
-  schemaVersion: 4,
+  schemaVersion: DEFAULT_SETTINGS.schemaVersion,
   locale: 'pt-BR',
   alwaysOnTopMain: true,
   alwaysOnTopMini: true,
@@ -144,6 +144,7 @@ const STORED: AppSettings = {
   restartGameOnExit: true,
   marketQuoteCurrency: 'EUR',
   usagePingEnabled: false,
+  startWithWindows: true,
 };
 
 const ALL_HANDLERS: readonly ((handlers: SettingsHandlers) => void)[] = DRIVES.map((entry) => entry.drive);

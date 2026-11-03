@@ -11,7 +11,7 @@ import {
 } from './settings-apply.js';
 
 const BASE: AppSettings = {
-  schemaVersion: 4,
+  schemaVersion: DEFAULT_SETTINGS.schemaVersion,
   locale: 'en',
   alwaysOnTopMain: true,
   alwaysOnTopMini: true,
@@ -19,6 +19,7 @@ const BASE: AppSettings = {
   restartGameOnExit: true,
   marketQuoteCurrency: 'BRL',
   usagePingEnabled: true,
+  startWithWindows: true,
 };
 
 describe('applyLocale', () => {
@@ -32,7 +33,7 @@ describe('applyLocale', () => {
     const result = applyLocale({ current: BASE, next: 'pt-BR', persist });
 
     expect(result.settings).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: true,
       alwaysOnTopMini: true,
@@ -40,6 +41,7 @@ describe('applyLocale', () => {
       restartGameOnExit: true,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -79,7 +81,7 @@ describe('applyAlwaysOnTopMain', () => {
 
     expect(setAlwaysOnTop).toHaveBeenCalledWith(true, 'normal');
     expect(result.settings).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: true,
       alwaysOnTopMini: false,
@@ -87,6 +89,7 @@ describe('applyAlwaysOnTopMain', () => {
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -166,7 +169,7 @@ describe('applyAlwaysOnTopMini', () => {
 
     expect(setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver');
     expect(result.settings).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: true,
@@ -174,6 +177,7 @@ describe('applyAlwaysOnTopMini', () => {
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -209,7 +213,7 @@ describe('applyForgeWritesEnabled', () => {
     const result = applyForgeWritesEnabled({ current: { ...DEFAULT_SETTINGS, locale: 'pt-BR' }, enabled: true, persist });
 
     expect(result.settings).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: false,
@@ -217,6 +221,7 @@ describe('applyForgeWritesEnabled', () => {
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -275,7 +280,7 @@ describe('applyRestartGameOnExit', () => {
 
     expect(setEnabled).toHaveBeenCalledWith(true);
     expect(result.settings).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: false,
@@ -283,6 +288,7 @@ describe('applyRestartGameOnExit', () => {
       restartGameOnExit: true,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });

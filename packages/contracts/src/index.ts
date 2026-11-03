@@ -480,7 +480,7 @@ export interface DamageAttributionResult {
 }
 
 export interface AppSettings {
-  schemaVersion: 4;
+  schemaVersion: 5;
   locale: 'en' | 'pt-BR';
   alwaysOnTopMain: boolean;
   alwaysOnTopMini: boolean;
@@ -497,10 +497,13 @@ export interface AppSettings {
   /** On until the player turns it off. While on, the hourly usage ping names this install and
    *  the game account; while off it names neither, and the install's id is deleted. */
   usagePingEnabled: boolean;
+  /** On until the player turns it off. While on, the installed app registers itself to start when
+   *  Windows signs the player in, hidden in the tray. */
+  startWithWindows: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  schemaVersion: 4,
+  schemaVersion: 5,
   locale: 'en',
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
@@ -508,6 +511,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   restartGameOnExit: false,
   marketQuoteCurrency: DEFAULT_MARKET_QUOTE_CURRENCY,
   usagePingEnabled: true,
+  startWithWindows: true,
 };
 
 export type MiniLiveGrowthAxis = 'vertical' | 'horizontal';

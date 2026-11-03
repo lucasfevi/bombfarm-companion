@@ -1,12 +1,12 @@
 import type { AppLocale, AppSettings, SettingsWriteResult } from '@bombfarm/contracts';
-import { isMarketQuoteCurrency } from '@bombfarm/contracts';
+import { DEFAULT_SETTINGS, isMarketQuoteCurrency } from '@bombfarm/contracts';
 
 export function applyLocale(deps: {
   current: AppSettings;
   next: AppLocale;
   persist: (settings: AppSettings) => SettingsWriteResult;
 }): SettingsWriteResult {
-  const applied: AppSettings = { ...deps.current, schemaVersion: 4, locale: deps.next };
+  const applied: AppSettings = { ...deps.current, schemaVersion: DEFAULT_SETTINGS.schemaVersion, locale: deps.next };
   return deps.persist(applied);
 }
 
@@ -20,7 +20,7 @@ export function applyAlwaysOnTopMain(deps: {
     return { settings: deps.current, persisted: true, reason: null };
   }
 
-  const applied: AppSettings = { ...deps.current, schemaVersion: 4, alwaysOnTopMain: deps.enabled };
+  const applied: AppSettings = { ...deps.current, schemaVersion: DEFAULT_SETTINGS.schemaVersion, alwaysOnTopMain: deps.enabled };
   deps.setAlwaysOnTop(deps.enabled, 'normal');
   return deps.persist(applied);
 }
@@ -35,7 +35,7 @@ export function applyAlwaysOnTopMini(deps: {
     return { settings: deps.current, persisted: true, reason: null };
   }
 
-  const applied: AppSettings = { ...deps.current, schemaVersion: 4, alwaysOnTopMini: deps.enabled };
+  const applied: AppSettings = { ...deps.current, schemaVersion: DEFAULT_SETTINGS.schemaVersion, alwaysOnTopMini: deps.enabled };
   deps.setAlwaysOnTop(deps.enabled, 'screen-saver');
   return deps.persist(applied);
 }
@@ -49,7 +49,7 @@ export function applyForgeWritesEnabled(deps: {
     return { settings: deps.current, persisted: true, reason: null };
   }
 
-  const applied: AppSettings = { ...deps.current, schemaVersion: 4, forgeWritesEnabled: deps.enabled };
+  const applied: AppSettings = { ...deps.current, schemaVersion: DEFAULT_SETTINGS.schemaVersion, forgeWritesEnabled: deps.enabled };
   return deps.persist(applied);
 }
 
@@ -63,7 +63,7 @@ export function applyRestartGameOnExit(deps: {
     return { settings: deps.current, persisted: true, reason: null };
   }
 
-  const applied: AppSettings = { ...deps.current, schemaVersion: 4, restartGameOnExit: deps.enabled };
+  const applied: AppSettings = { ...deps.current, schemaVersion: DEFAULT_SETTINGS.schemaVersion, restartGameOnExit: deps.enabled };
   deps.setEnabled(deps.enabled);
   return deps.persist(applied);
 }
@@ -77,7 +77,7 @@ export function applyMarketQuoteCurrency(deps: {
     return { settings: deps.current, persisted: true, reason: null };
   }
 
-  const applied: AppSettings = { ...deps.current, schemaVersion: 4, marketQuoteCurrency: deps.next };
+  const applied: AppSettings = { ...deps.current, schemaVersion: DEFAULT_SETTINGS.schemaVersion, marketQuoteCurrency: deps.next };
   return deps.persist(applied);
 }
 
@@ -91,7 +91,7 @@ export function applyUsagePingEnabled(deps: {
     return { settings: deps.current, persisted: true, reason: null };
   }
 
-  const applied: AppSettings = { ...deps.current, schemaVersion: 4, usagePingEnabled: deps.enabled };
+  const applied: AppSettings = { ...deps.current, schemaVersion: DEFAULT_SETTINGS.schemaVersion, usagePingEnabled: deps.enabled };
   deps.setEnabled(deps.enabled);
   return deps.persist(applied);
 }

@@ -44,7 +44,7 @@ export function migrateStoredSettings(parsed: unknown): AppSettings | null {
   }
 
   const schemaVersion = parsed.schemaVersion;
-  if (schemaVersion !== 1 && schemaVersion !== 2 && schemaVersion !== 3 && schemaVersion !== 4) {
+  if (schemaVersion !== 1 && schemaVersion !== 2 && schemaVersion !== 3 && schemaVersion !== 4 && schemaVersion !== 5) {
     return null;
   }
 
@@ -78,7 +78,7 @@ export function migrateStoredSettings(parsed: unknown): AppSettings | null {
   }
 
   return {
-    schemaVersion: 4,
+    schemaVersion: DEFAULT_SETTINGS.schemaVersion,
     locale: parsed.locale,
     alwaysOnTopMain: mainFlag === 'missing' ? DEFAULT_SETTINGS.alwaysOnTopMain : mainFlag,
     alwaysOnTopMini: miniFlag === 'missing' ? DEFAULT_SETTINGS.alwaysOnTopMini : miniFlag,
@@ -86,5 +86,6 @@ export function migrateStoredSettings(parsed: unknown): AppSettings | null {
     restartGameOnExit: restartGameFlag === 'missing' ? DEFAULT_SETTINGS.restartGameOnExit : restartGameFlag,
     marketQuoteCurrency,
     usagePingEnabled: usagePingFlag === 'missing' ? DEFAULT_SETTINGS.usagePingEnabled : usagePingFlag,
+    startWithWindows: DEFAULT_SETTINGS.startWithWindows,
   };
 }

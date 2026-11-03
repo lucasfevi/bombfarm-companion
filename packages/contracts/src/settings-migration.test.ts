@@ -3,9 +3,9 @@ import { DEFAULT_SETTINGS } from './index.js';
 import { migrateStoredSettings } from './settings-migration.js';
 
 describe('migrateStoredSettings', () => {
-  it('migrates a v1 row to v4 with every flag false and the default market currency', () => {
+  it('migrates a v1 row to the current schema with every flag false and the default market currency', () => {
     expect(migrateStoredSettings({ schemaVersion: 1, locale: 'pt-BR' })).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: false,
@@ -13,10 +13,11 @@ describe('migrateStoredSettings', () => {
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
   });
 
-  it('migrates a v2 row to v4 with forge writes off — the switch never comes on by migration', () => {
+  it('migrates a v2 row to the current schema with forge writes off — the switch never comes on by migration', () => {
     expect(
       migrateStoredSettings({
         schemaVersion: 2,
@@ -25,7 +26,7 @@ describe('migrateStoredSettings', () => {
         alwaysOnTopMini: false,
       }),
     ).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'en',
       alwaysOnTopMain: true,
       alwaysOnTopMini: false,
@@ -33,6 +34,7 @@ describe('migrateStoredSettings', () => {
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
   });
 
@@ -47,7 +49,7 @@ describe('migrateStoredSettings', () => {
         restartGameOnExit: true,
       }),
     ).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: true,
       alwaysOnTopMini: true,
@@ -55,10 +57,11 @@ describe('migrateStoredSettings', () => {
       restartGameOnExit: true,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
   });
 
-  it('returns a well-formed v4 row as-is, the chosen currency included', () => {
+  it('reads a well-formed v4 row forward with every stored value kept, the chosen currency included', () => {
     const stored = {
       schemaVersion: 4,
       locale: 'en' as const,
@@ -69,7 +72,11 @@ describe('migrateStoredSettings', () => {
       marketQuoteCurrency: 'USD' as const,
       usagePingEnabled: false,
     };
-    expect(migrateStoredSettings(stored)).toEqual(stored);
+    expect(migrateStoredSettings(stored)).toEqual({
+      ...stored,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
+      startWithWindows: true,
+    });
   });
 
   it('a stored currency this build no longer offers falls back to the default without discarding the row', () => {
@@ -84,7 +91,7 @@ describe('migrateStoredSettings', () => {
         marketQuoteCurrency: 'SEK',
       }),
     ).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: true,
       alwaysOnTopMini: false,
@@ -92,6 +99,7 @@ describe('migrateStoredSettings', () => {
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
   });
 
@@ -114,7 +122,7 @@ describe('migrateStoredSettings', () => {
         alwaysOnTopMini: true,
       }),
     ).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'en',
       alwaysOnTopMain: false,
       alwaysOnTopMini: true,
@@ -122,13 +130,14 @@ describe('migrateStoredSettings', () => {
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
   });
 
   it('fills missing fields from DEFAULT_SETTINGS on a v2, v3 or v4 row', () => {
     for (const schemaVersion of [2, 3, 4]) {
       expect(migrateStoredSettings({ schemaVersion, locale: 'en' })).toEqual({
-        schemaVersion: 4,
+        schemaVersion: DEFAULT_SETTINGS.schemaVersion,
         locale: 'en',
         alwaysOnTopMain: DEFAULT_SETTINGS.alwaysOnTopMain,
         alwaysOnTopMini: DEFAULT_SETTINGS.alwaysOnTopMini,
@@ -136,6 +145,7 @@ describe('migrateStoredSettings', () => {
         restartGameOnExit: DEFAULT_SETTINGS.restartGameOnExit,
         marketQuoteCurrency: DEFAULT_SETTINGS.marketQuoteCurrency,
         usagePingEnabled: DEFAULT_SETTINGS.usagePingEnabled,
+        startWithWindows: true,
       });
     }
   });
@@ -150,7 +160,7 @@ describe('migrateStoredSettings', () => {
         forgeWritesEnabled: true,
       }),
     ).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: true,
       alwaysOnTopMini: true,
@@ -158,6 +168,7 @@ describe('migrateStoredSettings', () => {
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
   });
 

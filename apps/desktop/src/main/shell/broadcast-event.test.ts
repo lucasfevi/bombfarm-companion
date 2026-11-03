@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { AppSettings, ConsentRecord, LiveEvent } from '@bombfarm/contracts';
+import { DEFAULT_SETTINGS, type AppSettings, type ConsentRecord, type LiveEvent } from '@bombfarm/contracts';
 import { broadcastEventToWindows } from './broadcast-event.js';
 
 function fakeWindow(destroyed: boolean) {
@@ -60,7 +60,7 @@ describe('broadcastEventToWindows', () => {
     const first = fakeWindow(false);
     const second = fakeWindow(false);
     const payload: AppSettings = {
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: true,
@@ -68,6 +68,7 @@ describe('broadcastEventToWindows', () => {
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     };
 
     broadcastEventToWindows([first, second], 'bfc:event:settings:changed', payload);

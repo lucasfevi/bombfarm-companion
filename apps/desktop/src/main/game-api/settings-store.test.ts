@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AppSettings } from '@bombfarm/contracts';
+import { DEFAULT_SETTINGS, type AppSettings } from '@bombfarm/contracts';
 import type { SqliteDb, SqliteStatement } from '../storage/index.js';
 import { detectAvailableBindings, openTestAccountDb, warnForUnavailableBindings } from '../storage/test-support.js';
 import { createSettingsStore } from './settings-store.js';
@@ -8,7 +8,7 @@ const availableBindings = detectAvailableBindings();
 warnForUnavailableBindings(availableBindings);
 
 const EN: AppSettings = {
-  schemaVersion: 4,
+  schemaVersion: DEFAULT_SETTINGS.schemaVersion,
   locale: 'en',
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
@@ -16,9 +16,10 @@ const EN: AppSettings = {
   restartGameOnExit: false,
   marketQuoteCurrency: 'BRL',
   usagePingEnabled: true,
+  startWithWindows: true,
 };
 const PT_BR: AppSettings = {
-  schemaVersion: 4,
+  schemaVersion: DEFAULT_SETTINGS.schemaVersion,
   locale: 'pt-BR',
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
@@ -26,6 +27,7 @@ const PT_BR: AppSettings = {
   restartGameOnExit: false,
   marketQuoteCurrency: 'BRL',
   usagePingEnabled: true,
+  startWithWindows: true,
 };
 
 describe.each(availableBindings)('createSettingsStore over the real account_meta table (%s)', (binding) => {
@@ -76,7 +78,7 @@ describe.each(availableBindings)('createSettingsStore over the real account_meta
     expect(store.read()).toBeNull();
   });
 
-  it('a v3 row stored before the market currency existed reads back quoting in BRL, and the next write persists v4', () => {
+  it('a v3 row stored before the market currency existed reads back quoting in BRL, and the next write persists the current schema', () => {
     const open = openTestAccountDb(binding);
     if (!open.db) throw new Error('expected an open db for this binding');
     const storedV3 = {
@@ -94,7 +96,7 @@ describe.each(availableBindings)('createSettingsStore over the real account_meta
     const store = createSettingsStore(open.db);
     const migrated = store.read();
 
-    expect(migrated).toEqual({ ...storedV3, schemaVersion: 4, marketQuoteCurrency: 'BRL', usagePingEnabled: true });
+    expect(migrated).toEqual({ ...storedV3, schemaVersion: DEFAULT_SETTINGS.schemaVersion, marketQuoteCurrency: 'BRL', usagePingEnabled: true, startWithWindows: true });
     if (!migrated) throw new Error('expected the v3 row to migrate');
 
     store.write({ ...migrated, marketQuoteCurrency: 'USD' });
@@ -103,9 +105,10 @@ describe.each(availableBindings)('createSettingsStore over the real account_meta
       | undefined;
     expect(JSON.parse(row?.value ?? '')).toEqual({
       ...storedV3,
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       marketQuoteCurrency: 'USD',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
     expect(store.read()?.marketQuoteCurrency).toBe('USD');
   });
