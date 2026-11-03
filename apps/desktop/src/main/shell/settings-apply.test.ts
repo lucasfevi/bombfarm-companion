@@ -417,11 +417,11 @@ describe('applyStartWithWindows', () => {
   it('reconciles with the new value and persists the applied settings, in that order', () => {
     const order: string[] = [];
     const reconcile = vi.fn((on: boolean) => {
-      order.push(`reconcile:${on}`);
-      return { applied: true, registered: on } as LoginItemOutcome;
+      order.push(`reconcile:${String(on)}`);
+      return { applied: true, registered: on };
     });
     const persist = vi.fn((settings: AppSettings) => {
-      order.push(`persist:${settings.startWithWindows}`);
+      order.push(`persist:${String(settings.startWithWindows)}`);
       return written(settings);
     });
 
