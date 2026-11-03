@@ -74,7 +74,7 @@ export interface TrackingHost extends HostTracking {
   history(subject: string): TrackingHistoryView;
   clear(subject: string): Promise<ClearOutcome>;
   armProbe(): void;
-  /** Stops the probe timer; the quit path calls it. */
+  /** Stops the probe timer and detaches the feeds; the runner's own stop already ends the feeds and closes the handle. */
   dispose(): void;
 }
 

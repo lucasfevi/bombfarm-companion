@@ -243,7 +243,7 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
       if (host !== null) startHost(host);
       // The one engine probe runs a few seconds from now, off the start-up path.
       host?.armTrackingProbe?.();
-      stopResume ??=deps.onResume?.(() => {
+      stopResume ??= deps.onResume?.(() => {
         service.trigger('resume');
       }) ?? null;
     },

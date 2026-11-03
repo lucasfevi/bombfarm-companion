@@ -2,6 +2,8 @@ import { existsSync } from 'node:fs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { PREMIUM_CAPABILITIES } from '@bombfarm/contracts';
 import { createPremiumTapFeedSlot } from '../../live-source/premium-tap-feed';
@@ -200,5 +202,79 @@ describe('the tracking capabilities the host grants', () => {
     await host.idle();
     await expect(host.clearTrackingHistory?.(SUBJECT)).resolves.toBe('cleared');
     expect(host.trackingHistory?.(SUBJECT)).toEqual({ state: 'none' });
+  });
+});
+
+describe('only a Settings clear deletes tracking history', () => {
+  const file = (): string => join(root, TRACKING_DIR, `${subjectHash(SUBJECT)}.duckdb`);
+  const survives = (rows: { held: Map<string, string> }): boolean =>
+    existsSync(file()) && rows.held.has(trackingKeyRow(SUBJECT));
+
+  async function opened() {
+    const w = await wire({ requested: ['db'] });
+    await w.worker?.call('db', { op: 'status' });
+    expect(survives(w.rows)).toBe(true);
+    return w;
+  }
+
+  it.each(['ended', 'moved', 'released'] as const)('removal (%s) through the real wiring keeps the file and key', async (reason) => {
+    const { host, rows } = await opened();
+
+    host.requestPremiumRemoval(reason);
+    await flush({ runner: host });
+    await host.idle();
+
+    expect(survives(rows)).toBe(true);
+  });
+
+  it('signing out, a pause and quitting keep the file and key', async () => {
+    const { host, rows } = await opened();
+
+    appLeaseGate.set(false, 'unconfirmed');
+    await flush({ runner: host });
+    expect(survives(rows)).toBe(true);
+    appLeaseGate.set(true, 'holds');
+    await flush({ runner: host });
+    host.signedOut();
+    await flush({ runner: host });
+    expect(survives(rows)).toBe(true);
+    host.stop();
+    await host.idle();
+    expect(survives(rows)).toBe(true);
+  });
+
+  it('a clear does delete them, so the survival checks above can fail', async () => {
+    const { host, rows } = await opened();
+
+    await expect(host.clearTrackingHistory?.(SUBJECT)).resolves.toBe('cleared');
+
+    expect(existsSync(file())).toBe(false);
+    expect(rows.held.has(trackingKeyRow(SUBJECT))).toBe(false);
+  });
+
+  describe('in the source', () => {
+    const main = resolve(__dirname, '..', '..');
+    const strip = (text: string): string => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    const read = (path: string): string => strip(readFileSync(resolve(main, path), 'utf8'));
+
+    it('names the tracking folder only in the store', () => {
+      for (const path of ['premium/host/tracking-host.ts', 'premium/host/host-runner.ts', 'premium/host/host-wiring.ts', 'premium/index.ts']) {
+        expect(read(path), path).not.toMatch(/TRACKING_DIR|premium-tracking/);
+      }
+    });
+
+    it('lets the runner reach the tracking clear in one place only: the Settings clear', () => {
+      const code = read('premium/host/host-runner.ts');
+      const calls = code.split('\n').filter((line) => /\.clear\?*\.?\(/.test(line) && /tracking/.test(line));
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toContain('clearTrackingHistory');
+    });
+
+    it('lets the composer call the store clear in one place only', () => {
+      const lines = read('premium/host/tracking-host.ts')
+        .split('\n')
+        .filter((line) => /store\.clear\(|current\.clear\(/.test(line));
+      expect(lines).toHaveLength(2);
+    });
   });
 });
