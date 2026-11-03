@@ -17,16 +17,32 @@ export class DuckdbExtensionError extends Error {
   }
 }
 
+/** The platform the shipped app is built for; packaging always asks for this one. */
+export const PACKAGING_PLATFORM = 'windows_amd64';
+
+/** DuckDB's name for the platform this process runs on, or null when no extension is pinned for it. */
+export function currentExtensionPlatform(platform = process.platform, arch = process.arch) {
+  if (platform === 'win32' && arch === 'x64') return 'windows_amd64';
+  if (platform === 'linux' && arch === 'x64') return 'linux_amd64';
+  return null;
+}
+
 /**
- * The one place the extension's DuckDB version and checksum are pinned. `sha256` is the
+ * The one place the extension's DuckDB version and checksums are pinned. Each `sha256` is the
  * *decompressed* file's. Bumping DuckDB means bumping this file and the exact
  * `@duckdb/node-api` version together; the pin test fails when only one moves.
  *
  * @typedef {{ version: string, platform: string, extension: string, sha256: string }} DuckdbExtensionPin
+ * @param {string} [platform] defaults to the packaging platform
  * @returns {DuckdbExtensionPin}
  */
-export function readDuckdbExtensionPin() {
-  return JSON.parse(readFileSync(path.join(__dirname, 'duckdb-extension.json'), 'utf8'));
+export function readDuckdbExtensionPin(platform = PACKAGING_PLATFORM) {
+  const file = JSON.parse(readFileSync(path.join(__dirname, 'duckdb-extension.json'), 'utf8'));
+  const sha256 = file.sha256[platform];
+  if (typeof sha256 !== 'string') {
+    throw new DuckdbExtensionError(`No DuckDB extension is pinned for ${platform}.`);
+  }
+  return { version: file.version, platform, extension: file.extension, sha256 };
 }
 
 export function extensionFileName(pin) {

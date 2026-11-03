@@ -6,6 +6,7 @@ import { gzipSync } from 'node:zlib';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   assertPinsAgree,
+  currentExtensionPlatform,
   DuckdbExtensionError,
   duckdbVersionOfBinding,
   extensionDownloadUrl,
@@ -140,5 +141,29 @@ describe('the DuckDB pins', () => {
 
   it('pins a sha256 of the right shape', () => {
     expect(realPin.sha256).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe('the per-platform pins', () => {
+  it('pins a well-formed sha256 for the packaging platform and for Linux CI', () => {
+    for (const platform of ['windows_amd64', 'linux_amd64']) {
+      const pin = readDuckdbExtensionPin(platform);
+      expect(pin.platform).toBe(platform);
+      expect(pin.sha256).toMatch(/^[0-9a-f]{64}$/);
+      expect(extensionDownloadUrl(pin)).toContain(`/${platform}/`);
+    }
+    expect(readDuckdbExtensionPin('windows_amd64').sha256).not.toBe(readDuckdbExtensionPin('linux_amd64').sha256);
+  });
+
+  it('defaults to the packaging platform and refuses an unpinned one', () => {
+    expect(readDuckdbExtensionPin().platform).toBe('windows_amd64');
+    expect(() => readDuckdbExtensionPin('osx_arm64')).toThrow(DuckdbExtensionError);
+  });
+
+  it('names the current platform, and none for an unpinned one', () => {
+    expect(currentExtensionPlatform('win32', 'x64')).toBe('windows_amd64');
+    expect(currentExtensionPlatform('linux', 'x64')).toBe('linux_amd64');
+    expect(currentExtensionPlatform('darwin', 'arm64')).toBeNull();
+    expect(currentExtensionPlatform('linux', 'arm64')).toBeNull();
   });
 });

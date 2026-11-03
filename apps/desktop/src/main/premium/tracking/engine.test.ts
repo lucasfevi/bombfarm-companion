@@ -1,28 +1,18 @@
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { LogPort } from '../../storage/index.js';
+import { currentPlatformExtension } from './test-extension.js';
 import { createTrackingEngine, EngineOpenError, type DuckBinding, type LockedDb } from './engine.js';
 
 const KEY = 'a1'.repeat(32);
-const FETCH_SCRIPT = resolve(__dirname, '../../../../scripts/fetch-duckdb-extension.mjs');
-
 let scratch = '';
-let extension: string | null = null;
-let skipReason = '';
+let extension = '';
 
-beforeAll(async () => {
+beforeAll(() => {
   scratch = mkdtempSync(join(tmpdir(), 'bfc-engine-'));
-  try {
-    const fetcher = (await import(/* @vite-ignore */ FETCH_SCRIPT)) as {
-      fetchDuckdbExtension: () => Promise<string>;
-    };
-    extension = await fetcher.fetchDuckdbExtension();
-  } catch (error) {
-    skipReason = `the signed extension could not be fetched: ${error instanceof Error ? error.message : String(error)}`;
-  }
-}, 120_000);
+});
 
 afterAll(() => {
   rmSync(scratch, { recursive: true, force: true });
@@ -50,14 +40,14 @@ function folder(name: string): string {
   return dir;
 }
 
-function realEngine(extensionPath: string | null = extension) {
+function realEngine(extensionPath: string = extension) {
   const { log, records } = recordingLog();
-  return { engine: createTrackingEngine({ extensionPath: extensionPath ?? '', log }), records };
+  return { engine: createTrackingEngine({ extensionPath, log }), records };
 }
 
 function tamperedCopy(): string {
   const target = join(folder('tamper'), 'httpfs.duckdb_extension');
-  copyFileSync(extension as string, target);
+  copyFileSync(extension, target);
   const bytes = readFileSync(target);
   const at = Math.floor(bytes.length / 2);
   bytes[at] = (bytes[at] as number) ^ 0xff;
@@ -162,17 +152,13 @@ describe('the engine probe', () => {
   });
 });
 
+// No skip: the fetch must work or the suite fails.
 describe('the engine against the real binding and the signed extension', () => {
-  const real = (name: string, body: () => Promise<void>) => {
-    it(name, async (context) => {
-      if (extension === null) {
-        context.skip(skipReason);
-      }
-      await body();
-    });
-  };
+  beforeAll(async () => {
+    extension = await currentPlatformExtension();
+  }, 120_000);
 
-  real('probes ok with the DuckDB version and logs once', async () => {
+  it('probes ok with the DuckDB version and logs once', async () => {
     const { engine, records } = realEngine();
     const result = await engine.probe();
     expect(result.ok).toBe(true);
@@ -181,24 +167,24 @@ describe('the engine against the real binding and the signed extension', () => {
     expect(records.filter((r) => r['event'] === 'premium.tracking_probe')).toHaveLength(1);
   });
 
-  real('answers extension_missing for a missing file', async () => {
+  it('answers extension_missing for a missing file', async () => {
     const { engine } = realEngine(join(folder('none'), 'httpfs.duckdb_extension'));
     await expect(engine.probe()).resolves.toEqual({ ok: false, reason: 'extension_missing' });
   });
 
-  real('answers extension_missing for a file with one byte changed', async () => {
+  it('answers extension_missing for a file with one byte changed', async () => {
     const { engine } = realEngine(tamperedCopy());
     await expect(engine.probe()).resolves.toEqual({ ok: false, reason: 'extension_missing' });
   });
 
-  real('refuses to open with a tampered extension and creates no database file', async () => {
+  it('refuses to open with a tampered extension and creates no database file', async () => {
     const file = join(folder('tamper-open'), 'track.duckdb');
     const { engine } = realEngine(tamperedCopy());
     await expect(engine.open(file, KEY)).rejects.toMatchObject({ name: 'EngineOpenError', reason: 'extension_failed' });
     expect(existsSync(file)).toBe(false);
   });
 
-  real('opens locked: the four settings read back false, true, false, false', async () => {
+  it('opens locked: the four settings read back false, true, false, false', async () => {
     const db = await realEngine().engine.open(join(folder('open'), 'track.duckdb'), KEY);
     try {
       const read = async (name: string) => (await db.query(`SELECT current_setting('${name}') AS v`))[0]?.['v'];
@@ -213,7 +199,7 @@ describe('the engine against the real binding and the signed extension', () => {
     }
   });
 
-  real('writes and reads after the lock, keeps the data encrypted, and reopens with the same key', async () => {
+  it('writes and reads after the lock, keeps the data encrypted, and reopens with the same key', async () => {
     const file = join(folder('roundtrip'), 'track.duckdb');
     const engine = realEngine().engine;
     const db = await engine.open(file, KEY);
@@ -231,7 +217,7 @@ describe('the engine against the real binding and the signed extension', () => {
     }
   });
 
-  real('throws EngineOpenError for a wrong key and keeps the file', async () => {
+  it('throws EngineOpenError for a wrong key and keeps the file', async () => {
     const file = join(folder('wrongkey'), 'track.duckdb');
     const engine = realEngine().engine;
     (await engine.open(file, KEY)).close();
@@ -240,7 +226,7 @@ describe('the engine against the real binding and the signed extension', () => {
     expect(readFileSync(file).equals(before)).toBe(true);
   });
 
-  real('rejects a key that is not 64 lowercase hex before touching anything', async () => {
+  it('rejects a key that is not 64 lowercase hex before touching anything', async () => {
     const file = join(folder('badkey'), 'track.duckdb');
     await expect(realEngine().engine.open(file, "x' ); DROP")).rejects.toBeInstanceOf(EngineOpenError);
     expect(existsSync(file)).toBe(false);
@@ -253,7 +239,6 @@ describe('the engine against the real binding and the signed extension', () => {
     let before = { mtimeMs: 0, body: '' };
 
     beforeAll(async () => {
-      if (extension === null) return;
       dir = folder('locked');
       marker = join(dir, 'marker.csv');
       writeFileSync(marker, 'a,b\n1,SECRET_MARKER\n');
@@ -283,14 +268,12 @@ describe('the engine against the real binding and the signed extension', () => {
     ];
 
     for (const [label, sql] of refused) {
-      it(`refuses ${label}`, async (context) => {
-        if (db === undefined) context.skip(skipReason);
+      it(`refuses ${label}`, async () => {
         await expect(db?.run(sql())).rejects.toThrow();
       });
     }
 
-    it('left the marker file untouched and created nothing beside the database', (context) => {
-      if (db === undefined) context.skip(skipReason);
+    it('left the marker file untouched and created nothing beside the database', () => {
       expect(statSync(marker).mtimeMs).toBe(before.mtimeMs);
       expect(readFileSync(marker, 'utf8')).toBe(before.body);
       const others = readdirSync(dir).filter((name) => !name.startsWith('track.duckdb'));
