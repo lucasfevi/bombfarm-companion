@@ -1525,6 +1525,11 @@ export const ptBR: Copy = {
   premiumLicenceMoveFailed: 'Não foi possível mover o Premium — tente de novo.',
   // The words of premiumLicenceMoveLimit that become a link once a support channel exists.
   premiumSupportWords: 'falar com o suporte',
+  // premiumMoveConfirm* — the dialog that asks before Premium moves to this PC
+  premiumMoveConfirmTitle: 'Usar o Premium neste PC?',
+  premiumMoveConfirmBody:
+    'O Premium será removido do outro PC. Seu histórico de rastreamento fica naquele PC, e este PC começa com o histórico vazio.',
+  premiumMoveConfirmCancel: 'Cancelar',
   // premiumHost* — the Premium page's mount point
   premiumHostUpdating: 'Atualizando o Premium…',
   premiumHostStopped: 'O Premium parou inesperadamente — reinicie o app',

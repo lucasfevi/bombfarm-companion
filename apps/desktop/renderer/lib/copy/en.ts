@@ -1594,6 +1594,11 @@ export const en = {
   premiumLicenceMoveFailed: "Couldn't move Premium — try again.",
   // The words of premiumLicenceMoveLimit that become a link once a support channel exists.
   premiumSupportWords: 'contact support',
+  // premiumMoveConfirm* — the dialog that asks before Premium moves to this PC
+  premiumMoveConfirmTitle: 'Use Premium on this PC?',
+  premiumMoveConfirmBody:
+    'Premium will be removed from the other PC. Your tracking history stays on that PC, and this PC starts with an empty history.',
+  premiumMoveConfirmCancel: 'Cancel',
   // premiumHost* — the Premium page's mount point
   premiumHostUpdating: 'Updating Premium…',
   premiumHostStopped: 'Premium stopped unexpectedly — restart the app',
