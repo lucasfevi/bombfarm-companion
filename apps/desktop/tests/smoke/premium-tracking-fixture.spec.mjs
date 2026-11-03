@@ -18,6 +18,7 @@ import { STUB_PATHS, activeStatusBody, startPremiumApiStub } from './premium-api
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
 const ACCOUNT_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-offline.json');
+const EN_COPY_PATH = path.join(desktopRoot, 'renderer', 'lib', 'copy', 'en.ts');
 
 /**
  * The tracking fixture bundle, loaded once: it reaches running with all eight capabilities and the
@@ -25,6 +26,13 @@ const ACCOUNT_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-offline.
  * answers a round trip to the worker. This is the sanity check the tracking checks build on; it
  * asserts through IPC and page text, never a screenshot, so it runs with hidden windows.
  */
+function en(key) {
+  const source = fs.readFileSync(EN_COPY_PATH, 'utf8');
+  const match = source.match(new RegExp(`\\b${key}:\\s*(?:\\n\\s*)?(['"])((?:(?!\\1)[^\\\\]|\\\\.)*)\\1`));
+  if (!match) throw new Error(`premium-tracking-fixture.spec.mjs: could not find copy key "${key}" in ${EN_COPY_PATH}`);
+  return match[2].replace(/\\'/g, "'");
+}
+
 function electronExecutable() {
   return path.join(
     desktopRoot,
@@ -131,7 +139,7 @@ test.describe.serial('The tracking fixture bundle loads', () => {
     expect(host.phase).toBe('running');
     expect(host.slots).toEqual(['premium.tab', 'live.section']);
 
-    await page.locator('nav[aria-label="Main"]').getByRole('button', { name: 'Premium', exact: true }).click();
+    await page.locator('nav[aria-label="Main"]').getByRole('button', { name: en('premiumNavLabel'), exact: true }).click();
     const mount = page.getByTestId('premium-host-mount');
     await expect(mount).toContainText(BUNDLE_MARKER, { timeout: 20_000 });
 
