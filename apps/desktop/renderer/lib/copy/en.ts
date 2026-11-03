@@ -143,7 +143,7 @@ export const en = {
   settingsStartWithWindowsSectionTitle: 'Startup',
   settingsStartWithWindowsLabel: 'Start with Windows',
   settingsStartWithWindowsHelp:
-    'Opens the companion when you sign in to Windows. It only takes effect once you have given the companion permission to run; until then your choice is kept and nothing starts. On by default.',
+    'Opens the companion when you sign in to Windows. It only takes effect while account access is allowed; until then your choice is kept and nothing starts. On by default.',
   settingsStartWithWindowsNotSavedTitle: 'Startup setting changed, but not saved',
   settingsStartWithWindowsUnpackagedText:
     'This only works in the installed app on Windows, so the switch is off here.',
