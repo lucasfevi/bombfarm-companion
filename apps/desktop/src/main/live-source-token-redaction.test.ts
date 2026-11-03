@@ -8,7 +8,13 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { SessionToken, initialConsent, type ConsentRecord, type GrantedConsent } from '@bombfarm/game-api';
+import {
+  CONSENT_TEXT_VERSION,
+  SessionToken,
+  initialConsent,
+  type ConsentRecord,
+  type GrantedConsent,
+} from '@bombfarm/game-api';
 
 import { armCredentialRedactor, createRedactingTokenReader, type CredentialRedactorSink } from './redacting-token-reader.js';
 import { FrameRing } from './live-source/frame-ring.js';
@@ -20,7 +26,7 @@ const MARKER_TOKEN = 'sTkn-marker-9f8e7d6c5b4a3210';
 const GRANTED: GrantedConsent = {
   decision: 'granted',
   grantedAt: '2026-11-02T00:00:00.000Z',
-  textVersion: 1,
+  textVersion: CONSENT_TEXT_VERSION,
 };
 
 const NOOP_LOG = { info: () => undefined, warn: () => undefined };
@@ -81,9 +87,12 @@ describe('the session token never reaches the frame dump or the capture file', (
 
     expect(boot.dumps).toHaveLength(1);
     expect(boot.dumps.join('\n')).not.toContain(MARKER_TOKEN);
-    expect(boot.lines.length).toBeGreaterThan(0);
     expect(boot.lines.join('')).not.toContain(MARKER_TOKEN);
-    expect(boot.lines.join('')).not.toContain('"redaction":"key-name-only"');
+    // The capture's own `session started` header predates any reader; every traffic record is armed.
+    const traffic = boot.lines
+      .map((line) => JSON.parse(line) as { kind: string; redaction: string })
+      .filter((record) => record.kind === 'frame' || record.kind === 'body');
+    expect(traffic.map((record) => record.redaction)).toEqual(['armed', 'armed']);
   });
 
   it('without arming, the same traffic does reach the capture in clear — the gap this closes', () => {
