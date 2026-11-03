@@ -255,7 +255,9 @@ describe.each([
   });
 
   it('closes the risk clause by naming the notification-area icon as the way to stop the app entirely', () => {
-    const clause = body.find((c) => c.heading === risk[0]);
-    expect(clause?.text).toMatch(risk[1]);
+    const [riskHeading, riskEnding] = risk;
+    if (!(riskEnding instanceof RegExp)) throw new Error('risk fixture must carry a RegExp ending');
+    const clause = body.find((c) => c.heading === riskHeading);
+    expect(clause?.text).toMatch(riskEnding);
   });
 });
