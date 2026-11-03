@@ -7,6 +7,8 @@ waitForHeavySlot('playwright:desktop');
 
 export default defineConfig({
   testDir: './tests/smoke',
+  // Fetches the pinned DuckDB extension the tracking specs need; a failed fetch fails the run.
+  globalSetup: './tests/smoke/global-setup.mjs',
   timeout: 120_000,
   retries: process.env.CI ? 1 : 0,
   // Each spec here launches a real Electron GUI process. Two specs launching concurrently
@@ -30,6 +32,7 @@ export default defineConfig({
         'premium-playing-account.spec.mjs',
         'premium-host.spec.mjs',
         'premium-capabilities.spec.mjs',
+        'premium-tracking-fixture.spec.mjs',
         'farm-board.spec.mjs',
         'auto-recompute.spec.mjs',
         'i18n.spec.mjs',

@@ -145,6 +145,11 @@ export async function startPremiumApiStub(options = {}) {
     /** Signed fixtures by sequence, and the sequence the manifest route offers. */
     bundles: new Map(),
     offered: null,
+    /**
+     * Who `/v1/me` names and whose Leases are issued: the licence's user at first. A spec signs out,
+     * sets another id here and signs in again to play a second subject, then sets the first back.
+     */
+    userId: licence?.userId ?? null,
     me: { audience: options.me?.audience ?? 'owner' },
     leaseSeconds: options.leaseSeconds ?? 3600,
     bundleAudience: options.bundleAudience ?? null,
@@ -190,7 +195,7 @@ export async function startPremiumApiStub(options = {}) {
     const issuedAt = Date.now();
     const payload = {
       v: 1,
-      user: licence.userId,
+      user: state.userId,
       deviceKeyId: deviceKeyIdOf(request),
       state: state.leaseState,
       playing: body?.playing ?? licence.playing ?? null,
@@ -357,7 +362,7 @@ export async function startPremiumApiStub(options = {}) {
         steamVerified: true,
         gameAccountLinked: true,
         admitted: false,
-        ...(licence === null ? {} : { userId: licence.userId, audience: state.me.audience }),
+        ...(licence === null ? {} : { userId: state.userId, audience: state.me.audience }),
       });
     } else if (url.pathname === PATHS.report) {
       const reply = state.reportReplies[body?.steam_id64];
