@@ -1,7 +1,7 @@
 import type { AppLocale } from '@bombfarm/contracts';
 
 /**
- * The versioned first-run disclosure. One constant, five clauses, each individually
+ * The versioned first-run disclosure. One constant, six clauses, each individually
  * assertable — this module is data, not JSX, because the acceptance criteria are about *what the
  * player is told*, and that must be assertable in a plain Node unit test (this repo's Vitest has
  * no jsdom anywhere — see `apps/desktop/renderer/app/consent-modal.tsx`, which binds to this text
@@ -23,7 +23,7 @@ export interface ConsentText {
   readonly declineLabel: string;
 }
 
-export const CONSENT_TEXT_VERSION = 6;
+export const CONSENT_TEXT_VERSION = 7;
 
 export const CONSENT_TEXT: Readonly<Record<AppLocale, ConsentText>> = {
   en: {
@@ -51,6 +51,16 @@ export const CONSENT_TEXT: Readonly<Record<AppLocale, ConsentText>> = {
           'into a log.',
       },
       {
+        heading: 'Keeps running in the background.',
+        text: 'It starts with Windows and keeps running after you close its window, so your Live ' +
+          'tab and your account stay current while you play. Look for its icon in the ' +
+          'notification area: right-click it to quit, and turn off starting with Windows in ' +
+          'Settings whenever you like. With "Restart Bomb Farm if it exits" turned on in ' +
+          'Settings, it also asks Steam to start the game again when the game closes while the ' +
+          'companion is running — so, left alone, it starts itself when you log in and brings ' +
+          'your game back if it exits.',
+      },
+      {
         heading: 'Antivirus may flag or quarantine it.',
         text: 'Attaching to another running program is the technique behavior-based detection ' +
           'looks for, so a warning is expected — it is about the technique, not a virus.',
@@ -59,7 +69,8 @@ export const CONSENT_TEXT: Readonly<Record<AppLocale, ConsentText>> = {
         heading: 'The risk is yours.',
         text: "Attaching is detectable in principle, and if the game's operator acts on it the " +
           'consequence falls on your account, not on us. You can turn it off at any time, which ' +
-          'stops the reads and disconnects from the game.',
+          'stops the reads and disconnects from the game; to stop the companion entirely, quit ' +
+          'it from its notification-area icon.',
       },
     ],
     acceptLabel: 'Allow',
@@ -91,6 +102,16 @@ export const CONSENT_TEXT: Readonly<Record<AppLocale, ConsentText>> = {
           'nunca para um log.',
       },
       {
+        heading: 'Continua rodando em segundo plano.',
+        text: 'Ele inicia junto com o Windows e continua rodando depois que você fecha a janela, ' +
+          'para manter a aba Ao vivo e sua conta atualizadas enquanto você joga. Procure o ícone ' +
+          'dele na área de notificação: clique com o botão direito para sair, e desative o início ' +
+          'junto com o Windows nas Configurações quando quiser. Com "Reiniciar o Bomb Farm se ele ' +
+          'fechar" ligado nas Configurações, ele também pede ao Steam para abrir o jogo de novo ' +
+          'quando o jogo fecha enquanto o companion está rodando — ou seja, deixado sozinho, ele ' +
+          'se inicia quando você entra no Windows e traz seu jogo de volta se ele fechar.',
+      },
+      {
         heading: 'O antivírus pode sinalizar ou colocar em quarentena.',
         text: 'Conectar-se a outro programa em execução é a técnica que a detecção por ' +
           'comportamento procura, então um aviso é esperado — ele é sobre a técnica, não sobre ' +
@@ -100,7 +121,8 @@ export const CONSENT_TEXT: Readonly<Record<AppLocale, ConsentText>> = {
         heading: 'O risco é seu.',
         text: 'Isso é detectável em princípio, e se o operador do jogo agir sobre isso a ' +
           'consequência recai sobre a sua conta, não sobre nós. Você pode desativar quando ' +
-          'quiser, o que interrompe as leituras e desconecta do jogo.',
+          'quiser, o que interrompe as leituras e desconecta do jogo; para encerrar o companion ' +
+          'por completo, saia pelo ícone na área de notificação.',
       },
     ],
     acceptLabel: 'Permitir',
