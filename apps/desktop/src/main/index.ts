@@ -7,6 +7,7 @@ import {
   ipcMain,
   Menu,
   nativeImage,
+  Notification,
   powerMonitor,
   screen,
   session,
@@ -25,7 +26,7 @@ import {
   type StartWithWindowsWriteResult,
   type UsagePingAccount,
 } from '@bombfarm/contracts';
-import { createPacingGate, initialConsent, isGranted, trayTextFor } from '@bombfarm/game-api';
+import { createPacingGate, firstHideTextFor, initialConsent, isGranted, trayTextFor } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView, resolveCachedAccountView } from './account-view.js';
 import { createApplyInjector, type ApplyInjector } from './apply/apply-inject.js';
 import { createApplyService, type ApplyService } from './apply/apply-service.js';
@@ -67,6 +68,9 @@ import { requestAccountRead } from './game-api/account-read-request.js';
 import { createAccountRefresh, type AccountRefreshDeps, type AccountRefreshHandle } from './game-api/account-refresh.js';
 import { createConsentApplier } from './game-api/consent-applier.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
+import { createShellNoticeStore, type ShellNoticeStore } from './game-api/shell-notice-store.js';
+import { createFirstHideAnnouncer } from './shell/first-hide-notice.js';
+import { createNotificationNoticePort } from './shell/first-hide-notification.js';
 import { createLiveConsentGate } from './game-api/live-consent-gate.js';
 import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
 import { createWindowLayoutStore, type WindowLayoutStore } from './game-api/window-layout-store.js';
@@ -172,6 +176,8 @@ let gameReader: GameReaderService | null = null;
 let accountStore: AccountStore | null = null;
 let accountRefresh: AccountRefreshHandle | null = null;
 let consentStore: ConsentStore | null = null;
+let shellNoticeStore: ShellNoticeStore | null = null;
+let firstHideAnnouncer: ReturnType<typeof createFirstHideAnnouncer> | null = null;
 let settingsStore: SettingsStore | null = null;
 let liveSource: LiveSource | null = null;
 let observationCapture: ObservationCapture | null = null;
@@ -800,6 +806,7 @@ function setupShellLifecycle(env: ReturnType<typeof resolveAppEnv>): void {
     if (shellLifecycle?.onWindowClose() === 'hide') {
       event.preventDefault();
       mainWindow?.hide();
+      firstHideAnnouncer?.announceIfFirst(true);
       log.info({ scope: 'main', event: 'window.hidden' });
     }
   });
@@ -837,6 +844,16 @@ async function bootstrap(): Promise<void> {
   // and before the game reader so its own live-mode process lookups can be gated by the same
   // predicate the live tap already checks.
   consentStore = createConsentStore(accountOpen.db);
+  shellNoticeStore = createShellNoticeStore(accountOpen.db);
+  firstHideAnnouncer = createFirstHideAnnouncer({
+    notice: createNotificationNoticePort(Notification),
+    latch: shellNoticeStore,
+    text: () => firstHideTextFor(currentSettings.locale),
+    show: () => {
+      shellLifecycle?.show();
+    },
+    log,
+  });
 
   gameReader = new GameReaderService(
     userDataDir,
@@ -1566,6 +1583,8 @@ if (!gotLock) {
         },
         releaseConsentStore: () => {
           consentStore = null;
+          shellNoticeStore = null;
+          firstHideAnnouncer = null;
         },
         persistMainWindowLayout: () => {
           persistMainWindowLayout(true);
