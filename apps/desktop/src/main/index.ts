@@ -26,7 +26,7 @@ import {
   type StartWithWindowsWriteResult,
   type UsagePingAccount,
 } from '@bombfarm/contracts';
-import { createPacingGate, firstHideTextFor, initialConsent, isGranted, trayTextFor } from '@bombfarm/game-api';
+import { createPacingGate, initialConsent, isGranted, trayTextFor } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView, resolveCachedAccountView } from './account-view.js';
 import { createApplyInjector, type ApplyInjector } from './apply/apply-inject.js';
 import { createApplyService, type ApplyService } from './apply/apply-service.js';
@@ -66,10 +66,10 @@ import {
 } from './renderer-protocol.js';
 import { requestAccountRead } from './game-api/account-read-request.js';
 import { createAccountRefresh, type AccountRefreshDeps, type AccountRefreshHandle } from './game-api/account-refresh.js';
-import { createConsentApplier } from './game-api/consent-applier.js';
+import { createLoginItemConsentApplier } from './shell/consent-login-item.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
 import { createShellNoticeStore, type ShellNoticeStore } from './game-api/shell-notice-store.js';
-import { createFirstHideAnnouncer } from './shell/first-hide-notice.js';
+import { createLocalizedFirstHideAnnouncer } from './shell/localized-first-hide-announcer.js';
 import { createNotificationNoticePort } from './shell/first-hide-notification.js';
 import { createLiveConsentGate } from './game-api/live-consent-gate.js';
 import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
@@ -177,7 +177,7 @@ let accountStore: AccountStore | null = null;
 let accountRefresh: AccountRefreshHandle | null = null;
 let consentStore: ConsentStore | null = null;
 let shellNoticeStore: ShellNoticeStore | null = null;
-let firstHideAnnouncer: ReturnType<typeof createFirstHideAnnouncer> | null = null;
+let firstHideAnnouncer: ReturnType<typeof createLocalizedFirstHideAnnouncer> | null = null;
 let settingsStore: SettingsStore | null = null;
 let liveSource: LiveSource | null = null;
 let observationCapture: ObservationCapture | null = null;
@@ -237,7 +237,7 @@ const emitToMainWindow = createEventEmitter({ getWindows: () => (mainWindow === 
  *  consent:* handler below goes through. Every dep below reads the module-level
  *  `let` bindings lazily, through its own closure, because they are still null at this point in
  *  the module and are only assigned once `bootstrap()` runs. */
-const applyConsentEvent = createConsentApplier({
+const applyConsentEvent = createLoginItemConsentApplier({
   read: () => consentStore?.read() ?? initialConsent(),
   write: (next) => {
     consentStore?.write(next);
@@ -266,10 +266,8 @@ const applyConsentEvent = createConsentApplier({
     () => {
       gameReader?.pollNow();
     },
-    () => {
-      reconcileLoginItemNow();
-    },
   ],
+  reconcileLoginItem: reconcileLoginItemNow,
   onError: (error) => {
     log.error({ scope: 'main', event: 'consent.pre_persist_hook_failed', error: String(error) });
   },
@@ -845,10 +843,10 @@ async function bootstrap(): Promise<void> {
   // predicate the live tap already checks.
   consentStore = createConsentStore(accountOpen.db);
   shellNoticeStore = createShellNoticeStore(accountOpen.db);
-  firstHideAnnouncer = createFirstHideAnnouncer({
+  firstHideAnnouncer = createLocalizedFirstHideAnnouncer({
     notice: createNotificationNoticePort(Notification),
     latch: shellNoticeStore,
-    text: () => firstHideTextFor(currentSettings.locale),
+    getLocale: () => currentSettings.locale,
     show: () => {
       shellLifecycle?.show();
     },

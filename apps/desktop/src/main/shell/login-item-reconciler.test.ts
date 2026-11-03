@@ -32,6 +32,9 @@ describe('createLoginItemReconciler', () => {
       revoke: () => {
         granted = false;
       },
+      grant: () => {
+        granted = true;
+      },
     };
   };
 
@@ -56,6 +59,17 @@ describe('createLoginItemReconciler', () => {
     expect(s.set).toHaveBeenCalledWith(false);
     expect(s.settings.startWithWindows).toBe(true);
     expect(s.r.status()).toEqual({ registered: false, block: null });
+  });
+
+  it('a re-grant after a revoke registers again while the setting is still on', () => {
+    const s = setup({ startWithWindows: true, granted: true, reads: [off, on, on, off, off, on] });
+    s.r.reconcile();
+    s.revoke();
+    s.r.reconcile();
+    s.grant();
+    s.r.reconcile();
+    expect(s.set.mock.calls.map((c) => c[0])).toEqual([true, false, true]);
+    expect(s.settings.startWithWindows).toBe(true);
   });
 
   it('an explicit value overrides the stored one for a write not yet persisted', () => {
