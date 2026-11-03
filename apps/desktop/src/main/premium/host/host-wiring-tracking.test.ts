@@ -82,7 +82,7 @@ interface WorkerHost {
   call(capability: string, args?: unknown): Promise<unknown>;
 }
 
-async function wire(options: { requested: readonly string[]; withTracking?: boolean }) {
+async function wire(options: { requested: readonly string[]; withTracking?: boolean; engine?: TrackingEngine }) {
   const cache = createBundleCache({ root, db: null, now: () => HOST_NOW });
   await cache.write(
     verifiedFixture(workerOptions({ sequence: 6, flavors: ['dev', 'beta', 'prod'], capabilities: [...options.requested] })),
@@ -117,7 +117,7 @@ async function wire(options: { requested: readonly string[]; withTracking?: bool
             tracking: {
               rows,
               extensionPath: 'not-used',
-              engine,
+              engine: options.engine ?? engine,
               feedSlot: slot,
               playingAccountAllows: () => true,
               accountKey: () => '486',
@@ -183,6 +183,22 @@ describe('the tracking capabilities the host grants', () => {
       ok: false,
       error: 'not_granted',
     });
+  });
+
+  it('keeps Premium running when the engine probe fails: only tracking is unavailable', async () => {
+    const broken: TrackingEngine = {
+      probe: () => Promise.resolve({ ok: false, reason: 'binding_missing' }),
+      open: () => Promise.reject(new Error('the engine must not be opened')),
+    };
+    const { host, worker } = await wire({ requested: ['db', 'store', 'premium.status'], engine: broken });
+
+    expect(host.view().phase).toBe('running');
+    await expect(worker?.call('store', { op: 'set', key: 'seen', value: 3 })).resolves.toBeDefined();
+    await expect(worker?.call('store', { op: 'get', key: 'seen' })).resolves.toBe(3);
+    await expect(worker?.call('premium.status')).resolves.toMatchObject({ active: true });
+    await expect(worker?.call('db', { op: 'status' })).resolves.toEqual({ state: 'unavailable', reason: 'engine_unavailable' });
+    expect(host.trackingHistory?.(SUBJECT)).toEqual({ state: 'engine_unavailable', bytes: null, reason: 'binding_missing' });
+    expect(existsSync(join(root, TRACKING_DIR))).toBe(false);
   });
 
   it('refuses the four when the app builds the host without the tracking parts', async () => {
