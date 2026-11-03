@@ -64,6 +64,8 @@ try {
 console.log(`Packaging @bombfarm/desktop (${flavor})`);
 
 await run('pnpm', ['build']);
+const { fetchDuckdbExtension } = await import('./fetch-duckdb-extension.mjs');
+console.log(`DuckDB extension ready: ${await fetchDuckdbExtension()}`);
 await run('pnpm', [
   'exec',
   'electron-builder',

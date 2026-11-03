@@ -10,6 +10,8 @@ const MAIN_EXTERNALS = [
   'electron-updater',
   '@bombfarm/tap-runtime',
   'frida',
+  '@duckdb/node-api',
+  '@duckdb/node-bindings',
 ];
 
 /** The only modules a sandboxed preload can `require`; anything else throws when the preload loads. */

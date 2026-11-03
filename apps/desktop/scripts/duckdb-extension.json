@@ -1,0 +1,6 @@
+{
+  "version": "1.5.5",
+  "platform": "windows_amd64",
+  "extension": "httpfs",
+  "sha256": "65661c40463e74751993e8a7cb7b4c8906be9218319616a0bdfc1b4ae9ffdf9a"
+}
