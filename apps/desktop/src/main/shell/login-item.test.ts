@@ -9,7 +9,12 @@ import {
 
 function fakePort(reads: LoginItemReadback[], opts: { setThrows?: boolean } = {}) {
   let i = 0;
-  const get = vi.fn(() => reads[Math.min(i++, reads.length - 1)]!);
+  const get = vi.fn((): LoginItemReadback => {
+    const next = reads[Math.min(i, reads.length - 1)];
+    i += 1;
+    if (!next) throw new Error('fakePort needs at least one read');
+    return next;
+  });
   const set = vi.fn((_v: boolean) => {
     if (opts.setThrows) throw new Error('registry denied');
   });
@@ -144,6 +149,39 @@ describe('reconcileLoginItem', () => {
     };
     expect(reconcileLoginItem({ ...base, desired: true, port }).applied).toBe(false);
     expect(set).not.toHaveBeenCalled();
+  });
+
+  it('desired on with an entry both present and disabled by Windows is disabled_by_windows, no set', () => {
+    const f = fakePort([{ openAtLogin: true, disabledByWindows: true }]);
+    expect(reconcileLoginItem({ ...base, desired: true, port: f.port })).toEqual({
+      applied: false,
+      block: 'disabled_by_windows',
+    });
+    expect(f.set).not.toHaveBeenCalled();
+  });
+
+  it('desired off with an absent, Windows-disabled entry is already applied, no set', () => {
+    const f = fakePort([{ openAtLogin: false, disabledByWindows: true }]);
+    expect(reconcileLoginItem({ ...base, desired: false, port: f.port })).toEqual({
+      applied: true,
+      registered: false,
+    });
+    expect(f.set).not.toHaveBeenCalled();
+  });
+
+  it('a read-back that throws after a successful set is failed', () => {
+    const set = vi.fn();
+    const get = vi
+      .fn<() => LoginItemReadback>()
+      .mockReturnValueOnce(off)
+      .mockImplementationOnce(() => {
+        throw new Error('read-back denied');
+      });
+    expect(reconcileLoginItem({ ...base, desired: true, port: { get, set } })).toEqual({
+      applied: false,
+      block: 'failed',
+    });
+    expect(set).toHaveBeenCalledTimes(1);
   });
 
   it('exposes one empty args constant for set and get', () => {
