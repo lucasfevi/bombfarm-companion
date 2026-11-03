@@ -144,6 +144,7 @@ const SECTION_TITLE_KEYS = [
   'settingsLanguageSectionTitle',
   'settingsWindowSectionTitle',
   'settingsGameSectionTitle',
+  'settingsStartWithWindowsSectionTitle',
   'settingsForgeSectionTitle',
   'settingsMarketSectionTitle',
   'settingsConsentSectionTitle',
