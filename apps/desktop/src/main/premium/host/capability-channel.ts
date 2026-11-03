@@ -312,6 +312,7 @@ export function createCapabilityChannel(deps: CapabilityChannelDeps): Capability
       asking.delete(id);
       clearTimeout(waiting.timer);
       if (message.ok === true) waiting.resolve(message.value);
+      else if (message.reason === 'other') waiting.reject(new CapabilityError('failed', 'other'));
       else waiting.reject(new CapabilityError('unavailable', 'no_handler'));
       return true;
     }

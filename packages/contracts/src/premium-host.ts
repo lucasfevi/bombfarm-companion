@@ -209,7 +209,7 @@ export type HostUiMessage = { t: 'ui'; id: number; slot: PremiumSlot; msg: unkno
 export type WorkerAckMessage = { t: 'ack'; seq: number };
 export type WorkerUiReply =
   | { t: 'uiReply'; id: number; ok: true; value: unknown }
-  | { t: 'uiReply'; id: number; ok: false };
+  | { t: 'uiReply'; id: number; ok: false; reason?: 'no_handler' | 'other' };
 
 export type HostToWorker =
   | { t: 'init'; sequence: number; version: string; granted: readonly string[] }

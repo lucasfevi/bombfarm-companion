@@ -57,7 +57,7 @@ function postMessageCalls(text: string): string[] {
  */
 const ALLOWED_CALLS: Readonly<Record<string, readonly string[]>> = {
   'capability-channel.ts': ['message'],
-  'worker-loader.ts': ['{ id, capability, args }'],
+  'worker-loader.ts': ['{ id, capability, args }', "{ t: 'ack', seq }", 'reply'],
   'worker-supervisor.ts': [
     "toWorker({ t: 'init', sequence: bundle.sequence, version: bundle.version, granted: channel.granted }), [capability.port2, code.port2]",
     'bundle.workerBytes.slice().buffer',
@@ -89,7 +89,7 @@ describe('every message to a Premium worker is built in one place', () => {
     const seen = hostSources().map(({ name, text }) => [name, postMessageCalls(text).length] as const);
     expect(Object.fromEntries(seen.filter(([, count]) => count > 0))).toEqual({
       'capability-channel.ts': 1,
-      'worker-loader.ts': 1,
+      'worker-loader.ts': 3,
       'worker-supervisor.ts': 2,
     });
   });

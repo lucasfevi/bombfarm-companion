@@ -234,6 +234,20 @@ describe('capability channel: asking the worker', () => {
     });
   });
 
+  it('rejects failed/other when the worker says its handler threw', async () => {
+    const { port, channel } = setup({});
+    const asked = channel.askWorker('premium.tab', null);
+    port.send({ t: 'uiReply', id: 1, ok: false, reason: 'other' });
+    await expect(asked).rejects.toMatchObject({ code: 'failed', reason: 'other' });
+  });
+
+  it('keeps unavailable/no_handler for an unknown reason', async () => {
+    const { port, channel } = setup({});
+    const asked = channel.askWorker('premium.tab', null);
+    port.send({ t: 'uiReply', id: 1, ok: false, reason: 'whatever' });
+    await expect(asked).rejects.toMatchObject({ code: 'unavailable', reason: 'no_handler' });
+  });
+
   it('times out after 5 s, not before, and ignores a late reply', async () => {
     const { port, channel } = setup({});
     let outcome: unknown = 'pending';
