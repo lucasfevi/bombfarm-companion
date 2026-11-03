@@ -195,7 +195,7 @@ export const en = {
   // settingsConsent* — the account access revoke control (Settings is reachable only once granted)
   settingsConsentSectionTitle: 'Account access',
   settingsConsentStatusGranted: 'Access: allowed',
-  settingsConsentHelpGranted: 'The companion reads your account and stays attached to the game client.',
+  settingsConsentHelpGranted: 'While this is on, the companion reads your account and attaches to the game client. The app itself keeps running in the background after you close its window; quit it from its notification-area icon.',
   settingsConsentRevokeAction: 'Turn off',
 
   // settingsDiagnostics* — the manual frame-ring dump control (a bug-report affordance)

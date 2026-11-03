@@ -189,7 +189,7 @@ export const ptBR: Copy = {
   // settingsConsent* — o controle de revogar o acesso à conta (Configurações só é alcançável já permitido)
   settingsConsentSectionTitle: 'Acesso à conta',
   settingsConsentStatusGranted: 'Acesso: permitido',
-  settingsConsentHelpGranted: 'O companion lê sua conta e permanece conectado ao cliente do jogo.',
+  settingsConsentHelpGranted: 'Enquanto isto estiver ativado, o companion lê sua conta e se conecta ao cliente do jogo. O app em si continua em execução em segundo plano depois que você fecha a janela; para encerrá-lo, use o ícone na área de notificação.',
   settingsConsentRevokeAction: 'Desativar',
 
   // settingsDiagnostics* — o controle manual de gravação do anel de quadros (um recurso de relatório de erro)
