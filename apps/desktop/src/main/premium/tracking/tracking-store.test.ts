@@ -9,6 +9,7 @@ import { createBundleCache } from '../host/bundle-cache.js';
 import { createMetaDb, HOST_NOW } from '../host/host-test-support.js';
 import { createSealedRows } from '../licence/licence-store.js';
 import type { SecretBox } from '../token-vault.js';
+import { currentPlatformExtension } from './test-extension.js';
 import {
   createTrackingEngine,
   EngineOpenError,
@@ -31,20 +32,12 @@ warnForUnavailableBindings(availableBindings);
 
 const ALICE = 'user-alice-0001';
 const BOB = 'user-bob-0002';
-const FETCH_SCRIPT = resolve(__dirname, '../../../../scripts/fetch-duckdb-extension.mjs');
-
 let scratch = '';
 let extension = '';
 
-/** The one place the real tests get the signed extension; a failed fetch fails the run. */
-async function fetchExtension(): Promise<string> {
-  const fetcher = (await import(/* @vite-ignore */ FETCH_SCRIPT)) as { fetchDuckdbExtension: () => Promise<string> };
-  return fetcher.fetchDuckdbExtension();
-}
-
 beforeAll(async () => {
   scratch = mkdtempSync(join(tmpdir(), 'bfc-trackstore-'));
-  extension = await fetchExtension();
+  extension = await currentPlatformExtension();
 }, 120_000);
 
 afterAll(() => {
