@@ -19,3 +19,5 @@ export { advanceRecoveryClock, createInitialFieldCountdownState, ingestFieldCoun
 export type { RosterHeroAbilities } from './drain-multipliers';
 export { resolveFieldDrainMultipliers } from './drain-multipliers';
 export { extractRosterHeroAbilities } from './roster-ability-ranks';
+
+export { countLootPayouts, GridClearCounter } from './prop-clears';

@@ -12,7 +12,7 @@ import { onPremiumLeaseChange, premiumLeaseAllows } from '../licence/lease-gate.
 import { createBundleCache } from './bundle-cache.js';
 import { createBundleKeyTable } from './bundle-verify.js';
 import { loadDevTrust, loadLocalBundle } from './dev-loader.js';
-import type { CapabilityHandler } from './capability-channel.js';
+import { CapabilityError, type CapabilityHandler } from './capability-channel.js';
 import { createLogCapability } from './capabilities/log.js';
 import { createNotifyCapability, type NotifyCapabilityDeps } from './capabilities/notify.js';
 import { createStatusCapability, type StatusCapabilityDeps } from './capabilities/status.js';
@@ -109,7 +109,12 @@ function leaseGate(playingAccountAllows: (() => boolean) | undefined): HostGate 
   };
 }
 
-/** The four handlers by name, in the order the contract lists them. */
+/** Refuses every call; the real handlers replace it in this branch. */
+const unavailableHandler: CapabilityHandler = () => {
+  throw new CapabilityError('unavailable');
+};
+
+/** The handlers by name, in the order the contract lists them. */
 function buildAllowlist(
   parts: PremiumHostCapabilityDeps | undefined,
   log: LogPort,
@@ -121,6 +126,10 @@ function buildAllowlist(
     store: createStoreCapability(parts.store),
     log: createLogCapability({ log, sequence }),
     notify: createNotifyCapability({ ...parts.notify, log }),
+    db: unavailableHandler,
+    'raw.tap': unavailableHandler,
+    'raw.battleLog': unavailableHandler,
+    'premium.worker': unavailableHandler,
   };
   return new Map(PREMIUM_CAPABILITIES.map((name) => [name, handlers[name]]));
 }
