@@ -133,6 +133,38 @@ describe.each(availableBindings)('createSettingsStore over the real account_meta
     expect(JSON.parse(row?.value ?? '')).toEqual(PT_BR);
   });
 
+  it('an older row read then written back persists at the current version with every stored field kept', () => {
+    const open = openTestAccountDb(binding);
+    if (!open.db) throw new Error('expected an open db for this binding');
+    const older = {
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion - 1,
+      locale: 'pt-BR',
+      alwaysOnTopMain: true,
+      alwaysOnTopMini: true,
+      forgeWritesEnabled: true,
+      restartGameOnExit: true,
+      marketQuoteCurrency: 'USD',
+      usagePingEnabled: false,
+    };
+    open.db
+      .prepare('INSERT INTO account_meta (key, value) VALUES (?, ?)')
+      .run('settings_v1', JSON.stringify(older));
+
+    const store = createSettingsStore(open.db);
+    const migrated = store.read();
+    if (!migrated) throw new Error('expected the older row to migrate');
+    store.write(migrated);
+
+    const row = open.db.prepare('SELECT value FROM account_meta WHERE key = ?').get('settings_v1') as
+      | { value: string }
+      | undefined;
+    expect(JSON.parse(row?.value ?? '')).toEqual({
+      ...older,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
+      startWithWindows: DEFAULT_SETTINGS.startWithWindows,
+    });
+  });
+
   it('an unknown future schemaVersion falls back to null', () => {
     const open = openTestAccountDb(binding);
     if (!open.db) throw new Error('expected an open db for this binding');

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SETTINGS } from './index.js';
-import { migrateStoredSettings } from './settings-migration.js';
+import { DEFAULT_SETTINGS, type AppSettings } from './index.js';
+import { migrateStoredSettings, SETTINGS_SCHEMA_VERSIONS } from './settings-migration.js';
 
 describe('migrateStoredSettings', () => {
   it('migrates a v1 row to the current schema with every flag false and the default market currency', () => {
@@ -254,5 +254,101 @@ describe('migrateStoredSettings — usagePingEnabled', () => {
 
   it('a stored value that is not a boolean discards the row rather than guessing', () => {
     expect(migrateStoredSettings({ ...v4, usagePingEnabled: 'off' })).toBeNull();
+  });
+});
+
+/** What each stored version introduced, every value away from its default so a migration that
+ *  hands back defaults cannot pass. The historical keys are absolute — they name shapes that
+ *  shipped. Everything else here is relative to the current version. */
+const INTRODUCED_BY: Record<number, Partial<AppSettings>> = {
+  1: { locale: 'pt-BR' },
+  2: { alwaysOnTopMain: true, alwaysOnTopMini: true },
+  3: { forgeWritesEnabled: true, restartGameOnExit: true },
+  4: { marketQuoteCurrency: 'USD', usagePingEnabled: false },
+  5: { startWithWindows: false },
+};
+
+function rowAt(version: number): Record<string, unknown> {
+  let row: Record<string, unknown> = { schemaVersion: version };
+  for (const [introducedAt, fields] of Object.entries(INTRODUCED_BY)) {
+    if (Number(introducedAt) <= version) {
+      row = { ...row, ...fields };
+    }
+  }
+  return row;
+}
+
+describe('migrateStoredSettings — every earlier version reads forward', () => {
+  it('the table has a row for exactly the versions the migration accepts', () => {
+    expect(Object.keys(INTRODUCED_BY).map(Number)).toEqual([...SETTINGS_SCHEMA_VERSIONS]);
+  });
+
+  it('the accepted versions are the consecutive range 1 to the current schema version', () => {
+    expect([...SETTINGS_SCHEMA_VERSIONS]).toEqual(
+      Array.from({ length: DEFAULT_SETTINGS.schemaVersion }, (_, index) => index + 1),
+    );
+  });
+
+  it('every settings field is attributed to some version in the table', () => {
+    const attributed = new Set(Object.values(INTRODUCED_BY).flatMap((fields) => Object.keys(fields)));
+    const unattributed = Object.keys(DEFAULT_SETTINGS).filter(
+      (key) => key !== 'schemaVersion' && !attributed.has(key),
+    );
+    expect(unattributed).toEqual([]);
+  });
+
+  it('every attributed field is held away from its default, so defaults cannot satisfy the table', () => {
+    for (const fields of Object.values(INTRODUCED_BY)) {
+      for (const [key, value] of Object.entries(fields)) {
+        expect(value, key).not.toEqual(DEFAULT_SETTINGS[key as keyof AppSettings]);
+      }
+    }
+  });
+
+  it.each([...SETTINGS_SCHEMA_VERSIONS])(
+    'a version %i row keeps every field it stored and defaults every later one',
+    (version) => {
+      const migrated = migrateStoredSettings(rowAt(version));
+
+      const expected: Record<string, unknown> = { ...DEFAULT_SETTINGS };
+      for (const [introducedAt, fields] of Object.entries(INTRODUCED_BY)) {
+        if (Number(introducedAt) <= version) {
+          Object.assign(expected, fields);
+        }
+      }
+      expect(migrated).toEqual({ ...expected, schemaVersion: DEFAULT_SETTINGS.schemaVersion });
+    },
+  );
+
+  it('a row already at the current version comes back unchanged', () => {
+    const current = rowAt(DEFAULT_SETTINGS.schemaVersion);
+    expect(migrateStoredSettings(current)).toEqual(current);
+  });
+
+  it('a version one past the current one is refused, not guessed at', () => {
+    expect(migrateStoredSettings({ ...rowAt(DEFAULT_SETTINGS.schemaVersion), schemaVersion: DEFAULT_SETTINGS.schemaVersion + 1 })).toBeNull();
+  });
+
+  it('a version that is not a whole listed number is refused', () => {
+    expect(migrateStoredSettings({ ...rowAt(1), schemaVersion: 0 })).toBeNull();
+    expect(migrateStoredSettings({ ...rowAt(1), schemaVersion: 1.5 })).toBeNull();
+    expect(migrateStoredSettings({ ...rowAt(1), schemaVersion: '5' })).toBeNull();
+  });
+});
+
+describe('migrateStoredSettings — startWithWindows', () => {
+  const v4 = rowAt(4);
+
+  it('an install that predates the setting updates with it on', () => {
+    expect(migrateStoredSettings(v4)?.startWithWindows).toBe(true);
+  });
+
+  it('a player who turned it off stays off across an update', () => {
+    expect(migrateStoredSettings({ ...v4, startWithWindows: false })?.startWithWindows).toBe(false);
+  });
+
+  it('a stored value that is not a boolean discards the row rather than guessing', () => {
+    expect(migrateStoredSettings({ ...v4, startWithWindows: 'off' })).toBeNull();
+    expect(migrateStoredSettings({ ...v4, startWithWindows: 0 })).toBeNull();
   });
 });
