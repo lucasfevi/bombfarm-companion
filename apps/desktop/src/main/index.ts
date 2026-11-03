@@ -85,6 +85,7 @@ import {
   type ObservationCapture,
 } from './live-source/observation-capture.js';
 import { createMarkWatch, type MarkWatch } from './live-source/observation-mark-watch.js';
+import { appPremiumTapFeedSlot, fanOutObservers } from './live-source/premium-tap-feed.js';
 import {
   createReplayTapFactory,
   isReplayLiveSourceEnabled,
@@ -855,6 +856,9 @@ async function bootstrap(): Promise<void> {
     observationMarkWatch.start();
   }
 
+  // The live and replay taps feed the developer capture and, once a worker runs, the premium feed.
+  const observationFanOut = fanOutObservers(observationCapture, appPremiumTapFeedSlot.sink);
+
   const replayLive = isReplayLiveSourceEnabled(process.env, resolveAppEnv().isPackaged);
   if (replayLive) {
     log.info({
@@ -891,7 +895,7 @@ async function bootstrap(): Promise<void> {
     userDataDir,
     flavor: resolveAppEnv().flavor,
     isPackaged: resolveAppEnv().isPackaged,
-    observer: observationCapture,
+    observer: observationFanOut,
     onObservedPvpBody: (observation) => {
       pvpRecorder?.observe(observation);
     },
@@ -908,7 +912,7 @@ async function bootstrap(): Promise<void> {
             consent: liveConsent,
             log,
             onObservedFrame: (wire, atMs) => {
-              observationCapture?.frame(wire, atMs);
+              observationFanOut.frame(wire, atMs);
             },
           }),
         }
