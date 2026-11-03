@@ -621,6 +621,7 @@ describe('the Premium host adds nothing secret to the view or the log', () => {
     'premium.removal',
     'premium.ui_mount',
     'premium.worker_exit',
+    'premium.worker_message',
   ];
   const HOST_ARGS_MARKER = 'host-capability-args-marker-7741';
   let rig: HostRig | null = null;

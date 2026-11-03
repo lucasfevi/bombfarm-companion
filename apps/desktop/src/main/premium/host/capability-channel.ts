@@ -53,7 +53,8 @@ export class CapabilityError extends Error {
       | 'timeout'
       | 'failed'
       | 'stopped'
-      | 'paused',
+      | 'paused'
+      | 'not_granted',
     readonly reason?: DbRefusalReason | PremiumWorkerRefusalReason,
   ) {
     super(code);

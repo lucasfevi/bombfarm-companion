@@ -57,8 +57,7 @@ export function createRawBattleLogCapability(deps: RawBattleLogDeps): RawBattleL
   }
 
   const handler = withOrigin((args, ctx) => {
-    // The channel's error type has no `not_granted` code yet; the reply carries whatever code is thrown.
-    if (ctx.origin !== 'worker') throw new CapabilityError('not_granted' as CapabilityError['code']);
+    if (ctx.origin !== 'worker') throw new CapabilityError('not_granted');
     const op = typeof args === 'object' && args !== null ? (args as Record<string, unknown>).op : undefined;
     if (op === 'subscribe') {
       if (subscribed) return null;
