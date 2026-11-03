@@ -67,7 +67,9 @@ export interface DbRows {
 
 /** One connection for the length of a `session` call; every method rejects `EngineStatementError`. */
 export interface DbSession {
-  /** Parses and prepares the string's first statement; a parse or bind failure is kind `bind`. */
+  /** How many statements the string holds. Parses only: nothing is bound or run. A parse failure is kind `bind`. */
+  count(sql: string): Promise<number>;
+  /** Parses and prepares the string's first statement (this binds it); a parse or bind failure is kind `bind`. */
   inspect(sql: string): Promise<StatementInfo>;
   /** Runs one statement; answers the rows it changed. */
   run(sql: string, params?: readonly unknown[]): Promise<number>;
@@ -170,16 +172,43 @@ function statementKind(error: unknown): StatementErrorKind {
   }
 }
 
-async function classified<T>(work: () => Promise<T>): Promise<T> {
+/**
+ * A connection the logger has been pointed somewhere the lock forbids fails every statement, and
+ * DuckDB then aborts the process when it closes the connection. The tell is a permission failure
+ * that a plain `SELECT 1` cannot get past; such a handle is never closed natively, only dropped
+ * (the write-ahead log covers its data).
+ */
+interface Poison {
+  poisoned: boolean;
+}
+
+async function checkPoison(db: DuckConnection, poison: Poison, error: unknown): Promise<void> {
+  if (poison.poisoned || !/^Permission Error/i.test(error instanceof Error ? error.message : '')) return;
+  try {
+    await db.runAndReadAll('SELECT 1');
+  } catch {
+    poison.poisoned = true;
+  }
+}
+
+async function classified<T>(db: DuckConnection, poison: Poison, work: () => Promise<T>): Promise<T> {
   try {
     return await work();
   } catch (error) {
+    await checkPoison(db, poison, error);
     throw new EngineStatementError(statementKind(error));
   }
 }
 
-function sessionOf(binding: DuckBinding, db: DuckConnection): DbSession {
+function sessionOf(binding: DuckBinding, db: DuckConnection, poison: Poison): DbSession {
   return {
+    async count(sql) {
+      try {
+        return (await db.extractStatements(sql)).count;
+      } catch {
+        throw new EngineStatementError('bind');
+      }
+    },
     async inspect(sql) {
       refuseLoggerControl(sql);
       try {
@@ -192,19 +221,20 @@ function sessionOf(binding: DuckBinding, db: DuckConnection): DbSession {
           type: binding.StatementType[prepared.statementType] ?? 'INVALID',
           parameters: prepared.parameterCount,
         };
-      } catch {
+      } catch (error) {
+        await checkPoison(db, poison, error);
         throw new EngineStatementError('bind');
       }
     },
     async run(sql, params) {
       refuseLoggerControl(sql);
-      const result = await classified(() => db.run(sql, params === undefined ? undefined : [...params]));
+      const result = await classified(db, poison, () => db.run(sql, params === undefined ? undefined : [...params]));
       const changed = (result as { rowsChanged?: unknown } | null)?.rowsChanged;
       return typeof changed === 'number' ? changed : 0;
     },
     async query(sql, params, maxRows) {
       refuseLoggerControl(sql);
-      const reader = await classified(() =>
+      const reader = await classified(db, poison, () =>
         db.streamAndReadUntil(sql, maxRows, params === undefined ? undefined : [...params]),
       );
       return { columns: reader.columnNames(), rows: reader.getRowsJson() };
@@ -324,20 +354,25 @@ export function createTrackingEngine(deps: TrackingEngineDeps): TrackingEngine {
     const db = connection;
     const owner = instance;
     let closed = false;
+    const poison: Poison = { poisoned: false };
     return {
       async run(sql, params) {
         refuseLoggerControl(sql);
-        await db.run(sql, params === undefined ? undefined : [...params]);
+        await classified(db, poison, () => db.run(sql, params === undefined ? undefined : [...params]));
       },
       async query(sql, params) {
         refuseLoggerControl(sql);
-        const reader = await db.runAndReadAll(sql, params === undefined ? undefined : [...params]);
+        const reader = await classified(db, poison, () =>
+          db.runAndReadAll(sql, params === undefined ? undefined : [...params]),
+        );
         return reader.getRowObjectsJS();
       },
-      session: (fn) => fn(sessionOf(binding, db)),
+      session: (fn) => fn(sessionOf(binding, db, poison)),
       close() {
         if (closed) return;
         closed = true;
+        // A poisoned handle is abandoned: closing it would abort the process.
+        if (poison.poisoned) return;
         closeQuietly(owner, db);
       },
     };

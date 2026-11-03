@@ -418,6 +418,148 @@ describe('the db capability over a real, sealed DuckDB file', () => {
     });
   });
 
+  describe("what DuckDB's own parse allows, whatever the text looks like", () => {
+    const dir = (): string => rig.root.split(String.fromCharCode(92)).join('/');
+    const poison = (): string =>
+      `enable' || '_logging(storage=''file'', storage_config={''path'': ''${dir()}''})`;
+    const BACKSLASH = String.fromCharCode(92);
+    const selects: Array<[string, () => string]> = [
+      ['a nested comment before the call, concatenating the logger call', () => `SELECT * FROM query /* /* */ */ ('SELECT * FROM ${poison()}')`],
+      ['an E-string and then a call', () => `SELECT E'it${BACKSLASH}'s' AS s FROM checkpoint()`],
+      ['a no-break space before the parenthesis', () => 'SELECT * FROM checkpoint ()'],
+      ['an ideographic space before the parenthesis', () => 'SELECT * FROM checkpoint　()'],
+      ['an em space before the parenthesis', () => 'SELECT * FROM checkpoint ()'],
+      ['a byte-order mark before the parenthesis', () => 'SELECT * FROM checkpoint﻿()'],
+      ['PRAGMA database_list', () => 'PRAGMA database_list'],
+      ['PRAGMA database_size', () => 'PRAGMA database_size'],
+      ['PRAGMA platform', () => 'PRAGMA platform'],
+      ['PRAGMA functions', () => 'PRAGMA functions'],
+      ['lower case pragma with a trailing semicolon', () => 'pragma database_list;'],
+      ['current_setting of the secret directory', () => "SELECT current_setting('secret_directory')"],
+      ['nextval', () => "SELECT nextval('s')"],
+      ['currval and setseed', () => "SELECT currval('s'), setseed(0.5)"],
+      ['a function inside a subquery, a CTE and a window', () => "WITH x AS (SELECT * FROM (SELECT nextval('s')) q) SELECT sum(1) OVER () FROM x"],
+      ['a function inside a lambda', () => "SELECT list_transform([1], x -> current_setting('s'))"],
+      ['json_serialize_sql itself', () => "SELECT json_serialize_sql('SELECT 1')"],
+      ['a system view without parentheses', () => 'SELECT * FROM duckdb_tables'],
+      ['the catalog schemas', () => 'SELECT * FROM information_schema.schemata'],
+      ['sqlite_master', () => 'SELECT * FROM sqlite_master'],
+      ['DESCRIBE', () => 'DESCRIBE drops'],
+      ['SUMMARIZE', () => 'SELECT * FROM (SUMMARIZE drops)'],
+    ];
+
+    it.each(selects)('refuses %s from the worker and the screen', async (_label, make) => {
+      const sql = make();
+      const worker = await call({ op: 'query', sql });
+      expect(worker.ok).toBe(false);
+      expect(worker).toMatchObject({ code: 'bad_args' });
+      expect(['statement_type', 'bind']).toContain((worker as { reason: string }).reason);
+      const ui = await call({ op: 'query', sql }, 'ui');
+      expect(ui.ok).toBe(false);
+      expect(['not_granted', 'bad_args']).toContain((ui as { code: string }).code);
+      expect((await call({ op: 'query', sql: 'SELECT 1' })).ok).toBe(true);
+    });
+
+    it.each(selects.filter(([label]) => !/space|mark/.test(label)))(
+      'refuses %s with exactly statement_type for the worker and not_granted for the screen',
+      async (_label, make) => {
+        const sql = make();
+        expect(await call({ op: 'query', sql })).toEqual(refusedWith('bad_args', 'statement_type'));
+        expect(await call({ op: 'query', sql }, 'ui')).toEqual(refusedWith('not_granted'));
+      },
+    );
+
+    const writes: Array<[string, () => string]> = [
+      ['an INSERT … SELECT from query() with the logger call concatenated', () => `INSERT INTO drops (id, item) SELECT 1, a FROM query('SELECT * FROM ${poison()}')`],
+      ['a quoted, upper-case query()', () => `INSERT INTO drops (id, item) SELECT 1, a FROM "QUERY"('SELECT 1')`],
+      ['a comment inside the write', () => 'INSERT INTO drops (id) /* x */ VALUES (7001)'],
+      ['a line comment inside the write', () => 'INSERT INTO drops (id) -- x\n VALUES (7001)'],
+      ['a nested comment inside the write', () => 'INSERT INTO drops (id) /* /* */ */ VALUES (7001)'],
+      ['an E-string in the write', () => `INSERT INTO drops (id, item) VALUES (7001, E'a${BACKSLASH}'b')`],
+      ['a dollar-quoted string in the write', () => 'INSERT INTO drops (id, item) VALUES (7001, $$x$$)'],
+      ['a no-break space before a call in the write', () => 'INSERT INTO drops (id) SELECT * FROM checkpoint ()'],
+      ['a non-ASCII word in the write', () => 'INSERT INTO drops (id) SELECT 7001 AS é'],
+      ['nextval in a write', () => "INSERT INTO drops (id) SELECT nextval('s')"],
+      ['current_setting in a write', () => "UPDATE drops SET item = current_setting('secret_directory') WHERE id = 1"],
+      ['a system table in a CREATE TABLE AS', () => 'CREATE TABLE leak AS SELECT * FROM duckdb_databases()'],
+      ['a system view without parentheses in a CREATE VIEW', () => 'CREATE VIEW leak AS SELECT * FROM duckdb_databases'],
+      ['a logger call in a macro body', () => 'CREATE MACRO leak() AS TABLE SELECT * FROM duckdb_databases()'],
+      ['a default that calls nextval', () => "CREATE TABLE seqd (a INTEGER DEFAULT nextval('s'))"],
+      ['a read_csv in a write', () => `INSERT INTO drops (id, item) SELECT 1, a FROM read_csv('${dir()}/marker.csv')`],
+      ['a form feed', () => 'INSERT INTO drops (id)\fVALUES (7001)'],
+    ];
+
+    it.each(writes)('refuses %s from the worker with statement_type, and from the screen with not_granted', async (_label, make) => {
+      const sql = make();
+      const before = await count('drops');
+      expect(await call({ op: 'exec', sql })).toEqual(refusedWith('bad_args', 'statement_type'));
+      expect(await call({ op: 'query', sql })).toEqual(refusedWith('bad_args', 'statement_type'));
+      expect(await call({ op: 'tx', steps: [{ sql }] })).toEqual(refusedWith('bad_args', 'statement_type'));
+      expect(await call({ op: 'query', sql }, 'ui')).toEqual(refusedWith('not_granted'));
+      expect(await count('drops')).toBe(before);
+      expect((await call({ op: 'query', sql: 'SELECT 1' })).ok).toBe(true);
+    });
+
+    it('answers ordinary analytics: JSON, time, window, CTE, lambda and quantile', async () => {
+      await call({
+        op: 'exec',
+        sql: 'CREATE TABLE IF NOT EXISTS ev (id INTEGER PRIMARY KEY, kind VARCHAR, at_ts TIMESTAMP, payload VARCHAR, n DOUBLE)',
+      });
+      await call({
+        op: 'batch',
+        sql: 'INSERT INTO ev VALUES ($1, $2, $3, $4, $5)',
+        rows: [
+          [1, 'a', '2026-01-02 03:04:05', '{"v":{"x":1}}', 1],
+          [2, 'a', '2026-01-03 03:04:05', '{"v":{"x":2}}', 3],
+          [3, 'b', '2026-02-01 00:00:00', '{"v":{"x":3}}', 5],
+        ],
+      });
+      const answer = await call(
+        {
+          op: 'query',
+          sql: `WITH monthly AS (
+                  SELECT strftime(date_trunc('month', at_ts), '%Y-%m') AS month, kind, sum(n) AS total,
+                         quantile_cont(n, 0.5) AS med, max(json_extract(payload, '$.v.x')::INTEGER) AS x
+                  FROM ev GROUP BY ALL)
+                SELECT month, kind, total, med, x,
+                       sum(total) OVER (ORDER BY month ROWS UNBOUNDED PRECEDING) AS running,
+                       list_transform([1, 2], v -> v * 2) AS doubled,
+                       row_number() OVER (PARTITION BY kind ORDER BY month) AS rn
+                FROM monthly
+                ORDER BY month`,
+        },
+        'ui',
+      );
+      expect(answer).toMatchObject({
+        ok: true,
+        value: { columns: ['month', 'kind', 'total', 'med', 'x', 'running', 'doubled', 'rn'] },
+      });
+      expect((answer as { value: { rows: unknown[][] } }).value.rows).toEqual([
+        ['2026-01', 'a', 4, 2, 2, 4, '[2,4]', '1'],
+        ['2026-02', 'b', 5, 5, 3, 9, '[2,4]', '1'],
+      ]);
+    });
+
+    it('lets the worker write with ON CONFLICT, MERGE, INSERT … SELECT and a view, using allowed functions', async () => {
+      const steps = [
+        "INSERT INTO ev (id, kind, n) VALUES (10, 'c', 1) ON CONFLICT (id) DO UPDATE SET n = ev.n + excluded.n",
+        "INSERT INTO ev (id, kind, n) VALUES (10, 'c', 1) ON CONFLICT (id) DO UPDATE SET n = ev.n + excluded.n",
+        "MERGE INTO ev USING (SELECT 11 AS id, 'd' AS kind) s ON ev.id = s.id WHEN NOT MATCHED THEN INSERT (id, kind) VALUES (s.id, upper(s.kind))",
+        "INSERT INTO ev (id, kind) SELECT 12 + range, lower('E') FROM range(2)",
+        "UPDATE ev SET kind = coalesce(kind, 'z') || '!' WHERE id IN (SELECT id FROM ev WHERE length(kind) > 0 AND id >= 10)",
+        'CREATE VIEW IF NOT EXISTS ev_totals AS SELECT kind, sum(n) AS total FROM ev GROUP BY kind',
+      ];
+      for (const sql of steps) expect(await call({ op: 'exec', sql })).toMatchObject({ ok: true });
+      const answer = await call({ op: 'query', sql: 'SELECT total FROM ev_totals WHERE kind = $1', params: ['c!'] });
+      expect(answer).toEqual({ ok: true, value: { columns: ['total'], rows: [[2]] } });
+    });
+
+    it('left the marker file untouched and the screen could not write', async () => {
+      expect(readFileSync(join(rig.root, 'marker.csv'), 'utf8')).toBe('a,b\n1,MARKER\n');
+      expect(await count('drops WHERE id = 7001')).toBe(0);
+    });
+  });
+
   describe('all or nothing', () => {
     it('a batch whose last row fails leaves no row', async () => {
       const answer = await call({
@@ -655,9 +797,11 @@ describe('status answers every unavailable reason', () => {
 describe('engine errors map by kind, with a scripted session', () => {
   function scripted(kind: StatementErrorKind | 'plain') {
     const session: DbSession = {
+      count: () => Promise.resolve(1),
       inspect: () => Promise.resolve({ count: 1, type: 'INSERT', parameters: 0 }),
       run: () => Promise.reject(kind === 'plain' ? new Error('ENGINE TEXT SELECT secret FROM vault') : new EngineStatementError(kind)),
-      query: () => Promise.reject(new Error('unused')),
+      query: (sql) =>
+        Promise.resolve({ columns: ['j'], rows: sql.includes('json_serialize_sql') ? [['{"error":true}']] : [] }),
       interrupt: () => undefined,
     };
     const store = {
