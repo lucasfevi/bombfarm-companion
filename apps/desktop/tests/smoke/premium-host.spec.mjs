@@ -164,6 +164,7 @@ test.describe.serial('The Premium host runs a signed bundle', () => {
         uiUrl: 'app://bundle/_premium/1/ui/index.js',
         styleUrl: 'app://bundle/_premium/1/ui/index.css',
         localBuild: false,
+        slots: ['premium.tab'],
       });
 
     // The worker is a real utility process, started from the loader inside the app's own files.
