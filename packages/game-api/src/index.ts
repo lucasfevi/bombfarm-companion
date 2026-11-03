@@ -2,6 +2,8 @@ export { CONSENT_TEXT, CONSENT_TEXT_VERSION, consentTextFor } from './consent-te
 export type { ConsentClause, ConsentText } from './consent-text.js';
 export { TRAY_TEXT, trayTextFor } from './tray-text.js';
 export type { TrayLabels } from './tray-text.js';
+export { FIRST_HIDE_TEXT, firstHideTextFor } from './first-hide-text.js';
+export type { FirstHideText } from './first-hide-text.js';
 export {
   initialConsent,
   isGranted,
