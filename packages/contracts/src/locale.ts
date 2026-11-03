@@ -66,6 +66,17 @@ export interface SettingsWriteResult {
   readonly reason: SettingsWriteReason | null;
 }
 
+/** Why the app could not register itself to start with Windows. Crosses IPC so the Settings
+ *  section can say which of the four it is. */
+export type LoginItemBlock = 'unpackaged' | 'not_supported' | 'disabled_by_windows' | 'failed';
+
+/** A settings write that also reconciled the OS login item. `loginItem` is independent of
+ *  `persisted`: either, neither or both can be a failure. `null` iff the OS now matches the setting
+ *  (including "not registered" while consent is not granted, which is the correct state). */
+export type StartWithWindowsWriteResult = SettingsWriteResult & {
+  readonly loginItem: LoginItemBlock | null;
+};
+
 /**
  * Boot-time language resolution. Pure — imports no Electron module, so the caller
  * (`apps/desktop/src/main/index.ts`, inside `whenReady()`, where `app.getLocale()` is documented

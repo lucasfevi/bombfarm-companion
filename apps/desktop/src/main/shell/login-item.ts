@@ -4,6 +4,8 @@
  * and no unpackaged run can write the real one.
  */
 
+import type { LoginItemBlock } from '@bombfarm/contracts';
+
 /**
  * The one argument list both `set` and `get` use. Electron reads `openAtLogin` back correctly only
  * when both sides pass the same arguments. Empty today; adding an argument later makes every
@@ -22,7 +24,7 @@ export interface LoginItemPort {
   get(): LoginItemReadback;
 }
 
-export type LoginItemBlock = 'unpackaged' | 'not_supported' | 'disabled_by_windows' | 'failed';
+export type { LoginItemBlock };
 
 export type LoginItemOutcome =
   | { readonly applied: true; readonly registered: boolean }

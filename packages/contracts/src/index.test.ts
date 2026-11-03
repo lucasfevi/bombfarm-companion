@@ -28,6 +28,8 @@ const IPC_CHANNEL_LIST = [
   'settings:setRestartGameOnExit',
   'settings:setMarketQuoteCurrency',
   'settings:setUsagePingEnabled',
+  'settings:setStartWithWindows',
+  'settings:getLoginItemStatus',
   'window:minimize',
   'window:toggleMaximize',
   'window:close',
