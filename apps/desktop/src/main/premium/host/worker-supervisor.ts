@@ -2,6 +2,7 @@ import type { CapabilityCall, CapabilityReply, HostToWorker, PremiumPauseReason 
 import type { LogPort } from '../../storage/index.js';
 import {
   createCapabilityChannel,
+  type CapabilityBudget,
   type CapabilityChannel,
   type CapabilityHandler,
   type CapabilityPort,
@@ -75,6 +76,14 @@ export interface WorkerSupervisorDeps {
   /** The process environment the worker's own is picked from. */
   readonly vars: Readonly<Record<string, string | undefined>>;
   readonly allowlist: ReadonlyMap<string, CapabilityHandler>;
+  /** Capabilities with their own call budget; the channel's defaults unless given. */
+  readonly budgets?: Readonly<Record<string, CapabilityBudget>>;
+  /**
+   * Called with each new worker's channel once it exists, and with `null` when that channel is
+   * retired (the worker stopped, was replaced or exited). Handlers that feed events to the worker
+   * bind to it here.
+   */
+  readonly onChannel?: (channel: CapabilityChannel | null) => void;
   readonly now: () => number;
   readonly log: LogPort;
 }
@@ -107,8 +116,17 @@ export function createWorkerSupervisor(deps: WorkerSupervisorDeps): WorkerSuperv
   const listeners = new Set<(requested: boolean) => void>();
   let current: Running | null = null;
 
+  function notifyChannel(channel: CapabilityChannel | null): void {
+    try {
+      deps.onChannel?.(channel);
+    } catch {
+      // A watcher's fault must not keep the worker from starting or stopping.
+    }
+  }
+
   function retire(running: Running): void {
     running.requested = true;
+    notifyChannel(null);
     running.channel.close();
     running.child.kill();
   }
@@ -126,6 +144,7 @@ export function createWorkerSupervisor(deps: WorkerSupervisorDeps): WorkerSuperv
         port: capability.port1,
         requested: bundle.requested,
         allowlist: deps.allowlist,
+        ...(deps.budgets === undefined ? {} : { budgets: deps.budgets }),
         sequence: bundle.sequence,
         now: deps.now,
         log: deps.log,
@@ -138,6 +157,7 @@ export function createWorkerSupervisor(deps: WorkerSupervisorDeps): WorkerSuperv
       });
       const running: Running = { sequence: bundle.sequence, child, channel, requested: false };
       current = running;
+      notifyChannel(channel);
 
       child.on('exit', (exitCode) => {
         deps.log.info({
@@ -148,6 +168,7 @@ export function createWorkerSupervisor(deps: WorkerSupervisorDeps): WorkerSuperv
         });
         if (current === running) {
           current = null;
+          notifyChannel(null);
           channel.close();
         }
         for (const listener of [...listeners]) listener(running.requested);

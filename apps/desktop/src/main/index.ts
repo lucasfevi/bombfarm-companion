@@ -109,6 +109,7 @@ import { offlineOnlinePlayersGet } from './online-players/online-players-offline
 import { createOnlinePlayersService, type OnlinePlayersService } from './online-players/online-players-service.js';
 import { onlinePlayersHttpGet } from './online-players/online-players-transport.js';
 import { createPremiumWhenEnabled, type ElectronPremium } from './premium/index.js';
+import { createPremiumTrackingGame } from './premium-tracking-game.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 import { sandboxedWebPreferences } from './web-preferences.js';
@@ -1258,6 +1259,12 @@ async function bootstrap(): Promise<void> {
         shellLifecycle?.show();
         emitToMainWindow('premium:showTab', null);
       },
+      tracking: createPremiumTrackingGame({
+        readConsent: () => consentStore?.read() ?? initialConsent(),
+        isPackaged: resolveAppEnv().isPackaged,
+        resourcesPath: process.resourcesPath,
+        mainDir: __dirname,
+      }),
     },
     build: { isPackaged: env.isPackaged, bakedFlavor: readBakedFlavor(), builtFlavor: __BFC_BUILD_FLAVOR__ },
   });

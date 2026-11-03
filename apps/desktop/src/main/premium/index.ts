@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { MessageChannelMain, safeStorage, shell, utilityProcess } from 'electron';
-import { isAppFlavor, type AppFlavor, type AppLocale, type CapabilityCall, type CapabilityReply, type PremiumActionResult, type PremiumView } from '@bombfarm/contracts';
+import { isAppFlavor, type AppFlavor, type AppLocale, type CapabilityCall, type CapabilityReply, type PremiumActionResult, type PremiumView, type TrackingHistoryView } from '@bombfarm/contracts';
 import type { LogPort, SqliteDb } from '../storage/index.js';
 import { createLicenceService, type LicenceService } from './licence/licence-runner.js';
 import { createLicenceStore, createSealedRows } from './licence/licence-store.js';
@@ -16,7 +16,10 @@ import {
 } from './host/host-wiring.js';
 import type { HostRunner } from './host/host-runner.js';
 import type { PremiumRoutes } from './host/premium-routes.js';
+import { cachedSecrets } from './host/tracking-host.js';
 import type { ForkWorker, PortPair } from './host/worker-supervisor.js';
+import type { BattleLogSource } from './tracking/battle-log-tailer.js';
+import type { ClearOutcome } from './tracking/tracking-store.js';
 import { startLoopbackListener } from './loopback-listener.js';
 import { createPremiumNotifier } from './notifier.js';
 import { createPkce, createState } from './pkce.js';
@@ -28,7 +31,7 @@ import { createPremiumService, type GameIdentity, type PremiumService } from './
 import { PREMIUM_API_ORIGIN, createBytesFetch, createPremiumHttp, type FetchBytes, type PremiumHttp } from './premium-transport.js';
 import { runtimeLeaseKeys } from './runtime-lease-keys.js';
 import { createSubjectStore } from './subject-store.js';
-import { createTokenVault, type SecretBox } from './token-vault.js';
+import { createTokenVault, type SecretBox, type TokenVault } from './token-vault.js';
 
 export type { PremiumService } from './premium-service.js';
 
@@ -83,6 +86,21 @@ export interface ElectronHostDeps {
   readonly openPremiumTab?: () => void;
   /** Builds the host from its parts; the real one unless a test says otherwise. */
   readonly create?: (parts: PremiumHostWiringDeps) => HostRunner;
+  /** What the tracking capabilities need from the game's side; without it they refuse every call. */
+  readonly tracking?: ElectronTrackingDeps;
+}
+
+/** The game facts the tracking capabilities need, composed by the app (this folder never reads a game file). */
+export interface ElectronTrackingDeps {
+  /** Where the signed DuckDB extension is shipped. */
+  readonly extensionPath: string;
+  /** The game's own credentials, as the plain values a worker must never receive. */
+  readonly gameSecrets: () => readonly string[];
+  /** The battle log and the game settings, read only for a player who granted consent. */
+  readonly battleLog: {
+    readonly source: BattleLogSource;
+    readonly watch?: (wake: () => void) => () => void;
+  };
 }
 
 export interface PremiumBuild {
@@ -108,6 +126,16 @@ export interface ElectronPremium extends PremiumService {
   callFromUi(call: CapabilityCall): Promise<CapabilityReply>;
   /** What the `app://` handler serves under `_premium`; null when there is no host. */
   readonly routes: PremiumRoutes | null;
+  /**
+   * The signed-in user's tracking history on disk, for Settings; works with Premium inactive. Null
+   * when nobody is signed in or the host has no tracking.
+   */
+  trackingHistory(): TrackingHistoryView | null;
+  /**
+   * Deletes the signed-in user's tracking file and key; works with Premium inactive. Null (nothing
+   * deleted) when nobody is signed in or the host has no tracking.
+   */
+  clearTrackingHistory(): Promise<ClearOutcome | null>;
 }
 
 export function createPremiumWhenEnabled(enabled: boolean, deps: ElectronPremiumDeps): ElectronPremium | null {
@@ -141,11 +169,12 @@ const createPortPair = (): PortPair => new MessageChannelMain();
 export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremium {
   const box = createSafeStorageBox();
   const api = createPremiumApi(chooseHttp(deps.offline, deps.originOverride));
+  const vault = createTokenVault(deps.db, box);
   let licence: LicenceService | null = null;
   let host: HostRunner | null = null;
   const premium = createPremiumService({
     api,
-    vault: createTokenVault(deps.db, box),
+    vault,
     subjectStore: createSubjectStore(deps.db, box),
     cache: createPremiumCache(deps.db),
     openExternal: (url) => shell.openExternal(url),
@@ -168,6 +197,7 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
     },
     premium,
     box,
+    vault,
   );
   const service = createLicenceService({
     host: premium.host,
@@ -211,7 +241,9 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
       premium.start();
       service.start();
       if (host !== null) startHost(host);
-      stopResume ??= deps.onResume?.(() => {
+      // The one engine probe runs a few seconds from now, off the start-up path.
+      host?.armTrackingProbe?.();
+      stopResume ??=deps.onResume?.(() => {
         service.trigger('resume');
       }) ?? null;
     },
@@ -240,6 +272,15 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
     callFromUi(call) {
       return host?.callFromUi(call) ?? Promise.resolve({ id: call.id, ok: false, error: 'unavailable' });
     },
+    trackingHistory() {
+      const who = premium.host.subject();
+      return who === null ? null : (host?.trackingHistory?.(who) ?? null);
+    },
+    clearTrackingHistory() {
+      const who = premium.host.subject();
+      if (who === null || host?.clearTrackingHistory === undefined) return Promise.resolve(null);
+      return host.clearTrackingHistory(who);
+    },
   };
 }
 
@@ -249,6 +290,7 @@ function buildHost(
   deviceGet: PremiumHostWiringDeps['deviceGet'],
   premium: PremiumService,
   box: SecretBox,
+  vault: TokenVault,
 ): HostRunner | null {
   const wiring = deps.host;
   if (wiring === undefined) return null;
@@ -257,6 +299,8 @@ function buildHost(
     deps.log.error({ scope: 'premium', event: 'premium.host_unavailable', reason: 'shims_unreadable' });
     return null;
   }
+  const rows = createSealedRows(deps.db, box);
+  const tracking = wiring.tracking;
   const parts: PremiumHostWiringDeps = {
     flavor: isAppFlavor(deps.flavor) ? deps.flavor : 'prod',
     appVersion: deps.appVersion ?? '0.0.0',
@@ -275,7 +319,7 @@ function buildHost(
     mono: () => performance.now(),
     capabilities: {
       status: { premiumStatus: () => premium.statusSnapshot(), audience: () => premium.audience() },
-      store: { subject: () => premium.host.subject(), rows: createSealedRows(deps.db, box) },
+      store: { subject: () => premium.host.subject(), rows },
       notify: {
         locale: deps.locale,
         now: () => Date.now(),
@@ -285,6 +329,22 @@ function buildHost(
           wiring.openPremiumTab?.();
         },
       },
+      ...(tracking === undefined
+        ? {}
+        : {
+            tracking: {
+              rows,
+              extensionPath: tracking.extensionPath,
+              playingAccountAllows: () => appPlayingAccount.allows(),
+              accountKey: () => deps.readGameIdentity()?.accountId ?? null,
+              // The game's credentials, the Premium sign-in token and the SteamID: none may reach a worker.
+              secrets: cachedSecrets(
+                () => [...tracking.gameSecrets(), vault.load()?.token ?? '', deps.readGameIdentity()?.steamId64 ?? ''],
+                () => performance.now(),
+              ),
+              battleLog: tracking.battleLog,
+            },
+          }),
     },
     playingAccountAllows: () => appPlayingAccount.allows(),
   };

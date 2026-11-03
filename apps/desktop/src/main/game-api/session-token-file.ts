@@ -120,3 +120,38 @@ export function readGameIdentity(
   if (!result.ok) return null;
   return { accountId: result.accountId, steamId64: result.steamId64 ?? null };
 }
+
+/** What `SessionToken.redactFrom` puts where the token was. */
+const REDACTED = '[redacted]';
+
+/**
+ * The session credential as the plain value a feed must withhold from a worker. The token type
+ * never hands its value back, so it is recovered from the file's own text by what `redactFrom`
+ * takes out of it, and kept only if redacting it again leaves nothing but the marker. Empty when
+ * the file cannot be read or parsed. For the premium feed's scrub list; nothing else may call it.
+ */
+export function readSessionSecrets(
+  _consent: GrantedConsent,
+  fs: FsPort = nodeFsPort,
+  filePath: string = sessionCfgPath(),
+): readonly string[] {
+  let text: string;
+  try {
+    text = fs.readFileSync(filePath);
+  } catch {
+    return [];
+  }
+  const parsed = parseSessionCfg(text);
+  if (!parsed.ok) return [];
+  const redacted = parsed.token.redactFrom(text);
+  let start = 0;
+  while (start < text.length && start < redacted.length && text[start] === redacted[start]) start += 1;
+  const removed = text.length - redacted.length;
+  // The token may appear more than once in the file; try each count until one reproduces the marker.
+  for (let occurrences = 1; occurrences <= 8; occurrences += 1) {
+    if (removed % occurrences !== 0) continue;
+    const candidate = text.slice(start, start + removed / occurrences + REDACTED.length);
+    if (candidate.length > 0 && parsed.token.redactFrom(candidate) === REDACTED) return [candidate];
+  }
+  return [];
+}

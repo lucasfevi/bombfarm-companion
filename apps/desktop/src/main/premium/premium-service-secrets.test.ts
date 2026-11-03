@@ -652,8 +652,9 @@ describe('the Premium host adds nothing secret to the view or the log', () => {
       uiUrl: 'app://bundle/_premium/4/ui/index.js',
       styleUrl: 'app://bundle/_premium/4/ui/index.css',
       localBuild: false,
+      slots: ['premium.tab'],
     });
-    expect(Object.keys(view.host ?? {}).sort()).toEqual(['localBuild', 'phase', 'styleUrl', 'uiUrl']);
+    expect(Object.keys(view.host ?? {}).sort()).toEqual(['localBuild', 'phase', 'slots', 'styleUrl', 'uiUrl']);
     const emitted = everyEmittedView(h);
     for (const secret of NEVER_EMITTED) expect(emitted, `emitted view holds ${secret}`).not.toContain(secret);
     for (const bytes of input.files.values()) {

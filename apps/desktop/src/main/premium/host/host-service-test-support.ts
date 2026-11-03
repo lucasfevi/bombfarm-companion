@@ -15,7 +15,7 @@ import { createFakeFork, type FakeFork } from './host-fakes.js';
 import { createMetaDb, signedInput, TEST_KEYS } from './host-test-support.js';
 import { createHostRunner, type HostGate, type HostRunner, type HostRunnerDeps } from './host-runner.js';
 import type { CapabilityHandler } from './capability-channel.js';
-import { createWorkerSupervisor, type WorkerSupervisor } from './worker-supervisor.js';
+import { createWorkerSupervisor, type WorkerSupervisor, type WorkerSupervisorDeps } from './worker-supervisor.js';
 import type { BundleInput } from './bundle-verify.js';
 
 /** A whole host over fakes: a gate, a server, a worker process, a temp cache and a fake clock. */
@@ -145,6 +145,10 @@ export interface RigOptions {
   allowlist?: ReadonlyMap<string, CapabilityHandler>;
   /** Hands the runner a way to delete the user's store data. */
   deleteStore?: HostRunnerDeps['deleteStore'];
+  /** Tells the runner about the tracking feeds and store. */
+  tracking?: HostRunnerDeps['tracking'];
+  /** Binds handlers to each worker's channel. */
+  onChannel?: WorkerSupervisorDeps['onChannel'];
 }
 
 /** The one capability the rig's host offers to a worker. */
@@ -165,6 +169,7 @@ export async function createHostRig(options: RigOptions = {}): Promise<HostRig> 
     loaderPath: 'premium-worker.cjs',
     vars: { SYSTEMROOT: 'C:\\Windows', TEMP: 'C:\\Temp', TMP: 'C:\\Temp' },
     allowlist: options.allowlist ?? new Map([[ECHO_CAPABILITY, () => 'pong']]),
+    ...(options.onChannel ? { onChannel: options.onChannel } : {}),
     now: () => clock.mono(),
     log,
   });
@@ -211,6 +216,7 @@ export async function createHostRig(options: RigOptions = {}): Promise<HostRig> 
     log,
     ...(options.removalRetryMs ? { removalRetryMs: options.removalRetryMs } : {}),
     ...(options.deleteStore ? { deleteStore: options.deleteStore } : {}),
+    ...(options.tracking ? { tracking: options.tracking } : {}),
   });
   rig.runner.attach(() => {
     rig.goneCalls += 1;
