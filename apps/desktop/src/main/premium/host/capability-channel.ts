@@ -27,6 +27,11 @@ export type CallOrigin = 'worker' | 'ui';
 
 export interface CapabilityContext {
   readonly origin: CallOrigin;
+  /**
+   * The slot the screen's call came from. Absent means the Premium tab; `null` means the call named
+   * a slot that does not exist or is not granted.
+   */
+  readonly slot?: PremiumSlot | null | undefined;
 }
 
 /** A handler that wants to know who is calling; wrap it with `withOrigin` to put it in the allowlist. */
@@ -145,14 +150,15 @@ interface ParsedCall {
   readonly id: number;
   readonly capability: string;
   readonly args: unknown;
+  readonly slot: unknown;
 }
 
 function parseCall(data: unknown): ParsedCall | { readonly id: number } {
   if (typeof data !== 'object' || data === null) return { id: -1 };
-  const { id, capability, args } = data as Record<string, unknown>;
+  const { id, capability, args, slot } = data as Record<string, unknown>;
   const safeId = typeof id === 'number' && Number.isSafeInteger(id) ? id : -1;
   if (safeId === -1 || typeof capability !== 'string') return { id: safeId };
-  return { id: safeId, capability, args };
+  return { id: safeId, capability, args, slot };
 }
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
@@ -165,6 +171,8 @@ export function createCapabilityChannel(deps: CapabilityChannelDeps): Capability
   const known = new Set<string>(deps.knownCapabilities ?? PREMIUM_CAPABILITIES);
   const granted = [...new Set(deps.requested)].filter((name) => allowlist.has(name));
   const grantedSet = new Set(granted);
+  /** The slots a screen call may name: the tab always, the Live section when the bundle declared it. */
+  const grantedSlots = new Set<string>(['premium.tab', ...deps.requested.filter((name) => name === 'live.section')]);
   const budgets = deps.budgets ?? DEFAULT_BUDGETS;
   const buckets = new Map<string, { tokens: number; at: number }>();
   /** Calls still waiting on their handler, each with the way to answer it. */
@@ -247,7 +255,7 @@ export function createCapabilityChannel(deps: CapabilityChannelDeps): Capability
       refuse(reply, call.id, null, 'bad_call');
       return;
     }
-    const { id, capability, args } = call;
+    const { id, capability, args, slot } = call;
     if (paused) {
       refuse(reply, id, capability, 'paused');
       return;
@@ -265,7 +273,10 @@ export function createCapabilityChannel(deps: CapabilityChannelDeps): Capability
     let result: unknown;
     try {
       result = originAware.has(handler)
-        ? (handler as OriginHandler)(args, { origin })
+        ? (handler as OriginHandler)(args, {
+            origin,
+            slot: slot === undefined ? undefined : typeof slot === 'string' && grantedSlots.has(slot) ? (slot as PremiumSlot) : null,
+          })
         : handler(args);
     } catch (thrown) {
       refuseThrown(reply, id, capability, thrown);

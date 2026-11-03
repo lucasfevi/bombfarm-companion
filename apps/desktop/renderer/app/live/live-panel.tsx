@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Panel, PanelHeader } from '@bombfarm/ui';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import type { LiveDamage, LiveEarnings, LiveMap } from '@bombfarm/contracts';
@@ -73,6 +73,7 @@ export function LivePanel({
   damage = null,
   onResetEarnings = () => undefined,
   onReopenConsent,
+  children,
 }: {
   freshness: ReachedLiveFreshness;
   slow: LiveSlowModel;
@@ -82,6 +83,8 @@ export function LivePanel({
   damage?: LiveDamage | null;
   onResetEarnings?: (() => void) | undefined;
   onReopenConsent?: (() => void) | undefined;
+  /** Rendered after everything else in the panel. */
+  children?: ReactNode;
 }) {
   const t = useCopy();
   const { locale } = useLocale();
@@ -170,6 +173,7 @@ export function LivePanel({
           {sub(t.liveFieldExitPendingCount, { n: formatCount(slow.fieldExitPendingCount, locale) })}
         </p>
       ) : null}
+      {children}
     </div>
   );
 }

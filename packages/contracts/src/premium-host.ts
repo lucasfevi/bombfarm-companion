@@ -63,7 +63,7 @@ export type PremiumSlot = (typeof PREMIUM_SLOTS)[number];
 
 export type PremiumCapability = (typeof PREMIUM_CAPABILITIES)[number];
 
-export type CapabilityCall = { id: number; capability: string; args: unknown };
+export type CapabilityCall = { id: number; capability: string; args: unknown; slot?: PremiumSlot };
 
 export type CapabilityReply =
   | { id: number; ok: true; value: unknown }

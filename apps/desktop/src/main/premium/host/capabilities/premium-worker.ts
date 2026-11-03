@@ -38,8 +38,9 @@ export function createPremiumWorkerCapability(deps: PremiumWorkerCapabilityDeps)
       const sent = jsonBytes(args);
       if (sent === null) throw new CapabilityError('bad_args');
       if (sent > PREMIUM_WORKER_MAX_BYTES) throw new CapabilityError('too_large', 'bytes');
-      // No call context carries the screen's slot yet; the Premium tab is the only slot that asks.
-      const answer = await deps.channel.askWorker('premium.tab', args);
+      // A call that names no slot comes from the Premium tab; a slot that is unknown or not granted is refused.
+      if (ctx.slot === null) throw new CapabilityError('bad_args');
+      const answer = await deps.channel.askWorker(ctx.slot ?? 'premium.tab', args);
       const received = jsonBytes(answer);
       if (received === null) throw new CapabilityError('failed', 'other');
       if (received > PREMIUM_WORKER_MAX_BYTES) throw new CapabilityError('too_large', 'bytes');

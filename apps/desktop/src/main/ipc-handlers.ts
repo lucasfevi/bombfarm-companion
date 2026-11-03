@@ -48,6 +48,7 @@ import {
   type GamePingView,
   type OnlinePlayersView,
   type PremiumActionResult,
+  type PremiumSlot,
   type PremiumView,
   type MiniLiveLayoutView,
   type PvpFilmView,
@@ -434,8 +435,10 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.getPremiumService()?.sectionMountFailed?.();
       return null;
     },
-    'premium:uiCall': (capability: string, args: unknown): Promise<CapabilityReply> | CapabilityReply =>
-      deps.getPremiumService()?.callFromUi?.({ id: 0, capability, args }) ?? { id: 0, ok: false, error: 'unavailable' },
+    'premium:uiCall': (capability: string, args: unknown, slot?: PremiumSlot): Promise<CapabilityReply> | CapabilityReply =>
+      deps.getPremiumService()?.callFromUi?.(
+        slot === undefined ? { id: 0, capability, args } : { id: 0, capability, args, slot },
+      ) ?? { id: 0, ok: false, error: 'unavailable' },
     'market:refreshItem': refreshMarketItem,
     'market:check': checkMarketNow,
     'forge:start': (request: ForgeStartRequest): ForgeStartResult =>
