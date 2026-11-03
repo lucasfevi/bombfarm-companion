@@ -139,6 +139,19 @@ export const en = {
     'When this is on, if the game closes while the companion is already running, Steam starts it again. The companion will not start the game when it itself opens. Off by default.',
   settingsRestartGameOnExitNotSavedTitle: 'Game setting changed, but not saved',
 
+  // settingsStartWithWindows* — open the companion when you sign in to Windows (on by default)
+  settingsStartWithWindowsSectionTitle: 'Startup',
+  settingsStartWithWindowsLabel: 'Start with Windows',
+  settingsStartWithWindowsHelp:
+    'Opens the companion when you sign in to Windows. It only takes effect once you have given the companion permission to run; until then your choice is kept and nothing starts. On by default.',
+  settingsStartWithWindowsNotSavedTitle: 'Startup setting changed, but not saved',
+  settingsStartWithWindowsUnpackagedText:
+    'This only works in the installed app on Windows, so the switch is off here.',
+  settingsStartWithWindowsFailedText:
+    'Windows did not accept the change, so the app will not start with Windows until it works. Try again.',
+  settingsStartWithWindowsDisabledByWindowsText:
+    'Windows has this turned off. To turn it back on, open Windows Settings → Apps → Startup, or Task Manager → Startup apps, and switch the companion on.',
+
   // settingsUsage* — the hourly usage ping, and the one switch that makes it anonymous
   settingsUsageSectionTitle: 'Usage count',
   settingsUsagePingLabel: 'Include my account in the usage count',

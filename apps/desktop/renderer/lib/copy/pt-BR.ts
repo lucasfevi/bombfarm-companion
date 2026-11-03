@@ -135,6 +135,19 @@ export const ptBR: Copy = {
     'Com isto ligado, se o jogo fechar enquanto o companion já está aberto, a Steam inicia-o de novo. O companion não inicia o jogo ao abrir. Desligado por padrão.',
   settingsRestartGameOnExitNotSavedTitle: 'Configuração do jogo alterada, mas não salva',
 
+  // settingsStartWithWindows* — abrir o companion quando você entra no Windows (ligado por padrão)
+  settingsStartWithWindowsSectionTitle: 'Inicialização',
+  settingsStartWithWindowsLabel: 'Iniciar com o Windows',
+  settingsStartWithWindowsHelp:
+    'Abre o companion quando você entra no Windows. Só passa a valer depois que você der ao companion a permissão para funcionar; até lá sua escolha fica guardada e nada é iniciado. Ligado por padrão.',
+  settingsStartWithWindowsNotSavedTitle: 'Configuração de inicialização alterada, mas não salva',
+  settingsStartWithWindowsUnpackagedText:
+    'Isto só funciona no app instalado, no Windows; por isso o interruptor fica desligado aqui.',
+  settingsStartWithWindowsFailedText:
+    'O Windows não aceitou a mudança, então o app não vai iniciar com o Windows até funcionar. Tente de novo.',
+  settingsStartWithWindowsDisabledByWindowsText:
+    'O Windows desativou isto. Para ligar de novo, abra Configurações do Windows > Aplicativos > Inicialização, ou Gerenciador de Tarefas > Aplicativos de inicialização, e ative o companion.',
+
   // settingsUsage* — o aviso de uso a cada hora, e o único interruptor que o torna anônimo
   settingsUsageSectionTitle: 'Contagem de uso',
   settingsUsagePingLabel: 'Incluir minha conta na contagem de uso',
