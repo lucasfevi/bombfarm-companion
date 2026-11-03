@@ -36,6 +36,97 @@ const CREATE_SECRET = /^(?:\s|--[^\n]*(?:\n|$)|\/\*[\s\S]*?\*\/)*create\s+(?:(?:
 /** Nothing but space, comments and semicolons: no statement at all. */
 const NO_STATEMENT = /^(?:\s|;|--[^\n]*(?:\n|$)|\/\*[\s\S]*?\*\/)*$/;
 
+/**
+ * Names refused wherever they appear as a function call. DuckDB's lock stops file and network reads
+ * but not these: the logger's controls (`enable_`, `disable_`, `truncate_`), the checkpoint calls,
+ * system tables that show the file's path and settings (`duckdb_`, `pragma_`, `*_info`), file
+ * readers (`read_`, `sniff_`, `parquet_`, `glob`, `arrow_`, `seq_scan`), calls that run a string
+ * as SQL (`query`, `query_table`, `json_execute_`), settings and the running query
+ * (`current_setting`, `current_query`), secrets, and the ones that only stall or write the log.
+ */
+const DENIED_CALL_PREFIXES = [
+  'enable_', 'disable_', 'truncate_', 'duckdb_', 'pragma_', 'read_', 'sniff_', 'parquet_',
+  'json_execute_', 'arrow_', 'add_parquet_', 'copy_', 'import_', 'export_', 'show_', 'load_', 'install_',
+] as const;
+const DENIED_CALL_NAMES = new Set([
+  'checkpoint', 'force_checkpoint', 'glob', 'query', 'query_table', 'seq_scan', 'which_secret',
+  'current_setting', 'current_query', 'pg_sleep', 'sleep_ms', 'write_log', 'getenv',
+  'metadata_info', 'storage_info', 'database_size', 'database_list', 'extension_versions',
+  'platform', 'user_agent', 'table_info', 'functions',
+]);
+/** System views that need no parentheses: refused wherever they appear. */
+const DENIED_ANYWHERE_PREFIXES = ['duckdb_', 'pragma_'] as const;
+const DENIED_ANYWHERE_NAMES = new Set(['sqlite_master', 'sqlite_schema', 'sqlite_temp_master']);
+
+const IDENT_START = /[A-Za-z_\u0080-￿]/;
+const IDENT_PART = /[A-Za-z0-9_$\u0080-￿]/;
+
+/** The first refused name in the statement, outside strings and comments, or null. */
+export function deniedName(sql: string): string | null {
+  const n = sql.length;
+  let i = 0;
+  const skipSpace = (from: number): number => {
+    let j = from;
+    for (;;) {
+      while (j < n && /\s/.test(sql[j] as string)) j += 1;
+      if (sql[j] === '-' && sql[j + 1] === '-') {
+        const end = sql.indexOf('\n', j);
+        j = end === -1 ? n : end + 1;
+      } else if (sql[j] === '/' && sql[j + 1] === '*') {
+        const end = sql.indexOf('*/', j + 2);
+        j = end === -1 ? n : end + 2;
+      } else {
+        return j;
+      }
+    }
+  };
+  const check = (rawName: string, end: number): string | null => {
+    const name = rawName.toLowerCase();
+    if (DENIED_ANYWHERE_NAMES.has(name) || DENIED_ANYWHERE_PREFIXES.some((prefix) => name.startsWith(prefix))) return name;
+    if (sql[skipSpace(end)] !== '(') return null;
+    if (DENIED_CALL_NAMES.has(name) || DENIED_CALL_PREFIXES.some((prefix) => name.startsWith(prefix))) return name;
+    return null;
+  };
+  while (i < n) {
+    const ch = sql[i] as string;
+    if (ch === '-' && sql[i + 1] === '-') {
+      const end = sql.indexOf('\n', i);
+      i = end === -1 ? n : end + 1;
+    } else if (ch === '/' && sql[i + 1] === '*') {
+      const end = sql.indexOf('*/', i + 2);
+      i = end === -1 ? n : end + 2;
+    } else if (ch === "'") {
+      i += 1;
+      while (i < n && !(sql[i] === "'" && sql[i + 1] !== "'")) i += sql[i] === "'" ? 2 : 1;
+      i += 1;
+    } else if (ch === '"') {
+      let name = '';
+      i += 1;
+      while (i < n && !(sql[i] === '"' && sql[i + 1] !== '"')) {
+        name += sql[i] === '"' ? '"' : (sql[i] as string);
+        i += sql[i] === '"' ? 2 : 1;
+      }
+      i += 1;
+      const hit = check(name, i);
+      if (hit !== null) return hit;
+    } else if (ch === '$' && /^\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$/.test(sql.slice(i, i + 64))) {
+      const tag = (/^\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$/.exec(sql.slice(i, i + 64)) as RegExpExecArray)[0];
+      const end = sql.indexOf(tag, i + tag.length);
+      i = end === -1 ? n : end + tag.length;
+    } else if (/[0-9]/.test(ch)) {
+      while (i < n && /[A-Za-z0-9_.]/.test(sql[i] as string)) i += 1;
+    } else if (IDENT_START.test(ch)) {
+      const start = i;
+      while (i < n && IDENT_PART.test(sql[i] as string)) i += 1;
+      const hit = check(sql.slice(start, i), i);
+      if (hit !== null) return hit;
+    } else {
+      i += 1;
+    }
+  }
+  return null;
+}
+
 const ENGINE_KINDS: Readonly<Record<Exclude<StatementErrorKind, 'interrupted' | 'bind'>, DbRefusalReason>> = {
   disk_full: 'disk_full',
   constraint: 'constraint',
@@ -107,6 +198,9 @@ export function createDbCapability(deps: DbCapabilityDeps): CapabilityHandler {
     if (NO_STATEMENT.test(sql)) throw new CapabilityError('bad_args', 'statement_count');
     // DuckDB cannot prepare a secret without its extension, so this one is read before it is asked.
     if (CREATE_SECRET.test(sql)) {
+      throw origin === 'ui' ? new CapabilityError('not_granted') : new CapabilityError('bad_args', 'statement_type');
+    }
+    if (deniedName(sql) !== null) {
       throw origin === 'ui' ? new CapabilityError('not_granted') : new CapabilityError('bad_args', 'statement_type');
     }
     const info = await session.inspect(sql);

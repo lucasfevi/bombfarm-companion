@@ -259,14 +259,19 @@ describe('the db capability over a real, sealed DuckDB file', () => {
       ['read_parquet', (m: string) => `SELECT * FROM read_parquet('${m}')`],
       ['read_json', (m: string) => `SELECT * FROM read_json('${m}')`],
       ['glob', (m: string) => `SELECT * FROM glob('${m}')`],
-      ['a file named as a table', (m: string) => `SELECT * FROM '${m}'`],
-    ])('refuses %s at bind, from the worker and the screen alike', async (_label, make) => {
+    ])('refuses %s by name: statement_type for the worker, not_granted for the screen', async (_label, make) => {
       const sql = make(fwd(marker));
+      expect(await call({ op: 'query', sql })).toEqual(refusedWith('bad_args', 'statement_type'));
+      expect(await call({ op: 'query', sql }, 'ui')).toEqual(refusedWith('not_granted'));
+      expect(await call({ op: 'exec', sql: `INSERT INTO drops (id, item) SELECT 1, a FROM read_csv('${fwd(marker)}')` })).toEqual(
+        refusedWith('bad_args', 'statement_type'),
+      );
+    });
+
+    it('refuses a file named as a table at bind, because the lock refuses the read', async () => {
+      const sql = `SELECT * FROM '${fwd(marker)}'`;
       expect(await call({ op: 'query', sql })).toEqual(refusedWith('bad_args', 'bind'));
       expect(await call({ op: 'query', sql }, 'ui')).toEqual(refusedWith('bad_args', 'bind'));
-      expect(await call({ op: 'exec', sql: `INSERT INTO drops (id, item) SELECT 1, a FROM read_csv('${fwd(marker)}')` })).toEqual(
-        refusedWith('bad_args', 'bind'),
-      );
     });
 
     it('refuses a parameter count that does not match, an unknown table and a syntax error at bind', async () => {
@@ -325,6 +330,91 @@ describe('the db capability over a real, sealed DuckDB file', () => {
       }
       expect(await count('drops WHERE id = 5000')).toBe(0);
       expect(await count('drops')).toBeGreaterThan(0);
+    });
+  });
+
+  describe('functions that run despite the lock are refused by name', () => {
+    const dir = (): string => rig.root.split(String.fromCharCode(92)).join('/');
+    const bypasses: Array<[string, () => string]> = [
+      ['enable_logging to a folder', () => `SELECT * FROM enable_logging(storage='file', storage_config={'path': '${dir()}'})`],
+      ['enable_logging, upper case and quoted', () => `SELECT * FROM "ENABLE_LOGGING" (level='debug')`],
+      ['disable_logging', () => 'SELECT * FROM disable_logging()'],
+      ['truncate_duckdb_logs', () => 'SELECT * FROM truncate_duckdb_logs()'],
+      ['checkpoint()', () => 'SELECT * FROM checkpoint()'],
+      ['force_checkpoint()', () => 'SELECT * FROM force_checkpoint()'],
+      ['sniff_csv', () => `SELECT * FROM sniff_csv('${dir()}/marker.csv')`],
+      ['duckdb_databases()', () => 'SELECT path FROM duckdb_databases()'],
+      ['duckdb_databases without parentheses', () => 'SELECT path FROM duckdb_databases'],
+      ['duckdb_settings()', () => 'SELECT * FROM duckdb_settings()'],
+      ['pragma_database_list', () => 'SELECT * FROM pragma_database_list'],
+      ['a schema-qualified read_csv', () => `SELECT * FROM main.read_csv('${dir()}/marker.csv')`],
+      ['glob', () => `SELECT * FROM glob('${dir()}/*')`],
+      ['query()', () => "SELECT * FROM query('SELECT 1')"],
+      ['query_table()', () => "SELECT * FROM query_table('drops')"],
+      ['current_setting()', () => "SELECT current_setting('secret_directory')"],
+      ['a call hidden after a string and a comment', () => "SELECT 'a''b', /* x */ 1 FROM checkpoint -- y\n ()"],
+      ['a call inside a macro body', () => 'CREATE MACRO leak() AS TABLE SELECT * FROM duckdb_databases()'],
+    ];
+
+    it.each(bypasses)('refuses %s from the worker and the screen, and the handle survives', async (_label, make) => {
+      const sql = make();
+      expect(await call({ op: 'query', sql })).toEqual(refusedWith('bad_args', 'statement_type'));
+      expect(await call({ op: 'query', sql }, 'ui')).toEqual(refusedWith('not_granted'));
+      expect(await call({ op: 'exec', sql })).toEqual(refusedWith('bad_args', 'statement_type'));
+      expect(await call({ op: 'tx', steps: [{ sql }] })).toEqual(refusedWith('bad_args', 'statement_type'));
+      expect((await call({ op: 'query', sql: 'SELECT 1' })).ok).toBe(true);
+    });
+
+    it('does not refuse a name that is only text, an alias or a column', async () => {
+      const answer = await call({
+        op: 'query',
+        sql: "SELECT 'checkpoint()' AS \"read_at\", /* duckdb_databases() */ 1 AS query -- glob()\n",
+      });
+      expect(answer).toEqual({ ok: true, value: { columns: ['read_at', 'query'], rows: [['checkpoint()', 1]] } });
+    });
+
+    it('still answers an ordinary analytics query with JSON and time functions', async () => {
+      await call({ op: 'exec', sql: 'CREATE TABLE events (at_ts TIMESTAMP, payload VARCHAR, n INTEGER)' });
+      await call({
+        op: 'batch',
+        sql: 'INSERT INTO events VALUES ($1, $2, $3)',
+        rows: [
+          ['2026-01-02 03:04:05', '{"kind":"a","v":{"x":1}}', 4],
+          ['2026-01-20 10:00:00', '{"kind":"a","v":{"x":2}}', 6],
+          ['2026-02-01 00:00:00', '{"kind":"b"}', null],
+        ],
+      });
+      const answer = await call({
+        op: 'query',
+        sql: `SELECT strftime(date_trunc('month', at_ts), '%Y-%m') AS month, json_extract_string(payload, '$.kind') AS kind,
+                coalesce(sum(n), 0) AS total, count(*) AS c, max(json_extract(payload, '$.v.x')::INTEGER) AS x
+              FROM events GROUP BY ALL ORDER BY month`,
+      }, 'ui');
+      expect(answer).toEqual({
+        ok: true,
+        value: {
+          columns: ['month', 'kind', 'total', 'c', 'x'],
+          rows: [
+            ['2026-01', 'a', '10', '2', 2],
+            ['2026-02', 'b', '0', '1', null],
+          ],
+        },
+      });
+    });
+
+    it('also refuses the logger controls inside the engine, and closing the store afterwards returns', async () => {
+      const engine = createTrackingEngine({ extensionPath: extension, log: recordingLog().log });
+      const file = join(rig.root, 'direct.duckdb');
+      const db = await engine.open(file, 'c3'.repeat(32));
+      await expect(db.query(`SELECT * FROM enable_logging(storage='file', storage_config={'path': '${dir()}'})`)).rejects.toThrow();
+      await expect(db.run('CALL ENABLE_LOGGING()')).rejects.toThrow();
+      await expect(db.session((s) => s.inspect('SELECT * FROM truncate_duckdb_logs()'))).rejects.toThrow();
+      expect(await db.query('SELECT 1 AS one')).toEqual([{ one: 1 }]);
+      db.close();
+    });
+
+    it('left the marker file untouched', () => {
+      expect(readFileSync(join(rig.root, 'marker.csv'), 'utf8')).toBe('a,b\n1,MARKER\n');
     });
   });
 

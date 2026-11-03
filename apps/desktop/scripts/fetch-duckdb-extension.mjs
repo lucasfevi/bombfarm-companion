@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -124,10 +124,17 @@ export async function fetchDuckdbExtension({
   }
 
   mkdirSync(outDir, { recursive: true });
-  const partial = `${target}.partial`;
+  // A name no other process shares, and a target nobody removes: a parallel fetch may be reading it.
+  const partial = `${target}.${process.pid}.${randomBytes(4).toString('hex')}.partial`;
   writeFileSync(partial, bytes);
-  rmSync(target, { force: true });
-  renameSync(partial, target);
+  try {
+    renameSync(partial, target);
+  } catch (error) {
+    // Windows refuses to replace a file another process has open. If it is already the pinned file, it is done.
+    const done = existsSync(target) && sha256Of(readFileSync(target)) === pin.sha256;
+    rmSync(partial, { force: true });
+    if (!done) throw error;
+  }
   return target;
 }
 

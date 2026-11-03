@@ -141,6 +141,17 @@ function lazyBinding(): DuckBinding {
   return require('@duckdb/node-api') as DuckBinding;
 }
 
+/**
+ * The logger's control functions run despite the lock: pointed at a folder the lock forbids, they
+ * leave a connection that fails every call and takes the process down when it closes. The caller
+ * gates function names too; this is the engine's own refusal, so no caller can reach them.
+ */
+const LOGGER_CONTROL = /(?:enable|disable)_logging|truncate_duckdb_logs/i;
+
+function refuseLoggerControl(sql: string): void {
+  if (LOGGER_CONTROL.test(sql)) throw new EngineStatementError('other');
+}
+
 function statementKind(error: unknown): StatementErrorKind {
   const message = error instanceof Error ? error.message : '';
   switch (/^([A-Za-z ]+?) Error:/.exec(message)?.[1]?.toLowerCase()) {
@@ -170,6 +181,7 @@ async function classified<T>(work: () => Promise<T>): Promise<T> {
 function sessionOf(binding: DuckBinding, db: DuckConnection): DbSession {
   return {
     async inspect(sql) {
+      refuseLoggerControl(sql);
       try {
         const extracted = await db.extractStatements(sql);
         // Only a lone statement is prepared: with two, the caller refuses on the count alone.
@@ -185,11 +197,13 @@ function sessionOf(binding: DuckBinding, db: DuckConnection): DbSession {
       }
     },
     async run(sql, params) {
+      refuseLoggerControl(sql);
       const result = await classified(() => db.run(sql, params === undefined ? undefined : [...params]));
       const changed = (result as { rowsChanged?: unknown } | null)?.rowsChanged;
       return typeof changed === 'number' ? changed : 0;
     },
     async query(sql, params, maxRows) {
+      refuseLoggerControl(sql);
       const reader = await classified(() =>
         db.streamAndReadUntil(sql, maxRows, params === undefined ? undefined : [...params]),
       );
@@ -312,9 +326,11 @@ export function createTrackingEngine(deps: TrackingEngineDeps): TrackingEngine {
     let closed = false;
     return {
       async run(sql, params) {
+        refuseLoggerControl(sql);
         await db.run(sql, params === undefined ? undefined : [...params]);
       },
       async query(sql, params) {
+        refuseLoggerControl(sql);
         const reader = await db.runAndReadAll(sql, params === undefined ? undefined : [...params]);
         return reader.getRowObjectsJS();
       },

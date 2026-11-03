@@ -107,6 +107,17 @@ describe('fetchDuckdbExtension', () => {
     expect(readFileSync(file).equals(payload)).toBe(true);
     expect(existsSync(`${file}.partial`)).toBe(false);
   });
+
+  it('is safe to run many at once into one folder: every caller gets the pinned file and no partial is left', async () => {
+    const outDir = makeTempDir();
+    const gz = gzipSync(payload);
+    const { fetchImpl } = fakeFetch(() => okResponse(gz.buffer.slice(gz.byteOffset, gz.byteOffset + gz.length)));
+
+    const files = await Promise.all(Array.from({ length: 8 }, () => fetchDuckdbExtension({ pin, outDir, fetchImpl })));
+
+    for (const file of files) expect(readFileSync(file).equals(payload)).toBe(true);
+    expect(readdirSync(outDir)).toEqual(['httpfs.duckdb_extension']);
+  });
 });
 
 describe('the DuckDB pins', () => {
