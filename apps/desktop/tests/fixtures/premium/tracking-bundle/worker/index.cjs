@@ -5,7 +5,9 @@
 // panel's messages: an echo, its recorded state, a forwarded `db` call, and feed switches.
 
 const KEPT_ITEMS = 8;
-const FLUSH_MS = 250;
+// `store` shares one 60-a-minute budget with the panel's reads, and the replayed tap never stops, so
+// the worker writes at most once per FLUSH_MS and only the lists that changed.
+const FLUSH_MS = 2000;
 
 const failure = (error) => ({
   ok: false,
@@ -34,14 +36,22 @@ module.exports.start = function start(host) {
   let tapItems = [];
   let battleItems = [];
   let timer = null;
+  let tapDirty = true;
+  let battleDirty = true;
 
   async function flush() {
     timer = null;
+    const writeTap = tapDirty;
+    const writeBattle = battleDirty;
+    tapDirty = false;
+    battleDirty = false;
     try {
       await store({ op: 'set', key: 'trk.state', value: state });
-      await store({ op: 'set', key: 'trk.tap', value: tapItems });
-      await store({ op: 'set', key: 'trk.battle', value: battleItems });
+      if (writeTap) await store({ op: 'set', key: 'trk.tap', value: tapItems });
+      if (writeBattle) await store({ op: 'set', key: 'trk.battle', value: battleItems });
     } catch (error) {
+      tapDirty = tapDirty || writeTap;
+      battleDirty = battleDirty || writeBattle;
       // Refused while paused or stopping: the next event writes again.
     }
   }
@@ -58,12 +68,18 @@ module.exports.start = function start(host) {
 
   host.on('raw.tap', (item) => {
     state.tapCount += 1;
-    if (tapItems.length < KEPT_ITEMS) tapItems.push(item);
+    if (tapItems.length < KEPT_ITEMS) {
+      tapItems.push(item);
+      tapDirty = true;
+    }
     changed();
   });
   host.on('raw.battleLog', (item) => {
     state.battleLogCount += 1;
-    if (battleItems.length < KEPT_ITEMS) battleItems.push(item);
+    if (battleItems.length < KEPT_ITEMS) {
+      battleItems.push(item);
+      battleDirty = true;
+    }
     changed();
   });
   host.on('raw.gap', () => {
@@ -92,6 +108,8 @@ module.exports.start = function start(host) {
     if (op === 'reset') {
       tapItems = [];
       battleItems = [];
+      tapDirty = true;
+      battleDirty = true;
       state.tapCount = 0;
       state.battleLogCount = 0;
       changed();

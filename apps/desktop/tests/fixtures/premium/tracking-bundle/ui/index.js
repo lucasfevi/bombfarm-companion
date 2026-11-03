@@ -3,6 +3,10 @@ import { createElement, useEffect, useState } from 'app://bundle/_premium/_share
 // The tracking check panel: it prints what the worker stored, one round trip to the worker, and
 // what its own `db` read sees, as plain text with test ids. Nothing here is styled or clever.
 const KEYS = ['trk.state', 'trk.tap', 'trk.battle'];
+// One shared 60-a-minute budget covers every `store` call, the worker's writes included, so the panel
+// reads the state each time round and the two lists every fourth time.
+const POLL_MS = 2500;
+const LIST_EVERY = 4;
 
 function line(testId, label, value) {
   return createElement('p', { 'data-testid': testId }, `${label}: ${value}`);
@@ -15,7 +19,8 @@ async function readRow(premium) {
     const answer = await premium.call('db', { op: 'query', sql: 'SELECT v FROM t' });
     return { row: answer.rows.length === 0 ? 'none' : String(answer.rows[0][0]), detail: 'read' };
   } catch (error) {
-    if (error.code === 'failed' && error.reason === 'catalog') return { row: 'none', detail: 'no_table' };
+    // The engine cannot prepare a read of a table that is not there; the host names that refusal `bind`.
+    if (error.code === 'bad_args' && error.reason === 'bind') return { row: 'none', detail: 'no_table' };
     return { row: refused(error), detail: 'refused' };
   }
 }
@@ -33,15 +38,21 @@ export default function TrackingPanel({ premium }) {
 
   useEffect(() => {
     let live = true;
+    let round = 0;
+    let lists = {};
     const read = async () => {
       const next = {};
-      for (const key of KEYS) {
+      const withLists = round % LIST_EVERY === 0;
+      round += 1;
+      for (const key of withLists ? KEYS : KEYS.slice(0, 1)) {
         try {
           next[key] = await premium.call('store', { op: 'get', key });
         } catch {
           return; // Refused (paused, stopped): keep what is shown.
         }
       }
+      if (withLists) lists = { 'trk.tap': next['trk.tap'], 'trk.battle': next['trk.battle'] };
+      else Object.assign(next, lists);
       const nextRow = await readRow(premium);
       if (live) {
         setStored(next);
@@ -49,7 +60,7 @@ export default function TrackingPanel({ premium }) {
       }
     };
     read();
-    const timer = setInterval(read, 400);
+    const timer = setInterval(read, POLL_MS);
     return () => {
       live = false;
       clearInterval(timer);

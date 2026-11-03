@@ -34,6 +34,7 @@ export default defineConfig({
         'premium-capabilities.spec.mjs',
         'premium-tracking-fixture.spec.mjs',
         'premium-tracking-stall.spec.mjs',
+        'premium-tracking.spec.mjs',
         'farm-board.spec.mjs',
         'auto-recompute.spec.mjs',
         'i18n.spec.mjs',
