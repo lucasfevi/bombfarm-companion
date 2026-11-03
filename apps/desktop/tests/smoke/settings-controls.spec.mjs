@@ -135,7 +135,7 @@ function mismatches(actual, expected) {
 }
 
 /**
- * The eleven sections, in the order a player reads them.
+ * The twelve sections, in the order a player reads them.
  *
  * Titles come out of `en.ts`, never written here: a section renamed in copy and not here would
  * fail this on a word rather than on an order, which is the wrong thing to report.
@@ -162,14 +162,14 @@ const SECTION_TITLE_KEYS = [
  * section's first child — so the selector stops one level short of the bodies. That matters: every
  * switch's always-mounted warning is a `Banner`, and a `Banner` with a title draws a heading of the
  * same level. Reading every heading under the view would interleave four warning titles among the
- * eleven section names and make the order assertion read as a different claim than it is.
+ * twelve section names and make the order assertion read as a different claim than it is.
  */
 function sectionTitles(page) {
   return page.locator('[data-testid="settings-view"] > section > div:first-child > h2').allTextContents();
 }
 
 test.describe('settings controls smoke — driven, held across a tab switch, and read back from the stored row', () => {
-  test('the sections are drawn top to bottom as language, the three about this machine, market, account access, usage, premium, and the three at the end', async () => {
+  test('the sections are drawn top to bottom as language, the four about this machine, market, account access, usage, premium, and the three at the end', async () => {
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-settings-order-'));
     try {
       const { app, page } = await launchApp({ BFC_USER_DATA_DIR: userDataDir });
