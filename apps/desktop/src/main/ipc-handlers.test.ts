@@ -38,6 +38,7 @@ import type { CapabilityCall, CapabilityReply } from '@bombfarm/contracts';
 import { grantedConsent } from '@bombfarm/game-api/test-fixtures';
 import { initialConsent } from '@bombfarm/game-api';
 import type { AppEnv } from './env.js';
+import type { LoginItemStatus } from './shell/login-item-reconciler.js';
 import {
   createIpcDispatch,
   createIpcHandlers,
@@ -241,6 +242,8 @@ function fakes() {
       applyRestartGameOnExit: vi.fn(() => written(DEFAULT_SETTINGS)),
       applyUsagePingEnabled: vi.fn(() => written(DEFAULT_SETTINGS)),
       applyMarketQuoteCurrency: vi.fn(() => written(DEFAULT_SETTINGS)),
+      applyStartWithWindows: vi.fn(() => ({ ...written(DEFAULT_SETTINGS), loginItem: null })),
+      getLoginItemStatus: vi.fn((): LoginItemStatus => ({ registered: true, block: null })),
       appVersion: vi.fn(() => '1.2.3'),
       getSettings: vi.fn(() => DEFAULT_SETTINGS),
     },
@@ -297,6 +300,8 @@ function wired(env: AppEnv = BETA_ENV) {
     applyRestartGameOnExit: f.spies.applyRestartGameOnExit,
     applyUsagePingEnabled: f.spies.applyUsagePingEnabled,
     applyMarketQuoteCurrency: f.spies.applyMarketQuoteCurrency,
+    applyStartWithWindows: f.spies.applyStartWithWindows,
+    getLoginItemStatus: f.spies.getLoginItemStatus,
     imageClipboard: f.imageClipboard,
   };
   const handlers = createIpcHandlers(deps);
@@ -400,6 +405,27 @@ describe('settings', () => {
     expect(f.spies.applyForgeWritesEnabled).toHaveBeenCalledWith(true);
     expect(f.spies.applyRestartGameOnExit).toHaveBeenCalledWith(false);
     expect(f.spies.applyUsagePingEnabled).toHaveBeenCalledWith(true);
+  });
+
+  it('passes the start-with-Windows choice through and returns what the write reported', async () => {
+    const { handlers, f } = wired();
+    expect((await handlers['settings:setStartWithWindows'](false)).loginItem).toBeNull();
+    expect(f.spies.applyStartWithWindows).toHaveBeenCalledWith(false);
+  });
+
+  it('hands a non-boolean start-with-Windows value to the applier untouched, so its guard decides', async () => {
+    const { handlers, f } = wired();
+    await handlers['settings:setStartWithWindows']('yes' as unknown as boolean);
+    expect(f.spies.applyStartWithWindows).toHaveBeenCalledWith('yes');
+  });
+
+  it('answers the login-item status read from the main process', async () => {
+    const { handlers, f } = wired();
+    f.spies.getLoginItemStatus.mockReturnValueOnce({ registered: false, block: 'disabled_by_windows' });
+    expect(await handlers['settings:getLoginItemStatus']()).toEqual({
+      registered: false,
+      block: 'disabled_by_windows',
+    });
   });
 
   it('passes the chosen quote currency through and returns what the write reported', async () => {
