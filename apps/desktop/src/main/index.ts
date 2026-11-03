@@ -835,13 +835,15 @@ async function bootstrap(): Promise<void> {
   const observationCaptureEnabled = isObservationCaptureEnabled(process.env, resolveAppEnv().isPackaged);
   const observationCaptureStartedAt = Date.now();
   const observationCaptureDestination = observationCaptureFilePath(userDataDir, observationCaptureStartedAt);
-  observationCapture = createObservationCapture({
+  const developerCapture = createObservationCapture({
     enabled: observationCaptureEnabled,
     isPackaged: resolveAppEnv().isPackaged,
     destination: observationCaptureDestination,
     appendPort: nodeObservationAppendPort(observationCaptureDestination),
     log,
   });
+  // The live and replay taps feed the developer capture and, once a worker runs, the premium feed.
+  observationCapture = fanOutObservers(developerCapture, appPremiumTapFeedSlot.sink);
 
   // Only polled when the mode is actually on: a shipped build must not read a file every half
   // second for a recorder it does not have.
@@ -855,9 +857,6 @@ async function bootstrap(): Promise<void> {
     });
     observationMarkWatch.start();
   }
-
-  // The live and replay taps feed the developer capture and, once a worker runs, the premium feed.
-  const observationFanOut = fanOutObservers(observationCapture, appPremiumTapFeedSlot.sink);
 
   const replayLive = isReplayLiveSourceEnabled(process.env, resolveAppEnv().isPackaged);
   if (replayLive) {
@@ -895,7 +894,7 @@ async function bootstrap(): Promise<void> {
     userDataDir,
     flavor: resolveAppEnv().flavor,
     isPackaged: resolveAppEnv().isPackaged,
-    observer: observationFanOut,
+    observer: observationCapture,
     onObservedPvpBody: (observation) => {
       pvpRecorder?.observe(observation);
     },
@@ -912,7 +911,7 @@ async function bootstrap(): Promise<void> {
             consent: liveConsent,
             log,
             onObservedFrame: (wire, atMs) => {
-              observationFanOut.frame(wire, atMs);
+              observationCapture?.frame(wire, atMs);
             },
           }),
         }
