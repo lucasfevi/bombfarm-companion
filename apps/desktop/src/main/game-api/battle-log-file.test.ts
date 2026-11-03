@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { GrantedConsent } from '@bombfarm/game-api';
 import {
   battleLogPath,
+  createBattleLogReader,
   gameSettingsPath,
   nodeBattleLogFsPort,
   parseGameLanguage,
@@ -12,14 +13,19 @@ import {
   readGameLanguage,
   statGameFile,
 } from './battle-log-file.js';
+import { sessionCfgPath } from './session-token-file.js';
 
 const GRANTED: GrantedConsent = { decision: 'granted', grantedAt: '2026-08-12T13:15:38.000Z', textVersion: 1 };
+
+/** The default folder is the one session.cfg lives in. */
+const inGameFolder = (file: string): string =>
+  sessionCfgPath({ isPackaged: true, env: { APPDATA: 'C:\\appdata' } }).replace(/session\.cfg$/, file);
 
 describe('battleLogPath / gameSettingsPath', () => {
   it('resolve beside session.cfg under %APPDATA%', () => {
     const env = { APPDATA: 'C:\\appdata' };
-    expect(battleLogPath({ env })).toBe('C:\\appdata\\Godot\\app_userdata\\BombFarm\\battle_log.cfg');
-    expect(gameSettingsPath({ env })).toBe('C:\\appdata\\Godot\\app_userdata\\BombFarm\\settings.cfg');
+    expect(battleLogPath({ env })).toBe(inGameFolder('battle_log.cfg'));
+    expect(gameSettingsPath({ env })).toBe(inGameFolder('settings.cfg'));
   });
 
   it('honours BFC_BATTLE_LOG_DIR_OVERRIDE only when isPackaged is explicitly false', () => {
@@ -30,8 +36,8 @@ describe('battleLogPath / gameSettingsPath', () => {
 
   it('ignores the override when isPackaged is true', () => {
     const env = { APPDATA: 'C:\\appdata', BFC_BATTLE_LOG_DIR_OVERRIDE: 'C:\\fixtures' };
-    expect(battleLogPath({ isPackaged: true, env })).toBe('C:\\appdata\\Godot\\app_userdata\\BombFarm\\battle_log.cfg');
-    expect(gameSettingsPath({ isPackaged: true, env })).toBe('C:\\appdata\\Godot\\app_userdata\\BombFarm\\settings.cfg');
+    expect(battleLogPath({ isPackaged: true, env })).toBe(inGameFolder('battle_log.cfg'));
+    expect(gameSettingsPath({ isPackaged: true, env })).toBe(inGameFolder('settings.cfg'));
   });
 
   it('zero-arg calls ignore the override even when it is set (fail-closed default)', () => {
@@ -40,8 +46,8 @@ describe('battleLogPath / gameSettingsPath', () => {
     process.env.APPDATA = 'C:\\appdata';
     process.env.BFC_BATTLE_LOG_DIR_OVERRIDE = 'C:\\should-be-ignored';
     try {
-      expect(battleLogPath()).toBe('C:\\appdata\\Godot\\app_userdata\\BombFarm\\battle_log.cfg');
-      expect(gameSettingsPath()).toBe('C:\\appdata\\Godot\\app_userdata\\BombFarm\\settings.cfg');
+      expect(battleLogPath()).toBe(inGameFolder('battle_log.cfg'));
+      expect(gameSettingsPath()).toBe(inGameFolder('settings.cfg'));
     } finally {
       if (originalAppData === undefined) delete process.env.APPDATA;
       else process.env.APPDATA = originalAppData;
@@ -52,7 +58,7 @@ describe('battleLogPath / gameSettingsPath', () => {
 
   it('falls back to the real path when unpackaged but no override is set', () => {
     expect(battleLogPath({ isPackaged: false, env: { APPDATA: 'C:\\appdata' } })).toBe(
-      'C:\\appdata\\Godot\\app_userdata\\BombFarm\\battle_log.cfg',
+      inGameFolder('battle_log.cfg'),
     );
   });
 });
@@ -98,5 +104,68 @@ describe('reads on a real folder', () => {
     expect(statGameFile(GRANTED, nodeBattleLogFsPort, log)).toBeNull();
     expect(statGameFile(GRANTED, nodeBattleLogFsPort, settings)?.size).toBe(21);
     expect(readGameLanguage(GRANTED, nodeBattleLogFsPort, log)).toBeNull();
+  });
+});
+
+describe('createBattleLogReader', () => {
+  it('reads nothing at all without a granted consent', () => {
+    const touched: string[] = [];
+    const reader = createBattleLogReader({
+      consent: () => null,
+      fs: {
+        statSync: (path) => {
+          touched.push(path);
+          return { mtimeMs: 1, size: 1 };
+        },
+        readFileSync: (path) => {
+          touched.push(path);
+          return 'x';
+        },
+      },
+      battleLogPath: 'dir/battle_log.cfg',
+      settingsPath: 'dir/settings.cfg',
+    });
+    expect(reader.stat()).toBeNull();
+    expect(reader.read()).toBeNull();
+    expect(reader.gameLanguage()).toBeNull();
+    expect(touched).toEqual([]);
+  });
+
+  it('with consent: stat, text and language come from the two files, null when missing', () => {
+    const files: Record<string, string> = {
+      'dir/battle_log.cfg': '[acc_1]\nentries=[]\n',
+      'dir/settings.cfg': '[game]\nlanguage="pt"\n',
+    };
+    const fs = {
+      statSync: (path: string) => {
+        const text = files[path];
+        if (text === undefined) throw new Error('ENOENT');
+        return { mtimeMs: 7, size: text.length };
+      },
+      readFileSync: (path: string) => {
+        const text = files[path];
+        if (text === undefined) throw new Error('ENOENT');
+        return text;
+      },
+    };
+    const reader = createBattleLogReader({
+      consent: () => GRANTED,
+      fs,
+      battleLogPath: 'dir/battle_log.cfg',
+      settingsPath: 'dir/settings.cfg',
+    });
+    expect(reader.stat()).toEqual({ mtimeMs: 7, size: 19 });
+    expect(reader.read()).toBe('[acc_1]\nentries=[]\n');
+    expect(reader.gameLanguage()).toBe('pt');
+
+    const missing = createBattleLogReader({
+      consent: () => GRANTED,
+      fs,
+      battleLogPath: 'dir/none.cfg',
+      settingsPath: 'dir/none2.cfg',
+    });
+    expect(missing.stat()).toBeNull();
+    expect(missing.read()).toBeNull();
+    expect(missing.gameLanguage()).toBeNull();
   });
 });

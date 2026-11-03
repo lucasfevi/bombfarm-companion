@@ -1,12 +1,3 @@
-import type { GrantedConsent } from '@bombfarm/game-api';
-import {
-  parseGameLanguage,
-  readGameFile,
-  statGameFile,
-  type BattleLogFsPort,
-  type FileStat,
-} from '../../game-api/battle-log-file.js';
-
 export const BATTLE_LOG_POLL_MS = 2_000;
 export const BATTLE_LOG_RETRY_MS = 250;
 export const BATTLE_LOG_MAX_TRIES = 3;
@@ -23,14 +14,28 @@ export interface BattleLogPayload {
   readonly baseline: boolean;
 }
 
+export interface FileStat {
+  readonly mtimeMs: number;
+  readonly size: number;
+}
+
+/**
+ * Where the tailer gets the game's files from. It knows no path, consent or file system; the
+ * implementation lives with the game files and answers `null` for anything it may not or cannot read.
+ */
+export interface BattleLogSource {
+  /** The battle log's `mtime` and size, or `null` when missing or not readable now. */
+  stat(): FileStat | null;
+  /** The battle log's text, or `null`. */
+  read(): string | null;
+  /** The `[game] language` of the game settings, or `null` when absent. */
+  gameLanguage(): string | null;
+}
+
 export interface BattleLogTailerDeps {
-  /** The granted consent, or `null` while the player has not granted it: then nothing is read. */
-  consent(): GrantedConsent | null;
+  readonly source: BattleLogSource;
   /** The licensed playing account, or `null` when Premium may not run for the account playing. */
   licensedAccountId(): string | null;
-  readonly fs: BattleLogFsPort;
-  readonly battleLogPath: string;
-  readonly settingsPath: string;
   now(): number;
   /** Returns whether the payload was accepted; a refused one is offered again on the next check. */
   send(payload: BattleLogPayload): boolean;
@@ -94,17 +99,16 @@ export function createBattleLogTailer(deps: BattleLogTailerDeps): BattleLogTaile
   let baseline = true;
 
   function attempt(tries: number): void {
-    const consent = deps.consent();
     const accountId = deps.licensedAccountId();
-    if (consent === null || accountId === null) return;
-    const before = statGameFile(consent, deps.fs, deps.battleLogPath);
+    if (accountId === null) return;
+    const before = deps.source.stat();
     if (before === null) return;
     const seen = signature(before);
     if (handled !== null && handled.signature === seen && handled.accountId === accountId) return;
 
-    const file = readGameFile(consent, deps.fs, deps.battleLogPath);
-    if (!file.ok) return;
-    const after = statGameFile(consent, deps.fs, deps.battleLogPath);
+    const text = deps.source.read();
+    if (text === null) return;
+    const after = deps.source.stat();
     if (after === null || signature(after) !== seen) {
       if (tries + 1 < BATTLE_LOG_MAX_TRIES) {
         retryTimer = setTimeout(() => {
@@ -115,7 +119,7 @@ export function createBattleLogTailer(deps: BattleLogTailerDeps): BattleLogTaile
       return;
     }
 
-    const body = extractSection(file.text, accountId);
+    const body = extractSection(text, accountId);
     if (body === null) {
       handled = { signature: seen, accountId };
       return;
@@ -126,14 +130,13 @@ export function createBattleLogTailer(deps: BattleLogTailerDeps): BattleLogTaile
       return;
     }
 
-    const settings = readGameFile(consent, deps.fs, deps.settingsPath);
     const accepted = deps.send({
       atMs: deps.now(),
       accountKey: accountId,
       section: `acc_${accountId}`,
       text: body,
       mtimeMs: after.mtimeMs,
-      gameLanguage: settings.ok ? parseGameLanguage(settings.text) : null,
+      gameLanguage: deps.source.gameLanguage(),
       baseline: baseline || lastSent === null || lastSent.accountId !== accountId,
     });
     if (!accepted) return;

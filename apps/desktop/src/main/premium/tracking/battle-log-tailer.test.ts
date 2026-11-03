@@ -1,48 +1,44 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GrantedConsent } from '@bombfarm/game-api';
-import type { BattleLogFsPort } from '../../game-api/battle-log-file.js';
 import {
   BATTLE_LOG_POLL_MS,
   createBattleLogTailer,
   extractSection,
   isCompleteSection,
   type BattleLogPayload,
+  type BattleLogSource,
   type BattleLogTailerDeps,
 } from './battle-log-tailer.js';
 
-const GRANTED: GrantedConsent = { decision: 'granted', grantedAt: '2026-08-12T13:15:38.000Z', textVersion: 1 };
 const LOG = 'dir/battle_log.cfg';
-const SETTINGS = 'dir/settings.cfg';
 
 const entries = (n: number): string => `entries=${JSON.stringify(Array.from({ length: n }, (_, i) => ({ k: `e${String(i)}` })))}`;
 const file = (...sections: Array<[string, string]>): string =>
   sections.map(([id, body]) => `[acc_${id}]\n${body}\n\n`).join('');
 
 function memoryFs() {
-  const files = new Map<string, { text: string; mtimeMs: number }>();
+  let current: { text: string; mtimeMs: number } | null = null;
   let clock = 1_000;
   let onRead: (() => void) | undefined;
-  const port: BattleLogFsPort = {
-    statSync: (path) => {
-      const entry = files.get(path);
-      if (!entry) throw new Error('ENOENT');
-      return { mtimeMs: entry.mtimeMs, size: entry.text.length };
-    },
-    readFileSync: (path) => {
-      const entry = files.get(path);
-      if (!entry) throw new Error('ENOENT');
-      const text = entry.text;
+  const state = { language: null as string | null, failReads: false, reads: 0 };
+  const source: BattleLogSource = {
+    stat: () => (current ? { mtimeMs: current.mtimeMs, size: current.text.length } : null),
+    read: () => {
+      if (state.failReads) throw new Error('EBUSY');
+      state.reads += 1;
+      if (!current) return null;
+      const text = current.text;
       onRead?.();
       return text;
     },
+    gameLanguage: () => state.language,
   };
   return {
-    port,
-    write(path: string, text: string) {
+    source,
+    state,
+    write(_path: string, text: string) {
       clock += 10;
-      files.set(path, { text, mtimeMs: clock });
+      current = { text, mtimeMs: clock };
     },
-    remove: (path: string) => files.delete(path),
     duringNextRead(fn: () => void) {
       onRead = () => {
         onRead = undefined;
@@ -56,11 +52,8 @@ function setup(over: Partial<BattleLogTailerDeps> = {}) {
   const fs = memoryFs();
   const sent: BattleLogPayload[] = [];
   const deps: BattleLogTailerDeps = {
-    consent: () => GRANTED,
+    source: fs.source,
     licensedAccountId: () => '486',
-    fs: fs.port,
-    battleLogPath: LOG,
-    settingsPath: SETTINGS,
     now: () => 5_000,
     send: (payload) => {
       sent.push(payload);
@@ -105,7 +98,7 @@ describe('the tailer', () => {
   it('sends only the licensed section, header removed, first with baseline; an unchanged rewrite sends nothing', () => {
     const { fs, sent, tailer } = setup();
     fs.write(LOG, file(['7', entries(1)], ['486', entries(2)]));
-    fs.write(SETTINGS, '[game]\nlanguage="pt"\n');
+    fs.state.language = 'pt';
     tailer.start();
 
     expect(sent).toHaveLength(1);
@@ -170,28 +163,12 @@ describe('the tailer', () => {
     tailer.stop();
   });
 
-  it('reads nothing without a granted consent', () => {
-    const readSpy = vi.fn();
-    const { fs, sent, tailer } = setup({ consent: () => null });
-    fs.write(LOG, file(['486', entries(1)]));
-    const original = fs.port.readFileSync.bind(fs.port);
-    fs.port.readFileSync = (p) => {
-      readSpy();
-      return original(p);
-    };
-    tailer.start();
-    tick();
-    expect(readSpy).not.toHaveBeenCalled();
-    expect(sent).toHaveLength(0);
-    tailer.stop();
-  });
-
-  it('gameLanguage is null when settings.cfg is missing or has no language', () => {
+  it('gameLanguage is null when the game has no language set', () => {
     const { fs, sent, tailer } = setup();
     fs.write(LOG, file(['486', entries(1)]));
     tailer.start();
     expect(sent[0]?.gameLanguage).toBeNull();
-    fs.write(SETTINGS, '[game]\nvolume=2\n');
+    fs.state.language = null;
     fs.write(LOG, file(['486', entries(2)]));
     tick();
     expect(sent[1]?.gameLanguage).toBeNull();
@@ -284,15 +261,10 @@ describe('the tailer', () => {
   it('a throwing fs does not stop the watcher', () => {
     const { fs, sent, tailer } = setup();
     fs.write(LOG, file(['486', entries(1)]));
-    const original = fs.port.readFileSync.bind(fs.port);
-    let boom = true;
-    fs.port.readFileSync = (p) => {
-      if (boom) throw new Error('EBUSY');
-      return original(p);
-    };
+    fs.state.failReads = true;
     tailer.start();
     expect(sent).toHaveLength(0);
-    boom = false;
+    fs.state.failReads = false;
     tick();
     expect(sent).toHaveLength(1);
     tailer.stop();

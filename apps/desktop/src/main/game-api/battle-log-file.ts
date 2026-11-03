@@ -1,8 +1,7 @@
 import { readFileSync, statSync, watch } from 'node:fs';
-import { homedir } from 'node:os';
 import { dirname, join, win32 } from 'node:path';
 import type { GrantedConsent } from '@bombfarm/game-api';
-import type { SessionCfgPathDeps } from './session-token-file.js';
+import { sessionCfgPath, type SessionCfgPathDeps } from './session-token-file.js';
 
 /**
  * The gated fs read for the two game files beside `session.cfg`: `battle_log.cfg` and
@@ -28,9 +27,8 @@ function gameFilePath(file: string, deps: SessionCfgPathDeps): string {
   const env = deps.env ?? process.env;
   const isPackaged = deps.isPackaged ?? true;
   if (!isPackaged && env.BFC_BATTLE_LOG_DIR_OVERRIDE) return join(env.BFC_BATTLE_LOG_DIR_OVERRIDE, file);
-  // Windows-only by definition, joined with `win32` so the separator is the same on every host.
-  const appData = env.APPDATA ?? win32.join(homedir(), 'AppData', 'Roaming');
-  return win32.join(appData, 'Godot', 'app_userdata', 'BombFarm', file);
+  // The game's folder is the one `session.cfg` lives in; the token override never applies here.
+  return win32.join(win32.dirname(sessionCfgPath({ isPackaged: true, env })), file);
 }
 
 export function battleLogPath(deps: SessionCfgPathDeps = {}): string {
@@ -127,4 +125,39 @@ export function watchGameFolder(filePath: string, wake: () => void): () => void 
   } catch {
     return () => {};
   }
+}
+
+/** What `createBattleLogReader` returns; the shape the tailer's source port asks for. */
+export interface BattleLogReader {
+  stat(): FileStat | null;
+  read(): string | null;
+  gameLanguage(): string | null;
+}
+
+export interface BattleLogReaderDeps {
+  /** The granted consent, or `null` while the player has not granted it: then nothing is read. */
+  consent(): GrantedConsent | null;
+  readonly fs: BattleLogFsPort;
+  readonly battleLogPath: string;
+  readonly settingsPath: string;
+}
+
+/** The consent-gated reads of the two game files, as plain values for code that knows no game API. */
+export function createBattleLogReader(deps: BattleLogReaderDeps): BattleLogReader {
+  return {
+    stat() {
+      const consent = deps.consent();
+      return consent === null ? null : statGameFile(consent, deps.fs, deps.battleLogPath);
+    },
+    read() {
+      const consent = deps.consent();
+      if (consent === null) return null;
+      const file = readGameFile(consent, deps.fs, deps.battleLogPath);
+      return file.ok ? file.text : null;
+    },
+    gameLanguage() {
+      const consent = deps.consent();
+      return consent === null ? null : readGameLanguage(consent, deps.fs, deps.settingsPath);
+    },
+  };
 }

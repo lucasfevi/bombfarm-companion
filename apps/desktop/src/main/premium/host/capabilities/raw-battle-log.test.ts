@@ -1,12 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GrantedConsent } from '@bombfarm/game-api';
 import type { RawBattleLogItem } from '@bombfarm/contracts';
-import type { BattleLogFsPort } from '../../../game-api/battle-log-file.js';
+import type { BattleLogSource } from '../../tracking/battle-log-tailer.js';
 import { CapabilityError, type CapabilityChannel } from '../capability-channel.js';
 import { BATTLE_LOG_MAX_IN_FLIGHT, createRawBattleLogCapability } from './raw-battle-log.js';
 
-const GRANTED: GrantedConsent = { decision: 'granted', grantedAt: '2026-08-12T13:15:38.000Z', textVersion: 1 };
-const LOG = 'dir/battle_log.cfg';
 
 const entries = (n: number): string => `entries=${JSON.stringify(Array.from({ length: n }, (_, i) => i))}`;
 
@@ -21,23 +18,18 @@ function codeOf(fn: () => unknown): string | undefined {
 }
 
 function setup() {
-  const files = new Map<string, { text: string; mtimeMs: number }>();
+  let current: { text: string; mtimeMs: number } | null = null;
   let clock = 1_000;
-  const fs: BattleLogFsPort = {
-    statSync: (p) => {
-      const e = files.get(p);
-      if (!e) throw new Error('ENOENT');
-      return { mtimeMs: e.mtimeMs, size: e.text.length };
-    },
-    readFileSync: (p) => {
-      const e = files.get(p);
-      if (!e) throw new Error('ENOENT');
-      return e.text;
-    },
+  const source: BattleLogSource = {
+    stat: () => (current ? { mtimeMs: current.mtimeMs, size: current.text.length } : null),
+    read: () => current?.text ?? null,
+    gameLanguage: () => null,
   };
   const write = (n: number): void => {
     clock += 10;
-    files.set(LOG, { text: `[acc_486]\n${entries(n)}\n`, mtimeMs: clock });
+    current = { text: `[acc_486]
+${entries(n)}
+`, mtimeMs: clock };
   };
   const items: RawBattleLogItem[] = [];
   const state = { paused: false, inFlight: 0 };
@@ -61,11 +53,8 @@ function setup() {
   const capability = createRawBattleLogCapability({
     channel,
     tailer: {
-      consent: () => GRANTED,
+      source,
       licensedAccountId: () => '486',
-      fs,
-      battleLogPath: LOG,
-      settingsPath: 'dir/settings.cfg',
       now: () => 9,
     },
   });
