@@ -109,6 +109,12 @@ export interface PremiumServicePort {
   useHere?(): PremiumActionResult;
   /** The Premium tab could not mount the bundle's screen. */
   hostMountFailed?(): void;
+  /** A bundle section could not mount in the window; log only. */
+  sectionMountFailed?(): void;
+  /** The tracking history on disk for the signed-in player; null when signed out or no host. */
+  trackingHistory?(): TrackingHistoryView | null;
+  /** Deletes the signed-in player's tracking history; null when nothing was done. */
+  clearTrackingHistory?(): Promise<'cleared' | 'busy' | 'failed' | null>;
   /** A capability call from the Premium screen; absent when the app built no host. */
   callFromUi?(call: CapabilityCall): Promise<CapabilityReply>;
 }
@@ -417,10 +423,17 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.getPremiumService()?.hostMountFailed?.();
       return null;
     },
-    // Placeholders; the real handlers replace them in this branch.
-    'premium:trackingHistory': (): TrackingHistoryView => ({ state: 'none' }),
-    'premium:clearTrackingHistory': (): { ok: false; error: 'failed' } => ({ ok: false, error: 'failed' }),
-    'premium:sectionMountFailed': (): null => null,
+    'premium:trackingHistory': (): TrackingHistoryView =>
+      deps.getPremiumService()?.trackingHistory?.() ?? { state: 'none' },
+    'premium:clearTrackingHistory': async (): Promise<{ ok: true } | { ok: false; error: 'busy' | 'failed' }> => {
+      const outcome = (await deps.getPremiumService()?.clearTrackingHistory?.()) ?? null;
+      if (outcome === 'cleared') return { ok: true };
+      return { ok: false, error: outcome === 'busy' ? 'busy' : 'failed' };
+    },
+    'premium:sectionMountFailed': (): null => {
+      deps.getPremiumService()?.sectionMountFailed?.();
+      return null;
+    },
     'premium:uiCall': (capability: string, args: unknown): Promise<CapabilityReply> | CapabilityReply =>
       deps.getPremiumService()?.callFromUi?.({ id: 0, capability, args }) ?? { id: 0, ok: false, error: 'unavailable' },
     'market:refreshItem': refreshMarketItem,

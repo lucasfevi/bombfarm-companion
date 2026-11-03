@@ -122,6 +122,8 @@ export interface ElectronPremium extends PremiumService {
   useHere(): PremiumActionResult;
   /** The Premium tab could not mount the screen of the bundle. */
   hostMountFailed(): void;
+  /** A bundle section could not mount in the window; log only. */
+  sectionMountFailed(): void;
   /** A capability call from the Premium screen; `stopped` unless the host is running. */
   callFromUi(call: CapabilityCall): Promise<CapabilityReply>;
   /** What the `app://` handler serves under `_premium`; null when there is no host. */
@@ -268,6 +270,9 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
     },
     hostMountFailed() {
       host?.mountFailed();
+    },
+    sectionMountFailed() {
+      deps.log.warn({ scope: 'premium', event: 'premium.section_mount', outcome: 'failed' });
     },
     callFromUi(call) {
       return host?.callFromUi(call) ?? Promise.resolve({ id: call.id, ok: false, error: 'unavailable' });
