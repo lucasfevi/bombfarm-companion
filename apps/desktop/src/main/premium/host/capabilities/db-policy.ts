@@ -1,4 +1,4 @@
-import { ALLOWED_FUNCTIONS, ALLOWED_TABLE_FUNCTIONS } from './db-functions.js';
+import { ALLOWED_FUNCTIONS, ALLOWED_TABLE_FUNCTIONS, EXCLUDED_FUNCTION_NAMES } from './db-functions.js';
 
 /**
  * What a tracking statement may contain, decided on how DuckDB itself reads it, never on a lexer
@@ -34,6 +34,13 @@ function walk(value: unknown, skipOwnName: boolean): boolean {
 
   if (typeof value['function_name'] === 'string' && !skipOwnName) {
     if (!ALLOWED_FUNCTIONS.has(value['function_name'].toLowerCase())) return false;
+  }
+  // A bare `current_catalog` or `current_schema` parses as a column, and the binder then resolves
+  // it as the excluded function of that name.
+  const names: unknown = value['column_names'];
+  if (value['type'] === 'COLUMN_REF' && Array.isArray(names) && names.length === 1) {
+    const name: unknown = names[0];
+    if (typeof name === 'string' && EXCLUDED_FUNCTION_NAMES.includes(name.toLowerCase())) return false;
   }
   // A table reference carries a `sample` key, as does a query node (`…_NODE`), which is not one.
   if ('sample' in value && !String(value['type']).endsWith('_NODE')) {

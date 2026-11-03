@@ -187,6 +187,23 @@ describe.each(['en', 'pt-BR'] as const)('the Tracking history row (%s)', (locale
       expect(clearButton()).not.toBeNull();
     },
   );
+
+  it('a clear that rejects shows the failed line and keeps the history and the button', async () => {
+    bridge({ state: 'present', bytes: MB_AND_A_HALF });
+    invoke.mockImplementation((channel) =>
+      channel === 'premium:trackingHistory'
+        ? Promise.resolve({ state: 'present', bytes: MB_AND_A_HALF })
+        : Promise.reject(new Error('ipc down')),
+    );
+    await mount(locale);
+    await click(clearButton());
+    await click(buttonReading(dialog() as HTMLElement, words.confirm));
+
+    expect(clearCalls()).toHaveLength(1);
+    expect(text()).toContain(words.failed);
+    expect(text()).toContain(words.size);
+    expect(clearButton()).not.toBeNull();
+  });
 });
 
 describe('the unavailable reasons', () => {
@@ -198,5 +215,15 @@ describe('the unavailable reasons', () => {
     bridge({ state: 'engine_unavailable', bytes: 10, reason });
     await mount('en');
     expect(text()).toContain(`Tracking isn't available on this PC (${phrase}).`);
+  });
+
+  it.each([
+    ['binding_missing', 'o mecanismo de banco de dados não foi encontrado'],
+    ['extension_missing', 'a extensão do mecanismo não foi encontrada'],
+    ['probe_failed', 'o mecanismo falhou na verificação de início'],
+  ] as const)('%s reads as its own sentence in pt-BR', async (reason, phrase) => {
+    bridge({ state: 'engine_unavailable', bytes: 10, reason });
+    await mount('pt-BR');
+    expect(text()).toContain(`O rastreamento não está disponível neste PC (${phrase}).`);
   });
 });

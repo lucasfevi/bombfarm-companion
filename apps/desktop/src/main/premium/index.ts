@@ -272,7 +272,7 @@ export function createElectronPremium(deps: ElectronPremiumDeps): ElectronPremiu
       host?.mountFailed();
     },
     sectionMountFailed() {
-      deps.log.warn({ scope: 'premium', event: 'premium.section_mount', outcome: 'failed' });
+      deps.log.warn({ scope: 'premium', event: 'premium.ui_mount', slot: 'live.section', outcome: 'failed' });
     },
     callFromUi(call) {
       return host?.callFromUi(call) ?? Promise.resolve({ id: call.id, ok: false, error: 'unavailable' });
