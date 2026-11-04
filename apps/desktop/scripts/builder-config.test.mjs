@@ -35,6 +35,27 @@ function collectSourceFiles(dir) {
   return files;
 }
 
+describe('assets/installer.nsh', () => {
+  const script = readFileSync(path.join(desktopRoot, 'assets', 'installer.nsh'), 'utf8');
+  const code = script
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== '' && !line.startsWith(';'));
+
+  it('removes the startup entry and its Windows approval on uninstall, but not on an update', () => {
+    // The whole body, in order: the update guard has to wrap both deletions, and a macro under any
+    // other name would never be called. No real uninstall runs in the tests.
+    expect(code).toEqual([
+      '!macro customUnInstall',
+      '${ifNot} ${isUpdated}',
+      'DeleteRegValue HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Run" "${APP_ID}"',
+      'DeleteRegValue HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run" "${APP_ID}"',
+      '${endIf}',
+      '!macroend',
+    ]);
+  });
+});
+
 describe('createBuilderConfig', () => {
   beforeEach(() => {
     delete process.env.BFC_VERSION_OVERRIDE;
@@ -80,6 +101,7 @@ describe('createBuilderConfig', () => {
           'package.json',
           '!**/*.map',
           'assets/**/*',
+          '!assets/installer.nsh',
         ]);
         expect(config.win).toEqual({
           target: [{ target: 'nsis', arch: ['x64'] }],
