@@ -1,6 +1,7 @@
 import type { LicenceState, PremiumLicenceView } from '@bombfarm/contracts';
 import { SUPPORT_URL } from '@bombfarm/contracts';
-import { Button } from '@bombfarm/ui';
+import { useState } from 'react';
+import { Button, ConfirmDialog } from '@bombfarm/ui';
 import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
 import { formatDate } from '../../lib/format';
 
@@ -39,6 +40,7 @@ export function PremiumLicenceLine({
 }) {
   const t = useCopy();
   const { locale } = useLocale();
+  const [confirming, setConfirming] = useState(false);
   if (licence === null || !isLineState(licence.state)) return null;
 
   const nameless = licence.state === 'moved' && (licence.holderName ?? '') === '';
@@ -82,10 +84,21 @@ export function PremiumLicenceLine({
             variant="default"
             data-testid="premium-use-here"
             disabled={licence.state === 'move_limit' || licence.moveInFlight}
-            onClick={onUseHere}
+            onClick={() => { setConfirming(true); }}
           >
             {t.premiumLicenceUseHere}
           </Button>
+          <ConfirmDialog
+            open={confirming}
+            onOpenChange={setConfirming}
+            title={t.premiumMoveConfirmTitle}
+            description={t.premiumMoveConfirmBody}
+            confirmLabel={t.premiumLicenceUseHere}
+            cancelLabel={t.premiumMoveConfirmCancel}
+            closeLabel={t.confirmDialogClose}
+            destructive={false}
+            onConfirm={onUseHere}
+          />
         </div>
       ) : null}
       {licence.moveFailed ? (

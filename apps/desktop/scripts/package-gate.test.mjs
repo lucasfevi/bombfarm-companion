@@ -14,9 +14,11 @@ import {
   assertAsarExists,
   assertAsarIntegrityMatches,
   assertAsarUnpackPatternsMatch,
+  assertDuckdbExtensionShipped,
   assertElectronFuses,
   assertNativeBinariesUnpacked,
   assertNoDevPremiumTrust,
+  assertNoDuckdbInAsar,
   assertNoNativeBinariesInAsar,
   assertRendererCspManifestIntact,
   assertRendererEntryPresent,
@@ -968,5 +970,99 @@ describe('assertNoDevPremiumTrust', () => {
       const options = await packagedTree('prod', stamped('prod', { 'dist/main/build-info.json': { flavor: 'dev' } }));
       await expectPackagingGateRejection(runPackagingGateChecks('prod', options), '"dev"', '"prod"');
     });
+  });
+});
+
+describe('the DuckDB artifact checks', () => {
+  const extension = Buffer.from('signed extension bytes');
+  const duckdbPin = {
+    version: '1.5.5',
+    platform: 'windows_amd64',
+    extension: 'httpfs',
+    sha256: createHash('sha256').update(extension).digest('hex'),
+  };
+  const BINDING = ['node_modules', '@duckdb', 'node-bindings-win32-x64'];
+
+  /** A fabricated tree that satisfies every other check, so only the DuckDB ones can fail. */
+  async function duckdbTree({ inAsar = [], unpacked = ['duckdb.dll', 'duckdb.node'], extensionBytes = extension } = {}) {
+    const desktopRootDir = makeTempDir('duckdb-root');
+    writeJson(path.join(desktopRootDir, 'package.json'), {
+      name: '@bombfarm/desktop',
+      dependencies: { '@duckdb/node-api': '1.5.5-r.4' },
+    });
+    const config = { ...createBuilderConfig('dev'), asarUnpack: [] };
+    const unpackedDir = path.join(desktopRootDir, config.directories.output, 'win-unpacked');
+    for (const name of unpacked) {
+      writeFile(path.join(unpackedDir, 'resources', 'app.asar.unpacked', ...BINDING, name), 'binary');
+    }
+    if (extensionBytes !== null) {
+      writeFile(path.join(unpackedDir, 'resources', 'duckdb', 'httpfs.duckdb_extension'), extensionBytes);
+    }
+    const asarSrcDir = makeTempDir('duckdb-asar-src');
+    const indexHtml = '<html><body><script>boot()</script></body></html>';
+    writeFile(path.join(asarSrcDir, 'renderer', 'out', 'index.html'), indexHtml);
+    writeJson(
+      path.join(asarSrcDir, 'renderer', 'out', CSP_MANIFEST_FILE),
+      buildManifest(new Map([['index.html', indexHtml]])),
+    );
+    for (const name of inAsar) writeFile(path.join(asarSrcDir, ...BINDING, name), 'binary');
+    const asarPath = path.join(unpackedDir, 'resources', 'app.asar');
+    await createPackageOnceReadable(asarSrcDir, asarPath);
+    writePackagedExecutable(path.join(unpackedDir, 'Bomb Farm Companion (Dev).exe'), {
+      fuses: config.electronFuses,
+      integrity: integrityOf(asarPath),
+    });
+    return { desktopRootDir, config, duckdbPin };
+  }
+
+  it('passes a tree with both binaries unpacked and the pinned extension beside the archive', async () => {
+    await expect(runPackagingGateChecks('dev', await duckdbTree())).resolves.toBeUndefined();
+  });
+
+  it.each(['duckdb.dll', 'duckdb.node'])('fails when %s is sealed inside app.asar', async (name) => {
+    await expectPackagingGateRejection(
+      runPackagingGateChecks('dev', await duckdbTree({ inAsar: [name] })),
+      'DuckDB binaries sealed inside app.asar',
+      name,
+    );
+  });
+
+  it.each(['duckdb.dll', 'duckdb.node'])('fails when %s is missing from app.asar.unpacked', async (name) => {
+    const unpacked = ['duckdb.dll', 'duckdb.node'].filter((candidate) => candidate !== name);
+    await expectPackagingGateRejection(
+      runPackagingGateChecks('dev', await duckdbTree({ unpacked })),
+      `${name} missing from app.asar.unpacked`,
+    );
+  });
+
+  it('fails when the extension is missing', async () => {
+    await expectPackagingGateRejection(
+      runPackagingGateChecks('dev', await duckdbTree({ extensionBytes: null })),
+      'resources/duckdb/httpfs.duckdb_extension',
+      'missing',
+    );
+  });
+
+  it('fails when the extension sha256 differs from the pin', async () => {
+    await expectPackagingGateRejection(
+      runPackagingGateChecks('dev', await duckdbTree({ extensionBytes: Buffer.from('tampered') })),
+      duckdbPin.sha256,
+    );
+  });
+
+  it('leaves a tree alone when the app does not depend on the DuckDB binding', async () => {
+    const options = await duckdbTree({ unpacked: [], extensionBytes: null });
+    writeJson(path.join(options.desktopRootDir, 'package.json'), { name: '@bombfarm/desktop' });
+    await expect(runPackagingGateChecks('dev', options)).resolves.toBeUndefined();
+  });
+
+  it('assertNoDuckdbInAsar ignores the same files once redirected to app.asar.unpacked', () => {
+    expect(() =>
+      assertNoDuckdbInAsar([{ path: '/node_modules/@duckdb/node-bindings-win32-x64/duckdb.dll', packed: false }]),
+    ).not.toThrow();
+  });
+
+  it('assertDuckdbExtensionShipped reads the real pin by default', () => {
+    expect(() => assertDuckdbExtensionShipped(makeTempDir('duckdb-default-pin'))).toThrow(PackagingGateError);
   });
 });

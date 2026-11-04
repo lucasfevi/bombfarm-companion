@@ -1,5 +1,13 @@
 import { compileFunction } from 'node:vm';
-import type { PremiumPauseReason } from '@bombfarm/contracts';
+import type {
+  DbClearedItem,
+  PremiumPauseReason,
+  PremiumSlot,
+  RawBattleLogItem,
+  RawGapItem,
+  RawTapItem,
+  WorkerUiReply,
+} from '@bombfarm/contracts';
 
 /**
  * The fixed entry of the Premium worker process. It holds no Premium logic: it waits for the init
@@ -25,12 +33,21 @@ export interface LoaderDeps {
 
 /** What a listener is told: the reason on `paused`, nothing known on `resumed`. */
 export type PauseInfo = { readonly reason: PremiumPauseReason | undefined };
-type PauseListener = (info: PauseInfo) => void;
+
+type EventListener = (item: never) => void;
+type UiHandler = (msg: unknown, from: { readonly slot: PremiumSlot }) => unknown;
+type HostEventName = 'paused' | 'resumed' | 'raw.tap' | 'raw.battleLog' | 'raw.gap' | 'db.cleared';
 
 export interface WorkerHost {
   readonly info: Readonly<{ sequence: number; version: string; granted: readonly string[] }>;
   call(capability: string, args?: unknown): Promise<unknown>;
-  on(event: 'paused' | 'resumed', listener: PauseListener): void;
+  on(event: 'paused' | 'resumed', listener: (info: PauseInfo) => void): void;
+  on(event: 'raw.tap', listener: (item: RawTapItem) => void): void;
+  on(event: 'raw.battleLog', listener: (item: RawBattleLogItem) => void): void;
+  on(event: 'raw.gap', listener: (item: RawGapItem) => void): void;
+  on(event: 'db.cleared', listener: (item: DbClearedItem) => void): void;
+  /** The one handler for messages from the bundle's own screen; a later call replaces it. */
+  onUiMessage(handler: UiHandler): void;
 }
 
 interface Pending {
@@ -60,14 +77,53 @@ function textOf(data: unknown): string | null {
   return null;
 }
 
-function refusal(code: string): Error {
-  return Object.assign(new Error(code), { code });
+function refusal(code: string, reason?: string): Error {
+  return Object.assign(new Error(code), { code, reason });
 }
 
 function createHost(init: InitMessage, port: LoaderPort): WorkerHost {
   const pending = new Map<number, Pending>();
-  const listeners: Record<'paused' | 'resumed', PauseListener[]> = { paused: [], resumed: [] };
+  const listeners: Record<HostEventName, EventListener[]> = {
+    paused: [],
+    resumed: [],
+    'raw.tap': [],
+    'raw.battleLog': [],
+    'raw.gap': [],
+    'db.cleared': [],
+  };
+  let uiHandler: UiHandler | null = null;
   let nextId = 1;
+
+  function deliver(name: HostEventName, item: unknown): void {
+    for (const listener of [...listeners[name]]) {
+      try {
+        listener(item as never);
+      } catch {
+        // One bundle listener failing must not stop the others or the acknowledgement.
+      }
+    }
+  }
+
+  function answerUi(id: number, slot: PremiumSlot, msg: unknown): void {
+    const handler = uiHandler;
+    const send = (reply: WorkerUiReply): void => {
+      port.postMessage(reply);
+    };
+    if (handler === null) {
+      send({ t: 'uiReply', id, ok: false, reason: 'no_handler' });
+      return;
+    }
+    new Promise<unknown>((resolve) => {
+      resolve(handler(msg, { slot }));
+    }).then(
+      (value) => {
+        send({ t: 'uiReply', id, ok: true, value });
+      },
+      () => {
+        send({ t: 'uiReply', id, ok: false, reason: 'other' });
+      },
+    );
+  }
 
   port.on('message', ({ data }) => {
     if (typeof data !== 'object' || data === null) return;
@@ -77,11 +133,24 @@ function createHost(init: InitMessage, port: LoaderPort): WorkerHost {
       const info: PauseInfo = {
         reason: reason === 'other_account' || reason === 'unconfirmed' ? reason : undefined,
       };
-      for (const listener of listeners.paused) listener(info);
+      deliver('paused', info);
       return;
     }
     if (message['t'] === 'resumed') {
-      for (const listener of listeners.resumed) listener({ reason: undefined });
+      deliver('resumed', { reason: undefined } satisfies PauseInfo);
+      return;
+    }
+    if (message['t'] === 'events') {
+      const { seq, name, items } = message;
+      if (typeof seq !== 'number' || typeof name !== 'string' || !Array.isArray(items)) return;
+      if (!Object.hasOwn(listeners, name)) return;
+      for (const item of items) deliver(name as HostEventName, item);
+      port.postMessage({ t: 'ack', seq });
+      return;
+    }
+    if (message['t'] === 'ui') {
+      const { id, slot, msg } = message;
+      if (typeof id === 'number' && typeof slot === 'string') answerUi(id, slot as PremiumSlot, msg);
       return;
     }
     const id = message['id'];
@@ -90,7 +159,10 @@ function createHost(init: InitMessage, port: LoaderPort): WorkerHost {
     if (waiting === undefined) return;
     pending.delete(id);
     if (message['ok'] === true) waiting.resolve(message['value']);
-    else waiting.reject(refusal(String(message['error'])));
+    else {
+      const reason = message['reason'];
+      waiting.reject(refusal(String(message['error']), typeof reason === 'string' ? reason : undefined));
+    }
   });
   port.start();
 
@@ -103,8 +175,11 @@ function createHost(init: InitMessage, port: LoaderPort): WorkerHost {
         port.postMessage({ id, capability, args });
       });
     },
-    on(event, listener) {
-      listeners[event].push(listener);
+    on(event: HostEventName, listener: EventListener) {
+      if (Object.hasOwn(listeners, event)) listeners[event].push(listener);
+    },
+    onUiMessage(handler) {
+      uiHandler = handler;
     },
   };
 }

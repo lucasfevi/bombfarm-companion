@@ -112,7 +112,12 @@ describe('createBuilderConfig', () => {
           perMachine: false,
           allowToChangeInstallationDirectory: false,
         });
-        expect(config.asarUnpack).toEqual(['**/node_modules/frida/**/*', 'assets/icon.ico']);
+        expect(config.asarUnpack).toEqual([
+          '**/node_modules/frida/**/*',
+          '**/node_modules/@duckdb/**/*',
+          'assets/icon.ico',
+        ]);
+        expect(config.extraResources).toEqual([{ from: 'build/duckdb', to: 'duckdb' }]);
       });
 
       it('locks the binary down with exactly this fuse set', () => {

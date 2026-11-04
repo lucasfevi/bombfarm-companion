@@ -3,6 +3,8 @@
 import { EmptyState } from '@bombfarm/ui';
 import { useCopy } from '../../lib/copy';
 import { useLiveModel } from '../../lib/live/use-live-model';
+import { usePremiumHost } from '../../lib/premium/use-premium-host';
+import { PremiumMount } from '../premium/premium-mount';
 import { LivePanel } from './live-panel';
 import { NeverReadEmptyState } from './never-read-empty-state';
 
@@ -15,6 +17,7 @@ function getBridge(): NonNullable<Window['bfc']> | null {
 export function LiveView({ onReopenConsent }: { onReopenConsent?: (() => void) | undefined }) {
   const t = useCopy();
   const { freshness, slow, fast, earnings, map, damage } = useLiveModel();
+  const premiumHost = usePremiumHost();
 
   const onResetEarnings = () => {
     const bridge = getBridge();
@@ -57,7 +60,9 @@ export function LiveView({ onReopenConsent }: { onReopenConsent?: (() => void) |
         damage={damage}
         onResetEarnings={onResetEarnings}
         onReopenConsent={onReopenConsent}
-      />
+      >
+        <PremiumMount host={premiumHost} slot="live.section" />
+      </LivePanel>
     </div>
   );
 }

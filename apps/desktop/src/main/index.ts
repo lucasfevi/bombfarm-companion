@@ -90,6 +90,7 @@ import {
   type ObservationCapture,
 } from './live-source/observation-capture.js';
 import { createMarkWatch, type MarkWatch } from './live-source/observation-mark-watch.js';
+import { appPremiumTapFeedSlot, fanOutObservers } from './live-source/premium-tap-feed.js';
 import {
   createReplayTapFactory,
   isReplayLiveSourceEnabled,
@@ -113,6 +114,7 @@ import { offlineOnlinePlayersGet } from './online-players/online-players-offline
 import { createOnlinePlayersService, type OnlinePlayersService } from './online-players/online-players-service.js';
 import { onlinePlayersHttpGet } from './online-players/online-players-transport.js';
 import { createPremiumWhenEnabled, type ElectronPremium } from './premium/index.js';
+import { createPremiumTrackingGame } from './premium-tracking-game.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 import { sandboxedWebPreferences } from './web-preferences.js';
@@ -879,13 +881,15 @@ async function bootstrap(): Promise<void> {
   const observationCaptureEnabled = isObservationCaptureEnabled(process.env, resolveAppEnv().isPackaged);
   const observationCaptureStartedAt = Date.now();
   const observationCaptureDestination = observationCaptureFilePath(userDataDir, observationCaptureStartedAt);
-  observationCapture = createObservationCapture({
+  const developerCapture = createObservationCapture({
     enabled: observationCaptureEnabled,
     isPackaged: resolveAppEnv().isPackaged,
     destination: observationCaptureDestination,
     appendPort: nodeObservationAppendPort(observationCaptureDestination),
     log,
   });
+  // The live and replay taps feed the developer capture and, once a worker runs, the premium feed.
+  observationCapture = fanOutObservers(developerCapture, appPremiumTapFeedSlot.sink);
 
   // Only polled when the mode is actually on: a shipped build must not read a file every half
   // second for a recorder it does not have.
@@ -1310,6 +1314,13 @@ async function bootstrap(): Promise<void> {
         shellLifecycle?.show();
         emitToMainWindow('premium:showTab', null);
       },
+      tracking: createPremiumTrackingGame({
+        readConsent: () => consentStore?.read() ?? initialConsent(),
+        isPackaged: resolveAppEnv().isPackaged,
+        resourcesPath: process.resourcesPath,
+        mainDir: __dirname,
+        env: process.env,
+      }),
     },
     build: { isPackaged: env.isPackaged, bakedFlavor: readBakedFlavor(), builtFlavor: __BFC_BUILD_FLAVOR__ },
   });

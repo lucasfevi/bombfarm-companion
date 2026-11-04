@@ -1,0 +1,296 @@
+import { existsSync } from 'node:fs';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { PREMIUM_CAPABILITIES } from '@bombfarm/contracts';
+import { createPremiumTapFeedSlot } from '../../live-source/premium-tap-feed';
+import { appLeaseGate } from '../licence/lease-gate';
+import type { KeepingSealedRows } from '../licence/licence-store';
+import { createLogSink } from '../premium-test-support';
+import type { LockedDb, TrackingEngine } from '../tracking/engine';
+import { subjectHash, TRACKING_DIR, trackingKeyRow } from '../tracking/tracking-store';
+import { createBundleCache } from './bundle-cache';
+import { createFakeFork } from './host-fakes';
+import { flush, workerOptions } from './host-service-test-support';
+import { HOST_NOW, verifiedFixture } from './host-test-support';
+import { createPremiumHost, type PremiumHostWiringDeps } from './host-wiring';
+import type { HostRunner } from './host-runner';
+
+const SUBJECT = 'subject-marker-0001';
+
+let root = '';
+let hosts: HostRunner[] = [];
+
+beforeEach(async () => {
+  root = await mkdtemp(join(tmpdir(), 'bfc-host-tracking-'));
+  hosts = [];
+  appLeaseGate.set(false, 'signed_out');
+  (globalThis as unknown as { __bfcTestHost?: unknown }).__bfcTestHost = undefined;
+});
+
+afterEach(async () => {
+  for (const host of hosts) {
+    host.stop();
+    await host.idle();
+  }
+  appLeaseGate.set(false, 'signed_out');
+  (globalThis as unknown as { __bfcTestHost?: unknown }).__bfcTestHost = undefined;
+  await rm(root, { recursive: true, force: true });
+});
+
+function memoryRows(): KeepingSealedRows & { held: Map<string, string> } {
+  const held = new Map<string, string>();
+  return {
+    held,
+    available: () => true,
+    read: <T>(key: string, parse: (v: Record<string, unknown>) => T | null) => {
+      const raw = held.get(key);
+      return raw === undefined ? null : parse(JSON.parse(raw) as Record<string, unknown>);
+    },
+    readKept: <T>(key: string, parse: (v: Record<string, unknown>) => T | null) => {
+      const raw = held.get(key);
+      if (raw === undefined) return { ok: false, reason: 'absent' } as const;
+      const value = parse(JSON.parse(raw) as Record<string, unknown>);
+      return value === null ? ({ ok: false, reason: 'unreadable' } as const) : ({ ok: true, value } as const);
+    },
+    write: (key, json) => {
+      held.set(key, json());
+      return 'written';
+    },
+    delete: (key) => held.delete(key) || true,
+  };
+}
+
+const engine: TrackingEngine = {
+  probe: () => Promise.resolve({ ok: true, version: 'v-test' }),
+  open: async (file) => {
+    if (!existsSync(file)) await writeFile(file, 'created-by-attach');
+    const raw: LockedDb = {
+      run: () => Promise.resolve(),
+      query: () => Promise.resolve([]),
+      session: () => Promise.reject(new Error('the fake engine has no sessions')),
+      close: () => undefined,
+    };
+    return raw;
+  },
+};
+
+interface WorkerHost {
+  call(capability: string, args?: unknown): Promise<unknown>;
+}
+
+async function wire(options: { requested: readonly string[]; withTracking?: boolean; engine?: TrackingEngine }) {
+  const cache = createBundleCache({ root, db: null, now: () => HOST_NOW });
+  await cache.write(
+    verifiedFixture(workerOptions({ sequence: 6, flavors: ['dev', 'beta', 'prod'], capabilities: [...options.requested] })),
+  );
+  appLeaseGate.set(true, 'holds');
+  const fakes = createFakeFork({ loader: true });
+  const rows = memoryRows();
+  const slot = createPremiumTapFeedSlot();
+  const parts: PremiumHostWiringDeps = {
+    flavor: 'dev',
+    appVersion: '1.0.0',
+    userDataPath: root,
+    db: null,
+    deviceGet: () => Promise.resolve({ ok: false, reason: 'unreachable' }),
+    reloadWindow: () => undefined,
+    uiOnAppScheme: true,
+    log: createLogSink(),
+    fork: fakes.fork,
+    createChannel: fakes.createChannel,
+    loaderPath: 'premium-worker.cjs',
+    shims: {},
+    vars: {},
+    now: () => HOST_NOW,
+    mono: () => 0,
+    capabilities: {
+      status: { premiumStatus: () => ({ active: true, until: '2026-12-01T00:00:00.000Z' }), audience: () => 'tester' },
+      store: { subject: () => SUBJECT, rows },
+      notify: { locale: () => 'en', now: () => HOST_NOW, show: () => 'shown', openPremiumTab: () => undefined },
+      ...(options.withTracking === false
+        ? {}
+        : {
+            tracking: {
+              rows,
+              extensionPath: 'not-used',
+              engine: options.engine ?? engine,
+              feedSlot: slot,
+              playingAccountAllows: () => true,
+              accountKey: () => '486',
+              secrets: () => new Set<string>(),
+              battleLog: {
+                source: { stat: () => null, read: () => null, gameLanguage: () => null },
+              },
+            },
+          }),
+    },
+  };
+  const host = createPremiumHost(parts);
+  hosts.push(host);
+  await host.start(SUBJECT);
+  await flush({ runner: host });
+  const worker = (globalThis as unknown as { __bfcTestHost?: WorkerHost }).__bfcTestHost;
+  return { host, fakes, rows, worker };
+}
+
+function granted(fakes: ReturnType<typeof createFakeFork>): unknown {
+  return (fakes.forks[0]?.child.posted[0]?.message as { granted?: unknown } | undefined)?.granted;
+}
+
+describe('the tracking capabilities the host grants', () => {
+  it('gives a bundle that requests all eight all eight, and each of the four new ones answers', async () => {
+    const { fakes, worker, rows } = await wire({ requested: [...PREMIUM_CAPABILITIES] });
+
+    expect(granted(fakes)).toEqual([...PREMIUM_CAPABILITIES]);
+    await expect(worker?.call('db', { op: 'status' })).resolves.toEqual({ state: 'ready' });
+    await expect(worker?.call('db', { op: 'size' })).resolves.toEqual({ bytes: expect.any(Number) as number });
+    await expect(worker?.call('raw.tap', { op: 'subscribe' })).resolves.toBeNull();
+    await expect(worker?.call('raw.tap', { op: 'unsubscribe' })).resolves.toBeNull();
+    await expect(worker?.call('raw.battleLog', { op: 'subscribe' })).resolves.toBeNull();
+    await expect(worker?.call('raw.battleLog', { op: 'unsubscribe' })).resolves.toBeNull();
+    // `premium.worker` is for the Premium screen; the worker itself is refused.
+    await expect(worker?.call('premium.worker', { hello: 1 })).rejects.toThrow('not_granted');
+    expect(existsSync(join(root, TRACKING_DIR, `${subjectHash(SUBJECT)}.duckdb`))).toBe(true);
+    expect(rows.held.has(trackingKeyRow(SUBJECT))).toBe(true);
+  });
+
+  it('gives a bundle that also names something unknown only the intersection', async () => {
+    const { fakes, worker } = await wire({ requested: ['raw.unknown', 'db', 'raw.battleLog', 'store'] });
+
+    expect(granted(fakes)).toEqual(['db', 'raw.battleLog', 'store']);
+    await expect(worker?.call('raw.unknown')).rejects.toThrow('not_granted');
+    await expect(worker?.call('raw.tap', { op: 'subscribe' })).rejects.toThrow('not_granted');
+  });
+
+  it('shares nothing between a call from the screen and the worker: the screen reads, the worker writes', async () => {
+    const { host, worker } = await wire({ requested: ['db', 'premium.worker'] });
+    await worker?.call('db', { op: 'status' });
+
+    await expect(host.callFromUi({ id: 1, capability: 'db', args: { op: 'size' } })).resolves.toEqual({
+      id: 1,
+      ok: true,
+      value: { bytes: expect.any(Number) as number },
+    });
+    await expect(host.callFromUi({ id: 2, capability: 'db', args: { op: 'exec', sql: 'select 1' } })).resolves.toMatchObject({
+      ok: false,
+      error: 'not_granted',
+    });
+    await expect(host.callFromUi({ id: 3, capability: 'raw.tap', args: { op: 'subscribe' } })).resolves.toMatchObject({
+      ok: false,
+      error: 'not_granted',
+    });
+  });
+
+  it('keeps Premium running when the engine probe fails: only tracking is unavailable', async () => {
+    const broken: TrackingEngine = {
+      probe: () => Promise.resolve({ ok: false, reason: 'binding_missing' }),
+      open: () => Promise.reject(new Error('the engine must not be opened')),
+    };
+    const { host, worker } = await wire({ requested: ['db', 'store', 'premium.status'], engine: broken });
+
+    expect(host.view().phase).toBe('running');
+    await expect(worker?.call('store', { op: 'set', key: 'seen', value: 3 })).resolves.toBeDefined();
+    await expect(worker?.call('store', { op: 'get', key: 'seen' })).resolves.toBe(3);
+    await expect(worker?.call('premium.status')).resolves.toMatchObject({ active: true });
+    await expect(worker?.call('db', { op: 'status' })).resolves.toEqual({ state: 'unavailable', reason: 'engine_unavailable' });
+    expect(host.trackingHistory?.(SUBJECT)).toEqual({ state: 'engine_unavailable', bytes: null, reason: 'binding_missing' });
+    expect(existsSync(join(root, TRACKING_DIR))).toBe(false);
+  });
+
+  it('refuses the four when the app builds the host without the tracking parts', async () => {
+    const { worker } = await wire({ requested: [...PREMIUM_CAPABILITIES], withTracking: false });
+
+    for (const name of ['db', 'raw.tap', 'raw.battleLog']) {
+      await expect(worker?.call(name, { op: 'status' })).rejects.toThrow('unavailable');
+    }
+  });
+
+  it('exposes the history and the clear for the signed-in subject whether or not a worker runs', async () => {
+    const { host, worker } = await wire({ requested: ['db'] });
+    await worker?.call('db', { op: 'status' });
+
+    expect(host.trackingHistory?.(SUBJECT)).toEqual({ state: 'present', bytes: expect.any(Number) as number });
+    host.stop();
+    await host.idle();
+    await expect(host.clearTrackingHistory?.(SUBJECT)).resolves.toBe('cleared');
+    expect(host.trackingHistory?.(SUBJECT)).toEqual({ state: 'none' });
+  });
+});
+
+describe('only a Settings clear deletes tracking history', () => {
+  const file = (): string => join(root, TRACKING_DIR, `${subjectHash(SUBJECT)}.duckdb`);
+  const survives = (rows: { held: Map<string, string> }): boolean =>
+    existsSync(file()) && rows.held.has(trackingKeyRow(SUBJECT));
+
+  async function opened() {
+    const w = await wire({ requested: ['db'] });
+    await w.worker?.call('db', { op: 'status' });
+    expect(survives(w.rows)).toBe(true);
+    return w;
+  }
+
+  it.each(['ended', 'moved', 'released'] as const)('removal (%s) through the real wiring keeps the file and key', async (reason) => {
+    const { host, rows } = await opened();
+
+    host.requestPremiumRemoval(reason);
+    await flush({ runner: host });
+    await host.idle();
+
+    expect(survives(rows)).toBe(true);
+  });
+
+  it('signing out, a pause and quitting keep the file and key', async () => {
+    const { host, rows } = await opened();
+
+    appLeaseGate.set(false, 'unconfirmed');
+    await flush({ runner: host });
+    expect(survives(rows)).toBe(true);
+    appLeaseGate.set(true, 'holds');
+    await flush({ runner: host });
+    host.signedOut();
+    await flush({ runner: host });
+    expect(survives(rows)).toBe(true);
+    host.stop();
+    await host.idle();
+    expect(survives(rows)).toBe(true);
+  });
+
+  it('a clear does delete them, so the survival checks above can fail', async () => {
+    const { host, rows } = await opened();
+
+    await expect(host.clearTrackingHistory?.(SUBJECT)).resolves.toBe('cleared');
+
+    expect(existsSync(file())).toBe(false);
+    expect(rows.held.has(trackingKeyRow(SUBJECT))).toBe(false);
+  });
+
+  describe('in the source', () => {
+    const main = resolve(__dirname, '..', '..');
+    const strip = (text: string): string => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    const read = (path: string): string => strip(readFileSync(resolve(main, path), 'utf8'));
+
+    it('names the tracking folder only in the store', () => {
+      for (const path of ['premium/host/tracking-host.ts', 'premium/host/host-runner.ts', 'premium/host/host-wiring.ts', 'premium/index.ts']) {
+        expect(read(path), path).not.toMatch(/TRACKING_DIR|premium-tracking/);
+      }
+    });
+
+    it('lets the runner reach the tracking clear in one place only: the Settings clear', () => {
+      const code = read('premium/host/host-runner.ts');
+      const calls = code.split('\n').filter((line) => /\.clear\?*\.?\(/.test(line) && /tracking/.test(line));
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toContain('clearTrackingHistory');
+    });
+
+    it('lets the composer call the store clear in one place only', () => {
+      const lines = read('premium/host/tracking-host.ts')
+        .split('\n')
+        .filter((line) => /store\.clear\(|current\.clear\(/.test(line));
+      expect(lines).toHaveLength(2);
+    });
+  });
+});

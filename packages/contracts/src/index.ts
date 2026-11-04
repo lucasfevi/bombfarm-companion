@@ -6,7 +6,7 @@ import type { MarketQuoteCurrency, MarketQuoteResult, MarketQuoteTarget, MarketS
 import { DEFAULT_MARKET_QUOTE_CURRENCY } from './market.js';
 import type { OnlinePlayersView } from './online-players.js';
 import type { GamePingView } from './game-ping.js';
-import type { CapabilityReply, TrackingHistoryView } from './premium-host.js';
+import type { CapabilityReply, PremiumSlot, TrackingHistoryView } from './premium-host.js';
 import type { PremiumActionResult, PremiumView } from './premium.js';
 import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
 import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
@@ -754,7 +754,7 @@ export interface IpcChannels {
   'premium:hostMountFailed': { args: []; result: null };
   /** A capability call from the Premium screen, answered by the same channel the bundle's worker
    *  uses. Main window only. */
-  'premium:uiCall': { args: [string, unknown]; result: CapabilityReply };
+  'premium:uiCall': { args: [string, unknown, PremiumSlot?]; result: CapabilityReply };
   /** What Settings shows about the tracking history on disk. Main window only. */
   'premium:trackingHistory': { args: []; result: TrackingHistoryView };
   /** Deletes the tracking history. Main window only. */

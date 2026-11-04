@@ -63,7 +63,7 @@ export type PremiumSlot = (typeof PREMIUM_SLOTS)[number];
 
 export type PremiumCapability = (typeof PREMIUM_CAPABILITIES)[number];
 
-export type CapabilityCall = { id: number; capability: string; args: unknown };
+export type CapabilityCall = { id: number; capability: string; args: unknown; slot?: PremiumSlot };
 
 export type CapabilityReply =
   | { id: number; ok: true; value: unknown }
@@ -209,7 +209,7 @@ export type HostUiMessage = { t: 'ui'; id: number; slot: PremiumSlot; msg: unkno
 export type WorkerAckMessage = { t: 'ack'; seq: number };
 export type WorkerUiReply =
   | { t: 'uiReply'; id: number; ok: true; value: unknown }
-  | { t: 'uiReply'; id: number; ok: false };
+  | { t: 'uiReply'; id: number; ok: false; reason?: 'no_handler' | 'other' };
 
 export type HostToWorker =
   | { t: 'init'; sequence: number; version: string; granted: readonly string[] }

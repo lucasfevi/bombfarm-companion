@@ -1538,9 +1538,29 @@ export const ptBR: Copy = {
   premiumLicenceMoveFailed: 'Não foi possível mover o Premium — tente de novo.',
   // The words of premiumLicenceMoveLimit that become a link once a support channel exists.
   premiumSupportWords: 'falar com o suporte',
+  // premiumMoveConfirm* — the dialog that asks before Premium moves to this PC
+  premiumMoveConfirmTitle: 'Usar o Premium neste PC?',
+  premiumMoveConfirmBody:
+    'O Premium será removido do outro PC. Seu histórico de drops fica naquele PC, e este PC começa com o histórico vazio.',
+  premiumMoveConfirmCancel: 'Cancelar',
   // premiumHost* — the Premium page's mount point
   premiumHostUpdating: 'Atualizando o Premium…',
   premiumHostStopped: 'O Premium parou inesperadamente — reinicie o app',
   premiumHostLocalBuild: 'Build local do Premium',
   premiumHostLocalBuildHint: 'Use pnpm dev:premium para carregá-lo',
+  // premiumTracking* — the Settings row that shows and clears the tracking history
+  premiumTrackingLabel: 'Histórico de drops',
+  premiumTrackingSize: '{size} guardados neste PC',
+  premiumTrackingUnavailable: 'O histórico de drops não está disponível neste PC ({reason}).',
+  premiumTrackingReasonBindingMissing: 'o mecanismo de banco de dados não foi encontrado',
+  premiumTrackingReasonExtensionMissing: 'a extensão do mecanismo não foi encontrada',
+  premiumTrackingReasonProbeFailed: 'o mecanismo falhou na verificação de início',
+  premiumTrackingClear: 'Limpar histórico de drops',
+  premiumTrackingConfirmTitle: 'Limpar o histórico de drops?',
+  premiumTrackingConfirmBody: 'Isso apaga o histórico de drops guardado neste PC. Ele não pode ser recuperado.',
+  premiumTrackingConfirmAction: 'Limpar',
+  premiumTrackingConfirmCancel: 'Cancelar',
+  premiumTrackingCleared: 'Histórico de drops limpo.',
+  premiumTrackingBusy: 'O histórico de drops está ocupado agora — tente de novo em instantes.',
+  premiumTrackingFailed: 'Não foi possível limpar o histórico de drops — tente de novo.',
 };

@@ -34,7 +34,7 @@ import {
   type SettingsWriteResult,
   type UpdateStatus,
 } from '@bombfarm/contracts';
-import type { CapabilityCall, CapabilityReply } from '@bombfarm/contracts';
+import type { CapabilityCall, CapabilityReply, TrackingHistoryView } from '@bombfarm/contracts';
 import { grantedConsent } from '@bombfarm/game-api/test-fixtures';
 import { initialConsent } from '@bombfarm/game-api';
 import type { AppEnv } from './env.js';
@@ -1123,5 +1123,65 @@ describe('the premium capability channel from the Premium screen', () => {
     });
 
     expect(await handlers['premium:uiCall']('premium.status', null)).toEqual({ id: 0, ok: false, error: 'stopped' });
+  });
+});
+
+describe('the tracking history channels from Settings', () => {
+  type Clear = 'cleared' | 'busy' | 'failed' | null;
+
+  it('answers none before the service is built, with no host, and when signed out', () => {
+    expect(bare().handlers['premium:trackingHistory']()).toEqual({ state: 'none' });
+    expect(wired().handlers['premium:trackingHistory']()).toEqual({ state: 'none' });
+    const { f, handlers } = wired();
+    Object.assign(f.premiumService, { trackingHistory: () => null });
+    expect(handlers['premium:trackingHistory']()).toEqual({ state: 'none' });
+  });
+
+  it.each<TrackingHistoryView>([
+    { state: 'none' },
+    { state: 'present', bytes: 4096 },
+    { state: 'engine_unavailable', bytes: null, reason: 'binding_missing' },
+    { state: 'engine_unavailable', bytes: 12, reason: 'extension_missing' },
+    { state: 'engine_unavailable', bytes: 0, reason: 'probe_failed' },
+  ])('passes the view %j through unchanged', (view) => {
+    const { f, handlers } = wired();
+    Object.assign(f.premiumService, { trackingHistory: () => view });
+    expect(handlers['premium:trackingHistory']()).toEqual(view);
+  });
+
+  it('answers ok for a cleared history, and ok again for a second clear', async () => {
+    const { f, handlers } = wired();
+    const clearTrackingHistory = vi.fn((): Promise<Clear> => Promise.resolve('cleared'));
+    Object.assign(f.premiumService, { clearTrackingHistory });
+    expect(await handlers['premium:clearTrackingHistory']()).toEqual({ ok: true });
+    expect(await handlers['premium:clearTrackingHistory']()).toEqual({ ok: true });
+    expect(clearTrackingHistory).toHaveBeenCalledTimes(2);
+  });
+
+  it('answers failed when the delete fails and busy while a clear runs', async () => {
+    const { f, handlers } = wired();
+    let outcome: Clear = 'failed';
+    Object.assign(f.premiumService, { clearTrackingHistory: (): Promise<Clear> => Promise.resolve(outcome) });
+    expect(await handlers['premium:clearTrackingHistory']()).toEqual({ ok: false, error: 'failed' });
+    outcome = 'busy';
+    expect(await handlers['premium:clearTrackingHistory']()).toEqual({ ok: false, error: 'busy' });
+  });
+
+  it('refuses a clear when signed out, with no host, or before the service is built', async () => {
+    const { f, handlers } = wired();
+    Object.assign(f.premiumService, { clearTrackingHistory: (): Promise<Clear> => Promise.resolve(null) });
+    expect(await handlers['premium:clearTrackingHistory']()).toEqual({ ok: false, error: 'failed' });
+    expect(await wired().handlers['premium:clearTrackingHistory']()).toEqual({ ok: false, error: 'failed' });
+    expect(await bare().handlers['premium:clearTrackingHistory']()).toEqual({ ok: false, error: 'failed' });
+  });
+
+  it('forwards a section mount failure to the service and answers null, with or without one', () => {
+    const { f, handlers } = wired();
+    const sectionMountFailed = vi.fn();
+    Object.assign(f.premiumService, { sectionMountFailed });
+    expect(handlers['premium:sectionMountFailed']()).toBeNull();
+    expect(sectionMountFailed).toHaveBeenCalledTimes(1);
+    expect(wired().handlers['premium:sectionMountFailed']()).toBeNull();
+    expect(bare().handlers['premium:sectionMountFailed']()).toBeNull();
   });
 });

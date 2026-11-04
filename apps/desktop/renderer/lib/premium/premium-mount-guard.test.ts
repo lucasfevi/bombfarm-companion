@@ -33,6 +33,10 @@ describe('Premium UI has one way in', () => {
     expect(naming('premium:uiCall')).toEqual(['lib/premium/premium-bridge.ts']);
   });
 
+  it('mounts Premium UI in the Premium tab and the Live tab, nowhere else', () => {
+    expect(naming('<PremiumMount').sort()).toEqual(['app/live/live-view.tsx', 'app/premium/premium-view.tsx']);
+  });
+
   it('imports the bridge from the mount point alone', () => {
     expect(naming('premium/premium-bridge')).toEqual(['app/premium/premium-mount.tsx']);
   });

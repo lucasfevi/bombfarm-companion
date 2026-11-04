@@ -9,6 +9,7 @@ import { FuseV1Options, getCurrentFuseWire } from '@electron/fuses';
 import { NtExecutable, NtExecutableResource } from 'resedit';
 import { resolveBuildFlavor } from '@bombfarm/contracts';
 import { createBuilderConfig } from './builder-config.mjs';
+import { extensionFileName, readDuckdbExtensionPin, sha256Of } from './fetch-duckdb-extension.mjs';
 import { CSP_MANIFEST_FILE, CspManifestError, verifyManifest } from './csp-manifest.mjs';
 import { TEST_BUNDLE_KEYPAIR, TEST_LEASE_KEYPAIR } from '../tests/fixtures/premium/keys.mjs';
 
@@ -297,6 +298,55 @@ export function assertNoNativeBinariesInAsar(entries) {
   }
 }
 
+const DUCKDB_BINARIES = ['duckdb.dll', 'duckdb.node'];
+const isDuckdbBinary = (file) => DUCKDB_BINARIES.includes(file.slice(file.lastIndexOf('/') + 1));
+
+/** Whether the app's own manifest depends on the DuckDB binding, which is what the checks below guard. */
+export function declaresDuckdb(rootPackageJsonPath) {
+  return Boolean(readJsonSafe(rootPackageJsonPath)?.dependencies?.['@duckdb/node-api']);
+}
+
+/**
+ * DuckDB's two binaries are loaded off disk: `duckdb.node` is dlopen'd and pulls in `duckdb.dll`
+ * beside it, and neither can be read from inside an archive.
+ */
+export function assertNoDuckdbInAsar(entries) {
+  const offenders = entries.filter((entry) => entry.packed && isDuckdbBinary(entry.path));
+  if (offenders.length > 0) {
+    throw new PackagingGateError(
+      `Packaging gate: DuckDB binaries sealed inside app.asar, unloadable at runtime:\n${offenders
+        .map((entry) => `  - ${entry.path}`)
+        .join('\n')}`,
+    );
+  }
+}
+
+export function assertDuckdbUnpacked(unpackedDir) {
+  const unpackRoot = path.join(unpackedDir, 'resources', 'app.asar.unpacked');
+  const files = existsSync(unpackRoot) ? walkRelativeFiles(unpackRoot) : [];
+  const missing = DUCKDB_BINARIES.filter((name) => !files.some((file) => file.endsWith(`/${name}`)));
+  if (missing.length > 0) {
+    throw new PackagingGateError(
+      `Packaging gate: ${missing.join(', ')} missing from app.asar.unpacked. The DuckDB binding cannot load without both.`,
+    );
+  }
+}
+
+/** The signed extension ships beside the archive; its checksum must be the pinned one. */
+export function assertDuckdbExtensionShipped(unpackedDir, pin = readDuckdbExtensionPin()) {
+  const relative = `resources/duckdb/${extensionFileName(pin)}`;
+  const file = path.join(unpackedDir, ...relative.split('/'));
+  if (!existsSync(file)) {
+    throw new PackagingGateError(`Packaging gate: "${relative}" is missing. The tracking store cannot open without DuckDB's signed extension.`);
+  }
+  const actual = sha256Of(readFileSync(file));
+  if (actual !== pin.sha256) {
+    throw new PackagingGateError(
+      `Packaging gate: "${relative}" has sha256 ${actual}, but ${pin.sha256} is pinned.`,
+    );
+  }
+}
+
 /** A string only the fixture bundle's screen renders; the build must not ship it. */
 export const FIXTURE_MARKER = 'bfc-premium-fixture-marker';
 
@@ -491,7 +541,7 @@ export async function assertAsarIntegrityMatches(executablePath, asarPath) {
  */
 export async function runPackagingGateChecks(
   flavor,
-  { desktopRootDir = desktopRoot, config = createBuilderConfig(flavor) } = {},
+  { desktopRootDir = desktopRoot, config = createBuilderConfig(flavor), duckdbPin = readDuckdbExtensionPin() } = {},
 ) {
   const unpackedDir = resolveUnpackedDir(config, desktopRootDir);
 
@@ -520,6 +570,11 @@ export async function runPackagingGateChecks(
   });
   await record(() => assertAsarUnpackPatternsMatch(config, unpackedDir));
   await record(() => assertNativeBinariesUnpacked(path.join(desktopRootDir, 'package.json'), unpackedDir));
+  const guardsDuckdb = declaresDuckdb(path.join(desktopRootDir, 'package.json'));
+  if (guardsDuckdb) {
+    await record(() => assertDuckdbUnpacked(unpackedDir));
+    await record(() => assertDuckdbExtensionShipped(unpackedDir, duckdbPin));
+  }
   if (asarPath) {
     let entries;
     await record(() => {
@@ -529,6 +584,7 @@ export async function runPackagingGateChecks(
       await record(() => assertRendererEntryPresent(entries));
       await record(() => assertRendererCspManifestIntact(asarPath, entries));
       await record(() => assertNoNativeBinariesInAsar(entries));
+      if (guardsDuckdb) await record(() => assertNoDuckdbInAsar(entries));
       await record(() => assertNoDevPremiumTrust(flavor, asarPath, entries));
     }
   }
