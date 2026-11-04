@@ -39,6 +39,10 @@ test.describe.serial('The tracking host, end to end', () => {
     rig = await createTrackingRig();
   });
 
+  test.afterEach(async ({}, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) await rig?.reportFailure(testInfo.title);
+  });
+
   test.afterAll(async () => {
     await rig?.dispose();
   });

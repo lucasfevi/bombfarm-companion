@@ -20,6 +20,8 @@ const EN_COPY_PATH = path.join(desktopRoot, 'renderer', 'lib', 'copy', 'en.ts');
 const TRACKING_DIR = 'premium-tracking';
 
 /** An English copy string, read off the source of truth so a reword moves the assertion with it. */
+const FAILURE_LOG_LINES = 120;
+
 export function en(key) {
   const source = fs.readFileSync(EN_COPY_PATH, 'utf8');
   const match = source.match(new RegExp(`\\b${key}:\\s*(?:\\n\\s*)?(['"])((?:(?!\\1)[^\\\\]|\\\\.)*)\\1`));
@@ -220,6 +222,19 @@ export async function createTrackingRig({ tmpPrefix = 'bfc-premium-tracking-' } 
     },
 
     mainLog: () => fs.readFileSync(path.join(userDataDir, 'logs', 'main.log'), 'utf8'),
+
+    /** Prints what a failed check can't otherwise tell: CI keeps neither the app's log nor its state. */
+    async reportFailure(title) {
+      const view = await rig.premiumView().catch((error) => `unreadable: ${error.message}`);
+      const { session, licence, host } = typeof view === 'string' ? { session: view } : view;
+      let log = 'unreadable';
+      try {
+        log = rig.mainLog().split(/\r?\n/).slice(-FAILURE_LOG_LINES).join('\n');
+      } catch {
+        // The log is only there once the app has started.
+      }
+      console.log([`--- failed: ${title}`, JSON.stringify({ session, licence, host }), log, '---'].join('\n'));
+    },
 
     async dispose() {
       await rig.quit();
