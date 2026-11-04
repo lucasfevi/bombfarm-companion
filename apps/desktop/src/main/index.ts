@@ -50,7 +50,7 @@ import { installSessionSecurity } from './session-permissions.js';
 import { createEventEmitter } from './event-emitter.js';
 import { createIpcRejectionLogGate } from './ipc-rejection-log.js';
 import { createRendererErrorGate } from './renderer-error-log.js';
-import { createRedactingTokenReader } from './redacting-token-reader.js';
+import { armCredentialRedactor, createRedactingTokenReader } from './redacting-token-reader.js';
 import { LIVE_SOURCE_RELEASE_DEADLINE_MS, settleWithin, shutdownInOrder } from './shutdown.js';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
@@ -976,6 +976,8 @@ async function bootstrap(): Promise<void> {
       emitEvent('live:event', event);
     }
   });
+  // Armed before the tap starts: the account cycle's first read lands only after the main window.
+  armCredentialRedactor({ readConsent: () => consentStore?.read() ?? initialConsent(), readToken });
   liveSource.start();
 
   // `refreshNow` is read lazily so construction order doesn't matter — `accountRefresh` itself is

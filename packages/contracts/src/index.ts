@@ -6,7 +6,7 @@ import type { MarketQuoteCurrency, MarketQuoteResult, MarketQuoteTarget, MarketS
 import { DEFAULT_MARKET_QUOTE_CURRENCY } from './market.js';
 import type { OnlinePlayersView } from './online-players.js';
 import type { GamePingView } from './game-ping.js';
-import type { CapabilityReply } from './premium-host.js';
+import type { CapabilityReply, TrackingHistoryView } from './premium-host.js';
 import type { PremiumActionResult, PremiumView } from './premium.js';
 import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
 import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
@@ -242,7 +242,25 @@ export type {
   BundlePublicKey,
   CapabilityCall,
   CapabilityReply,
+  DbAnswer,
+  DbArgs,
+  DbClearedItem,
+  DbParam,
+  DbRefusalReason,
+  DbUnavailableReason,
+  DbValue,
+  HostEventName,
+  HostEventsMessage,
   HostToWorker,
+  HostUiMessage,
+  PremiumSlot,
+  PremiumWorkerRefusalReason,
+  RawBattleLogItem,
+  RawGapItem,
+  RawTapItem,
+  TrackingHistoryView,
+  WorkerAckMessage,
+  WorkerUiReply,
   PremiumBundleRole,
   PremiumCapability,
   PremiumHostView,
@@ -256,6 +274,11 @@ export {
   PREMIUM_CAPABILITIES,
   PREMIUM_NOTIFICATIONS,
   PREMIUM_SHARED_MODULES,
+  PREMIUM_SLOTS,
+  TRACKING_DB_LIMITS,
+  TRACKING_DB_LOCK,
+  TRACKING_DB_OPEN_CONFIG,
+  TRACKING_DB_STATEMENTS,
 } from './premium-host.js';
 export type { LeasePublicKey, LicenceReason, LicenceState, PremiumLicenceView } from './premium-licence.js';
 export {
@@ -732,6 +755,12 @@ export interface IpcChannels {
   /** A capability call from the Premium screen, answered by the same channel the bundle's worker
    *  uses. Main window only. */
   'premium:uiCall': { args: [string, unknown]; result: CapabilityReply };
+  /** What Settings shows about the tracking history on disk. Main window only. */
+  'premium:trackingHistory': { args: []; result: TrackingHistoryView };
+  /** Deletes the tracking history. Main window only. */
+  'premium:clearTrackingHistory': { args: []; result: { ok: true } | { ok: false; error: 'busy' | 'failed' } };
+  /** A bundle section could not mount; log only. Main window only. */
+  'premium:sectionMountFailed': { args: []; result: null };
   /** A screen crash, reported by the window that drew it so it reaches the log file the renderer
    *  cannot write to. Main validates the record rather than trusting its shape, caps every field,
    *  stamps the scope itself and rate-limits each window; a call it drops answers the same `null`. */
@@ -813,6 +842,9 @@ export const IPC_CHANNELS = [
   'premium:useHere',
   'premium:hostMountFailed',
   'premium:uiCall',
+  'premium:trackingHistory',
+  'premium:clearTrackingHistory',
+  'premium:sectionMountFailed',
   'log:rendererError',
 ] as const satisfies readonly IpcInvokeChannel[];
 

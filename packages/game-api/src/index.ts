@@ -61,6 +61,7 @@ export { normalizeRotation } from './rotation/normalize.js';
 // used to live here now lives in that test file instead.
 export { LIVE_FRAME_WIRE_LEXICON, wireKey as liveFrameWireKey } from './live-frame/lexicon.js';
 export type { LiveFrameWireSymbol } from './live-frame/lexicon.js';
+export { toLiveTick } from './live-frame/to-live-tick.js';
 export { PVP_RANKING_BOARD, PVP_WIRE_LEXICON, wireKey as pvpWireKey } from './pvp/lexicon.js';
 export type { PvpWireSymbol } from './pvp/lexicon.js';
 export { identifyPvpBody } from './pvp/identify.js';

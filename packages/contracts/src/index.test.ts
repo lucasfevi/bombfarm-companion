@@ -85,6 +85,9 @@ const IPC_CHANNEL_LIST = [
   'premium:useHere',
   'premium:hostMountFailed',
   'premium:uiCall',
+  'premium:trackingHistory',
+  'premium:clearTrackingHistory',
+  'premium:sectionMountFailed',
   'log:rendererError',
 ] as const;
 

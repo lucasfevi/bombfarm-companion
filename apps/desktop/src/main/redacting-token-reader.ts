@@ -1,4 +1,4 @@
-import type { GrantedConsent } from '@bombfarm/game-api';
+import { isGranted, type ConsentRecord, type GrantedConsent } from '@bombfarm/game-api';
 import type { SessionTokenFileResult } from './game-api/session-token-file.js';
 
 export interface CredentialRedactorSink {
@@ -30,4 +30,22 @@ export function createRedactingTokenReader(
     }
     return result;
   };
+}
+
+export interface ArmCredentialRedactorDeps {
+  readConsent: () => ConsentRecord;
+  /** The reader {@link createRedactingTokenReader} returns, so a successful read installs on both sinks. */
+  readToken: (consent: GrantedConsent) => SessionTokenFileResult;
+}
+
+/**
+ * One read for its side effect, before the live source starts. The tap delivers frames as soon as
+ * it starts, while the account cycle's first read comes only after boot has awaited the main
+ * window — and until a read lands, the frame ring and the developer capture scrub by key name
+ * alone, so a token under any other key would reach disk in clear. Without account consent the
+ * token file is never read, here or anywhere else.
+ */
+export function armCredentialRedactor(deps: ArmCredentialRedactorDeps): void {
+  const consent = deps.readConsent();
+  if (isGranted(consent)) deps.readToken(consent);
 }

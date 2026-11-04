@@ -54,6 +54,7 @@ import {
   type PvpHistoryResult,
   type SettingsWriteResult,
   type StartWithWindowsWriteResult,
+  type TrackingHistoryView,
   type UpdateStatus,
   type WindowStateView,
 } from '@bombfarm/contracts';
@@ -423,6 +424,10 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.getPremiumService()?.hostMountFailed?.();
       return null;
     },
+    // Placeholders; the real handlers replace them in this branch.
+    'premium:trackingHistory': (): TrackingHistoryView => ({ state: 'none' }),
+    'premium:clearTrackingHistory': (): { ok: false; error: 'failed' } => ({ ok: false, error: 'failed' }),
+    'premium:sectionMountFailed': (): null => null,
     'premium:uiCall': (capability: string, args: unknown): Promise<CapabilityReply> | CapabilityReply =>
       deps.getPremiumService()?.callFromUi?.({ id: 0, capability, args }) ?? { id: 0, ok: false, error: 'unavailable' },
     'market:refreshItem': refreshMarketItem,
