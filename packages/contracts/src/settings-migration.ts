@@ -8,7 +8,21 @@ type BooleanFlag =
   | 'alwaysOnTopMini'
   | 'forgeWritesEnabled'
   | 'restartGameOnExit'
+  | 'startWithWindows'
   | 'usagePingEnabled';
+
+/** The newest stored shape this build writes. Held here, not read off `DEFAULT_SETTINGS`, because
+ *  `index.ts` re-exports this module before it defines `DEFAULT_SETTINGS` — a top-level read of it
+ *  would hit the temporal dead zone. The `satisfies` ties it to `AppSettings` at compile time, and
+ *  the migration test ties it to `DEFAULT_SETTINGS.schemaVersion` at run time. */
+const CURRENT_SCHEMA_VERSION = 5 satisfies AppSettings['schemaVersion'];
+
+/** Every stored version this build still reads, `1 … current`. Built from a range so a version
+ *  bump extends it without a second edit. */
+export const SETTINGS_SCHEMA_VERSIONS: readonly number[] = Array.from(
+  { length: CURRENT_SCHEMA_VERSION },
+  (_, index) => index + 1,
+);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -44,7 +58,7 @@ export function migrateStoredSettings(parsed: unknown): AppSettings | null {
   }
 
   const schemaVersion = parsed.schemaVersion;
-  if (schemaVersion !== 1 && schemaVersion !== 2 && schemaVersion !== 3 && schemaVersion !== 4) {
+  if (typeof schemaVersion !== 'number' || !SETTINGS_SCHEMA_VERSIONS.includes(schemaVersion)) {
     return null;
   }
 
@@ -64,6 +78,7 @@ export function migrateStoredSettings(parsed: unknown): AppSettings | null {
   const forgeWritesFlag = readBooleanFlag(parsed, 'forgeWritesEnabled');
   const restartGameFlag = readBooleanFlag(parsed, 'restartGameOnExit');
   const usagePingFlag = readBooleanFlag(parsed, 'usagePingEnabled');
+  const startWithWindowsFlag = readBooleanFlag(parsed, 'startWithWindows');
   const marketQuoteCurrency = readMarketQuoteCurrency(parsed);
 
   if (
@@ -72,13 +87,14 @@ export function migrateStoredSettings(parsed: unknown): AppSettings | null {
     forgeWritesFlag === 'invalid' ||
     restartGameFlag === 'invalid' ||
     usagePingFlag === 'invalid' ||
+    startWithWindowsFlag === 'invalid' ||
     marketQuoteCurrency === 'invalid'
   ) {
     return null;
   }
 
   return {
-    schemaVersion: 4,
+    schemaVersion: DEFAULT_SETTINGS.schemaVersion,
     locale: parsed.locale,
     alwaysOnTopMain: mainFlag === 'missing' ? DEFAULT_SETTINGS.alwaysOnTopMain : mainFlag,
     alwaysOnTopMini: miniFlag === 'missing' ? DEFAULT_SETTINGS.alwaysOnTopMini : miniFlag,
@@ -86,5 +102,6 @@ export function migrateStoredSettings(parsed: unknown): AppSettings | null {
     restartGameOnExit: restartGameFlag === 'missing' ? DEFAULT_SETTINGS.restartGameOnExit : restartGameFlag,
     marketQuoteCurrency,
     usagePingEnabled: usagePingFlag === 'missing' ? DEFAULT_SETTINGS.usagePingEnabled : usagePingFlag,
+    startWithWindows: startWithWindowsFlag === 'missing' ? DEFAULT_SETTINGS.startWithWindows : startWithWindowsFlag,
   };
 }

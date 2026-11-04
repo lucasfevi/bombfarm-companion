@@ -21,9 +21,10 @@ function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
-/** The body between `createConsentApplier({` and its matching closing `});`. */
+/** The body between `createLoginItemConsentApplier({` (the wrapper that delegates to
+ *  `createConsentApplier`) and its matching closing `});`. */
 function consentApplierConstruction(source: string): string {
-  const start = source.indexOf('createConsentApplier({');
+  const start = source.indexOf('createLoginItemConsentApplier({');
   expect(start).toBeGreaterThan(-1);
   const end = source.indexOf('});', start);
   expect(end).toBeGreaterThan(-1);

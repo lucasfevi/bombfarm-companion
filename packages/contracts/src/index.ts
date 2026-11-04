@@ -1,5 +1,5 @@
 import type { AppFlavor, UpdateChannel } from './flavors.js';
-import type { SettingsWriteResult } from './locale.js';
+import type { LoginItemBlock, SettingsWriteResult, StartWithWindowsWriteResult } from './locale.js';
 import type { LiveDiagnosticsDumpOutcome, LiveEvent, LiveView } from './live-source.js';
 import type { UpdateStatus } from './update.js';
 import type { MarketQuoteCurrency, MarketQuoteResult, MarketQuoteTarget, MarketSnapshotView } from './market.js';
@@ -503,7 +503,7 @@ export interface DamageAttributionResult {
 }
 
 export interface AppSettings {
-  schemaVersion: 4;
+  schemaVersion: 5;
   locale: 'en' | 'pt-BR';
   alwaysOnTopMain: boolean;
   alwaysOnTopMini: boolean;
@@ -520,10 +520,13 @@ export interface AppSettings {
   /** On until the player turns it off. While on, the hourly usage ping names this install and
    *  the game account; while off it names neither, and the install's id is deleted. */
   usagePingEnabled: boolean;
+  /** On until the player turns it off. While on, the installed app registers itself to start when
+   *  Windows signs the player in, hidden in the tray. */
+  startWithWindows: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  schemaVersion: 4,
+  schemaVersion: 5,
   locale: 'en',
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
@@ -531,6 +534,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   restartGameOnExit: false,
   marketQuoteCurrency: DEFAULT_MARKET_QUOTE_CURRENCY,
   usagePingEnabled: true,
+  startWithWindows: true,
 };
 
 export type MiniLiveGrowthAxis = 'vertical' | 'horizontal';
@@ -613,6 +617,8 @@ export interface IpcChannels {
   'settings:setRestartGameOnExit': { args: [boolean]; result: SettingsWriteResult };
   'settings:setMarketQuoteCurrency': { args: [MarketQuoteCurrency]; result: SettingsWriteResult };
   'settings:setUsagePingEnabled': { args: [boolean]; result: SettingsWriteResult };
+  'settings:setStartWithWindows': { args: [boolean]; result: StartWithWindowsWriteResult };
+  'settings:getLoginItemStatus': { args: []; result: { registered: boolean; block: LoginItemBlock | null } };
   /** The main window's caption buttons, drawn in the header rather than by the OS. Zero-arg like
    *  the consent quartet — the channel name is the verb. `window:close` asks the window to close
    *  and does not decide what that means: the shell's own close handler still answers it, so on
@@ -779,6 +785,8 @@ export const IPC_CHANNELS = [
   'settings:setRestartGameOnExit',
   'settings:setMarketQuoteCurrency',
   'settings:setUsagePingEnabled',
+  'settings:setStartWithWindows',
+  'settings:getLoginItemStatus',
   'window:minimize',
   'window:toggleMaximize',
   'window:close',

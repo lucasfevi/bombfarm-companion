@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { CONSENT_TEXT, CONSENT_TEXT_VERSION, consentTextFor } from './consent-text.js';
 
@@ -15,6 +17,7 @@ const KNOWN_BODY_DIGESTS: Readonly<Record<'en' | 'pt-BR', Readonly<Record<number
     4: 'bedbd31213ce49606ceadb85774b1c322fdda20fe35582fa02402295a8cb2baa',
     5: 'af6606e267b4e3658e6f94380de76d3ba193da484f7eed966e48687e89aaafa7',
     6: 'b9036725ffdb60065b5e61de5afb0795491abec7d80c3fded6bb3692864a44ef',
+    7: 'ab4e5e5f8e9eeac9952414d694b21b6442c8d7337f9a0f7d48c18c8e4d74cc64',
   },
   'pt-BR': {
     2: '1aa62c031159c769ae95530b147d7dc2f9eafdc3229f06e27a7d3d56ce0d886d',
@@ -22,6 +25,7 @@ const KNOWN_BODY_DIGESTS: Readonly<Record<'en' | 'pt-BR', Readonly<Record<number
     4: '24d67f662e7a0dcd3c7cc4aeb45d797e67b94028e9185c1a596f625a4713d3c0',
     5: 'f7d2821ba7eb64b92afd3da592b682e36d190905378a40b7500d1a876480dd6d',
     6: '987b939a339e6195be69d6c972278211b83b9c130dba781fe9733a3ae0517182',
+    7: '5f232fc20b21d4bc160b6f767e7167f9dccfb1670165db4b5a5efc5c7d5e798d',
   },
 };
 
@@ -35,8 +39,8 @@ describe.each([
     expect(text.declineLabel.length).toBeGreaterThan(0);
   });
 
-  it('carries exactly the five clauses', () => {
-    expect(text.body).toHaveLength(5);
+  it('carries exactly the six clauses', () => {
+    expect(text.body).toHaveLength(6);
   });
 
   it('is stamped with the shared CONSENT_TEXT_VERSION', () => {
@@ -183,5 +187,77 @@ describe('CONSENT_TEXT — the two locales are not accidentally the same text', 
     expect(CONSENT_TEXT['pt-BR'].title).not.toBe(CONSENT_TEXT.en.title);
     expect(CONSENT_TEXT['pt-BR'].acceptLabel).not.toBe(CONSENT_TEXT.en.acceptLabel);
     expect(CONSENT_TEXT['pt-BR'].declineLabel).not.toBe(CONSENT_TEXT.en.declineLabel);
+  });
+});
+
+const copyMap = (file: string): string =>
+  readFileSync(fileURLToPath(new URL(`../../../apps/desktop/renderer/lib/copy/${file}`, import.meta.url)), 'utf8');
+
+describe.each([
+  {
+    locale: 'en' as const,
+    file: 'en.ts',
+    heading: 'Keeps running in the background.',
+    label: 'Restart Bomb Farm if it exits',
+    tab: 'Live',
+    unchanged: [
+      ['Reads your account.', "Two ways: it calls the game's own server with the session token the game already saves on your machine, and it attaches to the running game client to read the traffic that client is already exchanging with that server."],
+      ['Writes only when you tell it to.', 'Everything it shows is read. The writes it can make are a forge roll, equipping or unequipping an item, refunding and re-placing a hero\'s stat points, and burning items for Forge Essence — from the Forge tab (its Deconstruct page included), the forge queue, and the Optimizer\'s Apply steps, only after you turn on "Let the app forge, equip and reset points" in Settings, and only after you confirm each run. Nothing else in it can change your account, your game client, or your progress.'],
+      ['Your token stays put.', 'It is sent only to app.bombfarm.net — never to us, never to anyone else, never into a log.'],
+      ['Antivirus may flag or quarantine it.', 'Attaching to another running program is the technique behavior-based detection looks for, so a warning is expected — it is about the technique, not a virus.'],
+    ],
+    risk: ['The risk is yours.', /to stop the companion entirely, quit it from its notification-area icon\.$/],
+    parts: [/starts with Windows/, /keeps running after you close its window/, /notification area/, /right-click it to quit/, /asks Steam to start the game again/, /starts itself when you log in and brings your game back/],
+  },
+  {
+    locale: 'pt-BR' as const,
+    file: 'pt-BR.ts',
+    heading: 'Continua rodando em segundo plano.',
+    label: 'Reiniciar o Bomb Farm se ele fechar',
+    tab: 'Ao vivo',
+    unchanged: [
+      ['Lê sua conta.', 'De duas formas: chamando o servidor do próprio jogo com o token de sessão que o jogo já salva no seu computador, e conectando-se ao cliente do jogo em execução para ler o tráfego que esse cliente já troca com esse servidor.'],
+      ['Escreve só quando você manda.', 'Tudo o que ele mostra é leitura. As escritas que ele pode fazer são uma rolagem de forja, equipar ou desequipar um item, reembolsar e redistribuir os pontos de status de um herói, e queimar itens para obter Essência de Forja — pela aba Forja (inclusive a página Desconstruir), pela fila de forja e pelas etapas de Aplicar do Otimizador, só depois que você ligar "Deixar o app forjar, equipar e redistribuir pontos" nas Configurações, e só depois de confirmar cada execução. Nada mais nele pode alterar sua conta, o cliente do jogo ou seu progresso.'],
+      ['Seu token não sai do lugar.', 'É enviado apenas para app.bombfarm.net — nunca para nós, nunca para terceiros, nunca para um log.'],
+      ['O antivírus pode sinalizar ou colocar em quarentena.', 'Conectar-se a outro programa em execução é a técnica que a detecção por comportamento procura, então um aviso é esperado — ele é sobre a técnica, não sobre um vírus.'],
+    ],
+    risk: ['O risco é seu.', /para encerrar o companion por completo, saia pelo ícone na área de notificação\.$/],
+    parts: [/inicia junto com o Windows/, /continua rodando depois que você fecha a janela/, /área de notificação/, /botão direito para sair/, /pede ao Steam para abrir o jogo de novo/, /se inicia quando você entra no Windows e traz seu jogo de volta/],
+  },
+])('CONSENT_TEXT[$locale] — background-running disclosure', ({ locale, file, heading, label, tab, unchanged, risk, parts }) => {
+  const { body } = CONSENT_TEXT[locale];
+
+  it('places the new clause directly after the token clause and leaves the other four clauses byte-identical', () => {
+    expect(body.map((c) => c.heading).slice(0, 5)).toEqual([
+      ...unchanged.slice(0, 3).map(([h]) => h),
+      heading,
+      unchanged[3]?.[0],
+    ]);
+    for (const [h, text] of unchanged) {
+      expect(body.find((c) => c.heading === h)?.text).toBe(text);
+    }
+  });
+
+  it('names the background run, the tray as the way to quit, and the relaunch compound', () => {
+    const clause = body.find((c) => c.heading === heading);
+    expect(clause).toBeDefined();
+    for (const part of parts) expect(clause?.text).toMatch(part);
+    expect(clause?.text).toContain(`"${label}"`);
+    expect(clause?.text).toContain(tab);
+  });
+
+  it('quotes the restart switch label exactly as the renderer copy map spells it', () => {
+    expect(copyMap(file)).toContain(`settingsRestartGameOnExitLabel: '${label}'`);
+  });
+
+  it('uses the Live tab name from the renderer copy map', () => {
+    expect(copyMap(file)).toContain(`liveNavLabel: '${tab}'`);
+  });
+
+  it('closes the risk clause by naming the notification-area icon as the way to stop the app entirely', () => {
+    const [riskHeading, riskEnding] = risk;
+    if (!(riskEnding instanceof RegExp)) throw new Error('risk fixture must carry a RegExp ending');
+    const clause = body.find((c) => c.heading === riskHeading);
+    expect(clause?.text).toMatch(riskEnding);
   });
 });
