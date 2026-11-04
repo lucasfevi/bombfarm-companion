@@ -107,6 +107,17 @@ export class EngineOpenError extends Error {
   }
 }
 
+const OPEN_DETAIL_MAX = 300;
+
+/** The engine's own words for a failed open, for the log: without the key, its hashes or any path. */
+function openFailureDetail(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message
+    .replace(/[0-9a-f]{32,}/gi, '[hex]')
+    .replace(/(?:[A-Za-z]:)?[\\/][^\x22\x27\n]*/g, '[path]')
+    .slice(0, OPEN_DETAIL_MAX);
+}
+
 export interface TrackingEngine {
   /** The one start-up probe. Runs on the first call, answers the same value afterwards; never throws. */
   probe(): Promise<EngineProbe>;
@@ -348,6 +359,7 @@ export function createTrackingEngine(deps: TrackingEngineDeps): TrackingEngine {
       }
     } catch (error) {
       if (instance !== null) closeQuietly(instance, connection);
+      deps.log.warn({ scope: 'premium', event: 'premium.tracking_open_failed', step, detail: openFailureDetail(error) });
       throw error instanceof EngineOpenError ? error : new EngineOpenError(step, error);
     }
 

@@ -56,7 +56,7 @@ function tamperedCopy(): string {
 }
 
 /** A binding whose instances script their answers and count their closes. */
-function fakeBinding(options: { answer?: number; failOn?: RegExp; failCreate?: boolean }) {
+function fakeBinding(options: { answer?: number; failOn?: RegExp; failCreate?: boolean; failMessage?: string }) {
   const state = { created: 0, closed: 0, sql: [] as string[] };
   const settings: Record<string, string> = {
     enable_external_access: 'false',
@@ -75,7 +75,7 @@ function fakeBinding(options: { answer?: number; failOn?: RegExp; failCreate?: b
             Promise.resolve({
               run: (sql: string) => {
                 state.sql.push(sql);
-                return options.failOn?.test(sql) ? Promise.reject(new Error('scripted failure')) : Promise.resolve();
+                return options.failOn?.test(sql) ? Promise.reject(new Error(options.failMessage ?? 'scripted failure')) : Promise.resolve();
               },
               runAndReadAll: (sql: string) => {
                 state.sql.push(sql);
@@ -221,6 +221,26 @@ describe('the engine against the real binding and the signed extension', () => {
     }
   });
 
+  it('logs why an open failed, without the key or the folder', async () => {
+    const dir = folder('openlog');
+    const file = join(dir, 'track.duckdb');
+    const { engine, records } = realEngine();
+    (await engine.open(file, KEY)).close();
+    const wrong = 'b2'.repeat(32);
+
+    await expect(engine.open(file, wrong)).rejects.toMatchObject({ reason: 'attach_failed' });
+
+    const failure = records.find((record) => record['event'] === 'premium.tracking_open_failed');
+    expect(failure).toMatchObject({ scope: 'premium', step: 'attach_failed' });
+    expect(failure?.['detail']).toMatch(/\S/);
+    const logged = JSON.stringify(failure);
+    expect(logged).not.toContain(wrong);
+    expect(logged).not.toContain(KEY);
+    expect(logged).not.toContain(dir);
+    expect(logged).not.toContain(dir.replaceAll('\\', '/'));
+    expect(logged).not.toContain(dir.replaceAll('\\', '\\\\'));
+  });
+
   it('throws EngineOpenError for a wrong key and keeps the file', async () => {
     const file = join(folder('wrongkey'), 'track.duckdb');
     const engine = realEngine().engine;
@@ -296,6 +316,22 @@ describe('a failed open', () => {
     const engine = createTrackingEngine({ extensionPath: 'x', log: recordingLog().log, loadBinding: () => fake.binding });
     await expect(engine.open('db', KEY)).rejects.toMatchObject({ name: 'EngineOpenError', reason });
     expect(fake.state.closed).toBe(1);
+  });
+
+  it('logs an engine message that echoes the key and the path with both removed', async () => {
+    const fake = fakeBinding({
+      failOn: /^ATTACH/,
+      failMessage: `IO Error: Cannot open file "C:${String.fromCharCode(92)}Users${String.fromCharCode(92)}someone${String.fromCharCode(92)}track.duckdb": busy, near ATTACH (ENCRYPTION_KEY '${KEY}')`,
+    });
+    const { log, records } = recordingLog();
+    const engine = createTrackingEngine({ extensionPath: 'x', log, loadBinding: () => fake.binding });
+
+    await expect(engine.open('db', KEY)).rejects.toMatchObject({ reason: 'attach_failed' });
+
+    const failure = records.find((record) => record['event'] === 'premium.tracking_open_failed');
+    expect(failure?.['detail']).toContain('IO Error');
+    expect(JSON.stringify(failure)).not.toContain(KEY);
+    expect(JSON.stringify(failure)).not.toContain('someone');
   });
 
   it('closes the instance and throws when a setting does not read back as locked', async () => {

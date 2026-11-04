@@ -18,6 +18,8 @@ const KEY_ROW_PREFIX = 'premium_trackdb_key_v1:';
 const KEY_HEX = /^[0-9a-f]{64}$/;
 /** How long `close` waits for the call in flight before it closes the handle anyway. */
 const CLOSE_WAIT_MS = 10_000;
+/** The waits between tries at attaching a file that exists: three seconds in all. */
+const REOPEN_DELAYS_MS = [250, 750, 2_000];
 
 /** The first 32 hex characters of `sha256('bfc-premium-tracking-v1\0' + subject)`. */
 export function subjectHash(subject: string): string {
@@ -51,6 +53,8 @@ export interface TrackingStoreDeps {
   fs?: TrackingFs;
   /** Test seam for the 10 s a closing handle waits on the call in flight. */
   closeWaitMs?: number;
+  /** Test seam for the waits between tries at attaching a file that exists. */
+  reopenDelaysMs?: readonly number[];
 }
 
 export type ClearOutcome = 'cleared' | 'busy' | 'failed';
@@ -94,6 +98,7 @@ export function createTrackingStore(deps: TrackingStoreDeps): TrackingStore {
   const fs = deps.fs ?? nodeFs;
   const dir = join(deps.root, TRACKING_DIR);
   const closeWaitMs = deps.closeWaitMs ?? CLOSE_WAIT_MS;
+  const reopenDelaysMs = deps.reopenDelaysMs ?? REOPEN_DELAYS_MS;
   const handles = new Map<string, Handle>();
   const opening = new Map<string, Promise<Handle>>();
   const clearing = new Set<string>();
@@ -146,6 +151,23 @@ export function createTrackingStore(deps: TrackingStoreDeps): TrackingStore {
     handle.raw.close();
   }
 
+  /** A file that is there can be held for a moment, so its attach gets a few more tries before it counts as unreadable. */
+  async function openExisting(file: string, key: string, fileExists: boolean): Promise<LockedDb> {
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await deps.engine.open(file, key);
+      } catch (error) {
+        const delay = reopenDelaysMs[attempt];
+        const held = fileExists && error instanceof EngineOpenError && error.reason === 'attach_failed';
+        if (!held || delay === undefined) throw error;
+        await new Promise((resolve) => {
+          setTimeout(resolve, delay).unref();
+        });
+        if (closed) throw error;
+      }
+    }
+  }
+
   async function openHandle(subject: string): Promise<Handle> {
     if (subject === '') throw new TrackingUnavailableError('no_subject');
     const probe = await probing;
@@ -170,7 +192,7 @@ export function createTrackingStore(deps: TrackingStoreDeps): TrackingStore {
     mkdirSync(dir, { recursive: true });
     let raw: LockedDb;
     try {
-      raw = await deps.engine.open(file, key);
+      raw = await openExisting(file, key, fileExists);
     } catch (error) {
       const reason = error instanceof EngineOpenError ? error.reason : null;
       const unreadable = fileExists && (reason === 'bad_key' || reason === 'attach_failed');
