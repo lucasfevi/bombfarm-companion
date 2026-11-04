@@ -9,9 +9,9 @@ import { CONSENT_TEXT_VERSION, consentTextFor } from '@bombfarm/game-api';
  * together with the text version.
  */
 const RECORDED = {
-  version: 6,
-  en: 'd6e3dadb171d60cac3bb4feabd98f8d40835af25a93e2ed1ba7ce783b0c95b8b',
-  'pt-BR': 'c1aaabd53540c6f26228aea65a6c6b68b0cee91db7246238d62cf302ac49ab98',
+  version: 7,
+  en: '5bc30959d7c19f6f911fedf95dc30c534246f0052ac95538d41afef6689153b6',
+  'pt-BR': '9e59e17b075b94e732fd91edc5e3fdfcc5ead2b79d0b54fb7b361881ae89de93',
 } as const;
 
 const digest = (locale: 'en' | 'pt-BR') =>
