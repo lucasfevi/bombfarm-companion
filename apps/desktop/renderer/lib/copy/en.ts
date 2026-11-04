@@ -1597,7 +1597,7 @@ export const en = {
   // premiumMoveConfirm* — the dialog that asks before Premium moves to this PC
   premiumMoveConfirmTitle: 'Use Premium on this PC?',
   premiumMoveConfirmBody:
-    'Premium will be removed from the other PC. Your tracking history stays on that PC, and this PC starts with an empty history.',
+    'Premium will be removed from the other PC. Your drop history stays on that PC, and this PC starts with an empty history.',
   premiumMoveConfirmCancel: 'Cancel',
   // premiumHost* — the Premium page's mount point
   premiumHostUpdating: 'Updating Premium…',
@@ -1605,18 +1605,18 @@ export const en = {
   premiumHostLocalBuild: 'Local premium build',
   premiumHostLocalBuildHint: 'Use pnpm dev:premium to load it',
   // premiumTracking* — the Settings row that shows and clears the tracking history
-  premiumTrackingLabel: 'Tracking history',
+  premiumTrackingLabel: 'Drop history',
   premiumTrackingSize: '{size} stored on this PC',
-  premiumTrackingUnavailable: "Tracking isn't available on this PC ({reason}).",
+  premiumTrackingUnavailable: "Drop history isn't available on this PC ({reason}).",
   premiumTrackingReasonBindingMissing: 'the database engine is missing',
   premiumTrackingReasonExtensionMissing: 'the engine extension is missing',
   premiumTrackingReasonProbeFailed: 'the engine failed its start-up check',
-  premiumTrackingClear: 'Clear tracking history',
-  premiumTrackingConfirmTitle: 'Clear tracking history?',
-  premiumTrackingConfirmBody: 'This deletes the tracking history stored on this PC. It cannot be recovered.',
+  premiumTrackingClear: 'Clear drop history',
+  premiumTrackingConfirmTitle: 'Clear drop history?',
+  premiumTrackingConfirmBody: 'This deletes the drop history stored on this PC. It cannot be recovered.',
   premiumTrackingConfirmAction: 'Clear',
   premiumTrackingConfirmCancel: 'Cancel',
-  premiumTrackingCleared: 'Tracking history cleared.',
-  premiumTrackingBusy: 'Tracking is busy right now — try again in a moment.',
-  premiumTrackingFailed: "Couldn't clear tracking history — try again.",
+  premiumTrackingCleared: 'Drop history cleared.',
+  premiumTrackingBusy: 'Drop history is busy right now — try again in a moment.',
+  premiumTrackingFailed: "Couldn't clear drop history — try again.",
 } as const;

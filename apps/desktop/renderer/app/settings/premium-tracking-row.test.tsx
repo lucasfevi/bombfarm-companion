@@ -14,30 +14,30 @@ type ClearReply = { ok: true } | { ok: false; error: 'busy' | 'failed' };
 // The approved wording, written out rather than read from the copy table under test.
 const WORDS = {
   en: {
-    label: 'Tracking history',
+    label: 'Drop history',
     size: '1.5 MB stored on this PC',
-    unavailable: "Tracking isn't available on this PC (the database engine is missing).",
-    clear: 'Clear tracking history',
-    title: 'Clear tracking history?',
-    body: 'This deletes the tracking history stored on this PC. It cannot be recovered.',
+    unavailable: "Drop history isn't available on this PC (the database engine is missing).",
+    clear: 'Clear drop history',
+    title: 'Clear drop history?',
+    body: 'This deletes the drop history stored on this PC. It cannot be recovered.',
     confirm: 'Clear',
     cancel: 'Cancel',
-    cleared: 'Tracking history cleared.',
-    busy: 'Tracking is busy right now — try again in a moment.',
-    failed: "Couldn't clear tracking history — try again.",
+    cleared: 'Drop history cleared.',
+    busy: 'Drop history is busy right now — try again in a moment.',
+    failed: "Couldn't clear drop history — try again.",
   },
   'pt-BR': {
-    label: 'Histórico de rastreamento',
+    label: 'Histórico de drops',
     size: '1,5 MB guardados neste PC',
-    unavailable: 'O rastreamento não está disponível neste PC (o mecanismo de banco de dados não foi encontrado).',
-    clear: 'Limpar histórico de rastreamento',
-    title: 'Limpar o histórico de rastreamento?',
-    body: 'Isso apaga o histórico de rastreamento guardado neste PC. Ele não pode ser recuperado.',
+    unavailable: 'O histórico de drops não está disponível neste PC (o mecanismo de banco de dados não foi encontrado).',
+    clear: 'Limpar histórico de drops',
+    title: 'Limpar o histórico de drops?',
+    body: 'Isso apaga o histórico de drops guardado neste PC. Ele não pode ser recuperado.',
     confirm: 'Limpar',
     cancel: 'Cancelar',
-    cleared: 'Histórico de rastreamento limpo.',
-    busy: 'O rastreamento está ocupado agora — tente de novo em instantes.',
-    failed: 'Não foi possível limpar o histórico de rastreamento — tente de novo.',
+    cleared: 'Histórico de drops limpo.',
+    busy: 'O histórico de drops está ocupado agora — tente de novo em instantes.',
+    failed: 'Não foi possível limpar o histórico de drops — tente de novo.',
   },
 } as const;
 
@@ -104,7 +104,7 @@ const buttonReading = (scope: ParentNode, text: string): HTMLElement => {
 const text = () => container.textContent.replace(/\s+/g, ' ');
 const clearCalls = () => invoke.mock.calls.filter(([channel]) => channel === 'premium:clearTrackingHistory');
 
-describe.each(['en', 'pt-BR'] as const)('the Tracking history row (%s)', (locale) => {
+describe.each(['en', 'pt-BR'] as const)('the Drop history row (%s)', (locale) => {
   const words = WORDS[locale];
 
   it.each([
@@ -214,7 +214,7 @@ describe('the unavailable reasons', () => {
   ] as const)('%s reads as its own sentence', async (reason, phrase) => {
     bridge({ state: 'engine_unavailable', bytes: 10, reason });
     await mount('en');
-    expect(text()).toContain(`Tracking isn't available on this PC (${phrase}).`);
+    expect(text()).toContain(`Drop history isn't available on this PC (${phrase}).`);
   });
 
   it.each([
@@ -224,6 +224,6 @@ describe('the unavailable reasons', () => {
   ] as const)('%s reads as its own sentence in pt-BR', async (reason, phrase) => {
     bridge({ state: 'engine_unavailable', bytes: 10, reason });
     await mount('pt-BR');
-    expect(text()).toContain(`O rastreamento não está disponível neste PC (${phrase}).`);
+    expect(text()).toContain(`O histórico de drops não está disponível neste PC (${phrase}).`);
   });
 });

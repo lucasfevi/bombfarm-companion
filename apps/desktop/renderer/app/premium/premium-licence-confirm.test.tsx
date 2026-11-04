@@ -13,13 +13,13 @@ type Locale = 'en' | 'pt-BR';
 const WORDS = {
   en: {
     title: 'Use Premium on this PC?',
-    body: 'Premium will be removed from the other PC. Your tracking history stays on that PC, and this PC starts with an empty history.',
+    body: 'Premium will be removed from the other PC. Your drop history stays on that PC, and this PC starts with an empty history.',
     confirm: 'Use Premium on this PC',
     cancel: 'Cancel',
   },
   'pt-BR': {
     title: 'Usar o Premium neste PC?',
-    body: 'O Premium será removido do outro PC. Seu histórico de rastreamento fica naquele PC, e este PC começa com o histórico vazio.',
+    body: 'O Premium será removido do outro PC. Seu histórico de drops fica naquele PC, e este PC começa com o histórico vazio.',
     confirm: 'Usar o Premium neste PC',
     cancel: 'Cancelar',
   },
