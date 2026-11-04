@@ -85,7 +85,7 @@ function deferred(): Deferred {
 const tick = (): Promise<void> => new Promise((resolveTick) => setImmediate(resolveTick));
 
 /** An engine whose opens create the file (as `ATTACH` does) and are scripted and counted. */
-function fakeEngine(options: { probe?: EngineProbe; failOpen?: EngineOpenReason } = {}) {
+function fakeEngine(options: { probe?: EngineProbe; failOpen?: EngineOpenReason; failFirst?: number } = {}) {
   const state = {
     opens: [] as { file: string; key: string }[],
     closed: 0,
@@ -98,7 +98,9 @@ function fakeEngine(options: { probe?: EngineProbe; failOpen?: EngineOpenReason 
     probe: () => Promise.resolve(options.probe ?? { ok: true, version: 'v-test' }),
     open: (file, key) => {
       state.opens.push({ file, key });
-      if (options.failOpen !== undefined) return Promise.reject(new EngineOpenError(options.failOpen));
+      if (options.failOpen !== undefined && state.opens.length <= (options.failFirst ?? Infinity)) {
+        return Promise.reject(new EngineOpenError(options.failOpen));
+      }
       if (!existsSync(file)) writeFileSync(file, 'created-by-attach');
       const raw: LockedDb = {
         run: async (sql) => {
@@ -182,7 +184,14 @@ describe('the folder and the hash are pinned', () => {
 });
 
 describe.each(availableBindings)('the tracking store over the real account_meta table (%s)', (binding) => {
-  function setup(options: { box?: Partial<SecretBox>; engine?: ReturnType<typeof fakeEngine>; fs?: TrackingFs } = {}) {
+  function setup(
+    options: {
+      box?: Partial<SecretBox>;
+      engine?: ReturnType<typeof fakeEngine>;
+      fs?: TrackingFs;
+      reopenDelaysMs?: readonly number[];
+    } = {},
+  ) {
     const root = folder('store');
     const db = openDb(binding);
     const engine = options.engine ?? fakeEngine();
@@ -193,6 +202,7 @@ describe.each(availableBindings)('the tracking store over the real account_meta 
       engine: engine.engine,
       ...(options.fs ? { fs: options.fs } : {}),
       closeWaitMs: 50,
+      reopenDelaysMs: options.reopenDelaysMs ?? [],
     });
     const fileOf = (subject: string): string => join(root, TRACKING_DIR, `${subjectHash(subject)}.duckdb`);
     return { root, db, engine, rows, store, fileOf };
@@ -322,6 +332,71 @@ describe.each(availableBindings)('the tracking store over the real account_meta 
 
       expect(rowValue(db, trackingKeyRow(ALICE))).toBeUndefined();
       expect(existsSync(join(root, TRACKING_DIR))).toBe(false);
+    });
+
+    describe('a file held for a moment', () => {
+      const existing = (s: ReturnType<typeof setup>): void => {
+        s.rows.write(trackingKeyRow(ALICE), () => JSON.stringify({ key: 'ef'.repeat(32) }));
+        mkdirSync(join(s.fileOf(ALICE), '..'), { recursive: true });
+        writeFileSync(s.fileOf(ALICE), 'existing history');
+      };
+
+      it('opens once the attach stops failing, and the caller never hears of it', async () => {
+        const s = setup({ engine: fakeEngine({ failOpen: 'attach_failed', failFirst: 2 }), reopenDelaysMs: [0, 0, 0] });
+        existing(s);
+
+        await expect(s.store.db(ALICE)).resolves.toBeDefined();
+
+        expect(s.engine.state.opens).toHaveLength(3);
+        expect(readFileSync(s.fileOf(ALICE), 'utf8')).toBe('existing history');
+      });
+
+      it('counts as unreadable when every try fails, with the file untouched', async () => {
+        const s = setup({ engine: fakeEngine({ failOpen: 'attach_failed' }), reopenDelaysMs: [0, 0, 0] });
+        existing(s);
+
+        expect(await refusal(s.store.db(ALICE))).toBe('db_unreadable');
+
+        expect(s.engine.state.opens).toHaveLength(4);
+        expect(readFileSync(s.fileOf(ALICE), 'utf8')).toBe('existing history');
+      });
+
+      it('asks again on the next call after giving up', async () => {
+        const s = setup({ engine: fakeEngine({ failOpen: 'attach_failed', failFirst: 1 }) });
+        existing(s);
+
+        expect(await refusal(s.store.db(ALICE))).toBe('db_unreadable');
+        await expect(s.store.db(ALICE)).resolves.toBeDefined();
+      });
+
+      it('does not try again when there was no file to hold', async () => {
+        const s = setup({ engine: fakeEngine({ failOpen: 'attach_failed' }), reopenDelaysMs: [0, 0, 0] });
+
+        expect(await refusal(s.store.db(ALICE))).toBe('engine_unavailable');
+
+        expect(s.engine.state.opens).toHaveLength(1);
+      });
+
+      it('does not try again for a failure that is not the attach', async () => {
+        const s = setup({ engine: fakeEngine({ failOpen: 'lock_failed' }), reopenDelaysMs: [0, 0, 0] });
+        existing(s);
+
+        expect(await refusal(s.store.db(ALICE))).toBe('engine_unavailable');
+
+        expect(s.engine.state.opens).toHaveLength(1);
+      });
+
+      it('stops trying once the store closes', async () => {
+        const s = setup({ engine: fakeEngine({ failOpen: 'attach_failed' }), reopenDelaysMs: [5, 5, 5] });
+        existing(s);
+
+        const opening = refusal(s.store.db(ALICE));
+        await tick();
+        await s.store.close();
+
+        expect(await opening).toBe('db_unreadable');
+        expect(s.engine.state.opens).toHaveLength(1);
+      });
     });
 
     it('a new file the engine cannot create: engine_unavailable, not an unreadable history', async () => {
