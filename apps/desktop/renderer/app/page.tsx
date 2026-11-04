@@ -7,6 +7,7 @@ import type {
   GameStatusInfo,
   LiveDiagnosticsDumpOutcome,
   MarketQuoteCurrency,
+  LoginItemBlock,
   SettingsWriteReason,
   UpdateStatus,
 } from '@bombfarm/contracts';
@@ -32,7 +33,7 @@ import { DataNoticesBanner } from './data-notices-banner';
 import { useDataNotices } from '../lib/account/use-data-notices';
 import { useServerAllocationRequests } from '../lib/account/use-server-allocation-requests';
 import { AccountHeroDataFlags } from '../lib/account/account-hero-data-flags';
-import { createSettingsHandlers, loadStoredSettings, type SettingsSink } from './settings-handlers';
+import { createSettingsHandlers, loadLoginItemStatus, loadStoredSettings, type SettingsSink } from './settings-handlers';
 import { ShellActions } from './shell-actions';
 import { ShellWindowControls } from './shell-window-controls';
 import { ConsentGate, isConsentGateVisible } from './consent-gate';
@@ -64,6 +65,7 @@ import { AccountView } from './account/account-view';
 import { ConsentSection } from './settings/consent-section';
 import { ForgeSection } from './settings/forge-section';
 import { GameSection } from './settings/game-section';
+import { StartupSection } from './settings/startup-section';
 import { UsageSection } from './settings/usage-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { PremiumSection } from './settings/premium-section';
@@ -101,6 +103,9 @@ export default function HomePage() {
   const [marketQuoteCurrencyWarning, setMarketQuoteCurrencyWarning] = useState<SettingsWriteReason | null>(null);
   const [usagePingEnabled, setUsagePingEnabled] = useState(DEFAULT_SETTINGS.usagePingEnabled);
   const [usagePingWarning, setUsagePingWarning] = useState<SettingsWriteReason | null>(null);
+  const [startWithWindows, setStartWithWindows] = useState(DEFAULT_SETTINGS.startWithWindows);
+  const [startWithWindowsWarning, setStartWithWindowsWarning] = useState<SettingsWriteReason | null>(null);
+  const [loginItemBlock, setLoginItemBlock] = useState<LoginItemBlock | null>(null);
 
   const sink = useMemo<SettingsSink>(
     () => ({
@@ -111,12 +116,14 @@ export default function HomePage() {
       restartGameOnExit: { apply: setRestartGameOnExit, warn: setRestartGameOnExitWarning },
       marketQuoteCurrency: { apply: setMarketQuoteCurrency, warn: setMarketQuoteCurrencyWarning },
       usagePingEnabled: { apply: setUsagePingEnabled, warn: setUsagePingWarning },
+      startWithWindows: { apply: setStartWithWindows, warn: setStartWithWindowsWarning },
     }),
     [],
   );
 
   useEffect(() => {
     loadStoredSettings(getBridge, sink);
+    void loadLoginItemStatus(getBridge, setLoginItemBlock);
   }, [sink]);
 
   useEffect(() => {
@@ -127,7 +134,7 @@ export default function HomePage() {
     document.documentElement.lang = locale;
   }, [locale]);
 
-  const handlers = useMemo(() => createSettingsHandlers(getBridge, sink), [sink]);
+  const handlers = useMemo(() => createSettingsHandlers(getBridge, sink, setLoginItemBlock), [sink]);
 
   return (
     <CopyProvider locale={locale ?? DEFAULT_SETTINGS.locale}>
@@ -153,6 +160,10 @@ export default function HomePage() {
         usagePingEnabled={usagePingEnabled}
         onUsagePingEnabledChange={handlers.onUsagePingEnabledChange}
         usagePingWarning={usagePingWarning}
+        startWithWindows={startWithWindows}
+        onStartWithWindowsChange={handlers.onStartWithWindowsChange}
+        startWithWindowsWarning={startWithWindowsWarning}
+        loginItemBlock={loginItemBlock}
       />
     </CopyProvider>
   );
@@ -180,6 +191,10 @@ function HomePageContent({
   usagePingEnabled,
   onUsagePingEnabledChange,
   usagePingWarning,
+  startWithWindows,
+  onStartWithWindowsChange,
+  startWithWindowsWarning,
+  loginItemBlock,
 }: {
   locale: AppLocale;
   onLocaleChange: (next: AppLocale) => void;
@@ -202,6 +217,10 @@ function HomePageContent({
   usagePingEnabled: boolean;
   onUsagePingEnabledChange: (next: boolean) => void;
   usagePingWarning: SettingsWriteReason | null;
+  startWithWindows: boolean;
+  onStartWithWindowsChange: (next: boolean) => void;
+  startWithWindowsWarning: SettingsWriteReason | null;
+  loginItemBlock: LoginItemBlock | null;
 }) {
   const t = useCopy();
   const { lang } = useLocale();
@@ -460,6 +479,12 @@ function HomePageContent({
                 restartGameOnExit={restartGameOnExit}
                 onRestartGameOnExitChange={onRestartGameOnExitChange}
                 persistWarning={restartGameOnExitWarning}
+              />
+              <StartupSection
+                startWithWindows={startWithWindows}
+                onStartWithWindowsChange={onStartWithWindowsChange}
+                persistWarning={startWithWindowsWarning}
+                loginItemBlock={loginItemBlock}
               />
               <ForgeSection
                 forgeWritesEnabled={forgeWritesEnabled}

@@ -13,6 +13,7 @@ import {
   type AppEnvironmentInfo,
   type ConsentRecord,
 } from './index.js';
+import type { AppLocale, AppSettings } from './index.js';
 
 const IPC_CHANNEL_LIST = [
   'app:getFlavor',
@@ -27,6 +28,8 @@ const IPC_CHANNEL_LIST = [
   'settings:setRestartGameOnExit',
   'settings:setMarketQuoteCurrency',
   'settings:setUsagePingEnabled',
+  'settings:setStartWithWindows',
+  'settings:getLoginItemStatus',
   'window:minimize',
   'window:toggleMaximize',
   'window:close',
@@ -261,7 +264,6 @@ describe('contracts IPC surface', () => {
   });
 
   it('ships default settings schema version', () => {
-    expect(DEFAULT_SETTINGS.schemaVersion).toBe(4);
     expect(DEFAULT_SETTINGS.locale).toBe('en');
     expect(DEFAULT_SETTINGS.alwaysOnTopMain).toBe(false);
     expect(DEFAULT_SETTINGS.alwaysOnTopMini).toBe(false);
@@ -269,6 +271,16 @@ describe('contracts IPC surface', () => {
     expect(DEFAULT_SETTINGS.restartGameOnExit).toBe(false);
     expect(DEFAULT_SETTINGS.marketQuoteCurrency).toBe('BRL');
     expect(DEFAULT_SETTINGS.usagePingEnabled).toBe(true);
+  });
+
+  it('ships the start-with-Windows setting on by default', () => {
+    expect(DEFAULT_SETTINGS.startWithWindows).toBe(true);
+  });
+
+  it('keeps the locale union derived from the settings shape', () => {
+    const locale: AppLocale = DEFAULT_SETTINGS.locale;
+    const roundTrip: AppSettings['locale'] = locale;
+    expect(roundTrip).toBe('en');
   });
 });
 

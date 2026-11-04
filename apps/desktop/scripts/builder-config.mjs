@@ -86,7 +86,15 @@ export function createBuilderConfig(flavor) {
     },
     // Replaces electron-builder's default `files` list. Both the main window and the tray load
     // `assets/icon.ico` at runtime, so packaged builds must ship the whole assets tree.
-    files: ['dist/**/*', 'renderer/out/**/*', 'package.json', '!**/*.map', 'assets/**/*'],
+    // `installer.nsh` is read while the installer is built and has no use inside the app.
+    files: [
+      'dist/**/*',
+      'renderer/out/**/*',
+      'package.json',
+      '!**/*.map',
+      'assets/**/*',
+      '!assets/installer.nsh',
+    ],
     // frida ships one large prebuilt native addon (`frida_binding.node`), resolved at require()
     // time by walking real filesystem paths under its own package directory — dlopen cannot load
     // a `.node` file from inside app.asar, and the `bindings` package's own path search would not

@@ -7,6 +7,7 @@ import {
   ipcMain,
   Menu,
   nativeImage,
+  Notification,
   powerMonitor,
   screen,
   session,
@@ -22,6 +23,7 @@ import {
   type AppLocale,
   type AppSettings,
   type SettingsWriteResult,
+  type StartWithWindowsWriteResult,
   type UsagePingAccount,
 } from '@bombfarm/contracts';
 import { createPacingGate, initialConsent, isGranted, trayTextFor } from '@bombfarm/game-api';
@@ -64,8 +66,11 @@ import {
 } from './renderer-protocol.js';
 import { requestAccountRead } from './game-api/account-read-request.js';
 import { createAccountRefresh, type AccountRefreshDeps, type AccountRefreshHandle } from './game-api/account-refresh.js';
-import { createConsentApplier } from './game-api/consent-applier.js';
+import { createLoginItemConsentApplier } from './shell/consent-login-item.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
+import { createShellNoticeStore, type ShellNoticeStore } from './game-api/shell-notice-store.js';
+import { createLocalizedFirstHideAnnouncer } from './shell/localized-first-hide-announcer.js';
+import { createNotificationNoticePort } from './shell/first-hide-notification.js';
 import { createLiveConsentGate } from './game-api/live-consent-gate.js';
 import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
 import { createWindowLayoutStore, type WindowLayoutStore } from './game-api/window-layout-store.js';
@@ -118,8 +123,12 @@ import {
   applyLocale as applyLocaleSettings,
   applyMarketQuoteCurrency as applyMarketQuoteCurrencySettings,
   applyRestartGameOnExit as applyRestartGameOnExitSettings,
+  applyStartWithWindows as applyStartWithWindowsSettings,
   applyUsagePingEnabled as applyUsagePingEnabledSettings,
 } from './shell/settings-apply.js';
+import type { LoginItemOutcome } from './shell/login-item.js';
+import { createLoginItemReconciler } from './shell/login-item-reconciler.js';
+import { createElectronLoginItemPort } from './shell/login-item-electron.js';
 import { accountIdentityOf, createElectronUsagePing, type UsagePing } from './usage-ping/index.js';
 import { createElectronTray } from './shell/electron-tray.js';
 import { resolveAppIconPath } from './shell/app-icon-path.js';
@@ -167,6 +176,8 @@ let gameReader: GameReaderService | null = null;
 let accountStore: AccountStore | null = null;
 let accountRefresh: AccountRefreshHandle | null = null;
 let consentStore: ConsentStore | null = null;
+let shellNoticeStore: ShellNoticeStore | null = null;
+let firstHideAnnouncer: ReturnType<typeof createLocalizedFirstHideAnnouncer> | null = null;
 let settingsStore: SettingsStore | null = null;
 let liveSource: LiveSource | null = null;
 let observationCapture: ObservationCapture | null = null;
@@ -206,6 +217,17 @@ let miniLiveController: MiniLiveController | null = null;
 let miniLayoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
 let gameKeepAlive: GameKeepAlive | null = null;
 let usagePing: UsagePing | null = null;
+/** Built in `bootstrap()` once settings and consent exist; the consent hook below reads it lazily. */
+let loginItem: ReturnType<typeof createLoginItemReconciler> | null = null;
+
+/** Runs the reconcile and logs a block with an event-style key; never throws into its caller. */
+function reconcileLoginItemNow(startWithWindows?: boolean): LoginItemOutcome {
+  const outcome = loginItem?.reconcile(startWithWindows) ?? { applied: false as const, block: 'failed' as const };
+  if (!outcome.applied) {
+    log.warn({ scope: 'main', event: 'login_item.blocked', block: outcome.block });
+  }
+  return outcome;
+}
 
 const emitEvent = createEventEmitter({ getWindows: () => BrowserWindow.getAllWindows() });
 /** For an event only the main window's screens act on; the compact window never hears it. */
@@ -215,7 +237,7 @@ const emitToMainWindow = createEventEmitter({ getWindows: () => (mainWindow === 
  *  consent:* handler below goes through. Every dep below reads the module-level
  *  `let` bindings lazily, through its own closure, because they are still null at this point in
  *  the module and are only assigned once `bootstrap()` runs. */
-const applyConsentEvent = createConsentApplier({
+const applyConsentEvent = createLoginItemConsentApplier({
   read: () => consentStore?.read() ?? initialConsent(),
   write: (next) => {
     consentStore?.write(next);
@@ -245,6 +267,7 @@ const applyConsentEvent = createConsentApplier({
       gameReader?.pollNow();
     },
   ],
+  reconcileLoginItem: reconcileLoginItemNow,
   onError: (error) => {
     log.error({ scope: 'main', event: 'consent.pre_persist_hook_failed', error: String(error) });
   },
@@ -314,6 +337,15 @@ function applyUsagePingEnabled(enabled: unknown): SettingsWriteResult {
     setEnabled: (on) => {
       usagePing?.setEnabled(on);
     },
+    persist: persistSettings,
+  });
+}
+
+function applyStartWithWindows(enabled: unknown): StartWithWindowsWriteResult {
+  return applyStartWithWindowsSettings({
+    current: currentSettings,
+    enabled,
+    reconcile: reconcileLoginItemNow,
     persist: persistSettings,
   });
 }
@@ -417,6 +449,8 @@ function registerIpcHandlers(): void {
       applyForgeWritesEnabled,
       applyRestartGameOnExit,
       applyUsagePingEnabled,
+      applyStartWithWindows,
+      getLoginItemStatus: () => loginItem?.status() ?? { registered: false, block: null },
       applyMarketQuoteCurrency,
       imageClipboard: {
         decodePng: (buffer) => nativeImage.createFromBuffer(buffer),
@@ -770,6 +804,7 @@ function setupShellLifecycle(env: ReturnType<typeof resolveAppEnv>): void {
     if (shellLifecycle?.onWindowClose() === 'hide') {
       event.preventDefault();
       mainWindow?.hide();
+      firstHideAnnouncer?.announceIfFirst(true);
       log.info({ scope: 'main', event: 'window.hidden' });
     }
   });
@@ -807,6 +842,16 @@ async function bootstrap(): Promise<void> {
   // and before the game reader so its own live-mode process lookups can be gated by the same
   // predicate the live tap already checks.
   consentStore = createConsentStore(accountOpen.db);
+  shellNoticeStore = createShellNoticeStore(accountOpen.db);
+  firstHideAnnouncer = createLocalizedFirstHideAnnouncer({
+    notice: createNotificationNoticePort(Notification),
+    latch: shellNoticeStore,
+    getLocale: () => currentSettings.locale,
+    show: () => {
+      shellLifecycle?.show();
+    },
+    log,
+  });
 
   gameReader = new GameReaderService(
     userDataDir,
@@ -966,6 +1011,16 @@ async function bootstrap(): Promise<void> {
   const { locale, source } = resolveStartupLocale({ stored: storedSettings?.locale ?? null, systemLocale });
   currentSettings = storedSettings ? { ...storedSettings, locale } : { ...DEFAULT_SETTINGS, locale };
   log.info({ scope: 'main', event: 'locale.resolved', locale, source, systemLocale });
+
+  // The only place the real `app` meets the login-item port; settings and consent are both loaded.
+  loginItem = createLoginItemReconciler({
+    getStartWithWindows: () => currentSettings.startWithWindows,
+    isConsentGranted: () => isGranted(consentStore?.read() ?? initialConsent()),
+    isPackaged: resolveAppEnv().isPackaged,
+    platform: process.platform,
+    port: createElectronLoginItemPort(app, resolveAppEnv().appId),
+  });
+  reconcileLoginItemNow();
 
   gameKeepAlive = createGameKeepAlive({
     clock: { now: () => Date.now(), setTimeout, clearTimeout },
@@ -1528,6 +1583,8 @@ if (!gotLock) {
         },
         releaseConsentStore: () => {
           consentStore = null;
+          shellNoticeStore = null;
+          firstHideAnnouncer = null;
         },
         persistMainWindowLayout: () => {
           persistMainWindowLayout(true);

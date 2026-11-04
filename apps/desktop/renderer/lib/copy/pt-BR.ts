@@ -135,6 +135,19 @@ export const ptBR: Copy = {
     'Com isto ligado, se o jogo fechar enquanto o companion já está aberto, a Steam inicia-o de novo. O companion não inicia o jogo ao abrir. Desligado por padrão.',
   settingsRestartGameOnExitNotSavedTitle: 'Configuração do jogo alterada, mas não salva',
 
+  // settingsStartWithWindows* — abrir o companion quando você entra no Windows (ligado por padrão)
+  settingsStartWithWindowsSectionTitle: 'Inicialização',
+  settingsStartWithWindowsLabel: 'Iniciar com o Windows',
+  settingsStartWithWindowsHelp:
+    'Abre o companion quando você entra no Windows. Só vale enquanto o acesso à conta estiver permitido; até lá sua escolha fica guardada e nada é iniciado. Ligado por padrão.',
+  settingsStartWithWindowsNotSavedTitle: 'Configuração de inicialização alterada, mas não salva',
+  settingsStartWithWindowsUnpackagedText:
+    'Isto só funciona no app instalado, no Windows; por isso o interruptor fica desligado aqui.',
+  settingsStartWithWindowsFailedText:
+    'O Windows não aceitou a mudança, então o app não vai iniciar com o Windows até funcionar. Tente de novo.',
+  settingsStartWithWindowsDisabledByWindowsText:
+    'O Windows desativou isto. Para ligar de novo, abra Configurações do Windows → Aplicativos → Inicialização, ou Gerenciador de Tarefas → Aplicativos de inicialização, e ative o companion.',
+
   // settingsUsage* — o aviso de uso a cada hora, e o único interruptor que o torna anônimo
   settingsUsageSectionTitle: 'Contagem de uso',
   settingsUsagePingLabel: 'Incluir minha conta na contagem de uso',
@@ -189,7 +202,7 @@ export const ptBR: Copy = {
   // settingsConsent* — o controle de revogar o acesso à conta (Configurações só é alcançável já permitido)
   settingsConsentSectionTitle: 'Acesso à conta',
   settingsConsentStatusGranted: 'Acesso: permitido',
-  settingsConsentHelpGranted: 'O companion lê sua conta e permanece conectado ao cliente do jogo.',
+  settingsConsentHelpGranted: 'Enquanto isto estiver ativado, o companion lê sua conta e se conecta ao cliente do jogo. O app em si continua em execução em segundo plano depois que você fecha a janela; para encerrá-lo, use o ícone na área de notificação.',
   settingsConsentRevokeAction: 'Desativar',
 
   // settingsDiagnostics* — o controle manual de gravação do anel de quadros (um recurso de relatório de erro)

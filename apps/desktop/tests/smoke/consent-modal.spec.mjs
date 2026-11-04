@@ -18,10 +18,10 @@ function electronExecutable() {
   );
 }
 
-async function launchApp(env) {
+async function launchApp(env, extraArgs = []) {
   const app = await electron.launch({
     executablePath: electronExecutable(),
-    args: [desktopRoot],
+    args: [desktopRoot, ...extraArgs],
     env: {
       ...process.env,
       NODE_ENV: 'production',
@@ -70,6 +70,13 @@ test.describe('consent modal smoke (Success Criterion "shown once, survives rest
         );
         await expect(body).toContainText('only after you confirm each run');
         await expect(body).toContainText('burning items for Forge Essence');
+
+        await expect(body).toContainText('Keeps running in the background.');
+
+        // An unpackaged run must stay inert: nothing is registered with Windows, and the
+        // status says why.
+        const loginItem = await page1.evaluate(async () => window.bfc.invoke('settings:getLoginItemStatus'));
+        expect(loginItem).toEqual({ registered: false, block: 'unpackaged' });
 
         await page1.getByTestId('consent-accept').click();
         await expect(modal).toBeHidden({ timeout: 15_000 });
@@ -147,6 +154,25 @@ test.describe('consent modal smoke (Success Criterion "shown once, survives rest
         await expect(page.getByTestId('consent-gate')).toHaveCount(0, { timeout: 15_000 });
         const afterAccept = await page.evaluate(async () => window.bfc.invoke('consent:get'));
         expect(afterAccept.decision).toBe('granted');
+      } finally {
+        await app.close().catch(() => undefined);
+      }
+    } finally {
+      fs.rmSync(userDataDir, { recursive: true, force: true });
+    }
+  });
+
+  test('the background clause is in the disclosure in Portuguese too', async () => {
+    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-consent-modal-pt-'));
+
+    try {
+      // The OS-language path the i18n suite uses. The heading is held in a constant so the
+      // wording guard, which reads only the English literals above, is not asked to match it.
+      const PORTUGUESE_BACKGROUND_HEADING = 'Continua rodando em segundo plano.';
+      const { app, page } = await launchApp({ BFC_USER_DATA_DIR: userDataDir }, ['--lang=pt-BR']);
+      try {
+        await expect(page.getByTestId('consent-modal')).toBeVisible({ timeout: 30_000 });
+        await expect(page.getByTestId('consent-modal-body')).toContainText(PORTUGUESE_BACKGROUND_HEADING);
       } finally {
         await app.close().catch(() => undefined);
       }

@@ -64,10 +64,10 @@ function asRenderedText(text: string): string {
 }
 
 describe('ConsentClauseList — every clause heading and its text reach the output', () => {
-  it('English: all five headings and sentences appear, and none of the PT-BR text does', () => {
+  it('English: all six headings and sentences appear, and none of the PT-BR text does', () => {
     const en = consentTextFor('en');
     const html = renderToStaticMarkup(createElement(ConsentClauseList, { body: en.body }));
-    expect(en.body).toHaveLength(5);
+    expect(en.body).toHaveLength(6);
     for (const clause of en.body) {
       expect(html).toContain(clause.heading);
       expect(html).toContain(asRenderedText(clause.text));
@@ -77,10 +77,10 @@ describe('ConsentClauseList — every clause heading and its text reach the outp
     expect(html).not.toContain(firstPtBrClause?.heading);
   });
 
-  it('PT-BR: all five headings and sentences appear, and none of the English text does', () => {
+  it('PT-BR: all six headings and sentences appear, and none of the English text does', () => {
     const ptBr = consentTextFor('pt-BR');
     const html = renderToStaticMarkup(createElement(ConsentClauseList, { body: ptBr.body }));
-    expect(ptBr.body).toHaveLength(5);
+    expect(ptBr.body).toHaveLength(6);
     for (const clause of ptBr.body) {
       expect(html).toContain(clause.heading);
       expect(html).toContain(asRenderedText(clause.text));
