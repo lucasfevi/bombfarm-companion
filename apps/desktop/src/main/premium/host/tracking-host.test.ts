@@ -61,7 +61,7 @@ describe('the engine probe', () => {
     await rm(root, { recursive: true, force: true });
   });
 
-  function build() {
+  function build(extra: { timedProbe?: boolean } = {}) {
     const probe = vi.fn(() => Promise.resolve({ ok: true, version: 'v' } as const));
     const open = vi.fn(async (file: string) => {
       if (!existsSync(file)) await writeFile(file, 'x');
@@ -89,6 +89,7 @@ describe('the engine probe', () => {
       log: createLogSink(),
       now: () => 0,
       mono: () => 0,
+      ...extra,
     });
     return { host, probe };
   }
@@ -109,6 +110,19 @@ describe('the engine probe', () => {
     expect(probe).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(1);
+    expect(probe).toHaveBeenCalledTimes(1);
+
+    host.dispose();
+  });
+
+  it('stays unarmed when the timed probe is off, and still runs on the first db call', async () => {
+    const { host, probe } = build({ timedProbe: false });
+
+    host.armProbe();
+    await vi.advanceTimersByTimeAsync(TRACKING_PROBE_DELAY_MS * 2);
+    expect(probe).not.toHaveBeenCalled();
+
+    await host.handlers.db({ op: 'status' });
     expect(probe).toHaveBeenCalledTimes(1);
 
     host.dispose();

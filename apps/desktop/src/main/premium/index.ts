@@ -96,6 +96,8 @@ export interface ElectronTrackingDeps {
   readonly extensionPath: string;
   /** The game's own credentials, as the plain values a worker must never receive. */
   readonly gameSecrets: () => readonly string[];
+  /** False leaves the engine probe to the first `db` call; only an unpackaged test run says so. */
+  readonly timedProbe?: boolean;
   /** The battle log and the game settings, read only for a player who granted consent. */
   readonly battleLog: {
     readonly source: BattleLogSource;
@@ -340,6 +342,7 @@ function buildHost(
             tracking: {
               rows,
               extensionPath: tracking.extensionPath,
+              ...(tracking.timedProbe === undefined ? {} : { timedProbe: tracking.timedProbe }),
               playingAccountAllows: () => appPlayingAccount.allows(),
               accountKey: () => deps.readGameIdentity()?.accountId ?? null,
               // The game's credentials, the Premium sign-in token and the SteamID: none may reach a worker.

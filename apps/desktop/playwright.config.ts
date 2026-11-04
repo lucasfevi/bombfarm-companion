@@ -5,6 +5,12 @@ import { waitForHeavySlot } from '../../tools/cpu-budget.mjs';
 // sharing with it — see `waitForHeavySlot` in `tools/cpu-budget.mjs`. A no-op on CI.
 waitForHeavySlot('playwright:desktop');
 
+// The timed engine probe's first load blocks the main process for about 80 ms, 5 s after launch. An
+// `app.evaluate` landing in that window fails with V8's "Promise was collected", which Playwright
+// reports as a destroyed context, in whichever spec it hits. Every launch inherits this; the probe
+// then runs on the first `db` call, and an installed build still runs it on the timer.
+process.env.BFC_TRACKING_TIMED_PROBE = 'off';
+
 export default defineConfig({
   testDir: './tests/smoke',
   // Fetches the pinned DuckDB extension the tracking specs need; a failed fetch fails the run.

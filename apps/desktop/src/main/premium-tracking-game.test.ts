@@ -35,6 +35,20 @@ function game(consent: ConsentRecord) {
   return createPremiumTrackingGame({ readConsent: () => consent, isPackaged: false, resourcesPath: 'R', mainDir: 'M' });
 }
 
+describe('the timed engine probe', () => {
+  const base = { readConsent: () => GRANTED, resourcesPath: 'R', mainDir: 'M' };
+  const off = { BFC_TRACKING_TIMED_PROBE: 'off' };
+
+  it('runs unless an unpackaged run turns it off', () => {
+    expect(createPremiumTrackingGame({ ...base, isPackaged: false }).timedProbe).toBe(true);
+    expect(createPremiumTrackingGame({ ...base, isPackaged: false, env: off }).timedProbe).toBe(false);
+  });
+
+  it('cannot be turned off in a packaged app', () => {
+    expect(createPremiumTrackingGame({ ...base, isPackaged: true, env: off }).timedProbe).toBe(true);
+  });
+});
+
 describe('the game side of the tracking capabilities', () => {
   it('reads the credential and the battle log for a player who granted consent', () => {
     const facts = game(GRANTED);

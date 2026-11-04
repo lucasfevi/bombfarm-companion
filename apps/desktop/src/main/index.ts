@@ -1264,6 +1264,7 @@ async function bootstrap(): Promise<void> {
         isPackaged: resolveAppEnv().isPackaged,
         resourcesPath: process.resourcesPath,
         mainDir: __dirname,
+        env: process.env,
       }),
     },
     build: { isPackaged: env.isPackaged, bakedFlavor: readBakedFlavor(), builtFlavor: __BFC_BUILD_FLAVOR__ },

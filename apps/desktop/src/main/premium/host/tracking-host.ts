@@ -58,6 +58,8 @@ export interface TrackingHostDeps {
   readonly engine?: TrackingEngine;
   readonly feedSlot?: PremiumTapFeedSlot;
   readonly probeDelayMs?: number;
+  /** False: nothing arms the probe, so it runs on the first `db` call. Defaults to true. */
+  readonly timedProbe?: boolean;
 }
 
 export interface TrackingHost extends HostTracking {
@@ -238,7 +240,7 @@ export function createTrackingHost(deps: TrackingHostDeps): TrackingHost {
       return outcome;
     },
     armProbe() {
-      if (probeTimer !== null) return;
+      if (deps.timedProbe === false || probeTimer !== null) return;
       probeTimer = setTimeout(startProbe, deps.probeDelayMs ?? TRACKING_PROBE_DELAY_MS);
       probeTimer.unref();
     },

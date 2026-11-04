@@ -19,6 +19,8 @@ export interface PremiumTrackingGameDeps {
   readonly resourcesPath: string;
   /** The folder holding the built main process files. */
   readonly mainDir: string;
+  /** `process.env`, read only in an unpackaged run. */
+  readonly env?: Readonly<Record<string, string | undefined>>;
 }
 
 const EXTENSION_FILE = 'httpfs.duckdb_extension';
@@ -44,6 +46,7 @@ export function createPremiumTrackingGame(deps: PremiumTrackingGameDeps): Electr
   };
   return {
     extensionPath: trackingExtensionPath(deps),
+    timedProbe: deps.isPackaged || deps.env?.['BFC_TRACKING_TIMED_PROBE'] !== 'off',
     gameSecrets: () => {
       const granted = consent();
       return granted === null ? [] : readSessionSecrets(granted, undefined, sessionCfgPath(pathDeps));
