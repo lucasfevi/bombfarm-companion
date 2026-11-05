@@ -214,6 +214,11 @@ test.describe.serial('The tracking host, end to end', () => {
     // The worker heard both edges.
     const recorded = await rig.worker({ op: 'state' });
     expect(recorded.state).toMatchObject({ paused: 1, resumed: 1 });
+    // The pause closed the file; the first call after the resume opens it again, on the first try.
+    const reopened = await rig.db({ op: 'query', sql: 'SELECT v FROM t ORDER BY v' });
+    expect(reopened, JSON.stringify(reopened)).toMatchObject({ ok: true });
+    expect(rowsOf(reopened)).toEqual(['first-run', 'subject-one-only', 'tx-committed']);
+    expect(rig.mainLog()).not.toContain('premium.tracking_open_failed');
   });
 
   test('check three: when the licence ends the code goes and the tracking file stays; when it holds again the row reads back', async () => {

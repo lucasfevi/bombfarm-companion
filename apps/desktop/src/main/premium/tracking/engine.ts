@@ -21,6 +21,9 @@ export interface DuckConnection {
 export interface DuckRows {
   columnNames(): string[];
   getRowsJson(): unknown[][];
+  /** Whether the stream has been read to its end. */
+  readonly done: boolean;
+  readAll(): Promise<void>;
 }
 export interface DuckInstance {
   connect(): Promise<DuckConnection>;
@@ -73,7 +76,11 @@ export interface DbSession {
   inspect(sql: string): Promise<StatementInfo>;
   /** Runs one statement; answers the rows it changed. */
   run(sql: string, params?: readonly unknown[]): Promise<number>;
-  /** Runs one statement and reads at least `maxRows` rows (possibly a chunk more) or all of them. */
+  /**
+   * Runs one statement and answers at least `maxRows` rows (possibly a chunk more) or all of them.
+   * The statement is over when this settles: a result longer than `maxRows` is interrupted, which
+   * also fails an open transaction, while one that fits is not.
+   */
   query(sql: string, params: readonly unknown[] | undefined, maxRows: number): Promise<DbRows>;
   /** Aborts the statement in flight; safe from any timer. */
   interrupt(): void;
@@ -211,6 +218,22 @@ async function classified<T>(db: DuckConnection, poison: Poison, work: () => Pro
   }
 }
 
+/**
+ * Ends a stream that was not read to its end. A stream's native result keeps its connection's
+ * context and so the whole instance alive, with the attached file still open, after both closes.
+ * The binding frees that result only when V8 collects it, which took over a minute under real
+ * load, and a later statement does not release it; reading to the end does.
+ */
+async function endStream(db: DuckConnection, reader: DuckRows): Promise<void> {
+  if (reader.done) return;
+  try {
+    db.interrupt();
+    await reader.readAll();
+  } catch {
+    // a failed read ends the stream as well
+  }
+}
+
 function sessionOf(binding: DuckBinding, db: DuckConnection, poison: Poison): DbSession {
   return {
     async count(sql) {
@@ -245,10 +268,13 @@ function sessionOf(binding: DuckBinding, db: DuckConnection, poison: Poison): Db
     },
     async query(sql, params, maxRows) {
       refuseLoggerControl(sql);
+      // One row past the limit: a result that fits is read to its end and needs no interrupt.
       const reader = await classified(db, poison, () =>
-        db.streamAndReadUntil(sql, maxRows, params === undefined ? undefined : [...params]),
+        db.streamAndReadUntil(sql, maxRows + 1, params === undefined ? undefined : [...params]),
       );
-      return { columns: reader.columnNames(), rows: reader.getRowsJson() };
+      const rows = { columns: reader.columnNames(), rows: reader.getRowsJson() };
+      await endStream(db, reader);
+      return rows;
     },
     interrupt() {
       db.interrupt();
@@ -256,17 +282,23 @@ function sessionOf(binding: DuckBinding, db: DuckConnection, poison: Poison): Db
   };
 }
 
-function closeQuietly(instance: DuckInstance, connection: DuckConnection | null): void {
-  try {
-    connection?.closeSync();
-  } catch {
-    // best-effort: the instance close below releases it anyway
-  }
-  try {
+function closeQuietly(instance: DuckInstance, connection: DuckConnection | null, log: LogPort): void {
+  const attempt = (step: 'connection' | 'instance', close: () => void): void => {
+    try {
+      close();
+    } catch (error) {
+      // best-effort: a close that fails must not stop the next one, but it is never silent
+      try {
+        log.warn({ scope: 'premium', event: 'premium.tracking_close_failed', step, detail: openFailureDetail(error) });
+      } catch {
+        // a failing log must not turn a close into a throw
+      }
+    }
+  };
+  attempt('connection', () => connection?.closeSync());
+  attempt('instance', () => {
     instance.closeSync();
-  } catch {
-    // best-effort close of an instance that already failed
-  }
+  });
 }
 
 export function createTrackingEngine(deps: TrackingEngineDeps): TrackingEngine {
@@ -298,7 +330,7 @@ export function createTrackingEngine(deps: TrackingEngineDeps): TrackingEngine {
     } catch {
       return { ok: false, reason: 'probe_failed' };
     } finally {
-      if (instance !== null) closeQuietly(instance, connection);
+      if (instance !== null) closeQuietly(instance, connection, deps.log);
     }
   }
 
@@ -358,7 +390,7 @@ export function createTrackingEngine(deps: TrackingEngineDeps): TrackingEngine {
         if (row === undefined || String(row['v']) !== expected) throw new Error(`${name} did not read back`);
       }
     } catch (error) {
-      if (instance !== null) closeQuietly(instance, connection);
+      if (instance !== null) closeQuietly(instance, connection, deps.log);
       deps.log.warn({ scope: 'premium', event: 'premium.tracking_open_failed', step, detail: openFailureDetail(error) });
       throw error instanceof EngineOpenError ? error : new EngineOpenError(step, error);
     }
@@ -385,7 +417,7 @@ export function createTrackingEngine(deps: TrackingEngineDeps): TrackingEngine {
         closed = true;
         // A poisoned handle is abandoned: closing it would abort the process.
         if (poison.poisoned) return;
-        closeQuietly(owner, db);
+        closeQuietly(owner, db, deps.log);
       },
     };
   }

@@ -56,7 +56,7 @@ function tamperedCopy(): string {
 }
 
 /** A binding whose instances script their answers and count their closes. */
-function fakeBinding(options: { answer?: number; failOn?: RegExp; failCreate?: boolean; failMessage?: string }) {
+function fakeBinding(options: { answer?: number; failOn?: RegExp; failCreate?: boolean; failMessage?: string; failClose?: string }) {
   const state = { created: 0, closed: 0, sql: [] as string[] };
   const settings: Record<string, string> = {
     enable_external_access: 'false',
@@ -86,10 +86,13 @@ function fakeBinding(options: { answer?: number; failOn?: RegExp; failCreate?: b
               streamAndReadUntil: () => Promise.reject(new Error('the fake has no streams')),
               extractStatements: () => Promise.reject(new Error('the fake has no statements')),
               interrupt: () => undefined,
-              closeSync: () => undefined,
+              closeSync: () => {
+                if (options.failClose !== undefined) throw new Error(options.failClose);
+              },
             }),
           closeSync: () => {
             state.closed += 1;
+            if (options.failClose !== undefined) throw new Error(options.failClose);
           },
         });
       },
@@ -221,6 +224,71 @@ describe('the engine against the real binding and the signed extension', () => {
     }
   });
 
+  /**
+   * These bite on Windows, where the file lock conflicts inside one process: a stream read only in
+   * part keeps the instance, and so the file, open after both closes, until V8 collects the result.
+   * A later statement on the connection does not release it.
+   */
+  describe('a result read only in part', () => {
+    const gateRead = ['the one row the gate reads', 'SELECT json_serialize_sql($1::VARCHAR) AS j', ['SELECT 1'], 1] as const;
+    const overLimit = ['a result over its limit', 'SELECT * FROM range(1000000000000)', undefined, 10] as const;
+
+    it.each([gateRead, overLimit])('does not hold the file after close: %s', async (_label, sql, params, maxRows) => {
+      const file = join(folder('part-read'), 'track.duckdb');
+      const engine = realEngine().engine;
+      const first = await engine.open(file, KEY);
+      await first.run('CREATE TABLE t (id INTEGER)');
+      first.close();
+
+      for (let round = 0; round < 5; round += 1) {
+        const db = await engine.open(file, KEY);
+        await db.session(async (session) => {
+          await session.query(sql, params, maxRows);
+          await session.run('INSERT INTO t VALUES ($1)', [round]);
+        });
+        db.close();
+      }
+
+      const last = await engine.open(file, KEY);
+      try {
+        expect((await last.query('SELECT count(*)::INTEGER AS n FROM t'))[0]?.['n']).toBe(5);
+      } finally {
+        last.close();
+      }
+    });
+
+    it('answers the rows it read, and the connection takes the next statement', async () => {
+      const db = await realEngine().engine.open(join(folder('part-rows'), 'track.duckdb'), KEY);
+      try {
+        const read = await db.session((session) => session.query(overLimit[1], undefined, overLimit[3]));
+        expect(read.columns).toEqual(['range']);
+        expect(read.rows.length).toBeGreaterThan(overLimit[3]);
+        expect(read.rows.length).toBeLessThan(1_000_000);
+        expect(await db.session((session) => session.query('SELECT 40 + 2 AS answer', undefined, 1))).toMatchObject({
+          rows: [[42]],
+        });
+      } finally {
+        db.close();
+      }
+    });
+
+    it('a read that fits its limit leaves the open transaction usable', async () => {
+      const db = await realEngine().engine.open(join(folder('part-tx'), 'track.duckdb'), KEY);
+      try {
+        await db.run('CREATE TABLE t (id INTEGER)');
+        await db.session(async (session) => {
+          await session.run('BEGIN');
+          await session.query(gateRead[1], [...gateRead[2]], gateRead[3]);
+          await session.run('INSERT INTO t VALUES ($1)', [7]);
+          await session.run('COMMIT');
+        });
+        expect(await db.query('SELECT id::INTEGER AS id FROM t')).toEqual([{ id: 7 }]);
+      } finally {
+        db.close();
+      }
+    });
+  });
+
   it('logs why an open failed, without the key or the folder', async () => {
     const dir = folder('openlog');
     const file = join(dir, 'track.duckdb');
@@ -332,6 +400,23 @@ describe('a failed open', () => {
     expect(failure?.['detail']).toContain('IO Error');
     expect(JSON.stringify(failure)).not.toContain(KEY);
     expect(JSON.stringify(failure)).not.toContain('someone');
+  });
+
+  it('logs a close that fails, without the path, still closes the rest, and does not throw', async () => {
+    const fake = fakeBinding({ failClose: `IO Error: close of "C:${String.fromCharCode(92)}Users${String.fromCharCode(92)}someone${String.fromCharCode(92)}track.duckdb" failed` });
+    const { log, records } = recordingLog();
+    const engine = createTrackingEngine({ extensionPath: 'x', log, loadBinding: () => fake.binding });
+
+    const db = await engine.open('db', KEY);
+    expect(() => {
+      db.close();
+    }).not.toThrow();
+
+    expect(fake.state.closed).toBe(1);
+    const failures = records.filter((record) => record['event'] === 'premium.tracking_close_failed');
+    expect(failures.map((record) => record['step'])).toEqual(['connection', 'instance']);
+    expect(failures[0]?.['detail']).toContain('IO Error');
+    expect(JSON.stringify(failures)).not.toContain('someone');
   });
 
   it('closes the instance and throws when a setting does not read back as locked', async () => {
