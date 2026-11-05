@@ -1,4 +1,4 @@
-import { expect, electron } from './smoke-test.mjs';
+import { expect, expectCleanExit, electron, quitApp } from './smoke-test.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -119,8 +119,10 @@ export async function createTrackingRig({ tmpPrefix = 'bfc-premium-tracking-' } 
     },
 
     async quit() {
-      await rig.app?.close().catch(() => undefined);
+      if (!rig.app) return;
+      const code = await quitApp(rig.app);
       rig.app = undefined;
+      expectCleanExit(code);
     },
 
     async acceptConsent() {
@@ -237,9 +239,12 @@ export async function createTrackingRig({ tmpPrefix = 'bfc-premium-tracking-' } 
     },
 
     async dispose() {
-      await rig.quit();
-      await stub.close();
-      fs.rmSync(tempDir, { recursive: true, force: true });
+      try {
+        await rig.quit();
+      } finally {
+        await stub.close();
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
     },
   };
   return rig;
