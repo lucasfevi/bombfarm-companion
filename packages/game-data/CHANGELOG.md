@@ -1,5 +1,12 @@
 # @bombfarm/game-data
 
+## 0.0.27
+
+### Patch Changes
+
+- Updated dependencies [f94c5f3]
+  - @bombfarm/contracts@0.16.2
+
 ## 0.0.26
 
 ### Patch Changes

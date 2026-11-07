@@ -1,5 +1,30 @@
 # @bombfarm/desktop
 
+## 0.33.0
+
+### Minor Changes
+
+- f94c5f3: Settings has a new "Start with Windows" switch, on by default. The app starts when you sign in to Windows, and only while account access is allowed; turn account access off and it stops starting. If you switch the app off in Windows' own Startup settings, it stays off and the switch says so, and it also says when Windows won't let the app register. Uninstalling the app removes its startup entry.
+
+  The first time you close the window while the app keeps running in the notification area, it now tells you once that it is still running and how to quit it.
+
+  The account-access disclosure has a new line, "Keeps running in the background", so you will be asked to accept it again. Your saved settings carry over unchanged.
+
+### Patch Changes
+
+- 26892f1: The diagnostic frame dump now masks your game session token from the moment the app starts, not only after the first account refresh.
+- Updated dependencies [f94c5f3]
+  - @bombfarm/contracts@0.16.2
+  - @bombfarm/game-api@0.8.9
+  - @bombfarm/domain@1.15.4
+  - @bombfarm/game-data@0.0.27
+  - @bombfarm/pricing@0.4.9
+  - @bombfarm/account@0.3.24
+  - @bombfarm/farm@1.5.6
+  - @bombfarm/game-art@0.8.13
+  - @bombfarm/hero@0.7.8
+  - @bombfarm/team-plan@0.8.6
+
 ## 0.32.3
 
 ### Patch Changes
