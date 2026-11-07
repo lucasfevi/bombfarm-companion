@@ -1,5 +1,12 @@
 # @bombfarm/account
 
+## 0.3.24
+
+### Patch Changes
+
+- @bombfarm/domain@1.15.4
+- @bombfarm/game-art@0.8.13
+
 ## 0.3.23
 
 ### Patch Changes

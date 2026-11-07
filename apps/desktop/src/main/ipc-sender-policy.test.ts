@@ -287,3 +287,13 @@ describe('ipcSenderRejectionRecord', () => {
     expect(Object.keys(record).sort()).toEqual(['channel', 'event', 'origin', 'reason', 'scope', 'window']);
   });
 });
+
+describe('the tracking history channels', () => {
+  it.each(['premium:trackingHistory', 'premium:clearTrackingHistory', 'premium:sectionMountFailed'] as const)(
+    'refuses %s from the compact window and lets the main window call it',
+    (channel) => {
+      expect(decide({ senderWindow: 'mini-live', channel })).toEqual({ allowed: false, reason: 'channel_not_allowed' });
+      expect(decide({ senderWindow: 'main', channel })).toEqual({ allowed: true });
+    },
+  );
+});

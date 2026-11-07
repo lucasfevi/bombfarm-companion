@@ -1,6 +1,7 @@
 import type { LicenceState, PremiumLicenceView } from '@bombfarm/contracts';
 import { SUPPORT_URL } from '@bombfarm/contracts';
-import { Button } from '@bombfarm/ui';
+import { useState } from 'react';
+import { Button, ConfirmDialog } from '@bombfarm/ui';
 import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
 import { formatDate } from '../../lib/format';
 
@@ -19,7 +20,10 @@ const LINE_KEY = {
 } as const satisfies Record<LineState, { done: keyof Copy; pending: keyof Copy }>;
 
 /** States in which the Use Premium on this PC button shows; `move_limit` shows it disabled. */
-const BUTTON_STATES: readonly LicenceState[] = ['elsewhere', 'mismatch', 'released', 'move_limit'];
+const BUTTON_STATES: readonly LicenceState[] = ['elsewhere', 'mismatch', 'released', 'moved', 'move_limit'];
+
+/** The `moved` line when the Lease names no holder. */
+const MOVED_AWAY_KEY = { done: 'premiumLicenceMovedAway', pending: 'premiumLicenceMovedAwayPending' } as const;
 
 function isLineState(state: LicenceState): state is LineState {
   return state !== 'signed_out' && state !== 'inactive';
@@ -36,9 +40,11 @@ export function PremiumLicenceLine({
 }) {
   const t = useCopy();
   const { locale } = useLocale();
+  const [confirming, setConfirming] = useState(false);
   if (licence === null || !isLineState(licence.state)) return null;
 
-  const keys = LINE_KEY[licence.state];
+  const nameless = licence.state === 'moved' && (licence.holderName ?? '') === '';
+  const keys = nameless ? MOVED_AWAY_KEY : LINE_KEY[licence.state];
   const text = sub(t[licence.removalDone ? keys.done : keys.pending], {
     name: licence.holderName ?? '',
     date: licence.lastMoveAt === undefined ? '' : formatDate(licence.lastMoveAt, locale),
@@ -71,17 +77,28 @@ export function PremiumLicenceLine({
       <p data-testid="premium-licence-line" className="text-sm text-ink">
         {line}
       </p>
-      {BUTTON_STATES.includes(licence.state) ? (
+      {BUTTON_STATES.includes(licence.state) && (licence.state !== 'moved' || licence.removalDone) ? (
         <div>
           <Button
             type="button"
             variant="default"
             data-testid="premium-use-here"
             disabled={licence.state === 'move_limit' || licence.moveInFlight}
-            onClick={onUseHere}
+            onClick={() => { setConfirming(true); }}
           >
             {t.premiumLicenceUseHere}
           </Button>
+          <ConfirmDialog
+            open={confirming}
+            onOpenChange={setConfirming}
+            title={t.premiumMoveConfirmTitle}
+            description={t.premiumMoveConfirmBody}
+            confirmLabel={t.premiumLicenceUseHere}
+            cancelLabel={t.premiumMoveConfirmCancel}
+            closeLabel={t.confirmDialogClose}
+            destructive={false}
+            onConfirm={onUseHere}
+          />
         </div>
       ) : null}
       {licence.moveFailed ? (

@@ -1,4 +1,4 @@
-import { test, expect, electron } from './smoke-test.mjs';
+import { test, expect, electron, expectCleanExit, quitApp } from './smoke-test.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -140,8 +140,10 @@ test.describe.serial('The Premium capabilities, end to end', () => {
   }
 
   async function quit() {
-    await app?.close().catch(() => undefined);
+    if (!app) return;
+    const code = await quitApp(app);
     app = undefined;
+    expectCleanExit(code);
   }
 
   async function acceptConsent() {
@@ -214,9 +216,12 @@ test.describe.serial('The Premium capabilities, end to end', () => {
   });
 
   test.afterAll(async () => {
-    await quit();
-    await stub?.close();
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    try {
+      await quit();
+    } finally {
+      await stub?.close();
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   test('check one: signed out, nothing mounts and no bundle is asked for', async () => {

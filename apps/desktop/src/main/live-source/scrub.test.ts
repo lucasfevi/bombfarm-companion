@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PERSONAL_FIELDS, redactText, scrubJsonValue } from './scrub.js';
+import { CREDENTIAL_KEY_NAMES, PERSONAL_FIELDS, redactText, scrubCredentials, scrubJsonValue } from './scrub.js';
 
 const NO_SECRETS = new Set<string>();
 
@@ -62,5 +62,78 @@ describe('redactText', () => {
 
   it('ignores an empty registered secret rather than splitting the text on it', () => {
     expect(redactText('unchanged', new Set(['']), null)).toBe('unchanged');
+  });
+});
+
+describe('scrubCredentials', () => {
+  const MARKER = 'tok-MARKER-7f3a91';
+  const SECRETS = new Set([MARKER]);
+  const serialized = (value: unknown): string => JSON.stringify(scrubCredentials(value, SECRETS));
+
+  it('removes a credential-named key, key included', () => {
+    const out = scrubCredentials({ sessionToken: MARKER, phase: 26 }, SECRETS);
+
+    expect(out).toEqual({ phase: 26 });
+  });
+
+  it('removes a credential-named key at any nesting depth, key included', () => {
+    const out = scrubCredentials({ a: { b: [{ c: { token: 'x', keep: 1 } }] } }, SECRETS);
+
+    expect(out).toEqual({ a: { b: [{ c: { keep: 1 } }] } });
+  });
+
+  it('removes a credential key nested under another credential key', () => {
+    const out = scrubCredentials({ cookie: { token: 'x', other: 1 }, keep: 1 }, SECRETS);
+
+    expect(out).toEqual({ keep: 1 });
+  });
+
+  it('removes a key whose string value contains a registered secret, key included', () => {
+    const out = scrubCredentials({ note: `Bearer ${MARKER} expires`, keep: 'visible' }, SECRETS);
+
+    expect(out).toEqual({ keep: 'visible' });
+    expect(serialized({ deep: { note: `x${MARKER}y` } })).not.toContain(MARKER);
+  });
+
+  it('removes an array element that is a string containing a secret, leaving no placeholder', () => {
+    const out = scrubCredentials({ list: ['fine', MARKER, `pre-${MARKER}`, { n: 1 }] }, SECRETS);
+
+    expect(out).toEqual({ list: ['fine', { n: 1 }] });
+  });
+
+  it('ignores an empty-string secret rather than removing every string', () => {
+    const out = scrubCredentials({ a: 'text', list: ['x', ''] }, new Set(['']));
+
+    expect(out).toEqual({ a: 'text', list: ['x', ''] });
+  });
+
+  it('removes cookie- and auth-named fields whatever their spelling or value', () => {
+    const out = scrubCredentials(
+      { Cookie: 'a=b', 'set-cookie': 'c=d', Authorization: 'Bearer zzz', auth_token: 'q', x: { password: 'p' }, keep: 1 },
+      SECRETS,
+    );
+
+    expect(out).toEqual({ x: {}, keep: 1 });
+  });
+
+  it('keeps account_id and player_name', () => {
+    const input = { account_id: '486', player_name: 'someone', nested: { account_id: '1', player_name: 'two' } };
+
+    expect(scrubCredentials(input, SECRETS)).toEqual(input);
+  });
+
+  it('keeps non-string leaves and does not mutate its input', () => {
+    const input = { n: 1, b: true, z: null, arr: [1, 'a'], token: 'x' };
+    const copy = structuredClone(input);
+
+    expect(scrubCredentials(input, SECRETS)).toEqual({ n: 1, b: true, z: null, arr: [1, 'a'] });
+    expect(input).toEqual(copy);
+  });
+
+  it('exports a credential list that excludes the pass-through fields', () => {
+    expect(CREDENTIAL_KEY_NAMES).toContain('token');
+    expect(CREDENTIAL_KEY_NAMES).toContain('cookie');
+    expect(CREDENTIAL_KEY_NAMES).not.toContain('accountId');
+    expect(CREDENTIAL_KEY_NAMES).not.toContain('playerName');
   });
 });

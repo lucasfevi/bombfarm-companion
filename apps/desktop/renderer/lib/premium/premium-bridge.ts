@@ -1,4 +1,4 @@
-import type { CapabilityReply, PremiumHostView, PremiumPauseReason } from '@bombfarm/contracts';
+import type { CapabilityReply, PremiumHostView, PremiumPauseReason, PremiumSlot } from '@bombfarm/contracts';
 
 /** What the Premium screen is told when the host pauses or resumes its bundle. */
 export interface PremiumPauseInfo {
@@ -7,13 +7,22 @@ export interface PremiumPauseInfo {
 
 /** The one prop the Premium screen receives. */
 export interface PremiumProp {
-  /** Resolves with the capability's value; rejects with `Error(code)` when the host refuses. */
+  /** The slot this root is mounted in. */
+  readonly slot: PremiumSlot;
+  /**
+   * Resolves with the capability's value; rejects with `Error(code)` when the host refuses. The
+   * error also carries `code` and, when the host names one, `reason`.
+   */
   call(capability: string, args?: unknown): Promise<unknown>;
   /** Subscribes to the host pausing or resuming the bundle; returns what unsubscribes. */
   on(event: 'paused' | 'resumed', fn: (info: PremiumPauseInfo) => void): () => void;
 }
 
-export type PremiumUiInvoke = (capability: string, args: unknown) => Promise<CapabilityReply>;
+/** `slot` is passed only for a slot other than the Premium tab. */
+export type PremiumUiInvoke = (capability: string, args: unknown, slot?: PremiumSlot) => Promise<CapabilityReply>;
+
+/** What a refused call rejects with: the message is the code, and the reason rides along when there is one. */
+export type PremiumCallError = Error & { readonly code: string; readonly reason?: string };
 
 /** The prop, plus the one way the mount point tells it what the host view now says. */
 export interface PremiumBridge {
@@ -24,29 +33,44 @@ export interface PremiumBridge {
 type Listener = (info: PremiumPauseInfo) => void;
 
 /** The window's own bridge to main; absent where there is no preload (the static export build). */
-export const invokeFromWindow: PremiumUiInvoke = (capability, args) => {
+export const invokeFromWindow: PremiumUiInvoke = (capability, args, slot) => {
   const bfc = (
     window as unknown as {
-      bfc?: { invoke: (channel: 'premium:uiCall', capability: string, args: unknown) => Promise<CapabilityReply> };
+      bfc?: {
+        invoke: (channel: 'premium:uiCall', capability: string, args: unknown, slot?: PremiumSlot) => Promise<CapabilityReply>;
+      };
     }
   ).bfc;
   if (bfc === undefined) return Promise.reject(new Error('unavailable'));
-  return bfc.invoke('premium:uiCall', capability, args);
+  return slot === undefined
+    ? bfc.invoke('premium:uiCall', capability, args)
+    : bfc.invoke('premium:uiCall', capability, args, slot);
 };
 
-export function createPremiumBridge(invoke: PremiumUiInvoke = invokeFromWindow): PremiumBridge {
+/** `code` and `reason` are readable but not enumerable, so the error still compares as `Error(code)`. */
+function refusal(code: string, reason?: string): PremiumCallError {
+  const error = new Error(code);
+  Object.defineProperty(error, 'code', { value: code });
+  if (reason !== undefined) Object.defineProperty(error, 'reason', { value: reason });
+  return error as PremiumCallError;
+}
+
+export function createPremiumBridge(
+  invoke: PremiumUiInvoke = invokeFromWindow,
+  slot: PremiumSlot = 'premium.tab',
+): PremiumBridge {
   const listeners: Record<'paused' | 'resumed', Set<Listener>> = { paused: new Set(), resumed: new Set() };
   let paused = false;
 
-  const prop: PremiumProp = {
+  const prop = {
     async call(capability, args) {
       let reply: CapabilityReply;
       try {
-        reply = await invoke(capability, args);
+        reply = await (slot === 'premium.tab' ? invoke(capability, args) : invoke(capability, args, slot));
       } catch {
-        throw new Error('unavailable');
+        throw refusal('unavailable');
       }
-      if (!reply.ok) throw new Error(reply.error);
+      if (!reply.ok) throw refusal(reply.error, reply.reason);
       return reply.value;
     },
     on(event, fn) {
@@ -55,7 +79,10 @@ export function createPremiumBridge(invoke: PremiumUiInvoke = invokeFromWindow):
         listeners[event].delete(fn);
       };
     },
-  };
+  } as PremiumProp;
+
+  // Readable, but not enumerable: the prop's own keys stay `call` and `on`.
+  Object.defineProperty(prop, 'slot', { value: slot });
 
   return {
     prop,

@@ -120,6 +120,16 @@ describe('which origin the service talks to in offline mode', () => {
   });
 });
 
+describe('a Premium section that could not mount', () => {
+  it('logs exactly the slot and the failed outcome, and nothing else', () => {
+    const { service, records } = build(null);
+
+    service.sectionMountFailed();
+
+    expect(records).toEqual([{ scope: 'premium', event: 'premium.ui_mount', slot: 'live.section', outcome: 'failed' }]);
+  });
+});
+
 describe('the secret box', () => {
   it('asks the operating system whether encryption is available', () => {
     electron.isEncryptionAvailable.mockReturnValueOnce(true).mockReturnValueOnce(false);

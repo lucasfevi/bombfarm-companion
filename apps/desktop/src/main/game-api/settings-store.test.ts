@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AppSettings } from '@bombfarm/contracts';
+import { DEFAULT_SETTINGS, type AppSettings } from '@bombfarm/contracts';
 import type { SqliteDb, SqliteStatement } from '../storage/index.js';
 import { detectAvailableBindings, openTestAccountDb, warnForUnavailableBindings } from '../storage/test-support.js';
 import { createSettingsStore } from './settings-store.js';
@@ -8,7 +8,7 @@ const availableBindings = detectAvailableBindings();
 warnForUnavailableBindings(availableBindings);
 
 const EN: AppSettings = {
-  schemaVersion: 4,
+  schemaVersion: DEFAULT_SETTINGS.schemaVersion,
   locale: 'en',
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
@@ -16,9 +16,10 @@ const EN: AppSettings = {
   restartGameOnExit: false,
   marketQuoteCurrency: 'BRL',
   usagePingEnabled: true,
+  startWithWindows: true,
 };
 const PT_BR: AppSettings = {
-  schemaVersion: 4,
+  schemaVersion: DEFAULT_SETTINGS.schemaVersion,
   locale: 'pt-BR',
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
@@ -26,6 +27,7 @@ const PT_BR: AppSettings = {
   restartGameOnExit: false,
   marketQuoteCurrency: 'BRL',
   usagePingEnabled: true,
+  startWithWindows: true,
 };
 
 describe.each(availableBindings)('createSettingsStore over the real account_meta table (%s)', (binding) => {
@@ -76,7 +78,7 @@ describe.each(availableBindings)('createSettingsStore over the real account_meta
     expect(store.read()).toBeNull();
   });
 
-  it('a v3 row stored before the market currency existed reads back quoting in BRL, and the next write persists v4', () => {
+  it('a v3 row stored before the market currency existed reads back quoting in BRL, and the next write persists the current schema', () => {
     const open = openTestAccountDb(binding);
     if (!open.db) throw new Error('expected an open db for this binding');
     const storedV3 = {
@@ -94,7 +96,7 @@ describe.each(availableBindings)('createSettingsStore over the real account_meta
     const store = createSettingsStore(open.db);
     const migrated = store.read();
 
-    expect(migrated).toEqual({ ...storedV3, schemaVersion: 4, marketQuoteCurrency: 'BRL', usagePingEnabled: true });
+    expect(migrated).toEqual({ ...storedV3, schemaVersion: DEFAULT_SETTINGS.schemaVersion, marketQuoteCurrency: 'BRL', usagePingEnabled: true, startWithWindows: true });
     if (!migrated) throw new Error('expected the v3 row to migrate');
 
     store.write({ ...migrated, marketQuoteCurrency: 'USD' });
@@ -103,9 +105,10 @@ describe.each(availableBindings)('createSettingsStore over the real account_meta
       | undefined;
     expect(JSON.parse(row?.value ?? '')).toEqual({
       ...storedV3,
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       marketQuoteCurrency: 'USD',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
     expect(store.read()?.marketQuoteCurrency).toBe('USD');
   });
@@ -128,6 +131,38 @@ describe.each(availableBindings)('createSettingsStore over the real account_meta
       | { value: string }
       | undefined;
     expect(JSON.parse(row?.value ?? '')).toEqual(PT_BR);
+  });
+
+  it('an older row read then written back persists at the current version with every stored field kept', () => {
+    const open = openTestAccountDb(binding);
+    if (!open.db) throw new Error('expected an open db for this binding');
+    const older = {
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion - 1,
+      locale: 'pt-BR',
+      alwaysOnTopMain: true,
+      alwaysOnTopMini: true,
+      forgeWritesEnabled: true,
+      restartGameOnExit: true,
+      marketQuoteCurrency: 'USD',
+      usagePingEnabled: false,
+    };
+    open.db
+      .prepare('INSERT INTO account_meta (key, value) VALUES (?, ?)')
+      .run('settings_v1', JSON.stringify(older));
+
+    const store = createSettingsStore(open.db);
+    const migrated = store.read();
+    if (!migrated) throw new Error('expected the older row to migrate');
+    store.write(migrated);
+
+    const row = open.db.prepare('SELECT value FROM account_meta WHERE key = ?').get('settings_v1') as
+      | { value: string }
+      | undefined;
+    expect(JSON.parse(row?.value ?? '')).toEqual({
+      ...older,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
+      startWithWindows: DEFAULT_SETTINGS.startWithWindows,
+    });
   });
 
   it('an unknown future schemaVersion falls back to null', () => {

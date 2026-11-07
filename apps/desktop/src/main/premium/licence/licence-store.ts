@@ -91,6 +91,11 @@ const serializeDevice = (record: DeviceRecord): string =>
     deviceId: record.deviceId,
   });
 
+/** What `readKept` answers: the value, or why there is none. */
+export type KeptRead<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly reason: 'absent' | 'unavailable' | 'unreadable' };
+
 /** Sealed rows of the app database: JSON objects encrypted with the secret box, one per key. */
 export interface SealedRows {
   /** Whether a row can be read or written at all: there is a database and the secret box is available. */
@@ -102,7 +107,13 @@ export interface SealedRows {
   delete: (key: string) => boolean;
 }
 
-export function createSealedRows(db: SqliteDb | null, box: SecretBox): SealedRows {
+/** The rows the real store builds: `SealedRows` plus a read that never deletes. Consumers that only need `SealedRows` are unaffected. */
+export interface KeepingSealedRows extends SealedRows {
+  /** Like `read`, but says why there is no value and never deletes: an unreadable row stays where it is. */
+  readKept: <T>(key: string, parse: Parse<T>) => KeptRead<T>;
+}
+
+export function createSealedRows(db: SqliteDb | null, box: SecretBox): KeepingSealedRows {
   function deleteRow(key: string): boolean {
     if (!db) return true;
     try {
@@ -114,15 +125,15 @@ export function createSealedRows(db: SqliteDb | null, box: SecretBox): SealedRow
     }
   }
 
-  function read<T>(key: string, parse: Parse<T>): T | null {
-    if (!db || !box.isAvailable()) return null;
+  function readKept<T>(key: string, parse: Parse<T>): KeptRead<T> {
+    if (!db || !box.isAvailable()) return { ok: false, reason: 'unavailable' };
     let stored: string | undefined;
     try {
       stored = (db.prepare('SELECT value FROM account_meta WHERE key = ?').get(key) as MetaRow | undefined)?.value;
     } catch {
-      return null;
+      return { ok: false, reason: 'unavailable' };
     }
-    if (stored === undefined) return null;
+    if (stored === undefined) return { ok: false, reason: 'absent' };
     let record: T | null = null;
     try {
       const value: unknown = JSON.parse(box.decrypt(Buffer.from(stored, 'base64')));
@@ -132,8 +143,14 @@ export function createSealedRows(db: SqliteDb | null, box: SecretBox): SealedRow
     } catch {
       record = null;
     }
-    if (record === null) deleteRow(key);
-    return record;
+    return record === null ? { ok: false, reason: 'unreadable' } : { ok: true, value: record };
+  }
+
+  function read<T>(key: string, parse: Parse<T>): T | null {
+    const kept = readKept(key, parse);
+    if (kept.ok) return kept.value;
+    if (kept.reason === 'unreadable') deleteRow(key);
+    return null;
   }
 
   function write(key: string, json: () => string): WriteOutcome {
@@ -149,7 +166,7 @@ export function createSealedRows(db: SqliteDb | null, box: SecretBox): SealedRow
     }
   }
 
-  return { available: () => db !== null && box.isAvailable(), read, write, delete: deleteRow };
+  return { available: () => db !== null && box.isAvailable(), read, readKept, write, delete: deleteRow };
 }
 
 export function createLicenceStore(db: SqliteDb | null, box: SecretBox): LicenceStore {

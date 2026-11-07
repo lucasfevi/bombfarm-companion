@@ -86,7 +86,15 @@ export function createBuilderConfig(flavor) {
     },
     // Replaces electron-builder's default `files` list. Both the main window and the tray load
     // `assets/icon.ico` at runtime, so packaged builds must ship the whole assets tree.
-    files: ['dist/**/*', 'renderer/out/**/*', 'package.json', '!**/*.map', 'assets/**/*'],
+    // `installer.nsh` is read while the installer is built and has no use inside the app.
+    files: [
+      'dist/**/*',
+      'renderer/out/**/*',
+      'package.json',
+      '!**/*.map',
+      'assets/**/*',
+      '!assets/installer.nsh',
+    ],
     // frida ships one large prebuilt native addon (`frida_binding.node`), resolved at require()
     // time by walking real filesystem paths under its own package directory — dlopen cannot load
     // a `.node` file from inside app.asar, and the `bindings` package's own path search would not
@@ -96,7 +104,11 @@ export function createBuilderConfig(flavor) {
     // copying it to the system temp folder first, and a machine whose temp folder is not writable
     // then gets an empty image and no tray; the main process resolves it through
     // `app.asar.unpacked` (see `src/main/shell/app-icon-path.ts`).
-    asarUnpack: ['**/node_modules/frida/**/*', 'assets/icon.ico'],
+    asarUnpack: ['**/node_modules/frida/**/*', '**/node_modules/@duckdb/**/*', 'assets/icon.ico'],
+    // DuckDB's signed `httpfs` extension, fetched by `scripts/fetch-duckdb-extension.mjs`. It is a
+    // file DuckDB loads by absolute path, so it ships beside the archive, not inside it, at a short
+    // path (`resources\duckdb\`).
+    extraResources: [{ from: 'build/duckdb', to: 'duckdb' }],
     electronFuses: { ...ELECTRON_FUSES },
     extraMetadata,
     artifactName: '${name}-${version}-setup.${ext}',

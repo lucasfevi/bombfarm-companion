@@ -20,6 +20,8 @@ Thumbs.db
 # electron-builder's output. Rooted `/release/` above never covered it, so a stray `git add -A`
 # in apps/desktop stages a ~350MB installer and unpacked app.
 apps/desktop/release/
+# The signed DuckDB extension the packaging step downloads, then ships as an extra resource.
+apps/desktop/build/
 playwright-report/
 test-results/
 storybook-static/

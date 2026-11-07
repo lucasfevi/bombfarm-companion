@@ -139,6 +139,19 @@ export const en = {
     'When this is on, if the game closes while the companion is already running, Steam starts it again. The companion will not start the game when it itself opens. Off by default.',
   settingsRestartGameOnExitNotSavedTitle: 'Game setting changed, but not saved',
 
+  // settingsStartWithWindows* — open the companion when you sign in to Windows (on by default)
+  settingsStartWithWindowsSectionTitle: 'Startup',
+  settingsStartWithWindowsLabel: 'Start with Windows',
+  settingsStartWithWindowsHelp:
+    'Opens the companion when you sign in to Windows. It only takes effect while account access is allowed; until then your choice is kept and nothing starts. On by default.',
+  settingsStartWithWindowsNotSavedTitle: 'Startup setting changed, but not saved',
+  settingsStartWithWindowsUnpackagedText:
+    'This only works in the installed app on Windows, so the switch is off here.',
+  settingsStartWithWindowsFailedText:
+    'Windows did not accept the change, so the app will not start with Windows until it works. Try again.',
+  settingsStartWithWindowsDisabledByWindowsText:
+    'Windows has this turned off. To turn it back on, open Windows Settings → Apps → Startup, or Task Manager → Startup apps, and switch the companion on.',
+
   // settingsUsage* — the hourly usage ping, and the one switch that makes it anonymous
   settingsUsageSectionTitle: 'Usage count',
   settingsUsagePingLabel: 'Include my account in the usage count',
@@ -195,7 +208,7 @@ export const en = {
   // settingsConsent* — the account access revoke control (Settings is reachable only once granted)
   settingsConsentSectionTitle: 'Account access',
   settingsConsentStatusGranted: 'Access: allowed',
-  settingsConsentHelpGranted: 'The companion reads your account and stays attached to the game client.',
+  settingsConsentHelpGranted: 'While this is on, the companion reads your account and attaches to the game client. The app itself keeps running in the background after you close its window; quit it from its notification-area icon.',
   settingsConsentRevokeAction: 'Turn off',
 
   // settingsDiagnostics* — the manual frame-ring dump control (a bug-report affordance)
@@ -1584,6 +1597,8 @@ export const en = {
   premiumLicenceMismatch: "This copy of the app isn't the PC that holds your Premium.",
   premiumLicenceMoved: "Premium moved to {name}. It's been removed from this PC.",
   premiumLicenceMovedPending: 'Premium moved to {name}.',
+  premiumLicenceMovedAway: "Premium moved to another PC. It's been removed from this PC.",
+  premiumLicenceMovedAwayPending: 'Premium moved to another PC.',
   premiumLicenceReleased: 'Support removed Premium from this PC.',
   premiumLicenceEnded: "Premium has ended. It's been removed from this PC.",
   premiumLicenceEndedPending: 'Premium has ended.',
@@ -1592,9 +1607,29 @@ export const en = {
   premiumLicenceMoveFailed: "Couldn't move Premium — try again.",
   // The words of premiumLicenceMoveLimit that become a link once a support channel exists.
   premiumSupportWords: 'contact support',
+  // premiumMoveConfirm* — the dialog that asks before Premium moves to this PC
+  premiumMoveConfirmTitle: 'Use Premium on this PC?',
+  premiumMoveConfirmBody:
+    'Premium will be removed from the other PC. Your drop history stays on that PC, and this PC starts with an empty history.',
+  premiumMoveConfirmCancel: 'Cancel',
   // premiumHost* — the Premium page's mount point
   premiumHostUpdating: 'Updating Premium…',
   premiumHostStopped: 'Premium stopped unexpectedly — restart the app',
   premiumHostLocalBuild: 'Local premium build',
   premiumHostLocalBuildHint: 'Use pnpm dev:premium to load it',
+  // premiumTracking* — the Settings row that shows and clears the tracking history
+  premiumTrackingLabel: 'Drop history',
+  premiumTrackingSize: '{size} stored on this PC',
+  premiumTrackingUnavailable: "Drop history isn't available on this PC ({reason}).",
+  premiumTrackingReasonBindingMissing: 'the database engine is missing',
+  premiumTrackingReasonExtensionMissing: 'the engine extension is missing',
+  premiumTrackingReasonProbeFailed: 'the engine failed its start-up check',
+  premiumTrackingClear: 'Clear drop history',
+  premiumTrackingConfirmTitle: 'Clear drop history?',
+  premiumTrackingConfirmBody: 'This deletes the drop history stored on this PC. It cannot be recovered.',
+  premiumTrackingConfirmAction: 'Clear',
+  premiumTrackingConfirmCancel: 'Cancel',
+  premiumTrackingCleared: 'Drop history cleared.',
+  premiumTrackingBusy: 'Drop history is busy right now — try again in a moment.',
+  premiumTrackingFailed: "Couldn't clear drop history — try again.",
 } as const;

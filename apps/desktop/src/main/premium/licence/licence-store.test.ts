@@ -5,10 +5,12 @@ import { detectAvailableBindings, openTestAccountDb, warnForUnavailableBindings 
 import type { SecretBox } from '../token-vault.js';
 import {
   createLicenceStore,
+  createSealedRows,
   type CleanupRecord,
   type DeviceRecord,
   generateDeviceRecord,
   type LeaseRecord,
+  type Parse,
 } from './licence-store.js';
 
 const availableBindings = detectAvailableBindings();
@@ -328,5 +330,71 @@ describe.each(availableBindings)('createLicenceStore over the real account_meta 
     const store = createLicenceStore(null, fakeBox());
     expect(store.writeDevice(ALICE, device())).toBe('unavailable');
     expect(store.readDevice(ALICE)).toBeNull();
+  });
+});
+
+describe.each(availableBindings)('createSealedRows.readKept over the real account_meta table (%s)', (binding) => {
+  const KEY = 'sealed_kept_probe:alice';
+  const parseCount: Parse<{ n: number }> = ({ n }) => (typeof n === 'number' ? { n } : null);
+
+  it('answers the value of a good row', () => {
+    const db = openDb(binding);
+    const rows = createSealedRows(db, fakeBox());
+    rows.write(KEY, () => JSON.stringify({ n: 7 }));
+
+    expect(rows.readKept(KEY, parseCount)).toEqual({ ok: true, value: { n: 7 } });
+  });
+
+  it('answers absent when there is no row', () => {
+    expect(createSealedRows(openDb(binding), fakeBox()).readKept(KEY, parseCount)).toEqual({ ok: false, reason: 'absent' });
+  });
+
+  it('answers unavailable when the secret box is not available, even if a row exists', () => {
+    const db = openDb(binding);
+    createSealedRows(db, fakeBox()).write(KEY, () => JSON.stringify({ n: 1 }));
+
+    const rows = createSealedRows(db, fakeBox({ isAvailable: () => false }));
+
+    expect(rows.readKept(KEY, parseCount)).toEqual({ ok: false, reason: 'unavailable' });
+    expect(rowValue(db, KEY)).toBeDefined();
+  });
+
+  it('answers unavailable when there is no database', () => {
+    expect(createSealedRows(null, fakeBox()).readKept(KEY, parseCount)).toEqual({ ok: false, reason: 'unavailable' });
+  });
+
+  it('answers unreadable for a row that fails to decrypt, and leaves the row in place', () => {
+    const db = openDb(binding);
+    createSealedRows(db, fakeBox()).write(KEY, () => JSON.stringify({ n: 1 }));
+    const before = rowValue(db, KEY);
+    const broken = createSealedRows(
+      db,
+      fakeBox({
+        decrypt: () => {
+          throw new Error('wrong key');
+        },
+      }),
+    );
+
+    expect(broken.readKept(KEY, parseCount)).toEqual({ ok: false, reason: 'unreadable' });
+    expect(rowValue(db, KEY)).toBe(before);
+  });
+
+  it('answers unreadable for a row the parser refuses, and leaves the row in place', () => {
+    const db = openDb(binding);
+    const rows = createSealedRows(db, fakeBox());
+    rows.write(KEY, () => JSON.stringify({ n: 'not a number' }));
+
+    expect(rows.readKept(KEY, parseCount)).toEqual({ ok: false, reason: 'unreadable' });
+    expect(rowValue(db, KEY)).toBeDefined();
+  });
+
+  it('keeps the shipped read deleting an unreadable row', () => {
+    const db = openDb(binding);
+    const rows = createSealedRows(db, fakeBox());
+    rows.write(KEY, () => JSON.stringify({ n: 'not a number' }));
+
+    expect(rows.read(KEY, parseCount)).toBeNull();
+    expect(rowValue(db, KEY)).toBeUndefined();
   });
 });

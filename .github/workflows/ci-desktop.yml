@@ -178,6 +178,16 @@ jobs:
           NODE_ENV: production
           BFC_FLAVOR: dev
 
+      # The tracking smoke opens its database with DuckDB's signed extension. The smoke's global
+      # setup fetches and verifies it; the cache only saves the download, keyed by the pin file
+      # (version and sha256), so bumping the pin fetches afresh. A miss still fetches; a failed
+      # fetch fails the smoke.
+      - name: Cache the DuckDB extension
+        uses: actions/cache@v4
+        with:
+          path: apps/desktop/build/duckdb
+          key: duckdb-extension-${{ runner.os }}-${{ hashFiles('apps/desktop/scripts/duckdb-extension.json') }}
+
       - name: Install Playwright
         run: pnpm --filter @bombfarm/desktop exec playwright install
 

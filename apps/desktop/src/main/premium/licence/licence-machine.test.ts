@@ -1280,6 +1280,13 @@ describe('rule 9: Move', () => {
       effects: [MOVE, PUBLISH],
     },
     {
+      name: 'in moved, once the removal report is answered',
+      from: gone('moved', { holderName: 'PC-B', device: UNLINKED }),
+      event: { t: 'movePressed' },
+      next: { moveIntent: true, inFlight: 'move' },
+      effects: [MOVE, PUBLISH],
+    },
+    {
       name: 'in mismatch: forgets the key, makes a fresh one, and activates only after it is ready',
       from: signedIn({ state: 'mismatch' }),
       event: { t: 'movePressed' },
@@ -1307,9 +1314,16 @@ describe('rule 9: Move', () => {
       next: {},
       effects: [],
     },
+    {
+      name: 'a press in moved while the removal report is owed is ignored',
+      from: owing('moved', { holderName: 'PC-B' }),
+      event: { t: 'movePressed' },
+      next: {},
+      effects: [],
+    },
   ]);
 
-  it.each(['signed_out', 'inactive', 'holds', 'unconfirmed', 'moved', 'ended', 'move_limit'] as const)(
+  it.each(['signed_out', 'inactive', 'holds', 'unconfirmed', 'ended', 'move_limit'] as const)(
     'a press in %s is never a Move',
     (state) => {
       const from = signedIn({ state, device: UNLINKED });
@@ -1373,6 +1387,50 @@ describe('rule 9: Move', () => {
       effects: [PUBLISH],
     },
     {
+      name: 'moved: a verified Lease is holds, the name gone',
+      from: gone('moved', { holderName: 'PC-B', device: UNLINKED, moveIntent: true, inFlight: 'move' }),
+      event: answer('move', leaseOutcome({}, 'device-9')),
+      next: {
+        device: { ...UNLINKED, deviceId: 'device-9' },
+        inFlight: null,
+        moveIntent: false,
+        state: 'holds',
+        removalDone: false,
+        holderName: undefined,
+        lease: { payload: payload(), windowEndsMono: M + HOUR },
+        lastUntil: null,
+      },
+      effects: [
+        { e: 'saveDeviceId', deviceId: 'device-9' },
+        SEAL_LEASE,
+        armWindow(HOUR),
+        armRenew(RENEW_EVERY_MS),
+        stateLog('holds'),
+        PUBLISH,
+      ],
+    },
+    {
+      name: 'moved: move_limit lands in the move limit state',
+      from: gone('moved', { holderName: 'PC-B', device: UNLINKED, moveIntent: true, inFlight: 'move' }),
+      event: answer('move', { kind: 'moveLimit', lastMoveAt: YESTERDAY, nextMoveAt: TOMORROW }),
+      next: {
+        inFlight: null,
+        moveIntent: false,
+        state: 'move_limit',
+        holderName: undefined,
+        lastMoveAt: YESTERDAY,
+        nextMoveAt: TOMORROW,
+      },
+      effects: [DISARM_WINDOW, stateLog('move_limit'), PUBLISH],
+    },
+    {
+      name: 'moved: a failure stays in moved with the failure line',
+      from: gone('moved', { holderName: 'PC-B', device: UNLINKED, moveIntent: true, inFlight: 'move' }),
+      event: answer('move', failed()),
+      next: { inFlight: null, moveIntent: false, moveFailed: true },
+      effects: [PUBLISH],
+    },
+    {
       name: 'an invalid Lease is a failed Move',
       from: signedIn({ state: 'released', device: UNLINKED, moveIntent: true, inFlight: 'move', removalDone: true }),
       event: answer('move', { kind: 'leaseInvalid', check: 'user' }),
@@ -1428,7 +1486,7 @@ describe('rule 9: Move', () => {
       { t: 'status', active: true },
       { t: 'pair', pair: PAIR, allows: true },
     ];
-    for (const state of ['elsewhere', 'mismatch', 'released', 'unconfirmed'] as const) {
+    for (const state of ['elsewhere', 'mismatch', 'released', 'moved', 'unconfirmed'] as const) {
       const { effects } = run(signedIn({ state, device: UNLINKED }), triggers);
       expect(effects.flat()).not.toContainEqual(MOVE);
     }

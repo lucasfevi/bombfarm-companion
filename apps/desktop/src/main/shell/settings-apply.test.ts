@@ -1,5 +1,6 @@
 import { DEFAULT_SETTINGS, type AppSettings } from '@bombfarm/contracts';
 import { describe, expect, it, vi } from 'vitest';
+import type { LoginItemOutcome } from './login-item.js';
 import {
   applyAlwaysOnTopMain,
   applyAlwaysOnTopMini,
@@ -7,11 +8,12 @@ import {
   applyLocale,
   applyMarketQuoteCurrency,
   applyRestartGameOnExit,
+  applyStartWithWindows,
   applyUsagePingEnabled,
 } from './settings-apply.js';
 
 const BASE: AppSettings = {
-  schemaVersion: 4,
+  schemaVersion: DEFAULT_SETTINGS.schemaVersion,
   locale: 'en',
   alwaysOnTopMain: true,
   alwaysOnTopMini: true,
@@ -19,6 +21,7 @@ const BASE: AppSettings = {
   restartGameOnExit: true,
   marketQuoteCurrency: 'BRL',
   usagePingEnabled: true,
+  startWithWindows: true,
 };
 
 describe('applyLocale', () => {
@@ -32,7 +35,7 @@ describe('applyLocale', () => {
     const result = applyLocale({ current: BASE, next: 'pt-BR', persist });
 
     expect(result.settings).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: true,
       alwaysOnTopMini: true,
@@ -40,6 +43,7 @@ describe('applyLocale', () => {
       restartGameOnExit: true,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -79,7 +83,7 @@ describe('applyAlwaysOnTopMain', () => {
 
     expect(setAlwaysOnTop).toHaveBeenCalledWith(true, 'normal');
     expect(result.settings).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: true,
       alwaysOnTopMini: false,
@@ -87,6 +91,7 @@ describe('applyAlwaysOnTopMain', () => {
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -166,7 +171,7 @@ describe('applyAlwaysOnTopMini', () => {
 
     expect(setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver');
     expect(result.settings).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: true,
@@ -174,6 +179,7 @@ describe('applyAlwaysOnTopMini', () => {
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -209,7 +215,7 @@ describe('applyForgeWritesEnabled', () => {
     const result = applyForgeWritesEnabled({ current: { ...DEFAULT_SETTINGS, locale: 'pt-BR' }, enabled: true, persist });
 
     expect(result.settings).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: false,
@@ -217,6 +223,7 @@ describe('applyForgeWritesEnabled', () => {
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -275,7 +282,7 @@ describe('applyRestartGameOnExit', () => {
 
     expect(setEnabled).toHaveBeenCalledWith(true);
     expect(result.settings).toEqual({
-      schemaVersion: 4,
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: false,
@@ -283,6 +290,7 @@ describe('applyRestartGameOnExit', () => {
       restartGameOnExit: true,
       marketQuoteCurrency: 'BRL',
       usagePingEnabled: true,
+      startWithWindows: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -390,3 +398,97 @@ describe('applyUsagePingEnabled', () => {
     expect(persist).not.toHaveBeenCalled();
   });
 });
+
+describe('applyStartWithWindows', () => {
+  const written = (settings: AppSettings) => ({ settings, persisted: true, reason: null });
+  const REGISTERED: LoginItemOutcome = { applied: true, registered: true };
+
+  it.each([undefined, null, 'true', 1, {}])('returns the current settings untouched for non-boolean %s', (bad) => {
+    const reconcile = vi.fn(() => REGISTERED);
+    const persist = vi.fn(written);
+
+    const result = applyStartWithWindows({ current: BASE, enabled: bad, reconcile, persist });
+
+    expect(result).toEqual({ settings: BASE, persisted: true, reason: null, loginItem: null });
+    expect(reconcile).not.toHaveBeenCalled();
+    expect(persist).not.toHaveBeenCalled();
+  });
+
+  it('reconciles with the new value and persists the applied settings, in that order', () => {
+    const order: string[] = [];
+    const reconcile = vi.fn((on: boolean) => {
+      order.push(`reconcile:${String(on)}`);
+      return { applied: true as const, registered: on };
+    });
+    const persist = vi.fn((settings: AppSettings) => {
+      order.push(`persist:${String(settings.startWithWindows)}`);
+      return written(settings);
+    });
+
+    const result = applyStartWithWindows({ current: BASE, enabled: false, reconcile, persist });
+
+    expect(order).toEqual(['reconcile:false', 'persist:false']);
+    expect(result.settings).toEqual({ ...BASE, schemaVersion: DEFAULT_SETTINGS.schemaVersion, startWithWindows: false });
+  });
+
+  it('reports loginItem null when the OS matches, including a correct "not registered"', () => {
+    const result = applyStartWithWindows({
+      current: BASE,
+      enabled: true,
+      reconcile: () => ({ applied: true, registered: false }),
+      persist: written,
+    });
+
+    expect(result.loginItem).toBeNull();
+    expect(result.persisted).toBe(true);
+  });
+
+  it.each(['unpackaged', 'not_supported', 'disabled_by_windows', 'failed'] as const)(
+    'carries the %s block when the OS did not take the setting, while the row is still persisted',
+    (block) => {
+      const result = applyStartWithWindows({
+        current: BASE,
+        enabled: true,
+        reconcile: () => ({ applied: false, block }),
+        persist: written,
+      });
+
+      expect(result.loginItem).toBe(block);
+      expect(result.persisted).toBe(true);
+      expect(result.settings.startWithWindows).toBe(true);
+    },
+  );
+
+  it('carries both failures at once: row not written and OS refused', () => {
+    const result = applyStartWithWindows({
+      current: BASE,
+      enabled: true,
+      reconcile: () => ({ applied: false, block: 'failed' }),
+      persist: (settings) => ({ settings, persisted: false, reason: 'not_writable' }),
+    });
+
+    expect(result).toEqual({
+      settings: { ...BASE, startWithWindows: true },
+      persisted: false,
+      reason: 'not_writable',
+      loginItem: 'failed',
+    });
+  });
+
+  it('still reports the OS outcome as clean when only the persist failed', () => {
+    const result = applyStartWithWindows({
+      current: BASE,
+      enabled: false,
+      reconcile: REGISTERED_FALSE,
+      persist: (settings) => ({ settings, persisted: false, reason: 'no_store' }),
+    });
+
+    expect(result.loginItem).toBeNull();
+    expect(result.persisted).toBe(false);
+    expect(result.reason).toBe('no_store');
+  });
+});
+
+function REGISTERED_FALSE(): LoginItemOutcome {
+  return { applied: true, registered: false };
+}

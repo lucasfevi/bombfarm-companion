@@ -93,7 +93,7 @@ const ROWS: Row[] = [
       en: "Premium moved to Workshop. It's been removed from this PC.",
       'pt-BR': 'O Premium foi para Workshop. Ele foi removido deste PC.',
     },
-    button: 'none',
+    button: 'enabled',
   },
   {
     state: 'released',
@@ -159,6 +159,27 @@ describe('the removal states before the removal is done', () => {
 
     expect(lineText(renderLine(l, 'en'))).toBe(en);
     expect(lineText(renderLine(l, 'pt-BR'))).toBe(ptBR);
+  });
+
+  it('moved without a holder name says another PC, in both forms and both languages', () => {
+    for (const rest of [{}, { holderName: '' }]) {
+      const done = licence('moved', { ...rest, removalDone: true });
+      const pending = licence('moved', { ...rest, removalDone: false });
+
+      expect(lineText(renderLine(done, 'en'))).toBe("Premium moved to another PC. It's been removed from this PC.");
+      expect(lineText(renderLine(done, 'pt-BR'))).toBe('O Premium foi para outro PC. Ele foi removido deste PC.');
+      expect(lineText(renderLine(pending, 'en'))).toBe('Premium moved to another PC.');
+      expect(lineText(renderLine(pending, 'pt-BR'))).toBe('O Premium foi para outro PC.');
+    }
+  });
+
+  it('shows no button in moved while the removal is pending, and an enabled one once it is done', () => {
+    const pending = renderLine(licence('moved', { holderName: 'Workshop', removalDone: false }), 'en');
+    const done = renderLine(licence('moved', { holderName: 'Workshop', removalDone: true }), 'en');
+
+    expect(pending).not.toContain('data-testid="premium-use-here"');
+    expect(buttonTag(done)).not.toBe('');
+    expect(isDisabled(buttonTag(done))).toBe(false);
   });
 
   it('shows the full line once the removal is done', () => {

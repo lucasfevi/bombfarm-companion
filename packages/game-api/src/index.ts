@@ -2,6 +2,8 @@ export { CONSENT_TEXT, CONSENT_TEXT_VERSION, consentTextFor } from './consent-te
 export type { ConsentClause, ConsentText } from './consent-text.js';
 export { TRAY_TEXT, trayTextFor } from './tray-text.js';
 export type { TrayLabels } from './tray-text.js';
+export { FIRST_HIDE_TEXT, firstHideTextFor } from './first-hide-text.js';
+export type { FirstHideText } from './first-hide-text.js';
 export {
   initialConsent,
   isGranted,
@@ -59,6 +61,7 @@ export { normalizeRotation } from './rotation/normalize.js';
 // used to live here now lives in that test file instead.
 export { LIVE_FRAME_WIRE_LEXICON, wireKey as liveFrameWireKey } from './live-frame/lexicon.js';
 export type { LiveFrameWireSymbol } from './live-frame/lexicon.js';
+export { toLiveTick } from './live-frame/to-live-tick.js';
 export { PVP_RANKING_BOARD, PVP_WIRE_LEXICON, wireKey as pvpWireKey } from './pvp/lexicon.js';
 export type { PvpWireSymbol } from './pvp/lexicon.js';
 export { identifyPvpBody } from './pvp/identify.js';
