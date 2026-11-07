@@ -6,7 +6,35 @@ export type DataNotice =
   | { readonly kind: 'skillTreeStale'; readonly capturedAt: string | null }
   | { readonly kind: 'skillTreeWithheld' }
   | { readonly kind: 'gearOwnerUnknown' }
-  | { readonly kind: 'gearFieldsAbsent' };
+  | { readonly kind: 'gearFieldsAbsent' }
+  | { readonly kind: 'heroesAndItemsNotReading'; readonly capturedAt: string | null };
+
+/** Longer than a failed cycle or two, so a dropped read in a running session raises no banner. Right
+ *  after a relaunch the saved pair is already this old, so one dropped read shows it until the next
+ *  good cycle. */
+const NOT_READING_AFTER_MS = 5 * 60_000;
+
+/** Heroes and items are read as a pair, so one failing route freezes both. Judged against the
+ *  `account` read, never the wall clock: a closed game leaves every section equally old, and that
+ *  is not a failure worth telling anyone about. */
+function heroesAndItemsNotReading(payload: AccountPayload): DataNotice | null {
+  const fidelity = payload.fidelity;
+  if (fidelity === undefined) return null;
+  const account = fidelity.account;
+  if (account.status !== 'resolved' && account.status !== 'degraded') return null;
+
+  const pair = [fidelity.heroes, fidelity.items];
+  if (pair.some((section) => section.status === 'missing')) {
+    return { kind: 'heroesAndItemsNotReading', capturedAt: null };
+  }
+  const accountMs = Date.parse(account.capturedAt);
+  const staleAges = pair.flatMap((section) =>
+    section.status === 'stale' && accountMs - Date.parse(section.capturedAt) > NOT_READING_AFTER_MS
+      ? [section.capturedAt]
+      : [],
+  );
+  return staleAges.length === 0 ? null : { kind: 'heroesAndItemsNotReading', capturedAt: staleAges[0] ?? null };
+}
 
 function noticeOf(issue: DataIssue, payload: AccountPayload): DataNotice | null {
   switch (issue.kind) {
@@ -31,6 +59,8 @@ export function dataNoticesOf(payload: AccountPayload): DataNotice[] {
     const notice = noticeOf(issue, payload);
     if (notice !== null && !notices.has(notice.kind)) notices.set(notice.kind, notice);
   }
+  const notReading = heroesAndItemsNotReading(payload);
+  if (notReading !== null) notices.set(notReading.kind, notReading);
   return [...notices.values()];
 }
 

@@ -20,6 +20,14 @@ function noticeCopy(notice: DataNotice, t: Copy): { text: string; info: string }
       return { text: t.dataNoticeGearOwnerUnknown, info: t.dataNoticeGearOwnerUnknownInfo };
     case 'gearFieldsAbsent':
       return { text: t.dataNoticeGearFieldsAbsent, info: t.dataNoticeGearFieldsAbsentInfo };
+    case 'heroesAndItemsNotReading':
+      return {
+        text:
+          notice.capturedAt === null
+            ? t.dataNoticeHeroesAndItemsUnread
+            : sub(t.dataNoticeHeroesAndItemsStale, { age: formatCapturedAt(notice.capturedAt, t) }),
+        info: t.dataNoticeHeroesAndItemsInfo,
+      };
   }
 }
 
