@@ -3,6 +3,7 @@ import {
   DEFAULT_TIMEOUT_MS,
   authorizedHeaders,
   classifyResponse,
+  outcomeOfTransportFailure,
   type HttpRequestTarget,
   type HttpResponse,
   type HttpTransport,
@@ -196,7 +197,7 @@ export async function sendPost(req: HttpWriteRequest, transport: HttpTransport):
   try {
     response = await transport(req);
   } catch (error) {
-    return { kind: 'transport_error', message: error instanceof Error ? error.message : String(error) };
+    return outcomeOfTransportFailure(error);
   }
 
   return classifyResponse(response.status, response.body);

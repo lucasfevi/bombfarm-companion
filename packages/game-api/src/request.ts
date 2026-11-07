@@ -36,8 +36,24 @@ export function companionUserAgent(appVersion: string): string {
   return `Bomb Farm Companion/${appVersion}`;
 }
 
-/** Conservative, unmeasured — rejecting a response this large is safer than buffering it whole. */
-const MAX_RESPONSE_BYTES = 2_000_000;
+/** `/inventory` has no pagination and costs ~300 bytes per chest, unstacked, so this is ~50k rows.
+ *  Reading and committing a body stalls the main process every cycle (measured ~750 ms at 100k
+ *  rows, ~130 ms at 20k), which is what a higher limit would cost. */
+export const MAX_RESPONSE_BYTES = 16_000_000;
+
+/** A transport throws this instead of buffering past the limit, so an oversized body keeps its own
+ *  name rather than reading as a network failure. */
+export class ResponseTooLargeError extends Error {
+  constructor(readonly bytes: number) {
+    super(`response exceeded ${String(MAX_RESPONSE_BYTES)} bytes while streaming`);
+    this.name = 'ResponseTooLargeError';
+  }
+}
+
+export function outcomeOfTransportFailure(error: unknown): RequestOutcome {
+  if (error instanceof ResponseTooLargeError) return { kind: 'too_large', bytes: error.bytes };
+  return { kind: 'transport_error', message: error instanceof Error ? error.message : String(error) };
+}
 
 /** Reused from the internal automation prototype's rate-limit module — the cooldown-shaped-body detector. */
 const COOLDOWN_BODY_PATTERN = /"(?:err|error|code)"\s*:\s*"[^"]*(?:RATE|COOLDOWN|TOO_MANY)[^"]*"/i;
@@ -251,7 +267,7 @@ export async function sendGet(req: HttpRequest, transport: HttpTransport): Promi
   try {
     response = await transport(req);
   } catch (error) {
-    return { kind: 'transport_error', message: error instanceof Error ? error.message : String(error) };
+    return outcomeOfTransportFailure(error);
   }
 
   return classifyResponse(response.status, response.body);

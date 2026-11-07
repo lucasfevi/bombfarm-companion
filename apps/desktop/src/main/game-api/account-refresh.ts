@@ -19,6 +19,7 @@ import {
 import type { AccountCommitter } from '../game-reader/game-reader-service.js';
 import type { LogPort } from '../storage/index.js';
 import type { ConsentStore } from './consent-store.js';
+import { createSectionBackoff } from './section-backoff.js';
 import { createServerAllocations } from './server-allocations.js';
 import { readSessionToken, type SessionTokenFileResult } from './session-token-file.js';
 
@@ -79,7 +80,7 @@ function wrapAbortable(transport: HttpTransport, signal: AbortSignal): HttpTrans
         reject(new Error('aborted'));
       };
       signal.addEventListener('abort', onAbort, { once: true });
-      transport(req).then(
+      transport({ ...req, signal }).then(
         (res) => {
           signal.removeEventListener('abort', onAbort);
           resolve(res);
@@ -117,8 +118,9 @@ export interface AccountRefreshHandle {
   start(): void;
   stop(): void;
   /** Runs one cycle and returns the most recently *committed* view — unchanged from before this
-   *  call if the cycle resolved no section at all, `null` if nothing has ever been committed. */
-  refreshNow(): Promise<AccountView | null>;
+   *  call if the cycle resolved no section at all, `null` if nothing has ever been committed.
+   *  `explicit` is a player or a just-finished write waiting on the answer, which ends any rest. */
+  refreshNow(options?: { readonly explicit?: boolean }): Promise<AccountView | null>;
   onConsentChanged(record: ConsentRecord): void;
   /** The most recently committed view, or `null` before any cycle has committed one. */
   getLastView(): AccountView | null;
@@ -153,6 +155,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
   let lastView: AccountView | null = null;
   const lastUnreadAbsence = new Map<AccountSection, string>();
   const serverAllocations = createServerAllocations();
+  const sectionBackoff = createSectionBackoff();
   let readingAllocations = false;
 
   function logUnreadAbsence(section: AccountSection, absentUnreadKeys: readonly string[]): void {
@@ -191,13 +194,13 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
    *  shared with the game reader, so committing a `missing` placeholder here would overwrite (or
    *  degrade to `stale`) whatever that other producer already resolved. Only a cycle where at
    *  least one section actually came back (`ok` or `drift`) is real data worth persisting. */
-  function commitIfAnyResolved(outcomes: Record<AccountSection, SectionOutcome>): AccountView | null {
+  function commitIfAnyResolved(outcomes: Record<AccountSection, SectionOutcome>, capturedAt = deps.now()): AccountView | null {
     const resolvedNothing = SECTIONS.every((section) => outcomes[section].kind === 'failed');
     if (resolvedNothing) {
       deps.log.info({ scope: 'account-refresh', event: 'cycle.no-data' });
       return lastView;
     }
-    const payload = serverAllocations.withCached(assembleAccountPayload(outcomes, deps.now()));
+    const payload = serverAllocations.withCached(assembleAccountPayload(outcomes, capturedAt));
     commitAndNotify(payload);
     deps.log.info({ scope: 'account-refresh', event: 'cycle.committed' });
     return lastView;
@@ -207,6 +210,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
     if (!cachedToken || cachedToken.mtimeMs !== fileResult.mtimeMs) {
       cachedToken = { accountId: fileResult.accountId, token: fileResult.token, mtimeMs: fileResult.mtimeMs };
       deps.gate.resetAuth();
+      sectionBackoff.reset();
     }
     return grantSession(consent, { accountId: cachedToken.accountId, token: cachedToken.token });
   }
@@ -232,12 +236,23 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
     }
   }
 
-  async function runCycle(): Promise<AccountView | null> {
+  /** Heroes and items are only usable together, so a rest on either makes reading the other a
+   *  download that `holdInversionPair` would throw away. */
+  function isRestingThisCycle(section: AccountSection, nowMs: number): boolean {
+    if (sectionBackoff.isResting(section, nowMs)) return true;
+    if (section === 'heroes') return sectionBackoff.isResting('items', nowMs);
+    if (section === 'items') return sectionBackoff.isResting('heroes', nowMs);
+    return false;
+  }
+
+  async function runCycle(options?: { readonly explicit?: boolean }): Promise<AccountView | null> {
     if (running) {
       return lastView;
     }
     running = true;
     try {
+      if (options?.explicit === true) sectionBackoff.wake();
+
       const consent = deps.consentStore.read();
 
       if (!isGranted(consent)) {
@@ -262,10 +277,16 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
       currentAbort = abortController;
       const abortableTransport = wrapAbortable(deps.transport, abortController.signal);
 
+      const cycleAt = deps.now();
+      const cycleAtMs = Date.parse(cycleAt);
       const outcomes = {} as Record<AccountSection, SectionOutcome>;
       for (const route of ROUTES) {
         if (abortController.signal.aborted) {
           outcomes[route.section] = { kind: 'failed', reason: 'aborted' };
+          continue;
+        }
+        if (isRestingThisCycle(route.section, cycleAtMs)) {
+          outcomes[route.section] = { kind: 'failed', reason: 'backed_off' };
           continue;
         }
         // The pacing gate is already the single-flight serializer for these five reads; a plain
@@ -282,8 +303,8 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
             scope: 'account-refresh',
             event: 'section.drift',
             section: route.section,
-            missingKeys: outcome.missingKeys,
-            addedKeys: outcome.addedKeys,
+            missingKeys: collapseIndexedPaths(outcome.missingKeys),
+            addedKeys: collapseIndexedPaths(outcome.addedKeys),
           });
         }
         if (outcome.kind !== 'failed') {
@@ -298,11 +319,19 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
             // The server's own error code when it named one (SERVER_LOCKED, ACCOUNT_BANNED, …).
             // A closed vocabulary of server states, never a response value — nothing player-identifying.
             ...(outcome.code === undefined ? {} : { code: outcome.code }),
+            ...(outcome.detail === undefined ? {} : { detail: outcome.detail }),
+            ...(outcome.bytes === undefined ? {} : { bytes: outcome.bytes }),
           });
         }
         outcomes[route.section] = outcome;
       }
       currentAbort = null;
+
+      if (!abortController.signal.aborted) {
+        for (const rest of sectionBackoff.record(outcomes, cycleAtMs)) {
+          deps.log.warn({ scope: 'account-refresh', event: 'section.resting', ...rest });
+        }
+      }
 
       const paired = holdInversionPair(outcomes);
       for (const section of ['heroes', 'items'] as const) {
@@ -310,7 +339,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
           deps.log.warn({ scope: 'account-refresh', event: 'section.held', section, partner: section === 'heroes' ? 'items' : 'heroes' });
         }
       }
-      return commitIfAnyResolved(paired);
+      return commitIfAnyResolved(paired, cycleAt);
     } finally {
       running = false;
     }
@@ -336,6 +365,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
         currentAbort?.abort();
         currentAbort = null;
         cachedToken = null;
+        sectionBackoff.reset();
       }
     },
     getLastView() {

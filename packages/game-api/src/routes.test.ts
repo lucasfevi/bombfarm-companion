@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AccountSection } from '@bombfarm/contracts';
 import { createPacingGate, type PacingClock } from './pacing.js';
-import type { HttpResponse, HttpTransport } from './request.js';
+import { MAX_RESPONSE_BYTES, type HttpResponse, type HttpTransport } from './request.js';
 import { ROUTES, readSection, type RouteDescriptor, type SectionFailureReason } from './routes.js';
 import { SessionToken, grantSession } from './session.js';
 import { grantedConsent, loadFixtureJson, required } from './test-fixtures.js';
@@ -255,7 +255,7 @@ describe('readSection — every SectionFailureReason producible from routes.ts i
     { label: 'non-JSON 200', transport: fixedResponseTransport({ status: 200, body: 'not json' }), expectedReason: 'malformed_json' },
     {
       label: 'oversize body',
-      transport: fixedResponseTransport({ status: 200, body: 'x'.repeat(2_100_000) }),
+      transport: fixedResponseTransport({ status: 200, body: 'x'.repeat(MAX_RESPONSE_BYTES + 1) }),
       expectedReason: 'too_large',
     },
     { label: 'a throwing transport', transport: throwingTransport('ECONNREFUSED'), expectedReason: 'transport_error' },
@@ -283,9 +283,20 @@ describe('readSection — every SectionFailureReason producible from routes.ts i
     it(`${label} -> failed/${expectedReason}`, async () => {
       const gate = createPacingGate(createTestClock());
       const outcome = await readSection(session, transport, gate, stateRoute);
-      expect(outcome).toEqual({ kind: 'failed', reason: expectedReason });
+      expect(outcome).toMatchObject({ kind: 'failed', reason: expectedReason });
     });
   }
+
+  it('an oversize body says how large it got', async () => {
+    const transport = fixedResponseTransport({ status: 200, body: 'x'.repeat(MAX_RESPONSE_BYTES + 1) });
+    const outcome = await readSection(session, transport, createPacingGate(createTestClock()), stateRoute);
+    expect(outcome).toEqual({ kind: 'failed', reason: 'too_large', bytes: MAX_RESPONSE_BYTES + 1 });
+  });
+
+  it('a transport failure keeps its own message, so a timeout reads differently from a reset', async () => {
+    const outcome = await readSection(session, throwingTransport('request timed out'), createPacingGate(createTestClock()), stateRoute);
+    expect(outcome).toEqual({ kind: 'failed', reason: 'transport_error', detail: 'request timed out' });
+  });
 
   it('a shape-drifted 200 (missing a required key) -> drift, not failed', async () => {
     const gate = createPacingGate(createTestClock());

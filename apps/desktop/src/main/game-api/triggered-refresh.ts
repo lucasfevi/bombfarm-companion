@@ -1,7 +1,12 @@
 import { READ_PACING } from '@bombfarm/game-api';
 
+export interface TriggerOptions {
+  /** A player or a just-finished write is waiting on this read, so it may end a route's rest. */
+  readonly explicit?: boolean;
+}
+
 export interface TriggeredRefreshDeps {
-  readonly refreshNow: () => Promise<unknown>;
+  readonly refreshNow: (options?: TriggerOptions) => Promise<unknown>;
   readonly now: () => number;
   /** Defaults to `READ_PACING.manualRefreshFloorMs` — the same floor an explicit player-triggered
    *  refresh already respects. A field-membership divergence can repeat many times a second while
@@ -15,7 +20,7 @@ export interface TriggeredRefresh {
    *  started one. Safe to call as often as the caller likes — every call inside the floor is a
    *  no-op, not a queued one. A caller with a player waiting on it needs the answer: a press that
    *  starts nothing and says nothing is indistinguishable from a broken button. */
-  readonly notify: () => boolean;
+  readonly notify: (options?: TriggerOptions) => boolean;
 }
 
 export function createTriggeredRefresh(deps: TriggeredRefreshDeps): TriggeredRefresh {
@@ -23,11 +28,11 @@ export function createTriggeredRefresh(deps: TriggeredRefreshDeps): TriggeredRef
   let lastTriggeredAt: number | null = null;
 
   return {
-    notify(): boolean {
+    notify(options): boolean {
       const nowMs = deps.now();
       if (lastTriggeredAt !== null && nowMs - lastTriggeredAt < floorMs) return false;
       lastTriggeredAt = nowMs;
-      void deps.refreshNow();
+      void deps.refreshNow(options);
       return true;
     },
   };

@@ -275,7 +275,7 @@ export const ptBR: Copy = {
   screenCrashInfo: 'O resto do app continua funcionando. Troque de aba ou tente novamente; os detalhes foram salvos no arquivo de log.',
   screenCrashInfoCompact: 'O resto do app continua funcionando. Tente novamente; os detalhes foram salvos no arquivo de log.',
   screenCrashRetry: 'Tentar novamente',
-  // dataNotice* / heroFlag* / dataField* — o que o app diz quando o jogo para de enviar um campo que ele lê
+  // dataNotice* / heroFlag* / dataField* — o que o app diz quando o jogo para de enviar um campo que ele lê, ou uma leitura continua falhando
   dataNoticeInfoLabel: 'O que isso significa',
   dataNoticeSkillTreeStale: 'O jogo mudou a forma de enviar sua árvore de habilidades. Mostrando a última que lemos ({age}).',
   dataNoticeSkillTreeStaleInfo:
@@ -283,6 +283,10 @@ export const ptBR: Copy = {
   dataNoticeSkillTreeWithheld: 'O jogo mudou a forma de enviar sua árvore de habilidades e o app não consegue lê-la até ser atualizado.',
   dataNoticeSkillTreeWithheldInfo:
     'As telas que precisam da árvore de habilidades não mostram nada em vez de um palpite, e voltam quando o app for atualizado.',
+  dataNoticeHeroesAndItemsStale: 'Não foi possível ler seus heróis e seu inventário agora. Mostrando a última leitura ({age}).',
+  dataNoticeHeroesAndItemsUnread: 'Ainda não foi possível ler seus heróis e seu inventário.',
+  dataNoticeHeroesAndItemsInfo:
+    'Eles são lidos juntos, então, quando um falha, os dois param de atualizar, e o quadro da Fazenda e o Otimizador usam a última leitura. O app continua tentando sozinho.',
   dataNoticeGearOwnerUnknown: 'Alguns equipamentos ficaram de fora porque o jogo parou de dizer quem os usa.',
   dataNoticeGearOwnerUnknownInfo:
     'Essas peças não contam em nenhum herói e não são oferecidas ao Otimizador até o app ser atualizado.',

@@ -21,7 +21,7 @@ export type { ConsentedSession } from './session.js';
 export { parseSessionCfg } from './session-cfg.js';
 export type { SessionCfgParseReason, SessionCfgParseResult } from './session-cfg.js';
 export { requestGet } from './request.js';
-export { companionUserAgent } from './request.js';
+export { MAX_RESPONSE_BYTES, ResponseTooLargeError, companionUserAgent } from './request.js';
 export type { HttpRequest, HttpResponse, HttpTransport, RequestOptions, RequestOutcome } from './request.js';
 export { WriteNotEnabledError, WriteSessionRequiredError, grantWriteSession, isWriteSession } from './write-session.js';
 export type { WriteSession } from './write-session.js';

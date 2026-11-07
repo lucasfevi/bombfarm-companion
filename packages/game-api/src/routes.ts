@@ -56,15 +56,14 @@ export const ROUTES: readonly RouteDescriptor[] = [
 ];
 
 /**
- * A closed vocabulary for "why this section has no body this cycle". The first seven
+ * A closed vocabulary for "why this section has no body this cycle". The first eight
  * members are produced by `readSection` below, driven by `RequestOutcome` and the shape
- * guard. The last five — `not_consented`, `game_not_running`, `token_unavailable`,
- * `aborted`, `partner_failed` — are produced by `apps/desktop/src/main/game-api/account-refresh.ts`:
+ * guard. The last six — `not_consented`, `game_not_running`, `token_unavailable`,
+ * `aborted`, `partner_failed`, `backed_off` — are produced by `apps/desktop/src/main/game-api/account-refresh.ts`:
  * they describe states that never reach a route at all (no consent, the game not running,
- * no token, a revoke that cancelled this route before it started) or a body the cycle read and
- * then set aside, so `routes.ts` cannot be the one to produce them. Both halves are covered by
- * tests — the first seven here, the last five in that module's suite — so no member of this union ships
- * unreachable.
+ * no token, a revoke that cancelled this route before it started, a route resting after repeated
+ * failures) or a body the cycle read and then set aside, so `routes.ts` cannot be the one to
+ * produce them. Both halves are covered by tests, so no member of this union ships unreachable.
  */
 export type SectionFailureReason =
   | 'unauthorized'
@@ -82,7 +81,10 @@ export type SectionFailureReason =
   | 'aborted'
   /** The route was read, but the section it is only readable beside was not — see
    *  `holdInversionPair` in the desktop's account refresh. */
-  | 'partner_failed';
+  | 'partner_failed'
+  /** Not attempted this cycle: this route, or the one it is read beside, kept failing while others
+   *  read fine. */
+  | 'backed_off';
 
 export type SectionOutcome =
   | { readonly kind: 'ok'; readonly body: unknown; readonly absentUnreadKeys: readonly string[] }
@@ -98,6 +100,11 @@ export type SectionOutcome =
       readonly reason: SectionFailureReason;
       /** The server's own error code, when it named one (`SERVER_LOCKED`, `ACCOUNT_BANNED`, …). */
       readonly code?: string;
+      /** The transport's own message on `transport_error`, so a timeout reads differently from a
+       *  reset. It describes the socket, and the request path is never part of it. */
+      readonly detail?: string;
+      /** How far a `too_large` body got before the read stopped. */
+      readonly bytes?: number;
     };
 
 /** Reads one route through the pacing gate, checks its shape, and projects it. Never throws for
@@ -161,9 +168,9 @@ export async function readSection(
     case 'malformed_json':
       return { kind: 'failed', reason: 'malformed_json' };
     case 'too_large':
-      return { kind: 'failed', reason: 'too_large' };
+      return { kind: 'failed', reason: 'too_large', bytes: outcome.bytes };
     case 'transport_error':
-      return { kind: 'failed', reason: 'transport_error' };
+      return { kind: 'failed', reason: 'transport_error', detail: outcome.message };
     default: {
       const exhaustive: never = outcome;
       return exhaustive;

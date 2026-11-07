@@ -58,6 +58,27 @@ describe('requestAccountRead', () => {
     expect(getReads()).toBe(1);
   });
 
+  it('marks the read explicit all the way to the refresh, so a press can end a route that is resting', () => {
+    const seen: unknown[] = [];
+    const trigger = createTriggeredRefresh({
+      refreshNow: (options) => {
+        seen.push(options);
+        return Promise.resolve(null);
+      },
+      now: () => 0,
+    });
+
+    requestAccountRead({
+      consentStore: { read: () => GRANTED },
+      accountSource: () => 'server',
+      isGameRunning: () => true,
+      readToken: readableToken(),
+      triggeredRefresh: () => trigger,
+    });
+
+    expect(seen).toEqual([{ explicit: true }]);
+  });
+
   it('refuses a second press inside the manual-refresh floor, and starts one again past it', () => {
     const { request, advance, getReads } = harness();
 
