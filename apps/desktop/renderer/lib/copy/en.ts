@@ -283,7 +283,7 @@ export const en = {
   screenCrashInfo: 'The rest of the app still works. Switch tabs or try again; the details were saved to the log file.',
   screenCrashInfoCompact: 'The rest of the app still works. Try again; the details were saved to the log file.',
   screenCrashRetry: 'Try again',
-  // dataNotice* / heroFlag* / dataField* — what the app says when the game stops sending a field it reads
+  // dataNotice* / heroFlag* / dataField* — what the app says when the game stops sending a field it reads, or a read keeps failing
   dataNoticeInfoLabel: 'What this means',
   dataNoticeSkillTreeStale: 'The game changed how it sends your skill tree. Showing the last one we read ({age}).',
   dataNoticeSkillTreeStaleInfo:
@@ -291,6 +291,10 @@ export const en = {
   dataNoticeSkillTreeWithheld: "The game changed how it sends your skill tree, and the app can't read it until it is updated.",
   dataNoticeSkillTreeWithheldInfo:
     'The screens that need the skill tree show nothing rather than a guess, and come back once the app is updated.',
+  dataNoticeHeroesAndItemsStale: "Can't read your heroes and inventory right now. Showing the last read ({age}).",
+  dataNoticeHeroesAndItemsUnread: "Can't read your heroes and inventory yet.",
+  dataNoticeHeroesAndItemsInfo:
+    'They are read together, so when one fails both stop updating, and the Farm board and the Optimizer use the last read. The app keeps retrying on its own.',
   dataNoticeGearOwnerUnknown: 'Some gear is left out because the game stopped saying who wears it.',
   dataNoticeGearOwnerUnknownInfo:
     'Those pieces are not counted on any hero and are not offered to the Optimizer until the app is updated.',

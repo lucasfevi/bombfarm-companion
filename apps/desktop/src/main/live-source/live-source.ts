@@ -28,7 +28,7 @@ import type {
   SectionFidelity,
 } from '@bombfarm/contracts';
 import { isConnectedCurrency, isLiveCurrency, liveGap, NO_BOOST_AXES, runningBoostAxes, sameBoostAxes } from '@bombfarm/contracts';
-import { diagnoseObservedBodyDrift, identifyObservedBody, isPlainObject, normalizeRotation, readPhaseEconomy, type PvpRoute } from '@bombfarm/game-api';
+import { collapseIndexedPaths, diagnoseObservedBodyDrift, identifyObservedBody, isPlainObject, normalizeRotation, readPhaseEconomy, type PvpRoute } from '@bombfarm/game-api';
 import {
   advanceRecoveryClock,
   createInitialFieldCountdownState,
@@ -966,7 +966,7 @@ export class LiveSource {
           scope: 'live-source',
           event: 'observed_body.drift',
           sections: drift.map(({ section }) => section),
-          addedKeys: drift.flatMap(({ addedKeys }) => addedKeys),
+          addedKeys: collapseIndexedPaths(drift.flatMap(({ addedKeys }) => addedKeys)),
           byteLength: bodyBuf.length,
         });
         return;

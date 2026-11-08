@@ -987,7 +987,7 @@ async function bootstrap(): Promise<void> {
   // `refreshNow` is read lazily so construction order doesn't matter — `accountRefresh` itself is
   // assigned later in this function.
   triggeredRefresh = createTriggeredRefresh({
-    refreshNow: () => accountRefresh?.refreshNow() ?? Promise.resolve(null),
+    refreshNow: (options) => accountRefresh?.refreshNow(options) ?? Promise.resolve(null),
     now: () => Date.now(),
   });
   // The scheduled cadence can otherwise leave the first read waiting out a full cycle after the

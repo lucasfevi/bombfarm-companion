@@ -8,7 +8,7 @@ import type {
   PacingClock,
   SessionToken,
 } from '@bombfarm/game-api';
-import { CONSENT_TEXT_VERSION, SessionToken as SessionTokenClass, createPacingGate } from '@bombfarm/game-api';
+import { CONSENT_TEXT_VERSION, ResponseTooLargeError, SessionToken as SessionTokenClass, createPacingGate } from '@bombfarm/game-api';
 import { consentRecord, grantedConsent } from '@bombfarm/game-api/test-fixtures';
 import type { AccountStore } from '../storage/account-store.js';
 import { createAccountStore } from '../storage/account-store.js';
@@ -1097,6 +1097,143 @@ describe('account-refresh — a drifted section is logged with path-qualified ke
       expect(view?.payload.account).toEqual(updatedState);
       expect(fidelityOf(view).account.status).toBe('resolved');
     });
+  });
+
+  it('an inventory that keeps failing is logged with its cause, rests, and is read again afterwards — while the other routes keep reading', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+
+    const calls: string[] = [];
+    const transport: HttpTransport = (req) => {
+      const route = routeOf(req.path);
+      calls.push(route);
+      if (route === '/inventory') return Promise.reject(new ResponseTooLargeError(40_000_000));
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[route] ?? {}) });
+    };
+    const inventoryReads = (): number => calls.filter((route) => route === '/inventory').length;
+
+    let nowMs = Date.parse('2026-08-12T00:00:00.000Z');
+    const { log, records } = createLogSpy();
+    const refresh = createAccountRefresh(
+      baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport, readToken, log, now: () => new Date(nowMs).toISOString() }),
+    );
+
+    await refresh.refreshNow();
+    nowMs += 60_000;
+    await refresh.refreshNow();
+    expect(inventoryReads()).toBe(2);
+    expect(records.find((r) => r.record.event === 'section.failed')?.record).toMatchObject({
+      section: 'items',
+      reason: 'too_large',
+      bytes: 40_000_000,
+    });
+    expect(records.find((r) => r.record.event === 'section.resting')?.record).toMatchObject({
+      section: 'items',
+      strikes: 2,
+      restMs: 120_000,
+    });
+
+    const readsOf = (route: string): number => calls.filter((called) => called === route).length;
+    const rosterReadsBefore = readsOf('/roster');
+    const stateReadsBefore = readsOf('/state');
+    nowMs += 60_000;
+    await refresh.refreshNow();
+    expect(inventoryReads()).toBe(2);
+    expect(readsOf('/roster')).toBe(rosterReadsBefore);
+    expect(readsOf('/state')).toBe(stateReadsBefore + 1);
+
+    nowMs += 60_000;
+    await refresh.refreshNow();
+    expect(inventoryReads()).toBe(3);
+  });
+
+  it('an explicit read ends the rest; an automatic one does not', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    let inventoryReads = 0;
+    const transport: HttpTransport = (req) => {
+      const route = routeOf(req.path);
+      if (route === '/inventory') {
+        inventoryReads += 1;
+        return Promise.reject(new Error('request timed out'));
+      }
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[route] ?? {}) });
+    };
+    const refresh = createAccountRefresh(baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport, readToken, now: () => '2026-08-12T00:00:00.000Z' }));
+
+    await refresh.refreshNow();
+    await refresh.refreshNow();
+    expect(inventoryReads).toBe(2);
+    await refresh.refreshNow();
+    expect(inventoryReads).toBe(2);
+    await refresh.refreshNow({ explicit: true });
+    expect(inventoryReads).toBe(3);
+  });
+
+  it('a new token starts clean, so the last account\'s rest cannot keep its heroes and items on screen', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    let token: SessionTokenFileResult = { ok: true, accountId: '486', token: SessionTokenClass.create(SENTINEL_TOKEN), mtimeMs: 1000 };
+    let inventoryReads = 0;
+    const transport: HttpTransport = (req) => {
+      const route = routeOf(req.path);
+      if (route === '/inventory') {
+        inventoryReads += 1;
+        return Promise.reject(new Error('request timed out'));
+      }
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[route] ?? {}) });
+    };
+    const refresh = createAccountRefresh(
+      baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport, readToken: () => token, now: () => '2026-08-12T00:00:00.000Z' }),
+    );
+
+    await refresh.refreshNow();
+    await refresh.refreshNow();
+    await refresh.refreshNow();
+    expect(inventoryReads).toBe(2);
+
+    token = { ...token, mtimeMs: 2000 };
+    await refresh.refreshNow();
+    expect(inventoryReads).toBe(3);
+  });
+
+  it('hands the transport the abort signal, so stopping a cycle closes its socket', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const signals: (AbortSignal | undefined)[] = [];
+    const transport: HttpTransport = (req) => {
+      signals.push(req.signal);
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[routeOf(req.path)] ?? {}) });
+    };
+    const refresh = createAccountRefresh(baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport, readToken }));
+
+    await refresh.refreshNow();
+
+    expect(signals.length).toBe(5);
+    expect(signals.every((signal) => signal instanceof AbortSignal)).toBe(true);
+  });
+
+  it('a drift on every inventory row logs one path per key, not one per row', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const rows = [...(BODIES['/inventory'] as { items: Record<string, unknown>[] }).items];
+    const drifted = { ...BODIES['/inventory'], items: rows.map((row) => ({ ...row, future_key: 1 })) };
+    const transport: HttpTransport = (req) => {
+      const route = routeOf(req.path);
+      return Promise.resolve({ status: 200, body: JSON.stringify(route === '/inventory' ? drifted : (BODIES[route] ?? {})) });
+    };
+    const { log, records } = createLogSpy();
+    const refresh = createAccountRefresh(baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport, readToken, log }));
+
+    await refresh.refreshNow();
+
+    const drift = records.find((r) => r.record.event === 'section.drift' && r.record.section === 'items');
+    const addedKeys = drift?.record.addedKeys as readonly string[];
+    expect(addedKeys.filter((key) => key.includes('future_key'))).toHaveLength(1);
   });
 
   it('a cycle that loses one route and commits the other four logs section.failed naming it, so a partial commit is not indistinguishable from a clean one', async () => {
