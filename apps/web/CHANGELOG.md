@@ -1,5 +1,17 @@
 # @bombfarm/web
 
+## 0.32.4
+
+### Patch Changes
+
+- @bombfarm/domain@1.15.4
+- @bombfarm/pricing@0.4.9
+- @bombfarm/account@0.3.24
+- @bombfarm/farm@1.5.6
+- @bombfarm/game-art@0.8.13
+- @bombfarm/hero@0.7.8
+- @bombfarm/team-plan@0.8.6
+
 ## 0.32.3
 
 ### Patch Changes

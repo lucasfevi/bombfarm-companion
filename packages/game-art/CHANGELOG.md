@@ -1,5 +1,11 @@
 # @bombfarm/game-art
 
+## 0.8.13
+
+### Patch Changes
+
+- @bombfarm/domain@1.15.4
+
 ## 0.8.12
 
 ### Patch Changes
