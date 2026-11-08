@@ -1,5 +1,12 @@
 # @bombfarm/domain
 
+## 1.15.4
+
+### Patch Changes
+
+- Updated dependencies [f94c5f3]
+  - @bombfarm/contracts@0.16.2
+
 ## 1.15.3
 
 ### Patch Changes
