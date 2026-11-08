@@ -40,6 +40,35 @@ describe('dataNoticesOf', () => {
   });
 });
 
+describe('dataNoticesOf — heroes and items that stopped reading', () => {
+  const EARLIER = '2026-10-08T09:00:00.000Z';
+  const stale = (capturedAt: string): SectionFidelity => ({ status: 'stale', capturedAt });
+  const withPair = (heroes: SectionFidelity, items: SectionFidelity, account: SectionFidelity = RESOLVED): AccountPayload => ({
+    heroes: [],
+    items: [],
+    fidelity: { account, heroes, skills: RESOLVED, casa: RESOLVED, items },
+  });
+
+  it('says so, with the age of the last read, once they fall behind a fresh account read', () => {
+    expect(dataNoticesOf(withPair(stale(EARLIER), stale(EARLIER)))).toEqual([
+      { kind: 'heroesAndItemsNotReading', capturedAt: EARLIER },
+    ]);
+  });
+
+  it('stays quiet about one dropped cycle', () => {
+    const justNow = '2026-10-08T09:59:00.000Z';
+    expect(dataNoticesOf(withPair(stale(justNow), stale(justNow)))).toEqual([]);
+  });
+
+  it('stays quiet when the game is closed and every section is equally old', () => {
+    expect(dataNoticesOf(withPair(stale(EARLIER), stale(EARLIER), stale(EARLIER)))).toEqual([]);
+  });
+
+  it('says they were never read when the account read works and nothing was saved for them', () => {
+    expect(dataNoticesOf(withPair(MISSING, MISSING))).toEqual([{ kind: 'heroesAndItemsNotReading', capturedAt: null }]);
+  });
+});
+
 describe('heroDataReasonsOf', () => {
   it('names the hero and the fields it lost, collapsing birth stats to one', () => {
     const heroes = [{ id: 'h1', level: 3, stars: 0, stat_points_available: 0, stats: {}, birth_stats: { dmg: 1 } }];

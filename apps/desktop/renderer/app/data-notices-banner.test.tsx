@@ -35,6 +35,18 @@ describe('DataNoticesBanner', () => {
     expect(html).toContain('aria-label="What this means: ');
   });
 
+  it('says heroes and inventory are not reading, with the age of the last read, in both languages', () => {
+    const notice: DataNotice = { kind: 'heroesAndItemsNotReading', capturedAt: FIVE_MINUTES_AGO };
+    expect(render('en', [notice])).toContain('Showing the last read (5m ago).');
+    expect(render('pt-BR', [notice])).toContain('Mostrando a última leitura (há 5m).');
+  });
+
+  it('says they were never read when there is no last read to show', () => {
+    const notice: DataNotice = { kind: 'heroesAndItemsNotReading', capturedAt: null };
+    expect(render('en', [notice])).toContain('read your heroes and inventory yet.');
+    expect(render('pt-BR', [notice])).toContain('Ainda não foi possível ler seus heróis e seu inventário.');
+  });
+
   it('lists one line per notice', () => {
     const html = render('en', [{ kind: 'skillTreeWithheld' }, { kind: 'gearFieldsAbsent' }]);
     expect(html).toContain('data-notice-skillTreeWithheld');

@@ -9,6 +9,11 @@ import {
   PREMIUM_CAPABILITIES,
   PREMIUM_NOTIFICATIONS,
   PREMIUM_SHARED_MODULES,
+  PREMIUM_SLOTS,
+  TRACKING_DB_LIMITS,
+  TRACKING_DB_LOCK,
+  TRACKING_DB_OPEN_CONFIG,
+  TRACKING_DB_STATEMENTS,
   type PremiumStatusAnswer,
   signedOutPremiumView,
 } from './index.js';
@@ -33,9 +38,23 @@ describe('shared modules and capabilities', () => {
     expect(Object.isFrozen(PREMIUM_SHARED_MODULES)).toBe(true);
   });
 
-  it('grants the four capabilities, in order, and the list is frozen', () => {
-    expect([...PREMIUM_CAPABILITIES]).toEqual(['premium.status', 'store', 'log', 'notify']);
+  it('grants the eight capabilities, in order, and the list is frozen', () => {
+    expect([...PREMIUM_CAPABILITIES]).toEqual([
+      'premium.status',
+      'store',
+      'log',
+      'notify',
+      'db',
+      'raw.tap',
+      'raw.battleLog',
+      'premium.worker',
+    ]);
     expect(Object.isFrozen(PREMIUM_CAPABILITIES)).toBe(true);
+  });
+
+  it('names the two slots, in order, and the list is frozen', () => {
+    expect([...PREMIUM_SLOTS]).toEqual(['premium.tab', 'live.section']);
+    expect(Object.isFrozen(PREMIUM_SLOTS)).toBe(true);
   });
 });
 
@@ -61,14 +80,63 @@ describe('bundle public keys', () => {
 });
 
 describe('plugin API version', () => {
-  it('is 1.1.0 from either module', () => {
-    expect(fromHost).toBe('1.1.0');
-    expect(fromLicence).toBe('1.1.0');
-    expect(PLUGIN_API_VERSION).toBe('1.1.0');
+  it('is 1.2.0 from either module', () => {
+    expect(fromHost).toBe('1.2.0');
+    expect(fromLicence).toBe('1.2.0');
+    expect(PLUGIN_API_VERSION).toBe('1.2.0');
   });
 
   it('is the same value through both modules', () => {
     expect(fromLicence).toBe(fromHost);
+  });
+});
+
+describe('tracking database configuration', () => {
+  it('pins the open configuration value for value', () => {
+    expect(TRACKING_DB_OPEN_CONFIG).toEqual({
+      autoinstall_known_extensions: 'false',
+      autoload_known_extensions: 'false',
+      allow_community_extensions: 'false',
+      allow_unsigned_extensions: 'false',
+      threads: '2',
+      memory_limit: '512MB',
+      temp_directory: '',
+    });
+    expect(Object.isFrozen(TRACKING_DB_OPEN_CONFIG)).toBe(true);
+  });
+
+  it('pins the lock statements and their order', () => {
+    expect(TRACKING_DB_LOCK).toEqual([
+      ['enable_external_access', 'false'],
+      ['lock_configuration', 'true'],
+    ]);
+    expect(Object.isFrozen(TRACKING_DB_LOCK)).toBe(true);
+  });
+
+  it('pins which statement types each half and each op may run', () => {
+    expect(TRACKING_DB_STATEMENTS).toEqual({
+      worker: ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP', 'MERGE_INTO'],
+      ui: ['SELECT'],
+      batch: ['INSERT', 'UPDATE', 'DELETE', 'MERGE_INTO'],
+      tx: ['INSERT', 'UPDATE', 'DELETE', 'MERGE_INTO', 'CREATE', 'ALTER', 'DROP'],
+      refusedCreateKinds: ['SECRET'],
+    });
+    expect(Object.isFrozen(TRACKING_DB_STATEMENTS)).toBe(true);
+  });
+
+  it('pins the limits value for value', () => {
+    expect(TRACKING_DB_LIMITS).toEqual({
+      sqlBytes: 65_536,
+      params: 256,
+      batchRows: 5_000,
+      txSteps: 256,
+      writeParamBytes: 4_194_304,
+      resultRows: 10_000,
+      resultBytes: 8_388_608,
+      statementMs: 10_000,
+      callsPerMinutePerHalf: 600,
+    });
+    expect(Object.isFrozen(TRACKING_DB_LIMITS)).toBe(true);
   });
 });
 
@@ -109,6 +177,12 @@ describe('host on the Premium view and the invoke allowlist', () => {
 
   it('allows the premium:hostMountFailed invoke for the main window', () => {
     expect(IPC_CHANNELS).toContain('premium:hostMountFailed');
+  });
+
+  it('allows the three tracking invokes for the main window', () => {
+    expect(IPC_CHANNELS).toContain('premium:trackingHistory');
+    expect(IPC_CHANNELS).toContain('premium:clearTrackingHistory');
+    expect(IPC_CHANNELS).toContain('premium:sectionMountFailed');
   });
 
   it('registers the UI capability call and the show-tab event', () => {

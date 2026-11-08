@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createTrackingRig } from './premium-tracking-rig.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
@@ -646,6 +647,69 @@ ${detail}`,
     } finally {
       await app.close().catch(() => undefined);
       fs.rmSync(userDataDir, { recursive: true, force: true });
+    }
+  });
+
+  /**
+   * The Live tab keeps its single scrollbar with Premium's section mounted at the bottom of it: the
+   * window cannot scroll, `<main>` is the one element that does, and the section adds no scroll
+   * region of its own. A short window makes the tab taller than the region, so the check measures a
+   * scrollbar that is really there rather than an absent one.
+   */
+  test('the Live tab keeps exactly one scrollbar with the Premium section mounted', async () => {
+    test.setTimeout(180_000);
+    const rig = await createTrackingRig({ tmpPrefix: 'bfc-earnings-section-' });
+    try {
+      const page = await rig.launch();
+      await rig.acceptConsent();
+      await rig.signIn();
+      await rig.waitForRunning(1);
+      await page.locator('nav[aria-label="Main"]').getByRole('button').first().click();
+      const section = page.getByTestId('premium-live-section');
+      await expect(section).toBeVisible({ timeout: 60_000 });
+      await expect(section.getByTestId('tracking-slot')).toHaveText('slot: live.section', { timeout: 30_000 });
+      await expect(page.getByTestId('live-earnings')).toBeVisible({ timeout: 30_000 });
+
+      await rig.app.evaluate(({ BrowserWindow }, size) => {
+        const win = BrowserWindow.getAllWindows()[0];
+        win?.setMinimumSize(200, 200);
+        win?.setSize(size.width, size.height);
+      }, { width: 1100, height: 640 });
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      await page.waitForTimeout(300);
+
+      const measured = await page.evaluate(() => {
+        const found = [];
+        for (const el of document.querySelectorAll('*')) {
+          const style = getComputedStyle(el);
+          const scrollsY = /(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight + 1;
+          const scrollsX = /(auto|scroll)/.test(style.overflowX) && el.scrollWidth > el.clientWidth + 1;
+          if (scrollsY || scrollsX) found.push({ tag: el.tagName.toLowerCase(), testId: el.getAttribute('data-testid') });
+        }
+        const startX = window.scrollX;
+        const startY = window.scrollY;
+        window.scrollTo(9999, 9999);
+        const documentMoved = { x: window.scrollX, y: window.scrollY };
+        window.scrollTo(startX, startY);
+        const mount = document.querySelector('[data-testid="premium-live-section"]');
+        const main = document.querySelector('main');
+        const mountStyle = getComputedStyle(mount);
+        return {
+          found,
+          documentMoved,
+          sectionInsideMain: main.contains(mount),
+          sectionOverflow: `${mountStyle.overflowX} ${mountStyle.overflowY}`,
+          mainOverflows: main.scrollHeight > main.clientHeight + 1,
+        };
+      });
+
+      expect(measured.documentMoved, 'the window itself scrolls').toEqual({ x: 0, y: 0 });
+      expect(measured.found.map((entry) => entry.tag), `scroll regions: ${JSON.stringify(measured.found)}`).toEqual(['main']);
+      expect(measured.mainOverflows, 'the tab is taller than its region, so the scrollbar measured is a real one').toBe(true);
+      expect(measured.sectionInsideMain).toBe(true);
+      expect(measured.sectionOverflow, 'the section has no overflow of its own').toBe('visible visible');
+    } finally {
+      await rig.dispose();
     }
   });
 });

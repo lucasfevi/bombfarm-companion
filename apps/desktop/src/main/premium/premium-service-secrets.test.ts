@@ -617,10 +617,12 @@ describe('the Premium host adds nothing secret to the view or the log', () => {
     'premium.bundle_fetch',
     'premium.bundle_verify',
     'premium.capability',
+    'premium.db',
     'premium.host_start_failed',
     'premium.removal',
     'premium.ui_mount',
     'premium.worker_exit',
+    'premium.worker_message',
   ];
   const HOST_ARGS_MARKER = 'host-capability-args-marker-7741';
   let rig: HostRig | null = null;
@@ -650,8 +652,9 @@ describe('the Premium host adds nothing secret to the view or the log', () => {
       uiUrl: 'app://bundle/_premium/4/ui/index.js',
       styleUrl: 'app://bundle/_premium/4/ui/index.css',
       localBuild: false,
+      slots: ['premium.tab'],
     });
-    expect(Object.keys(view.host ?? {}).sort()).toEqual(['localBuild', 'phase', 'styleUrl', 'uiUrl']);
+    expect(Object.keys(view.host ?? {}).sort()).toEqual(['localBuild', 'phase', 'slots', 'styleUrl', 'uiUrl']);
     const emitted = everyEmittedView(h);
     for (const secret of NEVER_EMITTED) expect(emitted, `emitted view holds ${secret}`).not.toContain(secret);
     for (const bytes of input.files.values()) {

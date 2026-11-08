@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import { ConsentedSessionRequiredError, RAW, SessionToken, grantSession, type ConsentedSession } from './session.js';
 import {
+  MAX_RESPONSE_BYTES,
+  ResponseTooLargeError,
   buildHttpRequest,
   isTrustedHttpRequest,
   requestGet,
@@ -203,9 +205,15 @@ describe('RequestOutcome classification — every response class maps to its own
 
   it('an oversize body is rejected as too_large WITHOUT being JSON.parsed', async () => {
     // A body that would throw if JSON.parse ever touched it, padded well past MAX_RESPONSE_BYTES.
-    const hugeBadJson = `{not-json${'x'.repeat(2_100_000)}`;
+    const hugeBadJson = `{not-json${'x'.repeat(MAX_RESPONSE_BYTES)}`;
     const outcome = await requestGet(session, fakeTransport({ status: 200, body: hugeBadJson }), '/state');
     expect(outcome).toEqual({ kind: 'too_large', bytes: Buffer.byteLength(hugeBadJson, 'utf8') });
+  });
+
+  it('a transport that stopped at the limit reads as too_large, not as a network failure', async () => {
+    const transport = vi.fn().mockRejectedValue(new ResponseTooLargeError(40_000_000)) as HttpTransport;
+    const outcome = await requestGet(session, transport, '/inventory');
+    expect(outcome).toEqual({ kind: 'too_large', bytes: 40_000_000 });
   });
 
   it('a throwing transport maps to transport_error with exactly one invocation — no alternative host, no retry', async () => {

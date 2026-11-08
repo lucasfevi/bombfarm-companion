@@ -9,7 +9,7 @@ import type { AppFlavor } from './flavors.js';
 import type { AppLocale } from './locale.js';
 
 /** The host API version a bundle is built against and a renewal reports to the server. */
-export const PLUGIN_API_VERSION = '1.1.0';
+export const PLUGIN_API_VERSION = '1.2.0';
 
 export type PremiumBundleRole = 'worker' | 'renderer' | 'style';
 
@@ -45,11 +45,25 @@ export const PREMIUM_SHARED_MODULES = Object.freeze([
 ] as const);
 
 /** What a worker may ask the host for. */
-export const PREMIUM_CAPABILITIES = Object.freeze(['premium.status', 'store', 'log', 'notify'] as const);
+export const PREMIUM_CAPABILITIES = Object.freeze([
+  'premium.status',
+  'store',
+  'log',
+  'notify',
+  'db',
+  'raw.tap',
+  'raw.battleLog',
+  'premium.worker',
+] as const);
+
+/** Where a bundle's screen may mount: the Premium tab and a section of the Live page. */
+export const PREMIUM_SLOTS = Object.freeze(['premium.tab', 'live.section'] as const);
+
+export type PremiumSlot = (typeof PREMIUM_SLOTS)[number];
 
 export type PremiumCapability = (typeof PREMIUM_CAPABILITIES)[number];
 
-export type CapabilityCall = { id: number; capability: string; args: unknown };
+export type CapabilityCall = { id: number; capability: string; args: unknown; slot?: PremiumSlot };
 
 export type CapabilityReply =
   | { id: number; ok: true; value: unknown }
@@ -64,14 +78,143 @@ export type CapabilityReply =
         | 'bad_call'
         | 'bad_args'
         | 'too_large'
-        | 'unavailable';
+        | 'unavailable'
+        | 'timeout'
+        | 'failed';
+      /** Set only by `db` and `premium.worker`: a category, never engine text, SQL or parameters. */
+      reason?: DbRefusalReason | PremiumWorkerRefusalReason;
     };
 
 /** Why the host paused the bundle: another account is playing, or the licence is unconfirmed. */
 export type PremiumPauseReason = 'other_account' | 'unconfirmed';
 
+/** The `db` call envelope. Parameters are positional: `$1` … `$n`. */
+export type DbParam = string | number | boolean | null;
+export type DbArgs =
+  | { op: 'exec'; sql: string; params?: readonly DbParam[] }
+  | { op: 'query'; sql: string; params?: readonly DbParam[] }
+  | { op: 'batch'; sql: string; rows: readonly (readonly DbParam[])[] }
+  | { op: 'tx'; steps: readonly { sql: string; params?: readonly DbParam[] }[] }
+  | { op: 'size' }
+  | { op: 'status' };
+
+/** BIGINT, HUGEINT, DECIMAL, dates and times arrive as strings. */
+export type DbValue = string | number | boolean | null;
+
+export type DbUnavailableReason =
+  | 'engine_unavailable'
+  | 'db_unreadable'
+  | 'no_secure_storage'
+  | 'clearing'
+  | 'no_subject';
+
+export type DbRefusalReason =
+  | DbUnavailableReason // error 'unavailable'
+  | 'disk_full'
+  | 'constraint'
+  | 'catalog'
+  | 'conversion'
+  | 'other' // error 'failed'
+  | 'shape'
+  | 'statement_count'
+  | 'statement_type'
+  | 'bind' // error 'bad_args'
+  | 'rows'
+  | 'bytes'
+  | 'params'; // error 'too_large'
+
+/** The reasons `premium.worker` refuses with: `unavailable` (no handler), `failed` (the handler threw), `too_large`. */
+export type PremiumWorkerRefusalReason = 'no_handler' | Extract<DbRefusalReason, 'other' | 'bytes'>;
+
+export type DbAnswer = {
+  exec: { changes: number };
+  query: { columns: readonly string[]; rows: readonly (readonly DbValue[])[] };
+  batch: { changes: number };
+  tx: { changes: readonly number[] };
+  size: { bytes: number };
+  status: { state: 'ready' } | { state: 'unavailable'; reason: DbUnavailableReason };
+};
+
+/** The configuration the tracking database opens with. */
+export const TRACKING_DB_OPEN_CONFIG = Object.freeze({
+  autoinstall_known_extensions: 'false',
+  autoload_known_extensions: 'false',
+  allow_community_extensions: 'false',
+  allow_unsigned_extensions: 'false',
+  threads: '2',
+  memory_limit: '512MB',
+  temp_directory: '',
+} as const);
+
+/** Applied in this order after the encryption key is attached. */
+export const TRACKING_DB_LOCK = Object.freeze([
+  ['enable_external_access', 'false'],
+  ['lock_configuration', 'true'],
+] as const);
+
+export const TRACKING_DB_STATEMENTS = Object.freeze({
+  worker: ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP', 'MERGE_INTO'],
+  ui: ['SELECT'],
+  batch: ['INSERT', 'UPDATE', 'DELETE', 'MERGE_INTO'],
+  tx: ['INSERT', 'UPDATE', 'DELETE', 'MERGE_INTO', 'CREATE', 'ALTER', 'DROP'],
+  refusedCreateKinds: ['SECRET'],
+} as const);
+
+export const TRACKING_DB_LIMITS = Object.freeze({
+  sqlBytes: 64 * 1024,
+  params: 256,
+  batchRows: 5_000,
+  txSteps: 256,
+  writeParamBytes: 4 * 1024 * 1024, // batch or tx, serialised params
+  resultRows: 10_000,
+  resultBytes: 8 * 1024 * 1024,
+  statementMs: 10_000,
+  callsPerMinutePerHalf: 600,
+} as const);
+
+/** One item of the raw game feed: a frame as the game sent it, or a parsed JSON response body. */
+export type RawTapItem =
+  | { kind: 'frame'; seq: number; atMs: number; accountKey: string; wire: Record<string, unknown> }
+  | { kind: 'body'; seq: number; atMs: number; accountKey: string; body: unknown };
+
+export type RawBattleLogItem = {
+  seq: number;
+  atMs: number;
+  accountKey: string;
+  /** `acc_${accountKey}`. */
+  section: string;
+  text: string;
+  mtimeMs: number;
+  gameLanguage: string | null;
+  baseline: boolean;
+};
+
+export type RawGapItem = { feed: 'raw.tap' | 'raw.battleLog'; dropped: number; fromSeq: number };
+
+export type DbClearedItem = { atMs: number };
+
+/** The event names a worker may listen for. */
+export type HostEventName = 'paused' | 'resumed' | 'raw.tap' | 'raw.battleLog' | 'raw.gap' | 'db.cleared';
+
+/** A batch of feed items; the loader answers `{ t: 'ack', seq }` once every listener has run. */
+export type HostEventsMessage =
+  | { t: 'events'; seq: number; name: 'raw.tap'; items: readonly RawTapItem[] }
+  | { t: 'events'; seq: number; name: 'raw.battleLog'; items: readonly RawBattleLogItem[] }
+  | { t: 'events'; seq: number; name: 'raw.gap'; items: readonly RawGapItem[] }
+  | { t: 'events'; seq: number; name: 'db.cleared'; items: readonly DbClearedItem[] };
+
+/** The bundle's screen asking its own worker (`premium.worker`). */
+export type HostUiMessage = { t: 'ui'; id: number; slot: PremiumSlot; msg: unknown };
+
+export type WorkerAckMessage = { t: 'ack'; seq: number };
+export type WorkerUiReply =
+  | { t: 'uiReply'; id: number; ok: true; value: unknown }
+  | { t: 'uiReply'; id: number; ok: false; reason?: 'no_handler' | 'other' };
+
 export type HostToWorker =
   | { t: 'init'; sequence: number; version: string; granted: readonly string[] }
+  | HostEventsMessage
+  | HostUiMessage
   // SPEC_DEVIATION: `reason` is optional on the wire type.
   // Reason: callers that pause without a known reason (and the tests that pin their message) stay valid.
   | { t: 'paused'; reason?: PremiumPauseReason }
@@ -104,7 +247,19 @@ export interface PremiumHostView {
   // SPEC_DEVIATION: optional, absent while the bundle is not paused.
   // Reason: views built without it (every earlier producer and test) stay valid.
   readonly paused?: { readonly reason: PremiumPauseReason } | null;
+  /** The slots granted while the bundle runs. */
+  readonly slots?: readonly PremiumSlot[];
 }
+
+/** What Settings learns about the tracking history on disk. */
+export type TrackingHistoryView =
+  | { state: 'none' }
+  | { state: 'present'; bytes: number }
+  | {
+      state: 'engine_unavailable';
+      bytes: number | null;
+      reason: 'binding_missing' | 'extension_missing' | 'probe_failed';
+    };
 
 export interface BundlePublicKey {
   readonly keyId: string;

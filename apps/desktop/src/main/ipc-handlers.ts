@@ -48,14 +48,18 @@ import {
   type GamePingView,
   type OnlinePlayersView,
   type PremiumActionResult,
+  type PremiumSlot,
   type PremiumView,
   type MiniLiveLayoutView,
   type PvpFilmView,
   type PvpHistoryResult,
   type SettingsWriteResult,
+  type StartWithWindowsWriteResult,
+  type TrackingHistoryView,
   type UpdateStatus,
   type WindowStateView,
 } from '@bombfarm/contracts';
+import type { LoginItemStatus } from './shell/login-item-reconciler.js';
 import { initialConsent, summarizePvpFilm, type ConsentEvent } from '@bombfarm/game-api';
 
 const premiumUnavailable: PremiumActionResult = { ok: false, reason: 'unavailable' };
@@ -108,6 +112,12 @@ export interface PremiumServicePort {
   useHere?(): PremiumActionResult;
   /** The Premium tab could not mount the bundle's screen. */
   hostMountFailed?(): void;
+  /** A bundle section could not mount in the window; log only. */
+  sectionMountFailed?(): void;
+  /** The tracking history on disk for the signed-in player; null when signed out or no host. */
+  trackingHistory?(): TrackingHistoryView | null;
+  /** Deletes the signed-in player's tracking history; null when nothing was done. */
+  clearTrackingHistory?(): Promise<'cleared' | 'busy' | 'failed' | null>;
   /** A capability call from the Premium screen; absent when the app built no host. */
   callFromUi?(call: CapabilityCall): Promise<CapabilityReply>;
 }
@@ -240,6 +250,8 @@ export interface IpcHandlerDeps<Image extends ClipboardImageLike = ClipboardImag
   applyRestartGameOnExit: (enabled: unknown) => SettingsWriteResult;
   applyUsagePingEnabled: (enabled: unknown) => SettingsWriteResult;
   applyMarketQuoteCurrency: (next: unknown) => SettingsWriteResult;
+  applyStartWithWindows: (enabled: unknown) => StartWithWindowsWriteResult;
+  getLoginItemStatus: () => LoginItemStatus;
 
   imageClipboard: ImageClipboard<Image>;
 }
@@ -364,6 +376,9 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.applyRestartGameOnExit(enabled),
     'settings:setMarketQuoteCurrency': (currency): SettingsWriteResult => deps.applyMarketQuoteCurrency(currency),
     'settings:setUsagePingEnabled': (enabled: boolean): SettingsWriteResult => deps.applyUsagePingEnabled(enabled),
+    'settings:setStartWithWindows': (enabled: boolean): StartWithWindowsWriteResult =>
+      deps.applyStartWithWindows(enabled),
+    'settings:getLoginItemStatus': (): LoginItemStatus => deps.getLoginItemStatus(),
     'storage:health': () => deps.getStorage()?.healthCheck() ?? { binding: 'unknown', ok: false },
     'game:getStatus': () =>
       deps.getGameReader()?.getStatus() ?? {
@@ -416,8 +431,21 @@ export function createIpcHandlers<Image extends ClipboardImageLike>(
       deps.getPremiumService()?.hostMountFailed?.();
       return null;
     },
-    'premium:uiCall': (capability: string, args: unknown): Promise<CapabilityReply> | CapabilityReply =>
-      deps.getPremiumService()?.callFromUi?.({ id: 0, capability, args }) ?? { id: 0, ok: false, error: 'unavailable' },
+    'premium:trackingHistory': (): TrackingHistoryView =>
+      deps.getPremiumService()?.trackingHistory?.() ?? { state: 'none' },
+    'premium:clearTrackingHistory': async (): Promise<{ ok: true } | { ok: false; error: 'busy' | 'failed' }> => {
+      const outcome = (await deps.getPremiumService()?.clearTrackingHistory?.()) ?? null;
+      if (outcome === 'cleared') return { ok: true };
+      return { ok: false, error: outcome === 'busy' ? 'busy' : 'failed' };
+    },
+    'premium:sectionMountFailed': (): null => {
+      deps.getPremiumService()?.sectionMountFailed?.();
+      return null;
+    },
+    'premium:uiCall': (capability: string, args: unknown, slot?: PremiumSlot): Promise<CapabilityReply> | CapabilityReply =>
+      deps.getPremiumService()?.callFromUi?.(
+        slot === undefined ? { id: 0, capability, args } : { id: 0, capability, args, slot },
+      ) ?? { id: 0, ok: false, error: 'unavailable' },
     'market:refreshItem': refreshMarketItem,
     'market:check': checkMarketNow,
     'forge:start': (request: ForgeStartRequest): ForgeStartResult =>

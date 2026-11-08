@@ -62,6 +62,7 @@ describe('downloading a bundle', () => {
       uiUrl: 'app://bundle/_premium/4/ui/index.js',
       styleUrl: 'app://bundle/_premium/4/ui/index.css',
       localBuild: false,
+      slots: ['premium.tab'],
     });
     expect(r.runner.runningSequence()).toBe(4);
   });
@@ -319,6 +320,7 @@ describe('a local development bundle', () => {
         uiUrl: 'app://bundle/_premium/0/ui/index.js',
         styleUrl: 'app://bundle/_premium/0/ui/index.css',
         localBuild: true,
+        slots: ['premium.tab'],
       });
       expect(r.server.attempts).toBe(0);
       expect(await topLevel(r.root)).toEqual([]);

@@ -1,5 +1,7 @@
+// @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import type { ReactElement, ReactNode } from 'react';
+import { act, type ReactElement, type ReactNode } from 'react';
+import { createRoot } from 'react-dom/client';
 import { signedOutPremiumView, type PremiumLicenceView, type PremiumView } from '@bombfarm/contracts';
 import { en } from '../../lib/copy/en';
 import { PremiumLicenceLine } from './premium-licence-line';
@@ -104,11 +106,27 @@ describe('the Premium tab — Use Premium on this PC is wired to its action', ()
     expect(onUseHere).not.toHaveBeenCalled();
   });
 
-  it('the button calls onUseHere once and nothing else', () => {
+  it('the button calls onUseHere once, only after confirm', () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    window.matchMedia = vi
+      .fn()
+      .mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() });
     const onUseHere = vi.fn();
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    act(() => { root.render(<PremiumLicenceLine licence={licence} onUseHere={onUseHere} />); });
 
-    findByTestId(PremiumLicenceLine({ licence, onUseHere }), 'premium-use-here')?.props.onClick?.();
+    act(() => container.querySelector<HTMLElement>('[data-testid="premium-use-here"]')?.click());
+    const dialog = document.body.querySelector<HTMLElement>('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(onUseHere).not.toHaveBeenCalled();
 
+    const confirm = [...(dialog?.querySelectorAll('button') ?? [])].find((b) => b.textContent === en.premiumLicenceUseHere);
+    act(() => confirm?.click());
     expect(onUseHere).toHaveBeenCalledTimes(1);
+
+    act(() => { root.unmount(); });
+    container.remove();
   });
 });

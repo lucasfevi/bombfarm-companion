@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { HERO_DETAIL_PATH, heroDetailPath, readHeroDetail } from './hero-detail.js';
 import { PacingRefusedError, type PacingGate, type PacingState } from './pacing.js';
-import type { HttpResponse, HttpTransport } from './request.js';
+import { MAX_RESPONSE_BYTES, type HttpResponse, type HttpTransport } from './request.js';
 import { SessionToken, grantSession } from './session.js';
 import { grantedConsent } from './test-fixtures.js';
 
@@ -176,7 +176,7 @@ describe('readHeroDetail — every other failure reason', () => {
 
   it('too_large on an oversized body', async () => {
     const gate = passthroughGate();
-    const transport = fixedResponseTransport({ status: 200, body: 'x'.repeat(2_000_001) });
+    const transport = fixedResponseTransport({ status: 200, body: 'x'.repeat(MAX_RESPONSE_BYTES + 1) });
     expect(await readHeroDetail(session, transport, gate, 'hero-1')).toEqual({ kind: 'failed', reason: 'too_large' });
   });
 

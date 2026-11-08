@@ -135,6 +135,19 @@ export const ptBR: Copy = {
     'Com isto ligado, se o jogo fechar enquanto o companion já está aberto, a Steam inicia-o de novo. O companion não inicia o jogo ao abrir. Desligado por padrão.',
   settingsRestartGameOnExitNotSavedTitle: 'Configuração do jogo alterada, mas não salva',
 
+  // settingsStartWithWindows* — abrir o companion quando você entra no Windows (ligado por padrão)
+  settingsStartWithWindowsSectionTitle: 'Inicialização',
+  settingsStartWithWindowsLabel: 'Iniciar com o Windows',
+  settingsStartWithWindowsHelp:
+    'Abre o companion quando você entra no Windows. Só vale enquanto o acesso à conta estiver permitido; até lá sua escolha fica guardada e nada é iniciado. Ligado por padrão.',
+  settingsStartWithWindowsNotSavedTitle: 'Configuração de inicialização alterada, mas não salva',
+  settingsStartWithWindowsUnpackagedText:
+    'Isto só funciona no app instalado, no Windows; por isso o interruptor fica desligado aqui.',
+  settingsStartWithWindowsFailedText:
+    'O Windows não aceitou a mudança, então o app não vai iniciar com o Windows até funcionar. Tente de novo.',
+  settingsStartWithWindowsDisabledByWindowsText:
+    'O Windows desativou isto. Para ligar de novo, abra Configurações do Windows → Aplicativos → Inicialização, ou Gerenciador de Tarefas → Aplicativos de inicialização, e ative o companion.',
+
   // settingsUsage* — o aviso de uso a cada hora, e o único interruptor que o torna anônimo
   settingsUsageSectionTitle: 'Contagem de uso',
   settingsUsagePingLabel: 'Incluir minha conta na contagem de uso',
@@ -189,7 +202,7 @@ export const ptBR: Copy = {
   // settingsConsent* — o controle de revogar o acesso à conta (Configurações só é alcançável já permitido)
   settingsConsentSectionTitle: 'Acesso à conta',
   settingsConsentStatusGranted: 'Acesso: permitido',
-  settingsConsentHelpGranted: 'O companion lê sua conta e permanece conectado ao cliente do jogo.',
+  settingsConsentHelpGranted: 'Enquanto isto estiver ativado, o companion lê sua conta e se conecta ao cliente do jogo. O app em si continua em execução em segundo plano depois que você fecha a janela; para encerrá-lo, use o ícone na área de notificação.',
   settingsConsentRevokeAction: 'Desativar',
 
   // settingsDiagnostics* — o controle manual de gravação do anel de quadros (um recurso de relatório de erro)
@@ -262,7 +275,7 @@ export const ptBR: Copy = {
   screenCrashInfo: 'O resto do app continua funcionando. Troque de aba ou tente novamente; os detalhes foram salvos no arquivo de log.',
   screenCrashInfoCompact: 'O resto do app continua funcionando. Tente novamente; os detalhes foram salvos no arquivo de log.',
   screenCrashRetry: 'Tentar novamente',
-  // dataNotice* / heroFlag* / dataField* — o que o app diz quando o jogo para de enviar um campo que ele lê
+  // dataNotice* / heroFlag* / dataField* — o que o app diz quando o jogo para de enviar um campo que ele lê, ou uma leitura continua falhando
   dataNoticeInfoLabel: 'O que isso significa',
   dataNoticeSkillTreeStale: 'O jogo mudou a forma de enviar sua árvore de habilidades. Mostrando a última que lemos ({age}).',
   dataNoticeSkillTreeStaleInfo:
@@ -270,6 +283,10 @@ export const ptBR: Copy = {
   dataNoticeSkillTreeWithheld: 'O jogo mudou a forma de enviar sua árvore de habilidades e o app não consegue lê-la até ser atualizado.',
   dataNoticeSkillTreeWithheldInfo:
     'As telas que precisam da árvore de habilidades não mostram nada em vez de um palpite, e voltam quando o app for atualizado.',
+  dataNoticeHeroesAndItemsStale: 'Não foi possível ler seus heróis e seu inventário agora. Mostrando a última leitura ({age}).',
+  dataNoticeHeroesAndItemsUnread: 'Ainda não foi possível ler seus heróis e seu inventário.',
+  dataNoticeHeroesAndItemsInfo:
+    'Eles são lidos juntos, então, quando um falha, os dois param de atualizar, e o quadro da Fazenda e o Otimizador usam a última leitura. O app continua tentando sozinho.',
   dataNoticeGearOwnerUnknown: 'Alguns equipamentos ficaram de fora porque o jogo parou de dizer quem os usa.',
   dataNoticeGearOwnerUnknownInfo:
     'Essas peças não contam em nenhum herói e não são oferecidas ao Otimizador até o app ser atualizado.',
@@ -1515,6 +1532,8 @@ export const ptBR: Copy = {
   premiumLicenceMismatch: 'Esta cópia do app não é o PC que tem o seu Premium.',
   premiumLicenceMoved: 'O Premium foi para {name}. Ele foi removido deste PC.',
   premiumLicenceMovedPending: 'O Premium foi para {name}.',
+  premiumLicenceMovedAway: 'O Premium foi para outro PC. Ele foi removido deste PC.',
+  premiumLicenceMovedAwayPending: 'O Premium foi para outro PC.',
   premiumLicenceReleased: 'O suporte removeu o Premium deste PC.',
   premiumLicenceEnded: 'O Premium terminou. Ele foi removido deste PC.',
   premiumLicenceEndedPending: 'O Premium terminou.',
@@ -1523,9 +1542,29 @@ export const ptBR: Copy = {
   premiumLicenceMoveFailed: 'Não foi possível mover o Premium — tente de novo.',
   // The words of premiumLicenceMoveLimit that become a link once a support channel exists.
   premiumSupportWords: 'falar com o suporte',
+  // premiumMoveConfirm* — the dialog that asks before Premium moves to this PC
+  premiumMoveConfirmTitle: 'Usar o Premium neste PC?',
+  premiumMoveConfirmBody:
+    'O Premium será removido do outro PC. Seu histórico de drops fica naquele PC, e este PC começa com o histórico vazio.',
+  premiumMoveConfirmCancel: 'Cancelar',
   // premiumHost* — the Premium page's mount point
   premiumHostUpdating: 'Atualizando o Premium…',
   premiumHostStopped: 'O Premium parou inesperadamente — reinicie o app',
   premiumHostLocalBuild: 'Build local do Premium',
   premiumHostLocalBuildHint: 'Use pnpm dev:premium para carregá-lo',
+  // premiumTracking* — the Settings row that shows and clears the tracking history
+  premiumTrackingLabel: 'Histórico de drops',
+  premiumTrackingSize: '{size} guardados neste PC',
+  premiumTrackingUnavailable: 'O histórico de drops não está disponível neste PC ({reason}).',
+  premiumTrackingReasonBindingMissing: 'o mecanismo de banco de dados não foi encontrado',
+  premiumTrackingReasonExtensionMissing: 'a extensão do mecanismo não foi encontrada',
+  premiumTrackingReasonProbeFailed: 'o mecanismo falhou na verificação de início',
+  premiumTrackingClear: 'Limpar histórico de drops',
+  premiumTrackingConfirmTitle: 'Limpar o histórico de drops?',
+  premiumTrackingConfirmBody: 'Isso apaga o histórico de drops guardado neste PC. Ele não pode ser recuperado.',
+  premiumTrackingConfirmAction: 'Limpar',
+  premiumTrackingConfirmCancel: 'Cancelar',
+  premiumTrackingCleared: 'Histórico de drops limpo.',
+  premiumTrackingBusy: 'O histórico de drops está ocupado agora — tente de novo em instantes.',
+  premiumTrackingFailed: 'Não foi possível limpar o histórico de drops — tente de novo.',
 };

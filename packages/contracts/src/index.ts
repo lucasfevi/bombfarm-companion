@@ -1,12 +1,12 @@
 import type { AppFlavor, UpdateChannel } from './flavors.js';
-import type { SettingsWriteResult } from './locale.js';
+import type { LoginItemBlock, SettingsWriteResult, StartWithWindowsWriteResult } from './locale.js';
 import type { LiveDiagnosticsDumpOutcome, LiveEvent, LiveView } from './live-source.js';
 import type { UpdateStatus } from './update.js';
 import type { MarketQuoteCurrency, MarketQuoteResult, MarketQuoteTarget, MarketSnapshotView } from './market.js';
 import { DEFAULT_MARKET_QUOTE_CURRENCY } from './market.js';
 import type { OnlinePlayersView } from './online-players.js';
 import type { GamePingView } from './game-ping.js';
-import type { CapabilityReply } from './premium-host.js';
+import type { CapabilityReply, PremiumSlot, TrackingHistoryView } from './premium-host.js';
 import type { PremiumActionResult, PremiumView } from './premium.js';
 import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
 import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
@@ -242,7 +242,25 @@ export type {
   BundlePublicKey,
   CapabilityCall,
   CapabilityReply,
+  DbAnswer,
+  DbArgs,
+  DbClearedItem,
+  DbParam,
+  DbRefusalReason,
+  DbUnavailableReason,
+  DbValue,
+  HostEventName,
+  HostEventsMessage,
   HostToWorker,
+  HostUiMessage,
+  PremiumSlot,
+  PremiumWorkerRefusalReason,
+  RawBattleLogItem,
+  RawGapItem,
+  RawTapItem,
+  TrackingHistoryView,
+  WorkerAckMessage,
+  WorkerUiReply,
   PremiumBundleRole,
   PremiumCapability,
   PremiumHostView,
@@ -256,6 +274,11 @@ export {
   PREMIUM_CAPABILITIES,
   PREMIUM_NOTIFICATIONS,
   PREMIUM_SHARED_MODULES,
+  PREMIUM_SLOTS,
+  TRACKING_DB_LIMITS,
+  TRACKING_DB_LOCK,
+  TRACKING_DB_OPEN_CONFIG,
+  TRACKING_DB_STATEMENTS,
 } from './premium-host.js';
 export type { LeasePublicKey, LicenceReason, LicenceState, PremiumLicenceView } from './premium-licence.js';
 export {
@@ -480,7 +503,7 @@ export interface DamageAttributionResult {
 }
 
 export interface AppSettings {
-  schemaVersion: 4;
+  schemaVersion: 5;
   locale: 'en' | 'pt-BR';
   alwaysOnTopMain: boolean;
   alwaysOnTopMini: boolean;
@@ -497,10 +520,13 @@ export interface AppSettings {
   /** On until the player turns it off. While on, the hourly usage ping names this install and
    *  the game account; while off it names neither, and the install's id is deleted. */
   usagePingEnabled: boolean;
+  /** On until the player turns it off. While on, the installed app registers itself to start when
+   *  Windows signs the player in, hidden in the tray. */
+  startWithWindows: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  schemaVersion: 4,
+  schemaVersion: 5,
   locale: 'en',
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
@@ -508,6 +534,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   restartGameOnExit: false,
   marketQuoteCurrency: DEFAULT_MARKET_QUOTE_CURRENCY,
   usagePingEnabled: true,
+  startWithWindows: true,
 };
 
 export type MiniLiveGrowthAxis = 'vertical' | 'horizontal';
@@ -590,6 +617,8 @@ export interface IpcChannels {
   'settings:setRestartGameOnExit': { args: [boolean]; result: SettingsWriteResult };
   'settings:setMarketQuoteCurrency': { args: [MarketQuoteCurrency]; result: SettingsWriteResult };
   'settings:setUsagePingEnabled': { args: [boolean]; result: SettingsWriteResult };
+  'settings:setStartWithWindows': { args: [boolean]; result: StartWithWindowsWriteResult };
+  'settings:getLoginItemStatus': { args: []; result: { registered: boolean; block: LoginItemBlock | null } };
   /** The main window's caption buttons, drawn in the header rather than by the OS. Zero-arg like
    *  the consent quartet — the channel name is the verb. `window:close` asks the window to close
    *  and does not decide what that means: the shell's own close handler still answers it, so on
@@ -725,7 +754,13 @@ export interface IpcChannels {
   'premium:hostMountFailed': { args: []; result: null };
   /** A capability call from the Premium screen, answered by the same channel the bundle's worker
    *  uses. Main window only. */
-  'premium:uiCall': { args: [string, unknown]; result: CapabilityReply };
+  'premium:uiCall': { args: [string, unknown, PremiumSlot?]; result: CapabilityReply };
+  /** What Settings shows about the tracking history on disk. Main window only. */
+  'premium:trackingHistory': { args: []; result: TrackingHistoryView };
+  /** Deletes the tracking history. Main window only. */
+  'premium:clearTrackingHistory': { args: []; result: { ok: true } | { ok: false; error: 'busy' | 'failed' } };
+  /** A bundle section could not mount; log only. Main window only. */
+  'premium:sectionMountFailed': { args: []; result: null };
   /** A screen crash, reported by the window that drew it so it reaches the log file the renderer
    *  cannot write to. Main validates the record rather than trusting its shape, caps every field,
    *  stamps the scope itself and rate-limits each window; a call it drops answers the same `null`. */
@@ -750,6 +785,8 @@ export const IPC_CHANNELS = [
   'settings:setRestartGameOnExit',
   'settings:setMarketQuoteCurrency',
   'settings:setUsagePingEnabled',
+  'settings:setStartWithWindows',
+  'settings:getLoginItemStatus',
   'window:minimize',
   'window:toggleMaximize',
   'window:close',
@@ -805,6 +842,9 @@ export const IPC_CHANNELS = [
   'premium:useHere',
   'premium:hostMountFailed',
   'premium:uiCall',
+  'premium:trackingHistory',
+  'premium:clearTrackingHistory',
+  'premium:sectionMountFailed',
   'log:rendererError',
 ] as const satisfies readonly IpcInvokeChannel[];
 

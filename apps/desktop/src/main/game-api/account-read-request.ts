@@ -29,5 +29,5 @@ export function requestAccountRead(deps: AccountReadRequestDeps): AccountReadRes
 
   const trigger = deps.triggeredRefresh();
   if (trigger === null) return { ok: false, reason: 'unavailable' };
-  return trigger.notify() ? { ok: true } : { ok: false, reason: 'rate_limited' };
+  return trigger.notify({ explicit: true }) ? { ok: true } : { ok: false, reason: 'rate_limited' };
 }

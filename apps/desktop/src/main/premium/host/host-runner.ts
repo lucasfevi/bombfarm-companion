@@ -1,15 +1,18 @@
 import {
   PLUGIN_API_VERSION,
+  PREMIUM_SLOTS,
   type AppFlavor,
   type CapabilityCall,
   type CapabilityReply,
   type PremiumHostView,
   type PremiumManifest,
   type PremiumPauseReason,
+  type TrackingHistoryView,
 } from '@bombfarm/contracts';
 import type { LogPort } from '../../storage/index.js';
 import type { DeviceGetRequest, DeviceGetResult } from '../licence/licence-runner.js';
 import type { PremiumRemovalPort, PremiumRemovalReason } from '../licence/removal-port.js';
+import type { ClearOutcome } from '../tracking/tracking-store.js';
 import type { BundleCache } from './bundle-cache.js';
 import { fetchBundle, type FetchOutcome } from './bundle-fetch.js';
 import {
@@ -62,6 +65,26 @@ export interface HostScheduler {
   readonly clearTimeout: typeof clearTimeout;
 }
 
+/**
+ * What the runner tells the tracking side as the worker's life changes: feeds stop before the
+ * handle closes, and the file and its key are never touched (only `clear` deletes them).
+ */
+export interface HostTracking {
+  /** Waits for the call in flight and closes the handle; the next `db` call reopens it. */
+  close(): Promise<void>;
+  /** End the game feeds and drop what they hold. */
+  stopFeeds(): void;
+  /** Deliver nothing while paused, keeping the subscriptions; `stopFeeds` stands in when absent. */
+  pauseFeeds?(): void;
+  resumeFeeds?(): void;
+  /** The Settings row for this subject; works whether or not a worker runs. */
+  history?(subject: string): TrackingHistoryView;
+  /** Deletes this subject's file and key; works whether or not a worker runs. */
+  clear?(subject: string): Promise<ClearOutcome>;
+  /** Start the one engine probe (the wiring schedules it once the window is up). */
+  armProbe?(): void;
+}
+
 export interface HostRunnerDeps {
   /** The flavour offers Premium; when false the runner does nothing. */
   readonly enabled: boolean;
@@ -98,6 +121,8 @@ export interface HostRunnerDeps {
    * with the folder. Called before the folder is reported gone.
    */
   readonly deleteStore?: (subject: string) => boolean;
+  /** The tracking side; without it the runner has no feeds or store to tell. */
+  readonly tracking?: HostTracking;
 }
 
 export interface HostRunner extends PremiumRemovalPort {
@@ -122,6 +147,12 @@ export interface HostRunner extends PremiumRemovalPort {
   idle(): Promise<void>;
   /** Stops the worker and every timer for good; the cache is left as it is. */
   stop(): void;
+  /** The tracking history on disk for this subject; present when the host was built with tracking. */
+  trackingHistory?(subject: string): TrackingHistoryView;
+  /** Deletes the subject's tracking file and key; present when the host was built with tracking. */
+  clearTrackingHistory?(subject: string): Promise<ClearOutcome>;
+  /** Starts the engine probe; present when the host was built with tracking. */
+  armTrackingProbe?(): void;
 }
 
 export const REMOVAL_RETRY_MS: readonly number[] = [1_000, 4_000, 16_000, 60_000];
@@ -208,6 +239,34 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
     removalTimer = null;
   }
 
+  /** Feeds end before the handle closes, so nothing is produced into a file that is closing. */
+  function stopTrackingFeeds(): void {
+    try {
+      deps.tracking?.stopFeeds();
+    } catch {
+      deps.log.warn({ scope: 'premium', event: 'premium.tracking_stop', outcome: 'failed' });
+    }
+  }
+
+  /** Closes the tracking handle once its call in flight is done. The file and its key stay. */
+  function closeTracking(): void {
+    const tracking = deps.tracking;
+    if (tracking === undefined) return;
+    const failed = (): void => {
+      deps.log.warn({ scope: 'premium', event: 'premium.tracking_close', outcome: 'failed' });
+    };
+    try {
+      tracking.close().catch(failed);
+    } catch {
+      failed();
+    }
+  }
+
+  function endTracking(): void {
+    stopTrackingFeeds();
+    closeTracking();
+  }
+
   function startWorkerNow(): void {
     clearRestart();
     const bundle = activeHeld();
@@ -216,6 +275,8 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
       deps.log.warn({ scope: 'premium', event: 'premium.worker_exit', requested: false, code: 'no_bundle' });
       return;
     }
+    // A new worker never inherits the last one's feeds or handle, whether it replaces a live one or follows a crash.
+    endTracking();
     deps.supervisor.start({
       sequence: bundle.manifest.sequence,
       version: bundle.manifest.version,
@@ -323,18 +384,34 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
       case 'stopWorker':
         clearRestart();
         pausedReason = null;
+        stopTrackingFeeds();
         deps.supervisor.stop();
+        closeTracking();
         return;
       case 'pauseWorker': {
         clearRestart();
         pausedReason = deps.gate.reason?.() ?? null;
+        try {
+          if (deps.tracking?.pauseFeeds === undefined) deps.tracking?.stopFeeds();
+          else deps.tracking.pauseFeeds();
+        } catch {
+          deps.log.warn({ scope: 'premium', event: 'premium.tracking_stop', outcome: 'failed' });
+        }
         deps.supervisor.pause(pausedReason ?? undefined);
+        closeTracking();
         return;
       }
       case 'resumeWorker':
         pausedReason = null;
         if (deps.supervisor.pid() === null) startWorkerNow();
-        else deps.supervisor.resume();
+        else {
+          deps.supervisor.resume();
+          try {
+            deps.tracking?.resumeFeeds?.();
+          } catch {
+            deps.log.warn({ scope: 'premium', event: 'premium.tracking_stop', outcome: 'failed' });
+          }
+        }
         return;
       case 'reloadWindow':
         deps.reloadWindow();
@@ -356,6 +433,8 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
         });
         return;
       case 'remove':
+        // The removal deletes the user's `store` data and the folder; the tracking file and its key stay.
+        endTracking();
         held.clear();
         activeSequence = null;
         fetchAbort?.abort();
@@ -419,6 +498,8 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
   }
 
   async function startAsync(who: string | null): Promise<void> {
+    // Another subject's history is its own sealed file; this one's stays closed and untouched.
+    if (subject !== who) endTracking();
     subject = who;
     held.clear();
     activeSequence = null;
@@ -447,10 +528,23 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
     dispatch({ t: 'started', subject: who, dev, cache: { owner: deps.cache.highest.owner(), bundles } });
   }
 
+  const tracking = deps.tracking;
+  const trackingApi: Pick<HostRunner, 'trackingHistory' | 'clearTrackingHistory' | 'armTrackingProbe'> =
+    tracking === undefined
+      ? {}
+      : {
+          trackingHistory: (who) => tracking.history?.(who) ?? { state: 'none' },
+          clearTrackingHistory: (who) => tracking.clear?.(who) ?? Promise.resolve('cleared'),
+          armTrackingProbe: () => {
+            tracking.armProbe?.();
+          },
+        };
+
   return {
     start: startAsync,
 
     signedOut() {
+      endTracking();
       subject = null;
       fetchAbort?.abort();
       fetchAbort = null;
@@ -484,6 +578,8 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
         uiUrl: premiumUiUrl(sequence, UI_FILE),
         styleUrl: bundle.files.has(STYLE_FILE) ? premiumUiUrl(sequence, STYLE_FILE) : null,
         localBuild,
+        // The tab is always granted; the section only when the manifest names it.
+        slots: PREMIUM_SLOTS.filter((slot) => slot === 'premium.tab' || bundle.manifest.capabilities.includes(slot)),
       };
     },
 
@@ -511,8 +607,13 @@ export function createHostRunner(deps: HostRunnerDeps): HostRunner {
       clearRemovalTimer();
       fetchAbort?.abort();
       fetchAbort = null;
+      // The producers go first, so the handle closes only once nothing can write into it.
+      stopTrackingFeeds();
       deps.supervisor.stop();
+      closeTracking();
     },
+
+    ...trackingApi,
 
     requestPremiumRemoval(reason: PremiumRemovalReason) {
       dispatch({ t: 'removalRequested', reason });

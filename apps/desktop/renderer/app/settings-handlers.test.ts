@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS, type AppSettings, type SettingsWriteReason, type SettingsWriteResult } from '@bombfarm/contracts';
 import {
   createSettingsHandlers,
+  loadLoginItemStatus,
   loadStoredSettings,
   SETTINGS_FIELDS,
   type SettingsField,
@@ -132,11 +133,21 @@ const DRIVES: readonly Drive[] = [
       handlers.onUsagePingEnabledChange(false);
     },
   },
+  {
+    field: 'startWithWindows',
+    expectedCall: ['settings:setStartWithWindows', false],
+    argument: false,
+    answeredSettings: { ...DEFAULT_SETTINGS, startWithWindows: true },
+    answeredValue: true,
+    drive: (handlers) => {
+      handlers.onStartWithWindowsChange(false);
+    },
+  },
 ];
 
 /** Every stored field differing from its default, so a read proves it came from the answer. */
 const STORED: AppSettings = {
-  schemaVersion: 4,
+  schemaVersion: DEFAULT_SETTINGS.schemaVersion,
   locale: 'pt-BR',
   alwaysOnTopMain: true,
   alwaysOnTopMini: true,
@@ -144,12 +155,13 @@ const STORED: AppSettings = {
   restartGameOnExit: true,
   marketQuoteCurrency: 'EUR',
   usagePingEnabled: false,
+  startWithWindows: false,
 };
 
 const ALL_HANDLERS: readonly ((handlers: SettingsHandlers) => void)[] = DRIVES.map((entry) => entry.drive);
 
 describe('the settings field table', () => {
-  it('names the seven stored fields this screen writes, and no others', () => {
+  it('names the eight stored fields this screen writes, and no others', () => {
     expect([...SETTINGS_FIELDS].sort()).toEqual(
       [
         'alwaysOnTopMain',
@@ -158,6 +170,7 @@ describe('the settings field table', () => {
         'locale',
         'marketQuoteCurrency',
         'restartGameOnExit',
+        'startWithWindows',
         'usagePingEnabled',
       ].sort(),
     );
@@ -177,10 +190,12 @@ describe('createSettingsHandlers', () => {
     for (const drive of ALL_HANDLERS) drive(handlers);
     await flush();
 
-    expect(new Set(calls.map((call) => JSON.stringify(call)))).toEqual(
+    // The start-with-Windows write is followed by a status read; that read is not a write.
+    const writes = calls.filter((call) => call[0] !== 'settings:getLoginItemStatus');
+    expect(new Set(writes.map((call) => JSON.stringify(call)))).toEqual(
       new Set(DRIVES.map((entry) => JSON.stringify(entry.expectedCall))),
     );
-    expect(calls).toHaveLength(DRIVES.length);
+    expect(writes).toHaveLength(DRIVES.length);
   });
 
   it('picks the Portuguese channel for pt-BR and the English one for en', async () => {
@@ -272,7 +287,7 @@ describe('createSettingsHandlers', () => {
 });
 
 describe('loadStoredSettings', () => {
-  it('applies all seven stored fields from the initial read', async () => {
+  it('applies all eight stored fields from the initial read', async () => {
     const { sink, applied } = recordingSink();
     const { bridge, calls } = recordingBridge(() => Promise.resolve(STORED));
 
@@ -288,6 +303,7 @@ describe('loadStoredSettings', () => {
       restartGameOnExit: [true],
       marketQuoteCurrency: ['EUR'],
       usagePingEnabled: [false],
+      startWithWindows: [false],
     });
   });
 
@@ -324,5 +340,73 @@ describe('loadStoredSettings', () => {
 
     expect(touched()).toEqual(['locale']);
     expect(applied.locale).toEqual([DEFAULT_SETTINGS.locale]);
+  });
+});
+
+describe('the login-item block', () => {
+  const statusBridge = (answer: (channel: string) => unknown) => recordingBridge(answer);
+
+  it('shows the block the write result carries, then the status read that follows it', async () => {
+    const { sink } = recordingSink();
+    const shown: (string | null)[] = [];
+    const { bridge, calls } = statusBridge((channel) =>
+      channel === 'settings:getLoginItemStatus'
+        ? Promise.resolve({ registered: false, block: 'disabled_by_windows' })
+        : Promise.resolve({ ...writeResult(DEFAULT_SETTINGS, true, null), loginItem: 'failed' }),
+    );
+
+    createSettingsHandlers(() => bridge, sink, (block) => shown.push(block)).onStartWithWindowsChange(true);
+    await flush();
+
+    expect(calls).toEqual([['settings:setStartWithWindows', true], ['settings:getLoginItemStatus']]);
+    expect(shown).toEqual(['failed', 'disabled_by_windows']);
+  });
+
+  it('clears the block when both the write and the status report none', async () => {
+    const { sink } = recordingSink();
+    const shown: (string | null)[] = [];
+    const { bridge } = statusBridge((channel) =>
+      channel === 'settings:getLoginItemStatus'
+        ? Promise.resolve({ registered: true, block: null })
+        : Promise.resolve({ ...writeResult(DEFAULT_SETTINGS, true, null), loginItem: null }),
+    );
+
+    createSettingsHandlers(() => bridge, sink, (block) => shown.push(block)).onStartWithWindowsChange(true);
+    await flush();
+
+    expect(shown).toEqual([null, null]);
+  });
+
+  it('keeps the write result visible when the status read rejects', async () => {
+    const { sink } = recordingSink();
+    const shown: (string | null)[] = [];
+    const { bridge } = statusBridge((channel) =>
+      channel === 'settings:getLoginItemStatus'
+        ? Promise.reject(new Error('gone'))
+        : Promise.resolve({ ...writeResult(DEFAULT_SETTINGS, false, 'not_writable'), loginItem: 'failed' }),
+    );
+
+    createSettingsHandlers(() => bridge, sink, (block) => shown.push(block)).onStartWithWindowsChange(true);
+    await flush();
+
+    expect(shown).toEqual(['failed']);
+  });
+
+  it('reads a boot-time block on mount without any toggle', async () => {
+    const shown: (string | null)[] = [];
+    const { bridge, calls } = statusBridge(() => Promise.resolve({ registered: false, block: 'disabled_by_windows' }));
+
+    await loadLoginItemStatus(() => bridge, (block) => shown.push(block));
+
+    expect(calls).toEqual([['settings:getLoginItemStatus']]);
+    expect(shown).toEqual(['disabled_by_windows']);
+  });
+
+  it('does nothing without a bridge, and swallows a rejected read', async () => {
+    const shown: (string | null)[] = [];
+    await loadLoginItemStatus(() => null, (block) => shown.push(block));
+    const { bridge } = statusBridge(() => Promise.reject(new Error('gone')));
+    await loadLoginItemStatus(() => bridge, (block) => shown.push(block));
+    expect(shown).toEqual([]);
   });
 });

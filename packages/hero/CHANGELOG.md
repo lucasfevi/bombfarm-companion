@@ -1,5 +1,12 @@
 # @bombfarm/hero
 
+## 0.7.8
+
+### Patch Changes
+
+- @bombfarm/domain@1.15.4
+- @bombfarm/game-art@0.8.13
+
 ## 0.7.7
 
 ### Patch Changes

@@ -1,6 +1,5 @@
 import type { LiveTick } from '@bombfarm/contracts';
-import { liveFrameWireKey as wireKey } from '@bombfarm/game-api';
-import { toLiveTick } from '../tls-stream.js';
+import { liveFrameWireKey as wireKey, toLiveTick } from '@bombfarm/game-api';
 
 /**
  * Synthesises the byte stream `tls-stream.ts` is decoding: an HTTP response, an idle run, a
