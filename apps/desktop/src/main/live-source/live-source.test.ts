@@ -2106,12 +2106,14 @@ describe('LiveSource: one info line per map end', () => {
     goLive();
 
     for (const wave of [3, 3, 3, 4, 4, 5]) pushFrame({ heroes: [], phase: 140, wave });
+    pushFrame({ heroes: [] });
     pushFrame({ heroes: [], phase: 141, wave: 6 });
     pushFrame({ heroes: [], phase: 141, wave: 9 });
 
     expect(infoRecords.filter((record) => record.event === 'map.ended')).toEqual([
       { scope: 'live-source', event: 'map.ended', wave: 3, phase: 140 },
       { scope: 'live-source', event: 'map.ended', wave: 4, phase: 140 },
+      { scope: 'live-source', event: 'map.ended', wave: 5, phase: 140 },
     ]);
   });
 });
