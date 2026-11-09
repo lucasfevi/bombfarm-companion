@@ -223,9 +223,13 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'dialogDescClass',
   'explainFormulaClass',
   'fileDropZoneRecipe',
+  // formatAge / formatTimeAgo (2026-11-09): the relative-age words, moved here from the desktop
+  // renderer so every consumer prints one spelling.
+  'formatAge',
   'formatCompactNumber',
   'formatNumber',
   'formatSignificantCompact',
+  'formatTimeAgo',
   // The number formatters take the reader's language now, so the pair that binds one for the
   // components which receive an injected formatter ships beside them.
   'numberFormatterFor',
@@ -356,6 +360,12 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'itemPeekFromInventory',
   'peekPopupClass',
   'peekTriggerClass',
+  // The peek card's name, rows, rule and foot typography (2026-11-09): a consumer drawing its own
+  // card beside the app's peeks composes the same lines instead of a copy that drifts.
+  'peekFootClass',
+  'peekNameClass',
+  'peekRowsClass',
+  'peekRuleClass',
   'ArtFrame',
   'DEFAULT_INVENTORY_TABLE_COLUMNS',
   'InventoryGrid',
@@ -400,6 +410,9 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   // emptyGearSlotClass (2026-09-14): the dashed empty-slot tile was private to HeroGearIcons until
   // the Optimizer's proposed-items grid started drawing the slots the plan leaves bare. One look.
   'emptyGearSlotClass',
+  // emptyGearSlotRecipe (2026-11-09): the same tile with its size variants, for a consumer that
+  // draws an empty slot at a size other than the class's default.
+  'emptyGearSlotRecipe',
   'heroRankBandClass',
   // heroRankFillClass (2026-09-26): a grade's colour at full strength, for the one grade a small
   // ladder lifts out of the washes heroRankBandClass paints the others in.
