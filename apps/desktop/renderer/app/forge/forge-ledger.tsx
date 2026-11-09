@@ -13,9 +13,9 @@ import { useMemo, useState } from 'react';
 import type { ForgeHistoryResult, ForgeHistoryRow } from '@bombfarm/contracts';
 import { mapInventoryViewItem, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { rarityTextClass } from '@bombfarm/game-art';
-import { Button, cn, Collapsible, DataTable, EmptyState, Panel } from '@bombfarm/ui';
-import { sub, useCopy } from '../../lib/copy';
-import { formatAge, formatCapturedAt } from '../../lib/format';
+import { Button, cn, Collapsible, DataTable, EmptyState, formatAge, Panel } from '@bombfarm/ui';
+import { sub, useCopy, useLocale } from '../../lib/copy';
+import { formatCapturedAt } from '../../lib/format';
 import {
   DEFAULT_FORGE_LEDGER_SORT,
   nextForgeLedgerSort,
@@ -55,6 +55,7 @@ export function ForgeLedger({
   defaultOpen?: boolean;
 }) {
   const t = useCopy();
+  const { lang } = useLocale();
   const [sort, setSort] = useState<ForgeLedgerSort>(DEFAULT_FORGE_LEDGER_SORT);
 
   const pieces = useMemo(() => new Map(history.rows.map((row) => [row.id, pieceOf(row)])), [history.rows]);
@@ -144,7 +145,7 @@ export function ForgeLedger({
                       return (
                         <DataTable.Row key={row.id} data-testid="forge-ledger-row" data-run-id={row.id}>
                           <DataTable.RowHeader className="whitespace-nowrap">
-                            {formatCapturedAt(row.finishedAt, t)}
+                            {formatCapturedAt(row.finishedAt, lang)}
                           </DataTable.RowHeader>
                           <DataTable.Cell nowrap>
                             <span
@@ -187,7 +188,7 @@ export function ForgeLedger({
                             {row.essence === null ? BLANK : labels.count(row.essence)}
                           </DataTable.Cell>
                           <DataTable.Cell align="right" nowrap numeric>
-                            {formatAge(row.durationMs, t)}
+                            {formatAge(row.durationMs, lang)}
                           </DataTable.Cell>
                         </DataTable.Row>
                       );

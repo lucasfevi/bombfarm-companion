@@ -2,9 +2,8 @@
 
 import type { ReactNode } from 'react';
 import type { ForgeRunResult } from '@bombfarm/contracts';
-import { Bar, Button, cn, StatList, type StatListItem } from '@bombfarm/ui';
-import { useCopy } from '../../lib/copy';
-import { formatAge } from '../../lib/format';
+import { Bar, Button, cn, formatAge, StatList, type StatListItem } from '@bombfarm/ui';
+import { useCopy, useLocale } from '../../lib/copy';
 import type { ForgeRunPlan } from '../../lib/forge/forge-run-reducer';
 import { ForgeRailRow } from './forge-climb';
 import { ForgeGold, ForgeSpend } from './forge-gold';
@@ -104,6 +103,7 @@ export function ForgeResult({
   onDone: () => void;
 }) {
   const t = useCopy();
+  const { lang } = useLocale();
   const heading = forgeResultHeading(result, t, labels.rarityName);
 
   const facts: StatListItem[] = [
@@ -140,7 +140,7 @@ export function ForgeResult({
           },
         ]
       : []),
-    { id: 'duration', label: t.forgeResultDuration, value: <span data-testid="forge-result-duration">{formatAge(result.durationMs, t)}</span> },
+    { id: 'duration', label: t.forgeResultDuration, value: <span data-testid="forge-result-duration">{formatAge(result.durationMs, lang)}</span> },
   ];
 
   return (

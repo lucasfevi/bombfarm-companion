@@ -371,7 +371,7 @@ function HomePageContent({
   // for the screen on show when that screen computes from a copy of its own.
   const feeds = useFeeds({ activeTabId: activeNavId, updateStatus, onUpdateCheck });
   // The Live tab wears the game's state at its corner — the same words the strip's game cell says.
-  const liveMark = liveTabMark(status, t);
+  const liveMark = liveTabMark(status, t, lang);
   const activeStripId = stripIdForScreen(activeNavId);
   const navItems = navItemsFor(t, { premium: premiumTabShown }).map((item) => (item.id === 'live' ? { ...item, mark: liveMark } : item));
 

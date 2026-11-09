@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { formatTimeAgo } from '@bombfarm/ui';
 import { en } from '../lib/copy/en';
 import { sub } from '../lib/copy';
 import type { FeedView, RefreshAllState } from '../lib/feeds/use-feeds';
@@ -69,8 +70,8 @@ describe('FeedsRail — five rings beside five names, and one ring for all of th
     const order = ['account-refresh', 'feed-pvp-refresh', 'feed-collections-refresh', 'feed-market-refresh', 'feed-updates-refresh'].map((id) => html.indexOf(`data-testid="${id}"`));
     expect(order.every((index) => index >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
-    expect(html).not.toContain(en.ageJustNow);
-    expect(html).not.toContain(en.ageMinutes.replace('{n}', '3'));
+    expect(html).not.toContain(formatTimeAgo(0, 'en'));
+    expect(html).not.toContain(formatTimeAgo(3 * 60_000, 'en'));
     expect(ringOf(html, 'account-refresh')).toContain('data-ring="fresh"');
     expect(ringOf(html, 'feed-pvp-refresh')).toContain('data-ring="noclock"');
     expect(ringOf(html, 'feed-collections-refresh')).toContain('data-ring="noclock"');
@@ -157,46 +158,46 @@ describe("ringMotion — the ring drains on the browser's clock, so the rail nev
 
 describe('feedWords — the tooltip: the name with the last read beside it, the click line with the countdown, what the feed is, and a note when something is wrong', () => {
   it('a feed with a clock: its name, the last read, the click line with the countdown, its cycle, and no note', () => {
-    expect(feedWords(feed({ id: 'market', capturedAt: ago(5 * 60_000) }), en, NOW)).toEqual({
+    expect(feedWords(feed({ id: 'market', capturedAt: ago(5 * 60_000) }), en, 'en', NOW)).toEqual({
       title: en.feedsPrices,
-      status: sub(en.feedsLastRead, { age: en.ageMinutes.replace('{n}', '5') }),
+      status: sub(en.feedsLastRead, { age: '5m ago' }),
       action: en.feedsClickToUpdate,
-      next: sub(en.feedsNextIn, { age: sub(en.ageShortMinutes, { n: 10 }) }),
+      next: sub(en.feedsNextIn, { age: '10m' }),
       what: `${en.feedsWhatPrices} · ${sub(en.feedsEvery, { cycle: sub(en.feedsCycleMinutes, { n: 15 }) })}`,
       note: null,
     });
   });
 
   it("the account's clock is a minute, and a due refresh is said to be due", () => {
-    const words = feedWords(feed({ id: 'account', capturedAt: ago(90_000) }), en, NOW);
+    const words = feedWords(feed({ id: 'account', capturedAt: ago(90_000) }), en, 'en', NOW);
     expect(words.next).toBe(en.feedsNextDue);
     expect(words.what).toContain(sub(en.feedsEvery, { cycle: sub(en.feedsCycleMinutes, { n: 1 }) }));
   });
 
   it('the collections have no clock either, and say what reads them instead', () => {
-    const words = feedWords(feed({ id: 'collections' }), en, NOW);
+    const words = feedWords(feed({ id: 'collections' }), en, 'en', NOW);
     expect(words.next).toBeNull();
     expect(words.title).toBe(en.feedsCollections);
     expect(words.what).toBe(`${en.feedsWhatCollections} · ${en.feedsNoClockCollections}`);
   });
 
   it('the PVP standing has no clock, so no countdown beside the click line', () => {
-    const words = feedWords(feed({ id: 'pvp' }), en, NOW);
+    const words = feedWords(feed({ id: 'pvp' }), en, 'en', NOW);
     expect(words.next).toBeNull();
     expect(words.what).toBe(`${en.feedsWhatPvp} · ${en.feedsNoClock}`);
   });
 
   it('a feed never read says so where the last read would be, and has no countdown yet', () => {
-    const words = feedWords(feed({ id: 'updates', capturedAt: null }), en, NOW);
+    const words = feedWords(feed({ id: 'updates', capturedAt: null }), en, 'en', NOW);
     expect(words.status).toBe(en.feedsNeverRead);
     expect(words.next).toBeNull();
     expect(words.action).toBe(en.feedsClickToUpdate);
   });
 
   it('a refusal is the note; out of date is the note; a running read is the status and has no click line', () => {
-    expect(feedWords(feed({ id: 'pvp', readState: { kind: 'refused', reason: 'rate_limited' } }), en, NOW).note).toBe(en.accountReadRecent);
-    expect(feedWords(feed({ id: 'account', outOfDate: true }), en, NOW).note).toBe(en.feedsOutOfDate);
-    const reading = feedWords(feed({ id: 'account', readState: { kind: 'working' } }), en, NOW);
+    expect(feedWords(feed({ id: 'pvp', readState: { kind: 'refused', reason: 'rate_limited' } }), en, 'en', NOW).note).toBe(en.accountReadRecent);
+    expect(feedWords(feed({ id: 'account', outOfDate: true }), en, 'en', NOW).note).toBe(en.feedsOutOfDate);
+    const reading = feedWords(feed({ id: 'account', readState: { kind: 'working' } }), en, 'en', NOW);
     expect(reading.status).toBe(en.feedsReadingNow);
     expect(reading.action).toBeNull();
   });

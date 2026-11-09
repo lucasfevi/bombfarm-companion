@@ -89,16 +89,6 @@ export const en = {
   // error* — failure paths
   errorAccountReadFailed: 'The account could not be read',
 
-  // age* — relative-age words for format.ts. format.ts owns no words of its
-  // own; every one of its five relative-age buckets renders through one of these, via sub().
-  // Singular/plural-agnostic by construction — no plural engine is built.
-  ageJustNow: 'just now',
-  ageMinutes: '{n}m ago',
-  ageHours: '{n}h ago',
-  ageDays: '{n}d ago',
-  ageShortSeconds: '{n}s',
-  ageShortMinutes: '{n}m',
-
   // settings* — the language control (a @bombfarm/ui primitive)
   settingsNavLabel: 'Settings',
   settingsLanguageSectionTitle: 'Language',

@@ -7,11 +7,8 @@
  * has a paired assertion showing the two locales disagree.
  */
 import { describe, expect, it } from 'vitest';
-import { en } from './copy/en';
-import { ptBR } from './copy/pt-BR';
 import {
   finiteNumber,
-  formatAge,
   formatCapturedAt,
   formatCount,
   formatDate,
@@ -20,61 +17,42 @@ import {
   formatGainPct,
 } from './format';
 
-describe('formatAge (both locales)', () => {
-  it('formats zero as 0s in English', () => {
-    expect(formatAge(0, en)).toBe('0s');
-  });
-
-  it('formats a sub-minute age in seconds (English)', () => {
-    expect(formatAge(45_000, en)).toBe('45s');
-  });
-
-  it('formats a multi-minute age in minutes (English)', () => {
-    expect(formatAge(5 * 60_000, en)).toBe('5m');
-  });
-
-  it('formats a sub-minute age in seconds (PT-BR) — identical suffix, declared identical on purpose', () => {
-    expect(formatAge(45_000, ptBR)).toBe('45s');
-  });
-
-  it("formats a multi-minute age using PT-BR's own 'min' abbreviation, DIFFERENT from English's 'm'", () => {
-    const enResult = formatAge(5 * 60_000, en);
-    const ptResult = formatAge(5 * 60_000, ptBR);
-    expect(enResult).toBe('5m');
-    expect(ptResult).toBe('5min');
-    expect(ptResult).not.toBe(enResult);
-  });
-});
-
 describe('formatCapturedAt (restored data is stamped, never presented as current)', () => {
   const now = Date.parse('2026-08-12T12:00:00.000Z');
 
   it('a zero-age capture reads as "just now" (English)', () => {
-    expect(formatCapturedAt('2026-08-12T12:00:00.000Z', en, now)).toBe('just now');
+    expect(formatCapturedAt('2026-08-12T12:00:00.000Z', 'en', now)).toBe('just now');
   });
 
   it('a sub-minute-old capture reads as "just now" (English)', () => {
-    expect(formatCapturedAt('2026-08-12T11:59:30.000Z', en, now)).toBe('just now');
+    expect(formatCapturedAt('2026-08-12T11:59:30.000Z', 'en', now)).toBe('just now');
+  });
+
+  it('minutes and hours read in whole units (English)', () => {
+    expect(formatCapturedAt('2026-08-12T11:55:00.000Z', 'en', now)).toBe('5m ago');
+    expect(formatCapturedAt('2026-08-12T09:00:00.000Z', 'en', now)).toBe('3h ago');
   });
 
   it('a multi-day-old capture reads in whole days, never as current (English)', () => {
-    expect(formatCapturedAt('2026-08-09T12:00:00.000Z', en, now)).toBe('3d ago');
+    expect(formatCapturedAt('2026-08-09T12:00:00.000Z', 'en', now)).toBe('3d ago');
   });
 
   it('an unparseable timestamp is returned as-is rather than throwing (English)', () => {
-    expect(formatCapturedAt('not-a-date', en, now)).toBe('not-a-date');
+    expect(formatCapturedAt('not-a-date', 'en', now)).toBe('not-a-date');
   });
 
-  it('the same inputs render DIFFERENT text in PT-BR, from the copy module, never hardcoded', () => {
-    const enResult = formatCapturedAt('2026-08-09T12:00:00.000Z', en, now);
-    const ptResult = formatCapturedAt('2026-08-09T12:00:00.000Z', ptBR, now);
+  it('the same inputs render DIFFERENT text in PT-BR', () => {
+    const enResult = formatCapturedAt('2026-08-09T12:00:00.000Z', 'en', now);
+    const ptResult = formatCapturedAt('2026-08-09T12:00:00.000Z', 'pt', now);
     expect(enResult).toBe('3d ago');
     expect(ptResult).toBe('há 3d');
     expect(ptResult).not.toBe(enResult);
   });
 
-  it('a zero-age capture reads as ageJustNow verbatim in PT-BR', () => {
-    expect(formatCapturedAt('2026-08-12T12:00:00.000Z', ptBR, now)).toBe(ptBR.ageJustNow);
+  it('every bucket in PT-BR', () => {
+    expect(formatCapturedAt('2026-08-12T12:00:00.000Z', 'pt', now)).toBe('agora mesmo');
+    expect(formatCapturedAt('2026-08-12T11:55:00.000Z', 'pt', now)).toBe('há 5m');
+    expect(formatCapturedAt('2026-08-12T09:00:00.000Z', 'pt', now)).toBe('há 3h');
   });
 });
 

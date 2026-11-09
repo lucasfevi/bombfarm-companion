@@ -40,7 +40,7 @@ export function PremiumScreenView({
   onUseHere: () => void;
 }) {
   const t = useCopy();
-  const { locale } = useLocale();
+  const { lang, locale } = useLocale();
 
   if (view.session !== 'signed-in') {
     return (
@@ -105,7 +105,7 @@ export function PremiumScreenView({
       )}
       {view.fetchedAt !== null ? (
         <p data-testid="premium-updated" className="text-xs text-muted">
-          {sub(t.premiumUpdated, { time: formatCapturedAt(view.fetchedAt, t) })}
+          {sub(t.premiumUpdated, { time: formatCapturedAt(view.fetchedAt, lang) })}
         </p>
       ) : null}
       <PremiumMount host={view.host} />

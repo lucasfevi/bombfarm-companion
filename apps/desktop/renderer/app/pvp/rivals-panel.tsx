@@ -158,7 +158,7 @@ export function RivalsPanel({ history, className }: { history: PvpHistoryResult 
 
 function RivalRow({ rival, ariaRowIndex }: { rival: RivalRecord; ariaRowIndex: number }) {
   const t = useCopy();
-  const { locale } = useLocale();
+  const { lang, locale } = useLocale();
   const { opponent, setOpponent } = usePvpFilters();
   const chosen = opponent === rival.name;
   const pick = () => {
@@ -203,7 +203,7 @@ function RivalRow({ rival, ariaRowIndex }: { rival: RivalRecord; ariaRowIndex: n
         </span>
       </DataTable.Cell>
       <DataTable.Cell data-testid="pvp-rival-last" nowrap className="truncate text-muted">
-        {sub(lastLine, { age: formatCapturedAt(rival.latest.recordedAt, t) })}
+        {sub(lastLine, { age: formatCapturedAt(rival.latest.recordedAt, lang) })}
       </DataTable.Cell>
     </DataTable.Row>
   );

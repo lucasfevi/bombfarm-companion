@@ -294,7 +294,7 @@ export function EarningsPanel({
     balanceCapturedAt !== null ? balanceCapturedAt : freshness.kind === 'live' ? null : freshness.sinceAt;
   const currentGoldAgeText: string | null =
     currentGoldAgeSource !== null && Date.now() - Date.parse(currentGoldAgeSource) >= FRESH_BALANCE_AGE_MS
-      ? formatCapturedAt(currentGoldAgeSource, t)
+      ? formatCapturedAt(currentGoldAgeSource, lang)
       : null;
   // A dash carries nothing to be stale about — gating on `balance` keeps the marker dark rather
   // than pinning a fabricated reading beside a figure that isn't there.

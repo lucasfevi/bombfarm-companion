@@ -13,21 +13,20 @@
  * the box over the descender space they never use, so centring the boxes leaves the dot's ink a
  * pixel below the letters' (measured on the launched app, 2026-09-20).
  */
-import type { AppNavItemMark } from '@bombfarm/ui';
-import { cn, Tooltip } from '@bombfarm/ui';
+import type { AppNavItemMark, Lang } from '@bombfarm/ui';
+import { cn, formatAge, Tooltip } from '@bombfarm/ui';
 import type { GameStatusInfo } from '@bombfarm/contracts';
-import { sub, useCopy, type Copy } from '../lib/copy';
-import { formatAge } from '../lib/format';
+import { sub, useCopy, useLocale, type Copy } from '../lib/copy';
 
 export type GameWords = { word: string; age: string | null; tip: string; tone: AppNavItemMark['tone'] | null };
 
-export function gameWords(status: GameStatusInfo | null, t: Copy): GameWords {
+export function gameWords(status: GameStatusInfo | null, t: Copy, lang: Lang): GameWords {
   if (status === null) return { word: t.gameConnecting, age: null, tip: t.shellLoadingLabel, tone: null };
   switch (status.status) {
     case 'connected':
       return { word: t.gameConnected, age: null, tip: t.liveStatusLiveLabel, tone: 'up' };
     case 'stale': {
-      const age = status.staleAgeMs === undefined ? null : formatAge(status.staleAgeMs, t);
+      const age = status.staleAgeMs === undefined ? null : formatAge(status.staleAgeMs, lang);
       return { word: t.gameStale, age, tip: age === null ? t.gameFeedStaleNoAgeTip : sub(t.gameFeedStaleTip, { age }), tone: 'warn' };
     }
     case 'not_running':
@@ -36,14 +35,15 @@ export function gameWords(status: GameStatusInfo | null, t: Copy): GameWords {
 }
 
 /** What the Live tab's corner dot says: the game's own state, in the game cell's own words. */
-export function liveTabMark(status: GameStatusInfo | null, t: Copy): AppNavItemMark | undefined {
-  const words = gameWords(status, t);
+export function liveTabMark(status: GameStatusInfo | null, t: Copy, lang: Lang): AppNavItemMark | undefined {
+  const words = gameWords(status, t, lang);
   return words.tone === null ? undefined : { tone: words.tone, label: words.tip };
 }
 
 export function GameFeed({ status }: { status: GameStatusInfo | null }) {
   const t = useCopy();
-  const { word, age, tip, tone } = gameWords(status, t);
+  const { lang } = useLocale();
+  const { word, age, tip, tone } = gameWords(status, t, lang);
   const dotClass = tone === 'up' ? cn('bg-up', 'motion-safe:animate-pulse') : tone === 'warn' ? 'bg-warn' : cn('bg-transparent', 'shadow-[inset_0_0_0_1.5px_var(--line)]');
   const wordClass = tone === 'up' ? 'text-ink' : tone === 'warn' ? 'text-warn' : 'text-muted';
 

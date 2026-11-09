@@ -134,7 +134,7 @@ export function AccountView({
           // leave the two of them not lining up.
           facts.readCapturedAt === null ? null : (
             <p data-testid="account-read-age" className="text-xs text-muted">
-              {sub(t.accountReadAge, { age: formatCapturedAt(facts.readCapturedAt, t) })}
+              {sub(t.accountReadAge, { age: formatCapturedAt(facts.readCapturedAt, lang) })}
             </p>
           )
         }
