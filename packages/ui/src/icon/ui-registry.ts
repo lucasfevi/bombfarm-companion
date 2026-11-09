@@ -15,6 +15,7 @@ import {
   HiMiniCheckCircle,
   HiMiniXCircle,
   HiMiniExclamationTriangle,
+  HiMiniEye,
   HiMiniInformationCircle,
   HiMiniArrowPath,
   HiMiniLockClosed,
@@ -114,6 +115,9 @@ export const uiIconRegistry = {
   'arrow-path': HiMiniArrowPath,
   // DeltaTable locked-row glyph — replaces a Chip + HelpTip pair on a row a table can't change
   'lock-closed': HiMiniLockClosed,
+  // A "look at this" control — reveal detail a panel keeps folded, or open a read-only view. From
+  // the same solid set as the chrome glyphs around it, so it keeps their weight in a toolbar.
+  eye: HiMiniEye,
   // Sort direction on a list control. A plain chevron is the wrong glyph here: it already means
   // "this select opens downward" two elements away, so the pair read as one control's affordance
   // rather than as the order the list is in. Phosphor's sort marks show the bars AND the arrow.

@@ -9,7 +9,7 @@ import type { AppFlavor } from './flavors.js';
 import type { AppLocale } from './locale.js';
 
 /** The host API version a bundle is built against and a renewal reports to the server. */
-export const PLUGIN_API_VERSION = '1.2.0';
+export const PLUGIN_API_VERSION = '1.3.0';
 
 export type PremiumBundleRole = 'worker' | 'renderer' | 'style';
 
@@ -35,13 +35,18 @@ export interface PremiumManifest {
   readonly files: readonly PremiumManifestFile[];
 }
 
-/** The modules a bundle's UI imports from the app instead of bundling its own copy. */
+/**
+ * The modules a bundle's UI imports from the app instead of bundling its own copy. Sharing the app's
+ * game art means a bundle draws an item, chest or key with the very component the app's screens use,
+ * hover card included, instead of a look-alike that drifts.
+ */
 export const PREMIUM_SHARED_MODULES = Object.freeze([
   'react',
   'react/jsx-runtime',
   'react-dom',
   'react/compiler-runtime',
   '@bombfarm/ui',
+  '@bombfarm/game-art',
 ] as const);
 
 /** What a worker may ask the host for. */

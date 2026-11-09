@@ -48,6 +48,8 @@ import { uiIconRegistry } from './ui-registry';
 // Desktop Premium tab (2026-10-17): star — the Premium tab's glyph, a five-point outline from the same
 // set as the graph, sword and hammer beside it, chosen over reusing `check-circle` (which already
 // means "done" in the chrome) and a filled star (read as a rating); the budget moved to 37 with it.
+// Extension panels (2026-11-09): eye — a "look at this" control for panels that bundles place in
+// the app, from the same solid set as the chrome around it; the budget moved to 38 with it.
 const MIGRATED_UI_NAMES = [
   'window',
   'signal',
@@ -80,6 +82,7 @@ const MIGRATED_UI_NAMES = [
   'information-circle',
   'arrow-path',
   'lock-closed',
+  'eye',
   'sort-ascending',
   'sort-descending',
   'window-minimize',
@@ -89,8 +92,8 @@ const MIGRATED_UI_NAMES = [
 ] as const;
 
 describe('icon registries — budget and membership', () => {
-  it('keeps uiIconRegistry within the 37-entry budget', () => {
-    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(37);
+  it('keeps uiIconRegistry within the 38-entry budget', () => {
+    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(38);
   });
 
   it('maps exactly the declared ui-chrome glyphs', () => {

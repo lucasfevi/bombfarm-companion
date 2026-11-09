@@ -27,6 +27,7 @@ describe('premium shim export lists', () => {
     expect(shims['react/jsx-runtime']).toContain('jsx');
     expect(shims['react/compiler-runtime']).toContain('c');
     expect(shims['@bombfarm/ui']).toContain('Button');
+    expect(shims['@bombfarm/game-art']).toEqual(expect.arrayContaining(['ItemIcon', 'ChestIcon', 'DropIcon']));
   });
 
   it('lists each name once, as a valid identifier, never default, sorted', async () => {

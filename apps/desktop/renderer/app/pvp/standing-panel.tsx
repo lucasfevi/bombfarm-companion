@@ -22,7 +22,7 @@ const MIN_TREND_ROWS = 2;
 
 export function StandingPanel({ history }: { history: PvpHistoryResult | null }) {
   const t = useCopy();
-  const { locale } = useLocale();
+  const { lang, locale } = useLocale();
   const standing = history?.standing ?? null;
   const rank = history?.rank ?? null;
   const quota = history === null ? null : duelsLeft(history);
@@ -84,7 +84,7 @@ export function StandingPanel({ history }: { history: PvpHistoryResult | null })
                 unread={t.pvpStandingRankUnknown}
                 {...(rank === null
                   ? {}
-                  : { note: sub(t.pvpStandingRankNote, { age: formatCapturedAt(rank.capturedAt, t), points: formatCount(rank.points, locale) }) })}
+                  : { note: sub(t.pvpStandingRankNote, { age: formatCapturedAt(rank.capturedAt, lang), points: formatCount(rank.points, locale) }) })}
               />
             </div>
             {standing === null ? null : <TierMeter standing={standing} rows={history?.rows ?? []} t={t} locale={locale} />}

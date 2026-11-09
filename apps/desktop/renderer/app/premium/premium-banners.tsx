@@ -125,7 +125,7 @@ function PremiumAccountNoticeView({ view }: { view: PremiumView }) {
 
 export function PremiumBanners({ view }: { view: PremiumView }) {
   const t = useCopy();
-  const { locale } = useLocale();
+  const { lang, locale } = useLocale();
   return (
     <>
       <PremiumAccountNoticeView view={view} />
@@ -139,7 +139,7 @@ export function PremiumBanners({ view }: { view: PremiumView }) {
         >
           {sub(t[banner.bodyKey], {
             date: banner.date === null ? '' : formatDate(banner.date, locale),
-            time: banner.time === null ? '' : formatCapturedAt(banner.time, t),
+            time: banner.time === null ? '' : formatCapturedAt(banner.time, lang),
           })}
         </Banner>
       ))}

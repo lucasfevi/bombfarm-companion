@@ -35,6 +35,7 @@ export {
   type BoundNumberFormat,
   type Lang,
 } from './format-number';
+export { formatAge, formatTimeAgo } from './format-age';
 export { AppShell } from './AppShell';
 export type { AppShellProps, AppShellNavItem } from './AppShell';
 export { WindowControls } from './window-controls';

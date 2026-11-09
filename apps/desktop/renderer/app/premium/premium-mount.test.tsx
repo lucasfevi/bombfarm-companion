@@ -112,6 +112,7 @@ describe('the Premium mount point', () => {
       'react-dom',
       'react/compiler-runtime',
       '@bombfarm/ui',
+      '@bombfarm/game-art',
     ]);
   });
 

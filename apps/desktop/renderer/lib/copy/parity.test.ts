@@ -15,9 +15,6 @@ import { ptBR } from './pt-BR';
  * Legitimately identical pairs between `en` and `ptBR` (a declared table, not an inferred one). Kept
  * deliberately short and reviewed: a future addition here is a reviewed diff, never a silent
  * weakening of the "no leakage" assertion below.
- *
- * `ageShortSeconds` ('{n}s'): 's' abbreviates seconds identically in English and Portuguese —
- * unlike minutes ('m' vs 'min'), there is no PT-BR-specific abbreviation to translate to.
  */
 // inventoryDetailSetSlot: pure layout, no words — two placeholders joined by a separator, and
 // both of the values it joins are themselves already localised before they reach it.
@@ -73,7 +70,6 @@ import { ptBR } from './pt-BR';
 // printed as their owners spell them in every language.
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'gamePingLabel',
-  'ageShortSeconds',
   'liveMapXpPerPropLabel',
   'liveEarningsXpPerPropLabel',
   'inventoryDetailSetSlot',
@@ -168,9 +164,9 @@ describe('en/ptBR placeholder parity', () => {
   });
 
   it('red state demonstrated: renaming one placeholder in one language is caught', () => {
-    const mutatedPtBR = { ...ptBR, ageMinutes: ptBR.ageMinutes.replace('{n}', '{q}') };
-    const enTokens = placeholderSet(en.ageMinutes);
-    const ptTokens = placeholderSet(mutatedPtBR.ageMinutes);
+    const mutatedPtBR = { ...ptBR, feedsLastRead: ptBR.feedsLastRead.replace('{age}', '{q}') };
+    const enTokens = placeholderSet(en.feedsLastRead);
+    const ptTokens = placeholderSet(mutatedPtBR.feedsLastRead);
     expect([...enTokens]).not.toEqual([...ptTokens]);
   });
 });

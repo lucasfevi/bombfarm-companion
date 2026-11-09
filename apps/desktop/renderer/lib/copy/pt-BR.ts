@@ -83,18 +83,6 @@ export const ptBR: Copy = {
   // error* — failure paths
   errorAccountReadFailed: 'Não foi possível ler a conta',
 
-  // age* — relative-age words for format.ts. Singular/plural-agnostic by construction, matching
-  // en.ts's own constraint — 'há {n}m' reads naturally for every n.
-  ageJustNow: 'agora mesmo',
-  ageMinutes: 'há {n}m',
-  ageHours: 'há {n}h',
-  ageDays: 'há {n}d',
-  // 's' for seconds is the same abbreviation in PT-BR as in English — a legitimately identical
-  // pair, declared in index.ts's IDENTICAL_IN_BOTH_LANGUAGES table rather than left to look like
-  // an untranslated leftover.
-  ageShortSeconds: '{n}s',
-  ageShortMinutes: '{n}min',
-
   // settings* — the language control
   settingsNavLabel: 'Configurações',
   settingsLanguageSectionTitle: 'Idioma',

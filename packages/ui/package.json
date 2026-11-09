@@ -60,6 +60,7 @@
     "./fields": "./src/fields.tsx",
     "./file-drop-zone": "./src/file-drop-zone.tsx",
     "./file-drop-zone.recipe": "./src/file-drop-zone.recipe.ts",
+    "./format-age": "./src/format-age.ts",
     "./format-number": "./src/format-number.ts",
     "./glossary-term": "./src/glossary-term.tsx",
     "./glossary-term.recipe": "./src/glossary-term.recipe.ts",

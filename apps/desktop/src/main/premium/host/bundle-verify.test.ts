@@ -393,18 +393,26 @@ describe('verifyFit', () => {
     expect(verifyFit(result.manifest, { ...fits, hostApi: '1.1.0' })).toEqual({ ok: true });
   });
 
-  it('runs a bundle written for >=1.0.0 <2.0.0 on plugin API 1.2.0', () => {
+  it('runs a bundle written for >=1.0.0 <2.0.0 on plugin API 1.3.0', () => {
     const input = fixture({ hostApi: '>=1.0.0 <2.0.0', minAppVersion: '0.40.0', flavors: ['dev', 'beta'] });
     const result = verifyManifest(input.manifestBytes, input.sig, { keys: TEST_KEYS });
     if (!result.ok) throw new Error('fixture refused');
     expect(verifyFit(result.manifest, { ...fits, hostApi: PLUGIN_API_VERSION })).toEqual({ ok: true });
   });
 
-  it('runs a bundle written for >=1.2.0 <2.0.0 on plugin API 1.2.0', () => {
+  it('runs a bundle written for >=1.2.0 <2.0.0 on plugin API 1.3.0', () => {
     const input = fixture({ hostApi: '>=1.2.0 <2.0.0', minAppVersion: '0.40.0', flavors: ['dev', 'beta'] });
     const result = verifyManifest(input.manifestBytes, input.sig, { keys: TEST_KEYS });
     if (!result.ok) throw new Error('fixture refused');
-    expect(PLUGIN_API_VERSION).toBe('1.2.0');
+    expect(PLUGIN_API_VERSION).toBe('1.3.0');
+    expect(verifyFit(result.manifest, { ...fits, hostApi: PLUGIN_API_VERSION })).toEqual({ ok: true });
+  });
+
+  it('refuses a bundle that needs >=1.3.0, the shared game art, on a 1.2.x host', () => {
+    const input = fixture({ hostApi: '>=1.3.0 <2.0.0', minAppVersion: '0.40.0', flavors: ['dev', 'beta'] });
+    const result = verifyManifest(input.manifestBytes, input.sig, { keys: TEST_KEYS });
+    if (!result.ok) throw new Error('fixture refused');
+    expect(verifyFit(result.manifest, { ...fits, hostApi: '1.2.0' })).toEqual({ ok: false, reason: 'host_range' });
     expect(verifyFit(result.manifest, { ...fits, hostApi: PLUGIN_API_VERSION })).toEqual({ ok: true });
   });
 

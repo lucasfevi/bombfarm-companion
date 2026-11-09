@@ -255,7 +255,7 @@ function DuelRow({
   ariaRowIndex: number;
 }) {
   const t = useCopy();
-  const { locale } = useLocale();
+  const { lang, locale } = useLocale();
 
   return (
     <DataTable.Row
@@ -265,7 +265,7 @@ function DuelRow({
       aria-rowindex={ariaRowIndex}
       style={{ height: DUEL_ROW_HEIGHT_PX }}
     >
-      <DataTable.RowHeader>{formatCapturedAt(row.recordedAt, t)}</DataTable.RowHeader>
+      <DataTable.RowHeader>{formatCapturedAt(row.recordedAt, lang)}</DataTable.RowHeader>
       <DataTable.Cell data-testid="pvp-squad" data-count={row.squadHeroIds.length}>
         <SquadStack heroIds={row.squadHeroIds} heroById={heroById} />
       </DataTable.Cell>

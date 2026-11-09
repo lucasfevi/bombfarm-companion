@@ -3,6 +3,7 @@ import * as ReactCompilerRuntime from 'react/compiler-runtime';
 import * as ReactJsxRuntime from 'react/jsx-runtime';
 import * as ReactDom from 'react-dom';
 import * as BombfarmUi from '@bombfarm/ui';
+import * as BombfarmGameArt from '@bombfarm/game-art';
 import type { PREMIUM_SHARED_MODULES } from '@bombfarm/contracts';
 
 /** The name a bundle's shims read the live modules from. */
@@ -17,6 +18,7 @@ export const SHARED_MODULES: Readonly<Record<SharedModuleName, object>> = Object
   'react-dom': ReactDom,
   'react/compiler-runtime': ReactCompilerRuntime,
   '@bombfarm/ui': BombfarmUi,
+  '@bombfarm/game-art': BombfarmGameArt,
 });
 
 /**

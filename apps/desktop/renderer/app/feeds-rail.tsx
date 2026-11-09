@@ -15,11 +15,11 @@
  * read are drawn muted — present and pressable, but not what that screen's numbers came from.
  */
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { cn, Tooltip } from '@bombfarm/ui';
-import { sub, useCopy, type Copy } from '../lib/copy';
+import { cn, formatAge, Tooltip, type Lang } from '@bombfarm/ui';
+import { sub, useCopy, useLocale, type Copy } from '../lib/copy';
 import { accountReadRefusalText } from '../lib/account-read-labels';
 import type { FeedRefusal } from '../lib/feeds/use-update-check';
-import { formatAge, formatCapturedAt } from '../lib/format';
+import { formatCapturedAt } from '../lib/format';
 import { FEED_CYCLE_MS, feedAgeMs, feedMeter, feedNextInMs, feedsReadBy, type FeedId } from '../lib/feeds/feed-clock';
 import type { FeedView, FeedsHook, RefreshAllState } from '../lib/feeds/use-feeds';
 
@@ -116,15 +116,15 @@ function feedRefusalText(reason: FeedRefusal, t: Copy): string {
   }
 }
 
-export function feedWords(feed: FeedView, t: Copy, now: number): FeedTip {
+export function feedWords(feed: FeedView, t: Copy, lang: Lang, now: number): FeedTip {
   const ageMs = feedAgeMs(feed.capturedAt, now);
   const working = feed.busy || feed.readState.kind === 'working';
-  const status = working ? t.feedsReadingNow : feed.capturedAt === null ? t.feedsNeverRead : sub(t.feedsLastRead, { age: formatCapturedAt(feed.capturedAt, t, now) });
+  const status = working ? t.feedsReadingNow : feed.capturedAt === null ? t.feedsNeverRead : sub(t.feedsLastRead, { age: formatCapturedAt(feed.capturedAt, lang, now) });
   const cycle = cycleText(feed.id, t);
   const what = cycle === null ? `${feedWhat(feed.id, t)} · ${noClockText(feed.id, t)}` : `${feedWhat(feed.id, t)} · ${sub(t.feedsEvery, { cycle })}`;
   const note = feed.outOfDate ? t.feedsOutOfDate : feed.readState.kind === 'refused' ? feedRefusalText(feed.readState.reason, t) : null;
   const nextIn = feedNextInMs(feed.id, ageMs);
-  const next = nextIn === null ? null : nextIn === 0 ? t.feedsNextDue : sub(t.feedsNextIn, { age: formatAge(nextIn, t) });
+  const next = nextIn === null ? null : nextIn === 0 ? t.feedsNextDue : sub(t.feedsNextIn, { age: formatAge(nextIn, lang) });
   return { title: feedName(feed.id, t), status, what, note, action: working ? null : t.feedsClickToUpdate, next };
 }
 
@@ -204,6 +204,7 @@ export function ringMotion(feed: FeedView, now: number): ArcMotion {
 /** The tooltip's words, re-read every second for as long as the tooltip is open — a closed
  *  tooltip is not mounted, so nothing ticks at rest. */
 function FeedTipBody({ feed, t }: { feed: FeedView; t: Copy }) {
+  const { lang } = useLocale();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -213,7 +214,7 @@ function FeedTipBody({ feed, t }: { feed: FeedView; t: Copy }) {
       window.clearInterval(timer);
     };
   }, []);
-  const tip = feedWords(feed, t, now);
+  const tip = feedWords(feed, t, lang, now);
   return (
     <>
       <div className="flex items-baseline justify-between gap-4">

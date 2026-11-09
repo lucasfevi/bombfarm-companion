@@ -28,35 +28,35 @@ function textOf(html: string, testId: string): string {
 
 describe('gameWords — the three states, as a word and as a sentence', () => {
   it('connected reads "Connected", with the streaming sentence for the tooltip', () => {
-    expect(gameWords(at('connected'), en)).toEqual({ word: en.gameConnected, age: null, tip: en.liveStatusLiveLabel, tone: 'up' });
+    expect(gameWords(at('connected'), en, 'en')).toEqual({ word: en.gameConnected, age: null, tip: en.liveStatusLiveLabel, tone: 'up' });
   });
 
   it('stale carries its age beside the word and in the sentence, in the warn tone', () => {
-    const words = gameWords(at('stale', 3 * 60_000), en);
+    const words = gameWords(at('stale', 3 * 60_000), en, 'en');
     expect(words.word).toBe(en.gameStale);
-    expect(words.age).toBe(sub(en.ageShortMinutes, { n: 3 }));
-    expect(words.tip).toBe(sub(en.gameFeedStaleTip, { age: sub(en.ageShortMinutes, { n: 3 }) }));
+    expect(words.age).toBe('3m');
+    expect(words.tip).toBe(sub(en.gameFeedStaleTip, { age: '3m' }));
     expect(words.tone).toBe('warn');
   });
 
   it('stale with no age known says stale, and no figure it does not have', () => {
-    expect(gameWords(at('stale'), en)).toEqual({ word: en.gameStale, age: null, tip: en.gameFeedStaleNoAgeTip, tone: 'warn' });
+    expect(gameWords(at('stale'), en, 'en')).toEqual({ word: en.gameStale, age: null, tip: en.gameFeedStaleNoAgeTip, tone: 'warn' });
   });
 
   it('not running is muted, never amber — nothing is wrong, the game is simply closed', () => {
-    expect(gameWords(at('not_running'), en)).toEqual({ word: en.gameNotRunning, age: null, tip: en.gameFeedNotRunningTip, tone: 'muted' });
+    expect(gameWords(at('not_running'), en, 'en')).toEqual({ word: en.gameNotRunning, age: null, tip: en.gameFeedNotRunningTip, tone: 'muted' });
   });
 
   it('before main has answered, "Connecting" with the loading sentence, and no tone for the tab to wear', () => {
-    expect(gameWords(null, en)).toEqual({ word: en.gameConnecting, age: null, tip: en.shellLoadingLabel, tone: null });
-    expect(liveTabMark(null, en)).toBeUndefined();
+    expect(gameWords(null, en, 'en')).toEqual({ word: en.gameConnecting, age: null, tip: en.shellLoadingLabel, tone: null });
+    expect(liveTabMark(null, en, 'en')).toBeUndefined();
   });
 });
 
 describe("liveTabMark — the Live tab's corner dot says exactly what the strip's game cell says", () => {
   it.each<GameStatusInfo['status']>(['connected', 'stale', 'not_running'])("%s: same tone, and the cell's sentence as the label", (status) => {
-    const words = gameWords(at(status, 60_000), en);
-    expect(liveTabMark(at(status, 60_000), en)).toEqual({ tone: words.tone, label: words.tip });
+    const words = gameWords(at(status, 60_000), en, 'en');
+    expect(liveTabMark(at(status, 60_000), en, 'en')).toEqual({ tone: words.tone, label: words.tip });
   });
 });
 
@@ -75,7 +75,7 @@ describe("GameFeed — a dot and a word at the strip's left", () => {
     const stale = render(at('stale', 60_000));
     expect(tagOf(stale, 'game-feed-dot')).toContain('bg-warn');
     expect(tagOf(stale, 'game-feed-dot')).not.toContain('animate-pulse');
-    expect(textOf(stale, 'game-feed-age')).toBe(sub(en.ageShortMinutes, { n: 1 }));
+    expect(textOf(stale, 'game-feed-age')).toBe('1m');
     const off = render(at('not_running'));
     expect(tagOf(off, 'game-feed-dot')).toContain('bg-transparent');
     expect(tagOf(off, 'game-feed-value')).toContain('text-muted');

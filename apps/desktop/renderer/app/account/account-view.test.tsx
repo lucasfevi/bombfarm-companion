@@ -419,7 +419,7 @@ describe('the account-read age, which is a different clock from the price age', 
       accountState.current = loaded(
         payloadOf(resolvedFidelity({ casa: { status: 'stale', capturedAt: EARLIER } })),
       );
-      expect(html()).toContain(formatCapturedAt(EARLIER, en));
+      expect(html()).toContain(formatCapturedAt(EARLIER, 'en'));
     } finally {
       vi.useRealTimers();
     }
