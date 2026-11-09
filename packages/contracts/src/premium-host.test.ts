@@ -27,13 +27,14 @@ function keyIdOf(x: string): string {
 }
 
 describe('shared modules and capabilities', () => {
-  it('lists the five shared modules in order and is frozen', () => {
+  it('lists the six shared modules in order and is frozen', () => {
     expect([...PREMIUM_SHARED_MODULES]).toEqual([
       'react',
       'react/jsx-runtime',
       'react-dom',
       'react/compiler-runtime',
       '@bombfarm/ui',
+      '@bombfarm/game-art',
     ]);
     expect(Object.isFrozen(PREMIUM_SHARED_MODULES)).toBe(true);
   });
@@ -80,10 +81,10 @@ describe('bundle public keys', () => {
 });
 
 describe('plugin API version', () => {
-  it('is 1.2.0 from either module', () => {
-    expect(fromHost).toBe('1.2.0');
-    expect(fromLicence).toBe('1.2.0');
-    expect(PLUGIN_API_VERSION).toBe('1.2.0');
+  it('is 1.3.0 from either module', () => {
+    expect(fromHost).toBe('1.3.0');
+    expect(fromLicence).toBe('1.3.0');
+    expect(PLUGIN_API_VERSION).toBe('1.3.0');
   });
 
   it('is the same value through both modules', () => {

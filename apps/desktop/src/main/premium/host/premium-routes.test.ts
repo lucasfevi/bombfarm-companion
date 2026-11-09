@@ -31,6 +31,7 @@ const SHIMS: Record<string, string[]> = {
   'react-dom': ['createPortal'],
   'react/compiler-runtime': ['c'],
   '@bombfarm/ui': ['Button', 'Banner'],
+  '@bombfarm/game-art': ['ItemIcon', 'ChestIcon'],
 };
 
 function served(sequence = 4): ServedBundle {
@@ -176,6 +177,7 @@ describe('the shared-module shims', () => {
       'react-dom.js',
       'react__compiler-runtime.js',
       '@bombfarm__ui.js',
+      '@bombfarm__game-art.js',
     ]);
   });
 
