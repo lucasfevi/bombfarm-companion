@@ -54,6 +54,7 @@ import { FrameRing } from './frame-ring.js';
 import { peScanExtent } from './image-scan.js';
 import type { ObservationAppendPort, ObservationCapture } from './observation-capture.js';
 import type { LogPort } from './log-port.js';
+import { MapEndWatch } from './map-end-watch.js';
 import { MapFold, NO_MAP_ACCOUNT_BOOSTS, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
 import { PhaseEconomyCheck, wikiPhaseEconomyBaseline } from './phase-economy-check.js';
 import { RuntimePort } from './runtime.js';
@@ -686,6 +687,7 @@ export class LiveSource {
   #apprenticeRanks: ReadonlyMap<string, number> = new Map();
   #fieldApprenticeXpMult = 1;
   readonly #damageFold: DamageFold;
+  readonly #mapEndWatch = new MapEndWatch();
   /** Every tap numbers its own frames from 1, so a tap rebuilt by {@link forceDetach} restarts at 1
    *  while the folds still remember the previous tap's last number and would drop its frames. The
    *  folds are handed this process-level count instead, which only ever grows. */
@@ -894,6 +896,7 @@ export class LiveSource {
       // report the map's economy at no boost at all until the next rotation read landed. Same
       // reasoning that leaves `#xpMult` alone across an account change.
       this.#mapFold.reset();
+      this.#mapEndWatch.reset();
     }
     this.#lastBinding = binding;
   }
@@ -1091,12 +1094,19 @@ export class LiveSource {
       this.#earningsFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#mapFold.consumeTick(event.frame.tick, this.#frameCounter);
       this.#damageFold.consumeTick(event.frame.tick, this.#frameCounter);
+      this.#logMapEnd(event.frame.tick);
       this.#earningsStarted = true;
       if (event.frame.tick.gold !== undefined) this.#goldBalance = event.frame.tick.gold;
       this.#ingestTick(event.frame.tick, Date.parse(event.frame.at));
     }
     this.#publish(event);
     if (boostsChanged) this.#publish({ type: 'boosts', boosts: this.#boosts });
+  }
+
+  /** One line per map, roughly every half minute while farming. */
+  #logMapEnd(tick: LiveTick): void {
+    const ended = this.#mapEndWatch.observe(tick);
+    if (ended !== null) this.#log.info({ scope: 'live-source', event: 'map.ended', wave: ended.wave, phase: ended.phase });
   }
 
   /** The wire lists the Boosts on every frame while one runs and drops the list when none does,

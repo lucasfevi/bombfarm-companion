@@ -2097,3 +2097,21 @@ describe("LiveSource: the map's XP estimate", () => {
     expect(source.getView().earnings?.xpSessionTotal).toBeCloseTo(bare * 2, 6);
   });
 });
+
+describe('LiveSource: one info line per map end', () => {
+  it('logs map.ended with the wave that ended and its phase, once per wave step, and nothing else', () => {
+    const { log, infoRecords } = createSpyLog();
+    const { source, pushFrame, goLive } = createHarness({ log });
+    source.start();
+    goLive();
+
+    for (const wave of [3, 3, 3, 4, 4, 5]) pushFrame({ heroes: [], phase: 140, wave });
+    pushFrame({ heroes: [], phase: 141, wave: 6 });
+    pushFrame({ heroes: [], phase: 141, wave: 9 });
+
+    expect(infoRecords.filter((record) => record.event === 'map.ended')).toEqual([
+      { scope: 'live-source', event: 'map.ended', wave: 3, phase: 140 },
+      { scope: 'live-source', event: 'map.ended', wave: 4, phase: 140 },
+    ]);
+  });
+});
