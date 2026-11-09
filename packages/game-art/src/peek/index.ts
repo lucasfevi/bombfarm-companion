@@ -29,4 +29,11 @@ export {
   type HeroPeekStatsResolver,
   type HeroPeekStatsSubject,
 } from './hero-peek-stats';
-export { peekPopupClass, peekTriggerClass } from './peek.recipe';
+export {
+  peekFootClass,
+  peekNameClass,
+  peekPopupClass,
+  peekRowsClass,
+  peekRuleClass,
+  peekTriggerClass,
+} from './peek.recipe';
