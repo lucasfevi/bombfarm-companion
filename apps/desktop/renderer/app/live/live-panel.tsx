@@ -83,7 +83,8 @@ export function LivePanel({
   damage?: LiveDamage | null;
   onResetEarnings?: (() => void) | undefined;
   onReopenConsent?: (() => void) | undefined;
-  /** Rendered after everything else in the panel. */
+  /** Rendered as the grid's last row, full width, so a panel placed here lines up with the four
+   *  above it; the footnotes stay below. */
   children?: ReactNode;
 }) {
   const t = useCopy();
@@ -162,6 +163,12 @@ export function LivePanel({
             )}
           </div>
         </Panel>
+        {children == null ? null : (
+          // `empty:hidden`: a slot whose content renders nothing must not open a grid row and its gap.
+          <div data-testid="live-extension-slot" className="col-span-2 flex flex-col gap-4 empty:hidden">
+            {children}
+          </div>
+        )}
       </div>
       {slow.unclassifiedCount > 0 ? (
         <p data-testid="live-unclassified-count" className="m-0 text-xs text-muted">
@@ -173,7 +180,6 @@ export function LivePanel({
           {sub(t.liveFieldExitPendingCount, { n: formatCount(slow.fieldExitPendingCount, locale) })}
         </p>
       ) : null}
-      {children}
     </div>
   );
 }
